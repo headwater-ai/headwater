@@ -16,10 +16,14 @@
 <meta name="description" content="Declare the taxonomy, build the graph, run the checks, project. The four steps of a Headwater run, and where its reasoning stops.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
 <style>
+  /* headwater:tokens */
   :root {
     --bg: #fbfaf8; --fg: #1a1917; --muted: #5f5b54;
     --rule: #e2ddd4; --accent: #1d5c54; --code-bg: #f1eee8;
     --accent-on-ink: #6fb3a6;
+    --serif: ui-serif, Charter, "Iowan Old Style", Georgia, serif;
+    --sans: ui-sans-serif, system-ui, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -28,15 +32,16 @@
       --accent-on-ink: #1d5c54;
     }
   }
+  .sans { font-family: var(--sans); }
+  .mono { font-family: var(--mono); }
+  /* headwater:tokens end */
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--fg);
-    font: 17px/1.65 ui-serif, Charter, "Iowan Old Style", Georgia, serif;
+    font: 17px/1.65 var(--serif);
     -webkit-text-size-adjust: 100%; overflow-wrap: break-word;
   }
   a { color: var(--accent); text-underline-offset: 2px; }
-  .sans { font-family: ui-sans-serif, system-ui, sans-serif; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
   .topbar { height: 4px; background: var(--accent); }
   .bar { max-width: 78rem; margin: 0 auto; padding: 0 3rem; }
@@ -52,7 +57,7 @@
   .brand .glyph { color: var(--accent); font-size: 1.3rem; }
   .navlinks {
     display: flex; gap: 1.7rem; flex-wrap: wrap;
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.82rem;
+    font-family: var(--sans); font-size: 0.82rem;
   }
   .navlinks a { color: var(--muted); text-decoration: none; }
   .navlinks a:hover { color: var(--accent); }
@@ -63,7 +68,7 @@
   .tint { background: var(--code-bg); }
 
   .eyebrow {
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.78rem;
+    font-family: var(--sans); font-size: 0.78rem;
     text-transform: uppercase; letter-spacing: 0.14em; font-weight: 650;
     color: var(--accent); margin: 0 0 1.5rem;
   }
@@ -81,7 +86,7 @@
   .stage { display: flex; flex-direction: column; min-width: 0; }
   .stagehead {
     background: var(--accent); color: var(--bg);
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.85rem;
+    font-family: var(--sans); font-size: 0.85rem;
     font-weight: 650; padding: 0.55rem 1rem; border-radius: 8px 8px 0 0;
   }
   .stagebody {
@@ -91,7 +96,7 @@
     flex: 1;
   }
   .chip {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: var(--mono);
     font-size: 0.7rem; background: var(--bg); border: 1px solid var(--rule);
     padding: 0.15rem 0.55rem; border-radius: 99px;
   }
@@ -106,12 +111,12 @@
     font-size: 2rem; font-weight: 600; margin: 0 0 0.7rem;
   }
   h2.step .n {
-    color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--accent); font-family: var(--mono);
     font-size: 1.2rem; margin-right: 0.7rem;
   }
   h2.label {
     font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em;
-    font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 650;
+    font-family: var(--sans); font-weight: 650;
     color: var(--muted); margin: 0 0 1.2rem;
     padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule);
   }
@@ -120,7 +125,7 @@
   pre.block, .box {
     margin: 0; background: var(--code-bg); border: 1px solid var(--rule);
     border-left: 3px solid var(--accent); padding: 1.2rem 1.4rem;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: var(--mono);
     font-size: 0.8rem; line-height: 1.75; color: var(--fg);
   }
   .tint pre.block, .tint .box { background: var(--bg); }
@@ -136,13 +141,13 @@
   .dim { color: var(--muted); }
 
   code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: var(--mono);
     font-size: 0.87em; background: var(--code-bg);
     padding: 0.12em 0.36em; border-radius: 3px;
   }
   .tint code { background: var(--bg); }
   .cta {
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.95rem;
+    font-family: var(--sans); font-size: 0.95rem;
     font-weight: 600; background: var(--accent); color: var(--bg);
     text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 2px;
   }
@@ -151,7 +156,7 @@
   footer { border-top: 1px solid var(--rule); }
   .foot {
     padding-top: 1.5rem; padding-bottom: 2.5rem;
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.87rem;
+    font-family: var(--sans); font-size: 0.87rem;
     color: var(--muted);
   }
   .foot p { margin: 0 0 1rem; max-width: 46rem; }

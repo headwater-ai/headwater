@@ -387,6 +387,27 @@ jobs:
         # person remembering to run the script. `--check` writes nothing and
         # prints a diff of committed against measured.
         run: sh tools/refresh-crawler-files.sh --check
+      - name: Every hand-built page carries the same visual register
+        # `tools/site-tokens.css` is the one copy of the color tokens and the
+        # three type stacks that the hand-built pages share, and HW-DR-0050
+        # rules it. Each page carries that block verbatim between its two
+        # `headwater:tokens` markers, written by the script and never by hand.
+        #
+        # A page cannot link the file instead. `site/_headers` gives every
+        # hand-built path `default-src 'none'` with `style-src 'unsafe-inline'`
+        # and no `'self'`, so a hand-built page fetches nothing at read time —
+        # the property HW-DR-0037 states and HW-DR-0039 relies on. So the copy
+        # runs before the commit, which is the move HW-DR-0039 already made for
+        # a figure on the same pages.
+        #
+        # Measured rather than supposed: the eight pages each carried their own
+        # copy of the six color tokens until this landed, and four of them had
+        # drifted to a seventh the other four did not declare.
+        #
+        # A page under `site/` with no marker pair fails this step too. That is
+        # deliberate: a ninth page opting out of the shared register would do it
+        # by carrying no marker, and a silent skip is what would let it.
+        run: sh tools/refresh-site-tokens.sh --check
       - name: The two halves of the site compose into one served directory
         # This is the input the deploy serves, and this step is the only place
         # that runs the composition where a person reads the result. The

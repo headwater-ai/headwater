@@ -16,24 +16,32 @@
 <meta name="description" content="Sixteen steps take an empty directory to a passing strict check, and you leave holding shelf, kind, facet, overlay and obligation.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
 <style>
+  /* headwater:tokens */
   :root {
     --bg: #fbfaf8; --fg: #1a1917; --muted: #5f5b54;
     --rule: #e2ddd4; --accent: #1d5c54; --code-bg: #f1eee8;
+    --accent-on-ink: #6fb3a6;
+    --serif: ui-serif, Charter, "Iowan Old Style", Georgia, serif;
+    --sans: ui-sans-serif, system-ui, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #14161a; --fg: #e6e3dd; --muted: #9b968c;
       --rule: #2a2e35; --accent: #6fb3a6; --code-bg: #1c1f25;
+      --accent-on-ink: #1d5c54;
     }
   }
+  .sans { font-family: var(--sans); }
+  .mono { font-family: var(--mono); }
+  /* headwater:tokens end */
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--fg);
-    font: 17px/1.65 ui-serif, Charter, "Iowan Old Style", Georgia, serif;
+    font: 17px/1.65 var(--serif);
     -webkit-text-size-adjust: 100%; overflow-wrap: break-word;
   }
   a { color: var(--accent); text-underline-offset: 2px; }
-  .sans { font-family: ui-sans-serif, system-ui, sans-serif; }
 
   .topbar { height: 4px; background: var(--accent); }
   .bar { max-width: 78rem; margin: 0 auto; padding: 0 3rem; }
@@ -49,7 +57,7 @@
   .brand .glyph { color: var(--accent); font-size: 1.3rem; }
   .navlinks {
     display: flex; gap: 1.7rem; flex-wrap: wrap;
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.82rem;
+    font-family: var(--sans); font-size: 0.82rem;
   }
   .navlinks a { color: var(--muted); text-decoration: none; }
   .navlinks a:hover { color: var(--accent); }
@@ -60,7 +68,7 @@
   .pad { padding-top: 3.5rem; padding-bottom: 4rem; }
 
   .eyebrow {
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.78rem;
+    font-family: var(--sans); font-size: 0.78rem;
     text-transform: uppercase; letter-spacing: 0.14em; font-weight: 650;
     color: var(--accent); margin: 0 0 1.5rem;
   }
@@ -70,7 +78,7 @@
   }
   .lede { font-size: 1.15rem; max-width: 46rem; margin: 0 0 1.6rem; }
   .warn {
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.88rem;
+    font-family: var(--sans); font-size: 0.88rem;
     background: var(--code-bg); border-left: 3px solid var(--muted);
     padding: 0.9rem 1.1rem; margin: 0; max-width: 46rem; color: var(--muted);
   }
@@ -78,7 +86,7 @@
 
   h2.label {
     font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em;
-    font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 650;
+    font-family: var(--sans); font-weight: 650;
     color: var(--muted); margin: 0 0 1rem;
   }
   .split {
@@ -94,7 +102,7 @@
   .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); flex: none; }
   .dot.hollow { background: none; border: 2px dashed var(--accent); }
   .marklabel {
-    writing-mode: vertical-rl; font-family: ui-sans-serif, system-ui, sans-serif;
+    writing-mode: vertical-rl; font-family: var(--sans);
     font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
     color: var(--accent); font-weight: 650;
   }
@@ -106,22 +114,22 @@
   }
   .step h2 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.5rem; }
   .step h2 .n {
-    color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--accent); font-family: var(--mono);
     font-size: 0.95rem; margin-right: 0.6rem;
   }
   .prose { font-size: 0.95rem; color: var(--muted); margin: 0 0 0.8rem; }
-  .check { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.8rem; margin: 0; }
+  .check { font-family: var(--sans); font-size: 0.8rem; margin: 0; }
   .checkword { color: var(--accent); font-weight: 650; }
   .check span { color: var(--muted); }
 
   .blocklabel {
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem;
+    font-family: var(--sans); font-size: 0.75rem;
     color: var(--muted); margin: 0.9rem 0 0.35rem;
   }
   .blocklabel:first-child { margin-top: 0; }
   pre {
     margin: 0 0 0.6rem; padding: 0.9rem 1.1rem;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: var(--mono);
     font-size: 0.78rem; line-height: 1.7;
     white-space: pre-wrap; overflow-wrap: anywhere;
   }
@@ -130,7 +138,7 @@
   pre.edit { background: var(--bg); border: 1px dashed var(--accent); color: var(--fg); }
   .tint pre.out { background: var(--bg); }
   .trimnote {
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem;
+    font-family: var(--sans); font-size: 0.75rem;
     color: var(--muted); margin: 0.4rem 0 0.6rem;
   }
 
@@ -141,13 +149,13 @@
   .words span { color: var(--muted); }
   p { margin: 0 0 1.1rem; }
   code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: var(--mono);
     font-size: 0.87em; background: var(--code-bg);
     padding: 0.12em 0.36em; border-radius: 3px;
   }
   .tint code { background: var(--bg); }
   .cta {
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.95rem;
+    font-family: var(--sans); font-size: 0.95rem;
     font-weight: 600; background: var(--accent); color: var(--bg);
     text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 2px;
   }
@@ -156,7 +164,7 @@
   footer { border-top: 1px solid var(--rule); }
   .foot {
     padding-top: 1.5rem; padding-bottom: 2.5rem;
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.87rem;
+    font-family: var(--sans); font-size: 0.87rem;
     color: var(--muted);
   }
   .foot p { margin: 0 0 1rem; max-width: 46rem; }

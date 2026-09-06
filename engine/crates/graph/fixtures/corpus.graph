@@ -1,6 +1,6 @@
-277 nodes, 575 declared edge halves
-    447 to a document
-    128 to an anchor
+279 nodes, 581 declared edge halves
+    449 to a document
+    132 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -61,7 +61,7 @@ anchors
       2 code_path `engine/crates/sweep/src/lib.rs` via source-tree
       1 code_path `engine/crates/verbs/src/lib.rs` via source-tree
       1 code_path `mkdocs-overrides/main.html` via source-tree
-      2 code_path `notes/website-design-brief.md` via source-tree
+      4 code_path `notes/website-design-brief.md` via source-tree
       1 code_path `packages/headwater-standard/taxonomy.yml` via source-tree
       1 code_path `site/_headers` via source-tree
       1 code_path `site/changelog/index.html` via source-tree
@@ -78,5 +78,7 @@ anchors
       1 code_path `tools/rdf-probe/emit.py` via source-tree
       1 code_path `tools/refresh-crawler-files.sh` via source-tree
       1 code_path `tools/refresh-figures.sh` via source-tree
+      1 code_path `tools/refresh-site-tokens.sh` via source-tree
+      1 code_path `tools/site-tokens.css` via source-tree
       1 code_path `tools/sitemap.py` via source-tree
       1 code_path `wrangler.jsonc` via source-tree

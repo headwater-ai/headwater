@@ -359,6 +359,48 @@ out=$(cd "$scratch" && HEADWATER_ALLOW_SITE_DELETE=1 sh .githooks/pre-commit 2>&
 judge 'the variable releases this clause and not the rule that reads a governed path' 1 "$status" \
     'relation.target.unresolved' "$out"
 
+# The token clause. `tools/site-tokens.css` is the one copy of the visual
+# register, and each hand-built page carries it between two markers. Before
+# HW-DR-0050 every page carried its own copy of the six color tokens, and four
+# of the eight had drifted to a seventh the other four did not declare. The
+# case edits a value inside a page's block, which is the drift with no other
+# witness: a title is unchanged, so the crawler clause above passes and this
+# one is what refuses.
+reset
+sed -i 's|--accent: #1d5c54|--accent: #b30000|' "$scratch/site/proof/index.html"
+out=$(gate); status=$?
+judge 'a page whose visual register was edited by hand is refused' 1 "$status" \
+    'disagrees with' "$out"
+judge 'and the refusal names the page that moved' 1 "$status" \
+    'site/proof/index.html' "$out"
+judge 'and it names the command that repairs it' 1 "$status" \
+    'sh tools/refresh-site-tokens.sh' "$out"
+
+# A page with no marker pair is refused rather than skipped, which is the half
+# of the clause a stale-block case cannot reach. A ninth page that opted out of
+# the shared register would do it by carrying no marker, so a silent skip is
+# what would let one through. `HEADWATER_SKIP_CRAWLER_CHECK` is set for the
+# same reason the site-delete cases above set it: adding a page necessarily
+# stales the crawler files, that clause runs first, and this case is about this
+# clause.
+reset
+mkdir -p "$scratch/site/unmarked"
+cat > "$scratch/site/unmarked/index.html" <<'HTML'
+<title>Unmarked</title>
+<meta name="description" content="A page added with no visual register markers.">
+<style>
+  body { background: rebeccapurple; }
+</style>
+HTML
+out=$(cd "$scratch" && HEADWATER_SKIP_CRAWLER_CHECK=1 sh .githooks/pre-commit 2>&1); status=$?
+judge 'a page added under site/ with no register markers is refused' 1 "$status" \
+    'no marker pair in site/unmarked/index.html' "$out"
+
+reset
+sed -i 's|--accent: #1d5c54|--accent: #b30000|' "$scratch/site/proof/index.html"
+out=$(cd "$scratch" && HEADWATER_SKIP_TOKEN_CHECK=1 sh .githooks/pre-commit 2>&1); status=$?
+judge 'and the named variable releases that one clause' 0 "$status" '' "$out"
+
 # A finding whose location line lands on the width boundary, printed whole.
 #
 # #340 lays the report out at 80 columns, and the fill leaves a line alone when

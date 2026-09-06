@@ -10,9 +10,12 @@
 > | §2 positioning, §3 the honesty constraint | A summary of `docs/evaluations/adjacent-work.md` §I and §J, and of Q16 and principle 11. Read those. |
 > | §3 figure table | **Wrong, and known to be wrong.** HW-DR-0039 §Context measures it: 245 files, 523 findings and taxonomy 3.2.0 here, against 332, 524 and 3.3.0 three days later. |
 > | §5, §6 landing and services copy | Draft copy. The built pages under `site/` are what shipped. |
-> | §7 visual and tonal direction | Ruled. HW-DR-0049. |
-> | §9 public glossary basis | Ruled. HW-DR-0050. |
-> | §8.2 to §8.5 open items | Filed as issues. |
+> | §7 visual and tonal direction | Ruled. HW-DR-0050. |
+> | §9 public glossary basis | Ruled. HW-DR-0051. |
+> | §8.2 pricing for the audit | Moot. No `/services` and no `/audit` page exists, and the offer is not on the site. |
+> | §8.3 a contact channel | Open, and no issue carries it. |
+> | §8.4 changelog and community | Half ruled. `/changelog/` shipped with [#526](https://github.com/headwater-ai/headwater/issues/526). The community half is open. |
+> | §8.5 the site ships when the engine ships | Settled by the fact. The site is live and the tutorial runs. |
 
 Research input for Claude Design. Written 2026-08-23. Everything here is either measured from a run of this engine, quoted from a source, or marked as a judgment call.
 

@@ -2,7 +2,7 @@
 
 # decisions
 
-48 documents on this shelf, in the reading order this corpus derives.
+50 documents on this shelf, in the reading order this corpus derives.
 
 - [Q1 — Implementation language](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [Q2 — Schema format](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -20,6 +20,7 @@
 - [Q14 — Discovery surface](0014-discovery-surface.md) — The corpus descriptor is a generated projection at `.headwater/corpus.json`, and registration went to Q16.
 - [Q15 — A synthesized content tier](0015-a-synthesized-content-tier.md) — Every document carries a warrant from a closed set of four, and `asserted` content is admitted with limits.
 - [Q39 — How a figure reaches a hand-built page, now that a build interpolates one](0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md) — The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.
+- [Q50 — Where the visual register of the hand-built pages lives, now that eight pages each carried a copy](0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md) — The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet. (asserted, and no human has accepted it)
 - [Q37 — Which parts of the site are hand-built and which are a projection of this corpus](0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md) — Everything under `site/` is hand-built and the corpus is the generated projection. A hand-built page states no figure a person typed, and nothing checks that.
 - [Q16 — Public presence](0016-public-presence.md) — Registration needs a channel with an obliged reader, a directory of corpora is refused, and the site is a projection of this corpus.
 - [Q17 — Governed access and the solution layer](0017-governed-access-and-the-solution-layer.md) — The serving boundary is the export step of each publishing corpus. A profile filters for an audience, and Headwater has no principals.
@@ -52,3 +53,4 @@
 - [Migrating from-version carries a semver and a release digest, kept as separate fields](0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md) — `adoption.from` is a pair, a semver and the release digest that was pinned when the migration began, and never a hash of the two.
 - [The served sitemap is derived from the served directory](0048-the-served-sitemap-is-derived-from-the-served-directory.md) — The sitemap a reader gets is derived from the directory that is served, by one walk that both halves call. Nobody types a page list, and the assembled directory is the only place the union exists. (asserted, and no human has accepted it)
 - [How the two halves of the site share one host](0047-how-the-two-halves-of-the-site-share-one-host.md) — One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time. (asserted, and no human has accepted it)
+- [Q51 — What licenses a term into the public glossary, and what licenses a sixteenth](0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md) — A term reaches the public glossary because it recurs in the visitor-facing pages of the site, and for no other reason. The tutorial and the glossary itself are not sources, and the specification glossary answers to a different reader. (asserted, and no human has accepted it)

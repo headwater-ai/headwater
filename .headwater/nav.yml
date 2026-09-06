@@ -19,6 +19,7 @@ nav:
       - "Q14 — Discovery surface": "decisions/0014-discovery-surface.md"
       - "Q15 — A synthesized content tier": "decisions/0015-a-synthesized-content-tier.md"
       - "Q39 — How a figure reaches a hand-built page, now that a build interpolates one": "decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md"
+      - "Q50 — Where the visual register of the hand-built pages lives, now that eight pages each carried a copy": "decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md"
       - "Q37 — Which parts of the site are hand-built and which are a projection of this corpus": "decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md"
       - "Q16 — Public presence": "decisions/0016-public-presence.md"
       - "Q17 — Governed access and the solution layer": "decisions/0017-governed-access-and-the-solution-layer.md"
@@ -51,6 +52,7 @@ nav:
       - "Migrating from-version carries a semver and a release digest, kept as separate fields": "decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md"
       - "The served sitemap is derived from the served directory": "decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md"
       - "How the two halves of the site share one host": "decisions/0047-how-the-two-halves-of-the-site-share-one-host.md"
+      - "Q51 — What licenses a term into the public glossary, and what licenses a sixteenth": "decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md"
   - "acceptance_criteria":
       - "Index": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
