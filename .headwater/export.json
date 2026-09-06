@@ -1061,7 +1061,7 @@
               "site/changelog/index.html"
             ],
             "traces_to": [
-              "site/DESIGN-BRIEF.md"
+              "notes/website-design-brief.md"
             ]
           }
         }
@@ -1125,7 +1125,7 @@
               "tools/refresh-figures.sh"
             ],
             "traces_to": [
-              "site/DESIGN-BRIEF.md"
+              "notes/website-design-brief.md"
             ]
           }
         }
@@ -7999,12 +7999,12 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": "packages/headwater-standard/taxonomy.yml",
+        "id": "notes/website-design-brief.md",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "site/DESIGN-BRIEF.md",
+        "id": "packages/headwater-standard/taxonomy.yml",
         "resolver": "source-tree"
       },
       {
@@ -8750,7 +8750,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "site/DESIGN-BRIEF.md",
+          "id": "notes/website-design-brief.md",
           "resolver": "source-tree"
         }
       },
@@ -8816,7 +8816,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "site/DESIGN-BRIEF.md",
+          "id": "notes/website-design-brief.md",
           "resolver": "source-tree"
         }
       },

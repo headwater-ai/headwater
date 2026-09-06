@@ -18,7 +18,7 @@ relations:
   governs:
     - tools/refresh-figures.sh
   traces_to:
-    - site/DESIGN-BRIEF.md
+    - notes/website-design-brief.md
 ---
 
 # Q39 — How a figure reaches a hand-built page, now that a build interpolates one
@@ -33,7 +33,7 @@ relations:
 
 **Both admitted forms were therefore closed, and a page of figures had nowhere to stand.** The self-assessment page waited behind that, and the landing page carried figures from a run that nobody could name.
 
-**The cost of the gap is measured rather than argued.** `site/DESIGN-BRIEF.md` section 3 states a table of run figures typed by hand on 2026-08-23. It reports 245 files under the corpus root, 523 findings, and taxonomy `headwater/standard 3.2.0`. A run of this engine on 2026-08-26 reports 332 files, 524 findings, and `headwater/standard 3.3.0`. Three days moved every figure in the one document that states why a hand-typed figure is a defect.
+**The cost of the gap is measured rather than argued.** `notes/website-design-brief.md` section 3 states a table of run figures typed by hand on 2026-08-23. It reports 245 files under the corpus root, 523 findings, and taxonomy `headwater/standard 3.2.0`. A run of this engine on 2026-08-26 reports 332 files, 524 findings, and `headwater/standard 3.3.0`. Three days moved every figure in the one document that states why a hand-typed figure is a defect.
 
 ## Decision
 

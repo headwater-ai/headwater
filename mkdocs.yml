@@ -16,9 +16,9 @@ docs_dir: docs
 # the site that HW-DR-0037 governs, `wrangler.jsonc` names it as the asset
 # directory with no build command, and Cloudflare deploys it on every push.
 # `mkdocs build` cleans `site_dir` before it writes, so the default would
-# delete `site/index.html`, `site/ns/index.html`, `site/_headers` and
-# `site/DESIGN-BRIEF.md` and exit 0 while doing it. Measured, on a throwaway
-# worktree, before this file was written. `.headwater/` is where this corpus's
+# delete every file under `site/` — the eight pages, `_headers`, and the
+# crawler files among them — and exit 0 while doing it. Measured, on a
+# throwaway worktree, before this file was written. `.headwater/` is where this corpus's
 # other derived artifacts already live, and `site-build` cannot be misread as
 # `site/`. The directory is git-ignored and this slice deploys nothing.
 site_dir: .headwater/site-build

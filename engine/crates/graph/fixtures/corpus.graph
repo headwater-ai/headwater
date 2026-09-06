@@ -61,8 +61,8 @@ anchors
       2 code_path `engine/crates/sweep/src/lib.rs` via source-tree
       1 code_path `engine/crates/verbs/src/lib.rs` via source-tree
       1 code_path `mkdocs-overrides/main.html` via source-tree
+      2 code_path `notes/website-design-brief.md` via source-tree
       1 code_path `packages/headwater-standard/taxonomy.yml` via source-tree
-      2 code_path `site/DESIGN-BRIEF.md` via source-tree
       1 code_path `site/_headers` via source-tree
       1 code_path `site/changelog/index.html` via source-tree
       1 code_path `site/compare/index.html` via source-tree

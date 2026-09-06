@@ -56,14 +56,17 @@ root=$(git rev-parse --show-toplevel) || exit 0
 # built engine, and this clause needs no engine.
 #
 # The variable releases this clause and nothing below it, and on this tree that
-# matters for every file under `site/` but one. HW-DR-0037 declares `governs`
-# over the pages it names and `traces_to` `site/DESIGN-BRIEF.md`, and it obliges
-# a page added under `site/` to carry an edge of its own. So removing any page
-# it governs is refused a second time by `relation.target.unresolved`, which
-# names the record that has to move first. `site/_headers` is the one file the
-# variable releases on its own, and it is the one that carries the HSTS,
-# `nosniff` and CSP headers. So this clause is the whole gate on exactly the
-# file whose loss is a security regression.
+# matters for three files. HW-DR-0037 declares `governs` over the eight pages it
+# names, HW-DR-0047 declares it over `site/_headers`, and both oblige a page
+# added under `site/` to carry an edge of its own. So removing any of those nine
+# is refused a second time by `relation.target.unresolved`, which names the
+# record that has to move first.
+#
+# `site/llms.txt`, `site/robots.txt` and `site/sitemap.xml` are the three the
+# variable releases on its own. No record names them,
+# `tools/refresh-crawler-files.sh` writes all three from the pages under
+# `site/`, and a crawler reads each one at a fixed path with no link to follow.
+# So this clause is the whole gate on exactly the files whose loss is silent.
 if [ -z "${HEADWATER_ALLOW_SITE_DELETE:-}" ]; then
     gone=$(git -C "$root" diff --cached --name-only --diff-filter=D -- site/)
     if [ -n "$gone" ]; then

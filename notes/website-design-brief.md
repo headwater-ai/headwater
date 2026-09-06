@@ -1,5 +1,19 @@
 # Headwater website — design brief
 
+> **Archived 2026-09-06, and superseded in parts.** This was research input written on 2026-08-23, before the site was built. It was served to the public at `https://headwater.tools/DESIGN-BRIEF.md` from that day until 2026-09-06, because `tools/assemble-site.sh` copies `site/` whole into the deployed directory and this file sat in it. Nothing linked it and no crawler file named it.
+>
+> It is kept because HW-DR-0037 and HW-DR-0039 both `traces_to` it, and both quote it. It is not current, and no part of it decides anything. Where a record now rules on a question this brief raised, read the record:
+>
+> | Section | Status |
+> |---|---|
+> | §1 site architecture row, §4 sitemap, §8.1 | Ruled. HW-DR-0037, HW-DR-0047, HW-DR-0048. |
+> | §2 positioning, §3 the honesty constraint | A summary of `docs/evaluations/adjacent-work.md` §I and §J, and of Q16 and principle 11. Read those. |
+> | §3 figure table | **Wrong, and known to be wrong.** HW-DR-0039 §Context measures it: 245 files, 523 findings and taxonomy 3.2.0 here, against 332, 524 and 3.3.0 three days later. |
+> | §5, §6 landing and services copy | Draft copy. The built pages under `site/` are what shipped. |
+> | §7 visual and tonal direction | Ruled. HW-DR-0049. |
+> | §9 public glossary basis | Ruled. HW-DR-0050. |
+> | §8.2 to §8.5 open items | Filed as issues. |
+
 Research input for Claude Design. Written 2026-08-23. Everything here is either measured from a run of this engine, quoted from a source, or marked as a judgment call.
 
 ---

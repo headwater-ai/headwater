@@ -250,14 +250,15 @@ printf '# the deployed site, which no engine reads\n'
 # The clause that refuses them sits above the engine check in the hook and reads
 # the index rather than the working tree, so every case below stages its change.
 #
-# The file the pair of cases moves is `site/_headers`, and the choice is
-# measured rather than arbitrary. It is the one file under `site/` that no
-# relation of this corpus names: HW-DR-0037 declares `governs` over
-# `site/index.html` and `site/ns/index.html` and `traces_to`
-# `site/DESIGN-BRIEF.md`, and removing any of those three raises
-# `relation.target.unresolved` whatever this clause decides. So `_headers` is
-# the only one whose removal the engine has no second opinion about, which is
-# what lets the release case below reach exit 0 and mean what it says.
+# The file the refusal case below removes is `site/_headers`, and any file
+# under `site/` would serve for it, because this clause sits above the engine
+# check and refuses before a relation is read.
+#
+# The choice that has to be measured is the escape-hatch case further down,
+# which asserts exit 0 and so needs a path that no relation of this corpus
+# names. HW-DR-0037 declares `governs` over the eight pages it names and
+# HW-DR-0047 declares it over `site/_headers`, so removing any of those nine
+# raises `relation.target.unresolved` whatever this clause decides.
 reset
 git -C "$scratch" rm -q site/_headers
 out=$(gate); status=$?
