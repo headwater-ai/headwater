@@ -2,7 +2,7 @@
 
 # obligations
 
-160 documents on this shelf, in the reading order this corpus derives.
+161 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for.
@@ -164,3 +164,4 @@
 - [clap owns the help flag, so -h, --help reads Print help on all 32 verb pages](0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md) — The fifth entry of the GLOBALS table carries clap's own two words rather than a description this repository wrote, because clap adds its help argument after the point where a caller can name it.
 - [A sentence that opens with a hash and an issue number is folded into the sentence before it](0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md) — `opens_a_sentence` admits a digit and not a hash, so a sentence that cites an issue as `#346` is counted with the sentence before it and reported at their combined length. (asserted, and no human has accepted it)
 - [The generated half of the site loads highlight.js from a third party with no subresource integrity](0160-the-generated-half-of-the-site-loads-highlight-js-from-a-third-party-with-no-subresource-integrity.md) — 277 generated pages load highlight.js and two stylesheets from cdnjs with no integrity attribute, so a third party supplies script to a site whose own subject is provenance. (asserted, and no human has accepted it)
+- [The validation block of mkdocs.yml is a gate this repository owns and no fixture drives](0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md) — Two raised severities in mkdocs.yml are the whole of two gates, and no case in this repository fails when either one is lowered

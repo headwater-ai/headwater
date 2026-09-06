@@ -231,7 +231,7 @@ This paragraph read eighteen for sixteen iterations, and the number is nineteen.
 
 ## What the engine found about itself
 
-Twenty-nine items: HW-OBL-0131 through HW-OBL-0159. Each one names no decision, because nothing here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
+Thirty items: HW-OBL-0131 through HW-OBL-0159, and HW-OBL-0161. Each one names no decision, because nothing here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
 
 This class did not exist before 2026-08-26. Before that date, such a finding was filed as a GitHub issue labeled `self-audit` and left open. The theory was that a defect nobody outside this repository can reach costs nothing to hold. The theory was half right. The label did keep such work out of an iteration's hands, but it never closed anything. Of 24 issues so labeled, three ever closed. The issue board as a whole ran net-positive on all but one of the eleven days that followed. [The value rule](../../.claude/commands/next-run.md#the-value-rule) now routes a self-audit finding here directly. These 21 are the backlog that rule found already sitting on the tracker, migrated in the same change that rewrote it.
 
@@ -264,6 +264,7 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0157](../obligations/0157-the-capture-report-says-two-denominators-over-a-store-that-named-seventeen-taxonomies.md) — The capture report says two denominators over a store that named seventeen taxonomies
 - [HW-OBL-0158](../obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md) — clap owns the help flag, so -h, --help reads Print help on all 32 verb pages
 - [HW-OBL-0159](../obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md) — A sentence that opens with a hash and an issue number is folded into the sentence before it
+- [HW-OBL-0161](../obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md) — The validation block of mkdocs.yml is a gate this repository owns and no fixture drives
 
 ## What the first typing of this corpus found
 
