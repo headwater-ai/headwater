@@ -16,11 +16,13 @@ So there are two artifacts and they answer opposite requirements. The base has t
 
 ## What each bundle gives you
 
-**`design-spec` — a numbered series that states one design.** A specification split into ordered parts, where part 7 is an address a reader can cite and reach. It carries the register that collects the decisions, the review record, and the supersession relations that let part 9 retire part 4 without deleting it. Take it if your organization writes anything that reads in order: an architecture document, a protocol, a standard, a set of numbered internal specifications.
+**`design-spec` — a numbered series that states one design.** It declares the `design_spec` kind and the `sequence` facet that orders it, so part 7 is an address a reader can cite and reach. It also declares `decision_register` and `obligation_register`, the `review_prompt` and `review_record` pair, the `spec_series` and `reviews` shelves, and the `applied_in`, `assesses` and `cites_evidence` relations. Take it if your organization writes anything that reads in order: an architecture document, a protocol, a set of numbered internal specifications.
 
-**`evidence-and-obligation` — what a document owes, and what discharges it.** An obligation record states something the corpus owes that nobody has yet paid: a ruling that is waiting, a measurement nobody has taken, an adopter who has not arrived. It carries the register that lists them and the relations that connect a claim to the evidence for it. Take it if you want the gap between what a document asserts and what anybody checked to be a thing you can count.
+**`evidence-and-obligation` — the two reader intents that connect a claim to what stands behind it.** It declares the `evaluation` kind and the `evaluations` shelf, the `evidence` and `obligation` purposes, and one voice regime. It is small on purpose. The two purposes are the addresses that the other two entries name, which is why it is not optional beside them, and the `evaluation` kind is where a measurement lives that a claim can cite.
 
-**`decision-record` — one decision per document, with the argument beside it.** The architecture-decision-record tradition: a context, a ruling, and the consequences, on a shelf where each record supersedes or constrains its neighbors. Take it if your organization already writes ADRs, or wants to.
+**`decision-record` — one decision per document, with the argument beside it.** It declares the `decision` kind and the `obligation_record` kind, the `obligations` shelf, the `waiting_on` facet that says what a record is waiting for, the identifier scheme that numbers a record, and the `discharges` relation that closes one. Take it if your organization already writes architecture decision records, or wants to.
+
+**How the three fit together.** A decision states a ruling, an obligation record states what the ruling left unpaid, an evaluation is the measurement that pays it, and a specification part is what the whole argument is about. The relations that carry that arc are split across the three entries, which is why the selection is a set rather than a menu.
 
 ## Why these three and not another three
 
@@ -28,9 +30,9 @@ So there are two artifacts and they answer opposite requirements. The base has t
 
 Say that plainly, because the alternative is worse. The obligation record `HW-OBL-0018` in that corpus states that the bundle set is a guess about how adopters cluster, and that no adopter has revised it. This page is the same admission, addressed to the first adopter who might.
 
-**They do not decompose.** `design-spec` and `decision-record` both name purposes, kinds and a voice regime that `evidence-and-obligation` declares. A selection of the first two without the third leaves seven dangling names, and referential integrity refuses it before a lock is written. So the three arrive together whether you take the recipe or copy the list.
+**They do not decompose.** `design-spec` and `decision-record` both between them name purposes, kinds and a voice regime that `evidence-and-obligation` declares. A selection of the first two without the third leaves seven dangling names, and referential integrity refuses it before a lock is written. So the three arrive together whether you take the recipe or copy the list.
 
-**Three bundles this recipe leaves out, and when to add one.** `standards-spec` models a normative standard with conformance levels and requirement identifiers, which most repositories do not write. `brd-prd` models the business-requirement and product-requirement pair. `diataxis` models the four-way split of tutorial, how-to, reference and explanation, which is a documentation-site shape rather than a governance shape. Each of them is a real tradition and none of them is a guess most adopters would want made for them.
+**Three bundles this recipe leaves out, and when to add one.** `standards-spec` is the internal-standard ladder: a standard that binds many components, a functional specification for what one component does, and a technical specification for how it is realized. `brd-prd` is the requirements handoff, a business requirements document and a product requirements document. `diataxis` sorts end-user documentation into tutorial, how-to guide, reference and explanation, as one `reader_mode` facet over kinds a corpus already has. Each is a real tradition, and each answers a question the starter should not answer for you.
 
 ## The two ways to take this
 
