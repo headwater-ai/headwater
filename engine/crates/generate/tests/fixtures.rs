@@ -1609,3 +1609,146 @@ projections:
         }
     }
 }
+
+/// The same nav, over a corpus that also declares a shelf index — the case
+/// [#528](https://github.com/headwater-ai/headwater/issues/528) is about.
+///
+/// A generated index carries no front matter, holds no identifier and is no
+/// node of the graph, so the emitter above could never list one and ten served
+/// pages sat outside the navigation of this repository's own site. This case
+/// is the sibling of `a_declared_site_nav_is_held_to_regeneration` and differs
+/// from it in exactly one input: the source declares a `shelf_index` beside the
+/// `site_nav`. That one is deliberately left declaring a `site_nav` alone, so
+/// the pair states both halves of the rule — a group whose shelf has an index
+/// opens with it, and a group whose shelf has none still lists documents only.
+///
+/// `archive` is declared for the index and holds no document, so it produces
+/// neither an index nor a group: a shelf with no group gets no index entry.
+#[test]
+fn a_site_nav_opens_each_group_with_that_shelf_s_generated_index() {
+    let (built, _root) = fixture_tree();
+    let surface = built.surface();
+    let source = "\
+projections:
+  - kind: shelf_index
+    for: [decisions, guides, archive]
+    output: \"{shelf}/README.md\"
+  - kind: site_nav
+    output: nav.yml
+";
+    let root = headwater_yaml::load(source)
+        .expect("it loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let projections = Projections::read(&root).expect("the projections read");
+    let plan = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+    let output = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == "nav.yml")
+        .expect("the declaration produced an output");
+    assert_eq!(output.kind, Kind::SiteNav);
+
+    // The two indexes the first declaration writes. `archive` writes none,
+    // because a shelf index of an empty shelf is declined rather than written.
+    let indexes: Vec<&str> = plan
+        .outputs
+        .iter()
+        .filter(|output| output.kind == Kind::ShelfIndex)
+        .map(|output| output.path.as_str())
+        .collect();
+    assert_eq!(
+        indexes,
+        vec!["generate/decisions/README.md", "generate/guides/README.md"],
+        "the fixture corpus has to produce exactly the two indexes this case reads"
+    );
+
+    let docs = YamlOwned::load_from_str(&output.bytes).expect("the emitted file is valid YAML");
+    let doc = docs.first().expect("one YAML document");
+    let nav = doc
+        .as_mapping_get("nav")
+        .expect("a top-level `nav` key")
+        .as_sequence()
+        .expect("`nav` is a sequence");
+    assert_eq!(nav.len(), 2, "an empty shelf should not appear in `nav`");
+
+    for group in nav {
+        let mapping = group
+            .as_mapping()
+            .expect("each nav entry is a one-key mapping");
+        let (shelf_key, entries) = mapping.iter().next().expect("exactly one key");
+        let shelf_name = shelf_key.as_str().expect("the shelf name is a string");
+        let entries = entries
+            .as_sequence()
+            .expect("the shelf's entries are a sequence");
+
+        // The first entry is the shelf's own generated index, under the label
+        // this emitter writes because a shelf declaration carries no name.
+        let (first_label, first_path) = {
+            let entry = entries
+                .first()
+                .expect("the group holds at least the index")
+                .as_mapping()
+                .expect("each entry is a one-key mapping");
+            let (key, value) = entry.iter().next().expect("exactly one key");
+            (
+                key.as_str().expect("the label is a string").to_string(),
+                value.as_str().expect("the path is a string").to_string(),
+            )
+        };
+        assert_eq!(
+            first_path,
+            format!("{shelf_name}/README.md"),
+            "{shelf_name} does not open with its own generated index"
+        );
+        assert_eq!(
+            first_label, "Index",
+            "{shelf_name}'s index entry is not labeled as the shelf's index"
+        );
+
+        // Everything after it is still the documents of the shelf, in the
+        // order `by_precedence` derives, unmoved by the index in front.
+        let on_shelf: Vec<_> = surface
+            .documents()
+            .into_iter()
+            .filter(|document| {
+                matches!(
+                    shelf_for(document.path, surface.taxonomy()),
+                    ShelfMatch::Matched { shelf, .. } if shelf.name == shelf_name
+                )
+            })
+            .collect();
+        let mut expected: Vec<_> = on_shelf
+            .iter()
+            .map(|document| surface.pointer(document))
+            .collect();
+        surface.by_precedence(&mut expected);
+        assert_eq!(
+            entries.len(),
+            expected.len() + 1,
+            "{shelf_name} has the wrong number of entries"
+        );
+        for (entry, pointer) in entries.iter().skip(1).zip(&expected) {
+            let entry_map = entry.as_mapping().expect("each entry is a one-key mapping");
+            let (_, path_value) = entry_map.iter().next().expect("exactly one key");
+            let path = path_value.as_str().expect("the path is a string");
+            let expected_path = pointer
+                .path
+                .strip_prefix("generate/")
+                .expect("every fixture document sits under the fixture corpus root");
+            assert_eq!(
+                path, expected_path,
+                "{shelf_name}'s order does not match `by_precedence`"
+            );
+        }
+    }
+}
