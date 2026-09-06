@@ -51,6 +51,16 @@
 #
 set -eu
 
+# THROWAWAY PROBE — this branch is never merged and exists to answer one
+# question: does the Cloudflare Workers Builds build command actually run this
+# script? Nothing outside the build can observe the assembly, because
+# `wrangler.jsonc` still serves `./site` either way, so a deliberate failure is
+# the only observable. A red build means the command runs. A green build means
+# it does not. A pull request build produces a version and never a deployment,
+# so production cannot be reached from here.
+echo "HEADWATER-BUILD-COMMAND-PROBE: tools/assemble-site.sh ran" >&2
+exit 1
+
 MODE=assemble
 case "${1:-}" in
   --check) MODE=check ;;
