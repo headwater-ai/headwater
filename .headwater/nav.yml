@@ -263,6 +263,7 @@ nav:
       - "A sentence that opens with a hash and an issue number is folded into the sentence before it": "obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md"
       - "The generated half of the site loads highlight.js from a third party with no subresource integrity": "obligations/0160-the-generated-half-of-the-site-loads-highlight-js-from-a-third-party-with-no-subresource-integrity.md"
       - "The validation block of mkdocs.yml is a gate this repository owns and no fixture drives": "obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md"
+      - "Spec 7 prints a package version that no check compares with the recipe": "obligations/0162-spec-7-prints-a-package-version-that-no-check-compares-with-the-recipe.md"
   - "probes":
       - "Index": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"

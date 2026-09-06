@@ -26,7 +26,7 @@ relations:
 
 Every decision in [9 — The decision register](09-decisions.md) is closed, and each one left work behind. This file gathers that work in one place. Nothing here blocks a decision. Most items wait on an engine that nobody has built, on a corpus that nobody has adopted, or on a measurement that nobody has run. An item whose measurement has since run stays here, with the number, until the claim it was filed against is settled.
 
-**This file is an index, and it stopped being the place an obligation lives.** Each of the 151 items below is a document on [the obligations shelf](../obligations/), of the `obligation_record` kind. It carries an identifier, a state, two dates, and an edge to the decision or the specification that produced it. The fifth class below has no such producer, and states why. It states its context, what the corpus owes, and what would discharge it, under the three headings that the kind requires. The shelf holds 157 records. Of the 151 below, 119 stand at `current` and 32 stand at `draft`. The six that are not below stand at `discharged`, which is the terminal state a record takes when the corpus paid what it records. A record that a ruling discharges stays on the shelf and leaves the list, and [the last section](#a-human-maintains-this-list-by-hand) states what that costs.
+**This file is an index, and it stopped being the place an obligation lives.** Each of the 156 items below is a document on [the obligations shelf](../obligations/), of the `obligation_record` kind. It carries an identifier, a state, two dates, and an edge to the decision or the specification that produced it. The fifth class below has no such producer, and states why. It states its context, what the corpus owes, and what would discharge it, under the three headings that the kind requires. The shelf holds 162 records. Of the 156 below, 155 stand at `current` and one stands at `discharged`. The six that are not below stand at `discharged` too, which is the terminal state a record takes when the corpus paid what it records. A record that a ruling discharges stays on the shelf and leaves the list, and [the last section](#a-human-maintains-this-list-by-hand) states what that costs. HW-OBL-0135 is discharged and still listed, against that rule, which is a cost of the same kind.
 
 An obligation was a paragraph in a list. Nothing could carry its state, its dates or its edges, and a reader who cited one cited a position in a file. Now a citation names a document with an identifier, and a check reads the document that a citation reaches.
 
@@ -231,7 +231,7 @@ This paragraph read eighteen for sixteen iterations, and the number is nineteen.
 
 ## What the engine found about itself
 
-Thirty items: HW-OBL-0131 through HW-OBL-0159, and HW-OBL-0161. Each one names no decision, because nothing here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
+Thirty-one items: HW-OBL-0131 through HW-OBL-0159, HW-OBL-0161 and HW-OBL-0162. Each one names no decision, because nothing here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
 
 This class did not exist before 2026-08-26. Before that date, such a finding was filed as a GitHub issue labeled `self-audit` and left open. The theory was that a defect nobody outside this repository can reach costs nothing to hold. The theory was half right. The label did keep such work out of an iteration's hands, but it never closed anything. Of 24 issues so labeled, three ever closed. The issue board as a whole ran net-positive on all but one of the eleven days that followed. [The value rule](../../.claude/commands/next-run.md#the-value-rule) now routes a self-audit finding here directly. These 21 are the backlog that rule found already sitting on the tracker, migrated in the same change that rewrote it.
 
@@ -265,6 +265,7 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0158](../obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md) — clap owns the help flag, so -h, --help reads Print help on all 32 verb pages
 - [HW-OBL-0159](../obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md) — A sentence that opens with a hash and an issue number is folded into the sentence before it
 - [HW-OBL-0161](../obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md) — The validation block of mkdocs.yml is a gate this repository owns and no fixture drives
+- [HW-OBL-0162](../obligations/0162-spec-7-prints-a-package-version-that-no-check-compares-with-the-recipe.md) — Spec 7 prints a package version that no check compares with the recipe
 
 ## What the first typing of this corpus found
 

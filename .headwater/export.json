@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 358,
-      "carried": 358,
+      "in the graph": 359,
+      "carried": 359,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -6861,6 +6861,28 @@
           "last_verified": "2026-09-06",
           "title": "The validation block of mkdocs.yml is a gate this repository owns and no fixture drives",
           "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0162-spec-7-prints-a-package-version-that-no-check-compares-with-the-recipe.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0162",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0162",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "Spec 7's assembly example and the shipped recipe both pin one package version, and nothing compares them. The example was stale for four minor versions and no rule, no fixture and no CI job reported it.",
+          "last_verified": "2026-09-06",
+          "title": "Spec 7 prints a package version that no check compares with the recipe",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
         }
       },
       {
