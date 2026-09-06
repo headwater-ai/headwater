@@ -23,6 +23,7 @@ relations:
     - site/proof/index.html
     - site/tutorial/index.html
     - site/glossary/index.html
+    - site/changelog/index.html
   traces_to:
     - site/DESIGN-BRIEF.md
 ---

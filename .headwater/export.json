@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 346,
-      "carried": 346,
+      "in the graph": 347,
+      "carried": 347,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 568,
-      "carried": 568,
+      "in the graph": 569,
+      "carried": 569,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1057,7 +1057,8 @@
               "site/compare/index.html",
               "site/proof/index.html",
               "site/tutorial/index.html",
-              "site/glossary/index.html"
+              "site/glossary/index.html",
+              "site/changelog/index.html"
             ],
             "traces_to": [
               "site/DESIGN-BRIEF.md"
@@ -7964,6 +7965,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "site/changelog/index.html",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "site/compare/index.html",
         "resolver": "source-tree"
       },
@@ -8659,6 +8665,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "site/glossary/index.html",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/changelog/index.html",
           "resolver": "source-tree"
         }
       },
