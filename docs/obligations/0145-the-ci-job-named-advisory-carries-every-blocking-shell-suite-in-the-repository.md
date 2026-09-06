@@ -19,7 +19,7 @@ waiting_on: adopter
 
 ## Context
 
-An agent building issue #314 read a pull request's CI result and checked which of two jobs ran the shell suites. The second job, defined at .github/workflows/ci.yml:80, carries the name headwater check (advisory). The build order's recorded environment notes take that name at face value. They record that when main went red at commit 01861df, the advisory headwater check job stayed green. They give that as the reason a red baseline reads as hard to interpret. The name tells a reader the job is not signal, and eleven of its sixteen steps say otherwise.
+An agent building issue #314 read a pull request's CI result and checked which of two jobs ran the shell suites. The second job, defined at .github/workflows/ci.yml:114, carries the name headwater check (advisory). The build order's recorded environment notes take that name at face value. They record that when main went red at commit 01861df, the advisory headwater check job stayed green. They give that as the reason a red baseline reads as hard to interpret. The name tells a reader the job is not signal, and eleven of its sixteen steps say otherwise.
 
 ## Obligation
 

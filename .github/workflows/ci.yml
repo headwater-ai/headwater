@@ -40,6 +40,24 @@ on:
     branches: [main]
   pull_request:
 
+# One self-hosted runner serves this repository, and it takes one job at a
+# time. So a superseded run is not merely wasted compute here: it holds the
+# only runner, and every other branch waits behind a verdict about a commit
+# nobody will merge. Three pushes to one branch in ten minutes queued three
+# full runs of both jobs, at three to fourteen minutes each.
+#
+# The group is per ref, so two different pull requests never cancel each
+# other. `github.ref` is `refs/pull/N/merge` on a pull request and
+# `refs/heads/main` on a push, which separates them without a second key.
+#
+# Cancellation is for pull requests only. A run on `main` is the only thing
+# that reads the composition of merges, so two merges landing a minute apart
+# must produce two verdicts rather than one; cancelling the first would lose
+# the only check that ever sees that pair together.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
