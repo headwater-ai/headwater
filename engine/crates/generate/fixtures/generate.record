@@ -755,6 +755,14 @@ what this verb does not write, and why
     `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
   shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  relation_view no declaration names one
+    a relation view needs the traceability grain that the obligation and control register holds, and no document states which relations a view covers
+  agent_rules no declaration names one
+    the glossary names the artifact and no document states its form, so an emitter here would be this engine inventing a schema for somebody else's consumer
+  template no declaration names one
+    a template is the permitted relations, facets and sections of a kind, which `headwater explain` already prints. What no document states is the file it goes in
+  transcription no declaration names one
+    a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: false
@@ -785,6 +793,14 @@ what this verb does not write, and why
     `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
   shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  relation_view no declaration names one
+    a relation view needs the traceability grain that the obligation and control register holds, and no document states which relations a view covers
+  agent_rules no declaration names one
+    the glossary names the artifact and no document states its form, so an emitter here would be this engine inventing a schema for somebody else's consumer
+  template no declaration names one
+    a template is the permitted relations, facets and sections of a kind, which `headwater explain` already prints. What no document states is the file it goes in
+  transcription no declaration names one
+    a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: false
@@ -815,6 +831,14 @@ what this verb does not write, and why
     `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
   shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  relation_view no declaration names one
+    a relation view needs the traceability grain that the obligation and control register holds, and no document states which relations a view covers
+  agent_rules no declaration names one
+    the glossary names the artifact and no document states its form, so an emitter here would be this engine inventing a schema for somebody else's consumer
+  template no declaration names one
+    a template is the permitted relations, facets and sections of a kind, which `headwater explain` already prints. What no document states is the file it goes in
+  transcription no declaration names one
+    a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: true
@@ -845,6 +869,14 @@ what this verb does not write, and why
     `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
   shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  relation_view no declaration names one
+    a relation view needs the traceability grain that the obligation and control register holds, and no document states which relations a view covers
+  agent_rules no declaration names one
+    the glossary names the artifact and no document states its form, so an emitter here would be this engine inventing a schema for somebody else's consumer
+  template no declaration names one
+    a template is the permitted relations, facets and sections of a kind, which `headwater explain` already prints. What no document states is the file it goes in
+  transcription no declaration names one
+    a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: false
@@ -875,6 +907,14 @@ what this verb does not write, and why
     `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
   shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  relation_view no declaration names one
+    a relation view needs the traceability grain that the obligation and control register holds, and no document states which relations a view covers
+  agent_rules no declaration names one
+    the glossary names the artifact and no document states its form, so an emitter here would be this engine inventing a schema for somebody else's consumer
+  template no declaration names one
+    a template is the permitted relations, facets and sections of a kind, which `headwater explain` already prints. What no document states is the file it goes in
+  transcription no declaration names one
+    a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: false
@@ -905,6 +945,14 @@ what this verb does not write, and why
     `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
   shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  relation_view no declaration names one
+    a relation view needs the traceability grain that the obligation and control register holds, and no document states which relations a view covers
+  agent_rules no declaration names one
+    the glossary names the artifact and no document states its form, so an emitter here would be this engine inventing a schema for somebody else's consumer
+  template no declaration names one
+    a template is the permitted relations, facets and sections of a kind, which `headwater explain` already prints. What no document states is the file it goes in
+  transcription no declaration names one
+    a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: true
@@ -935,6 +983,14 @@ what this verb does not write, and why
     `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
   shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  relation_view no declaration names one
+    a relation view needs the traceability grain that the obligation and control register holds, and no document states which relations a view covers
+  agent_rules no declaration names one
+    the glossary names the artifact and no document states its form, so an emitter here would be this engine inventing a schema for somebody else's consumer
+  template no declaration names one
+    a template is the permitted relations, facets and sections of a kind, which `headwater explain` already prints. What no document states is the file it goes in
+  transcription no declaration names one
+    a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: true

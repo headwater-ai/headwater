@@ -40,7 +40,15 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-use headwater_generate::{unbuilt, Kind};
+use headwater_census::census::{self};
+use headwater_census::shelves::Taxonomy;
+use headwater_census::walk::Corpus;
+use headwater_check::Shape;
+use headwater_generate::{check, plan, unbuilt, Identity, Kind, Projections, Runs};
+use headwater_graph::anchors::Resolvers;
+use headwater_graph::declarations::Declarations;
+use headwater_graph::{Config, Graph};
+use headwater_query::Surface;
 
 /// The heading-free anchor the extractor splits on.
 ///
@@ -243,5 +251,74 @@ fn the_coverage_report_reason_of_spec_6_is_the_reason_the_verb_prints() {
         text.contains(reason),
         "docs/spec/06-engine-architecture.md does not quote the reason \
          `headwater generate --check` prints for `coverage_report`:\n\n{reason}"
+    );
+}
+
+/// Every reason [`unbuilt`] holds is printed by one run over a corpus that
+/// declares none of the kinds that hold one.
+///
+/// #596's clause. `coverage_report` reached a reader because
+/// [`headwater_generate::plan`] pushes it with no declaration behind it, and
+/// the other four reached a reader only where a taxonomy had already declared
+/// the kind. A reader asks "does this emitter exist" before writing the
+/// declaration, not after, so the answer cannot be behind the declaration.
+///
+/// The five come from `Kind::ALL` through `unbuilt`, never from a list typed
+/// here, so a sixth kind that acquires a reason joins this case with no edit
+/// and a kind that acquires an emitter leaves it.
+///
+/// # Watched failing
+///
+/// Before the change this reddened over an empty `Projections`, naming
+/// `relation_view`, `agent_rules`, `template` and `transcription`, and not
+/// `coverage_report`.
+#[test]
+fn every_unbuilt_reason_reaches_a_reader_of_a_corpus_that_declares_none() {
+    let held: Vec<(Kind, &'static str)> = Kind::ALL
+        .into_iter()
+        .filter_map(|kind| unbuilt(kind).map(|reason| (kind, reason)))
+        .collect();
+    assert!(
+        !held.is_empty(),
+        "`headwater_generate::unbuilt` gives no kind a reason, so this case reads nothing"
+    );
+
+    let tree = Path::new(env!("CARGO_TARGET_TMPDIR")).join("every-unbuilt-reason");
+    let _ = std::fs::remove_dir_all(&tree);
+    std::fs::create_dir_all(&tree).expect("a temporary tree");
+
+    let corpus = Corpus::new(&tree, "corpus");
+    let taxonomy = Taxonomy::default();
+    let relations = Declarations::default();
+    let shape = Shape::default();
+    let config = Config::default();
+    let census = census::take(&corpus, &taxonomy);
+    let graph = Graph::build(
+        &census,
+        &relations,
+        &Resolvers::over(&corpus),
+        &corpus,
+        &config,
+    );
+    let surface = Surface::over(&census, &graph, &shape, &taxonomy, &relations, &config);
+    let plan = plan(
+        &surface,
+        &census,
+        &Projections::default(),
+        &Identity::default(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+    let rendered = check(&tree, &plan).render();
+
+    let unreached: Vec<&str> = held
+        .iter()
+        .filter(|(_, reason)| !rendered.contains(reason))
+        .map(|(kind, _)| kind.name())
+        .collect();
+    assert!(
+        unreached.is_empty(),
+        "`headwater_generate::unbuilt` gives {unreached:?} a reason that a run over a corpus \
+         declaring no projection at all never prints. The report was:\n\n{rendered}"
     );
 }
