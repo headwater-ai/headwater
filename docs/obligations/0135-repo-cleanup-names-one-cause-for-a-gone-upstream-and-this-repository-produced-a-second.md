@@ -1,6 +1,6 @@
 ---
 id: HW-OBL-0135
-status: current
+status: discharged
 status_since: 2026-09-06
 title: "repo-cleanup names one cause for a gone upstream, and this repository produced a second"
 summary: "Ancestry misreads a merged branch as unmerged wherever a squash merge or a rewritten history left it unreachable, and git branch -d then refuses on no evidence about content."
