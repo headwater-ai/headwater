@@ -38,16 +38,60 @@
 //! carries [`crate::shelf_index::relative`] of the corpus root and the
 //! pointer's path. A corpus rooted at the repository root is unmoved by this,
 //! because the two forms coincide there.
+//!
+//! # A group opens with its shelf's generated index, which is no node
+//!
+//! Every other entry this module writes stands for a document of the graph. A
+//! generated index carries no front matter, holds no identifier and is
+//! therefore no node, so no reading of `surface.documents()` can reach one and
+//! a served index page sits outside the navigation. That is the defect
+//! [#528](https://github.com/headwater-ai/headwater/issues/528) reports, and
+//! the reason this emitter takes the paths the rest of the plan already wrote
+//! rather than a declaration of its own. [HW-DR-0036] records the ruling.
+//!
+//! The rule is keyed on the **path**, not on the kind of the projection that
+//! wrote it: an output that sits directly in the shelf's own directory, whose
+//! file stem is `README` or `index`, and which is no document of the graph.
+//! Three properties follow from that shape, and each one is a defect avoided.
+//! A `verb_index` is covered as well as a `shelf_index`, because this
+//! repository's `docs/interfaces/README.md` is the first and a rule keyed on
+//! [`Kind::ShelfIndex`] would leave it orphaned. A projection that writes a
+//! document, such as the `shelf_sections` output that carries an `identity`
+//! block and is already a node of the `spec_series` group, is excluded twice
+//! over: by its stem and by the graph. And a shelf that holds no document has
+//! no group here, so it takes no index entry either.
+//!
+//! The label is the constant `Index`. A shelf declaration is
+//! `{path, homogeneous, kind}` and carries no reader-facing name, so nothing
+//! in the taxonomy supplies one, and the index page's own heading is the
+//! machine shelf name, which would restate the group key. [#427] and
+//! HW-OBL-0044 own what the entries and the groups of this file are called.
+//!
+//! [HW-DR-0036]: ../../../../docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md
+//! [#427]: https://github.com/headwater-ai/headwater/issues/427
 
 use crate::{pointers, shelf_of, Declaration, Identity, Kind, Output, Plan, Unwritten};
 use headwater_census::census::Census;
 use headwater_query::{Pointer, Surface};
+
+/// What a group's index entry is called. See the module comment: nothing in a
+/// shelf declaration supplies a name, so this emitter chooses a constant.
+const INDEX_LABEL: &str = "Index";
+
+/// The one group of the emitted `nav:` list: a shelf, the generated index of
+/// that shelf if the plan wrote one, and the shelf's documents in order.
+struct Group {
+    shelf: String,
+    index: Option<String>,
+    ordered: Vec<Pointer>,
+}
 
 pub(crate) fn emit(
     surface: &Surface<'_>,
     _census: &Census,
     declaration: &Declaration,
     identity: &Identity,
+    written: &[String],
     plan: &mut Plan,
 ) {
     let taxonomy = surface.taxonomy();
@@ -58,16 +102,16 @@ pub(crate) fn emit(
         false => declaration.shelves.clone(),
     };
 
-    let mut groups: Vec<(String, Vec<Pointer>)> = Vec::new();
+    let mut groups: Vec<Group> = Vec::new();
     for name in &wanted {
-        if !taxonomy.shelves.iter().any(|shelf| &shelf.name == name) {
+        let Some(shelf) = taxonomy.shelves.iter().find(|shelf| &shelf.name == name) else {
             plan.unwritten.push(Unwritten {
                 at: declaration.output.clone(),
                 kind: Kind::SiteNav,
                 reason: format!("names a shelf `{name}` this taxonomy does not declare"),
             });
             return;
-        }
+        };
 
         let on_shelf: Vec<_> = surface
             .documents()
@@ -84,7 +128,11 @@ pub(crate) fn emit(
 
         let mut ordered = pointers(surface, &on_shelf);
         surface.by_precedence(&mut ordered);
-        groups.push((name.clone(), ordered));
+        groups.push(Group {
+            shelf: name.clone(),
+            index: index_of(shelf.pattern.source(), written, surface),
+            ordered,
+        });
     }
 
     plan.outputs.push(Output {
@@ -92,6 +140,44 @@ pub(crate) fn emit(
         path: declaration.output.clone(),
         kind: Kind::SiteNav,
     });
+}
+
+/// The generated index of one shelf, among the paths the rest of the plan
+/// wrote, or `None` where the shelf has none.
+///
+/// The three conditions are the module comment's rule, and each one is here
+/// against a different way of getting this wrong. **Directly in the shelf's
+/// own directory**, so a nested `README.md` under a deeper directory of the
+/// same shelf is not read as the shelf's index. **A file stem of `README` or
+/// `index`**, so a `shelf_sections` output such as `09-open-questions.md` is
+/// not swept up and listed a second time under a group that already holds it
+/// as a node. **No document of the graph**, so a projection that declares an
+/// `identity` block and lands on `README.md` stays a node and is listed once,
+/// by the loop above, rather than twice.
+///
+/// Where a plan somehow wrote two, the first in path order is taken, so that
+/// the result is a function of the plan's outputs and not of their order.
+fn index_of(pattern: &str, written: &[String], surface: &Surface<'_>) -> Option<String> {
+    let directory = crate::shelf_index::directory_of(pattern);
+    let mut found: Vec<&String> = written
+        .iter()
+        .filter(|path| {
+            path.rsplit_once('/')
+                .is_some_and(|(parent, _)| parent == directory)
+                && matches!(
+                    crate::shelf_index::file_name(path)
+                        .rsplit_once('.')
+                        .map(|(stem, _)| stem),
+                    Some("README") | Some("index")
+                )
+                && !surface
+                    .documents()
+                    .iter()
+                    .any(|document| document.path == path.as_str())
+        })
+        .collect();
+    found.sort();
+    found.first().map(|path| (*path).clone())
 }
 
 /// A double-quoted YAML scalar: `"` and `\` escaped, never written bare.
@@ -115,15 +201,29 @@ fn quoted(scalar: &str) -> String {
     out
 }
 
-fn render(output: &str, groups: &[(String, Vec<Pointer>)], corpus_root: &str) -> String {
+fn render(output: &str, groups: &[Group], corpus_root: &str) -> String {
     let mut out = String::new();
     let mark = headwater_mark::marker(Kind::SiteNav.name(), output)
         .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
     out.push_str(&mark);
     out.push_str("\n\n");
     out.push_str("nav:\n");
-    for (shelf, ordered) in groups {
+    for Group {
+        shelf,
+        index,
+        ordered,
+    } in groups
+    {
         out.push_str(&format!("  - {}:\n", quoted(shelf)));
+        // The index first, so a reader who opens a group lands on the page
+        // that summarizes it before the first document of it.
+        if let Some(path) = index {
+            out.push_str(&format!(
+                "      - {}: {}\n",
+                quoted(INDEX_LABEL),
+                quoted(&crate::shelf_index::relative(corpus_root, path))
+            ));
+        }
         for pointer in ordered {
             out.push_str(&format!(
                 "      - {}: {}\n",
