@@ -303,8 +303,15 @@ mod index_tests {
 
     /// The graph condition. A projection may declare an `identity` block and
     /// write a document, and the group lists that document as a node. To list
-    /// it a second time as the group's index is a duplicate entry, which
-    /// MkDocs refuses.
+    /// it a second time as the group's index is a duplicate row in a
+    /// visitor's sidebar.
+    ///
+    /// **Nothing downstream reports that, so this case is its only reader.**
+    /// MkDocs 1.6.1 builds a `nav:` that names one page twice at exit 0 with
+    /// no warning, both within one group and across two, under `--strict`.
+    /// Measured on a scratch project whose known-bad arm — a nav entry to a
+    /// file that is not there — does exit 1, so the green is a real negative
+    /// rather than a harness that cannot fail.
     #[test]
     fn an_index_that_is_a_document_of_the_graph_is_left_to_the_node_listing() {
         let plan = written(&["docs/decisions/README.md"]);
