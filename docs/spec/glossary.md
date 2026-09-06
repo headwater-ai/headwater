@@ -95,6 +95,10 @@ The single component that owns identity for one anchor type. It normalizes ancho
 
 Whether a probe run had the corpus present or absent. Every probe runs in one arm, and a published efficacy claim needs the pair. See [spec 5](05-ai-integration.md#probe-categories).
 
+### Assembly
+
+A named publisher recipe over one package version. It declares a complete [bundle](#bundle) selection, and it may declare one overlay that holds the connections which span two or more of those bundles. A composer takes the recipe inputs, and a batteries-included consumer takes the flattened package that the publisher emits from it. See [spec 7](07-distribution-and-federation.md#an-assembly-has-two-consumption-forms).
+
 ### Asserted content
 
 Content with the `asserted` [warrant](#warrant): nobody accepted it, and no regeneration proves it. Headwater admits it, marks it positively, and never lets it govern the reading of warranted content or discharge an evidence obligation. See [spec 1](01-conceptual-model.md#warrant).
@@ -657,7 +661,7 @@ The condition of a document past its freshness threshold, weighted by drift risk
 
 ### Starter kit
 
-The [base package](#base-package), a named [bundle](#bundle) selection over it, and the doctrine prose that explains the selection. It is what an adopter gets who answers nothing. See [spec 7](07-distribution-and-federation.md#the-starter-kit-is-an-assembly).
+The [base package](#base-package), an [assembly](#assembly) over it, and the doctrine prose that explains the selection. It is what an adopter gets who answers nothing. See [spec 7](07-distribution-and-federation.md#the-starter-kit-is-an-assembly).
 
 ### State
 
