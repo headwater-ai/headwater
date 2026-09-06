@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-27
 summary: "Q31 originally left the publication date unset. The owner set 2026-09-08, and this record remains current until the repository is public."
 last_verified: 2026-08-27
-title: "The publication date of this repository is unset and the owner alone sets it"
+title: "The publication date of this repository is set, and the repository stays private until then"
 waiting_on: ruling
 provenance:
   warrant: asserted
@@ -17,7 +17,7 @@ relations:
     - HW-DR-0031
 ---
 
-# The publication date of this repository is unset and the owner alone sets it
+# The publication date of this repository is set, and the repository stays private until then
 
 ## Context
 

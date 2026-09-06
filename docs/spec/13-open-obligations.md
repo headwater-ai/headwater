@@ -207,7 +207,7 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0127](../obligations/0127-a-deletion-is-invisible-where-the-version-that-stood-there-does-not-parse.md) — A deletion is invisible where the version that stood there does not parse
 - [HW-OBL-0128](../obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md) — Nothing holds a crate to having a contract under a root that excludes it
 - [HW-OBL-0129](../obligations/0129-spec-12-calls-two-phase-a-outcomes-structural-findings-and-the-engine-emits-none.md) — Spec 12 calls two Phase A outcomes structural findings, and the engine emits none
-- [HW-OBL-0130](../obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md) — The publication date of this repository is unset, and the owner alone sets it
+- [HW-OBL-0130](../obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md) — The publication date of this repository is set, and the repository stays private until then
 
 ## What else each decision left open
 
