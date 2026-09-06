@@ -6,6 +6,21 @@ A **documentation governance system**: a typed, validated, self-describing corpu
 
 **Start here: [Your first governed corpus](docs/tutorials/your-first-governed-corpus.md).** Sixteen steps from an empty directory to a passing check, and it teaches the model rather than the commands. Every step states what you should now see, and `sh .claude/tutorial/fixtures.sh` runs the page against the engine in CI so that no output block on it can go stale quietly.
 
+## Obtaining a named version
+
+`v0.1.0` is the first tagged release, and it is the version to build if you want a tree that does not move under you. There is no published binary and no package registry entry: the install path is a source build, and it needs a Rust toolchain at **1.85 or later**, a floor `engine/README.md` explains.
+
+```
+git clone https://github.com/headwater-ai/headwater.git
+cd headwater
+git checkout v0.1.0
+cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml
+```
+
+The binary lands at `engine/target/release/headwater`, and `headwater --version` prints the number the tag names. The GitHub release for that tag states the digest of `packages/headwater-standard/release.yml`, so `headwater taxonomy vendor --expect <digest>` checks the package against a number published outside the artifact it verifies rather than one read out of it.
+
+The tutorial above builds whatever tree you cloned, which is the default branch and moves. That is deliberate, because the tutorial is a claim about the default branch and CI holds it there. This paragraph is where the fixed version is.
+
 ## What problem this solves
 
 Documentation rots because nothing holds it accountable. Specs drift from code, rationale evaporates, standards multiply and contradict each other, and the AI assistants now reading that documentation as context inherit every one of those faults — silently, and at scale.

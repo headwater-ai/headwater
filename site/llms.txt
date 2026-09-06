@@ -4,6 +4,7 @@
 
 ## Docs
 
+- [Headwater changelog](https://headwater.tools/changelog/): Every tagged version of Headwater, newest first. An entry arrives when a tag is cut, and this page promises no interval between one tag and the next.
 - [Headwater compared — LeanCTX, TrustGraph, Vale](https://headwater.tools/compare/): Authors declare the graph here and a language model extracts it there. The field side by side, including the arguments against Headwater.
 - [Glossary — Headwater](https://headwater.tools/glossary/): Fifteen terms this site uses more than once, defined the way this site uses them. Not the full engine vocabulary — that lives in the specification.
 - [How Headwater works](https://headwater.tools/how-it-works/): Declare the taxonomy, build the graph, run the checks, project. The four steps of a Headwater run, and where its reasoning stops.
