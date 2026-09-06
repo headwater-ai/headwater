@@ -266,6 +266,7 @@ nav:
       - "The validation block of mkdocs.yml is a gate this repository owns and no fixture drives": "obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md"
       - "Spec 7 prints a package version that no check compares with the recipe": "obligations/0162-spec-7-prints-a-package-version-that-no-check-compares-with-the-recipe.md"
       - "Ten decision records claim a Q number the decision register does not carry": "obligations/0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md"
+      - "The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it": "obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md"
   - "probes":
       - "Index": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"

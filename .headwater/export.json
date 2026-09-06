@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 361,
-      "carried": 361,
+      "in the graph": 362,
+      "carried": 362,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 586,
-      "carried": 586,
+      "in the graph": 587,
+      "carried": 587,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -6934,6 +6934,33 @@
         }
       },
       {
+        "path": "docs/obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0167",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0167",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "The ruleset on the default branch requires zero approving reviews, which is the posture HW-DR-0034 named as the thing that erases its line. The corpus owes a ruling.",
+          "last_verified": "2026-09-06",
+          "title": "The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0034"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
@@ -13137,6 +13164,17 @@
           "bound": "document",
           "id": "HW-DR-0047",
           "path": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0034",
+          "path": "docs/decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md",
           "kind": "decision"
         }
       },
