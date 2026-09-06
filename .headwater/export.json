@@ -711,7 +711,7 @@
           "status": "current",
           "status_since": "2026-08-30",
           "summary": "The namespace opens every identifier, and a published source declares no namespace at all, because any constant it wrote would be minted by every adopter of it at once.",
-          "last_verified": "2026-08-30",
+          "last_verified": "2026-09-06",
           "title": "Q25 — Where the namespace goes in an identifier, and who declares it",
           "provenance": {
             "warrant": "accepted",
@@ -878,8 +878,8 @@
           "id": "HW-DR-0031",
           "status": "current",
           "status_since": "2026-08-30",
-          "summary": "This repository becomes public on 2026-09-08. The owner sets the date, and the record stops each run from raising the schedule as an open question.",
-          "last_verified": "2026-08-30",
+          "summary": "This repository is public. The owner set 2026-09-08 and opened it on 2026-09-06, and the record stops each run from raising the schedule.",
+          "last_verified": "2026-09-06",
           "title": "Q31 — Whether this repository becomes public, and when",
           "provenance": {
             "warrant": "accepted",
@@ -1107,7 +1107,7 @@
           "status": "current",
           "status_since": "2026-08-30",
           "summary": "The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.",
-          "last_verified": "2026-08-30",
+          "last_verified": "2026-09-06",
           "title": "Q39 — How a figure reaches a hand-built page, now that a build interpolates one",
           "provenance": {
             "warrant": "accepted",
@@ -6203,11 +6203,11 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0130",
-          "status": "current",
-          "status_since": "2026-08-27",
-          "summary": "Q31 originally left the publication date unset. The owner set 2026-09-08, and this record remains current until the repository is public.",
-          "last_verified": "2026-08-27",
-          "title": "The publication date of this repository is set, and the repository stays private until then",
+          "status": "discharged",
+          "status_since": "2026-09-06",
+          "summary": "Q31 originally left the publication date unset. The owner set 2026-09-08 and opened the repository on 2026-09-06, which discharges this record.",
+          "last_verified": "2026-09-06",
+          "title": "The publication date of this repository is set, and the repository is public",
           "waiting_on": "ruling",
           "provenance": {
             "warrant": "asserted",

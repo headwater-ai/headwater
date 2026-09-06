@@ -3,7 +3,7 @@ id: HW-DR-0025
 status: current
 status_since: 2026-08-30
 summary: The namespace opens every identifier, and a published source declares no namespace at all, because any constant it wrote would be minted by every adopter of it at once.
-last_verified: 2026-08-30
+last_verified: 2026-09-06
 title: "Q25 — Where the namespace goes in an identifier, and who declares it"
 provenance:
   warrant: accepted
@@ -30,7 +30,7 @@ Nine identifier schemes serve this corpus. Seven are declared in this repository
 
 **A package cannot repair this by naming a better constant.** Any value it writes is minted by every adopter at once. Its own namespace is inherited by all of them, and a stand-in names nobody. So the question is not which value ships. It is whether a published source declares one at all.
 
-**The rendered order was open at the same time, and it cannot stay open.** Every scheme wrote the type first, as `DR-{namespace}-{seq:04d}` and `SPEC-{namespace}-{slug}`. A rendered identifier travels into a commit message, a ticket and an agent prompt, so the order is fixed the moment anything cites one. This repository is private, has never been vendored, and carries about 1,100 identifier occurrences. That is the only window in which the order can be settled at all.
+**The rendered order was open at the same time, and it cannot stay open.** Every scheme wrote the type first, as `DR-{namespace}-{seq:04d}` and `SPEC-{namespace}-{slug}`. A rendered identifier travels into a commit message, a ticket and an agent prompt, so the order is fixed the moment anything cites one. This repository was private on 2026-08-30, had never been vendored, and carried about 1,100 identifier occurrences. That was the only window in which the order could be settled at all. The window closed when the repository became public on 2026-09-06, so the order below is the order every outside citation now carries.
 
 ## Decision
 
