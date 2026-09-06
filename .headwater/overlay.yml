@@ -173,6 +173,13 @@ add:
     required: false
     volatility: stable
 
+  # `title` joins the three facets below because this shelf is rendered as a
+  # list. `probes` carries a generated index and a navigation group, and both
+  # read the facet in the `name` role, so a probe with no title renders as
+  # `HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor`
+  # (#427). headwater/standard declares the facet from 3.6.0. `probe_category`
+  # is the discriminator a reader would otherwise scan for, and it is a value
+  # from a closed set rather than a name.
   kinds.probe:
     is_a: governed_document
     purpose: evidence
@@ -180,7 +187,7 @@ add:
     lifecycle: standard
     identifier: {scheme: probe_id}
     facets:
-      require: [probe_category, expectation, oracle]
+      require: [probe_category, expectation, oracle, title]
     sections:
       require: [Task, Expectation]
 

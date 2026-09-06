@@ -44,6 +44,10 @@ The general rule that falls out: **purpose splits kinds, placement splits shelve
 
 Six concrete kinds, each one under the base's `governed_document` abstract kind. Each inherits the four core-bearing facets, and each joins `supersedes`, `governs` and `traces_to` with no endpoint edit.
 
+Each of the five that stayed here also requires `title`, which headwater/standard declares in the `name` role from 3.6.0. A numbered series is the tradition that needs a name most and states one least: the number orders the parts and names none of them, so a generated index and a site navigation both rendered `HW-SPEC-vision-and-scope` where "Vision and scope" belongs ([#123](https://github.com/headwater-ai/headwater/pull/123), [#427](https://github.com/headwater-ai/headwater/issues/427)). The facet stood in the decision-record entry until 3.6.0 and no `add` could reach these kinds from there, which is the finding that entry's doctrine carries as its own finding 1.
+
+**The title is not the first heading, and on this shelf the two differ on purpose.** A part opens `# 0 — Vision and scope`, because a reader who opens the file wants the number. Its title is "Vision and scope", because `sequence` already carries the number and [spec 2](../../spec/02-taxonomy-model.md#the-meta-schema) refuses a second copy of a value the front matter holds. A rendered label that read the heading would put the number in every sidebar entry and would take it from prose that no rule holds, which is the reading the owner refused when the alternative was put.
+
 | Kind | Purpose | Shelf | Why it is not the kind above it |
 |---|---|---|---|
 | `design_spec` | `behavior` | `docs/spec/**` | It states what the system is |

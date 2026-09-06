@@ -30,6 +30,17 @@
 # names both files, both keys and both names.
 
 taxonomy: headwater/standard
+# 3.6.0 adds `facets.title`, in the `name` role, and it declares it on no kind.
+# Nothing is removed and nothing already declared changes meaning, so it is a
+# minor. What a consumer meets is one more facet it may require, and a
+# requirement is what makes a facet reach a document: an adopter that names it
+# nowhere resolves the requirements it resolved under 3.5.0. The facet-role
+# registry of spec 2 is closed at five members and four of them had a facet
+# here; this is the fifth. The decision-record entry declared `title` until now,
+# and its doctrine recorded that an entry cannot reach the kinds of another
+# entry, so the numbered specification series stayed unnamed. That entry now
+# requires the facet and declares it no longer.
+#
 # 3.4.0 adds `OB-MIG-1` and `CT-MIG-1`, which are the obligation and the
 # control behind `adoption.task.expired`. Nothing is removed and nothing
 # already declared changes meaning, so it is a minor. What a consumer meets is
@@ -94,7 +105,7 @@ taxonomy: headwater/standard
 # The two are required to agree: `resolve::package::agrees` refuses the package
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
-version: 3.5.0
+version: 3.6.0
 
 purposes:
   rationale:
@@ -129,9 +140,26 @@ vocabularies:
 
 # Every facet declares `volatility`, and every enum value carries guidance. Both
 # are facet acceptance tests of spec 2 (Facet acceptance tests), and `taxonomy
-# validate` fails a facet that omits either. The four facets here are all
+# validate` fails a facet that omits either. Four of the five facets here are
 # `mutable`, which is what keeps a value of any of them out of an identifier, a
-# path and a shelf pattern.
+# path and a shelf pattern. `title` is the fifth and it is `stable`.
+#
+# The facet-role registry of spec 2 is closed at five members, and this block
+# now declares one facet for each of them. `title` is the last of the five to
+# arrive here. The decision-record entry declared it first, because a log that
+# reads `HW-DR-0007` is not a log anybody reads, and its doctrine recorded that
+# an entry cannot reach the kinds of another entry: an `add` writes no address a
+# second entry already owns, and a bundle holds no `override`. So the shelf
+# where the defect was measured, the numbered specification series, stayed
+# unnamed. That doctrine named this file as the resolution, because the base is
+# the one source where vocabulary that several traditions need composes. This is
+# that move, and the entry that first declared `title` now requires it and
+# declares it no longer.
+#
+# `required: false` is what keeps the move additive. A kind takes the facet by
+# naming it in its own `facets.require`, and no kind of this package does. An
+# adopter who resolved 3.5.0 and resolves this version reads the same
+# requirements over the same documents.
 
 facets:
   status:
@@ -160,6 +188,20 @@ facets:
     type: string
     required: true
     volatility: mutable
+  # The name a reader sees where a list of documents is rendered: a generated
+  # shelf index, a site navigation, a register. `summary` carries the scent role
+  # and it is a sentence; a reader who scans a list wants a name.
+  #
+  # `stable` and not `mutable`. The claim is the one the decision-record entry
+  # made when it declared this facet: a document is renamed by succession rather
+  # than by edit, so the value moves when the document is replaced and not while
+  # it stands. That reading also leaves the value legal in an identifier pattern
+  # and in a shelf layout, which a `mutable` facet may not enter.
+  title:
+    role: name
+    type: string
+    required: false
+    volatility: stable
 
 # Two lifecycle regimes over one vocabulary, and the pair is the answer to "may
 # a kind narrow a value set". It may, where the facet is the one in the `state`

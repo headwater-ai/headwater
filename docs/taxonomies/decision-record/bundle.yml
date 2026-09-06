@@ -31,20 +31,17 @@ requires: [evidence-and-obligation]
 add:
 
   # --- facets ---------------------------------------------------------------
-  # A generated index over this shelf labels each record with its identifier,
-  # because no facet in the base or in the design-spec entry carries a name
-  # (#123). A log of decisions that reads `HW-DR-0007` is not a log anybody
-  # reads, so this entry declares the facet. It reaches this entry's kinds and
-  # the base `decision` only, and doctrine.md states why that is not a fix.
-  #
-  # `stable` is the claim the tradition makes: an accepted record is amended by
-  # succession, so its name changes by rename and never by edit.
-
-  facets.title:
-    role: name
-    type: string
-    required: false
-    volatility: stable
+  # `facets.title` stood here until headwater/standard 3.6.0, and the base now
+  # declares it. This entry was the first to need it, because a generated index
+  # over this shelf labeled each record with its identifier and a log of
+  # decisions that reads `HW-DR-0007` is not a log anybody reads (#123). It was
+  # also the wrong home for it: an `add` writes no address a second entry
+  # already owns and a bundle holds no `override`, so a facet declared here
+  # reached this entry's kinds and the base `decision` and nothing else, and the
+  # shelf where #123 measured the defect stayed unnamed. doctrine.md carried
+  # that as finding 1 and finding 4, and both named the base as the resolution.
+  # The move is that resolution. This entry now requires the facet below and
+  # declares it nowhere.
 
   # What an obligation record is waiting on right now, which is the one thing
   # the shelf never carried. `status` says whether a reader may rely on the
