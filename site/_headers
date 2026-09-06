@@ -1,8 +1,84 @@
+# Response headers for https://headwater.tools/, which serves two halves out of
+# one directory: the hand-built pages committed under `site/`, and the pages
+# `mkdocs build` renders from this corpus. `tools/assemble-site.sh` composes
+# them, and HW-DR-0047 rules how they share the host.
+#
+# WHY THE POLICY IS WRITTEN LOOSE FIRST AND STRICT SECOND
+#
+#   The two halves need different content policies. A hand-built page inlines
+#   everything it uses and reaches nothing at read time, which is the
+#   measurement HW-DR-0037 states. A generated page links its stylesheet, its
+#   script, its web fonts and its search index as files beside it, so a policy
+#   of `default-src 'none'` serves it with no stylesheet, no script and no
+#   search.
+#
+#   The generated half is open-ended — a new shelf adds a new top-level path —
+#   and the hand-built half is a closed set that HW-DR-0037 names. So the
+#   wider policy is the default under `/*`, and every hand-built path below
+#   re-asserts the narrow one.
+#
+#   That order is deliberate and it is correct under either reading of what
+#   this file does with a header two rules both set. If the later rule wins,
+#   a hand-built path takes the narrow policy. If both headers are sent and
+#   the browser enforces their intersection, a hand-built path takes the
+#   narrow policy too, because it is a subset of the wide one. Writing it the
+#   other way round is correct under only one of the two.
+#
+# WHAT THE WIDE POLICY ADMITS, AND WHY EACH TERM IS THERE
+#
+#   `'unsafe-inline'` for script is not a preference. The theme emits two
+#   inline blocks on every generated page, and one of them declares the
+#   `base_url` and `shortcuts` values that `js/base.js` reads to run search.
+#   Refusing inline script refuses search, which is a capability #527 requires
+#   the served page to have. The inline content is this repository's own build
+#   output on its own origin.
+#
+#   `https://cdnjs.cloudflare.com` is where the built-in MkDocs theme loads
+#   highlight.js and its two stylesheets, on 277 of the generated pages. It is
+#   third-party code, it carries no subresource integrity, and this corpus's
+#   own subject is provenance — so it is recorded as a debt in
+#   HW-OBL-0160 rather than accepted quietly. Removing the CDN is not a
+#   one-line change: `js/darkmode.js` dereferences the two `hljs-*` link
+#   elements with no null guard, so deleting them throws on page load, where
+#   refusing them at the network keeps the elements and costs only the
+#   coloring. Vendoring the three files is the remedy that record names.
+#
+#   `worker-src` and `connect-src` are what search needs: `search/main.js`
+#   starts a worker, and the worker reads `search/search_index.json`.
+
 /*
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+# The hand-built half, which HW-DR-0037 governs by name. Each path re-asserts
+# the policy that half has always carried, unchanged from what it served
+# before the generated half shared the host.
+/
+  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+/how-it-works/*
+  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+/compare/*
+  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+/proof/*
+  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+/tutorial/*
+  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+/glossary/*
   Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 
 /ns/*
+  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Access-Control-Allow-Origin: *
+
+# The corpus descriptor is what every generated page names in its
+# `rel="describedby"` link, and spec 7 expects a cold reader to fetch it from
+# another origin. `/ns/*` above carries the same header for the same reason.
+/corpus.json
   Access-Control-Allow-Origin: *

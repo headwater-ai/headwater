@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 341,
-      "carried": 341,
+      "in the graph": 346,
+      "carried": 346,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 561,
-      "carried": 561,
+      "in the graph": 568,
+      "carried": 568,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1346,6 +1346,39 @@
             "traces_to": [
               "HW-OBL-0082",
               "HW-DR-0012"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+        "kind": "decision",
+        "id": "HW-DR-0047",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0047",
+          "status": "draft",
+          "status_since": "2026-09-06",
+          "summary": "One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time.",
+          "last_verified": "2026-09-06",
+          "title": "How the two halves of the site share one host",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0037",
+              "HW-DR-0038",
+              "HW-DR-0039"
+            ],
+            "governs": [
+              "tools/assemble-site.sh",
+              "wrangler.jsonc",
+              "site/_headers"
             ]
           }
         }
@@ -6620,6 +6653,33 @@
         }
       },
       {
+        "path": "docs/obligations/0160-the-generated-half-of-the-site-loads-highlight-js-from-a-third-party-with-no-subresource-integrity.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0160",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0160",
+          "status": "draft",
+          "status_since": "2026-09-06",
+          "summary": "277 generated pages load highlight.js and two stylesheets from cdnjs with no integrity attribute, so a third party supplies script to a site whose own subject is provenance.",
+          "last_verified": "2026-09-06",
+          "title": "The generated half of the site loads highlight.js from a third party with no subresource integrity",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0047"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
@@ -7854,6 +7914,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "site/_headers",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "site/compare/index.html",
         "resolver": "source-tree"
       },
@@ -7894,12 +7959,22 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "tools/assemble-site.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "tools/rdf-probe/emit.py",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
         "id": "tools/refresh-figures.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "wrangler.jsonc",
         "resolver": "source-tree"
       }
     ],
@@ -8925,6 +9000,72 @@
           "id": "HW-DR-0012",
           "path": "docs/decisions/0012-migration-path-for-an-existing-corpus.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0037",
+          "path": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0038",
+          "path": "docs/decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0039",
+          "path": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/assemble-site.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "wrangler.jsonc",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/_headers",
+          "resolver": "source-tree"
         }
       },
       {
@@ -12478,6 +12619,17 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/doc/src/sentences.rs",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0160-the-generated-half-of-the-site-loads-highlight-js-from-a-third-party-with-no-subresource-integrity.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0047",
+          "path": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+          "kind": "decision"
         }
       },
       {

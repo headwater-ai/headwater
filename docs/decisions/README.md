@@ -2,7 +2,7 @@
 
 # decisions
 
-46 documents on this shelf, in the reading order this corpus derives.
+47 documents on this shelf, in the reading order this corpus derives.
 
 - [HW-DR-0001](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [HW-DR-0002](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -50,3 +50,4 @@
 - [HW-DR-0044](0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md) — Design-spec's evaluation kind and its two purposes move to a new evidence-and-obligation bundle, so decision-record stops requiring the whole specification tradition.
 - [HW-DR-0045](0045-coloring-the-cli-and-where-the-banner-goes.md) — Color is sensed per stream and off by default in a pipe, and turned off everywhere by `--no-color` or `NO_COLOR`. A new masthead banner prints on the root help screen alone, off by `--no-banner` or `HEADWATER_NO_BANNER`.
 - [HW-DR-0046](0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md) — `adoption.from` is a pair, a semver and the release digest that was pinned when the migration began, and never a hash of the two.
+- [HW-DR-0047](0047-how-the-two-halves-of-the-site-share-one-host.md) — One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time. (asserted, and no human has accepted it)
