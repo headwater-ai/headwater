@@ -1025,7 +1025,10 @@ mod label_tests {
     #[test]
     fn a_declared_name_is_the_label() {
         assert_eq!(
-            label(&pointer(Some("HW-SPEC-vision-and-scope"), Some("Vision and scope"))),
+            label(&pointer(
+                Some("HW-SPEC-vision-and-scope"),
+                Some("Vision and scope")
+            )),
             "Vision and scope"
         );
     }
