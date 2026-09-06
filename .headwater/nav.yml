@@ -220,7 +220,7 @@ nav:
       - "A deletion is invisible where the version that stood there does not parse": "obligations/0127-a-deletion-is-invisible-where-the-version-that-stood-there-does-not-parse.md"
       - "Nothing holds a crate to having a contract under a root that excludes it": "obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md"
       - "Spec 12 calls two Phase A outcomes structural findings and the engine emits none": "obligations/0129-spec-12-calls-two-phase-a-outcomes-structural-findings-and-the-engine-emits-none.md"
-      - "The publication date of this repository is unset and the owner alone sets it": "obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md"
+      - "The publication date of this repository is set, and the repository stays private until then": "obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md"
       - "The CLI crate wires every verb and carries no tests, so two wiring defects passed a green suite": "obligations/0131-the-cli-crate-wires-every-verb-and-carries-no-tests-so-two-wiring-defects-passed-a-green-suite.md"
       - "Survey the wiring decisions of main.rs, verb by verb, and cover the quiet ones": "obligations/0132-survey-the-wiring-decisions-of-main-rs-verb-by-verb-and-cover-the-quiet-ones.md"
       - "Two test helpers key a scratch directory on the pid alone, and the race springs on the next case added": "obligations/0133-two-test-helpers-key-a-scratch-directory-on-the-pid-alone-and-the-race-springs-on-the-next-case-added.md"
