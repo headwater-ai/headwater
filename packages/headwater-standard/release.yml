@@ -26,8 +26,10 @@ release:
   package: headwater/standard
   version: 4.0.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:41e26a3c03a728b2cd4d0f91fad5913931ecfa790ce432058fb61c6f2d2269d3
+  digest: sha256:343f9a5c8d92ce95559a7c2fda4d2feefb0addec04060a50a331dcb7f27894bb
   members:
+    - path: assemblies/starter/assembly.yml
+      digest: sha256:fc2d5fa5d0f1bbf2d45f86c8dbfe8d9ecce37b4dd381e5763e8343a29de31f09
     - path: bundles/README.md
       digest: sha256:3b244809dc209c67d00e360b2c91dc67497fa22eb18c11d3b51da9201db10717
     - path: bundles/brd-prd/bundle.yml
@@ -224,7 +226,9 @@ release:
       digest: sha256:4018e2fbd675ce28d94e73ca0f1cc986c83c0730fdb460606707c8e3f86af0cc
     - path: conformance.yml
       digest: sha256:9ff0735e955bea021067c9949782bb01b5bd2ea46ef7be87c929d3fe9094f0db
+    - path: doctrine/starter.md
+      digest: sha256:762861c8f86cc019110d2aeb370e1e5a167962f11184c3b26d9cb94aa26cee9d
     - path: package.yml
-      digest: sha256:ad06d05b8d6ba19586464119e3ee4033b2f24b2fd91e05a0445c8ea588e2fef9
+      digest: sha256:4abfef9da8b4130514856add58db461c54611f14c486fd1cdcc67d0fa83096f0
     - path: taxonomy.yml
       digest: sha256:5fd3473412d79334f35cd19adb605f452d386d7b1fa6c77546e0f040e15d1ad1
