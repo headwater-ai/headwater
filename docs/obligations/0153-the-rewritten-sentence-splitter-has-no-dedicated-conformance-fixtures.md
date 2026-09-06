@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0153
-status: draft
-status_since: 2026-08-27
+status: current
+status_since: 2026-09-06
 summary: "The sentence splitter has inline tests, but it has no data-driven corpus that preserves the failures behind Q5's rewrite."
 provenance:
   warrant: asserted

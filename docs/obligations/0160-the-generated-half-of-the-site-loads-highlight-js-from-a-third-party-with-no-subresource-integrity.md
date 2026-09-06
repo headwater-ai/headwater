@@ -1,6 +1,6 @@
 ---
 id: HW-OBL-0160
-status: draft
+status: current
 status_since: 2026-09-06
 summary: "277 generated pages load highlight.js and two stylesheets from cdnjs with no integrity attribute, so a third party supplies script to a site whose own subject is provenance."
 last_verified: 2026-09-06

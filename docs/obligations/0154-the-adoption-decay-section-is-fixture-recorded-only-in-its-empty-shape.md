@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0154
-status: draft
-status_since: 2026-08-28
+status: current
+status_since: 2026-09-06
 summary: "Every section of the recorded audit report renders populated except the adoption one, whose fixture tree declares no payload."
 last_verified: 2026-08-28
 title: "The adoption decay section is fixture-recorded only in its empty shape"

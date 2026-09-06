@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0126
-status: draft
-status_since: 2026-08-15
+status: current
+status_since: 2026-09-06
 waiting_on: ruling
 summary: "Spec 3 rules that an `asserted` document cannot carry `last_verified`. The facet contract requires it on every kind that has one, and nine of nine asserted documents carry it."
 last_verified: 2026-08-15

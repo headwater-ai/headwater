@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-help
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How to print the command tree or one verb's help, and the caller errors that return status 1."
 last_verified: 2026-08-30
 title: "headwater help"

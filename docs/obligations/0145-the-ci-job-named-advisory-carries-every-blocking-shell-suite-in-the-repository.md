@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0145
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "The CI job named \\\"(advisory)\\\" carries every blocking shell suite in the repository"
 summary: "The CI job named advisory blocks on eleven of its own steps, not the two its name describes."

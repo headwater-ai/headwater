@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0150
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "A `current` decision declares no required edge to the document it settled, so 22 of 23 reach no specification at all"
 summary: "22 of 23 current decisions declare no edge to the specification they settled, and one declares no relation at all."

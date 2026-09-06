@@ -1,7 +1,7 @@
 ---
 id: HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
-status: draft
-status_since: 2026-08-14
+status: current
+status_since: 2026-09-06
 summary: Nothing makes a skill load, so its reach is a measurement, and this is the instrument that takes it.
 last_verified: 2026-08-14
 probe_category: discovery

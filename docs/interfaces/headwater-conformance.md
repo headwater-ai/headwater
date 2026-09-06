@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-conformance
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How a package's rules measure adoption, how waivers affect a requested rung, and what exits non-zero."
 last_verified: 2026-08-25
 title: "headwater conformance"

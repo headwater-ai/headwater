@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-new
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How to scaffold one typed document from the resolved taxonomy without overwriting existing files."
 last_verified: 2026-08-25
 title: "headwater new"

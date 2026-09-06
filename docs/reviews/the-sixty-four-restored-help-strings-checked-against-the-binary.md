@@ -1,7 +1,7 @@
 ---
 id: HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary
-status: draft
-status_since: 2026-08-28
+status: current
+status_since: 2026-09-06
 summary: "Each of the 64 help strings that PR #335 carried whole out of the retired parser, run against the shipped binary: 60 true, 3 false, 1 not runnable."
 last_verified: 2026-08-28
 doc_type: review_record

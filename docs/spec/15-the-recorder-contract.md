@@ -1,7 +1,7 @@
 ---
 id: HW-SPEC-the-recorder-contract
-status: draft
-status_since: 2026-08-14
+status: current
+status_since: 2026-09-06
 summary: Everything an external recorder writes into a transcript, the closed key sets that refuse a file, and the one member of the run identity this engine compares.
 last_verified: 2026-08-14
 doc_type: design_spec

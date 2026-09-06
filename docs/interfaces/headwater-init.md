@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-init
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How to start a corpus by writing a consumer declaration and an overlay from tree evidence and interview prompts."
 last_verified: 2026-08-25
 title: "headwater init"

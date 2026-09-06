@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-route
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How a task description becomes ranked document pointers, when routing stays silent, and what the budget limits."
 last_verified: 2026-08-25
 title: "headwater route"

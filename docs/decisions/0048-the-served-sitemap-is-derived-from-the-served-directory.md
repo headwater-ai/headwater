@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0048
-status: draft
+status: current
 status_since: 2026-09-06
 summary: "The sitemap a reader gets is derived from the directory that is served, by one walk that both halves call. Nobody types a page list, and the assembled directory is the only place the union exists."
 last_verified: 2026-09-06

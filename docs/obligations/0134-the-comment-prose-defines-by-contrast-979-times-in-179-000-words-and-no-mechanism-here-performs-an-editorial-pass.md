@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0134
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 summary: "The comment prose passes every rule this engine has, so the readability problem is a judgment call no check here reaches."
 provenance:
   warrant: accepted

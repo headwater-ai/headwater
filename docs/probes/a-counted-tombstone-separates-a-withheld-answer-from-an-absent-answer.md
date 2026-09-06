@@ -1,7 +1,7 @@
 ---
 id: HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer
-status: draft
-status_since: 2026-08-27
+status: current
+status_since: 2026-09-06
 summary: A session classifies a recovery word as present, withheld, or absent from a served corpus with a counted tombstone.
 last_verified: 2026-08-27
 probe_category: sufficiency

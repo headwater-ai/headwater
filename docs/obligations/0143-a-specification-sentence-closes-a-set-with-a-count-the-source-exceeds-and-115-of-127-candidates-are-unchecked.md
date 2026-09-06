@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0143
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "A specification sentence closes a set with a count the source exceeds, and 115 of 127 candidates are unchecked"
 summary: "Three sentences that closed a set with a wrong count were found by accident, and 115 more candidates were never checked."

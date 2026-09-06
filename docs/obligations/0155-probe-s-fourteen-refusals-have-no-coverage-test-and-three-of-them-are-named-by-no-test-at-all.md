@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0155
-status: draft
-status_since: 2026-08-28
+status: current
+status_since: 2026-09-06
 summary: "Three of the `probe` crate's fourteen refusals are named by no test, and no case holds the set to its own coverage."
 last_verified: 2026-08-28
 title: "probe's fourteen refusals have no coverage test, and three of them are named by no test at all"

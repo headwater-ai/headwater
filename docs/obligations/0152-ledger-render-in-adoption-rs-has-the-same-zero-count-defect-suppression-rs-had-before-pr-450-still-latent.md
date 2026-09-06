@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0152
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 title: "Ledger::render() in adoption.rs has the same zero-count defect suppression.rs had before PR #450, still latent"
 summary: "adoption.rs::Ledger::render() drops its own header and count line whenever a corpus declares no adoption debt, the same shape PR #450 fixed in suppression.rs, and nothing reads the dropped text yet."
 provenance:

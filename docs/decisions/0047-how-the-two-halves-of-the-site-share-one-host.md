@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0047
-status: draft
+status: current
 status_since: 2026-09-06
 summary: "One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time."
 last_verified: 2026-09-06

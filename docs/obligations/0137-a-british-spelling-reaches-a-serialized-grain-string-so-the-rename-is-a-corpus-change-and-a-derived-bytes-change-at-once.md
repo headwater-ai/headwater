@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0137
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "A British spelling reaches a serialized grain string, so the rename is a corpus change and a derived-bytes change at once"
 summary: "A British spelling in the serialized grain string entangles a prose rename with cached verdicts, a read-set artifact, and recorded fixtures."

@@ -59,9 +59,10 @@ cp "$engine" "$scratch/engine/target/release/headwater"
 passed=0
 failed=0
 
-# The two documents these cases move, named once. The first opens at `draft`,
-# which admits `current` and `deprecated` and not `discharged`. The second
-# stands at `discharged`, which the `obligation` regime gives no exit at all.
+# The two documents these cases move, named once. The first is seeded to
+# `draft`, which admits `current` and `deprecated` and not `discharged`. The
+# second stands at `discharged`, which the `obligation` regime gives no exit at
+# all.
 draft="docs/obligations/0126-every-asserted-document-carries-the-freshness-date-that-spec-3-says-it-cannot.md"
 terminal="docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md"
 
@@ -79,6 +80,22 @@ move() {
         printf 'FAIL setup: %s did not move from %s to %s\n' "$1" "$from" "$to"
         exit 1
     }
+}
+
+# No document of this corpus stands at `draft`. HW-DR-0052 rules that an author
+# writes the state a document will hold once the branch lands, so a merged
+# document stands at `current` and the population these cases used to borrow
+# from is empty. The producer reads the prior state out of `HEAD`, so a case
+# that moves a document away from `draft` needs a committed `draft` version.
+# This commits one, which is what the cases below were always really asking for.
+seed_draft() {
+    sed -i "s/^status: current\$/status: draft/" "$scratch/$draft"
+    grep -q '^status: draft$' "$scratch/$draft" || {
+        printf 'FAIL setup: %s did not seed to draft\n' "$draft"
+        exit 1
+    }
+    git -C "$scratch" -c user.name=fixtures -c user.email=fixtures@invalid \
+        commit -qam "seed a draft version" --no-verify
 }
 
 # Run the commit gate in the scratch repository, the way git runs it.
@@ -129,6 +146,7 @@ judge() {
 printf '# the gate, over this corpus\n'
 
 reset
+seed_draft
 move "$draft" draft discharged
 out=$(gate); status=$?
 judge 'a movement the regime does not admit is refused at the commit' 1 "$status" \
@@ -146,6 +164,7 @@ judge 'and the instance reports the reason rather than a pass' 0 "$status" \
     'change-scoped-only' "$out"
 
 reset
+seed_draft
 move "$draft" draft current
 out=$(gate); status=$?
 judge 'the same document moved to a state the regime admits passes' 0 "$status" '' "$out"
@@ -157,6 +176,7 @@ judge 'a movement out of a terminal state is refused' 1 "$status" \
     'lifecycle.transition.not_permitted' "$out"
 
 reset
+seed_draft
 git -C "$scratch" mv "$draft" "docs/obligations/0126-renamed.md" >/dev/null 2>&1
 move "docs/obligations/0126-renamed.md" draft discharged
 out=$(gate); status=$?

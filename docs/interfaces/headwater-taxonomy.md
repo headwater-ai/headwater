@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-taxonomy
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How to validate, resolve, audit, publish, vendor, compare and migrate taxonomy packages."
 last_verified: 2026-09-05
 title: "headwater taxonomy"

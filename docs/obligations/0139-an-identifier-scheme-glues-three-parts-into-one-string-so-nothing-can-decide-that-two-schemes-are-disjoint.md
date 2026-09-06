@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0139
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "An identifier scheme glues three parts into one string, so nothing can decide that two schemes are disjoint"
 summary: "A pattern string glues the prefix, the namespace, and the local part, so disjointness is undecided and a published address is invented from its path."

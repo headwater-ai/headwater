@@ -1,7 +1,7 @@
 ---
 id: HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor
-status: draft
-status_since: 2026-08-14
+status: current
+status_since: 2026-09-06
 summary: The descriptor names one entry point for each shelf that holds a document, and this asks whether a session with no other pointer opens the one that governs the task.
 last_verified: 2026-08-14
 probe_category: discovery

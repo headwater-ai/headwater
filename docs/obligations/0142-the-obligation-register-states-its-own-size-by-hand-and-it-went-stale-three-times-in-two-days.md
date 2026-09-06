@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0142
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "The obligation register states its own size by hand, and it went stale three times in two days"
 summary: "Spec 13 states its own item and record counts by hand, and the figure drifted three times in two days before anyone noticed."

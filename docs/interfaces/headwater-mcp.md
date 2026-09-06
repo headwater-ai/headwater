@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-mcp
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How the stdio MCP server exposes read tools, optional working-tree writes, and a one-write session seal."
 last_verified: 2026-08-25
 title: "headwater mcp"

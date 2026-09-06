@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-query
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "Why `headwater query` always refuses an expression, and which graph reads replace it."
 last_verified: 2026-08-25
 title: "headwater query"

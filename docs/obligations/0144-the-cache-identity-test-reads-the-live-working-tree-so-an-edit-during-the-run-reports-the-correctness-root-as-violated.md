@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0144
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "The cache-identity test reads the live working tree, so an edit during the run reports the correctness root as violated"
 summary: "The test proving cache and no-cache agree on a verdict reads the live working tree, and a concurrent edit reports the correctness root as violated."
