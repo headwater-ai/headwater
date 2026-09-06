@@ -39,7 +39,7 @@ Two halves make up `https://headwater.tools/`. `site/` holds the hand-built page
 
 **One directory holds both halves, and `tools/assemble-site.sh` composes it.** The script copies the generated half into `.headwater/site-deploy` first and the hand-built half second. A path that both halves carry is served with the committed bytes, and the script names every such path on each run.
 
-**The Cloudflare Workers Builds build command runs that script.** The command names one file, `tools/cloudflare-build.sh`, which installs the pinned site toolchain, runs the build, and runs the assembly. A dashboard field carries no commit and goes stale in silence, so every version this deploy installs moves in a reviewed change instead. `wrangler.jsonc` names `.headwater/site-deploy` as the asset directory and states what writes it.
+**Every Cloudflare Workers Builds configuration runs that script.** A build command names one file, `tools/cloudflare-build.sh`, which installs the pinned site toolchain, runs the build, and runs the assembly. This project holds two such configurations, one for the default branch and one for every other branch. Each carries a build command of its own. A dashboard field carries no commit and goes stale in silence, so every version this deploy installs moves in a reviewed change instead. `wrangler.jsonc` names `.headwater/site-deploy` as the asset directory and states what writes it.
 
 **The repository keeps one deploy path.** A second path in GitHub Actions would race the first, and the last writer would decide what a reader sees.
 
@@ -52,6 +52,8 @@ Two halves make up `https://headwater.tools/`. `site/` holds the hand-built page
 **Something now runs between the commit and the served bytes.** HW-DR-0037 states that nothing does, and that sentence measured a tree with no build command. [HW-DR-0039](0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md) names a build command on the deploy path as one of the two events that retire `tools/refresh-figures.sh` as the only answer. Both sentences answer to this record.
 
 **The build image carries the risk this repository cannot test.** The Cloudflare image must hold `python3` and `pip`. CI runs the same assembly on every push, so a break in the script is found by the runner that already builds the site. A break in the image is found by the deploy, which fails visibly and leaves the previous deploy live.
+
+**A build configuration with no build command has no directory to serve.** The second configuration deploys a preview of each pull request, with `wrangler versions upload` in place of `wrangler deploy`. It reaches the same `wrangler.jsonc` and therefore the same asset directory, which only a build writes. A preview build that fails on every change reports nothing about any change, and a check that is always red is a check nobody reads.
 
 **The order of the two acts is not free.** `wrangler.jsonc` names a directory that git ignores, so the build command has to exist before that name reaches the default branch. The reverse order serves a directory that is not there.
 

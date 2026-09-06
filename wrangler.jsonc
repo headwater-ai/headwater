@@ -31,11 +31,24 @@
   //
   //   That script installs the pinned site toolchain, runs
   //   `mkdocs build --strict`, and runs `tools/assemble-site.sh`. Cloudflare
-  //   then runs `npx wrangler deploy` from the repository root, which reads
-  //   this file. `tools/cloudflare-build.sh` states why the dashboard field
-  //   names a file rather than carrying those commands itself.
+  //   then deploys from the repository root, which is where it reads this
+  //   file. `tools/cloudflare-build.sh` states why the dashboard field names
+  //   a file rather than carrying those commands itself.
   //
-  //   If that build command is ever unset, this directory is absent and the
+  //   THERE ARE TWO OF THAT FIELD, AND BOTH HAVE TO NAME THE SCRIPT.
+  //   Workers Builds keeps one build configuration for the default branch
+  //   and a second for every other branch, each with its own build command:
+  //
+  //       default branch   sh tools/cloudflare-build.sh   npx wrangler deploy
+  //       every other      sh tools/cloudflare-build.sh   npx wrangler versions upload
+  //
+  //   The second one is what runs on a pull request. Both read this file, so
+  //   both need the directory below, and only a build writes it. A second
+  //   configuration left empty does not touch the live site — it fails every
+  //   pull request's build instead, which is a red check that says nothing
+  //   about the change under it.
+  //
+  //   If a build command is ever unset, this directory is absent and that
   //   deploy has nothing to serve. Restore the command first, and only then
   //   change the name below.
   "name": "headwater",
