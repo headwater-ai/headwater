@@ -146,7 +146,7 @@ relations:
 
 ## Q31 — Whether this repository becomes public, and when
 
-[HW-DR-0031](../decisions/0031-q31-whether-this-repository-becomes-public-and-when.md) — This repository becomes public on 2026-09-08. The owner sets the date, and the record stops each run from raising the schedule as an open question.
+[HW-DR-0031](../decisions/0031-q31-whether-this-repository-becomes-public-and-when.md) — This repository is public. The owner set 2026-09-08 and opened it on 2026-09-06, and the record stops each run from raising the schedule.
 
 ## Q32 — Which test the self-audit label states
 
