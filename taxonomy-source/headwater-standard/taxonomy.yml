@@ -30,16 +30,33 @@
 # names both files, both keys and both names.
 
 taxonomy: headwater/standard
-# 3.6.0 adds `facets.title`, in the `name` role, and it declares it on no kind.
-# Nothing is removed and nothing already declared changes meaning, so it is a
-# minor. What a consumer meets is one more facet it may require, and a
-# requirement is what makes a facet reach a document: an adopter that names it
-# nowhere resolves the requirements it resolved under 3.5.0. The facet-role
-# registry of spec 2 is closed at five members and four of them had a facet
-# here; this is the fifth. The decision-record entry declared `title` until now,
-# and its doctrine recorded that an entry cannot reach the kinds of another
-# entry, so the numbered specification series stayed unnamed. That entry now
-# requires the facet and declares it no longer.
+# 4.0.0 adds `facets.title`, in the `name` role, and this file declares it on no
+# kind. The facet-role registry of spec 2 is closed at five members and four of
+# them had a facet here; this is the fifth. The decision-record entry declared
+# `title` until now, and its doctrine recorded that an entry cannot reach the
+# kinds of another entry, so the numbered specification series stayed unnamed.
+# That entry now requires the facet and declares it no longer.
+#
+# It is a major, and this file is not where the reason is. A package is the
+# taxonomy and the bundles it ships under one version and one digest, and five
+# kinds of the design-spec entry and one of evidence-and-obligation now name
+# `title` in their own `facets.require`. A consumer that selects either entry
+# and moves from 3.5.0 therefore holds documents that stop validating.
+# `headwater taxonomy diff` measured it against the corpus of this repository
+# before the bump: `instance_validity` BROKEN, 41 failed, `consequence` BROKEN,
+# 41 of them, and the run printed "a dimension is broken, so this change
+# requires a major version". Spec 2 (Versioning by measured compatibility) is
+# what that sentence reads, and the number here obeys the measurement rather
+# than the shape of the edit. Read the two paragraphs together: a facet that
+# reaches no kind is additive, and a package that ships a bundle requiring it is
+# not, and only the second is what a consumer fetches.
+#
+# The artifact ships no migration payload, and `taxonomy diff` says so on every
+# run of this transition. Spec 7 (The migration payload) gives a step three
+# subjects, `facet_value`, `kind` and `overlay_address`, and a facet that became
+# required is none of the three: there is no old value for a `facet_value` step
+# to move. So the payload vocabulary cannot state this move at all, which is a
+# finding against spec 7 rather than an omission of this release.
 #
 # 3.4.0 adds `OB-MIG-1` and `CT-MIG-1`, which are the obligation and the
 # control behind `adoption.task.expired`. Nothing is removed and nothing
@@ -105,7 +122,7 @@ taxonomy: headwater/standard
 # The two are required to agree: `resolve::package::agrees` refuses the package
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
-version: 3.6.0
+version: 4.0.0
 
 purposes:
   rationale:
@@ -156,10 +173,13 @@ vocabularies:
 # that move, and the entry that first declared `title` now requires it and
 # declares it no longer.
 #
-# `required: false` is what keeps the move additive. A kind takes the facet by
-# naming it in its own `facets.require`, and no kind of this package does. An
-# adopter who resolved 3.5.0 and resolves this version reads the same
-# requirements over the same documents.
+# `required: false` says only that this file requires it of nothing. A kind
+# takes the facet by naming it in its own `facets.require`, no kind here does,
+# and six kinds of the two bundles this package ships do. So an adopter who
+# selects no bundle reads the same requirements over the same documents, and an
+# adopter who selects `design-spec` or `evidence-and-obligation` reads one more
+# on six kinds. The version comment above states why the second reading is the
+# one that decided the number.
 
 facets:
   status:

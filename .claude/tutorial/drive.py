@@ -311,7 +311,7 @@ def main():
         # The new line is read out of block 9, which is the output the page says
         # `grep 'version:'` prints after the edit, and never typed here. A
         # literal in this file would be a second copy of the package version,
-        # and #427 bumped the package to 3.6.0 and moved six mentions in the
+        # and #427 bumped the package to 4.0.0 and moved six mentions in the
         # tutorial while this one stayed at 3.5.0, so every step from 5 to 16
         # failed on a tutorial that was right.
         path = os.path.join(cwd['at'], '.headwater/taxonomy.yml')

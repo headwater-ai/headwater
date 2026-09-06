@@ -78,10 +78,10 @@ add:
   # removes the one declaration finding 4 already said was too narrow.
 
   # It requires `title`, which headwater/standard declares in the `name` role
-  # from 3.6.0. An evaluation is the one kind here that a reader reaches from a
+  # from 4.0.0. An evaluation is the one kind here that a reader reaches from a
   # list rather than from the document that cites it: a shelf index and a site
   # navigation both render the whole shelf, and both read the `name` role. Until
-  # 3.6.0 the facet stood in the decision-record entry, which this entry does
+  # 4.0.0 the facet stood in the decision-record entry, which this entry does
   # not require and could not require without a cycle, so every evaluation
   # rendered as `HW-EVAL-adjacent-work` (#123, #427).
   kinds.evaluation:

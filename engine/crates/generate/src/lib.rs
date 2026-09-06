@@ -978,7 +978,14 @@ pub(crate) fn pointers(surface: &Surface<'_>, documents: &[Document<'_>]) -> Vec
 }
 
 /// The name one document is rendered under, wherever an emitter of this crate
-/// writes a list of documents.
+/// has room for exactly one string that stands for a document.
+///
+/// Two of the three emitters that render a list call this. `shelf_index` writes
+/// a bullet and `site_nav` writes a navigation entry, and neither has room for
+/// a second string. `shelf_sections` has room for two, so it writes the name as
+/// the heading and the identifier as the link under it, and its own comment at
+/// the line that builds that link states why. A caller with room for two is not
+/// a caller of this function.
 ///
 /// The declared `name`-role facet first, because that is what the document
 /// calls itself and spec 2 puts a reader-facing name in a facet rather than in

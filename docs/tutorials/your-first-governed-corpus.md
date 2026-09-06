@@ -126,7 +126,7 @@ headwater taxonomy resolve
 
 ```
 headwater: the taxonomy did not resolve, so no lock is possible
-  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 3.6.0
+  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 4.0.0
 ```
 
 **Check.** `echo $?` prints `1`.
@@ -135,12 +135,12 @@ headwater: the taxonomy did not resolve, so no lock is possible
 
 ### Step 5 — Pin the version, and meet the second refusal
 
-Open `.headwater/taxonomy.yml`, and change the line `  version: 0.0.0` to `  version: 3.6.0`.
+Open `.headwater/taxonomy.yml`, and change the line `  version: 0.0.0` to `  version: 4.0.0`.
 
 **Check.** `grep 'version:' .headwater/taxonomy.yml` prints one line:
 
 ```
-  version: 3.6.0
+  version: 4.0.0
 ```
 
 Now resolve again.
@@ -487,13 +487,13 @@ levels
   L2 Regenerated — not reached, 2 of 4 rules met
     2 gaps, 0 of them waived
 
-no level reached, against headwater/standard 3.6.0
+no level reached, against headwater/standard 4.0.0
   a level states what this repository wired up. It measures nothing about the
   corpus, no key declares one, and a waiver moves the exit status and never the
   level.
 ```
 
-**Check.** The last line of the levels block reads `no level reached, against headwater/standard 3.6.0`.
+**Check.** The last line of the levels block reads `no level reached, against headwater/standard 4.0.0`.
 
 Your corpus passes every check and reaches no level, and both statements are correct. A level measures what you wired up rather than what your documents say. One of the two gaps closes with a command:
 

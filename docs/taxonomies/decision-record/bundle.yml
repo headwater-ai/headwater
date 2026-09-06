@@ -31,7 +31,7 @@ requires: [evidence-and-obligation]
 add:
 
   # --- facets ---------------------------------------------------------------
-  # `facets.title` stood here until headwater/standard 3.6.0, and the base now
+  # `facets.title` stood here until headwater/standard 4.0.0, and the base now
   # declares it. This entry was the first to need it, because a generated index
   # over this shelf labeled each record with its identifier and a log of
   # decisions that reads `HW-DR-0007` is not a log anybody reads (#123). It was

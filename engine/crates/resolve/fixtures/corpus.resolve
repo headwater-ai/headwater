@@ -1,4 +1,4 @@
-headwater/standard 3.6.0
+headwater/standard 4.0.0
 
 sources, in application order
   packages/headwater-standard/taxonomy.yml
@@ -90,7 +90,7 @@ operations
 
 declarations, by member count
   taxonomy: headwater/standard
-  version: 3.6.0
+  version: 4.0.0
   purposes: 6 members
   vocabularies: 1 member
   facets: 14 members

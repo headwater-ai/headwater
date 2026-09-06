@@ -47,11 +47,11 @@ add:
   # from governed_document, which is what keeps this bundle add-only.
   #
   # Every kind here requires `title`, which headwater/standard declares in the
-  # `name` role from 3.6.0. A numbered series is the tradition that most needs
+  # `name` role from 4.0.0. A numbered series is the tradition that most needs
   # it: the number is what orders the series and it is no name, so a rendered
   # list of parts that reads the identifier reads `HW-SPEC-vision-and-scope`
   # where "Vision and scope" belongs (#123, #427). The facet stood in the
-  # decision-record entry until 3.6.0 and could not reach here, and that entry's
+  # decision-record entry until 4.0.0 and could not reach here, and that entry's
   # doctrine carried the reason as its finding 4.
   #
   # `title` is not the first heading of the body, and the two are allowed to
