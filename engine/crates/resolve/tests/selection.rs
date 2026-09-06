@@ -113,6 +113,17 @@ add:
   purposes.behavior: {intent: a second declaration of a name the base holds}
 ";
 
+/// Reads one name `beta` declares and one name `gamma` declares, so no single
+/// bundle completes a selection that holds it.
+const ETA: &str = "\
+bundle: eta
+extends: acme/fixture@1.0.0
+requires: []
+add:
+  kinds.eta_one: {is_a: governed_document, purpose: stewardship}
+  kinds.eta_two: {is_a: governed_document, purpose: custody}
+";
+
 /// Removes a purpose the base declares, which `kinds.note` reads as a bare
 /// string and no bundle in the library re-declares. Nothing can be added to
 /// complete this.
@@ -147,6 +158,7 @@ fn library(scratch: &Scratch) {
     scratch.write("packages/acme-fixture/bundles/gamma/bundle.yml", GAMMA);
     scratch.write("packages/acme-fixture/bundles/delta/bundle.yml", DELTA);
     scratch.write("packages/acme-fixture/bundles/epsilon/bundle.yml", EPSILON);
+    scratch.write("packages/acme-fixture/bundles/eta/bundle.yml", ETA);
 }
 
 fn consumer(bundles: &[&str], overlay: Option<&str>) -> Consumer {
@@ -304,6 +316,36 @@ fn a_name_the_consumers_own_overlay_reads_is_told_which_bundle_declares_it() {
     assert_eq!(advice.bundles.len(), 1);
     assert_eq!(advice.bundles[0].bundle, "beta");
     assert_eq!(advice.bundles[0].names, vec!["stewardship".to_string()]);
+}
+
+#[test]
+fn no_bundle_that_supplies_part_of_what_is_missing_is_presented_as_sufficient() {
+    let scratch = Scratch::new("part");
+    library(&scratch);
+    let consumer = consumer(&["eta"], None);
+
+    let advice = selection::advice(&scratch.0, &consumer).expect("two bundles in the library help");
+    assert_eq!(advice.dangling, 2);
+    assert_eq!(advice.supplied, 2);
+    assert_eq!(advice.bundles.len(), 2, "no one bundle completes this");
+    assert_eq!(advice.bundles[0].bundle, "beta");
+    assert_eq!(advice.bundles[0].names, vec!["stewardship".to_string()]);
+    assert_eq!(advice.bundles[1].bundle, "gamma");
+    assert_eq!(advice.bundles[1].names, vec!["custody".to_string()]);
+
+    let text = advice.render();
+    assert!(
+        text.contains("Bundles `acme/fixture` ships that this repository did not select declare 2"),
+        "the message is plural and counts the union: {text}"
+    );
+    assert!(
+        text.contains("`beta` declares 1 of the 2: `stewardship`"),
+        "each bundle is named with what it alone supplies: {text}"
+    );
+    assert!(
+        text.contains("`gamma` declares 1 of the 2: `custody`"),
+        "each bundle is named with what it alone supplies: {text}"
+    );
 }
 
 #[test]
