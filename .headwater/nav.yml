@@ -234,7 +234,7 @@ nav:
       - "A deletion is invisible where the version that stood there does not parse": "obligations/0127-a-deletion-is-invisible-where-the-version-that-stood-there-does-not-parse.md"
       - "Nothing holds a crate to having a contract under a root that excludes it": "obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md"
       - "Spec 12 calls two Phase A outcomes structural findings and the engine emits none": "obligations/0129-spec-12-calls-two-phase-a-outcomes-structural-findings-and-the-engine-emits-none.md"
-      - "The publication date of this repository is set, and the repository stays private until then": "obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md"
+      - "The publication date of this repository is set, and the repository is public": "obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md"
       - "The CLI crate wires every verb and carries no tests, so two wiring defects passed a green suite": "obligations/0131-the-cli-crate-wires-every-verb-and-carries-no-tests-so-two-wiring-defects-passed-a-green-suite.md"
       - "Survey the wiring decisions of main.rs, verb by verb, and cover the quiet ones": "obligations/0132-survey-the-wiring-decisions-of-main-rs-verb-by-verb-and-cover-the-quiet-ones.md"
       - "Two test helpers key a scratch directory on the pid alone, and the race springs on the next case added": "obligations/0133-two-test-helpers-key-a-scratch-directory-on-the-pid-alone-and-the-race-springs-on-the-next-case-added.md"
@@ -270,6 +270,7 @@ nav:
       - "Ten decision records claim a Q number the decision register does not carry": "obligations/0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md"
       - "The regeneration check tests byte equality before the marker, so a file the census stopped counting as generated still passes": "obligations/0164-the-regeneration-check-tests-byte-equality-before-the-marker-so-a-file-the-census-stopped-counting-as-generated-still-passes.md"
       - "A rendered-page gate greps for a string it requires and states no denominator, so an empty build passes it": "obligations/0165-a-rendered-page-gate-greps-for-a-string-it-requires-and-states-no-denominator-so-an-empty-build-passes-it.md"
+      - "The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it": "obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md"
   - "probes":
       - "probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"

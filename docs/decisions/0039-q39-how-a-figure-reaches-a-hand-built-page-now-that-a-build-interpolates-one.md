@@ -3,7 +3,7 @@ id: HW-DR-0039
 status: current
 status_since: 2026-08-30
 summary: "The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run."
-last_verified: 2026-08-30
+last_verified: 2026-09-06
 title: "Q39 — How a figure reaches a hand-built page, now that a build interpolates one"
 provenance:
   warrant: accepted
@@ -29,7 +29,7 @@ relations:
 
 **The record measures the second form as unavailable, and the measurement is about the deploy path.** `wrangler.jsonc` declares an asset directory and no build command, so nothing runs between the commit and the served bytes. `site/_headers` sets `default-src 'none'`, so a served page reaches no data file at read time either. Both readings are still true on this tree, and this record disturbs neither.
 
-**The first form is unavailable for a different reason, which [#435](https://github.com/headwater-ai/headwater/issues/435) states.** The repository is private, and no workflow publishes a built artifact anywhere a visitor can reach. So a link to a run resolves to nothing for the reader it was written for.
+**The first form is unavailable for a different reason, which [#435](https://github.com/headwater-ai/headwater/issues/435) states.** No workflow of this repository publishes a built artifact anywhere a visitor can reach. A run page of this repository answers a reader with no credentials since 2026-09-06, and it carries no artifact for a link to name.
 
 **Both admitted forms were therefore closed, and a page of figures had nowhere to stand.** The self-assessment page waited behind that, and the landing page carried figures from a run that nobody could name.
 
