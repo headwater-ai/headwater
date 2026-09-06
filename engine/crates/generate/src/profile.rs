@@ -93,12 +93,78 @@ impl Emitter {
         Emitter::ALL.into_iter().find(|one| one.name() == text)
     }
 
+    /// Where this target sits in [`Emitter::ALL`].
+    ///
+    /// `ALL` is a hand-kept array, and the refusal in `export.rs` now counts it
+    /// and lists the built half of it, so a target missing from `ALL` makes the
+    /// engine's own sentence wrong rather than merely incomplete. This is the
+    /// exhaustive `match` that array is checked against, in
+    /// `all_holds_every_emitter_at_the_position_the_match_gives_it`: an eighth
+    /// variant cannot compile without an arm here, and an arm whose index
+    /// disagrees with `ALL` fails that test naming the target.
+    ///
+    /// # What it still does not catch
+    ///
+    /// A variant whose arm here is a fresh index past the end of `ALL`, and
+    /// which is added to `ALL` nowhere, compiles and passes. No test can reach a
+    /// variant that no list names, so closing that needs a macro or a derive
+    /// crate that enumerates variants, and this engine has neither.
+    pub fn position(self) -> usize {
+        match self {
+            Emitter::Json => 0,
+            Emitter::JsonSchema => 1,
+            Emitter::Shacl => 2,
+            Emitter::Rdf => 3,
+            Emitter::Skos => 4,
+            Emitter::Okf => 5,
+            Emitter::LinkMl => 6,
+        }
+    }
+
     /// Whether this engine emits it.
     ///
     /// Spec 6: "Only `json` and `jsonschema` ship in the first release, and each
     /// later format waits for a consumer who asks for it."
+    ///
+    /// An exhaustive `match` rather than a `matches!`, because the refusal in
+    /// `export.rs` reads this to say which emitters ship. Under `matches!` an
+    /// eighth variant is silently unbuilt and the sentence stays true by
+    /// accident; here the author has to say which half it joins.
     pub fn is_built(self) -> bool {
-        matches!(self, Emitter::Json | Emitter::JsonSchema)
+        match self {
+            Emitter::Json | Emitter::JsonSchema => true,
+            Emitter::Shacl | Emitter::Rdf | Emitter::Skos | Emitter::Okf | Emitter::LinkMl => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod emitter_tests {
+    use super::Emitter;
+
+    /// `ALL` agrees with the exhaustive `match` in `Emitter::position`.
+    ///
+    /// `ALL` is the only enumeration of this enum that any code has, and
+    /// `export.rs` counts it into a sentence a specification part quotes. The
+    /// compiler holds `name`, `is_built` and `position` complete, and this holds
+    /// `ALL` against the last of the three.
+    ///
+    /// # Watched failing
+    ///
+    /// Deleting `Emitter::Okf` from `ALL` reddens this at index 5, naming the
+    /// emitter that sits there and the position it claims.
+    #[test]
+    fn all_holds_every_emitter_at_the_position_the_match_gives_it() {
+        for (at, emitter) in Emitter::ALL.into_iter().enumerate() {
+            assert_eq!(
+                emitter.position(),
+                at,
+                "`Emitter::ALL` holds `{}` at index {at} and `Emitter::position` puts it at {}. \
+                 One of the two is missing a target the other has",
+                emitter.name(),
+                emitter.position()
+            );
+        }
     }
 }
 

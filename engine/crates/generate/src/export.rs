@@ -185,10 +185,12 @@ impl Refusal {
     pub fn reason(&self) -> String {
         match self {
             Refusal::NotBuilt(emitter) => format!(
-                "the `{}` emitter waits on a named external consumer. Q13 stages the six \
+                "the `{}` emitter waits on a named external consumer. Q13 stages the {} \
                  emitters and puts every one after the second behind a consumer who asks for \
-                 it, and none has. `json` and `jsonschema` ship",
-                emitter.name()
+                 it, and none has. {} ship",
+                emitter.name(),
+                numeral(staged()),
+                shipping()
             ),
             Refusal::Unevaluable { facet, clause } => format!(
                 "the filter clause `{clause}` names the facet `{facet}`, and this taxonomy \
@@ -198,6 +200,63 @@ impl Refusal {
                  not have"
             ),
         }
+    }
+}
+
+/// How many emitters Q13 stages.
+///
+/// Every target but the native `json`, which is the property graph this engine
+/// already writes rather than one of Q13's siblings, and HW-DR-0013 calls
+/// LinkML "the last of six siblings". Six is what this counts today.
+///
+/// # Why this is counted rather than typed
+///
+/// The sentence [`Refusal::reason`] returns is quoted verbatim in
+/// `docs/spec/02-taxonomy-model.md`, and `tests/spec_two_emitters.rs` compares
+/// the two. A hardcoded "six" makes that comparison worthless: the day a third
+/// emitter ships, the document and the literal are false in the same words, the
+/// test compares one false thing to another, and it stays green. Counted off
+/// [`Emitter::ALL`], the engine's own sentence goes right on its own and the
+/// document is the only side left to catch.
+fn staged() -> usize {
+    Emitter::ALL
+        .into_iter()
+        .filter(|one| *one != Emitter::Json)
+        .count()
+}
+
+/// The staged count, spelled the way the sentence reads it.
+///
+/// Digits past twelve, because a numeral this function had to invent would be
+/// worse for a reader than the figure.
+fn numeral(count: usize) -> String {
+    const WORDS: [&str; 13] = [
+        "no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+        "eleven", "twelve",
+    ];
+    match WORDS.get(count) {
+        Some(word) => (*word).to_string(),
+        None => count.to_string(),
+    }
+}
+
+/// The emitters this engine ships, as the sentence lists them.
+///
+/// The other half of the same argument as [`staged`]. A third emitter that
+/// ships moves these bytes, so the refusal cannot stay in step with a
+/// specification part that still names two.
+fn shipping() -> String {
+    let names: Vec<String> = Emitter::ALL
+        .into_iter()
+        .filter(|one| one.is_built())
+        .map(|one| format!("`{}`", one.name()))
+        .collect();
+    match names.split_last() {
+        Some((last, [])) => last.clone(),
+        Some((last, rest)) => format!("{} and {last}", rest.join(", ")),
+        // Unreachable while `json` is built, and a panic here would turn a
+        // refusal into a crash.
+        None => "no emitter".to_string(),
     }
 }
 
