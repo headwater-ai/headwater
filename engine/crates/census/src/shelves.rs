@@ -35,6 +35,12 @@ pub struct Taxonomy {
 #[derive(Clone, Debug)]
 pub struct Shelf {
     pub name: String,
+    /// The name a reader sees where an emitter prints this shelf, where the
+    /// declaration carries one. `None` is the shelf that declares none, and
+    /// the fall-through to [`Shelf::name`] belongs to the emitter rather than
+    /// here: a reading that filled this in would leave no caller able to tell
+    /// a declared display name from a key that happens to read well.
+    pub title: Option<String>,
     pub pattern: Pattern,
     pub body: ShelfBody,
     /// The span of the shelf's name, which is what a finding about the
@@ -194,6 +200,7 @@ fn read_shelf(name: &str, value: &Value, span: Span) -> Result<Shelf, Declaratio
 
     Ok(Shelf {
         name: name.to_string(),
+        title: scalar(map, "title"),
         pattern: Pattern::new(&path),
         body,
         span,
@@ -261,6 +268,27 @@ shelves:
             ShelfBody::Homogeneous { kind } => assert_eq!(kind, "evaluation"),
             other => panic!("{other:?}"),
         }
+    }
+
+    /// The declared display name reaches the reading, and the shelf that
+    /// declares none reads as `None` rather than as its own key.
+    ///
+    /// Both halves in one case on purpose. A reading that filled the key in
+    /// would satisfy the first assertion and fail the second, and it is the
+    /// second that keeps the fall-through in one place —
+    /// `headwater_generate::shelf_label` — where three emitters read it.
+    #[test]
+    fn a_declared_display_name_is_read_and_an_undeclared_one_is_not_invented() {
+        let taxonomy = read(&SOURCE.replace(
+            "  spec_series:\n",
+            "  spec_series:\n    title: The specification series\n",
+        ))
+        .expect("reads");
+        assert_eq!(
+            taxonomy.shelves[0].title.as_deref(),
+            Some("The specification series")
+        );
+        assert_eq!(taxonomy.shelves[1].title, None);
     }
 
     #[test]

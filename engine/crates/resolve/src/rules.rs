@@ -290,6 +290,54 @@ pub fn render() -> String {
     out
 }
 
+/// Every shelf that declares no display name, in declaration order.
+///
+/// A shelf key is written for a machine and read by a person the moment an
+/// emitter prints it: `spec_series` was the label of a navigation group, the
+/// `<title>` of a served page and the text of a search result, on the ten
+/// shelves of this repository, until `shelves.<s>.title` was declared. So a
+/// shelf with no display name is a shelf whose key a reader will meet.
+pub fn undisplayed(taxonomy: &Mapping) -> Vec<&str> {
+    View::new(taxonomy)
+        .members("shelves")
+        .into_iter()
+        .filter(|(_, body)| text(body, "title").is_none())
+        .map(|(shelf, _)| shelf)
+        .collect()
+}
+
+/// [`undisplayed`] as the block `taxonomy validate` prints.
+///
+/// **It refuses nothing, and that is clause 1 of
+/// [#538](https://github.com/headwater-ai/headwater/issues/538): a shelf that
+/// declares no display name is a decision rather than a defect.** A taxonomy
+/// whose keys read well in the corpus that wrote them is a taxonomy that needs
+/// no display name, and the emitter falls through to the key. What a validator
+/// owes such a corpus is the reading, not a refusal, because whether
+/// `evaluations` is a label or an identifier is a judgment about an audience
+/// that no rule here can take.
+///
+/// The heading carries its own count and prints at zero, on the precedent
+/// [`render`] sets for `WAITING` and [`crate::Resolution::foundings`] sets for
+/// a founding: a list that empties says so rather than looking like a list
+/// nobody printed. The trailing note prints only beside a name, and it is the
+/// one place the fall-through is written down for a reader of this verb.
+pub fn display_names(taxonomy: &Mapping) -> String {
+    let bare = undisplayed(taxonomy);
+    let mut out = format!("shelves that print their key for want of a display name: {}\n", bare.len());
+    for shelf in &bare {
+        out.push_str(&format!("  shelves.{shelf}\n"));
+    }
+    if !bare.is_empty() {
+        out.push_str(
+            "  Nothing here refuses. `shelves.<s>.title` is optional, and an emitter that \
+             prints a shelf falls through to the key when none is declared. Declare one \
+             wherever the key above is a name a reader would not have chosen.\n",
+        );
+    }
+    out
+}
+
 /// The default nuclearity of each relation family, from spec 2's own table. A
 /// family with no default has a blank cell there, and it is absent here.
 ///

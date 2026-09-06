@@ -309,9 +309,16 @@ relations:
 # sequence of the identifier the run mints rather than a second copy of that
 # number in a facet. The specification shelf carries none, because a
 # specification is addressed by its subject and nothing numbers the shelf.
+#
+# `title` is the name a reader sees wherever an emitter prints the shelf: a
+# navigation group, the heading of the shelf's own index, the `<title>` of that
+# page and the entry a search returns for it. The key beside it is written for
+# a machine, and a key a reader meets is the defect
+# [#538](https://github.com/headwater-ai/headwater/issues/538) records. It is
+# optional, and a shelf that declares none is printed under its key.
 shelves:
-  decisions:      {path: docs/decisions/**,      homogeneous: true, kind: decision, layout: "{seq:04d}-{slug}.md"}
-  specifications: {path: docs/specifications/**, homogeneous: true, kind: specification}
+  decisions:      {path: docs/decisions/**,      homogeneous: true, kind: decision, layout: "{seq:04d}-{slug}.md", title: Decision records}
+  specifications: {path: docs/specifications/**, homogeneous: true, kind: specification, title: Specifications}
 
 # The namespace goes first and this package declares none.
 #

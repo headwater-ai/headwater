@@ -247,6 +247,7 @@ add:
     created_by: generator
 
   shelves.probes:
+    title: Probes
     path: docs/probes/**
     homogeneous: true
     kind: probe
@@ -255,6 +256,7 @@ add:
   # would claim a path below it and two shelves that claim one path resolve a
   # kind by accident.
   shelves.probe_runs:
+    title: Probe runs
     path: docs/probe-runs/**
     homogeneous: true
     kind: probe_transcript
@@ -264,6 +266,7 @@ add:
   # short. The shelf states the kind, spec 2 forbids a facet that restates it,
   # and the block the emitter writes is then an identifier and nothing else.
   shelves.probe_results:
+    title: Probe results
     path: docs/probe-results/**
     homogeneous: true
     kind: probe_result
@@ -444,6 +447,7 @@ add:
   # `layout`, because nothing numbers a verb: the file is named from the title,
   # the way an evaluation is.
   shelves.interfaces:
+    title: The command surface
     path: docs/interfaces/**
     homogeneous: true
     kind: interface_contract
@@ -540,6 +544,7 @@ add:
   # corpus declaration excludes. No `layout`, because nothing numbers a
   # tutorial: the file is named from the title, the way a verb contract is.
   shelves.tutorials:
+    title: Tutorials
     path: docs/tutorials/**
     homogeneous: true
     kind: tutorial
@@ -844,6 +849,7 @@ add:
     created_by: scaffold
 
   shelves.requirements:
+    title: Requirements
     path: docs/requirements/**
     homogeneous: true
     kind: requirement
@@ -852,6 +858,7 @@ add:
   # Disjoint from the shelf above rather than under it, for the reason the probe
   # shelves give: two shelves that claim one path resolve a kind by accident.
   shelves.acceptance_criteria:
+    title: Acceptance criteria
     path: docs/acceptance-criteria/**
     homogeneous: true
     kind: acceptance_criterion

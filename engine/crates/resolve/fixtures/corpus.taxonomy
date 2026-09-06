@@ -645,45 +645,55 @@ shelves:
     homogeneous: true
     kind: decision
     layout: "{seq:04d}-{slug}.md"
+    title: "Decision records"
   specifications:
     path: "docs/specifications/**"
     homogeneous: true
     kind: specification
+    title: Specifications
   acceptance_criteria:
     homogeneous: true
     kind: acceptance_criterion
     layout: "{seq:04d}-{slug}.md"
     path: "docs/acceptance-criteria/**"
+    title: "Acceptance criteria"
   evaluations:
     homogeneous: true
     kind: evaluation
     path: "docs/evaluations/**"
+    title: Evaluations
   interfaces:
     homogeneous: true
     kind: interface_contract
     path: "docs/interfaces/**"
+    title: "The command surface"
   obligations:
     homogeneous: true
     kind: obligation_record
     layout: "{seq:04d}-{slug}.md"
     path: "docs/obligations/**"
+    title: "Obligation records"
   probe_results:
     homogeneous: true
     kind: probe_result
     path: "docs/probe-results/**"
+    title: "Probe results"
   probe_runs:
     homogeneous: true
     kind: probe_transcript
     path: "docs/probe-runs/**"
+    title: "Probe runs"
   probes:
     homogeneous: true
     kind: probe
     path: "docs/probes/**"
+    title: Probes
   requirements:
     homogeneous: true
     kind: requirement
     layout: "{seq:04d}-{slug}.md"
     path: "docs/requirements/**"
+    title: Requirements
   reviews:
     discriminator: doc_type
     homogeneous: false
@@ -691,6 +701,7 @@ shelves:
       - review_prompt
       - review_record
     path: "docs/reviews/**"
+    title: "Review records"
   spec_series:
     discriminator: doc_type
     homogeneous: false
@@ -700,10 +711,12 @@ shelves:
       - obligation_register
     layout: "{sequence:02d}-{slug}.md"
     path: "docs/spec/**"
+    title: "The specification series"
   tutorials:
     homogeneous: true
     kind: tutorial
     path: "docs/tutorials/**"
+    title: Tutorials
 identifier_schemes:
   decision_id:
     pattern: "{namespace}-DR-{seq:04d}"
