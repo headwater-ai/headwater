@@ -594,6 +594,57 @@ jobs:
         # refuses everything is as useless as one that refuses nothing. It
         # writes only under a temporary directory.
         run: sh tools/site-fragments-fixtures.sh
+      - name: Every served page loads in a browser with an empty console
+        # THE READER THAT RUNS THE PAGE RATHER THAN PARSING IT
+        #
+        #   Three steps above this one walk the same directory and none of them
+        #   runs a line of JavaScript. #532 is what lived in that gap: on 13 of
+        #   the served pages the theme's own `js/base.js` threw twice on load,
+        #   every specification part a visitor reads first was affected, and
+        #   `mkdocs build --strict`, `check-site-fragments.py` and the assembly
+        #   check all reported green for as long as it stood.
+        #
+        #   This serves the assembled directory on a loopback port and loads
+        #   every page in headless Chrome. It asserts three things per page and
+        #   not one, because an absence-of-errors check goes quiet the moment
+        #   its own mechanism breaks: HTTP 200, a probe it injects at serve
+        #   time having actually run, and an empty console with `keyCodes`
+        #   defined on the pages that load the theme script. The tool's header
+        #   states why each bar is there, and the 404s that first read as
+        #   passes are recorded in it.
+        #
+        # THE SKIP, AND WHY IT IS NOISY
+        #
+        #   Exit 3 means no browser was found, so nothing was loaded. It is a
+        #   separate status precisely so that a caller cannot read it as a
+        #   pass, and this step turns it into a workflow annotation rather than
+        #   a silent green tick. `headwater probe` and
+        #   `.claude/hooks/fixtures-live.sh` take the same posture toward a
+        #   dependency they cannot install.
+        run: |
+          status=0
+          python3 tools/check-site-console.py || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Browser console check skipped::No Chrome or Chromium on this runner, so no page was loaded and this step checked nothing. Install one, or set HEADWATER_CHROME."
+            exit 0
+          fi
+          exit "$status"
+      - name: The console checker refuses what it claims to refuse
+        # Spec 12 refuses a check that ships with no failing fixture, and the
+        # reason carries double weight for a check whose verdict is an absence.
+        # The suite injects a page that throws, and points the checker at
+        # `/bin/true` — which exits 0 and prints nothing, byte for byte what a
+        # clean run looks like — to prove the probe is what tells those apart.
+        # It writes only under a temporary directory, and it skips with exit 3
+        # on a host with no browser for the reason the step above does.
+        run: |
+          status=0
+          sh tools/site-console-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Browser console fixtures skipped::No Chrome or Chromium on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
       - name: The identifier claim store conflicts on a collision and merges on a coincidence
         # The store answers "is this number taken" through git rather than
         # through a rule, so the two outcomes it rests on are properties of
