@@ -300,7 +300,7 @@ census
 
 **Check.** `headwater check 2>/dev/null | grep 'check instances'` prints the second block above.
 
-The corpus did not grow. The count of checks that ran went from 2 to 14, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and fourteen questions become answerable about it.
+The corpus did not grow. The count of checks that ran went from 4 to 16, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and sixteen questions become answerable about it.
 
 ### Step 10 — Say what does not belong in the repository, and commit
 
@@ -396,7 +396,7 @@ Trimmed to the head of the register and to its last line. The same run printed b
 
 **One of those readings is about the package and one is about your run.** The thirty-one obligations and their severities come from `headwater/standard`, so they read the same on your first day and your thousandth. The last line is derived from the run in front of you. It says that no rule fired at you without an obligation behind it, and that is what makes the identifier in your finding worth reading.
 
-**Your corpus will not show you a gap, and the reason is worth knowing.** A `gap` is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads `0 gap` on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares three obligations no mechanism verifies. The same block there reads `32 obligations: 29 verified, 2 gap, 1 unverifiable`, and it names the owner of each gap. The number worth watching is the one that is not `verified`.
+**Your corpus will not show you a gap, and the reason is worth knowing.** A `gap` is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads `0 gap` on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares three obligations no mechanism verifies. The same block there reads `34 obligations: 31 verified, 2 gap, 1 unverifiable`, and it names the owner of each gap. The number worth watching is the one that is not `verified`.
 
 The word `mechanical` on the fix line is the second thing to read. A rule is an error when the repair takes no judgment, and advisory when the repair is a rewrite. This one takes no judgment, so the next step is a command rather than an edit.
 
