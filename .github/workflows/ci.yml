@@ -20,18 +20,35 @@
 #
 # No third-party action beyond `actions/checkout`.
 #
-# Both jobs run on a self-hosted runner rather than `ubuntu-latest`, because
-# the org's included Actions minutes (2,000/month on the Free plan) are spent
-# for the month and its spending limit defaults to $0, which refuses a
-# GitHub-hosted job outright rather than billing it. A self-hosted runner's
-# compute is not metered against that limit at all. The runner carries its
-# own rustup-managed stable toolchain rather than a distro one, so the pinned
-# floor is still what the container command in `engine/README.md` is for, and
-# `--break-system-packages` on every `pip install --user` below is this
-# runner's Python being a PEP 668 environment, which the comment ahead of the
-# `mkdocs` install already names as a thing a contributor hits reproducing
-# this locally. Move back to `ubuntu-latest` once the org's spending limit is
-# raised, or add it back as a second choice of runner if both should work.
+# Which runner both jobs take is a repository variable rather than a value
+# written here, so moving between the self-hosted runner and `ubuntu-latest`
+# costs no commit and no pull request. `CI_RUNNER` holds a JSON list of
+# labels, and an unset variable means the self-hosted runner:
+#
+#   gh variable set CI_RUNNER --body '["ubuntu-latest"]'   # GitHub-hosted
+#   gh variable delete CI_RUNNER                           # self-hosted again
+#   gh variable list                                       # which one is live
+#
+# The self-hosted runner is the default because a GitHub-hosted job spends the
+# org's included Actions minutes (2,000/month on the Free plan), and the
+# spending limit defaults to $0, which refuses such a job outright rather than
+# billing it. A self-hosted runner's compute is not metered against that limit
+# at all. The hosted image answers a different question: it takes 20 concurrent
+# jobs on this plan where the self-hosted runner takes one, so several branches
+# under review at once are a reason to spend minutes that one branch is not.
+#
+# Both images carry a rustup-managed stable toolchain rather than a distro one,
+# so the pinned floor is still what the container command in
+# `engine/README.md` is for. `--break-system-packages` on every
+# `pip install --user` below is what a PEP 668 Python needs, which the
+# self-hosted runner is and which the comment ahead of the `mkdocs` install
+# already names as a thing a contributor hits reproducing this locally. pip
+# accepts the flag where PEP 668 does not apply, so it costs the hosted image
+# nothing.
+#
+# Nothing here caches cargo output between runs, so a hosted job pays a cold
+# build every time. That is the cost of the line above about third-party
+# actions, and it is what makes a hosted minute estimate a build from scratch.
 
 name: CI
 
@@ -40,11 +57,13 @@ on:
     branches: [main]
   pull_request:
 
-# One self-hosted runner serves this repository, and it takes one job at a
-# time. So a superseded run is not merely wasted compute here: it holds the
-# only runner, and every other branch waits behind a verdict about a commit
-# nobody will merge. Three pushes to one branch in ten minutes queued three
-# full runs of both jobs, at three to fourteen minutes each.
+# On the self-hosted runner a superseded run is not merely wasted compute: one
+# runner serves this repository and it takes one job at a time, so a run
+# nobody will read holds the only runner, and every other branch waits behind
+# a verdict about a commit nobody will merge. Three pushes to one branch in
+# ten minutes queued three full runs of both jobs, at three to fourteen
+# minutes each. On a GitHub-hosted runner the queue is not the cost and the
+# minutes are, which is the same reason under a different meter.
 #
 # The group is per ref, so two different pull requests never cancel each
 # other. `github.ref` is `refs/pull/N/merge` on a pull request and
@@ -64,7 +83,7 @@ permissions:
 jobs:
   engine:
     name: Engine tests
-    runs-on: [self-hosted, headwater]
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["self-hosted", "headwater"]') }}
     steps:
       - uses: actions/checkout@v4
       - name: The toolchain this build needs
@@ -113,7 +132,7 @@ jobs:
 
   headwater:
     name: headwater check (advisory)
-    runs-on: [self-hosted, headwater]
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["self-hosted", "headwater"]') }}
     steps:
       - uses: actions/checkout@v4
         with:
