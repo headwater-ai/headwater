@@ -1,6 +1,6 @@
-379 files under the corpus root
+386 files under the corpus root
     274 typed
-      4 generated
+     11 generated
       2 untyped
      97 excluded
       2 not a document
@@ -24,12 +24,24 @@ exclusions
 
 docs/LICENSE
   not a document: not a Markdown file
+docs/acceptance-criteria/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
   untyped: no shelf pattern claims this path
+docs/evaluations/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/interfaces/README.md
   generated: `verb_index`, and `headwater generate --check` holds it rather than this census
+docs/obligations/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/probes/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/requirements/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/reviews/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/spec/09-open-questions.md
   generated: `shelf_sections`, and `headwater generate --check` holds it rather than this census
 docs/spec/README.md
@@ -228,6 +240,8 @@ docs/taxonomies/standards-spec/templates/standard.md
   excluded: docs/taxonomies/**
 docs/taxonomies/standards-spec/templates/technical_spec.md
   excluded: docs/taxonomies/**
+docs/tutorials/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/w3id/.htaccess
   not a document: not a Markdown file
 docs/w3id/README.md

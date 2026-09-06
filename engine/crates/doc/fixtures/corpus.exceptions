@@ -1,8 +1,20 @@
+docs/acceptance-criteria/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/decisions/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/doctrine/maturity-model.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/evaluations/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/interfaces/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/obligations/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/probes/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/requirements/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/reviews/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/spec/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
@@ -41,6 +53,8 @@ docs/taxonomies/standards-spec/fixtures/n8n/LICENSE.md
 docs/taxonomies/standards-spec/fixtures/n8n/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/standards-spec/fixtures/n8n/sweep/briefing.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/tutorials/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/w3id/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line

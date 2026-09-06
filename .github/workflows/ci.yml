@@ -165,8 +165,14 @@ jobs:
         # `ensurepip` is absent. A contributor reproducing this locally wants
         # `pip install --target <dir>` with `PYTHONPATH`, or
         # `--break-system-packages`.
+        #
+        # `PyYAML` is named rather than left to MkDocs's own dependency
+        # resolution. MkDocs 1.6.1 pulls it in, and the compose step below
+        # reads `.headwater/taxonomy.lock` with it, so leaving it implicit
+        # would make that step fail on a release of MkDocs that stopped
+        # depending on it.
         run: |
-          python3 -m pip install --user --break-system-packages mkdocs==1.6.1
+          python3 -m pip install --user --break-system-packages mkdocs==1.6.1 PyYAML
           python3 -m mkdocs build --strict
       - name: The build wrote nothing into the deployed site
         # `site/` is the hand-built half HW-DR-0037 governs, `wrangler.jsonc`
@@ -266,21 +272,34 @@ jobs:
         # document, and a step that has to be re-blessed on ordinary work
         # stops being read.
         #
-        # Only three shelf roots are named, and that is a measurement rather
-        # than a selection. `spec`, `decisions` and `interfaces` are the
-        # shelves `.headwater/overlay.yml` declares an index projection for,
-        # so `headwater generate` writes `docs/<shelf>/README.md` for those
-        # three and MkDocs renders each as `<shelf>/index.html`. The other
-        # seven shelf roots have no index page and answer 404 on the served
-        # site, which is #528 rather than anything this step can hold. The
-        # last check reads the obligations shelf by shape instead: the
-        # records are there even though the root that should list them is
-        # not, and naming one record here would make an ordinary rename a
-        # red build.
+        # No shelf root is named in that list, because the check after it
+        # covers every one of them and derives the names rather than typing
+        # them. This step named `spec`, `decisions` and `interfaces` until
+        # #528: those were the three shelves that had an index projection,
+        # and a step that names the shelves that already work asserts
+        # nothing about the seven that did not. The obligations shelf keeps
+        # a check of its own shape below, because a served root that lists
+        # no record is a different failure from a missing root.
+        #
+        # THE DERIVED CHECK, AND WHY IT ASSERTS A FILE
+        #
+        #   `.headwater/corpus.json` names one entry point per shelf that
+        #   holds a document, and `.headwater/taxonomy.lock` gives each of
+        #   those shelves its directory. Both are committed, and
+        #   `headwater generate --check` and `taxonomy resolve --check` hold
+        #   each of them current, so an eleventh shelf is covered by the push
+        #   that adds it and nobody has to remember this step exists.
+        #
+        #   It asserts that `<shelf>/index.html` is a file, and never that a
+        #   request answers 200. `python3 -m http.server` generates a
+        #   directory listing where no `index.html` is, so a local `curl` of
+        #   `/obligations/` answered 200 while Cloudflare answered 404. That
+        #   difference is the whole reason seven missing shelf roots stayed
+        #   invisible until 2026-09-06, and a status code is therefore not
+        #   evidence this step will accept.
         run: |
           sh tools/assemble-site.sh --check
-          for path in spec/index.html decisions/index.html interfaces/index.html \
-                      tutorials/your-first-governed-corpus/index.html \
+          for path in tutorials/your-first-governed-corpus/index.html \
                       css/base.css js/base.js search/search_index.json corpus.json \
                       index.html ns/index.html tutorial/index.html; do
             if [ ! -f ".headwater/site-deploy/$path" ]; then
@@ -292,6 +311,39 @@ jobs:
             echo "the assembled site carries no obligation record page" >&2
             exit 1
           fi
+          python3 - <<'PY'
+          import json, os, sys, yaml
+
+          deploy = ".headwater/site-deploy"
+          shelves = yaml.safe_load(open(".headwater/taxonomy.lock"))["resolved"]["shelves"]
+          descriptor = json.load(open(".headwater/corpus.json"))
+
+          roots = set()
+          for corpus in descriptor["corpora"]:
+              prefix = corpus["root"] + "/"
+              for entry in corpus["entry_points"]:
+                  pattern = shelves[entry["shelf"]]["path"]
+                  if not pattern.startswith(prefix) or not pattern.endswith("/**"):
+                      sys.exit(
+                          "the shelf `%s` is declared at `%s`, which this step cannot map to a "
+                          "served root. Read the comment above it." % (entry["shelf"], pattern)
+                      )
+                  roots.add(pattern[len(prefix):-3])
+
+          missing = [r for r in sorted(roots) if not os.path.isfile("%s/%s/index.html" % (deploy, r))]
+          if missing:
+              print("shelf roots that hold a document and serve no index page:", file=sys.stderr)
+              for root in missing:
+                  print("    /%s/" % root, file=sys.stderr)
+              print(
+                  "each one needs a `shelf_index` projection in `.headwater/overlay.yml`, or a "
+                  "reason recorded there for holding none.",
+                  file=sys.stderr,
+              )
+              raise SystemExit(1)
+
+          print("%d shelf roots each serve an index page: %s" % (len(roots), ", ".join(sorted(roots))))
+          PY
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every
