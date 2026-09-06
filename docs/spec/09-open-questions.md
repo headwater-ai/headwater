@@ -8,9 +8,9 @@ relations:
     - HW-REG-open-obligations
 ---
 
-# decisions
+# Decision records
 
-54 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+55 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -72,13 +72,13 @@ relations:
 
 [HW-DR-0015](../decisions/0015-a-synthesized-content-tier.md) — Every document carries a warrant from a closed set of four, and `asserted` content is admitted with limits.
 
-## Q39 — How a figure reaches a hand-built page, now that a build interpolates one
+## Q39 — How a figure reaches a hand-built page
 
-[HW-DR-0039](../decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md) — The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.
+[HW-DR-0039](../decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md) — The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.
 
-## Q50 — Where the visual register of the hand-built pages lives, now that eight pages each carried a copy
+## Q50 — Where the visual register of the hand-built pages lives
 
-[HW-DR-0050](../decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md) — The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet. (asserted, and no human has accepted it)
+[HW-DR-0050](../decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md) — The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet. (asserted, and no human has accepted it)
 
 ## Q37 — Which parts of the site are hand-built and which are a projection of this corpus
 
@@ -227,3 +227,7 @@ relations:
 ## A hook reads a wire format through the engine and not through an interpreter
 
 [HW-DR-0055](../decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) — A harness payload is read by a verb of this engine rather than by an interpreter a session does not otherwise require. The verb answers nothing about a corpus, which is what puts it outside the term that forbids a hook verb. (asserted, and no human has accepted it)
+
+## A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile
+
+[HW-DR-0056](../decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md) — No kind in the base package or in any bundle binds a language regime. A package that set the default value would change nothing, so the doctrine page of the starter kit carries the promise. (asserted, and no human has accepted it)

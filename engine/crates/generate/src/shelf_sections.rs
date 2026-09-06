@@ -211,7 +211,12 @@ pub(crate) fn emit(
         };
 
         plan.outputs.push(Output {
-            bytes: render(&name, &path, &sections, front.as_deref()),
+            bytes: render(
+                &crate::shelf_label(shelf),
+                &path,
+                &sections,
+                front.as_deref(),
+            ),
             path,
             kind: Kind::ShelfSections,
         });

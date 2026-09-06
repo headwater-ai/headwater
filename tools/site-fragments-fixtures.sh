@@ -92,6 +92,8 @@ report "the served site passes every pass this tool makes" 0 "$status"
 report "  no fragment on it is dead" 0 "$status" "0 dead fragments" "$scratch/out"
 report "  no title on it is carried twice" 0 "$status" \
     "0 repeated titles and 0 pages with no title" "$scratch/out"
+report "  no shelf index is served under a label the lock does not declare" 0 "$status" \
+    "0 shelf labels not what the lock declares" "$scratch/out"
 
 # 2. The denominator is stated and is not zero, on both passes. A run that
 #    checked nothing would print `0 dead fragments` too, and that is the pass
@@ -107,6 +109,20 @@ if grep -qE 'out of [1-9][0-9]* distinct titles across [1-9][0-9]* served pages'
 else
     failed=$((failed + 1)); echo "  FAIL  the title pass states a non-zero denominator"
     echo "          it reported: $(tail -1 "$scratch/out")"
+fi
+if grep -qE 'out of [1-9][0-9]* shelf index pages checked' "$scratch/out"; then
+    passed=$((passed + 1)); echo "  ok    the shelf pass states a non-zero denominator"
+else
+    failed=$((failed + 1)); echo "  FAIL  the shelf pass states a non-zero denominator"
+    echo "          it reported: $(tail -1 "$scratch/out")"
+fi
+if grep -qE '\([1-9][0-9]* shel(f|ves) skipped as holding no document' "$scratch/out"; then
+    passed=$((passed + 1)); echo "  ok    a shelf with no document is skipped and counted"
+else
+    failed=$((failed + 1)); echo "  FAIL  a shelf with no document is skipped and counted"
+    echo "          this corpus declares three such shelves, and a run that"
+    echo "          dropped them silently would say so here. It reported:"
+    echo "          $(tail -1 "$scratch/out")"
 fi
 
 echo "provoked refusals"
@@ -278,7 +294,7 @@ rm -rf "$titles"
 page a/index.html '<title>Same - Headwater</title>'
 page b/index.html '<title>Same - Headwater</title>'
 page c/index.html '<title>Other - Headwater</title>'
-status=$(run "$titles")
+status=$(run "$titles" --no-lock)
 report "a title carried by two pages fails the run" 1 "$status" "of 2 served pages" "$scratch/out"
 report "  and it names the first of them" 1 "$status" "a/index.html" "$scratch/out"
 report "  and it names the second of them" 1 "$status" "b/index.html" "$scratch/out"
@@ -289,7 +305,7 @@ report "  and it counts one repetition, not two" 1 "$status" "1 repeated title a
 rm -rf "$titles"
 page a/index.html '<meta charset="utf-8">'
 page b/index.html '<title>B - Headwater</title>'
-status=$(run "$titles")
+status=$(run "$titles" --no-lock)
 report "a page with no title fails the run" 1 "$status" "a/index.html: carries no" "$scratch/out"
 
 # 16. An empty title element is untitled. A reader gets the same nothing from
@@ -298,14 +314,14 @@ report "a page with no title fails the run" 1 "$status" "a/index.html: carries n
 rm -rf "$titles"
 page a/index.html '<title></title>'
 page b/index.html '<title>B - Headwater</title>'
-status=$(run "$titles")
+status=$(run "$titles" --no-lock)
 report "an empty title element is untitled" 1 "$status" "a/index.html: carries no" "$scratch/out"
 
 # 17. And so is a whitespace-only one.
 rm -rf "$titles"
 page a/index.html '<title>   </title>'
 page b/index.html '<title>B - Headwater</title>'
-status=$(run "$titles")
+status=$(run "$titles" --no-lock)
 report "a whitespace-only title element is untitled" 1 "$status" "a/index.html: carries no" "$scratch/out"
 
 # 18. An inline icon may carry a `<title>` as its accessible name. A reader
@@ -318,7 +334,7 @@ rm -rf "$titles"
 mkdir -p "$titles/a" "$titles/b"
 printf '<html><head><meta charset="utf-8"></head><body><svg><title>menu</title></svg></body></html>\n' >"$titles/a/index.html"
 printf '<html><head><title>B - Headwater</title></head><body><svg><title>menu</title></svg></body></html>\n' >"$titles/b/index.html"
-status=$(run "$titles")
+status=$(run "$titles" --no-lock)
 report "an svg icon's title is not the page's title" 1 "$status" "a/index.html: carries no" "$scratch/out"
 
 # 19. Distinct titles throughout, over a stated denominator that is not zero.
@@ -327,7 +343,7 @@ report "an svg icon's title is not the page's title" 1 "$status" "a/index.html: 
 rm -rf "$titles"
 page a/index.html '<title>A - Headwater</title>'
 page b/index.html '<title>B - Headwater</title>'
-status=$(run "$titles")
+status=$(run "$titles" --no-lock)
 report "distinct titles throughout pass" 0 "$status" \
     "0 repeated titles and 0 pages with no title" "$scratch/out"
 report "  over a stated, non-zero denominator" 0 "$status" \
@@ -343,6 +359,155 @@ if [ "$status" = 2 ] && ! grep -q "repeated title" "$scratch/out"; then
 else
     failed=$((failed + 1)); echo "  FAIL  an empty root states no title verdict"
     echo "          exit $status, and the report said: $(cat "$scratch/out")"
+fi
+
+echo "the shelf half, which #538 added"
+
+# Every case below is written rather than doctored, for the reason case 14
+# gives: a shelf label is a property of a lock and a served tree together, and
+# the assembled site carries one pairing of those at a time. Writing both sides
+# is also what lets this suite show the property the pass rests on — that the
+# expectation comes from the lock and not from the page — which no doctoring of
+# one side alone can demonstrate.
+shelf="$scratch/shelf"
+lock="$scratch/lock.yml"
+
+shelfpage() {
+    # shelfpage RELATIVE-PATH TITLE-TEXT
+    mkdir -p "$(dirname "$shelf/$1")"
+    printf '<html><head><title>%s - Headwater</title></head><body><h1>x</h1></body></html>\n' \
+        "$2" >"$shelf/$1"
+}
+
+writelock() {
+    # writelock BODY-OF-resolved.shelves
+    printf 'lock:\n  format: 3\nresolved:\n  shelves:\n%s' "$1" >"$lock"
+}
+
+# 21. The green case. One shelf, declaring a display name, served under it.
+rm -rf "$shelf"
+shelfpage decisions/index.html 'Decision records'
+writelock '    decisions:
+      path: "docs/decisions/**"
+      title: Decision records
+'
+status=$(run "$shelf" --lock "$lock")
+report "a shelf served under its declared display name passes" 0 "$status" \
+    "0 shelf labels not what the lock declares" "$scratch/out"
+report "  over a stated, non-zero denominator" 0 "$status" \
+    "out of 1 shelf index page checked" "$scratch/out"
+
+# 22. The defect #538 records: the emitter prints the key and the declaration
+#     says otherwise. This is the state of `main` before the emitter changed.
+rm -rf "$shelf"
+shelfpage decisions/index.html 'decisions'
+writelock '    decisions:
+      path: "docs/decisions/**"
+      title: Decision records
+'
+status=$(run "$shelf" --lock "$lock")
+report "a shelf served under its key against a declared name fails" 1 "$status" \
+    "1 shelf label not what the lock declares" "$scratch/out"
+report "  and it names the page a visitor lands on" 1 "$status" \
+    "decisions/index.html: served as \`decisions\`" "$scratch/out"
+report "  and it names the declaration the page disagrees with" 1 "$status" \
+    "\`shelves.decisions.title\` declares \`Decision records\`" "$scratch/out"
+
+# 23. THE CASE THAT SHOWS THE EXPECTATION IS NOT THE PAGE'S OWN. The served
+#     bytes of case 21 are unchanged and only the lock moves. A pass that
+#     took its expectation from the emitter's own output — from
+#     `.headwater/nav.yml`, which is what the title pass's header refuses to
+#     read — could not tell these two runs apart.
+rm -rf "$shelf"
+shelfpage decisions/index.html 'Decision records'
+writelock '    decisions:
+      path: "docs/decisions/**"
+      title: Rulings
+'
+status=$(run "$shelf" --lock "$lock")
+report "moving the lock alone moves the verdict on unchanged bytes" 1 "$status" \
+    "declares \`Rulings\`" "$scratch/out"
+
+# 24. The fall-through. A shelf that declares no display name is printed under
+#     its key, and that is the defect in its other form: the reader still
+#     meets the key. `taxonomy validate` reports such a shelf and refuses
+#     nothing, and this is where it becomes a finding — on a served page.
+rm -rf "$shelf"
+shelfpage decisions/index.html 'decisions'
+writelock '    decisions:
+      path: "docs/decisions/**"
+'
+status=$(run "$shelf" --lock "$lock")
+report "a shelf with no display name served under its key fails" 1 "$status" \
+    "declares no display name" "$scratch/out"
+
+# 25. And the same shelf served under anything else passes. Nothing here
+#     requires a declaration; what it requires is that no reader meets the key.
+rm -rf "$shelf"
+shelfpage decisions/index.html 'Rulings of this project'
+writelock '    decisions:
+      path: "docs/decisions/**"
+'
+status=$(run "$shelf" --lock "$lock")
+report "a shelf with no display name served under some other label passes" 0 "$status" \
+    "0 shelf labels not what the lock declares" "$scratch/out"
+
+# 26. An empty shelf is skipped and counted, not dropped. Three of this
+#     repository's thirteen hold no document, so a guard of the form "every
+#     declared shelf has a page" would fire on a corpus that is correct.
+rm -rf "$shelf"
+shelfpage decisions/index.html 'Decision records'
+writelock '    decisions:
+      path: "docs/decisions/**"
+      title: Decision records
+    probe_runs:
+      path: "docs/probe-runs/**"
+      title: Probe runs
+'
+status=$(run "$shelf" --lock "$lock")
+report "a shelf with no served page is skipped, not failed" 0 "$status" \
+    "0 shelf labels not what the lock declares" "$scratch/out"
+report "  and the skip is counted against the declared total" 0 "$status" \
+    "(1 shelf skipped as holding no document, out of 2 declared" "$scratch/out"
+
+# 27. THE DENOMINATOR GUARD. Every declared shelf is empty, so the pass has an
+#     empty set to assert over, and an assertion over an empty set passes.
+#     This repository has shipped that shape before, which is why case 11
+#     exists for the walk; this is the same refusal one pass further in.
+rm -rf "$shelf"
+shelfpage somewhere/else/index.html 'Unrelated'
+writelock '    decisions:
+      path: "docs/decisions/**"
+      title: Decision records
+'
+status=$(run "$shelf" --lock "$lock")
+report "no shelf reaching a page exits 2, not 0" 2 "$status" \
+    "checked no shelf label" "$scratch/err"
+
+# 28. A missing lock is the assumption of this pass, so it refuses and names
+#     the verb that writes one. It is never a quiet skip: a pass that skipped
+#     itself when its expectation was absent would report a green run over an
+#     expectation nobody supplied.
+rm -rf "$shelf"
+shelfpage decisions/index.html 'Decision records'
+status=$(run "$shelf" --lock "$scratch/no-such-lock.yml")
+report "a missing lock exits 2 and names \`taxonomy resolve\`" 2 "$status" \
+    "taxonomy resolve" "$scratch/err"
+
+# 29. And so is a lock that carries no shelves at all.
+printf 'lock:\n  format: 3\nresolved:\n  kinds: {}\n' >"$lock"
+status=$(run "$shelf" --lock "$lock")
+report "a lock with no shelves exits 2" 2 "$status" \
+    "declares no \`resolved.shelves\`" "$scratch/err"
+
+# 30. `--no-lock` is the one way to leave the pass out, and a run that leaves
+#     it out says nothing about a shelf rather than saying zero.
+status=$(run "$shelf" --no-lock)
+if [ "$status" = 0 ] && ! grep -q "shelf label" "$scratch/out"; then
+    passed=$((passed + 1)); echo "  ok    \`--no-lock\` states no shelf verdict at all"
+else
+    failed=$((failed + 1)); echo "  FAIL  \`--no-lock\` states no shelf verdict at all"
+    echo "          exit $status, and the report said: $(tail -1 "$scratch/out")"
 fi
 
 echo

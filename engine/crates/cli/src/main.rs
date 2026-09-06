@@ -737,6 +737,16 @@ fn validate(root: &Path) -> ExitCode {
     println!();
     print!("{}", repository.resolution.foundings());
 
+    // Beside the founding block and for the same reason: a reading of the
+    // resolved taxonomy that refuses nothing, printed where a reader of the
+    // verdict meets it. #538 is the issue, and `rules::display_names` carries
+    // why a shelf with no display name is a decision rather than a defect.
+    println!();
+    print!(
+        "{}",
+        headwater_resolve::rules::display_names(&repository.resolution.taxonomy)
+    );
+
     let findings = repository.resolution.validate();
     println!("\nrules");
     print!("{}", headwater_resolve::rules::render());

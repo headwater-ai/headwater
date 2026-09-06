@@ -1,7 +1,7 @@
-290 nodes, 592 declared edge halves
-    455 to a document
-    137 to an anchor
-0 prose links that did not resolve
+293 nodes, 594 declared edge halves
+    456 to a document
+    138 to an anchor
+1 prose links that did not resolve
 
 anchors
       1 code_path `.claude/agents/headwater-maintainer.md` via source-tree
@@ -29,6 +29,7 @@ anchors
       1 code_path `engine/crates/check/src/language.rs` via source-tree
       1 code_path `engine/crates/check/src/lib.rs` via source-tree
       1 code_path `engine/crates/check/src/lifecycle_state.rs` via source-tree
+      1 code_path `engine/crates/check/src/voice.rs` via source-tree
       1 code_path `engine/crates/cli/Cargo.toml` via source-tree
      20 code_path `engine/crates/cli/src/lib.rs` via source-tree
      22 code_path `engine/crates/cli/src/main.rs` via source-tree
@@ -83,3 +84,6 @@ anchors
       1 code_path `tools/site-tokens.css` via source-tree
       1 code_path `tools/sitemap.py` via source-tree
       1 code_path `wrangler.jsonc` via source-tree
+
+docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md:70:236
+  link: `0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md` no `docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md` in the repository

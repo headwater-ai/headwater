@@ -106,12 +106,13 @@ const CANDIDATE: [(&[&str], &[&str]); 3] = [
 /// `addressability` stays preserved, the candidate resolves, and
 /// `classification` is the one dimension that reports a document. That was
 /// measured rather than assumed, and the opposite was written down first.
+///
+/// The second edit names the kind the shelf carries and nothing else on that
+/// line, for the reason [`address`] gives: an edit that quotes a whole shelf
+/// declaration breaks on a member added to it that the case is not about.
 const KIND: [(&[&str], &[&str]); 2] = [
     (&["  decision:"], &["  ruling:"]),
-    (
-        &["  decisions:      {path: docs/decisions/**,      homogeneous: true, kind: decision, layout: \"{seq:04d}-{slug}.md\"}"],
-        &["  decisions:      {path: docs/decisions/**,      homogeneous: true, kind: ruling, layout: \"{seq:04d}-{slug}.md\"}"],
-    ),
+    (&["kind: decision,"], &["kind: ruling,"]),
 ];
 
 /// The candidate that renames a kind one of the package's *bundles* declares.
@@ -164,10 +165,13 @@ fn register_payload(target: &str) -> String {
 fn address() -> Vec<(&'static [&'static str], &'static [&'static str])> {
     let mut edits: Vec<(&[&str], &[&str])> = CANDIDATE.to_vec();
     edits.push((&["  specification:"], &["  norm:"]));
-    edits.push((
-        &["  specifications: {path: docs/specifications/**, homogeneous: true, kind: specification}"],
-        &["  specifications: {path: docs/specifications/**, homogeneous: true, kind: norm}"],
-    ));
+    // The kind the shelf names, and nothing else on that line. An edit that
+    // quoted the whole `shelves.specifications` declaration is an edit that an
+    // unrelated member added to it breaks, with a failure that says nothing
+    // about why — #538 declaring a display name on every shelf broke exactly
+    // that, on eight cases at once. `kind: specification` appears once in the
+    // base and the edit above has already renamed the kind's own key.
+    edits.push((&["kind: specification"], &["kind: norm"]));
     edits
 }
 

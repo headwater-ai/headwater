@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""check-site-fragments.py — read the served bytes for two properties: every
+"""check-site-fragments.py — read the served bytes for three properties: every
 in-site fragment link resolves against the `id` attributes its target page
-carries, and every served page carries a `<title>` that no other page carries.
+carries, every served page carries a `<title>` that no other page carries, and
+every shelf's own index page is served under the display name its taxonomy
+declares.
 
-WHY ONE SCRIPT READS TWO PROPERTIES
+WHY ONE SCRIPT READS THREE PROPERTIES
 
-  #567 needed an instrument over the served `<title>` of every page. That is
-  the same walk, the same parser, the same empty-root refusal and the same
-  denominator this file already derives, so a second script would be a second
-  copy of all four, and a second CI step to keep beside this one. The two
-  properties are independent — a page can carry a correct set of anchors and
-  an indistinguishable title — so each one reports on its own line and each
-  one fails the run on its own.
+  #567 needed an instrument over the served `<title>` of every page, and #538
+  needed one over the served title of the ten pages a shelf declaration names.
+  That is the same walk, the same parser, the same empty-root refusal and the
+  same denominator this file already derives, so a second script would be a
+  second copy of all four, and a second CI step to keep beside this one. The
+  three properties are independent — a page can carry a correct set of
+  anchors, an indistinguishable title and a label nobody declared — so each
+  one reports on its own line and each one fails the run on its own.
 
 WHY THIS READS THE SERVED DIRECTORY AND NOT THE SOURCE
 
@@ -56,7 +59,9 @@ WHAT THE TITLE PASS ASSERTS, AND WHY IT IS NOT A STRING MATCH
   wrong label would agree with its own expectation and pass. Distinctness
   reads the served bytes and takes its expectation from nothing. That is also
   why #538 renaming every shelf, #556 adding a canonical URL and #566
-  replacing the theme each leave this pass green with no edit here.
+  replacing the theme each leave *this* pass green with no edit here. #538
+  added a third pass rather than editing this one, and the section below says
+  where a pass that does name a string is allowed to get it.
 
   A repeated title cannot be reported unless both colliding pages were read,
   so a failure here is positive evidence that the walk reached each page it
@@ -67,6 +72,37 @@ WHAT THE TITLE PASS ASSERTS, AND WHY IT IS NOT A STRING MATCH
   icon may carry a `<title>` of its own as its accessible name, and a reader
   that took the first one in document order would compare icon labels on the
   pages that have one and page titles on the pages that do not.
+
+WHAT THE SHELF PASS ASSERTS, AND WHERE ITS EXPECTATION COMES FROM
+
+  #538: a shelf declaration may carry `title`, and the three emitters that
+  print a shelf read it. The paragraph above says a string match here would
+  be circular, and it is right about `.headwater/nav.yml`, which is an
+  artifact the emitter under test writes. This pass takes its expectation
+  from `.headwater/taxonomy.lock` instead. That file is written by `headwater
+  taxonomy resolve`, a different verb in a different crate, and it is the
+  *input* the emitter reads rather than its output. An emitter that wrote the
+  wrong label cannot move it.
+
+  For each shelf the lock declares, the pass derives the served index page
+  from the shelf's `path` glob — everything before the first glob construct,
+  with the `docs_dir` prefix removed and `index.html` appended. That is a
+  second copy of `headwater_generate::shelf_index::directory_of`, and it is
+  declared here rather than hidden: a checker that asked the engine where the
+  page was would be reading the answer out of the thing it is checking.
+
+  Where the shelf declares a display name, the served page must carry it.
+  Where it declares none, the served page must not be titled with the shelf's
+  key, which is the same assertion in its fall-through form. The comparison
+  is against the leading segment of the `<title>`, because a served title is
+  the page's title followed by the site name.
+
+  A shelf whose derived page is not served holds no document — three of this
+  repository's thirteen do — so it is skipped and the skip is counted. An
+  assertion over an empty set passes trivially, so the pass exits 2 when no
+  shelf reached a page at all, and it exits 2 rather than skipping when the
+  lock is missing or carries no shelves. `--no-lock` is how a run says it
+  makes no shelf pass, and it is the only way to leave it out.
 
 WHAT FAILS THE RUN, AND WHAT ONLY REPORTS
 
@@ -97,12 +133,14 @@ THE ASSUMPTION IT STATES, AND FAILS ON
 
 USAGE
 
-  python3 tools/check-site-fragments.py [ROOT] [--source-dir DIR] [--quiet]
+  python3 tools/check-site-fragments.py [ROOT] [--source-dir DIR]
+      [--lock PATH | --no-lock] [--strict-paths] [--quiet]
 
   ROOT defaults to `.headwater/site-deploy`. Exit 0 when every in-site
-  fragment resolves and every page carries a title no other page carries, 1
-  when one does not, 2 when the assumption above fails. `--strict-paths` also
-  fails on a dead path.
+  fragment resolves, every page carries a title no other page carries and
+  every shelf index is served under its declared display name, 1 when one
+  does not, 2 when an assumption above fails. `--strict-paths` also fails on
+  a dead path.
 """
 
 import collections
@@ -114,6 +152,7 @@ import urllib.parse
 
 DEFAULT_ROOT = os.path.join(".headwater", "site-deploy")
 DEFAULT_SOURCE_DIR = "docs"
+DEFAULT_LOCK = os.path.join(".headwater", "taxonomy.lock")
 
 
 class Page(html.parser.HTMLParser):
@@ -246,9 +285,84 @@ def source_line(source_path, fragment):
     return None
 
 
+def directory_of(pattern):
+    """The directory a shelf's glob claims, with no trailing separator.
+
+    A second copy of `headwater_generate::shelf_index::directory_of`, which is
+    the function the emitter under test uses to decide where a shelf's index
+    page goes. It is a copy on purpose: a checker that asked the engine where
+    the page was would be reading the answer out of the thing it checks. The
+    two are held together by this suite failing when they disagree, and the
+    derivation is four lines in both places.
+    """
+    stop = len(pattern)
+    for index, ch in enumerate(pattern):
+        if ch in "*?[{":
+            stop = index
+            break
+    return pattern[:stop].rstrip("/")
+
+
+def shelves_of(lock_path, docs_dir):
+    """The lock's shelves as (key, declared display name, served page).
+
+    The served page is where a shelf's generated index lands under
+    `use_directory_urls`: the shelf's directory with the `docs_dir` prefix
+    removed, and `index.html` under it.
+
+    Raises OSError or a ValueError whose message names what is wrong. The
+    caller turns either into exit 2, because a lock that cannot be read is
+    the assumption of this pass rather than a finding of it.
+    """
+    try:
+        import yaml
+    except ImportError as exc:  # pragma: no cover - the environment, not the code
+        raise ValueError(
+            "PyYAML is not installed, so `%s` cannot be read. It ships with "
+            "MkDocs, which builds the site this run reads." % lock_path
+        ) from exc
+    with open(lock_path, "r", encoding="utf-8") as fh:
+        lock = yaml.safe_load(fh)
+    if not isinstance(lock, dict):
+        raise ValueError("`%s` is not a mapping" % lock_path)
+    shelves = (lock.get("resolved") or {}).get("shelves")
+    if not isinstance(shelves, dict) or not shelves:
+        raise ValueError(
+            "`%s` declares no `resolved.shelves`, so this pass has no "
+            "expectation to read" % lock_path
+        )
+    prefix = docs_dir.replace(os.sep, "/").strip("/") + "/"
+    out = []
+    for key in sorted(shelves):
+        body = shelves[key] or {}
+        directory = directory_of(str(body.get("path", "")))
+        if directory.startswith(prefix):
+            directory = directory[len(prefix):]
+        page = posixpath.join(directory, "index.html") if directory else "index.html"
+        title = body.get("title")
+        out.append((key, str(title) if title is not None else None, page))
+    return out
+
+
+def served_label(title):
+    """The page's own title, out of the `<title>` a static host serves.
+
+    MkDocs serves `<page title> - <site name>`. The site name is the same on
+    every page and this pass is about the first half, so the comparison is
+    against everything before the last ` - `. A display name that carries one
+    itself survives that, because the split takes the last.
+    """
+    text = title.strip()
+    if " - " in text:
+        return text.rsplit(" - ", 1)[0]
+    return text
+
+
 def main(argv):
     root = None
     source_dir = DEFAULT_SOURCE_DIR
+    docs_dir = DEFAULT_SOURCE_DIR
+    lock_path = DEFAULT_LOCK
     quiet = False
     strict_paths = False
     rest = list(argv)
@@ -256,18 +370,27 @@ def main(argv):
         arg = rest.pop(0)
         if arg == "--strict-paths":
             strict_paths = True
+        elif arg == "--no-lock":
+            lock_path = None
+        elif arg == "--lock":
+            if not rest:
+                sys.stderr.write("check-site-fragments: --lock needs a value\n")
+                return 2
+            lock_path = rest.pop(0)
         elif arg == "--source-dir":
             if not rest:
                 sys.stderr.write("check-site-fragments: --source-dir needs a value\n")
                 return 2
             source_dir = rest.pop(0)
+            docs_dir = source_dir
         elif arg == "--quiet":
             quiet = True
         elif arg.startswith("-"):
             sys.stderr.write("check-site-fragments: unknown argument: %s\n" % arg)
             sys.stderr.write(
                 "  usage: python3 tools/check-site-fragments.py "
-                "[ROOT] [--source-dir DIR] [--strict-paths] [--quiet]\n"
+                "[ROOT] [--source-dir DIR] [--lock PATH | --no-lock] "
+                "[--strict-paths] [--quiet]\n"
             )
             return 2
         elif root is None:
@@ -322,6 +445,51 @@ def main(argv):
         (title, paths) for title, paths in by_title.items() if len(paths) > 1
     )
 
+    # The shelf pass. Its expectation comes from the lock, which is the
+    # emitter's input and not its output. See the header.
+    mislabelled = []
+    shelves_checked = 0
+    shelves_skipped = []
+    shelves_declared = 0
+    if lock_path is not None:
+        try:
+            declared = shelves_of(lock_path, docs_dir)
+        except (OSError, ValueError) as exc:
+            sys.stderr.write("check-site-fragments: %s\n" % exc)
+            sys.stderr.write(
+                "  The shelf pass takes its expectation from the lock, so a run "
+                "without one checked nothing about a shelf label.\n"
+            )
+            sys.stderr.write(
+                "  `headwater taxonomy resolve` writes it. `--no-lock` states "
+                "that this run makes no shelf pass.\n"
+            )
+            return 2
+        shelves_declared = len(declared)
+        for key, display, page_rel in declared:
+            if page_rel not in parsed:
+                shelves_skipped.append(key)
+                continue
+            shelves_checked += 1
+            title = parsed[page_rel].title
+            label = served_label(title) if title else ""
+            if display is not None:
+                if label != display:
+                    mislabelled.append((key, page_rel, display, label))
+            elif label == key:
+                mislabelled.append((key, page_rel, None, label))
+        if shelves_checked == 0:
+            sys.stderr.write(
+                "check-site-fragments: none of the %d shelves `%s` declares "
+                "reached a served page, so this run checked no shelf label.\n"
+                % (shelves_declared, lock_path)
+            )
+            sys.stderr.write(
+                "  An assertion over an empty set passes, and reporting that "
+                "as a pass is what this suite must not do.\n"
+            )
+            return 2
+
     checked = 0
     dead_fragments = []
     dead_paths = []
@@ -370,6 +538,18 @@ def main(argv):
             print("`%s` is the `<title>` of %d served pages:" % (title, len(paths)))
             for page_rel in paths:
                 print("    %s" % page_rel)
+        for key, page_rel, display, label in mislabelled:
+            print("%s: served as `%s`" % (page_rel, label))
+            if display is None:
+                print(
+                    "    `shelves.%s` declares no display name, and the page is "
+                    "served under the shelf's own key" % key
+                )
+            else:
+                print(
+                    "    `shelves.%s.title` declares `%s`, which is not what this "
+                    "page is served under" % (key, display)
+                )
 
     print(
         "%d dead fragment%s and %d dead path%s, "
@@ -402,10 +582,29 @@ def main(argv):
             "" if len(pages) == 1 else "s",
         )
     )
+    if lock_path is not None:
+        print(
+            "%d shelf label%s not what the lock declares, "
+            "out of %d shelf index page%s checked "
+            "(%d %s skipped as holding no document, "
+            "out of %d declared in `%s`)"
+            % (
+                len(mislabelled),
+                "" if len(mislabelled) == 1 else "s",
+                shelves_checked,
+                "" if shelves_checked == 1 else "s",
+                len(shelves_skipped),
+                "shelf" if len(shelves_skipped) == 1 else "shelves",
+                shelves_declared,
+                lock_path,
+            )
+        )
 
     if dead_fragments:
         return 1
     if repeated or untitled:
+        return 1
+    if mislabelled:
         return 1
     if dead_paths and strict_paths:
         return 1

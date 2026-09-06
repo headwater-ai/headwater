@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-06
 summary: "The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet."
 last_verified: 2026-09-06
-title: "Q50 — Where the visual register of the hand-built pages lives, now that eight pages each carried a copy"
+title: "Q50 — Where the visual register of the hand-built pages lives"
 provenance:
   warrant: asserted
   agency: agent
@@ -21,7 +21,7 @@ relations:
     - notes/website-design-brief.md
 ---
 
-# Q50 — Where the visual register of the hand-built pages lives, now that eight pages each carried a copy
+# Q50 — Where the visual register of the hand-built pages lives
 
 ## Context
 
@@ -29,7 +29,7 @@ relations:
 
 **No document of this corpus stated those values.** Section 7 of [the design brief](../../notes/website-design-brief.md) named the ground and the accent in prose. It named neither the four other color tokens nor any type stack. The same section states a measure of 40rem. The eight pages set `max-width` at eleven distinct values, and 40rem is not one of them. So the one description of the register was partial where it was right and wrong where it was specific.
 
-**A linked stylesheet is what the content policy of these pages refuses.** `site/_headers` gives every hand-built path `default-src 'none'` with `style-src 'unsafe-inline'` and no `'self'`. HW-DR-0037 states as a measurement that a hand-built page inlines what it uses and reaches nothing at read time. [HW-DR-0039](0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md) reads the same header and relies on the same property. A served stylesheet needs `'self'` added to `style-src` at all eight paths.
+**A linked stylesheet is what the content policy of these pages refuses.** `site/_headers` gives every hand-built path `default-src 'none'` with `style-src 'unsafe-inline'` and no `'self'`. HW-DR-0037 states as a measurement that a hand-built page inlines what it uses and reaches nothing at read time. [HW-DR-0039](0039-q39-how-a-figure-reaches-a-hand-built-page.md) reads the same header and relies on the same property. A served stylesheet needs `'self'` added to `style-src` at all eight paths.
 
 ## Decision
 

@@ -142,7 +142,11 @@ pub(crate) fn emit(
         let mut ordered = pointers(surface, &on_shelf);
         surface.by_precedence(&mut ordered);
         groups.push(Group {
-            shelf: name.clone(),
+            // The declared display name, through the one function three
+            // emitters read. `Group::shelf` is a label and nothing addresses
+            // a shelf by it: `index_of` takes the pattern and the filter above
+            // takes the key.
+            shelf: crate::shelf_label(shelf),
             index: index_of(shelf.pattern.source(), written, &documents),
             ordered,
         });

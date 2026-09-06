@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 368,
-      "carried": 368,
+      "in the graph": 372,
+      "carried": 372,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 592,
-      "carried": 592,
+      "in the graph": 594,
+      "carried": 594,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1098,7 +1098,7 @@
         }
       },
       {
-        "path": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+        "path": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md",
         "kind": "decision",
         "id": "HW-DR-0039",
         "warrant": "accepted",
@@ -1108,7 +1108,7 @@
           "status_since": "2026-08-30",
           "summary": "The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.",
           "last_verified": "2026-09-06",
-          "title": "Q39 — How a figure reaches a hand-built page, now that a build interpolates one",
+          "title": "Q39 — How a figure reaches a hand-built page",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1420,7 +1420,7 @@
         }
       },
       {
-        "path": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md",
+        "path": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
         "kind": "decision",
         "id": "HW-DR-0050",
         "warrant": "asserted",
@@ -1430,7 +1430,7 @@
           "status_since": "2026-09-06",
           "summary": "The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet.",
           "last_verified": "2026-09-06",
-          "title": "Q50 — Where the visual register of the hand-built pages lives, now that eight pages each carried a copy",
+          "title": "Q50 — Where the visual register of the hand-built pages lives",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
@@ -1585,6 +1585,27 @@
               ".claude/hooks/intent.sh",
               ".claude/hooks/review.sh"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md",
+        "kind": "decision",
+        "id": "HW-DR-0056",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0056",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "No kind in the base package or in any bundle binds a language regime. A package that set the default value would change nothing, so the doctrine page of the starter kit carries the promise.",
+          "last_verified": "2026-09-06",
+          "title": "A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
           }
         }
       },
@@ -2631,7 +2652,7 @@
           "status": "current",
           "status_since": "2026-08-11",
           "waiting_on": "adopter",
-          "last_verified": "2026-08-14",
+          "last_verified": "2026-09-06",
           "summary": "The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for.",
           "provenance": {
             "warrant": "accepted",
@@ -7009,6 +7030,28 @@
         }
       },
       {
+        "path": "docs/obligations/0166-spec-2-states-a-corpus-wide-default-language-regime-that-no-rule-of-this-engine-reads.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0166",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0166",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "Spec 2 tells an adopter that a corpus declares one default language regime. The engine resolves a regime through a kind and implements no fallback, so the first half of that sentence describes nothing.",
+          "last_verified": "2026-09-06",
+          "title": "Spec 2 states a corpus-wide default language regime that no rule of this engine reads",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
         "path": "docs/obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md",
         "kind": "obligation_record",
         "id": "HW-OBL-0167",
@@ -7036,12 +7079,40 @@
         }
       },
       {
-        "path": "docs/obligations/0168-the-coverage-report-lists-one-path-twice-so-the-self-assessment-page-publishes-two-unaccounted-files-where-one-exists.md",
+        "path": "docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md",
         "kind": "obligation_record",
         "id": "HW-OBL-0168",
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0168",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "The voice rule reports zero because not one of its forty patterns occurs here, and that reads the same as a clean corpus.",
+          "last_verified": "2026-09-06",
+          "title": "A saturated pattern set and a clean corpus are the same zero, and no report separates them",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0002",
+              "engine/crates/check/src/voice.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0169-the-coverage-report-lists-one-path-twice-so-the-self-assessment-page-publishes-two-unaccounted-files-where-one-exists.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0169",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0169",
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "coverage.unaccounted reads ['.headwater/ids', '.headwater/ids'], so the self-assessment page publishes 2 under a label that names files nobody accounted for.",
@@ -8148,6 +8219,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/check/src/voice.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/cli/Cargo.toml",
         "resolver": "source-tree"
       },
@@ -9112,7 +9188,7 @@
         }
       },
       {
-        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md",
         "relation": "constrains",
         "written_as": "constrains",
         "target": {
@@ -9123,7 +9199,7 @@
         }
       },
       {
-        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md",
         "relation": "governs",
         "written_as": "governs",
         "target": {
@@ -9134,7 +9210,7 @@
         }
       },
       {
-        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -9481,7 +9557,7 @@
         "target": {
           "bound": "document",
           "id": "HW-DR-0039",
-          "path": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+          "path": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md",
           "kind": "decision"
         }
       },
@@ -9585,7 +9661,7 @@
         }
       },
       {
-        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md",
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
         "relation": "constrains",
         "written_as": "constrains",
         "target": {
@@ -9596,7 +9672,7 @@
         }
       },
       {
-        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md",
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
         "relation": "governs",
         "written_as": "governs",
         "target": {
@@ -9607,7 +9683,7 @@
         }
       },
       {
-        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md",
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
         "relation": "governs",
         "written_as": "governs",
         "target": {
@@ -9618,7 +9694,7 @@
         }
       },
       {
-        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md",
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -13333,6 +13409,28 @@
           "id": "HW-DR-0034",
           "path": "docs/decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0002",
+          "path": "docs/obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/voice.rs",
+          "resolver": "source-tree"
         }
       },
       {

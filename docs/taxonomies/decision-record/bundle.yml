@@ -134,6 +134,7 @@ add:
   # whose siblings all sort by number gains one that sorts by its first letter.
 
   shelves.obligations:
+    title: Obligation records
     path: docs/obligations/**
     homogeneous: true
     kind: obligation_record

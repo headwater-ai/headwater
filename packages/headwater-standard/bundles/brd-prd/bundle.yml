@@ -230,6 +230,7 @@ add:
   # omission as an assumption.
 
   shelves.requirements:
+    title: Requirements
     path: docs/requirements/**
     homogeneous: false
     discriminator: requirement_tier

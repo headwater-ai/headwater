@@ -95,6 +95,7 @@ add:
   # --- shelves --------------------------------------------------------------
 
   shelves.evaluations:
+    title: Evaluations
     path: docs/evaluations/**
     homogeneous: true
     kind: evaluation

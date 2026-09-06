@@ -98,20 +98,42 @@ impl Root {
     /// record exists to draw. The shelf keeps the coverage rule satisfied, so
     /// the verdict stays valid and the case measures the record rather than an
     /// unrelated refusal.
+    ///
+    /// The anchor is one line and the operations go *above* it. An anchor
+    /// that quoted the whole `shelves.tutorials` declaration is an anchor
+    /// that an unrelated change to that declaration breaks, and #538
+    /// declaring a display name on every shelf broke exactly that, with a
+    /// failure that said nothing about why.
     fn founds_a_kind(&self) {
         let overlay = self.at.join(".headwater/overlay.yml");
         let text = std::fs::read_to_string(&overlay).expect("the overlay reads");
-        let anchor = "  shelves.tutorials:\n    path: docs/tutorials/**\n    homogeneous: true\n    kind: tutorial\n";
+        let anchor = "  shelves.tutorials:\n";
         assert!(
             text.contains(anchor),
-            "the overlay still carries the anchor"
+            "the overlay still declares a tutorials shelf"
         );
         let added = format!(
-            "{anchor}\n  kinds.playbook.is_a: governed_document\n  kinds.playbook.purpose: \
+            "  kinds.playbook.is_a: governed_document\n  kinds.playbook.purpose: \
              behavior\n  shelves.playbooks: {{path: docs/playbooks/**, homogeneous: true, kind: \
-             playbook}}\n"
+             playbook}}\n\n{anchor}"
         );
         std::fs::write(&overlay, text.replacen(anchor, &added, 1)).expect("the overlay writes");
+    }
+
+    /// Take the display name off one shelf, leaving every other one declared.
+    ///
+    /// A removal from this repository's own overlay rather than a taxonomy
+    /// written for the case, so what is measured is the reading of the
+    /// declarations that ship.
+    fn drops_a_display_name(&self) {
+        let overlay = self.at.join(".headwater/overlay.yml");
+        let text = std::fs::read_to_string(&overlay).expect("the overlay reads");
+        let anchor = "    title: Tutorials\n";
+        assert!(
+            text.contains(anchor),
+            "the overlay still gives the tutorials shelf a display name"
+        );
+        std::fs::write(&overlay, text.replacen(anchor, "", 1)).expect("the overlay writes");
     }
 
     /// Narrow the consumer's selection until its closure is incomplete.
@@ -231,6 +253,67 @@ fn validate_states_that_no_operation_makes_what_it_addresses() {
     assert!(
         !ran.out.contains("Nothing here refuses a founding"),
         "the note prints only beside a founding: {ran:?}"
+    );
+}
+
+/// The display-name block, in the direction a block can lose in silence.
+///
+/// This repository declares a display name on all thirteen of its shelves, so
+/// the block prints at zero here. That is the reading a corpus wants and it is
+/// also the reading that a block deleted by mistake produces, which is why the
+/// count is asserted on the heading rather than inferred from the absence of
+/// names under it.
+#[test]
+fn validate_states_that_every_shelf_carries_a_display_name() {
+    let root = Root::new("no-bare-shelf");
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "the copy of this repository is valid: {ran:?}"
+    );
+    assert!(
+        ran.out
+            .contains("shelves that print their key for want of a display name: 0"),
+        "the block prints at zero: {ran:?}"
+    );
+    assert!(
+        !ran.out.contains("Nothing here refuses. `shelves."),
+        "the note prints only beside a name: {ran:?}"
+    );
+}
+
+/// Clause 1 of [#538](https://github.com/headwater-ai/headwater/issues/538) as
+/// a status code: a shelf that declares no display name is a decision and not
+/// a defect.
+///
+/// The shelf is named and the verb exits 0. A refusal here would make
+/// `shelves.<s>.title` required in everything but the meta-schema, and a
+/// corpus whose keys are already the names its readers want would have to
+/// restate each of them to pass.
+#[test]
+fn a_shelf_with_no_display_name_is_named_and_not_refused() {
+    let root = Root::new("one-bare-shelf");
+    root.drops_a_display_name();
+    let ran = root.run(&["taxonomy", "validate"]);
+
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "a shelf with no display name refuses nothing: {ran:?}"
+    );
+    assert!(
+        ran.out
+            .contains("shelves that print their key for want of a display name: 1"),
+        "the count is on the heading: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("shelves.tutorials"),
+        "the shelf is named: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("falls through to the key"),
+        "and the reading is stated where the name is: {ran:?}"
     );
 }
 

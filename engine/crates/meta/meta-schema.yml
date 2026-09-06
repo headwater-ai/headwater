@@ -300,6 +300,24 @@ definitions:
       kinds: {seq: {scalar: string}}
       group_by: {scalar: string}
       layout: {scalar: string}
+      # The name a reader sees where an emitter prints this shelf. Optional,
+      # and a shelf that declares none is printed under its key, which is the
+      # fall-through `headwater_generate::shelf_label` states.
+      #
+      # No `role`, and that is the difference from a facet rather than an
+      # omission. The role registry above exists because a facet is
+      # open-named: `title` means something in the decision-record entry and
+      # nothing outside it, so an emitter may not reach a facet by its name. A
+      # shelf's member set is closed by this block, and `taxonomy validate`
+      # refuses a member outside it, so `title` here is addressed by a name
+      # every taxonomy shares and needs no indirection to be portable.
+      #
+      # The alternative was to derive the display name from the key, and
+      # [#427](https://github.com/headwater-ai/headwater/issues/427) ruled it
+      # out for the document half in the same words: a label a reader sees is
+      # a declared property, not something derived from whatever string
+      # happens to name the thing.
+      title: {scalar: string}
 
   # --- kinds ----------------------------------------------------------------
 
