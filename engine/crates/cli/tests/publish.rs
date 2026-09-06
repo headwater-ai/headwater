@@ -184,18 +184,45 @@ fn publish_real_source(out: &Path, json: bool) -> (Option<i32>, String, String) 
     )
 }
 
+/// Which shape of source `assembly_source` writes.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Arm {
+    /// Every declared path carries what a reader of it opens.
+    Sound,
+    /// The recipe names a bundle the package does not ship.
+    UnselectableBundle,
+    /// `contents.doctrine` names a directory that exists and holds no file.
+    ///
+    /// This is the state a *correct* stager still produces, on both publish
+    /// paths: `reachable` passes it, because the directory is there and it is a
+    /// directory, and the walk that carries bytes then carries none. The
+    /// manifest reaches a consumer naming a path the artifact does not hold.
+    EmptyDoctrine,
+}
+
 /// A source package with one named assembly, small enough to make the publish
 /// boundary visible in isolation from the real one.
 ///
 /// It carries the shapes the shipped starter does not: an assembly overlay, a
-/// templates directory, and an invalid arm that names a bundle the package does
-/// not ship. `the_shipped_starter_recipe_publishes_vendors_and_resolves` is the
-/// case that runs the same verb over the real source.
-fn assembly_source(root: &Root, invalid: bool) -> PathBuf {
+/// templates directory, an arm that names a bundle the package does not ship,
+/// and an arm whose declared doctrine directory is empty.
+/// `the_shipped_starter_recipe_publishes_vendors_and_resolves` is the case that
+/// runs the same verb over the real source.
+///
+/// **It declares `contents.conformance`, and that is deliberate.** Until #581
+/// no fixture in this file declared a file-valued `contents` key beyond
+/// `taxonomy`, so nothing here ever asked whether a flattened artifact carries
+/// one. `headwater/standard` declares one and the flattened starter did not
+/// carry it.
+fn assembly_source(root: &Root, arm: Arm) -> PathBuf {
     let source = root.path().join("source/acme-fixture");
     write(
         &source.join("package.yml"),
-        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: bundles\n  assemblies: assemblies\n  doctrine: doctrine\n  templates: templates\n",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  conformance: conformance.yml\n  bundles: bundles\n  assemblies: assemblies\n  doctrine: doctrine\n  templates: templates\n",
+    );
+    write(
+        &source.join("conformance.yml"),
+        "conformance:\n  format: 1\n  rules:\n    - name: pin.current\n      title: The pin names the package that is installed\n      decided_by: tree\n      statement: The pin names a version and a digest that the installed artifact carries.\n      remediation: Publish the package, write the printed digest into the pin, and vendor it.\n  levels:\n    - name: L0\n      title: Pointed at\n      rules: [pin.current]\n",
     );
     write(
         &source.join("taxonomy.yml"),
@@ -209,10 +236,9 @@ fn assembly_source(root: &Root, invalid: bool) -> PathBuf {
         &source.join("bundles/beta/bundle.yml"),
         "bundle: beta\nextends: acme/fixture@1.0.0\nrequires: []\nadd:\n  kinds.beta: {is_a: governed_document, purpose: behavior}\n",
     );
-    let selected = if invalid {
-        "[alpha, missing]"
-    } else {
-        "[alpha, beta]"
+    let selected = match arm {
+        Arm::UnselectableBundle => "[alpha, missing]",
+        Arm::Sound | Arm::EmptyDoctrine => "[alpha, beta]",
     };
     write(
         &source.join("assemblies/starter/assembly.yml"),
@@ -224,7 +250,15 @@ fn assembly_source(root: &Root, invalid: bool) -> PathBuf {
         &source.join("assemblies/starter/overlay.yml"),
         "add:\n  relations.connects:\n    family: derivation\n    from: [alpha]\n    to: [beta]\n    nucleus: from\n    inverse: connected_by\n    reciprocal: required\n    created_by: scaffold\n",
     );
-    write(&source.join("doctrine/guide.md"), "# Fixture doctrine\n");
+    match arm {
+        Arm::EmptyDoctrine => {
+            std::fs::create_dir_all(source.join("doctrine"))
+                .expect("the empty doctrine directory is made");
+        }
+        Arm::Sound | Arm::UnselectableBundle => {
+            write(&source.join("doctrine/guide.md"), "# Fixture doctrine\n");
+        }
+    }
     write(&source.join("templates/decision.md"), "# Decision\n");
     source
 }
@@ -238,6 +272,28 @@ fn write(path: &Path, text: &str) {
 fn publish_assembly_from(root: &Path, source: &Path, out: &Path) -> (Option<i32>, String, String) {
     let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
         .args(["taxonomy", "publish", "--assembly", "starter", "--from"])
+        .arg(source)
+        .arg("--out")
+        .arg(out)
+        .arg("--root")
+        .arg(root)
+        .output()
+        .expect("the binary runs");
+    (
+        output.status.code(),
+        String::from_utf8_lossy(&output.stdout).into_owned(),
+        String::from_utf8_lossy(&output.stderr).into_owned(),
+    )
+}
+
+/// `taxonomy publish --from` over a source the caller names, with no recipe.
+///
+/// The plain stager, beside `publish_assembly_from`'s flattening one. The two
+/// reach `--out` by different functions and #581 is a defect of both, so a case
+/// about what an artifact carries needs one call of each.
+fn publish_plain_from(root: &Path, source: &Path, out: &Path) -> (Option<i32>, String, String) {
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["taxonomy", "publish", "--from"])
         .arg(source)
         .arg("--out")
         .arg(out)
@@ -303,7 +359,7 @@ fn copy(from: &Path, to: &Path) {
 #[test]
 fn a_named_assembly_publishes_one_flattened_package() {
     let root = Root::scratch("assembly-publishes");
-    let source = assembly_source(&root, false);
+    let source = assembly_source(&root, Arm::Sound);
     let out = root.path().join("release");
 
     let (code, stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
@@ -325,6 +381,75 @@ fn a_named_assembly_publishes_one_flattened_package() {
     assert!(out.join("templates/starter/decision.md").is_file());
 }
 
+/// Every key the source declares reaches the flattened artifact, not five of them.
+///
+/// `flatten::contents` copies through every `contents` key it does not filter,
+/// and `flatten::assets` writes two. `conformance` is on one side of that gap
+/// and not the other, so before #581 the flattened manifest named a rule set
+/// the artifact did not hold and `headwater conformance` failed on the machine
+/// of whoever vendored it.
+#[test]
+fn a_flattened_package_carries_the_conformance_rule_set_its_source_declared() {
+    let root = Root::scratch("assembly-conformance");
+    let source = assembly_source(&root, Arm::Sound);
+    let out = root.path().join("release");
+
+    let (code, _stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
+    assert_eq!(code, Some(0), "{stderr}");
+
+    let manifest = std::fs::read_to_string(out.join("package.yml")).expect("the manifest reads");
+    assert!(manifest.contains("conformance: conformance.yml"), "{manifest}");
+    assert!(
+        out.join("conformance.yml").is_file(),
+        "the manifest declares a conformance rule set the artifact does not carry"
+    );
+    let record = std::fs::read_to_string(out.join("release.yml")).expect("the release reads");
+    assert!(
+        record.contains("conformance.yml"),
+        "the release record names no conformance rule set: {record}"
+    );
+}
+
+/// A declared directory with no file in it is the case a correct stager still
+/// produces, and it is why the guard is general rather than a second key check.
+///
+/// `reachable` admits `contents.doctrine` here: the directory is there and it is
+/// a directory. The walk that carries bytes then carries none, because a
+/// directory with no file in it has nothing to copy. Both these cases were
+/// measured at exit 0 before #581, with the manifest naming a path the artifact
+/// did not hold, on both publish paths.
+#[test]
+fn a_flattened_manifest_may_not_name_a_member_the_artifact_does_not_carry() {
+    let root = Root::scratch("assembly-empty-doctrine");
+    let source = assembly_source(&root, Arm::EmptyDoctrine);
+    let out = root.path().join("release");
+
+    let (code, _stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
+    assert_eq!(code, Some(1), "{stderr}");
+    assert!(stderr.contains("`contents.doctrine`"), "{stderr}");
+    assert!(stderr.contains("doctrine/starter"), "{stderr}");
+    assert!(
+        !out.exists(),
+        "the refused run left partial output at {out:?}"
+    );
+}
+
+#[test]
+fn a_published_manifest_may_not_name_a_member_the_artifact_does_not_carry() {
+    let root = Root::scratch("plain-empty-doctrine");
+    let source = assembly_source(&root, Arm::EmptyDoctrine);
+    let out = root.path().join("release");
+
+    let (code, _stdout, stderr) = publish_plain_from(root.path(), &source, &out);
+    assert_eq!(code, Some(1), "{stderr}");
+    assert!(stderr.contains("`contents.doctrine`"), "{stderr}");
+    assert!(stderr.contains("doctrine"), "{stderr}");
+    assert!(
+        !out.exists(),
+        "the refused run left partial output at {out:?}"
+    );
+}
+
 /// The flattened artifact crosses the entire publisher-consumer boundary.
 ///
 /// The source selection has two bundles, but the consumer names no bundles at
@@ -336,7 +461,7 @@ fn a_named_assembly_publishes_one_flattened_package() {
 #[test]
 fn a_flattened_assembly_is_pinned_vendored_and_resolved_without_bundle_selection() {
     let root = Root::scratch("assembly-consumer");
-    let source = assembly_source(&root, false);
+    let source = assembly_source(&root, Arm::Sound);
     let artifact = root.path().join("release");
     let (code, _stdout, stderr) = publish_assembly_from(root.path(), &source, &artifact);
     assert_eq!(code, Some(0), "{stderr}");
@@ -499,12 +624,28 @@ fn the_shipped_starter_recipe_publishes_vendors_and_resolves() {
         consumer.join(".headwater/taxonomy.lock").is_file(),
         "a resolved flattened starter has a lock"
     );
+
+    // The verb that reads `contents.conformance`, run against the vendored
+    // flattened package rather than against the lock. #581 is the reason it is
+    // here: `vendor` and `resolve` both exited 0 over an artifact whose manifest
+    // named a rule set it did not carry, and this is the first reader that opens
+    // the path. `headwater conformance` also verifies the installed bytes
+    // against the release record, so hand-placing the file cannot satisfy it.
+    assert!(
+        consumer
+            .join("packages/headwater-starter/conformance.yml")
+            .is_file(),
+        "the conformance rule set did not arrive with the vendored package"
+    );
+    let (code, stdout, stderr) = consumer_run(&consumer, &["conformance"]);
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(stdout.contains("L1"), "{stdout}");
 }
 
 #[test]
 fn an_invalid_assembly_refuses_before_it_creates_output() {
     let root = Root::scratch("assembly-refuses");
-    let source = assembly_source(&root, true);
+    let source = assembly_source(&root, Arm::UnselectableBundle);
     let out = root.path().join("release");
 
     let (code, _stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
