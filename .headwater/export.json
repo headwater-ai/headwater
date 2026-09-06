@@ -2267,7 +2267,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How a package's rules measure adoption, how waivers affect a requested rung, and what exits non-zero.",
-          "last_verified": "2026-08-25",
+          "last_verified": "2026-09-07",
           "title": "headwater conformance",
           "relations": {
             "governs": [
