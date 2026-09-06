@@ -743,7 +743,6 @@ fn dangling_names(view: &View) -> Vec<Dangling> {
         }
     }
 
-    drop(reads);
     out
 }
 
