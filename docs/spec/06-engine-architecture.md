@@ -112,9 +112,40 @@ headwater generate            # write
 headwater generate --check    # fail if any committed output differs
 ```
 
-The engine implements these projection kinds: shelf indexes, shelf sections, relation views (decision lineage, traceability matrices), agent rule files, site navigation, graph export, coverage reports, and templates. A transcription of a pinned external snapshot is one more ([Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record)). A probe result is another, and [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document) declares it. A verb index is the last one, and [the paragraph below](#a-verb-index-reads-the-command-surface-of-the-engine) declares it.
+**Twelve projection kinds exist, and this engine emits seven of them.** The block below names all twelve, as a taxonomy writes each name. A kind under `runs` has an emitter here. A kind under `waits` has a slot that a declaration opens and no emitter fills.
 
-**Ten of the twelve are declarable, and two are not.** A taxonomy names the kind and the output path, and [principle 1](00-vision-and-scope.md#design-principles) makes that path a schema decision. The coverage report and the corpus descriptor are the exceptions. [Spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition) makes the register engine-defined and non-optional, and [Q20](09-decisions.md#q20--where-scent-lives) fixes the descriptor at `.headwater/corpus.json`. Both hold that standing for one reason. A reader who must consult the taxonomy to find an artifact already knows what it would tell them. So a declaration of either would put a second copy of one artifact at a path the engine did not fix. The meta-schema therefore closes the declarable nine as a value set, and `headwater generate` writes the other two under no declaration at all.
+```
+runs
+  shelf_index
+  shelf_sections
+  site_nav
+  graph_export
+  probe_result
+  verb_index
+  corpus_descriptor
+
+waits
+  relation_view
+  agent_rules
+  template
+  transcription
+  coverage_report
+```
+
+A shelf index and a shelf sections file each carry the documents of one shelf. A probe result carries the verdicts of one graded run, and [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document) declares it. A verb index carries the command surface of the binary, and [the paragraph below](#a-verb-index-reads-the-command-surface-of-the-engine) declares it. Site navigation, a graph export and the corpus descriptor each carry one file that a reader outside this corpus opens.
+
+A relation view carries decision lineage and a traceability matrix. A template carries the permitted relations, facets and sections of one kind. An agent rule file is the artifact [the glossary](glossary.md#projection) names. A transcription reads a pinned external snapshot, and [Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record) leaves it to the first adopter who asks. `engine/crates/generate/src/lib.rs` states beside each of these four what no document says, and `engine/crates/generate/tests/spec_six_projections.rs` holds the block above against that statement.
+
+**The coverage report is the one waiting kind that a run over any corpus names.** [Spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition) makes the register engine-defined, so no taxonomy declares it and every run reaches it. `headwater generate --check` prints it under *what this verb does not write, and why*:
+
+```
+coverage_report the register
+  its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+```
+
+[Spec 13](13-open-obligations.md) carries the register, and no committed copy of it exists.
+
+**Ten of the twelve are declarable, and two are not.** A taxonomy names the kind and the output path, and [principle 1](00-vision-and-scope.md#design-principles) makes that path a schema decision. The coverage report and the corpus descriptor are the exceptions. [Spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition) makes the register engine-defined and non-optional, and [Q20](09-decisions.md#q20--where-scent-lives) fixes the descriptor at `.headwater/corpus.json`. Both hold that standing for one reason. A reader who must consult the taxonomy to find an artifact already knows what it would tell them. So a declaration of either would put a second copy of one artifact at a path the engine did not fix. The meta-schema therefore closes the declarable ten as a value set, and `headwater generate` writes the other two under no declaration at all.
 
 **A shelf index writes a bullet for each document, and a shelf sections file writes a heading.** A bullet carries no anchor, so nothing outside the index cites one row of it. A heading is an address, so a reader, an evaluation and an agent each cite the row rather than the file. That is the whole of the difference between the two kinds, and it is the reason they are two kinds. A member that changed the shape of one output would be read by one kind and ignored by the rest.
 

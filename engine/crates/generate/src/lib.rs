@@ -272,6 +272,28 @@ impl Kind {
         !matches!(self, Kind::CoverageReport | Kind::CorpusDescriptor)
     }
 
+    /// Every kind, declarable or engine-defined.
+    ///
+    /// A hand-kept list, and the compiler does not hold it complete: a
+    /// thirteenth variant added without a line here compiles. What forces an
+    /// author into this file is [`unbuilt`], whose `match` is exhaustive, and
+    /// [`Kind::name`], whose `match` is too. `DECLARABLE` below carries the
+    /// identical exposure and has since #257 added the tenth entry.
+    pub const ALL: [Kind; 12] = [
+        Kind::ShelfIndex,
+        Kind::ShelfSections,
+        Kind::RelationView,
+        Kind::AgentRules,
+        Kind::SiteNav,
+        Kind::GraphExport,
+        Kind::Template,
+        Kind::Transcription,
+        Kind::ProbeResult,
+        Kind::VerbIndex,
+        Kind::CoverageReport,
+        Kind::CorpusDescriptor,
+    ];
+
     /// The declarable kinds, in the order the meta-schema lists them.
     pub const DECLARABLE: [Kind; 10] = [
         Kind::ShelfIndex,
@@ -566,15 +588,19 @@ pub struct Plan {
 /// regeneration; building the rest of the verb is what showed why it cannot
 /// yet. The descriptor had the same entry until it acquired an emitter, and the
 /// difference between the two is the clock.
+///
+/// The reason comes from [`unbuilt`] rather than from a copy here, because two
+/// statements of one kind's status drift apart and this pair already had: the
+/// register was named unbuilt here and "this engine emits it" there.
 fn engine_defined() -> Vec<Unwritten> {
-    vec![Unwritten {
-        at: "the register".to_string(),
-        kind: Kind::CoverageReport,
-        reason: "its content is a function of the clock as well as of the corpus and the lock, \
-                 because a migration task lapses and a suppression expires on a date. A committed \
-                 copy would fail this check on a morning when nothing changed. Spec 13 carries it"
-            .to_string(),
-    }]
+    unbuilt(Kind::CoverageReport)
+        .into_iter()
+        .map(|reason| Unwritten {
+            at: "the register".to_string(),
+            kind: Kind::CoverageReport,
+            reason: reason.to_string(),
+        })
+        .collect()
 }
 
 /// Build the plan: what every declaration and the engine itself would write.
@@ -605,11 +631,19 @@ pub fn plan(
             }
             Kind::VerbIndex => verb_index::emit(surface, declaration, verbs, &mut plan),
             Kind::SiteNav => navs.push(declaration),
-            other => plan.unwritten.push(Unwritten {
-                at: declaration.output.clone(),
-                kind: other,
-                reason: unbuilt(other).to_string(),
-            }),
+            // Only a declarable kind with no emitter arm above reaches here,
+            // and `unbuilt` answers `Some` for every one of those. A `None`
+            // would mean an emitter exists and no arm dispatches to it, which
+            // is nothing this plan can report at a declaration.
+            other => {
+                if let Some(reason) = unbuilt(other) {
+                    plan.unwritten.push(Unwritten {
+                        at: declaration.output.clone(),
+                        kind: other,
+                        reason: reason.to_string(),
+                    });
+                }
+            }
         }
     }
     // The second pass. A generated shelf index is no node of the graph, so a
@@ -762,38 +796,49 @@ fn graph_export(
     }
 }
 
-/// Why a declarable kind produces nothing yet, and who owns it.
+/// Why a kind produces nothing yet, or `None` where this engine emits it.
 ///
-/// Named rather than ignored, and each one names the issue that owns it. This is
+/// Named rather than ignored, and each one names what it waits on. This is
 /// the posture the binary already takes over `headwater query`: a surface the
 /// specification lists and this engine does not implement is reported as that,
 /// and never as an empty result.
-fn unbuilt(kind: Kind) -> &'static str {
+///
+/// This is the only statement of the built/unbuilt split, over all twelve
+/// kinds rather than over the declarable ten. [`engine_defined`] reads the
+/// register's reason from here rather than holding a second copy, and
+/// `engine/crates/generate/tests/spec_six_projections.rs` holds spec 6's
+/// projection-kinds block against it. The `match` is exhaustive, so a
+/// thirteenth variant is `E0004` here before it is anything else.
+pub fn unbuilt(kind: Kind) -> Option<&'static str> {
     match kind {
-        Kind::RelationView => {
+        Kind::RelationView => Some(
             "a relation view needs the traceability grain that the obligation and control \
-             register holds, and no document states which relations a view covers"
-        }
-        Kind::AgentRules => {
-            "spec 5 and Q16 name the artifact and no document states its form, so an emitter here \
-             would be this engine inventing a schema for somebody else's consumer"
-        }
-        Kind::Template => {
+             register holds, and no document states which relations a view covers",
+        ),
+        Kind::AgentRules => Some(
+            "the glossary names the artifact and no document states its form, so an emitter here \
+             would be this engine inventing a schema for somebody else's consumer",
+        ),
+        Kind::Template => Some(
             "a template is the permitted relations, facets and sections of a kind, which \
-             `headwater explain` already prints. What no document states is the file it goes in"
-        }
-        Kind::Transcription => {
+             `headwater explain` already prints. What no document states is the file it goes in",
+        ),
+        Kind::Transcription => Some(
             "a transcription needs a resolver that reads text from a pinned snapshot, and Q19 \
-             leaves whether it ships at all to the first adopter who asks"
-        }
+             leaves whether it ships at all to the first adopter who asks",
+        ),
+        Kind::CoverageReport => Some(
+            "its content is a function of the clock as well as of the corpus and the lock, \
+             because a migration task lapses and a suppression expires on a date. A committed \
+             copy would fail this check on a morning when nothing changed. Spec 13 carries it",
+        ),
         Kind::ShelfIndex
         | Kind::ShelfSections
         | Kind::GraphExport
         | Kind::ProbeResult
         | Kind::VerbIndex
         | Kind::SiteNav
-        | Kind::CoverageReport
-        | Kind::CorpusDescriptor => "this engine emits it",
+        | Kind::CorpusDescriptor => None,
     }
 }
 

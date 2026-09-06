@@ -657,7 +657,24 @@ fn validate(root: &Path) -> ExitCode {
     }
     println!("\n{} is not valid", repository.consumer.package);
     eprint!("{}", indent(&err(&render_errors(&findings))));
+    advise(root, &repository.consumer);
     ExitCode::FAILURE
+}
+
+/// Which bundle would have completed an incomplete selection, under the refusal
+/// that reported it as a list of names nothing declares.
+///
+/// It prints nothing at all unless the refusal is that one and a bundle the
+/// package ships would answer it, which is
+/// [`headwater_resolve::selection::advice`]'s whole contract. It carries no
+/// finding of its own and it moves no exit status: a refusal is what refuses,
+/// and this is what a reader does about it.
+///
+/// Uncolored, under a red block, because it is guidance rather than a finding.
+fn advise(root: &Path, consumer: &headwater_resolve::Consumer) {
+    if let Some(advice) = headwater_resolve::selection::advice(root, consumer) {
+        eprint!("{}", indent(&advice.render()));
+    }
 }
 
 /// `headwater taxonomy resolve`, and `--check` over a committed lock.
@@ -712,6 +729,7 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
                 )
             );
             eprint!("{}", indent(&err(&render_errors(&findings))));
+            advise(root, &repository.consumer);
             return ExitCode::FAILURE;
         }
     };
