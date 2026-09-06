@@ -279,8 +279,22 @@ out=$(gate); status=$?
 judge 'a page added to the deployed site by hand is not refused' 0 "$status" '' "$out"
 
 # An escape hatch nobody has watched work is an escape hatch nobody knows works.
+#
+# The case needs a page of the deployed site that no document of this corpus
+# declares `governs` over, because a governed path is refused a second time by
+# a rule the engine already runs — which is the case below. So the path is
+# stated as a measurement rather than as a constant, the same way the width
+# boundary further down is. This case named `site/_headers` until HW-DR-0047
+# declared a `governs` edge onto it, and the suite then failed here saying
+# nothing about why.
+hatch="site/llms.txt"
 reset
-git -C "$scratch" rm -q site/_headers
+governed=$(grep -rl "^    - $hatch\$" "$scratch/docs" 2>/dev/null | tr '\n' ' ')
+[ -n "$governed" ] || governed=ungoverned
+judge 'the escape-hatch case still names a page no document governs' 0 0 \
+    'ungoverned' "$governed (declares \`governs\` over $hatch)"
+
+git -C "$scratch" rm -q "$hatch"
 out=$(cd "$scratch" && HEADWATER_ALLOW_SITE_DELETE=1 sh .githooks/pre-commit 2>&1); status=$?
 judge 'the same removal with the named variable set is allowed through' 0 "$status" '' "$out"
 
@@ -288,7 +302,7 @@ judge 'the same removal with the named variable set is allowed through' 0 "$stat
 # nothing else, so a page that a document of this corpus declares `governs`
 # over is refused a second time, by a rule the engine already runs. Nobody
 # designed that pairing and it is worth a case, because it is the reason the
-# case above names `_headers` and not `index.html`.
+# case above measures for an ungoverned page rather than naming any page.
 reset
 git -C "$scratch" rm -q site/index.html
 out=$(cd "$scratch" && HEADWATER_ALLOW_SITE_DELETE=1 sh .githooks/pre-commit 2>&1); status=$?
