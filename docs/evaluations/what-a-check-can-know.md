@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
 summary: The Q5 and Q21 evidence, which measures what a lexical checker gets wrong on the checker that this repository already runs.
+title: "What a check can know — the Q5 and Q21 evaluation"
 provenance:
   warrant: accepted
   agency: mixed

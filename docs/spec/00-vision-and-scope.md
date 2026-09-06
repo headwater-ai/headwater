@@ -6,6 +6,7 @@ last_verified: 2026-08-11
 summary: What Headwater is for, the three qualities it aims at, the eleven design principles, and what it refuses to build.
 doc_type: design_spec
 sequence: 0
+title: "Vision and scope"
 provenance:
   warrant: accepted
   agency: mixed

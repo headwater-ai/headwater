@@ -6,6 +6,7 @@ summary: Everything an external recorder writes into a transcript, the closed ke
 last_verified: 2026-08-14
 doc_type: design_spec
 sequence: 15
+title: "The recorder contract"
 provenance:
   warrant: asserted
   agency: mixed

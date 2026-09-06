@@ -6,6 +6,7 @@ last_verified: 2026-08-13
 summary: The work that the closed decisions left behind, which is unmeasured claims, items that wait on an adopter, and unblocked design work.
 doc_type: obligation_register
 sequence: 13
+title: "Open obligations"
 provenance:
   warrant: accepted
   agency: mixed

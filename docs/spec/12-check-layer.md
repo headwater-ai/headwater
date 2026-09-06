@@ -6,6 +6,7 @@ last_verified: 2026-08-14
 summary: What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
 doc_type: design_spec
 sequence: 12
+title: "The check layer"
 provenance:
   warrant: accepted
   agency: mixed

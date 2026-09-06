@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-01
 last_verified: 2026-08-11
 summary: Where the research literature confirms, sharpens, or contradicts the design, and what changed in the specification as a result.
+title: "Theoretical foundations"
 provenance:
   warrant: accepted
   agency: mixed

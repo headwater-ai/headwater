@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
 summary: The results of the Q1 risk-retirement spike, which are four items, all passing, and three findings that the argument did not predict.
+title: "The Q1 spike — results"
 provenance:
   warrant: accepted
   agency: mixed

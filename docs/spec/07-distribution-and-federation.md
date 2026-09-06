@@ -6,6 +6,7 @@ last_verified: 2026-08-17
 summary: How a publisher ships a taxonomy, how a consumer overlays it, and what the invariant core requires of the result.
 doc_type: design_spec
 sequence: 7
+title: "Distribution and federation"
 provenance:
   warrant: accepted
   agency: mixed

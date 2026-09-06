@@ -5,6 +5,7 @@ status_since: 2026-08-06
 last_verified: 2026-08-08
 summary: Run two of the core-concepts instrument, made adversarially against the integration of run one by the reviewer who wrote it.
 doc_type: review_record
+title: "Core-concepts review: findings, second run"
 provenance:
   warrant: accepted
   agency: agent

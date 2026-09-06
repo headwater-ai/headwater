@@ -5,6 +5,7 @@ status_since: 2026-08-10
 last_verified: 2026-08-10
 summary: What the ASD-STE100 editorial pass found in the source content, and the terminology rulings that the glossary pass raised.
 doc_type: review_record
+title: "STE editorial pass — source findings to address"
 provenance:
   warrant: accepted
   agency: mixed

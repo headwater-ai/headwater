@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
 summary: The Q11, Q12 and Q16 evidence, which is the license, the migration path, and the public presence that a first reader meets.
+title: "First contact — the Q11, Q12 and Q16 evaluation"
 provenance:
   warrant: accepted
   agency: mixed

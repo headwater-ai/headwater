@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
 summary: The Q6, Q13 and Q9 evidence, which is where the corpus graph lives, what it exports, and how a second repository consumes it.
+title: "The graph, its export, and the tier above it"
 provenance:
   warrant: accepted
   agency: mixed

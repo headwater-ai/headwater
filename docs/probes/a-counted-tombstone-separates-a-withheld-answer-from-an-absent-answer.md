@@ -7,6 +7,7 @@ last_verified: 2026-08-27
 probe_category: sufficiency
 expectation: answered
 oracle: "none"
+title: "A counted tombstone separates a withheld answer from an absent answer"
 provenance:
   warrant: asserted
   agency: mixed

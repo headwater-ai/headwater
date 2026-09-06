@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
 summary: The Q2 evidence, a cognitive-dimensions walkthrough over five authoring scenarios, which chose YAML and found five defects in spec 2.
+title: "Choosing the schema format — a cognitive-dimensions walkthrough"
 provenance:
   warrant: accepted
   agency: mixed

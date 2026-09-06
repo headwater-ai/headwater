@@ -4,6 +4,7 @@ status: draft
 status_since: 2026-08-30
 last_verified: 2026-08-31
 summary: The cross-bundle address inventory HW-DR-0044 asks for, and what it shows decision-record actually reaches inside design-spec.
+title: "The capability-bundle address inventory"
 provenance:
   warrant: asserted
   agency: mixed

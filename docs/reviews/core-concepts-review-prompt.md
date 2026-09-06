@@ -5,6 +5,7 @@ status_since: 2026-08-04
 last_verified: 2026-08-08
 summary: The instrument for the core-concepts review, with the deletion test, the two lenses, and the bar a finding must clear.
 doc_type: review_prompt
+title: "Review the core concepts of headwater: simplification and robustness"
 provenance:
   warrant: accepted
   agency: mixed

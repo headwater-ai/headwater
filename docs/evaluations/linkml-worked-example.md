@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-02
 last_verified: 2026-08-11
 summary: The Headwater taxonomy written out in LinkML, and the boundary where the standard stops covering what spec 2 declares.
+title: "The Headwater taxonomy in LinkML — a worked example"
 provenance:
   warrant: accepted
   agency: mixed

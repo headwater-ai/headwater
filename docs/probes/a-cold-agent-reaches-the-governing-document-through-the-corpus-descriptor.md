@@ -7,6 +7,7 @@ last_verified: 2026-08-14
 probe_category: discovery
 expectation: opened
 oracle: "none"
+title: "A cold agent reaches the governing document through the corpus descriptor"
 provenance:
   warrant: asserted
   agency: mixed

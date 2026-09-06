@@ -6,6 +6,7 @@ last_verified: 2026-08-11
 summary: The ideas that this design adopts, and the eight recurrent failure modes of documentation tooling that it designs against.
 doc_type: design_spec
 sequence: 8
+title: "Design departures"
 provenance:
   warrant: accepted
   agency: mixed

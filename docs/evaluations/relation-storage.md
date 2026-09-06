@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
 summary: The Q4 evidence, which makes a relation instance an object in front matter and refuses the annotated prose link as a second edge syntax.
+title: "Relation storage — the Q4 evaluation"
 provenance:
   warrant: accepted
   agency: mixed

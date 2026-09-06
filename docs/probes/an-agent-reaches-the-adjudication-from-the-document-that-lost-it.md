@@ -7,6 +7,7 @@ last_verified: 2026-08-14
 probe_category: navigability
 expectation: opened
 oracle: "none"
+title: "An agent reaches the adjudication from the document that lost it"
 provenance:
   warrant: asserted
   agency: mixed

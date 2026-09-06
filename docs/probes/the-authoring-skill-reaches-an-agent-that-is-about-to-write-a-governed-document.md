@@ -7,6 +7,7 @@ last_verified: 2026-08-14
 probe_category: discovery
 expectation: opened
 oracle: "none"
+title: "The authoring skill reaches an agent that is about to write a governed document"
 provenance:
   warrant: asserted
   agency: mixed

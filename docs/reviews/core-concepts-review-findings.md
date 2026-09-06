@@ -5,6 +5,7 @@ status_since: 2026-08-05
 last_verified: 2026-08-10
 summary: Run one of the core-concepts instrument, with a verdict on each concept of spec 1 and seven arguments behind the cuts.
 doc_type: review_record
+title: "Core-concepts review: findings"
 provenance:
   warrant: accepted
   agency: agent

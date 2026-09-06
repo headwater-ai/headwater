@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-02
 last_verified: 2026-08-11
 summary: Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.
+title: "Adjacent work and tooling"
 provenance:
   warrant: accepted
   agency: mixed
