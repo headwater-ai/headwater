@@ -211,7 +211,7 @@ The second said that a control declares one posture and that spec 4 writes two v
 
 ## What else each decision left open
 
-The three classes above do not exhaust the nineteen decisions that carry open work. The rest sits here, as HW-OBL-0091 through HW-OBL-0101, under the decision that produced each item.
+The three classes above do not exhaust the nineteen decisions that carry open work. The rest sits here, as HW-OBL-0091 through HW-OBL-0101 and HW-OBL-0160, under the decision that produced each item.
 
 This paragraph read eighteen for sixteen iterations, and the number is nineteen. Nineteen of the twenty-one decisions are cited somewhere in the four classes. The two that are not are [Q1](09-decisions.md#q1--implementation-language) and [Q10](09-decisions.md#q10--naming). The [redirect map](09-open-questions.md) states that nothing stays open under either one, so the two records agree.
 
@@ -226,10 +226,11 @@ This paragraph read eighteen for sixteen iterations, and the number is nineteen.
 - [HW-OBL-0099](../obligations/0099-whether-an-adjudication-is-ever-partial.md) — Whether an adjudication is ever partial
 - [HW-OBL-0100](../obligations/0100-the-size-of-a-committed-snapshot-with-full-requirement-text.md) — The size of a committed snapshot with full requirement text
 - [HW-OBL-0101](../obligations/0101-whether-the-read-set-of-a-real-corpus-is-small-enough.md) — Whether the read set of a real corpus is small enough that publishing it is free
+- [HW-OBL-0160](../obligations/0160-the-generated-half-of-the-site-loads-highlight-js-from-a-third-party-with-no-subresource-integrity.md) — The generated half of the site loads highlight.js from a third party with no subresource integrity
 
 ## What the engine found about itself
 
-Twenty-eight items: HW-OBL-0131 through HW-OBL-0158. Each one names no decision, because nothing here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
+Twenty-nine items: HW-OBL-0131 through HW-OBL-0159. Each one names no decision, because nothing here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
 
 This class did not exist before 2026-08-26. Before that date, such a finding was filed as a GitHub issue labeled `self-audit` and left open. The theory was that a defect nobody outside this repository can reach costs nothing to hold. The theory was half right. The label did keep such work out of an iteration's hands, but it never closed anything. Of 24 issues so labeled, three ever closed. The issue board as a whole ran net-positive on all but one of the eleven days that followed. [The value rule](../../.claude/commands/next-run.md#the-value-rule) now routes a self-audit finding here directly. These 21 are the backlog that rule found already sitting on the tracker, migrated in the same change that rewrote it.
 

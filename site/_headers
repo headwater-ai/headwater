@@ -1,7 +1,7 @@
 # Response headers for https://headwater.tools/, which serves two halves out of
 # one directory: the hand-built pages committed under `site/`, and the pages
 # `mkdocs build` renders from this corpus. `tools/assemble-site.sh` composes
-# them, and HW-DR-0045 rules how they share the host.
+# them, and HW-DR-0047 rules how they share the host.
 #
 # WHY THE POLICY IS WRITTEN LOOSE FIRST AND STRICT SECOND
 #
@@ -37,7 +37,7 @@
 #   highlight.js and its two stylesheets, on 277 of the generated pages. It is
 #   third-party code, it carries no subresource integrity, and this corpus's
 #   own subject is provenance — so it is recorded as a debt in
-#   HW-OBL-0154 rather than accepted quietly. Removing the CDN is not a
+#   HW-OBL-0160 rather than accepted quietly. Removing the CDN is not a
 #   one-line change: `js/darkmode.js` dereferences the two `hljs-*` link
 #   elements with no null guard, so deleting them throws on page load, where
 #   refusing them at the network keeps the elements and costs only the

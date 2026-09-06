@@ -93,7 +93,7 @@ HW-EVAL-adjacent-work contains arguments *against* Headwater — OpenGEO declini
 
 ## 4. Sitemap
 
-Marketing pages are hand-built. Every shelf of the corpus is the generated projection. The two halves share one host: `tools/assemble-site.sh` composes them into one directory, hand-built last, and HW-DR-0045 rules that arrangement.
+Marketing pages are hand-built. Every shelf of the corpus is the generated projection. The two halves share one host: `tools/assemble-site.sh` composes them into one directory, hand-built last, and HW-DR-0047 rules that arrangement.
 
 No row below carries a count. A shelf gains and loses documents on ordinary changes, and a figure typed here goes stale silently — which is the same rule HW-DR-0037 applies to a served page, applied to the brief that describes one.
 

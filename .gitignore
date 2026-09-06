@@ -20,7 +20,7 @@
 # What `tools/assemble-site.sh` composes from the two halves above, and what the
 # deploy serves. Every byte of it is a copy of a byte that is either committed
 # under `site/` or recomputable into `.headwater/site-build/`, so it holds
-# nothing of its own. HW-DR-0045 rules that this is the served directory.
+# nothing of its own. HW-DR-0047 rules that this is the served directory.
 .headwater/site-deploy/
 
 __pycache__/

@@ -249,7 +249,7 @@ jobs:
       - name: The two halves of the site compose into one served directory
         # This is the input the deploy serves, and this step is the only place
         # that runs the composition where a person reads the result. The
-        # deploy runs the same script — HW-DR-0045 rules that it does — so a
+        # deploy runs the same script — HW-DR-0047 rules that it does — so a
         # break in the assembly is found by this runner, on the push that
         # caused it, rather than by a visitor.
         #
