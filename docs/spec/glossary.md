@@ -657,7 +657,7 @@ The condition of a document past its freshness threshold, weighted by drift risk
 
 ### Starter kit
 
-The [base package](#base-package), a named [bundle](#bundle) selection over it, and the doctrine prose that explains the selection. It is what an adopter gets who answers nothing. See [spec 7](07-distribution-and-federation.md#the-starter-kit-is-a-selection).
+The [base package](#base-package), a named [bundle](#bundle) selection over it, and the doctrine prose that explains the selection. It is what an adopter gets who answers nothing. See [spec 7](07-distribution-and-federation.md#the-starter-kit-is-an-assembly).
 
 ### State
 

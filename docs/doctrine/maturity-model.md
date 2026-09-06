@@ -2,7 +2,7 @@
 
 A new adopter faces three dials and no guidance about which way to turn them. This file names the ordered positions that most adopters will want, and it states what a position is allowed to mean.
 
-The short form: **a maturity level is a named, ordered subset of the conformance rule set, shipped as package data.** It adds no declaration, changes no posture, and weakens no core. It is the [starter kit](../spec/07-distribution-and-federation.md#the-starter-kit-is-a-selection) pattern applied to conformance instead of to bundles.
+The short form: **a maturity level is a named, ordered subset of the conformance rule set, shipped as package data.** It adds no declaration, changes no posture, and weakens no core. It is the [starter kit](../spec/07-distribution-and-federation.md#the-starter-kit-is-an-assembly) pattern applied to conformance instead of to bundles.
 
 ## The ladder invents nothing
 

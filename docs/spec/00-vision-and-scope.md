@@ -58,7 +58,7 @@ Everything in this specification follows from that premise.
 
 5. **A distribution model** that lets one organization publish a taxonomy and the doctrine that explains it. Many repositories can then consume that taxonomy. They can customize it by overlay, upgrade it deliberately, and prove that they are still conformant.
 
-6. **A doctrine starter kit** — an opinionated default taxonomy and the prose that explains it. It is not the base package, and the two answer opposite requirements. The base is minimal and derived from the core. The starter kit is a named bundle selection over that base, which a new adopter can take fully, take partially, or ignore ([spec 7](07-distribution-and-federation.md#the-starter-kit-is-a-selection)).
+6. **A doctrine starter kit** — an opinionated default taxonomy and the prose that explains it. It is not the base package, and the two answer opposite requirements. The base is minimal and derived from the core. The starter kit is a named bundle selection over that base, which a new adopter can take fully, take partially, or ignore ([spec 7](07-distribution-and-federation.md#the-starter-kit-is-an-assembly)).
 
 ## What we do not build
 
