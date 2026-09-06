@@ -1,7 +1,8 @@
 # headwater:generated site_nav. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.
 
 nav:
-  - "decisions":
+  - "Decision records":
+      - "Decision records": "decisions/README.md"
       - "Q1 — Implementation language": "decisions/0001-implementation-language.md"
       - "Q2 — Schema format": "decisions/0002-schema-format.md"
       - "Q3 — How much of the default taxonomy ships in the box": "decisions/0003-how-much-of-the-default-taxonomy-ships-in-the-box.md"
@@ -17,7 +18,8 @@ nav:
       - "Q13 — LinkML and SHACL as substrate": "decisions/0013-linkml-and-shacl-as-substrate.md"
       - "Q14 — Discovery surface": "decisions/0014-discovery-surface.md"
       - "Q15 — A synthesized content tier": "decisions/0015-a-synthesized-content-tier.md"
-      - "Q39 — How a figure reaches a hand-built page, now that a build interpolates one": "decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md"
+      - "Q39 — How a figure reaches a hand-built page": "decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md"
+      - "Q50 — Where the visual register of the hand-built pages lives": "decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md"
       - "Q37 — Which parts of the site are hand-built and which are a projection of this corpus": "decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md"
       - "Q16 — Public presence": "decisions/0016-public-presence.md"
       - "Q17 — Governed access and the solution layer": "decisions/0017-governed-access-and-the-solution-layer.md"
@@ -48,11 +50,23 @@ nav:
       - "Q44 — Whether bundles decompose into capabilities and assemblies compose practices": "decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md"
       - "Coloring the CLI, and where the banner goes": "decisions/0045-coloring-the-cli-and-where-the-banner-goes.md"
       - "Migrating from-version carries a semver and a release digest, kept as separate fields": "decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md"
+      - "The served sitemap is derived from the served directory": "decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md"
       - "How the two halves of the site share one host": "decisions/0047-how-the-two-halves-of-the-site-share-one-host.md"
       - "A corpus-wide fold is derived and never stored": "decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md"
-  - "acceptance_criteria":
+      - "Q51 — What licenses a term into the public glossary, and what licenses a sixteenth": "decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md"
+      - "A document is proposed at the state it will hold, and the merge activates it": "decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md"
+      - "A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance": "decisions/0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md"
+      - "The upper bound of a reconcile-first allocator is the corpus and a claim store": "decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md"
+      - "A hook reads a wire format through the engine and not through an interpreter": "decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md"
+      - "A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile": "decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md"
+      - "A shelf layout is the second half of what the identifier claim store covers": "decisions/0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md"
+      - "A blank facet value is a rule of its own and it reads every string facet": "decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md"
+      - "A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to": "decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md"
+  - "Acceptance criteria":
+      - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
-  - "evaluations":
+  - "Evaluations":
+      - "Evaluations": "evaluations/README.md"
       - "Adjacent work and tooling": "evaluations/adjacent-work.md"
       - "The capability-bundle address inventory": "evaluations/capability-bundle-address-inventory.md"
       - "What ships in the box — a first-run walkthrough": "evaluations/default-taxonomy-first-run.md"
@@ -72,7 +86,8 @@ nav:
       - "Theoretical foundations": "evaluations/theoretical-foundations.md"
       - "Warrant — what stands behind a document, and who vouched for it": "evaluations/warrant-and-adjudication.md"
       - "What a check can know — the Q5 and Q21 evaluation": "evaluations/what-a-check-can-know.md"
-  - "interfaces":
+  - "The command surface":
+      - "The command surface": "interfaces/README.md"
       - "headwater capture": "interfaces/headwater-capture.md"
       - "headwater check": "interfaces/headwater-check.md"
       - "headwater completions": "interfaces/headwater-completions.md"
@@ -85,6 +100,7 @@ nav:
       - "headwater import": "interfaces/headwater-import.md"
       - "headwater infer": "interfaces/headwater-infer.md"
       - "headwater init": "interfaces/headwater-init.md"
+      - "headwater json": "interfaces/headwater-json.md"
       - "headwater mcp": "interfaces/headwater-mcp.md"
       - "headwater new": "interfaces/headwater-new.md"
       - "headwater probe": "interfaces/headwater-probe.md"
@@ -92,7 +108,8 @@ nav:
       - "headwater route": "interfaces/headwater-route.md"
       - "headwater sweep": "interfaces/headwater-sweep.md"
       - "headwater taxonomy": "interfaces/headwater-taxonomy.md"
-  - "obligations":
+  - "Obligation records":
+      - "Obligation records": "obligations/README.md"
       - "The promotion fix has no reading of the assisted fraction": "obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md"
       - "Declarative voice is called detectable at useful precision, and the sample is unreachable": "obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md"
       - "The rebuild-and-cache design is measured at spike scale alone": "obligations/0003-the-rebuild-and-cache-design-is-measured-at-spike-scale-alone.md"
@@ -222,7 +239,7 @@ nav:
       - "A deletion is invisible where the version that stood there does not parse": "obligations/0127-a-deletion-is-invisible-where-the-version-that-stood-there-does-not-parse.md"
       - "Nothing holds a crate to having a contract under a root that excludes it": "obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md"
       - "Spec 12 calls two Phase A outcomes structural findings and the engine emits none": "obligations/0129-spec-12-calls-two-phase-a-outcomes-structural-findings-and-the-engine-emits-none.md"
-      - "The publication date of this repository is set, and the repository stays private until then": "obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md"
+      - "The publication date of this repository is set, and the repository is public": "obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md"
       - "The CLI crate wires every verb and carries no tests, so two wiring defects passed a green suite": "obligations/0131-the-cli-crate-wires-every-verb-and-carries-no-tests-so-two-wiring-defects-passed-a-green-suite.md"
       - "Survey the wiring decisions of main.rs, verb by verb, and cover the quiet ones": "obligations/0132-survey-the-wiring-decisions-of-main-rs-verb-by-verb-and-cover-the-quiet-ones.md"
       - "Two test helpers key a scratch directory on the pid alone, and the race springs on the next case added": "obligations/0133-two-test-helpers-key-a-scratch-directory-on-the-pid-alone-and-the-race-springs-on-the-next-case-added.md"
@@ -253,14 +270,34 @@ nav:
       - "clap owns the help flag, so -h, --help reads Print help on all 32 verb pages": "obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md"
       - "A sentence that opens with a hash and an issue number is folded into the sentence before it": "obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md"
       - "The generated half of the site loads highlight.js from a third party with no subresource integrity": "obligations/0160-the-generated-half-of-the-site-loads-highlight-js-from-a-third-party-with-no-subresource-integrity.md"
-  - "probes":
+      - "The validation block of mkdocs.yml is a gate this repository owns and no fixture drives": "obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md"
+      - "Spec 7 prints a package version that no check compares with the recipe": "obligations/0162-spec-7-prints-a-package-version-that-no-check-compares-with-the-recipe.md"
+      - "Ten decision records claim a Q number the decision register does not carry": "obligations/0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md"
+      - "The regeneration check tests byte equality before the marker, so a file the census stopped counting as generated still passes": "obligations/0164-the-regeneration-check-tests-byte-equality-before-the-marker-so-a-file-the-census-stopped-counting-as-generated-still-passes.md"
+      - "A rendered-page gate greps for a string it requires and states no denominator, so an empty build passes it": "obligations/0165-a-rendered-page-gate-greps-for-a-string-it-requires-and-states-no-denominator-so-an-empty-build-passes-it.md"
+      - "Spec 2 states a corpus-wide default language regime that no rule of this engine reads": "obligations/0166-spec-2-states-a-corpus-wide-default-language-regime-that-no-rule-of-this-engine-reads.md"
+      - "The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it": "obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md"
+      - "A saturated pattern set and a clean corpus are the same zero, and no report separates them": "obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md"
+      - "The coverage report lists one path twice, so the self-assessment page publishes two unaccounted files where one exists": "obligations/0169-the-coverage-report-lists-one-path-twice-so-the-self-assessment-page-publishes-two-unaccounted-files-where-one-exists.md"
+      - "The blank facet value rule reaches no obligation so the report names none": "obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md"
+      - "No rule reads a document facet value against the type its declaration states": "obligations/0171-no-rule-reads-a-document-facet-value-against-the-type-its-declaration-states.md"
+      - "Nine hand-kept constants enumerate an enum and nothing holds one against the variants": "obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md"
+      - "Four inline gates in the workflow decide an exit status and no suite provokes one": "obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md"
+      - "Publishing the base package reports 51 references that resolve nowhere and exits 0": "obligations/0174-publishing-the-base-package-reports-51-references-that-resolve-nowhere-and-exits-0.md"
+      - "Two documents take one sequence on a sequence-declaring shelf and no rule reads it": "obligations/0175-two-documents-take-one-sequence-on-a-sequence-declaring-shelf-and-no-rule-reads-it.md"
+      - "A blessed fixture is read by a sibling case that runs while the write truncates it": "obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md"
+      - "The value rule writes adopter on every self-audit record and most of them wait on a build": "obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md"
+  - "Probes":
+      - "Probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
       - "A counted tombstone separates a withheld answer from an absent answer": "probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md"
       - "An agent reaches the adjudication from the document that lost it": "probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md"
       - "The authoring skill reaches an agent that is about to write a governed document": "probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md"
-  - "requirements":
+  - "Requirements":
+      - "Requirements": "requirements/README.md"
       - "The engine reaches no network at check time": "requirements/0001-the-engine-reaches-no-network-at-check-time.md"
-  - "reviews":
+  - "Review records":
+      - "Review records": "reviews/README.md"
       - "Assessment of the existing core-concepts findings": "reviews/core-concepts-findings-assessment.md"
       - "Core-concepts independent review": "reviews/core-concepts-independent-review.md"
       - "Core-concepts review: findings, second run": "reviews/core-concepts-review-findings-2.md"
@@ -268,7 +305,8 @@ nav:
       - "Review the core concepts of headwater: simplification and robustness": "reviews/core-concepts-review-prompt.md"
       - "STE editorial pass — source findings to address": "reviews/ste-editorial-pass-findings.md"
       - "The sixty-four restored help strings, checked against the binary": "reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md"
-  - "spec_series":
+  - "The specification series":
+      - "The specification series": "spec/README.md"
       - "Vision and scope": "spec/00-vision-and-scope.md"
       - "Conceptual model": "spec/01-conceptual-model.md"
       - "The taxonomy model": "spec/02-taxonomy-model.md"
@@ -285,5 +323,6 @@ nav:
       - "The recorder contract": "spec/15-the-recorder-contract.md"
       - "Harness support": "spec/16-harness-support.md"
       - "Glossary": "spec/glossary.md"
-  - "tutorials":
+  - "Tutorials":
+      - "Tutorials": "tutorials/README.md"
       - "Your first governed corpus": "tutorials/your-first-governed-corpus.md"

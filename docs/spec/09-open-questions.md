@@ -8,9 +8,9 @@ relations:
     - HW-REG-open-obligations
 ---
 
-# decisions
+# Decision records
 
-48 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+59 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -72,9 +72,13 @@ relations:
 
 [HW-DR-0015](../decisions/0015-a-synthesized-content-tier.md) — Every document carries a warrant from a closed set of four, and `asserted` content is admitted with limits.
 
-## Q39 — How a figure reaches a hand-built page, now that a build interpolates one
+## Q39 — How a figure reaches a hand-built page
 
-[HW-DR-0039](../decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md) — The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.
+[HW-DR-0039](../decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md) — The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.
+
+## Q50 — Where the visual register of the hand-built pages lives
+
+[HW-DR-0050](../decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md) — The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet. (asserted, and no human has accepted it)
 
 ## Q37 — Which parts of the site are hand-built and which are a projection of this corpus
 
@@ -142,7 +146,7 @@ relations:
 
 ## Q31 — Whether this repository becomes public, and when
 
-[HW-DR-0031](../decisions/0031-q31-whether-this-repository-becomes-public-and-when.md) — This repository becomes public on 2026-09-08. The owner sets the date, and the record stops each run from raising the schedule as an open question.
+[HW-DR-0031](../decisions/0031-q31-whether-this-repository-becomes-public-and-when.md) — This repository is public. The owner set 2026-09-08 and opened it on 2026-09-06, and the record stops each run from raising the schedule.
 
 ## Q32 — Which test the self-audit label states
 
@@ -196,6 +200,10 @@ relations:
 
 [HW-DR-0046](../decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md) — `adoption.from` is a pair, a semver and the release digest that was pinned when the migration began, and never a hash of the two.
 
+## The served sitemap is derived from the served directory
+
+[HW-DR-0048](../decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md) — The sitemap a reader gets is derived from the directory that is served, by one walk that both halves call. Nobody types a page list, and the assembled directory is the only place the union exists. (asserted, and no human has accepted it)
+
 ## How the two halves of the site share one host
 
 [HW-DR-0047](../decisions/0047-how-the-two-halves-of-the-site-share-one-host.md) — One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time. (asserted, and no human has accepted it)
@@ -203,3 +211,39 @@ relations:
 ## A corpus-wide fold is derived and never stored
 
 [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) — A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict. (asserted, and no human has accepted it)
+
+## Q51 — What licenses a term into the public glossary, and what licenses a sixteenth
+
+[HW-DR-0051](../decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md) — A term reaches the public glossary because it recurs in the visitor-facing pages of the site, and for no other reason. The tutorial and the glossary itself are not sources, and the specification glossary answers to a different reader. (asserted, and no human has accepted it)
+
+## A document is proposed at the state it will hold, and the merge activates it
+
+[HW-DR-0052](../decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md) — An author writes the state a document will hold once it lands, and the merge activates it. The state facet answers to the merge, the way HW-DR-0034 made the warrant facet answer to it.
+
+## A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance
+
+[HW-DR-0053](../decisions/0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md) — A manifest says what a package carries, a recipe says what a composer selected, and a flattened manifest records where it came from. Three enforcement points already hold the split, and this record names it as a rule rather than as specification prose. (asserted, and no human has accepted it)
+
+## The upper bound of a reconcile-first allocator is the corpus and a claim store
+
+[HW-DR-0054](../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md) — A tree holds no concurrency, so two branches mint one number in silence. A claim store of one file for each identifier makes the two branches meet, and the rule that already reports a duplicate then fires on the branch. (asserted, and no human has accepted it)
+
+## A hook reads a wire format through the engine and not through an interpreter
+
+[HW-DR-0055](../decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) — A harness payload is read by a verb of this engine rather than by an interpreter a session does not otherwise require. The verb answers nothing about a corpus, which is what puts it outside the term that forbids a hook verb. (asserted, and no human has accepted it)
+
+## A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile
+
+[HW-DR-0056](../decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md) — No kind in the base package or in any bundle binds a language regime. A package that set the default value would change nothing, so the doctrine page of the starter kit carries the promise. (asserted, and no human has accepted it)
+
+## A shelf layout is the second half of what the identifier claim store covers
+
+[HW-DR-0057](../decisions/0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md) — The claim store covers an identifier where the file name does not determine it: a shelf that declares a layout, or a scheme that reconciles
+
+## A blank facet value is a rule of its own and it reads every string facet
+
+[HW-DR-0058](../decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md) — A declared facet that carries no content is a state that neither the required-facet rule nor the enum rule reaches. A new rule reports it, over every facet a taxonomy types as a string, at error severity. (asserted, and no human has accepted it)
+
+## A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to
+
+[HW-DR-0059](../decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md) — A filter that keeps the tool calls of a harness session log and drops every block the model wrote is an outside observation, because the type tag it reads is the harness's and not the model's. The condition is the channel the log arrives by, and a file the session can open is not one. (asserted, and no human has accepted it)

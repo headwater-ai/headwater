@@ -57,4 +57,10 @@ relations:
 
 **So currency is asked for and not enforced, until the repository is public.** Nothing in a free private repository refuses a merge of a stale branch. `.claude/commands/next-run.md` states the request where a run reads it, and the `headwater-engine` skill states it where an agent that blesses an artifact reads it. Both cite this record rather than restating the rule. When branch protection becomes available, the request becomes a required check and this paragraph is what it replaces.
 
+**The identifier case is the same anomaly with a different mechanism, and it was met while this record was open.** Two branches minted `HW-DR-0048` under two slugs. The file names differ, so a merge takes both with no conflict of any kind, and neither branch is wrong on its own. `identity.duplicate` is an error at corpus grain, and it reads both claimants, so nothing is missing from what the rule checks.
+
+**What it cannot do is run early enough.** No branch carries both claimants, so no run over either branch can see the pair. The rule is structurally unable to report before the second merge. That is a gap in when a check runs rather than in what it reads. It is the harder of the two to close. Every rule of this engine reads one tree, and this anomaly lives between two.
+
+**So the two cases have one remedy.** A count and an identifier both need a run over the merged state, and neither needs a new rule. The fold reaches the same conclusion from an unrelated defect. That agreement is the evidence that the conclusion is about merges rather than about counts.
+
 **An adopter inherits the rule rather than the artifacts.** Any corpus that two people edit in parallel meets the same anomaly in any artifact that stores a count over the whole corpus. The rule is the transferable part, and the two artifacts above are this repository's application of it.

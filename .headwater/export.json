@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 351,
-      "carried": 351,
+      "in the graph": 393,
+      "carried": 393,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 573,
-      "carried": 573,
+      "in the graph": 613,
+      "carried": 613,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -33,8 +33,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-AC-0001",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "Two facts settle whether the engine can reach a network: no source file under engine/crates names a network API, and no locked package provides one.",
           "last_verified": "2026-08-25",
           "title": "No source file of the engine names a network API and no locked dependency provides one",
@@ -711,7 +711,7 @@
           "status": "current",
           "status_since": "2026-08-30",
           "summary": "The namespace opens every identifier, and a published source declares no namespace at all, because any constant it wrote would be minted by every adopter of it at once.",
-          "last_verified": "2026-08-30",
+          "last_verified": "2026-09-06",
           "title": "Q25 — Where the namespace goes in an identifier, and who declares it",
           "provenance": {
             "warrant": "accepted",
@@ -878,8 +878,8 @@
           "id": "HW-DR-0031",
           "status": "current",
           "status_since": "2026-08-30",
-          "summary": "This repository becomes public on 2026-09-08. The owner sets the date, and the record stops each run from raising the schedule as an open question.",
-          "last_verified": "2026-08-30",
+          "summary": "This repository is public. The owner set 2026-09-08 and opened it on 2026-09-06, and the record stops each run from raising the schedule.",
+          "last_verified": "2026-09-06",
           "title": "Q31 — Whether this repository becomes public, and when",
           "provenance": {
             "warrant": "accepted",
@@ -1061,7 +1061,7 @@
               "site/changelog/index.html"
             ],
             "traces_to": [
-              "site/DESIGN-BRIEF.md"
+              "notes/website-design-brief.md"
             ]
           }
         }
@@ -1098,7 +1098,7 @@
         }
       },
       {
-        "path": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+        "path": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md",
         "kind": "decision",
         "id": "HW-DR-0039",
         "warrant": "accepted",
@@ -1107,8 +1107,8 @@
           "status": "current",
           "status_since": "2026-08-30",
           "summary": "The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.",
-          "last_verified": "2026-08-30",
-          "title": "Q39 — How a figure reaches a hand-built page, now that a build interpolates one",
+          "last_verified": "2026-09-06",
+          "title": "Q39 — How a figure reaches a hand-built page",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1125,7 +1125,7 @@
               "tools/refresh-figures.sh"
             ],
             "traces_to": [
-              "site/DESIGN-BRIEF.md"
+              "notes/website-design-brief.md"
             ]
           }
         }
@@ -1358,7 +1358,7 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-DR-0047",
-          "status": "draft",
+          "status": "current",
           "status_since": "2026-09-06",
           "summary": "One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time.",
           "last_verified": "2026-09-06",
@@ -1378,8 +1378,43 @@
             ],
             "governs": [
               "tools/assemble-site.sh",
+              "tools/cloudflare-build.sh",
               "wrangler.jsonc",
               "site/_headers"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md",
+        "kind": "decision",
+        "id": "HW-DR-0048",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0048",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "The sitemap a reader gets is derived from the directory that is served, by one walk that both halves call. Nobody types a page list, and the assembled directory is the only place the union exists.",
+          "last_verified": "2026-09-06",
+          "title": "The served sitemap is derived from the served directory",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "constrains": [
+              "HW-DR-0047"
+            ],
+            "traces_to": [
+              "HW-DR-0037",
+              "HW-DR-0047"
+            ],
+            "governs": [
+              "tools/sitemap.py",
+              "tools/refresh-crawler-files.sh"
             ]
           }
         }
@@ -1410,6 +1445,251 @@
               "engine/crates/graph/src/lib.rs",
               ".githooks/merge-regenerate"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
+        "kind": "decision",
+        "id": "HW-DR-0050",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0050",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet.",
+          "last_verified": "2026-09-06",
+          "title": "Q50 — Where the visual register of the hand-built pages lives",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "constrains": [
+              "HW-DR-0037"
+            ],
+            "governs": [
+              "tools/site-tokens.css",
+              "tools/refresh-site-tokens.sh"
+            ],
+            "traces_to": [
+              "notes/website-design-brief.md"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md",
+        "kind": "decision",
+        "id": "HW-DR-0051",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0051",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "A term reaches the public glossary because it recurs in the visitor-facing pages of the site, and for no other reason. The tutorial and the glossary itself are not sources, and the specification glossary answers to a different reader.",
+          "last_verified": "2026-09-06",
+          "title": "Q51 — What licenses a term into the public glossary, and what licenses a sixteenth",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0037",
+              "notes/website-design-brief.md"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md",
+        "kind": "decision",
+        "id": "HW-DR-0052",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-DR-0052",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "An author writes the state a document will hold once it lands, and the merge activates it. The state facet answers to the merge, the way HW-DR-0034 made the warrant facet answer to it.",
+          "last_verified": "2026-09-06",
+          "title": "A document is proposed at the state it will hold, and the merge activates it",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0034",
+              "HW-OBL-0030"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md",
+        "kind": "decision",
+        "id": "HW-DR-0053",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0053",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "A manifest says what a package carries, a recipe says what a composer selected, and a flattened manifest records where it came from. Three enforcement points already hold the split, and this record names it as a rule rather than as specification prose.",
+          "last_verified": "2026-09-06",
+          "title": "A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0044",
+              "HW-DR-0003"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md",
+        "kind": "decision",
+        "id": "HW-DR-0054",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0054",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "A tree holds no concurrency, so two branches mint one number in silence. A claim store of one file for each identifier makes the two branches meet, and the rule that already reports a duplicate then fires on the branch.",
+          "last_verified": "2026-09-06",
+          "title": "The upper bound of a reconcile-first allocator is the corpus and a claim store",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0021"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md",
+        "kind": "decision",
+        "id": "HW-DR-0055",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0055",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "A harness payload is read by a verb of this engine rather than by an interpreter a session does not otherwise require. The verb answers nothing about a corpus, which is what puts it outside the term that forbids a hook verb.",
+          "last_verified": "2026-09-06",
+          "title": "A hook reads a wire format through the engine and not through an interpreter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              ".claude/hooks/lib.sh",
+              ".claude/hooks/intent.sh",
+              ".claude/hooks/review.sh"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md",
+        "kind": "decision",
+        "id": "HW-DR-0056",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0056",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "No kind in the base package or in any bundle binds a language regime. A package that set the default value would change nothing, so the doctrine page of the starter kit carries the promise.",
+          "last_verified": "2026-09-06",
+          "title": "A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md",
+        "kind": "decision",
+        "id": "HW-DR-0057",
+        "facets": {
+          "id": "HW-DR-0057",
+          "status": "draft",
+          "status_since": "2026-09-07",
+          "summary": "The claim store covers an identifier where the file name does not determine it: a shelf that declares a layout, or a scheme that reconciles",
+          "last_verified": "2026-09-07",
+          "title": "A shelf layout is the second half of what the identifier claim store covers"
+        }
+      },
+      {
+        "path": "docs/decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md",
+        "kind": "decision",
+        "id": "HW-DR-0058",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0058",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "A declared facet that carries no content is a state that neither the required-facet rule nor the enum rule reaches. A new rule reports it, over every facet a taxonomy types as a string, at error severity.",
+          "last_verified": "2026-09-07",
+          "title": "A blank facet value is a rule of its own and it reads every string facet",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md",
+        "kind": "decision",
+        "id": "HW-DR-0059",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0059",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "A filter that keeps the tool calls of a harness session log and drops every block the model wrote is an outside observation, because the type tag it reads is the harness's and not the model's. The condition is the channel the log arrives by, and a file the session can open is not one.",
+          "last_verified": "2026-09-07",
+          "title": "A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
           }
         }
       },
@@ -1457,8 +1737,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-EVAL-capability-bundle-address-inventory",
-          "status": "draft",
-          "status_since": "2026-08-30",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-31",
           "summary": "The cross-bundle address inventory HW-DR-0044 asks for, and what it shows decision-record actually reaches inside design-spec.",
           "title": "The capability-bundle address inventory",
@@ -1621,7 +1901,7 @@
               "HW-SPEC-check-layer"
             ],
             "traces_to": [
-              "spike/"
+              "tools/language-spike/build.sh"
             ]
           }
         }
@@ -2002,8 +2282,8 @@
         "id": "HW-IFACE-headwater-capture",
         "facets": {
           "id": "HW-IFACE-headwater-capture",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How the capture-cost store reports assisted fields, sections, identifiers, edges, and document reach.",
           "last_verified": "2026-08-25",
           "title": "headwater capture",
@@ -2023,8 +2303,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-IFACE-headwater-check",
-          "status": "draft",
-          "status_since": "2026-08-16",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "What headwater check reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit.",
           "last_verified": "2026-08-24",
           "title": "headwater check",
@@ -2049,8 +2329,8 @@
         "id": "HW-IFACE-headwater-completions",
         "facets": {
           "id": "HW-IFACE-headwater-completions",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How to write one of four shell completion scripts, and which caller errors prevent any script output.",
           "last_verified": "2026-08-25",
           "title": "headwater completions",
@@ -2068,10 +2348,10 @@
         "id": "HW-IFACE-headwater-conformance",
         "facets": {
           "id": "HW-IFACE-headwater-conformance",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How a package's rules measure adoption, how waivers affect a requested rung, and what exits non-zero.",
-          "last_verified": "2026-08-25",
+          "last_verified": "2026-09-07",
           "title": "headwater conformance",
           "relations": {
             "governs": [
@@ -2090,8 +2370,8 @@
         "id": "HW-IFACE-headwater-explain",
         "facets": {
           "id": "HW-IFACE-headwater-explain",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How a path or identifier yields the taxonomy derivation, requirements, relations, and graph edges.",
           "last_verified": "2026-08-25",
           "title": "headwater explain",
@@ -2113,8 +2393,8 @@
         "id": "HW-IFACE-headwater-export",
         "facets": {
           "id": "HW-IFACE-headwater-export",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How to emit a taxonomy export profile to a file or standard output with a declared loss census.",
           "last_verified": "2026-08-25",
           "title": "headwater export",
@@ -2133,8 +2413,8 @@
         "id": "HW-IFACE-headwater-gate",
         "facets": {
           "id": "HW-IFACE-headwater-gate",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How a published read set carries a verdict to another tree, and why new documents stay outside its reach.",
           "last_verified": "2026-08-25",
           "title": "headwater gate",
@@ -2153,10 +2433,10 @@
         "id": "HW-IFACE-headwater-generate",
         "facets": {
           "id": "HW-IFACE-headwater-generate",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How to write the projections declared by the taxonomy and detect stale generated files.",
-          "last_verified": "2026-08-25",
+          "last_verified": "2026-09-07",
           "title": "headwater generate",
           "relations": {
             "governs": [
@@ -2173,8 +2453,8 @@
         "id": "HW-IFACE-headwater-help",
         "facets": {
           "id": "HW-IFACE-headwater-help",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How to print the command tree or one verb's help, and the caller errors that return status 1.",
           "last_verified": "2026-08-30",
           "title": "headwater help",
@@ -2196,8 +2476,8 @@
         "id": "HW-IFACE-headwater-import",
         "facets": {
           "id": "HW-IFACE-headwater-import",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How to validate a pinned fetched snapshot and import its declared relation edges into documents.",
           "last_verified": "2026-08-25",
           "title": "headwater import",
@@ -2216,8 +2496,8 @@
         "id": "HW-IFACE-headwater-infer",
         "facets": {
           "id": "HW-IFACE-headwater-infer",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How to report uncovered findings as adoption tasks and optionally append them to the taxonomy lock.",
           "last_verified": "2026-08-25",
           "title": "headwater infer",
@@ -2235,8 +2515,8 @@
         "id": "HW-IFACE-headwater-init",
         "facets": {
           "id": "HW-IFACE-headwater-init",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How to start a corpus by writing a consumer declaration and an overlay from tree evidence and interview prompts.",
           "last_verified": "2026-08-25",
           "title": "headwater init",
@@ -2249,13 +2529,32 @@
         }
       },
       {
+        "path": "docs/interfaces/headwater-json.md",
+        "kind": "interface_contract",
+        "id": "HW-IFACE-headwater-json",
+        "facets": {
+          "id": "HW-IFACE-headwater-json",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "How one member of the JSON object on standard input reaches a caller, and the one answer that stands for every way a read reaches no scalar.",
+          "last_verified": "2026-09-06",
+          "title": "headwater json",
+          "relations": {
+            "governs": [
+              "engine/crates/cli/src/main.rs",
+              "engine/crates/yaml/src/json.rs"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/interfaces/headwater-mcp.md",
         "kind": "interface_contract",
         "id": "HW-IFACE-headwater-mcp",
         "facets": {
           "id": "HW-IFACE-headwater-mcp",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How the stdio MCP server exposes read tools, optional working-tree writes, and a one-write session seal.",
           "last_verified": "2026-08-25",
           "title": "headwater mcp",
@@ -2274,8 +2573,8 @@
         "id": "HW-IFACE-headwater-new",
         "facets": {
           "id": "HW-IFACE-headwater-new",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How to scaffold one typed document from the resolved taxonomy without overwriting existing files.",
           "last_verified": "2026-08-25",
           "title": "headwater new",
@@ -2294,8 +2593,8 @@
         "id": "HW-IFACE-headwater-probe",
         "facets": {
           "id": "HW-IFACE-headwater-probe",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How plan, record, grade and stale compose probe measurements without gating a build.",
           "last_verified": "2026-08-25",
           "title": "headwater probe",
@@ -2313,8 +2612,8 @@
         "id": "HW-IFACE-headwater-query",
         "facets": {
           "id": "HW-IFACE-headwater-query",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "Why `headwater query` always refuses an expression, and which graph reads replace it.",
           "last_verified": "2026-08-25",
           "title": "headwater query",
@@ -2332,8 +2631,8 @@
         "id": "HW-IFACE-headwater-route",
         "facets": {
           "id": "HW-IFACE-headwater-route",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How a task description becomes ranked document pointers, when routing stays silent, and what the budget limits.",
           "last_verified": "2026-08-25",
           "title": "headwater route",
@@ -2355,8 +2654,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-IFACE-headwater-sweep",
-          "status": "draft",
-          "status_since": "2026-08-16",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "Why no result of headwater sweep can move an exit status, and the four caller errors that move one anyway.",
           "last_verified": "2026-08-24",
           "title": "headwater sweep",
@@ -2381,10 +2680,10 @@
         "id": "HW-IFACE-headwater-taxonomy",
         "facets": {
           "id": "HW-IFACE-headwater-taxonomy",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "How to validate, resolve, audit, publish, vendor, compare and migrate taxonomy packages.",
-          "last_verified": "2026-09-05",
+          "last_verified": "2026-09-07",
           "title": "headwater taxonomy",
           "relations": {
             "governs": [
@@ -2437,7 +2736,7 @@
           "status": "current",
           "status_since": "2026-08-11",
           "waiting_on": "adopter",
-          "last_verified": "2026-08-14",
+          "last_verified": "2026-09-06",
           "summary": "The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for.",
           "provenance": {
             "warrant": "accepted",
@@ -3911,8 +4210,8 @@
           "status": "current",
           "status_since": "2026-08-12",
           "waiting_on": "build",
-          "last_verified": "2026-08-14",
-          "summary": "Every template of the design-spec entry writes a relation at the top level with a path as the target, which Q4 refused.",
+          "last_verified": "2026-09-07",
+          "summary": "The fixture corpus of the first library entry writes a relation at the top level with a path as the target, which Q4 refused.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -5947,8 +6246,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0126",
-          "status": "draft",
-          "status_since": "2026-08-15",
+          "status": "current",
+          "status_since": "2026-09-06",
           "waiting_on": "ruling",
           "summary": "Spec 3 rules that an `asserted` document cannot carry `last_verified`. The facet contract requires it on every kind that has one, and nine of nine asserted documents carry it.",
           "last_verified": "2026-08-15",
@@ -5974,8 +6273,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0127",
-          "status": "draft",
-          "status_since": "2026-08-15",
+          "status": "current",
+          "status_since": "2026-09-06",
           "waiting_on": "build",
           "summary": "A path a change named that no census row holds keeps its prior version only where that version parsed, so a deleted document with malformed front matter reaches no rule.",
           "last_verified": "2026-08-15",
@@ -6001,8 +6300,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0128",
-          "status": "draft",
-          "status_since": "2026-08-16",
+          "status": "current",
+          "status_since": "2026-09-06",
           "waiting_on": "ruling",
           "summary": "Q29 keeps the engine outside the corpus root, so a contract may name a crate and nothing names a crate that has no contract. A participation expectation runs between documents, and an anchor target is no node with a kind.",
           "last_verified": "2026-08-17",
@@ -6028,8 +6327,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0129",
-          "status": "draft",
-          "status_since": "2026-08-16",
+          "status": "current",
+          "status_since": "2026-09-06",
           "waiting_on": "build",
           "summary": "Spec 12 lists an unparseable file and an unclassifiable path among the structural findings of Phase A, and the engine emits no finding for either. The census and `corpus.classified` report both, which is what the control on OB-COV-1 declares, and no document says so.",
           "last_verified": "2026-08-16",
@@ -6056,11 +6355,11 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0130",
-          "status": "current",
-          "status_since": "2026-08-27",
-          "summary": "Q31 originally left the publication date unset. The owner set 2026-09-08, and this record remains current until the repository is public.",
-          "last_verified": "2026-08-27",
-          "title": "The publication date of this repository is set, and the repository stays private until then",
+          "status": "discharged",
+          "status_since": "2026-09-06",
+          "summary": "Q31 originally left the publication date unset. The owner set 2026-09-08 and opened the repository on 2026-09-06, which discharges this record.",
+          "last_verified": "2026-09-06",
+          "title": "The publication date of this repository is set, and the repository is public",
           "waiting_on": "ruling",
           "provenance": {
             "warrant": "asserted",
@@ -6083,8 +6382,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0131",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "The CLI crate wires every verb and carries no tests, so two wiring defects passed a green suite",
           "summary": "Two wiring defects in the CLI crate's verb dispatch were found by hand, and reverting either fix still leaves the test suite green.",
@@ -6106,8 +6405,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0132",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "Survey the wiring decisions of main.rs, verb by verb, and cover the quiet ones",
           "summary": "Two more wiring decisions in main.rs went uncovered by hand alone, and the other twenty-seven verbs have never been surveyed for the same failure.",
@@ -6129,8 +6428,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0133",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "Two test helpers key a scratch directory on the pid alone, and the race springs on the next case added",
           "summary": "Two scratch-directory test helpers key on the process id alone, safe only while their files hold one test each.",
@@ -6152,8 +6451,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0134",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "The comment prose passes every rule this engine has, so the readability problem is a judgment call no check here reaches.",
           "provenance": {
             "warrant": "accepted",
@@ -6175,19 +6474,19 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0135",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "discharged",
+          "status_since": "2026-09-06",
           "title": "repo-cleanup names one cause for a gone upstream, and this repository produced a second",
-          "summary": "Four merged branches survived repo-cleanup's first run with a gone upstream that ancestry misread, caused by a rewritten history the skill never names.",
+          "summary": "Ancestry misreads a merged branch as unmerged wherever a squash merge or a rewritten history left it unreachable, and git branch -d then refuses on no evidence about content.",
           "provenance": {
             "warrant": "accepted",
             "agency": "agent",
             "drafted_by": "claude-sonnet-5",
-            "activity": "draft",
+            "activity": "draft+revise",
             "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
           },
-          "last_verified": "2026-08-26",
+          "last_verified": "2026-09-06",
           "waiting_on": "adopter"
         }
       },
@@ -6198,8 +6497,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0136",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "title": "Seven rustdoc-relative links in comments point at pages the doc tree does not have",
           "summary": "Seven links in engine comments are written for rustdoc output that no job ever builds, so nothing has ever resolved them.",
           "provenance": {
@@ -6221,8 +6520,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0137",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "A British spelling reaches a serialized grain string, so the rename is a corpus change and a derived-bytes change at once",
           "summary": "A British spelling in the serialized grain string entangles a prose rename with cached verdicts, a read-set artifact, and recorded fixtures.",
@@ -6244,8 +6543,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0138",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "The editorial pass measured 180,255 words of comment prose and rewrote two files, leaving cli/src/main.rs, the largest, untouched.",
           "provenance": {
             "warrant": "accepted",
@@ -6267,8 +6566,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0139",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "An identifier scheme glues three parts into one string, so nothing can decide that two schemes are disjoint",
           "summary": "A pattern string glues the prefix, the namespace, and the local part, so disjointness is undecided and a published address is invented from its path.",
@@ -6290,8 +6589,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0140",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "A check can meet the failing-fixture bar with a fixture that cannot distinguish the rule from its neighbour",
           "summary": "A fixture set can meet the failing-fixture bar in full and never exercise the choice between a rule and its neighbor.",
@@ -6313,8 +6612,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0141",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "The gap `HW-OBL-0046` left open, a document IRI built from a file path rather than a name, is gated on a consumer for `rdf` or `skos` that has not appeared.",
           "provenance": {
             "warrant": "accepted",
@@ -6336,8 +6635,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0142",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "The obligation register states its own size by hand, and it went stale three times in two days",
           "summary": "Spec 13 states its own item and record counts by hand, and the figure drifted three times in two days before anyone noticed.",
@@ -6359,8 +6658,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0143",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "A specification sentence closes a set with a count the source exceeds, and 115 of 127 candidates are unchecked",
           "summary": "Three sentences that closed a set with a wrong count were found by accident, and 115 more candidates were never checked.",
@@ -6382,8 +6681,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0144",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "The cache-identity test reads the live working tree, so an edit during the run reports the correctness root as violated",
           "summary": "The test proving cache and no-cache agree on a verdict reads the live working tree, and a concurrent edit reports the correctness root as violated.",
@@ -6405,8 +6704,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0145",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "The CI job named \\\"(advisory)\\\" carries every blocking shell suite in the repository",
           "summary": "The CI job named advisory blocks on eleven of its own steps, not the two its name describes.",
@@ -6428,8 +6727,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0146",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "discharged",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "The Stop hook reads its re-entry guard with an interpreter it does not require, so a machine with no python3 re-blocks the same turn",
           "summary": "The Stop hook reads its re-entry guard through python3 with no fallback, so a machine without python3 re-blocks the same turn.",
@@ -6451,8 +6750,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0147",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "The skills fixture suite passes on zero verbs counted, and fails in every clone that has not yet built the engine.",
           "provenance": {
             "warrant": "accepted",
@@ -6474,9 +6773,9 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0148",
-          "status": "draft",
-          "status_since": "2026-08-26",
-          "last_verified": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "last_verified": "2026-09-07",
           "title": "The help assertion never asks a subcommand, and no rust-version declares the floor clap now sits on",
           "summary": "The help test pins only the root command, and no machine-readable rust-version stops clap's own margin from reaching zero.",
           "provenance": {
@@ -6497,8 +6796,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0149",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "The write-time hook still picks pointer lines out of prose by their em dash",
           "summary": "The write-time hook still finds pointer lines by grepping for an em dash, so a document with no summary drops out in silence.",
@@ -6520,8 +6819,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0150",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "A `current` decision declares no required edge to the document it settled, so 22 of 23 reach no specification at all",
           "summary": "22 of 23 current decisions declare no edge to the specification they settled, and one declares no relation at all.",
@@ -6543,8 +6842,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0151",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "title": "The glossary's Package entry omits conformance and still lists plugins, which #367 dropped",
           "summary": "The glossary's Package entry is missing `conformance` and still names `plugins`, a key spec 7 no longer carries.",
           "provenance": {
@@ -6566,8 +6865,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0152",
-          "status": "draft",
-          "status_since": "2026-08-26",
+          "status": "current",
+          "status_since": "2026-09-06",
           "title": "Ledger::render() in adoption.rs has the same zero-count defect suppression.rs had before PR #450, still latent",
           "summary": "adoption.rs::Ledger::render() drops its own header and count line whenever a corpus declares no adoption debt, the same shape PR #450 fixed in suppression.rs, and nothing reads the dropped text yet.",
           "provenance": {
@@ -6589,8 +6888,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0153",
-          "status": "draft",
-          "status_since": "2026-08-27",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "The sentence splitter has inline tests, but it has no data-driven corpus that preserves the failures behind Q5's rewrite.",
           "provenance": {
             "warrant": "asserted",
@@ -6610,8 +6909,8 @@
         "id": "HW-OBL-0154",
         "facets": {
           "id": "HW-OBL-0154",
-          "status": "draft",
-          "status_since": "2026-08-28",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "Every section of the recorded audit report renders populated except the adoption one, whose fixture tree declares no payload.",
           "last_verified": "2026-08-28",
           "title": "The adoption decay section is fixture-recorded only in its empty shape",
@@ -6624,8 +6923,8 @@
         "id": "HW-OBL-0155",
         "facets": {
           "id": "HW-OBL-0155",
-          "status": "draft",
-          "status_since": "2026-08-28",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "Three of the `probe` crate's fourteen refusals are named by no test, and no case holds the set to its own coverage.",
           "last_verified": "2026-08-28",
           "title": "probe's fourteen refusals have no coverage test, and three of them are named by no test at all",
@@ -6638,8 +6937,8 @@
         "id": "HW-OBL-0156",
         "facets": {
           "id": "HW-OBL-0156",
-          "status": "draft",
-          "status_since": "2026-08-28",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "Two suites read the shape of the help and the headings of the contract, and neither reads a word of either.",
           "last_verified": "2026-08-28",
           "title": "A help string and the interface contract that restates it can both be false with the whole suite green",
@@ -6652,8 +6951,8 @@
         "id": "HW-OBL-0157",
         "facets": {
           "id": "HW-OBL-0157",
-          "status": "draft",
-          "status_since": "2026-08-28",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "The capture report warns that its aggregate crosses two denominators, on a run whose own next line lists seventeen of them.",
           "last_verified": "2026-08-28",
           "title": "The capture report says two denominators over a store that named seventeen taxonomies",
@@ -6666,8 +6965,8 @@
         "id": "HW-OBL-0158",
         "facets": {
           "id": "HW-OBL-0158",
-          "status": "draft",
-          "status_since": "2026-08-28",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "The fifth entry of the GLOBALS table carries clap's own two words rather than a description this repository wrote, because clap adds its help argument after the point where a caller can name it.",
           "last_verified": "2026-08-28",
           "title": "clap owns the help flag, so -h, --help reads Print help on all 32 verb pages",
@@ -6681,8 +6980,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0159",
-          "status": "draft",
-          "status_since": "2026-08-28",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "`opens_a_sentence` admits a digit and not a hash, so a sentence that cites an issue as `#346` is counted with the sentence before it and reported at their combined length.",
           "last_verified": "2026-08-28",
           "title": "A sentence that opens with a hash and an issue number is folded into the sentence before it",
@@ -6708,7 +7007,7 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0160",
-          "status": "draft",
+          "status": "current",
           "status_since": "2026-09-06",
           "summary": "277 generated pages load highlight.js and two stylesheets from cdnjs with no integrity attribute, so a third party supplies script to a site whose own subject is provenance.",
           "last_verified": "2026-09-06",
@@ -6729,14 +7028,422 @@
         }
       },
       {
+        "path": "docs/obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0161",
+        "facets": {
+          "id": "HW-OBL-0161",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "Two raised severities in mkdocs.yml are the whole of two gates, and no case in this repository fails when either one is lowered",
+          "last_verified": "2026-09-06",
+          "title": "The validation block of mkdocs.yml is a gate this repository owns and no fixture drives",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0162-spec-7-prints-a-package-version-that-no-check-compares-with-the-recipe.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0162",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0162",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "Spec 7's assembly example and the shipped recipe both pin one package version, and nothing compares them. The example was stale for four minor versions and no rule, no fixture and no CI job reported it.",
+          "last_verified": "2026-09-06",
+          "title": "Spec 7 prints a package version that no check compares with the recipe",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0163",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0163",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "Ten decision records name a Q number in their file name that docs/spec/09-decisions.md has no section for, and nothing reads either side of the pair.",
+          "last_verified": "2026-09-06",
+          "title": "Ten decision records claim a Q number the decision register does not carry",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0164-the-regeneration-check-tests-byte-equality-before-the-marker-so-a-file-the-census-stopped-counting-as-generated-still-passes.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0164",
+        "facets": {
+          "id": "HW-OBL-0164",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "`generate --check` reads byte equality before it reads the marker, so a generated file the census dropped from the generated set still passes it",
+          "last_verified": "2026-09-06",
+          "title": "The regeneration check tests byte equality before the marker, so a file the census stopped counting as generated still passes",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0165-a-rendered-page-gate-greps-for-a-string-it-requires-and-states-no-denominator-so-an-empty-build-passes-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0165",
+        "facets": {
+          "id": "HW-OBL-0165",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "The CI step that holds every rendered page to a corpus pointer exits 0 over a served directory with no page in it",
+          "last_verified": "2026-09-06",
+          "title": "A rendered-page gate greps for a string it requires and states no denominator, so an empty build passes it",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0166-spec-2-states-a-corpus-wide-default-language-regime-that-no-rule-of-this-engine-reads.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0166",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0166",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "Spec 2 tells an adopter that a corpus declares one default language regime. The engine resolves a regime through a kind and implements no fallback, so the first half of that sentence describes nothing.",
+          "last_verified": "2026-09-06",
+          "title": "Spec 2 states a corpus-wide default language regime that no rule of this engine reads",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0167",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0167",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "The ruleset on the default branch requires zero approving reviews, which is the posture HW-DR-0034 named as the thing that erases its line. The corpus owes a ruling.",
+          "last_verified": "2026-09-06",
+          "title": "The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0034"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0168",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0168",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "The voice rule reports zero because not one of its forty patterns occurs here, and that reads the same as a clean corpus.",
+          "last_verified": "2026-09-06",
+          "title": "A saturated pattern set and a clean corpus are the same zero, and no report separates them",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0002",
+              "engine/crates/check/src/voice.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0169-the-coverage-report-lists-one-path-twice-so-the-self-assessment-page-publishes-two-unaccounted-files-where-one-exists.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0169",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0169",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "coverage.unaccounted reads ['.headwater/ids', '.headwater/ids'], so the self-assessment page publishes 2 under a label that names files nobody accounted for.",
+          "last_verified": "2026-09-06",
+          "title": "The coverage report lists one path twice, so the self-assessment page publishes two unaccounted files where one exists",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0170",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0170",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Every other rule this engine carries reaches one obligation. `facet.value.blank` reaches none, because the control that would bind it sits in the vendored package and the edit moves the pin digest.",
+          "last_verified": "2026-09-07",
+          "title": "The blank facet value rule reaches no obligation so the report names none",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0058",
+              "engine/crates/check/src/facet_blank.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0171-no-rule-reads-a-document-facet-value-against-the-type-its-declaration-states.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0171",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0171",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "A facet declares `type: date`, `type: integer` or `type: string`, and no check reads a document's value against that declaration. A mapping where a date belongs reaches a strict run at exit 0.",
+          "last_verified": "2026-09-07",
+          "title": "No rule reads a document facet value against the type its declaration states",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0058",
+              "engine/crates/check/src/facet_blank.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0172",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0172",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Nine constants named ALL type the variant list of an enum by hand, the array length is part of the type, and no assertion compares either against the exhaustive match beside it.",
+          "last_verified": "2026-09-07",
+          "title": "Nine hand-kept constants enumerate an enum and nothing holds one against the variants",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "engine/crates/adapter/src/lib.rs",
+              "engine/crates/generate/src/lib.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0173",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0173",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Four named steps of ci.yml carry a shell decision procedure that ends in exit 1, no fixture suite drives any of them over a scratch input, and no shell of this repository is parsed or linted at all.",
+          "last_verified": "2026-09-07",
+          "title": "Four inline gates in the workflow decide an exit status and no suite provokes one",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              ".github/workflows/ci.yml",
+              "HW-OBL-0145"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0174-publishing-the-base-package-reports-51-references-that-resolve-nowhere-and-exits-0.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0174",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0174",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Publishing headwater/standard 4.1.0 prints that the artifact records 51 references resolving nowhere inside it, exits 0, ships the list in the manifest, and taxonomy vendor installs it without a word.",
+          "last_verified": "2026-09-07",
+          "title": "Publishing the base package reports 51 references that resolve nowhere and exits 0",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "taxonomy-source/headwater-standard/package.yml"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0175-two-documents-take-one-sequence-on-a-sequence-declaring-shelf-and-no-rule-reads-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0175",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0175",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Two design specs declaring sequence 16, whose file names both open with 16-, give check --strict exit 0 and the same finding count as the tree without them.",
+          "last_verified": "2026-09-07",
+          "title": "Two documents take one sequence on a sequence-declaring shelf and no rule reads it",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0106",
+              "HW-SPEC-taxonomy-model"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0176",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0176",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Under HEADWATER_BLESS one case truncates crates/conformance/fixtures/wrapped.report while a sibling thread of the same binary reads it, which can panic the run and cannot corrupt the artifact.",
+          "last_verified": "2026-09-07",
+          "title": "A blessed fixture is read by a sibling case that runs while the write truncates it",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "engine/crates/conformance/tests/render.rs",
+              "HW-OBL-0133"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0177",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0177",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "The value rule prescribes waiting_on=adopter on every self-audit record, HW-DR-0030 defines that value as waiting on an outside corpus, and almost none of those records does.",
+          "last_verified": "2026-09-07",
+          "title": "The value rule writes adopter on every self-audit record and most of them wait on a build",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0030",
+              ".claude/commands/next-run.md"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
         "warrant": "asserted",
         "facets": {
           "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
-          "status": "draft",
-          "status_since": "2026-08-14",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "The descriptor names one entry point for each shelf that holds a document, and this asks whether a session with no other pointer opens the one that governs the task.",
           "last_verified": "2026-08-14",
           "probe_category": "discovery",
@@ -6767,8 +7474,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer",
-          "status": "draft",
-          "status_since": "2026-08-27",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "A session classifies a recovery word as present, withheld, or absent from a served corpus with a counted tombstone.",
           "last_verified": "2026-08-27",
           "probe_category": "sufficiency",
@@ -6796,8 +7503,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it",
-          "status": "draft",
-          "status_since": "2026-08-14",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "A session that meets the superseded register first either reaches the decision that replaced it or reports the stale answer.",
           "last_verified": "2026-08-14",
           "probe_category": "navigability",
@@ -6828,8 +7535,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document",
-          "status": "draft",
-          "status_since": "2026-08-14",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "Nothing makes a skill load, so its reach is a measurement, and this is the instrument that takes it.",
           "last_verified": "2026-08-14",
           "probe_category": "discovery",
@@ -6860,8 +7567,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-REQ-0001",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "The engine opens no network connection while it reads a corpus, so a check runs offline and a resolution result stays reproducible.",
           "last_verified": "2026-08-25",
           "title": "The engine reaches no network at check time",
@@ -7089,8 +7796,8 @@
         "id": "HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary",
         "facets": {
           "id": "HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary",
-          "status": "draft",
-          "status_since": "2026-08-28",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "Each of the 64 help strings that PR #335 carried whole out of the retired parser, run against the shipped binary: 60 true, 3 false, 1 not runnable.",
           "last_verified": "2026-08-28",
           "doc_type": "review_record",
@@ -7581,8 +8288,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-SPEC-the-recorder-contract",
-          "status": "draft",
-          "status_since": "2026-08-14",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "Everything an external recorder writes into a transcript, the closed key sets that refuse a file, and the one member of the run identity this engine compares.",
           "last_verified": "2026-08-14",
           "doc_type": "design_spec",
@@ -7609,8 +8316,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-SPEC-harness-support",
-          "status": "draft",
-          "status_since": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "The ten capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.",
           "last_verified": "2026-08-25",
           "doc_type": "design_spec",
@@ -7675,8 +8382,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-TUT-your-first-governed-corpus",
-          "status": "draft",
-          "status_since": "2026-08-17",
+          "status": "current",
+          "status_since": "2026-09-06",
           "summary": "An untyped repository reaches a passing strict check in sixteen steps, and the reader leaves holding shelf, kind, facet, overlay and obligation.",
           "last_verified": "2026-08-17",
           "title": "Your first governed corpus",
@@ -7699,6 +8406,11 @@
       {
         "anchor_kind": "code_path",
         "id": ".claude/agents/headwater-maintainer.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".claude/commands/next-run.md",
         "resolver": "source-tree"
       },
       {
@@ -7753,6 +8465,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": ".github/workflows/ci.yml",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": ".headwater/overlay.yml",
         "resolver": "source-tree"
       },
@@ -7784,6 +8501,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/adapter/src/lib.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/audit/src/lib.rs",
         "resolver": "source-tree"
       },
@@ -7809,6 +8531,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/check/src/facet_blank.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/check/src/gate.rs",
         "resolver": "source-tree"
       },
@@ -7825,6 +8552,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/check/src/lifecycle_state.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/check/src/voice.rs",
         "resolver": "source-tree"
       },
       {
@@ -7885,6 +8617,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/conformance/src/render.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/conformance/tests/render.rs",
         "resolver": "source-tree"
       },
       {
@@ -7989,17 +8726,22 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/yaml/src/json.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "mkdocs-overrides/main.html",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "packages/headwater-standard/taxonomy.yml",
+        "id": "notes/website-design-brief.md",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "site/DESIGN-BRIEF.md",
+        "id": "packages/headwater-standard/taxonomy.yml",
         "resolver": "source-tree"
       },
       {
@@ -8049,7 +8791,7 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": "spike",
+        "id": "taxonomy-source/headwater-standard/package.yml",
         "resolver": "source-tree"
       },
       {
@@ -8059,12 +8801,42 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "tools/cloudflare-build.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/language-spike/build.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "tools/rdf-probe/emit.py",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
+        "id": "tools/refresh-crawler-files.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "tools/refresh-figures.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/refresh-site-tokens.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/site-tokens.css",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/sitemap.py",
         "resolver": "source-tree"
       },
       {
@@ -8730,7 +9502,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "site/DESIGN-BRIEF.md",
+          "id": "notes/website-design-brief.md",
           "resolver": "source-tree"
         }
       },
@@ -8768,7 +9540,7 @@
         }
       },
       {
-        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md",
         "relation": "constrains",
         "written_as": "constrains",
         "target": {
@@ -8779,7 +9551,7 @@
         }
       },
       {
-        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md",
         "relation": "governs",
         "written_as": "governs",
         "target": {
@@ -8790,13 +9562,13 @@
         }
       },
       {
-        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "site/DESIGN-BRIEF.md",
+          "id": "notes/website-design-brief.md",
           "resolver": "source-tree"
         }
       },
@@ -9137,7 +9909,7 @@
         "target": {
           "bound": "document",
           "id": "HW-DR-0039",
-          "path": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+          "path": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md",
           "kind": "decision"
         }
       },
@@ -9149,6 +9921,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "tools/assemble-site.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/cloudflare-build.sh",
           "resolver": "source-tree"
         }
       },
@@ -9171,6 +9954,61 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "site/_headers",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0047",
+          "path": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0037",
+          "path": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0047",
+          "path": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/sitemap.py",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/refresh-crawler-files.sh",
           "resolver": "source-tree"
         }
       },
@@ -9215,6 +10053,160 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": ".githooks/merge-regenerate",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0037",
+          "path": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/site-tokens.css",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/refresh-site-tokens.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "notes/website-design-brief.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0037",
+          "path": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "notes/website-design-brief.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0034",
+          "path": "docs/decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0030",
+          "path": "docs/obligations/0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/decisions/0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0044",
+          "path": "docs/decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0003",
+          "path": "docs/decisions/0003-how-much-of-the-default-taxonomy-ships-in-the-box.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0021",
+          "path": "docs/decisions/0021-terminological-succession-and-validity-under-merge.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/hooks/lib.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/hooks/intent.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/hooks/review.sh",
           "resolver": "source-tree"
         }
       },
@@ -9555,7 +10547,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "spike",
+          "id": "tools/language-spike/build.sh",
           "resolver": "source-tree"
         }
       },
@@ -10568,6 +11560,28 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-json.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-json.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/yaml/src/json.rs",
           "resolver": "source-tree"
         }
       },
@@ -12780,6 +13794,204 @@
           "id": "HW-DR-0047",
           "path": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0034",
+          "path": "docs/decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0002",
+          "path": "docs/obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/voice.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0058",
+          "path": "docs/decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/facet_blank.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0171-no-rule-reads-a-document-facet-value-against-the-type-its-declaration-states.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0058",
+          "path": "docs/decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0171-no-rule-reads-a-document-facet-value-against-the-type-its-declaration-states.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/facet_blank.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/adapter/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/generate/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/ci.yml",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0145",
+          "path": "docs/obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/obligations/0174-publishing-the-base-package-reports-51-references-that-resolve-nowhere-and-exits-0.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "taxonomy-source/headwater-standard/package.yml",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0175-two-documents-take-one-sequence-on-a-sequence-declaring-shelf-and-no-rule-reads-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0106",
+          "path": "docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/obligations/0175-two-documents-take-one-sequence-on-a-sequence-declaring-shelf-and-no-rule-reads-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-taxonomy-model",
+          "path": "docs/spec/02-taxonomy-model.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/conformance/tests/render.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0133",
+          "path": "docs/obligations/0133-two-test-helpers-key-a-scratch-directory-on-the-pid-alone-and-the-race-springs-on-the-next-case-added.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0030",
+          "path": "docs/decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/commands/next-run.md",
+          "resolver": "source-tree"
         }
       },
       {

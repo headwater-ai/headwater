@@ -80,7 +80,7 @@ docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-p
   typed: decision
 docs/decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md
   typed: decision
-docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md
+docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md
   typed: decision
 docs/decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md
   typed: decision
@@ -98,7 +98,29 @@ docs/decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest
   typed: decision
 docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md
   typed: decision
+docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md
+  typed: decision
 docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
+  typed: decision
+docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md
+  typed: decision
+docs/decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md
+  typed: decision
+docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md
+  typed: decision
+docs/decisions/0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md
+  typed: decision
+docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md
+  typed: decision
+docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md
+  typed: decision
+docs/decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md
+  typed: decision
+docs/decisions/0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md
+  typed: decision
+docs/decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md
+  typed: decision
+docs/decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md
   typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
@@ -169,6 +191,8 @@ docs/interfaces/headwater-import.md
 docs/interfaces/headwater-infer.md
   typed: interface_contract
 docs/interfaces/headwater-init.md
+  typed: interface_contract
+docs/interfaces/headwater-json.md
   typed: interface_contract
 docs/interfaces/headwater-mcp.md
   typed: interface_contract
@@ -503,6 +527,40 @@ docs/obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-
 docs/obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md
   typed: obligation_record
 docs/obligations/0160-the-generated-half-of-the-site-loads-highlight-js-from-a-third-party-with-no-subresource-integrity.md
+  typed: obligation_record
+docs/obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md
+  typed: obligation_record
+docs/obligations/0162-spec-7-prints-a-package-version-that-no-check-compares-with-the-recipe.md
+  typed: obligation_record
+docs/obligations/0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md
+  typed: obligation_record
+docs/obligations/0164-the-regeneration-check-tests-byte-equality-before-the-marker-so-a-file-the-census-stopped-counting-as-generated-still-passes.md
+  typed: obligation_record
+docs/obligations/0165-a-rendered-page-gate-greps-for-a-string-it-requires-and-states-no-denominator-so-an-empty-build-passes-it.md
+  typed: obligation_record
+docs/obligations/0166-spec-2-states-a-corpus-wide-default-language-regime-that-no-rule-of-this-engine-reads.md
+  typed: obligation_record
+docs/obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md
+  typed: obligation_record
+docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md
+  typed: obligation_record
+docs/obligations/0169-the-coverage-report-lists-one-path-twice-so-the-self-assessment-page-publishes-two-unaccounted-files-where-one-exists.md
+  typed: obligation_record
+docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md
+  typed: obligation_record
+docs/obligations/0171-no-rule-reads-a-document-facet-value-against-the-type-its-declaration-states.md
+  typed: obligation_record
+docs/obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md
+  typed: obligation_record
+docs/obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md
+  typed: obligation_record
+docs/obligations/0174-publishing-the-base-package-reports-51-references-that-resolve-nowhere-and-exits-0.md
+  typed: obligation_record
+docs/obligations/0175-two-documents-take-one-sequence-on-a-sequence-declaring-shelf-and-no-rule-reads-it.md
+  typed: obligation_record
+docs/obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md
+  typed: obligation_record
+docs/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md
   typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census

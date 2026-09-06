@@ -1,10 +1,18 @@
 anchors
   code_path `.claude/agents/headwater-maintainer.md` via source-tree
     cited by HW-SPEC-ai-integration
+  code_path `.claude/commands/next-run.md` via source-tree
+    cited by HW-OBL-0177
+  code_path `.claude/hooks/intent.sh` via source-tree
+    cited by HW-DR-0055
   code_path `.claude/hooks/intent.sh` via source-tree
     cited by HW-SPEC-ai-integration
   code_path `.claude/hooks/lib.sh` via source-tree
+    cited by HW-DR-0055
+  code_path `.claude/hooks/lib.sh` via source-tree
     cited by HW-SPEC-ai-integration
+  code_path `.claude/hooks/review.sh` via source-tree
+    cited by HW-DR-0055
   code_path `.claude/hooks/review.sh` via source-tree
     cited by HW-SPEC-ai-integration
   code_path `.claude/hooks/write.sh` via source-tree
@@ -23,6 +31,8 @@ anchors
     cited by HW-SPEC-ai-integration
   code_path `.githooks/merge-regenerate` via source-tree
     cited by HW-DR-0049
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-OBL-0173
   code_path `.headwater/overlay.yml` via source-tree
     cited by HW-DR-0027
   code_path `.headwater/overlay.yml` via source-tree
@@ -41,6 +51,8 @@ anchors
     cited by HW-DR-0023
   code_path `engine/README.md` via source-tree
     cited by HW-DR-0029
+  code_path `engine/crates/adapter/src/lib.rs` via source-tree
+    cited by HW-OBL-0172
   code_path `engine/crates/audit/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-taxonomy
   code_path `engine/crates/audit/src/reading.rs` via source-tree
@@ -51,6 +63,10 @@ anchors
     cited by HW-IFACE-headwater-explain
   code_path `engine/crates/check/src/dependency.rs` via source-tree
     cited by HW-DR-0026
+  code_path `engine/crates/check/src/facet_blank.rs` via source-tree
+    cited by HW-OBL-0170
+  code_path `engine/crates/check/src/facet_blank.rs` via source-tree
+    cited by HW-OBL-0171
   code_path `engine/crates/check/src/gate.rs` via source-tree
     cited by HW-IFACE-headwater-gate
   code_path `engine/crates/check/src/language.rs` via source-tree
@@ -59,6 +75,8 @@ anchors
     cited by HW-IFACE-headwater-check
   code_path `engine/crates/check/src/lifecycle_state.rs` via source-tree
     cited by HW-DR-0026
+  code_path `engine/crates/check/src/voice.rs` via source-tree
+    cited by HW-OBL-0168
   code_path `engine/crates/cli/Cargo.toml` via source-tree
     cited by HW-DR-0033
   code_path `engine/crates/cli/src/lib.rs` via source-tree
@@ -130,6 +148,8 @@ anchors
   code_path `engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-init
   code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-json
+  code_path `engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-mcp
   code_path `engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-new
@@ -165,12 +185,16 @@ anchors
     cited by HW-IFACE-headwater-conformance
   code_path `engine/crates/conformance/src/render.rs` via source-tree
     cited by HW-IFACE-headwater-conformance
+  code_path `engine/crates/conformance/tests/render.rs` via source-tree
+    cited by HW-OBL-0176
   code_path `engine/crates/doc/src/sentences.rs` via source-tree
     cited by HW-OBL-0159
   code_path `engine/crates/generate/src/export.rs` via source-tree
     cited by HW-IFACE-headwater-export
   code_path `engine/crates/generate/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-generate
+  code_path `engine/crates/generate/src/lib.rs` via source-tree
+    cited by HW-OBL-0172
   code_path `engine/crates/graph/src/anchors.rs` via source-tree
     cited by HW-REQ-0001
   code_path `engine/crates/graph/src/lib.rs` via source-tree
@@ -221,14 +245,20 @@ anchors
     cited by HW-IFACE-headwater-sweep
   code_path `engine/crates/verbs/src/lib.rs` via source-tree
     cited by HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary
+  code_path `engine/crates/yaml/src/json.rs` via source-tree
+    cited by HW-IFACE-headwater-json
   code_path `mkdocs-overrides/main.html` via source-tree
     cited by HW-DR-0038
+  code_path `notes/website-design-brief.md` via source-tree
+    cited by HW-DR-0037
+  code_path `notes/website-design-brief.md` via source-tree
+    cited by HW-DR-0039
+  code_path `notes/website-design-brief.md` via source-tree
+    cited by HW-DR-0050
+  code_path `notes/website-design-brief.md` via source-tree
+    cited by HW-DR-0051
   code_path `packages/headwater-standard/taxonomy.yml` via source-tree
     cited by HW-DR-0025
-  code_path `site/DESIGN-BRIEF.md` via source-tree
-    cited by HW-DR-0037
-  code_path `site/DESIGN-BRIEF.md` via source-tree
-    cited by HW-DR-0039
   code_path `site/_headers` via source-tree
     cited by HW-DR-0047
   code_path `site/changelog/index.html` via source-tree
@@ -247,13 +277,25 @@ anchors
     cited by HW-DR-0037
   code_path `site/tutorial/index.html` via source-tree
     cited by HW-DR-0037
-  code_path `spike` via source-tree
-    cited by HW-EVAL-language-spike-results
+  code_path `taxonomy-source/headwater-standard/package.yml` via source-tree
+    cited by HW-OBL-0174
   code_path `tools/assemble-site.sh` via source-tree
     cited by HW-DR-0047
+  code_path `tools/cloudflare-build.sh` via source-tree
+    cited by HW-DR-0047
+  code_path `tools/language-spike/build.sh` via source-tree
+    cited by HW-EVAL-language-spike-results
   code_path `tools/rdf-probe/emit.py` via source-tree
     cited by HW-EVAL-owl-skos-worked-example
+  code_path `tools/refresh-crawler-files.sh` via source-tree
+    cited by HW-DR-0048
   code_path `tools/refresh-figures.sh` via source-tree
     cited by HW-DR-0039
+  code_path `tools/refresh-site-tokens.sh` via source-tree
+    cited by HW-DR-0050
+  code_path `tools/site-tokens.css` via source-tree
+    cited by HW-DR-0050
+  code_path `tools/sitemap.py` via source-tree
+    cited by HW-DR-0048
   code_path `wrangler.jsonc` via source-tree
     cited by HW-DR-0047
