@@ -108,15 +108,17 @@ Read the two headings in that output. The first names what a tree states about i
 cp -r "$HEADWATER_SRC/taxonomy-source" packages
 ```
 
-**Check.** `ls packages/headwater-standard` prints three lines:
+**Check.** `ls packages/headwater-standard` prints five lines:
 
 ```
+assemblies
 conformance.yml
+doctrine
 package.yml
 taxonomy.yml
 ```
 
-A **package** carries a taxonomy: the kinds, the facets, the shelves and the rules. `headwater/standard` is the base package, and it is deliberately small. Nothing in this engine fetches a package over a network, so a package arrives in your tree by a copy that you can read.
+A **package** carries a taxonomy: the kinds, the facets, the shelves and the rules. `headwater/standard` is the base package, and the taxonomy it declares is deliberately small. Two of the five entries are not taxonomy at all. `assemblies/` holds the publisher recipes this package ships, and `doctrine/` holds the prose that explains them to a person. Nothing you run in this tutorial reads either one. Nothing in this engine fetches a package over a network, so a package arrives in your tree by a copy that you can read.
 
 Step 2 named two routes, and this step took the first. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. It refuses a directory that somebody maintains by hand. What you copied is a package source directory, so no verb of this engine vendored anything. The difference between the two routes returns in step 16.
 

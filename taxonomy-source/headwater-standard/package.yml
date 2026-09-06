@@ -83,3 +83,26 @@ contents:
   # `../../docs/taxonomies` here and `bundles` in every published artifact,
   # including the vendored copy under `packages/`.
   bundles: ../../docs/taxonomies
+  # The publisher recipes this package ships. `assembly::read` reads
+  # `<assemblies>/<name>/assembly.yml`, and `headwater taxonomy publish
+  # --assembly <name>` is the only verb that opens one. A recipe names a bundle
+  # selection over this package and the identity of the flattened package that
+  # results, and `assembly::read` refuses a recipe whose `from.package` does not
+  # pin the `package` and `version` above. HW-DR-0053 rules why the selection
+  # lives here and never in this manifest.
+  #
+  # Unlike `bundles`, this scalar may not reach outside the package: publishing
+  # rewrites the bundles scalar and rewrites no other, so every other key would
+  # reach a consumer with a path it cannot follow.
+  assemblies: assemblies/
+  # The prose this package ships for a person to read. `headwater taxonomy
+  # vendor` resolves this path against the fetched artifact before it installs
+  # anything, and it refuses an artifact that names prose it does not carry. The
+  # report then names the installed path and says that the directory is prose
+  # rather than schema.
+  #
+  # `flatten::assets` reads the same key when a recipe is published, and it
+  # copies this directory into the flattened artifact at `doctrine/<recipe
+  # name>/`. So one page here reaches both a consumer of `headwater/standard`
+  # and a consumer of any flattened package derived from it.
+  doctrine: doctrine/
