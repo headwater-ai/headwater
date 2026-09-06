@@ -667,10 +667,15 @@ fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() 
     );
     // One declared shelf that holds no document, one declared projection whose
     // source this corpus does not hold, and the register. Nothing is passed
-    // over: a projection that produced no file states a reason.
+    // over: a projection that produced no file states a reason. The other four
+    // are the declarable kinds this engine does not emit and this corpus does
+    // not declare — `relation_view`, `agent_rules`, `template` and
+    // `transcription` — which a run states whether or not a declaration named
+    // them, because the reason is a property of this engine rather than of the
+    // corpus.
     assert_eq!(
         plan.unwritten.len(),
-        3,
+        7,
         "a projection produced neither a file nor a reason"
     );
     // The empty arm, and where it is stated. `docs/probe-runs/` holds no file,

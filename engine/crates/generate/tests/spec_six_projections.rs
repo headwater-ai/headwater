@@ -7,10 +7,11 @@
 //! implemented, four of which this engine does not emit
 //! ([#576](https://github.com/headwater-ai/headwater/issues/576)). The check a
 //! reader could run by hand — `headwater generate --check` beside a `grep` of
-//! the sentence — cannot see three of those four, because this corpus declares
-//! no `relation_view`, no `agent_rules` and no `template`, so no run of the
-//! verb ever names them. An instrument blind to the defect it exists to catch
-//! is worse than none.
+//! the sentence — could not see three of those four, because this corpus
+//! declares no `relation_view`, no `agent_rules` and no `template`, so no run
+//! of the verb ever named them. An instrument blind to the defect it exists to
+//! catch is worse than none. #596 closed that blind spot in the verb itself,
+//! and this file holds the verb to it.
 //!
 //! # The model, and where this is stronger than it
 //!
@@ -32,15 +33,27 @@
 //!
 //! The *wording* of a reason is held for `coverage_report` alone, in
 //! [`the_coverage_report_reason_of_spec_6_is_the_reason_the_verb_prints`].
-//! That is the one reason a run over any corpus prints, and the other four
-//! reasons remain a hand copy in prose. `Kind::ALL` is a hand-kept list the
+//! That is the one reason spec 6 quotes in full, and the other four remain a
+//! hand copy in prose. Since
+//! [#596](https://github.com/headwater-ai/headwater/issues/596) a run over any
+//! corpus prints all five, which
+//! [`every_unbuilt_reason_reaches_a_reader_of_a_corpus_that_declares_none`]
+//! holds. `Kind::ALL` is a hand-kept list the
 //! compiler does not hold complete; the exhaustive `match` in `unbuilt` is
 //! what forces a thirteenth variant into that file.
 
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-use headwater_generate::{unbuilt, Kind};
+use headwater_census::census::{self};
+use headwater_census::shelves::Taxonomy;
+use headwater_census::walk::Corpus;
+use headwater_check::Shape;
+use headwater_generate::{check, plan, unbuilt, Identity, Kind, Projections, Runs};
+use headwater_graph::anchors::Resolvers;
+use headwater_graph::declarations::Declarations;
+use headwater_graph::{Config, Graph};
+use headwater_query::Surface;
 
 /// The heading-free anchor the extractor splits on.
 ///
@@ -223,10 +236,10 @@ fn the_runs_group_of_spec_6_is_exactly_the_projection_kinds_this_engine_emits() 
 
 /// The reason spec 6 quotes for `coverage_report` is the reason the verb prints.
 ///
-/// #576's second clause. `coverage_report` is the one waiting kind that a run
-/// over any corpus names, because it is engine-defined and needs no
-/// declaration to reach the report, so it is the one reason a specification
-/// part can be held to byte-for-byte rather than by hand.
+/// #576's second clause. Every waiting kind reaches a run over any corpus
+/// since #596, and `coverage_report` is the one of them a specification part
+/// quotes in full, so it is the one reason that can be held byte-for-byte
+/// rather than by hand.
 ///
 /// # Watched failing
 ///
@@ -243,5 +256,150 @@ fn the_coverage_report_reason_of_spec_6_is_the_reason_the_verb_prints() {
         text.contains(reason),
         "docs/spec/06-engine-architecture.md does not quote the reason \
          `headwater generate --check` prints for `coverage_report`:\n\n{reason}"
+    );
+}
+
+/// The report of one run over an empty tree, under the given declarations.
+///
+/// Everything a [`Surface`] borrows is owned here, so a case states the
+/// declarations it cares about and reads the rendered report. The tree is
+/// empty and under Cargo's own temporary directory, so every output is missing
+/// and no case writes beside its inputs. `name` keeps two cases off one path,
+/// because Cargo runs the cases of one target as threads of one process.
+fn report_over(projections: &Projections, name: &str) -> String {
+    let tree = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
+    let _ = std::fs::remove_dir_all(&tree);
+    std::fs::create_dir_all(&tree).expect("a temporary tree");
+
+    let corpus = Corpus::new(&tree, "corpus");
+    let taxonomy = Taxonomy::default();
+    let relations = Declarations::default();
+    let shape = Shape::default();
+    let config = Config::default();
+    let census = census::take(&corpus, &taxonomy);
+    let graph = Graph::build(
+        &census,
+        &relations,
+        &Resolvers::over(&corpus),
+        &corpus,
+        &config,
+    );
+    let surface = Surface::over(&census, &graph, &shape, &taxonomy, &relations, &config);
+    let plan = plan(
+        &surface,
+        &census,
+        projections,
+        &Identity::default(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+    check(&tree, &plan).render()
+}
+
+/// Every kind [`unbuilt`] holds a reason for, with the reason it holds.
+fn every_unbuilt_kind() -> Vec<(Kind, &'static str)> {
+    Kind::ALL
+        .into_iter()
+        .filter_map(|kind| unbuilt(kind).map(|reason| (kind, reason)))
+        .collect()
+}
+
+/// The `projections` block of a taxonomy, from its source text.
+fn projections_from(source: &str) -> Projections {
+    let root = headwater_yaml::load(source)
+        .unwrap_or_else(|errors| panic!("the source does not load: {errors:?}"))
+        .value
+        .as_map()
+        .expect("the source is a mapping")
+        .clone();
+    Projections::read(&root).expect("the projections read")
+}
+
+/// Every reason [`unbuilt`] holds is printed by one run over a corpus that
+/// declares none of the kinds that hold one.
+///
+/// #596's clause. `coverage_report` reached a reader because
+/// [`headwater_generate::plan`] pushes it with no declaration behind it, and
+/// the other four reached a reader only where a taxonomy had already declared
+/// the kind. A reader asks "does this emitter exist" before writing the
+/// declaration, not after, so the answer cannot be behind the declaration.
+///
+/// The five come from `Kind::ALL` through `unbuilt`, never from a list typed
+/// here, so a sixth kind that acquires a reason joins this case with no edit
+/// and a kind that acquires an emitter leaves it.
+///
+/// # Watched failing
+///
+/// Before the change this reddened over an empty `Projections`, naming
+/// `relation_view`, `agent_rules`, `template` and `transcription`, and not
+/// `coverage_report`.
+#[test]
+fn every_unbuilt_reason_reaches_a_reader_of_a_corpus_that_declares_none() {
+    let held = every_unbuilt_kind();
+    assert!(
+        !held.is_empty(),
+        "`headwater_generate::unbuilt` gives no kind a reason, so this case reads nothing"
+    );
+
+    let rendered = report_over(&Projections::default(), "every-unbuilt-reason");
+
+    let unreached: Vec<&str> = held
+        .iter()
+        .filter(|(_, reason)| !rendered.contains(reason))
+        .map(|(kind, _)| kind.name())
+        .collect();
+    assert!(
+        unreached.is_empty(),
+        "`headwater_generate::unbuilt` gives {unreached:?} a reason that a run over a corpus \
+         declaring no projection at all never prints. The report was:\n\n{rendered}"
+    );
+}
+
+/// A kind a declaration named is reported once, and never twice.
+///
+/// The guard on the undeclared pass. `plan()` reports a declared kind with no
+/// emitter through its own arm, at the declaration's output path, and reports
+/// an undeclared one at `no declaration names one`. A kind that took both
+/// routes would be printed twice, so a reader would meet one reason under two
+/// headings and could not tell which of the two the corpus asked for.
+///
+/// The case declares two of the four declarable waiting kinds and leaves two
+/// undeclared, so both routes run in one report and the count holds over every
+/// kind rather than over the declared pair alone.
+///
+/// # Watched failing
+///
+/// Deleting the `!declared.contains(kind)` filter from `undeclared` reddens
+/// this, naming `relation_view` and the count 2. The case before this one
+/// stays green over that regression, because a doubled reason still appears.
+#[test]
+fn a_kind_a_declaration_named_is_reported_once_and_not_twice() {
+    let declared = projections_from(
+        "projections:\n  \
+         - {kind: relation_view, output: generate/relations.md}\n  \
+         - {kind: template, output: generate/templates.md}\n",
+    );
+    assert_eq!(
+        declared.declared.len(),
+        2,
+        "this case declares two projections, and the block read {:?}",
+        declared
+            .declared
+            .iter()
+            .map(|one| one.kind.name())
+            .collect::<Vec<_>>()
+    );
+
+    let rendered = report_over(&declared, "a-declared-unbuilt-kind");
+
+    let miscounted: Vec<(&str, usize)> = every_unbuilt_kind()
+        .into_iter()
+        .map(|(kind, reason)| (kind.name(), rendered.matches(reason).count()))
+        .filter(|(_, count)| *count != 1)
+        .collect();
+    assert!(
+        miscounted.is_empty(),
+        "a run states each unbuilt kind once, and it stated {miscounted:?} some other number of \
+         times. The report was:\n\n{rendered}"
     );
 }
