@@ -32,7 +32,7 @@
     font: 17px/1.65 ui-serif, Charter, "Iowan Old Style", Georgia, serif;
     -webkit-text-size-adjust: 100%;
   }
-  .wrap { max-width: 42rem; margin: 0 auto; padding: 2.5rem 1.5rem 6rem; }
+  .wrap { max-width: 42rem; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
   h1 {
     font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em;
     margin: 0 0 0.4rem; font-weight: 600;
@@ -73,7 +73,7 @@
   }
   .note strong { color: var(--fg); }
   .topbar { height: 4px; background: var(--accent); }
-  .navbar { max-width: 78rem; margin: 0 auto; padding: 0 3rem; }
+  .bar { max-width: 78rem; margin: 0 auto; padding: 0 3rem; }
   nav.top {
     display: flex; justify-content: space-between; align-items: center;
     gap: 1.5rem; flex-wrap: wrap; padding: 1.2rem 0;
@@ -92,14 +92,16 @@
   .navlinks a:hover { color: var(--accent); }
   .navlinks a.here { color: var(--fg); border-bottom: 2px solid var(--accent); }
   @media (max-width: 62rem) {
-    .navbar { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .bar { padding-left: 1.5rem; padding-right: 1.5rem; }
   }
-  footer {
-    margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
-    font-family: ui-sans-serif, system-ui, sans-serif;
-    font-size: 0.87rem; color: var(--muted);
+  footer { border-top: 1px solid var(--rule); }
+  .foot {
+    padding-top: 1.5rem; padding-bottom: 2.5rem;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.87rem;
+    color: var(--muted);
   }
-  footer a { margin-right: 1.25rem; display: inline-block; }
+  .foot p { margin: 0 0 1rem; max-width: 46rem; }
+  .footlinks { display: flex; gap: 1.25rem; flex-wrap: wrap; }
   dl { margin: 0; }
   dt {
     font-weight: 600; font-size: 1.1rem; margin: 2.1rem 0 0.4rem;
@@ -112,7 +114,7 @@
 <body>
 
 <div class="topbar"></div>
-<div class="navbar">
+<div class="bar">
   <nav class="top">
     <a class="brand" href="/"><span class="glyph">🜄</span>Headwater</a>
     <div class="navlinks">
@@ -182,18 +184,24 @@
 
   <p style="font-size: 0.9rem; color: var(--muted); margin-top: 2.5rem;">More depth on any of this lives at <a href="/how-it-works/">how it works</a>, which walks the same four steps — taxonomy, graph, checks, projections — with real output from this repository.</p>
 
-  <footer>
-    <a href="/">Home</a>
-    <a href="/spec/">Specification</a>
-    <a href="/decisions/">Decisions</a>
-    <a href="/how-it-works/">How it works</a>
-    <a href="/compare/">Compare</a>
-    <a href="/proof/">Proof</a>
-    <a href="/tutorial/">Tutorial</a>
-    <a href="/ns/">Namespace</a>
-    <a href="/changelog/">Changelog</a>
-  </footer>
-
 </div>
+
+<footer>
+  <div class="bar foot">
+    <p>There is no link to the source here, because the repository is not public. The project has decided that this repository becomes public, and the date belongs to the owner.</p>
+    <div class="footlinks">
+      <a href="/">Home</a>
+      <a href="/spec/">Specification</a>
+      <a href="/decisions/">Decisions</a>
+      <a href="/how-it-works/">How it works</a>
+      <a href="/compare/">Compare</a>
+      <a href="/proof/">Proof</a>
+      <a href="/tutorial/">Tutorial</a>
+      <a href="/ns/">Namespace</a>
+      <a href="/changelog/">Changelog</a>
+    </div>
+  </div>
+</footer>
+
 </body>
 </html>
