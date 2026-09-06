@@ -154,10 +154,8 @@ impl Root {
     /// target as threads of one process, so a directory keyed on the process
     /// alone is a directory one case removes while another is reading it.
     fn over(label: &str) -> Root {
-        let at = std::env::temp_dir().join(format!(
-            "headwater-cli-init-{}-{label}",
-            std::process::id()
-        ));
+        let at =
+            std::env::temp_dir().join(format!("headwater-cli-init-{}-{label}", std::process::id()));
         let _ = std::fs::remove_dir_all(&at);
         std::fs::create_dir_all(at.join("docs")).expect("the corpus directory is there");
         std::fs::write(at.join("docs/one.md"), "# a document\n").expect("the document writes");
@@ -223,10 +221,7 @@ impl Root {
             "the manifest declares one version at the top level, and it declares {}",
             lines.len()
         );
-        lines[0]
-            .trim_start_matches("version:")
-            .trim()
-            .to_string()
+        lines[0].trim_start_matches("version:").trim().to_string()
     }
 }
 
