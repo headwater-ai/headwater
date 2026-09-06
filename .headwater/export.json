@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 363,
-      "carried": 363,
+      "in the graph": 366,
+      "carried": 366,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 586,
-      "carried": 586,
+      "in the graph": 591,
+      "carried": 591,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1561,6 +1561,34 @@
         }
       },
       {
+        "path": "docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md",
+        "kind": "decision",
+        "id": "HW-DR-0055",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0055",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "A harness payload is read by a verb of this engine rather than by an interpreter a session does not otherwise require. The verb answers nothing about a corpus, which is what puts it outside the term that forbids a hook verb.",
+          "last_verified": "2026-09-06",
+          "title": "A hook reads a wire format through the engine and not through an interpreter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              ".claude/hooks/lib.sh",
+              ".claude/hooks/intent.sh",
+              ".claude/hooks/review.sh"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/adjacent-work.md",
         "kind": "evaluation",
         "id": "HW-EVAL-adjacent-work",
@@ -2391,6 +2419,25 @@
             "governs": [
               "engine/crates/cli/src/lib.rs",
               "engine/crates/cli/src/main.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/interfaces/headwater-json.md",
+        "kind": "interface_contract",
+        "id": "HW-IFACE-headwater-json",
+        "facets": {
+          "id": "HW-IFACE-headwater-json",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "How one member of the JSON object on standard input reaches a caller, and the one answer that stands for every way a read reaches no scalar.",
+          "last_verified": "2026-09-06",
+          "title": "headwater json",
+          "relations": {
+            "governs": [
+              "engine/crates/cli/src/main.rs",
+              "engine/crates/yaml/src/json.rs"
             ]
           }
         }
@@ -6575,7 +6622,7 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0146",
-          "status": "current",
+          "status": "discharged",
           "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "The Stop hook reads its re-entry guard with an interpreter it does not require, so a machine with no python3 re-blocks the same turn",
@@ -8207,6 +8254,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/yaml/src/json.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "mkdocs-overrides/main.html",
         "resolver": "source-tree"
       },
@@ -9605,6 +9657,39 @@
         }
       },
       {
+        "source": "docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/hooks/lib.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/hooks/intent.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/hooks/review.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/evaluations/adjacent-work.md",
         "relation": "cites_evidence",
         "written_as": "cited_by",
@@ -10954,6 +11039,28 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-json.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-json.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/yaml/src/json.rs",
           "resolver": "source-tree"
         }
       },

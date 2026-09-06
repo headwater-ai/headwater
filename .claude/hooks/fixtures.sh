@@ -75,10 +75,17 @@ skip() {
 # either. It writes the argument verbatim, so the case above reads as the bytes
 # the hook meets.
 #
+# It stands in for `route` and for nothing else. `json` is passed through to the
+# real binary, because the hook reads the harness payload and the routing
+# document through the same verb, and a stand-in that answered that verb with a
+# route document would be testing the stand-in. The wire-format reader is held
+# by `engine/crates/yaml/src/json.rs` and by the cases below that name it.
+#
 # It needs `$open_root`, so it is only callable inside the fail-open block.
 stub_route() {
     printf '%s\n' "$1" > "$open_root/document.json"
-    printf '#!/bin/sh\ncat "%s"\n' "$open_root/document.json" \
+    printf '#!/bin/sh\ncase ${1:-} in json) exec "%s" "$@" ;; esac\ncat "%s"\n' \
+        "$engine" "$open_root/document.json" \
         > "$open_root/engine/target/release/headwater"
     chmod u+x "$open_root/engine/target/release/headwater"
 }
@@ -313,26 +320,57 @@ if [ -x "$engine" ]; then
         'chmod a-x "$open_root/engine/target/release/headwater"' \
         'chmod u+x "$open_root/engine/target/release/headwater"'
 
-    # `python3` is not the engine. The hook reads the harness's own wire format
-    # with it and reaches no verb without it, so an interpreter that answers
-    # non-zero has to be the same silence as a missing binary.
-    fails_open 'a python3 that answers non-zero, and the edit proceeds in silence' \
-        'printf "#!/bin/sh\nexit 1\n" > "$open_root/bin/python3"; chmod u+x "$open_root/bin/python3"' \
-        'rm -f "$open_root/bin/python3"'
-
     # The refusal position on the same terms, and this is the case that would
     # make a clean clone unusable if it were ever inverted: a `PreToolUse` that
     # cannot read its input has to let the write land rather than deny it. The
     # control is the deny, over the same root and the same payload.
     expect 'the control for: a PreToolUse that cannot read its input' \
         write.sh 0 '"permissionDecision":"deny"' "$deny_payload"
-    printf '#!/bin/sh\nexit 1\n' > "$open_root/bin/python3"
-    chmod u+x "$open_root/bin/python3"
+    rm -f "$open_root/engine/target/release/headwater"
     expect 'a PreToolUse that cannot read its input denies nothing' \
         write.sh 0 '' "$deny_payload"
-    rm -f "$open_root/bin/python3"
+    cp "$engine" "$open_root/engine/target/release/headwater"
 
-    # The same three sabotages at the intent position, over the same root. A
+    # No position runs an interpreter, which is HW-DR-0055 and the discharge of
+    # HW-OBL-0146. A sabotage cannot state this the way the three above state
+    # theirs: an interpreter that answers non-zero changes nothing now, and a
+    # case asserting that nothing changed would pass on a tree where the
+    # interpreter was never installed either.
+    #
+    # So this one is stated by the call rather than by the outcome. The stand-in
+    # records every invocation, all three positions are driven through it at
+    # full strength, and the file it would have written is the assertion. The
+    # `PATH` here already puts `$open_root/bin` first, so a hook that reached
+    # for the name would reach this.
+    printf '#!/bin/sh\nprintf "%%s\\n" "$@" >> "%s/interpreter-was-called"\nexit 1\n' \
+        "$open_root" > "$open_root/bin/python3"
+    chmod u+x "$open_root/bin/python3"
+    cp "$open_root/bin/python3" "$open_root/bin/python"
+    rm -f "$open_root/interpreter-was-called"
+
+    expect 'the write position runs at full strength with no interpreter behind it' \
+        write.sh 0 '(headwater check)' "$open_payload"
+    expect 'the refusal position runs at full strength with no interpreter behind it' \
+        write.sh 0 '"permissionDecision":"deny"' "$deny_payload"
+    expect 'the intent position runs at full strength with no interpreter behind it' \
+        intent.sh 0 'docs/spec/' \
+        '{"hook_event_name":"UserPromptSubmit","user_input":"what does a check know about the front matter of a document"}'
+    expect 'the review position reads its re-entry guard with no interpreter behind it' \
+        review.sh 0 '' '{"hook_event_name":"Stop","stop_hook_active":true}'
+
+    if [ -e "$open_root/interpreter-was-called" ]; then
+        printf 'FAIL a hook called an interpreter, with:\n%s\n' \
+            "$(cat "$open_root/interpreter-was-called")"
+        failed=$((failed + 1))
+    else
+        printf 'ok   %s\n' 'no position called an interpreter at all'
+        passed=$((passed + 1))
+    fi
+    rm -f "$open_root/bin/python3" "$open_root/bin/python"
+
+    # Three sabotages at the intent position, over the same root. The first two
+    # are the two the write position meets above, and the third is a document
+    # that only a stand-in can produce. A
     # prompt proceeds whatever happens here, so silence is the ambient outcome
     # at this position too and only a control makes it mean anything. The
     # control is a task this corpus answers, which reaches the agent as
@@ -349,9 +387,9 @@ if [ -x "$engine" ]; then
         'rm -f "$open_root/engine/target/release/headwater"' \
         'cp "$engine" "$open_root/engine/target/release/headwater"'
 
-    intent_fails_open 'a python3 that answers non-zero, and the prompt proceeds in silence' \
-        'printf "#!/bin/sh\nexit 1\n" > "$open_root/bin/python3"; chmod u+x "$open_root/bin/python3"' \
-        'rm -f "$open_root/bin/python3"'
+    intent_fails_open 'a built engine nobody may execute, and the prompt proceeds in silence' \
+        'chmod a-x "$open_root/engine/target/release/headwater"' \
+        'chmod u+x "$open_root/engine/target/release/headwater"'
 
     # A route document this hook cannot parse. `headwater route --json` is the
     # one thing this position reads, so a stand-in that writes something else is
@@ -453,6 +491,52 @@ if [ -x "$engine" ]; then
     expect 'a stop the hook already blocked is let through, so no turn loops' \
         review.sh 0 '' \
         '{"hook_event_name":"Stop","stop_hook_active":true}'
+
+    # The same pair with no interpreter behind the guard, which is what
+    # HW-OBL-0146 asks for and what the interpreter cost until HW-DR-0055. The
+    # planted document is still on the tree, so the gate refuses this tree and
+    # the guard is the only way out of the loop it would otherwise start. A
+    # `python3` that answers non-zero stands first on `PATH` and records every
+    # call, so the pair states the outcome and the file states the cause.
+    guard_bin=$(mktemp -d "${TMPDIR:-/tmp}/headwater-guard-XXXXXX")
+    printf '#!/bin/sh\nprintf "%%s\\n" "$@" >> "%s/called"\nexit 1\n' \
+        "$guard_bin" > "$guard_bin/python3"
+    chmod u+x "$guard_bin/python3"
+    cp "$guard_bin/python3" "$guard_bin/python"
+    guard_path=$PATH
+    PATH="$guard_bin:$guard_path"
+    export PATH
+
+    expect 'a second stop is let through with no interpreter behind the guard' \
+        review.sh 0 '' \
+        '{"hook_event_name":"Stop","stop_hook_active":true}'
+    expect 'a first stop still stops the turn with no interpreter behind the guard' \
+        review.sh 2 '9999-a-fixture-that-this-runner-removes.md' \
+        '{"hook_event_name":"Stop","stop_hook_active":false}'
+
+    PATH=$guard_path
+    export PATH
+    if [ -e "$guard_bin/called" ]; then
+        printf 'FAIL the review position called an interpreter, with:\n%s\n' \
+            "$(cat "$guard_bin/called")"
+        failed=$((failed + 1))
+    else
+        printf 'ok   %s\n' 'the review position called no interpreter for either stop'
+        passed=$((passed + 1))
+    fi
+    rm -rf "$guard_bin"
+
+    # No engine, and therefore no read of the guard. The position ends the turn
+    # rather than running a gate it could not stop twice, over the same tree the
+    # two cases above refuse. The engine moves rather than the tree, so the
+    # control for this case is every case above it.
+    moved="$root/engine/target/release/headwater.moved-by-fixtures"
+    trap 'rm -f "$planted"; [ -e "$moved" ] && mv "$moved" "$engine"' EXIT INT TERM
+    mv "$engine" "$moved"
+    expect 'a stop with no engine to read the guard ends the turn' \
+        review.sh 0 '' \
+        '{"hook_event_name":"Stop","stop_hook_active":false}'
+    mv "$moved" "$engine"
 
     rm -f "$planted"
     trap - EXIT INT TERM

@@ -47,27 +47,18 @@ task=$(hw_field "$input" user_input) || task=$(hw_field "$input" prompt) || exit
 
 route=$("$engine" route --root "$hw_root" --json "$task" 2>/dev/null) || exit 0
 
-# One reader for both halves of the decision. `hw_field` above already
-# established that `python3` runs, so a host without one has exited by now;
-# every other way this can fail — a document that will not parse, a member that
-# is not there, an empty pointer set — leaves the substitution empty or its
-# status non-zero, and both of those end the hook with the prompt untouched.
-report=$(printf '%s' "$route" | python3 -c '
-import json, sys
-try:
-    document = json.load(sys.stdin)
-except Exception:
-    sys.exit(1)
-if not isinstance(document, dict):
-    sys.exit(1)
-pointers = document.get("pointers")
-if not isinstance(pointers, list) or not pointers:
-    sys.exit(1)
-text = document.get("text")
-if not isinstance(text, str) or not text.strip():
-    sys.exit(1)
-sys.stdout.write(text)
-' 2>/dev/null) || exit 0
+# Two reads of one document, and the same engine that wrote it reads it back.
+# `pointers` is written on every run and written empty where the route had
+# nothing to offer, so the count is the decision and the emptiness is a result
+# rather than a failure. A route that offered something then hands back the
+# rendering it wrote. Every other way this can fail — a document that will not
+# parse, a member that is not there, no built engine — leaves the substitution
+# empty or its status non-zero, and both of those end the hook with the prompt
+# untouched.
+pointers=$(hw_count "$route" pointers) || exit 0
+[ "$pointers" -gt 0 ] 2>/dev/null || exit 0
+
+report=$(hw_field "$route" text) || exit 0
 [ -n "$report" ] || exit 0
 
 printf 'Headwater routed this task to the documents that govern it, before you open a file.\n'

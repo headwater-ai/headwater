@@ -36,6 +36,16 @@ input=$(cat)
 
 # The harness sets this once it has already blocked a stop, and blocking again
 # on the same turn is a loop rather than a gate.
+#
+# The engine is what reads it, so a host with no engine cannot decide, and this
+# position ends the turn rather than running a gate it could not stop twice.
+# That is the hook contract's term at the one branch that used to break it:
+# HW-OBL-0146 measured a machine with no `python3` re-blocking the same turn
+# forever, because the read resolved to an empty string and the guard was gone
+# rather than unreadable. A missing engine costs nothing here. The commit gate
+# below reads the same tree at the next commit, and it prints its own line when
+# there is no engine to run.
+hw_engine >/dev/null || exit 0
 active=$(hw_field "$input" stop_hook_active)
 [ "$active" = "true" ] && exit 0
 
