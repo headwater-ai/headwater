@@ -185,7 +185,12 @@ fn publish_real_source(out: &Path, json: bool) -> (Option<i32>, String, String) 
 }
 
 /// A source package with one named assembly, small enough to make the publish
-/// boundary visible without depending on a future public starter assembly.
+/// boundary visible in isolation from the real one.
+///
+/// It carries the shapes the shipped starter does not: an assembly overlay, a
+/// templates directory, and an invalid arm that names a bundle the package does
+/// not ship. `the_shipped_starter_recipe_publishes_vendors_and_resolves` is the
+/// case that runs the same verb over the real source.
 fn assembly_source(root: &Root, invalid: bool) -> PathBuf {
     let source = root.path().join("source/acme-fixture");
     write(
@@ -386,6 +391,113 @@ fn a_flattened_assembly_is_pinned_vendored_and_resolved_without_bundle_selection
     assert!(
         flatten::equivalent(&source_resolution, &installed_flattened, &recipe),
         "the flattened consumer differs from the source assembly after identity is removed"
+    );
+}
+
+/// The recipe this repository ships, over the whole publisher-consumer boundary.
+///
+/// The two cases above prove the mechanism over `acme/fixture`, which is a
+/// fixture written to make the boundary visible. This is the first case here to
+/// run `--assembly` over the real maintained source, and its subject is the
+/// artifact spec 0 deliverable 6 promises an adopter:
+/// `taxonomy-source/headwater-standard/assemblies/starter/assembly.yml`,
+/// published as `headwater/starter`, vendored into a tree that names no bundle,
+/// and resolved to a lock.
+///
+/// It takes the identity and the version out of the recipe rather than writing
+/// either one down, so a bump of the starter moves this case with it and never
+/// past it.
+///
+/// **The overlay is the assertion, not scaffolding.** The one answer a
+/// batteries-included consumer still owes is the identifier namespace, which no
+/// package may hold because a constant a publisher wrote would be minted by
+/// every adopter at once. So the consumer below declares two namespace lines and
+/// nothing else, and a lock at the end of it is the measurement that the
+/// flattened starter needs no other answer.
+#[test]
+fn the_shipped_starter_recipe_publishes_vendors_and_resolves() {
+    let root = Root::scratch("shipped-starter");
+    let source = repository().join("taxonomy-source/headwater-standard");
+    let artifact = root.path().join("release");
+
+    let source_manifest = package::manifest_at(&source).expect("the source manifest reads");
+    let recipe = assembly::read(&repository(), &source, &source_manifest, "starter")
+        .expect("the shipped starter recipe reads");
+    assert_eq!(recipe.from.bundles.len(), 3, "{:?}", recipe.from.bundles);
+    assert!(
+        recipe.overlay.is_none(),
+        "the shipped recipe declares an overlay, and `validate_glue` admits one only as a \
+         relation between two selected bundles"
+    );
+
+    let (code, stdout, stderr) = publish_assembly_from(&repository(), &source, &artifact);
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(
+        stdout.contains(&format!("published {} {}", recipe.package, recipe.version)),
+        "{stdout}"
+    );
+    let manifest =
+        std::fs::read_to_string(artifact.join("package.yml")).expect("the manifest reads");
+    assert!(
+        manifest.contains(&format!("package: {}", recipe.package)),
+        "{manifest}"
+    );
+    assert!(manifest.contains("form: flattened"), "{manifest}");
+    assert!(
+        !artifact.join("bundles").exists(),
+        "a flattened package carries bundles"
+    );
+    assert!(
+        artifact.join("doctrine/starter/starter.md").is_file(),
+        "the doctrine this package declares did not reach the flattened artifact"
+    );
+
+    let release = headwater_resolve::release::read(
+        &std::fs::read_to_string(artifact.join("release.yml")).expect("the release reads"),
+    )
+    .expect("the published record reads");
+    let consumer = root.path().join("consumer");
+    write(
+        &consumer.join(".headwater/taxonomy.yml"),
+        &format!(
+            "taxonomy:\n  package: {}\n  version: {}\n  digest: {}\n  overlay: .headwater/overlay.yml\ncorpus:\n  root: docs\n",
+            recipe.package, recipe.version, release.digest
+        ),
+    );
+    write(
+        &consumer.join(".headwater/overlay.yml"),
+        "add:\n  identifier_schemes.decision_id.namespace: ACME\n  identifier_schemes.obligation_record_id.namespace: ACME\n",
+    );
+    std::fs::create_dir_all(consumer.join("docs")).expect("the corpus root is made");
+
+    let declaration = package::consumer(&consumer).expect("the consumer declaration reads");
+    assert!(
+        declaration.bundles.is_empty(),
+        "a flattened consumer carries no bundle selection: {:?}",
+        declaration.bundles
+    );
+
+    let (code, _stdout, stderr) = consumer_run(
+        &consumer,
+        &[
+            "taxonomy",
+            "vendor",
+            artifact.to_str().expect("the artifact is UTF-8"),
+        ],
+    );
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(
+        consumer
+            .join("packages/headwater-starter/doctrine/starter/starter.md")
+            .is_file(),
+        "the doctrine did not arrive with the vendored package"
+    );
+
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "resolve"]);
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(
+        consumer.join(".headwater/taxonomy.lock").is_file(),
+        "a resolved flattened starter has a lock"
     );
 }
 

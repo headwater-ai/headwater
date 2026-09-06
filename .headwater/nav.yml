@@ -54,6 +54,7 @@ nav:
       - "How the two halves of the site share one host": "decisions/0047-how-the-two-halves-of-the-site-share-one-host.md"
       - "Q51 — What licenses a term into the public glossary, and what licenses a sixteenth": "decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md"
       - "A document is proposed at the state it will hold, and the merge activates it": "decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md"
+      - "A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance": "decisions/0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md"
   - "acceptance_criteria":
       - "Index": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
@@ -262,6 +263,7 @@ nav:
       - "A sentence that opens with a hash and an issue number is folded into the sentence before it": "obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md"
       - "The generated half of the site loads highlight.js from a third party with no subresource integrity": "obligations/0160-the-generated-half-of-the-site-loads-highlight-js-from-a-third-party-with-no-subresource-integrity.md"
       - "The validation block of mkdocs.yml is a gate this repository owns and no fixture drives": "obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md"
+      - "Spec 7 prints a package version that no check compares with the recipe": "obligations/0162-spec-7-prints-a-package-version-that-no-check-compares-with-the-recipe.md"
   - "probes":
       - "Index": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"

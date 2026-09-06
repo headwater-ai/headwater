@@ -159,6 +159,8 @@ taxonomy:
   overlay: .headwater/overlay.yml
 ```
 
+**Two packages answer this declaration, and the `bundles` key is what separates them.** A composer takes `headwater/standard`, names the bundles it wants, and owns the selection from then on. A batteries-included adopter takes `headwater/starter`, which is the flattened form of the [starter assembly](#the-starter-kit-is-an-assembly), and names no bundles at all. A flattened package ships no bundle directory, so a selection against one is refused rather than ignored. `package::selected` reports `this selects N bundles and <package> ships none`, and a case in `engine/crates/resolve/tests/publish.rs` holds that refusal. The two forms differ in who owns the upgrade and in nothing else the engine reads.
+
 Consuming is two steps, and the split is what keeps the network out of the engine. The caller fetches the artifact, by whatever the organization already uses. `headwater taxonomy vendor` then checks the fetched directory against the `digest` above and installs it. `headwater taxonomy resolve` merges the overlay, validates, and writes the lock. The lock is committed. Thus the corpus is checked against a resolved, reviewable, reproducible taxonomy, and CI needs no network to check anything.
 
 ### What a package digest proves, and what it does not
@@ -209,30 +211,31 @@ This is what fixes the size of the base package. A large base forces bundles and
 
 ### An assembly has two consumption forms
 
-An **assembly** is a named publisher recipe over one package version. It declares a complete bundle selection and may declare one assembly overlay. The overlay holds connections whose meaning spans two or more selected bundles. No selected bundle owns those connections, and the assembly changes none of its bundle sources.
+An **assembly** is a named publisher recipe over one package version. It declares a complete bundle selection and may declare one assembly overlay. The overlay holds connections whose meaning spans two or more selected bundles. No selected bundle owns those connections, and the assembly changes none of its bundle sources. A recipe with no such connection to make declares no overlay key at all. An empty overlay is not glue, and the resolver refuses one.
+
+The recipe below is the one this repository ships, at `taxonomy-source/headwater-standard/assemblies/starter/assembly.yml`. It declares no overlay.
 
 ```yaml
 assembly: starter
 package: headwater/starter
-version: 1.0.0
+version: 0.1.0
 from:
-  package: headwater/standard@3.4.0
-  bundles: [design-spec, decision-record, standards-spec]
-overlay: overlay.yml
+  package: headwater/standard@4.0.0
+  bundles: [design-spec, evidence-and-obligation, decision-record]
 ```
 
 ```text
-headwater/standard@3.4.0
+headwater/standard@4.0.0
 |-- base taxonomy
-|-- bundle: design-spec --------\
-|-- bundle: decision-record -----+--> assembly: starter
-`-- bundle: standards-spec ------/    |-- optional overlay: overlay.yml
-                                      |
-                                      |-- composer: pins standard and selects bundles
-                                      |
-                                      `-- publisher: resolves recipe
-                                          -> headwater/starter (flattened)
-                                          -> batteries-included consumer
+|-- bundle: design-spec ---------------\
+|-- bundle: evidence-and-obligation ----+--> assembly: starter
+`-- bundle: decision-record -----------/    |-- optional overlay: none declared here
+                                            |
+                                            |-- composer: pins standard and selects bundles
+                                            |
+                                            `-- publisher: resolves recipe
+                                                -> headwater/starter (flattened)
+                                                -> batteries-included consumer
 ```
 
 An arrow into the assembly identifies a recipe input, not a package dependency. The composer chooses inputs directly. The publisher resolves the assembly, and the flattened package contains that result.
@@ -251,7 +254,9 @@ The two forms place upgrades on different owners. A composer can change its sele
 
 [Spec 0](00-vision-and-scope.md#what-we-build) promises a doctrine starter kit, and [spec 2](02-taxonomy-model.md) refers to a base package. These are two artifacts, and an earlier reading of [Q3](09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) treated them as one. They answer opposite requirements. The base has to be minimal so that bundles stay add-only. The starter kit has to be opinionated so that a new adopter does not face a blank schema.
 
-`headwater/starter` is the first assembly. Its recipe is a named bundle selection, an assembly overlay, and doctrine that explains the combination. A composer can take the recipe inputs. A batteries-included consumer can take the flattened `headwater/starter` package. Nobody is expected to run the base bare.
+`headwater/starter` is the first assembly. Its recipe is a bundle selection and the doctrine that explains the combination. It may add an assembly overlay where two selected bundles need a connection between them. A composer can take the recipe inputs. A batteries-included consumer can take the flattened `headwater/starter` package. Nobody is expected to run the base bare.
+
+The selection is `design-spec`, `evidence-and-obligation` and `decision-record`. It is the selection this repository runs on its own corpus, and [HW-OBL-0018](../obligations/0018-the-bundle-set-is-a-guess-about-how-adopters-cluster.md) records that no measurement of adopters stands behind it yet. The doctrine page that ships beside the recipe says the same thing to the adopter who reads it.
 
 ### The interview
 
