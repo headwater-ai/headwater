@@ -47,6 +47,7 @@ version: 1.0.0
 contents:
   taxonomy: taxonomy.yml
   bundles: bundles
+  assemblies: assemblies
 ";
 
 const TAXONOMY: &str = "\
@@ -159,6 +160,22 @@ fn library(scratch: &Scratch) {
     scratch.write("packages/acme-fixture/bundles/delta/bundle.yml", DELTA);
     scratch.write("packages/acme-fixture/bundles/epsilon/bundle.yml", EPSILON);
     scratch.write("packages/acme-fixture/bundles/eta/bundle.yml", ETA);
+}
+
+/// One recipe over the same library, selecting what the caller names.
+///
+/// The selection is the only thing that varies, so a case that changes it
+/// changes nothing else about the fixture.
+fn recipe(scratch: &Scratch, bundles: &[&str]) -> PathBuf {
+    scratch.write(
+        "packages/acme-fixture/assemblies/starter/assembly.yml",
+        &format!(
+            "assembly: starter\npackage: acme/starter\nversion: 2.0.0\nfrom:\n  package: \
+             acme/fixture@1.0.0\n  bundles: [{}]\n",
+            bundles.join(", ")
+        ),
+    );
+    scratch.0.join("packages/acme-fixture")
 }
 
 fn consumer(bundles: &[&str], overlay: Option<&str>) -> Consumer {
@@ -393,5 +410,94 @@ fn the_shipped_triple_is_told_to_add_evidence_and_obligation() {
     assert!(
         !text.contains("diataxis"),
         "the message names no bundle that does not help: {text}"
+    );
+}
+
+/// A recipe whose selection is incomplete is told the same thing a consumer is,
+/// and sent to its own file.
+///
+/// The publisher's half of the same derivation. Until
+/// [#582](https://github.com/headwater-ai/headwater/issues/582) a publisher
+/// never reached a refusal at all — the publish exited 0 and the adopter met it
+/// — so nothing under a refusal was the right amount of advice. Now the publish
+/// refuses, and this is what the publisher reads.
+///
+/// **The last line is the assertion.** The names, the counts and the bundle are
+/// the consumer's own and are already pinned above. What is new is that the
+/// remedy names the file and the key the publisher edits. A message that told a
+/// publisher to add a bundle to `.headwater/taxonomy.yml` would be advice
+/// nobody can take: a publisher has no such declaration, and the selection they
+/// wrote is in the recipe.
+#[test]
+fn a_recipe_that_omits_a_bundle_another_bundle_needs_names_the_key_a_publisher_edits() {
+    let scratch = Scratch::new("recipe-omits");
+    library(&scratch);
+    let directory = recipe(&scratch, &["alpha"]);
+
+    let advice = selection::for_recipe(&scratch.0, &directory, "starter")
+        .expect("a bundle in the library helps");
+    assert_eq!(advice.dangling, 1);
+    assert_eq!(advice.bundles.len(), 1, "one bundle helps, not two");
+    assert_eq!(advice.bundles[0].bundle, "beta");
+
+    let text = advice.render();
+    assert!(
+        text.contains("`from.bundles:` in packages/acme-fixture/assemblies/starter/assembly.yml"),
+        "the remedy names the recipe file and its key: {text}"
+    );
+    assert!(
+        !text.contains(".headwater/taxonomy.yml"),
+        "a publisher is sent to a consumer declaration they do not have: {text}"
+    );
+    assert!(
+        text.contains("ships that this recipe did not select"),
+        "the subject is the recipe rather than a repository: {text}"
+    );
+    // `epsilon` collides with the base, so a trial that adds it does not
+    // resolve. A publisher's library meets this more often than a consumer's,
+    // because a publisher ships every bundle it has rather than the ones that
+    // work together.
+    assert!(
+        !text.contains("epsilon"),
+        "the message names a bundle that does not resolve: {text}"
+    );
+    assert!(
+        !text.contains("gamma"),
+        "the message names a bundle that does not help: {text}"
+    );
+}
+
+/// A recipe whose selection is complete is told nothing.
+///
+/// The negative. `for_recipe` returning `Some` over a sound recipe would put a
+/// paragraph of guidance under every publish that refused for any other reason.
+#[test]
+fn a_recipe_whose_selection_resolves_is_told_nothing() {
+    let scratch = Scratch::new("recipe-complete");
+    library(&scratch);
+    let directory = recipe(&scratch, &["alpha", "beta"]);
+
+    assert_eq!(
+        selection::for_recipe(&scratch.0, &directory, "starter"),
+        None
+    );
+}
+
+/// A recipe name that is not a directory under `contents.assemblies` prints
+/// nothing rather than a second refusal.
+///
+/// Every caller of this reaches it already holding the refusal it is guidance
+/// under. A `None` here is the contract: the reader has been told what went
+/// wrong, and being told a second time that the same file could not be read is
+/// noise rather than help.
+#[test]
+fn a_recipe_that_does_not_read_is_told_nothing() {
+    let scratch = Scratch::new("recipe-absent");
+    library(&scratch);
+    let directory = recipe(&scratch, &["alpha"]);
+
+    assert_eq!(
+        selection::for_recipe(&scratch.0, &directory, "absent"),
+        None
     );
 }

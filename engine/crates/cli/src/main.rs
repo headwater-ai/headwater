@@ -677,6 +677,45 @@ fn advise(root: &Path, consumer: &headwater_resolve::Consumer) {
     }
 }
 
+/// The same guidance for a publisher whose recipe named an incomplete selection.
+///
+/// The publisher's position is the consumer's position one step earlier, and
+/// until [#582](https://github.com/headwater-ai/headwater/issues/582) they never
+/// reached it: the publish exited 0 and the adopter met the refusal. Now the
+/// publish refuses, and this is what the publisher reads under it.
+///
+/// It carries [`advise`]'s contract exactly. It prints nothing unless the
+/// refusal was an incomplete bundle selection and a bundle the package ships
+/// would answer it, it carries no finding, and it moves no exit status. So every
+/// step here is best-effort: a `--package` that names nothing, a directory with
+/// no manifest, a recipe that does not read — each one prints nothing, because
+/// the reader is already holding the refusal that says what went wrong and a
+/// second complaint about reading it again is noise.
+fn advise_recipe(root: &Path, package: Option<&str>, from: Option<&Path>, assembly: Option<&str>) {
+    let Some(assembly) = assembly else {
+        return;
+    };
+    let directory = match from {
+        Some(directory) => directory.to_path_buf(),
+        None => {
+            let name = match package {
+                Some(name) => name.to_string(),
+                None => match headwater_resolve::package::consumer(root) {
+                    Ok(consumer) => consumer.package,
+                    Err(_) => return,
+                },
+            };
+            match headwater_resolve::package::located(root, &name) {
+                Some((directory, _)) => directory,
+                None => return,
+            }
+        }
+    };
+    if let Some(advice) = headwater_resolve::selection::for_recipe(root, &directory, assembly) {
+        eprint!("{}", indent(&advice.render()));
+    }
+}
+
 /// `headwater taxonomy resolve`, and `--check` over a committed lock.
 fn resolve(root: &Path, check_only: bool) -> ExitCode {
     let repository = match headwater_resolve::repository(root) {
@@ -1251,6 +1290,7 @@ fn publish(
         Err(errors) => {
             eprintln!("headwater: {}", err("nothing was published"));
             eprint!("{}", indent(&err(&render_errors(&errors))));
+            advise_recipe(root, package, from, assembly);
             return ExitCode::FAILURE;
         }
     };

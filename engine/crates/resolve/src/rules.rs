@@ -353,6 +353,39 @@ pub fn check(taxonomy: &Mapping) -> Vec<ResolveError> {
     out
 }
 
+/// Referential integrity alone, for a publisher.
+///
+/// [`check`] is the consumer's reading and it is not the publisher's, because
+/// one of the eighteen rules it runs is consumer-side by design.
+/// [`identifier_integrity`] refuses a scheme that declares no namespace, and its
+/// own message says why: a package leaves the namespace to the corpus that
+/// adopts it, so an overlay of that corpus has to declare one. A publisher
+/// cannot answer it and must not be refused for it.
+///
+/// Measured on `2bd1e96`, against this repository's own package: the base with
+/// all six shipped bundles carries **zero** referential-integrity findings and
+/// **seven** identifier-integrity ones, and the shipped `starter` recipe's
+/// flattened output carries zero and two. So a publish that called [`check`]
+/// would refuse the release of `headwater/standard` and of the one recipe spec 7
+/// points a first adopter at.
+///
+/// The rendering is [`referential_integrity`]'s and not a second one, so the
+/// sentence a publisher reads at `taxonomy publish` and the sentence an adopter
+/// reads at `taxonomy resolve` are the same bytes for the same defect. That is
+/// what [#582](https://github.com/headwater-ai/headwater/issues/582) asked for
+/// by "the same check": one rule, one traversal, one wording, two verbs.
+///
+/// Widening this to a second rule needs the same measurement taken against a
+/// third-party package this repository has never seen. Every one of the other
+/// seventeen is a candidate for the same false refusal, and a false refusal
+/// stops a publisher shipping.
+pub fn referential(taxonomy: &Mapping) -> Vec<ResolveError> {
+    let view = View::new(taxonomy);
+    let mut out = Vec::new();
+    referential_integrity(&view, &mut out);
+    out
+}
+
 // --- the view ---------------------------------------------------------------
 
 /// A resolved taxonomy, read the way the rules ask questions of it.

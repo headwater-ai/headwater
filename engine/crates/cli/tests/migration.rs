@@ -123,14 +123,28 @@ const KIND: [(&[&str], &[&str]); 2] = [
 /// the bundle, so the artifact the publish writes really does carry the new name
 /// and really does not carry the old one.
 ///
-/// Two edits and not one. The declaration is what a `kind` step names, and
-/// `shelves.spec_series.kinds` is the one other place in the bundle that names
-/// the kind rather than the facet value of the same spelling.
-const BUNDLE_KIND: [(&str, &str); 2] = [
+/// Three edits and not one. The declaration is what a `kind` step names, and
+/// `shelves.spec_series.kinds` and `relations.cites_evidence.from` are the two
+/// other places in the bundle that name the kind rather than the facet value of
+/// the same spelling.
+///
+/// **It was two edits until #582.** `relations.cites_evidence.from` was left
+/// reading the old name, so the fixture's own package declared no
+/// `decision_register` and still read one, and a consumer who selected this
+/// bundle would have been refused for it. Nothing measured that: the publish
+/// asked whether the shipped set merges and whether it commutes, and never
+/// whether every name it reads is declared. The rule that now asks is what
+/// found this, over a fixture whose doc comment already claimed the rename was
+/// complete.
+const BUNDLE_KIND: [(&str, &str); 3] = [
     ("  kinds.decision_register:", "  kinds.ruling_register:"),
     (
         "    kinds: [design_spec, decision_register, obligation_register]",
         "    kinds: [design_spec, ruling_register, obligation_register]",
+    ),
+    (
+        "    from: [design_spec, decision_register, obligation_register]",
+        "    from: [design_spec, ruling_register, obligation_register]",
     ),
 ];
 
@@ -778,7 +792,7 @@ fn a_rename_of_a_kind_a_bundle_declares_publishes() {
 /// The widening of the target half is a widening and not a deletion.
 ///
 /// The same candidate, and a target that no source of the package declares —
-/// not the base and not any of the five bundles. The publish refuses, and the
+/// not the base and not any of the six bundles. The publish refuses, and the
 /// message says which set was asked. Without this case
 /// [`a_rename_of_a_kind_a_bundle_declares_publishes`] is satisfied by removing
 /// the target check outright.
