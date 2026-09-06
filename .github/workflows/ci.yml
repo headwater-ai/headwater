@@ -618,9 +618,15 @@ jobs:
         #   Exit 3 means no browser was found, so nothing was loaded. It is a
         #   separate status precisely so that a caller cannot read it as a
         #   pass, and this step turns it into a workflow annotation rather than
-        #   a silent green tick. `headwater probe` and
-        #   `.claude/hooks/fixtures-live.sh` take the same posture toward a
-        #   dependency they cannot install.
+        #   a silent green tick. `.claude/hooks/fixtures-live.sh` takes the
+        #   same posture toward a harness it cannot install: it skips what is
+        #   not there and says so, rather than failing or going quiet.
+        #
+        #   The verb this repository ships for reaching a model is deliberately
+        #   not named on this line. `.claude/skills/fixtures.sh` asserts that
+        #   no CI job calls it by grepping this file for its name, and that
+        #   grep does not distinguish a comment from a `run:` step — measured,
+        #   by writing one here and watching the job fail.
         run: |
           status=0
           python3 tools/check-site-console.py || status=$?
