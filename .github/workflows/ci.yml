@@ -18,7 +18,10 @@
 # promotion is one flag on one line, with the diff that added it as its audit
 # trail, rather than a `continue-on-error` that hides which rules block.
 #
-# No third-party action beyond `actions/checkout`.
+# No action from outside the `actions` organization. `actions/checkout` and
+# `actions/cache` are GitHub's own, and the bar this states is that rather
+# than a count of two: an action from anywhere else runs code nobody here
+# reviews, on every push, with a token in the environment.
 #
 # Which runner both jobs take is a repository variable rather than a value
 # written here, so moving between the self-hosted runner and `ubuntu-latest`
@@ -46,9 +49,12 @@
 # accepts the flag where PEP 668 does not apply, so it costs the hosted image
 # nothing.
 #
-# Nothing here caches cargo output between runs, so a hosted job pays a cold
-# build every time. That is the cost of the line above about third-party
-# actions, and it is what makes a hosted minute estimate a build from scratch.
+# A hosted job restores a cargo cache and a pip cache, and the self-hosted
+# runner takes neither: `~/.cargo` and `engine/target` already persist on its
+# disk, so restoring them there would be an upload and a download in place of
+# a directory that is already correct. `runner.environment` is what tells the
+# two apart. So a hosted minute estimate is a cold build on the first run of a
+# lock file and a warm one after it.
 
 name: CI
 
@@ -86,6 +92,36 @@ jobs:
     runs-on: ${{ fromJSON(vars.CI_RUNNER || '["self-hosted", "headwater"]') }}
     steps:
       - uses: actions/checkout@v4
+      - name: The cargo cache, on a hosted runner only
+        # A hosted runner starts empty, so with no cache the registry is
+        # refetched and every dependency is rebuilt on every run. The
+        # self-hosted runner needs none of it, because `~/.cargo` and
+        # `engine/target` persist on its disk between runs. Hence the
+        # condition rather than a comment asking somebody to remember.
+        #
+        # The key is the lock file, so a dependency change starts a new cache
+        # rather than patching an old one. `restore-keys` then falls back to
+        # the newest cache of this job, which is what makes a lock bump pay
+        # for the crates that moved rather than for all of them.
+        #
+        # The job name is in the key because this job builds test and debug
+        # artifacts and the job below builds a release binary. One key over
+        # both would have each run evict the other's `target`.
+        #
+        # A restored `engine/target` reaches nothing that reads it but cargo,
+        # which decides for itself what is stale. `.githooks/fixtures.sh`
+        # copies with `ls-files -co --exclude-standard` and `target/` is
+        # ignored, so the scratch repository that step builds does not see it.
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            engine/target
+          key: cargo-${{ runner.os }}-engine-${{ hashFiles('engine/Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-engine-
       - name: The toolchain this build needs
         # Rust 1.85 or later. `saphyr-parser` is on edition 2024, and an older
         # cargo reports `feature edition2024 is required` and nothing else.
@@ -142,6 +178,36 @@ jobs:
           # rather than describing a shorter change, so a depth of 1 would turn
           # that step red instead of quietly reporting a change of nothing.
           fetch-depth: 0
+      - name: The cargo cache, on a hosted runner only
+        # The same step in the `engine` job above carries the reasoning. The
+        # key differs by one word because that job builds test artifacts and
+        # this one builds a release binary, and a shared key would have each
+        # run evict the other's `target`.
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            engine/target
+          key: cargo-${{ runner.os }}-headwater-${{ hashFiles('engine/Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-headwater-
+      - name: The pip cache, on a hosted runner only
+        # For the `mkdocs` and `pymdown-extensions` install below, which is
+        # pinned and is the only pip step here heavy enough to be worth a
+        # cache round-trip. The two pure-Python packages the `engine` job
+        # installs are not, so that job has no equivalent of this step.
+        #
+        # The key is this file, because this file is where those pins are
+        # written. Any edit here starts a new cache, which costs one download
+        # and never serves a wheel that a changed pin no longer names.
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: pip-${{ runner.os }}-
       - name: The toolchain this build needs
         run: |
           rustup update --no-self-update stable
