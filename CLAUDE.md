@@ -51,7 +51,7 @@ The hook needs a built engine and fails open with one printed line when there is
 | `PostToolUse` on `Write`/`Edit` | `write.sh` | names the documents that declare `governs` over the path you just edited. Advisory, and it blocks nothing |
 | `Stop` | `review.sh` | runs `.githooks/pre-commit` and stops the turn on what would stop the commit |
 
-Each one calls a verb that already ships, and none carries a rule of its own. The review hook invokes the commit hook rather than repeating it, so this repository still runs exactly one thing at commit time. Every one of them fails open: no built engine, no `python3`, or an input it cannot read, and the action proceeds.
+Each one calls a verb that already ships, and none carries a rule of its own. The review hook invokes the commit hook rather than repeating it, so this repository still runs exactly one thing at commit time. Every one of them fails open: no built engine, or an input it cannot read, and the action proceeds. `sh` and that engine are the whole of what a session needs, because the harness payload is read by `headwater json` rather than by an interpreter ([HW-DR-0055](docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md)). The review position needs the engine for its re-entry guard, so a host with no engine ends the turn rather than stopping it twice.
 
 None of them binds. A `Bash` call that writes a file matches no matcher, `disableAllHooks` turns all of them off with no record anywhere, and `git commit --no-verify` skips the gate below them. What holds a change is the commit gate and the CI job. `sh .claude/hooks/fixtures.sh` runs all four positions against recorded input, including every refusal.
 

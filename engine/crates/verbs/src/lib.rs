@@ -336,6 +336,49 @@ pub const VERBS: &[Verb] = &[
             },
         ],
     },
+    // A verb that reads no corpus, and the only one.
+    //
+    // A harness hands a hook one JSON object on standard input, and the hook
+    // needs three words of it: which moment fired, which path a tool is about
+    // to touch, and whether this stop is a second stop. Reading those needed an
+    // interpreter that nothing else in a session requires, and
+    // [HW-OBL-0146](../../../../docs/obligations/0146-the-stop-hook-reads-its-re-entry-guard-with-an-interpreter-it-does-not-require-so-a-machine-with-no-python3-re-blocks-the-same-turn.md)
+    // records what that cost: on a machine with no `python3` the review
+    // position could not read its re-entry guard, and it re-blocked the same
+    // turn with no way out.
+    //
+    // The [hook contract](../../../../docs/spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
+    // forbids a `headwater hook <moment>` verb, and the reason it gives is
+    // drift: two entry points to one answer are two answers. This verb is
+    // outside that reason rather than inside an exception to it. It answers
+    // nothing about a corpus, so there is no second answer for it to drift
+    // from, and it names no moment, so no position of a harness is spelled
+    // anywhere in this binary.
+    // [HW-DR-0055](../../../../docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md)
+    // is the ruling.
+    Verb {
+        name: "json",
+        group: "Reading a wire format, and no corpus",
+        summary: "read one member of the JSON object on standard input",
+        description: "Read the JSON object on standard input. This verb reads no corpus and answers no question about one. It is here because a harness hands a hook a JSON payload, and a hook that read it for itself would need an interpreter that nothing else in a session requires.",
+        words: &[
+            Word {
+                name: "field",
+                summary: "one member, addressed by a path of keys",
+                description: "Print one member of the object on standard input, addressed by a path of keys. `headwater json field tool_input file_path` reads the `file_path` member of the `tool_input` member. A string is printed with its escapes resolved, a number as it was written, and a boolean as `true` or `false`. It prints nothing and exits non-zero where the read reaches no scalar, which is one answer for six states: the document will not parse, a step of the path is not an object, the key is absent, the member is an array, the member is an object, or the member is null. A caller that told those apart would act on the shape of a message it did not write.",
+            },
+            Word {
+                name: "count",
+                summary: "how many elements the array or the object at a path holds",
+                description: "Print how many elements the array or the object at that path holds. It is the read `field` cannot do. An empty array and an absent member both give a caller nothing back, and they are different facts about the message. It prints nothing and exits non-zero where the path reaches no array and no object.",
+            },
+            Word {
+                name: "quote",
+                summary: "standard input as one JSON string literal",
+                description: "Read standard input and write it back as one JSON string literal, quoted and escaped. A caller needs this to put a path or a report inside the JSON object it writes back to a harness. It is the writer that every JSON this engine emits is written with.",
+            },
+        ],
+    },
     // `help` is a verb of this table and a variant of the parser, rather than
     // the subcommand `clap` injects during `build()`. The injected one carries a
     // copy of the whole command tree under it — `headwater help sweep plan` and

@@ -311,6 +311,9 @@ headwater probe       plan [--tier regression|campaign] [--arm present|absent]
                     | record <path>
                     | grade <path>
                     | stale
+headwater json        field <key>...
+                    | count [<key>...]
+                    | quote
 headwater help        [<verb> [<word>]]
 headwater completions bash|zsh|fish|powershell
 ```
@@ -326,6 +329,8 @@ headwater completions bash|zsh|fish|powershell
 **`sweep` is two verbs and neither one reaches a model.** `plan` writes the briefing an agent reads, and `report` reads back the file the agent wrote. The part between them needs a model and no engine code performs it, so no build ever waits for one. Both exit 0 whatever they find, neither writes into the corpus, and the sampler is a crate that `headwater-check` cannot name. Both exit non-zero over a corpus that does not load, which is a fact about the caller rather than about a finding. [Spec 12](12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) states what each of those four facts enforces.
 
 **`taxonomy vendor` takes a path, and that is what keeps the network out of the engine.** [Spec 7](07-distribution-and-federation.md#consuming) says a consumer fetches a package and checks its digest. The fetch is the caller's, by whatever moves a directory in the organization that runs it, and the verb checks the bytes it is handed. A verb that took a location would need a client, and a client is a crate that opens a socket. So the [non-negotiable](00-vision-and-scope.md#non-negotiables) is a property of the argument rather than a rule that somebody keeps. `publish` is the other half, and it writes the artifact that `vendor` reads.
+
+**`json` is the one verb that reads no corpus.** A harness hands a hook one JSON object on standard input. A hook that read it alone would need an interpreter that nothing else in a session requires. `field` prints one member, addressed by a path of keys. `count` prints how many elements the array or the object at a path holds, which is the read `field` cannot do. `quote` writes standard input back as one JSON string literal, for the object a hook writes to a harness. The reader is the loader this engine already carries, because JSON is a subset of the YAML 1.2 core schema. [HW-DR-0055](../decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) rules why a verb answers this and an interpreter does not, and [spec 5](05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind) carries the term that constrains it.
 
 **`conformance` reads a rule set the package ships, and both of its flags carry a rule.** The verb evaluates the repository against those rules and reports the level that the passing ones reach ([spec 7](07-distribution-and-federation.md#conformance)). With no flag it exits 0, on the terms `audit` exits 0: it measures an adoption and it gates nothing. `--level <name>` asks one question — is this repository at that rung — and it exits non-zero on a gap that no waiver covers. `--now` injects the clock that a waiver expiry is read against, so two runs over one tree at one date agree. The verb writes text and no other format, because the reader is a person closing a gap rather than a program.
 

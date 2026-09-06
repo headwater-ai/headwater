@@ -28,6 +28,6 @@ A reader of a verb page meets five global flags, and one of them speaks in a dif
 
 ## Discharge
 
-Either route discharges this record if `HELP.description` reaches all 32 verb pages and `the_long_description_of_a_verb_is_reachable_three_ways` stays green. The flag block of a verb page must stay inside 80 columns under either route.
+Either route discharges this record if `HELP.description` reaches every verb page and `the_long_description_of_a_verb_is_reachable_three_ways` stays green. The count in the title of this record is the count on the day it was written. `headwater json` and its three second words made it 36 on 2026-09-06, and no check reads either number. `headwater_verbs::VERBS` is what a reader counts. The flag block of a verb page must stay inside 80 columns under either route.
 
 The alternative discharge is a ruling that `clap` owns this one string. In that case the entry names `clap` as the author, and this record closes on the ruling rather than on a build.

@@ -2,7 +2,7 @@
 
 # The command surface
 
-`headwater` dispatches 19 verbs. 19 of them have a contract on this shelf, and 0 have none.
+`headwater` dispatches 20 verbs. 20 of them have a contract on this shelf, and 0 have none.
 
 A verb with no contract carries a mark in the last column, and that cell is what this file is for. An index of the contracts that exist would say nothing about the verbs nobody has described yet.
 
@@ -49,6 +49,12 @@ The headings and the second column are the groups and the summaries that `headwa
 |---|---|---|---|
 | `init` | scaffold the consumer declaration and the overlay | `headwater init` | [headwater init](headwater-init.md) |
 | `taxonomy` | read, write, publish and compare a taxonomy package | `headwater taxonomy validate`, `headwater taxonomy resolve`, `headwater taxonomy audit`, `headwater taxonomy publish`, `headwater taxonomy vendor`, `headwater taxonomy diff`, `headwater taxonomy migrate` | [headwater taxonomy](headwater-taxonomy.md) |
+
+## Reading a wire format, and no corpus
+
+| Verb | What it does | What a caller types | Contract |
+|---|---|---|---|
+| `json` | read one member of the JSON object on standard input | `headwater json field`, `headwater json count`, `headwater json quote` | [headwater json](headwater-json.md) |
 
 ## Getting help
 
