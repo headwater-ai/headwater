@@ -1,6 +1,6 @@
 <!-- headwater:generated shelf_index. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file. -->
 
-# reviews
+# Review records
 
 7 documents on this shelf, in the reading order this corpus derives.
 

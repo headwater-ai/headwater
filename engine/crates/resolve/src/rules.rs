@@ -324,7 +324,10 @@ pub fn undisplayed(taxonomy: &Mapping) -> Vec<&str> {
 /// one place the fall-through is written down for a reader of this verb.
 pub fn display_names(taxonomy: &Mapping) -> String {
     let bare = undisplayed(taxonomy);
-    let mut out = format!("shelves that print their key for want of a display name: {}\n", bare.len());
+    let mut out = format!(
+        "shelves that print their key for want of a display name: {}\n",
+        bare.len()
+    );
     for shelf in &bare {
         out.push_str(&format!("  shelves.{shelf}\n"));
     }
