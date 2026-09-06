@@ -7,10 +7,11 @@
 //! implemented, four of which this engine does not emit
 //! ([#576](https://github.com/headwater-ai/headwater/issues/576)). The check a
 //! reader could run by hand — `headwater generate --check` beside a `grep` of
-//! the sentence — cannot see three of those four, because this corpus declares
-//! no `relation_view`, no `agent_rules` and no `template`, so no run of the
-//! verb ever names them. An instrument blind to the defect it exists to catch
-//! is worse than none.
+//! the sentence — could not see three of those four, because this corpus
+//! declares no `relation_view`, no `agent_rules` and no `template`, so no run
+//! of the verb ever named them. An instrument blind to the defect it exists to
+//! catch is worse than none. #596 closed that blind spot in the verb itself,
+//! and this file holds the verb to it.
 //!
 //! # The model, and where this is stronger than it
 //!
@@ -32,8 +33,12 @@
 //!
 //! The *wording* of a reason is held for `coverage_report` alone, in
 //! [`the_coverage_report_reason_of_spec_6_is_the_reason_the_verb_prints`].
-//! That is the one reason a run over any corpus prints, and the other four
-//! reasons remain a hand copy in prose. `Kind::ALL` is a hand-kept list the
+//! That is the one reason spec 6 quotes in full, and the other four remain a
+//! hand copy in prose. Since
+//! [#596](https://github.com/headwater-ai/headwater/issues/596) a run over any
+//! corpus prints all five, which
+//! [`every_unbuilt_reason_reaches_a_reader_of_a_corpus_that_declares_none`]
+//! holds. `Kind::ALL` is a hand-kept list the
 //! compiler does not hold complete; the exhaustive `match` in `unbuilt` is
 //! what forces a thirteenth variant into that file.
 
@@ -231,10 +236,10 @@ fn the_runs_group_of_spec_6_is_exactly_the_projection_kinds_this_engine_emits() 
 
 /// The reason spec 6 quotes for `coverage_report` is the reason the verb prints.
 ///
-/// #576's second clause. `coverage_report` is the one waiting kind that a run
-/// over any corpus names, because it is engine-defined and needs no
-/// declaration to reach the report, so it is the one reason a specification
-/// part can be held to byte-for-byte rather than by hand.
+/// #576's second clause. Every waiting kind reaches a run over any corpus
+/// since #596, and `coverage_report` is the one of them a specification part
+/// quotes in full, so it is the one reason that can be held byte-for-byte
+/// rather than by hand.
 ///
 /// # Watched failing
 ///
