@@ -249,11 +249,20 @@ fn one_indented(line: &str, width: usize) -> String {
     out
 }
 
-/// Whether the opening word of `line` leaves no room for the word after it.
+/// The longest tail [`opens_past_the_room`] reads whole rather than by its
+/// first word.
+///
+/// Two, because the widest identity tail in this report is a severity marker
+/// under `ColorMode::Plain`: a glyph and a word. A read-set entry opens with
+/// `input`, so its tail is measured by the path and this bound never binds it.
+const TAIL: usize = 2;
+
+/// Whether the opening word of `line` leaves no room for what follows it.
 ///
 /// This is the one predicate that decides whether [`filled`] narrows a line or
-/// hands it back untouched, and [`unfoldable`] is its public name. It reads two
-/// words rather than one, and the second word is the whole point.
+/// hands it back untouched, and [`unfoldable`] is its public name. It reads
+/// past the opening word rather than stopping at it, and what follows is the
+/// whole point.
 ///
 /// # Why one word is the wrong question
 ///
@@ -287,11 +296,29 @@ fn opens_past_the_room(line: &str, width: usize) -> bool {
         return false;
     };
     let opening = indent + first.chars().count();
-    match words.next() {
+    let tail: Vec<&str> = words.collect();
+    match tail.len() {
         // One word, so there is nothing to detach. It is left alone only when
         // no fill could narrow it.
-        None => opening > width,
-        Some(second) => opening + 1 + second.chars().count() > width,
+        0 => opening > width,
+        // An identity and the token that classifies it. The whole tail is
+        // measured rather than its first word, because a severity marker is one
+        // token under `ColorMode::Ansi` and two under `ColorMode::Plain`, where
+        // `crate::paint::severity_word` writes a glyph, a space and the word. A
+        // guard that measured the first word of the tail let the glyph ride and
+        // wrapped the word alone, which is the harm above with an extra step in
+        // front of it.
+        1..=TAIL => {
+            opening
+                + tail
+                    .iter()
+                    .map(|word| 1 + word.chars().count())
+                    .sum::<usize>()
+                > width
+        }
+        // Prose. The opening word of a message line is short, so this arm is
+        // reached with room to spare and the fill narrows the line as it should.
+        _ => opening + 1 + tail[0].chars().count() > width,
     }
 }
 
@@ -506,6 +533,38 @@ mod tests {
         let out = filled(&line, WIDTH);
         assert_eq!(out, line, "the severity left its location line:\n{out}");
         assert_eq!(out.lines().count(), 1);
+    }
+
+    /// The same guard against a severity marker of two tokens.
+    ///
+    /// `crate::paint::severity_word` writes `warn` under `ColorMode::Ansi` and
+    /// `▲ warn` under `ColorMode::Plain`, so a finding's location line
+    /// holds three words in every recorded fixture and every piped run. The
+    /// band where the glyph fits and the word does not is one column wide per
+    /// opening, so a case that reads the corpus as it stands meets it only when
+    /// a path happens to land there. This walks the opening instead.
+    #[test]
+    fn a_glyph_never_rides_alone_when_its_severity_word_wraps() {
+        let width = 40;
+        for opening in 20..=48 {
+            let first = "p".repeat(opening - 2);
+            let line = format!("  {first} ▲ warn");
+            let out = filled(&line, width);
+            let lines: Vec<&str> = out.lines().collect();
+            assert!(
+                !lines.iter().any(|line| line.trim() == "warn"),
+                "at an opening of {opening} the severity word landed alone:\n{out}"
+            );
+            assert!(
+                !lines.iter().any(|line| line.trim() == "▲"),
+                "at an opening of {opening} the glyph landed alone:\n{out}"
+            );
+            assert_eq!(
+                unfoldable(&line, width),
+                line.chars().count() > width && out == line,
+                "at an opening of {opening} the predicate and the fill disagree"
+            );
+        }
     }
 
     /// Every wide line the fill emits is one the predicate names.

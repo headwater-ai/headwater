@@ -72,13 +72,13 @@ relations:
 
 [HW-DR-0015](../decisions/0015-a-synthesized-content-tier.md) — Every document carries a warrant from a closed set of four, and `asserted` content is admitted with limits.
 
-## Q39 — How a figure reaches a hand-built page, now that a build interpolates one
+## Q39 — How a figure reaches a hand-built page
 
-[HW-DR-0039](../decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md) — The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.
+[HW-DR-0039](../decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md) — The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.
 
-## Q50 — Where the visual register of the hand-built pages lives, now that eight pages each carried a copy
+## Q50 — Where the visual register of the hand-built pages lives
 
-[HW-DR-0050](../decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md) — The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet. (asserted, and no human has accepted it)
+[HW-DR-0050](../decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md) — The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet. (asserted, and no human has accepted it)
 
 ## Q37 — Which parts of the site are hand-built and which are a projection of this corpus
 

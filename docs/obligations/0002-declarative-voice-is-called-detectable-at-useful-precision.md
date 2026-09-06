@@ -4,7 +4,7 @@ title: "Declarative voice is called detectable at useful precision, and the samp
 status: current
 status_since: 2026-08-11
 waiting_on: adopter
-last_verified: 2026-08-14
+last_verified: 2026-09-06
 summary: "The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for."
 provenance:
   warrant: accepted
@@ -37,6 +37,8 @@ The instrument is a run of the three categories over this corpus, with an adjudi
 
 ## Discharge
 
-`voice.forbidden_construction` implements `future_intent`, `change_narration` and `phased_rollout`, which are the categories that the declarative regime forbids. The first run reports 21 findings over the three, and the largest category holds 10. So the implementation exists and the sample the instrument asks for does not.
+`voice.forbidden_construction` implements `future_intent`, `change_narration` and `phased_rollout`, which are the categories that the declarative regime forbids. So the implementation exists, and what this record holds open is the sample.
 
-Each category is an order of magnitude short of 50, and no larger corpus under the declarative regime exists to run against. This claim stays unmeasured until the instrument names a reachable sample, a wider corpus, or both.
+Edition two of the `change_narration` set reports 60 findings over this corpus, which clears the bar of 50 for one category of the three. `future_intent` and `phased_rollout` report nothing. [HW-OBL-0168](0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md) states why a zero from a pattern set carries two readings rather than one.
+
+So this claim is short by two categories rather than by three. A wider corpus is one way to reach the other two. A pattern set curated against the prose those two categories are written in is the second way, and it asks nothing of an adopter.

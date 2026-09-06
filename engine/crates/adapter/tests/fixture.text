@@ -488,7 +488,7 @@ read set
   version identifier.claimed_twice 1
   version identifier.claim.missing 1
   version identifier.claim.stale 1
-  version voice.forbidden_construction 1
+  version voice.forbidden_construction 2
   version language.controlled.not_met 1
   version language.retired_term.used 1
   version language.source_form.not_met 1
