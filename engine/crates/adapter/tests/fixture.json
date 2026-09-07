@@ -4,16 +4,16 @@
   "taxonomy": {
     "package": "headwater/fixture",
     "version": "1.0.0",
-    "lock": "f56bcd0fbdb55db9caf432a8df7904bc47d417d9333f5561baceece2d6f94037"
+    "lock": "9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0"
   },
   "clock": "2026-08-12",
   "coverage": {
-    "seen": 25,
-    "classified": 23,
-    "checked": 22,
+    "seen": 26,
+    "classified": 24,
+    "checked": 23,
     "generated": 1,
-    "instances": 269,
-    "skipped": 67,
+    "instances": 304,
+    "skipped": 70,
     "skips": [
       {
         "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
@@ -25,7 +25,7 @@
       },
       {
         "reason": "the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it",
-        "instances": 16
+        "instances": 17
       },
       {
         "reason": "`guarded` forbids hedging, and this engine has no pattern set for it",
@@ -37,11 +37,11 @@
       },
       {
         "reason": "this document writes no fragment into itself",
-        "instances": 21
+        "instances": 22
       },
       {
         "reason": "change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change",
-        "instances": 24
+        "instances": 25
       }
     ],
     "unaccounted": [
@@ -65,6 +65,12 @@
       "obligations": [
         "OB-FIX-4"
       ]
+    },
+    {
+      "rule": "facet.value.blank",
+      "scope": "document",
+      "version": 1,
+      "obligations": []
     },
     {
       "rule": "identifier.pattern.not_met",
@@ -773,6 +779,51 @@
       "escape": "none"
     },
     {
+      "rule": "facet.value.blank",
+      "severity": "error",
+      "path": "check/spec/18-blank-facets.md",
+      "line": 6,
+      "column": 10,
+      "message": "`summary` is declared with no value",
+      "remediation": "write the value of `summary` into check/spec/18-blank-facets.md, which this kind requires",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "facet.value.blank",
+      "severity": "error",
+      "path": "check/spec/18-blank-facets.md",
+      "line": 7,
+      "column": 8,
+      "message": "`title` is declared as empty text",
+      "remediation": "write the value of `title` into check/spec/18-blank-facets.md, or remove the key",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "facet.value.blank",
+      "severity": "error",
+      "path": "check/spec/18-blank-facets.md",
+      "line": 8,
+      "column": 9,
+      "message": "`oracle` is declared as a sequence, and its declaration says `string`",
+      "remediation": "write the value of `oracle` into check/spec/18-blank-facets.md, or remove the key",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "language.controlled.not_met",
+      "severity": "warn",
+      "obligation": "OB-FIX-8",
+      "path": "check/spec/18-blank-facets.md",
+      "line": 15,
+      "column": 26,
+      "message": "`ste_house` holds prose to 25 words a sentence, and this one has 32",
+      "remediation": "split the sentence, or move a clause into its own sentence",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
       "rule": "control.mechanism.unimplemented",
       "severity": "warn",
       "obligation": "OB-FIX-12",
@@ -945,6 +996,10 @@
     {
       "path": "check/spec/17-identifier-not-a-word.md",
       "digest": "sha256:9d82bc120f67b7b5a999433bbae8502e18587777cf94bcc8254491ebe9c73981"
+    },
+    {
+      "path": "check/spec/18-blank-facets.md",
+      "digest": "sha256:ab8d0eb139f3733cde3ca712a0f637ff8fe82f70fc93a55f87b27273fad00d57"
     }
   ]
 }

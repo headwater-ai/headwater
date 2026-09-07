@@ -1,17 +1,17 @@
 taxonomy
   headwater/fixture 1.0.0
-  f56bcd0fbdb55db9caf432a8df7904bc47d417d9333f5561baceece2d6f94037
+  9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0
 
 clock
   2026-08-12
 
 census
-  25 files under the corpus root
-       23 typed
+  26 files under the corpus root
+       24 typed
         1 generated
         1 untyped
         2 typed decision_record
-       13 typed design_spec
+       14 typed design_spec
         7 typed evaluation
         1 typed note
 
@@ -22,7 +22,7 @@ census
       than this census
 
 graph
-  21 nodes, 10 declared edge halves
+  22 nodes, 10 declared edge halves
         8 to a document
         2 unbound
   0 prose links that did not resolve
@@ -55,19 +55,19 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  25 seen, 23 classified, 22 checked, 269 check instances
+  26 seen, 24 classified, 23 checked, 304 check instances
         1 generated, held to regeneration by `headwater generate --check`
         1 skipped: no `id` facet, which is the key this engine reads an
           identifier from and which no declaration states
         1 skipped: the `id` facet is a sequence, and an identifier is a word
-       16 skipped: the shelf is heterogeneous, so the discriminator is the gap
+       17 skipped: the shelf is heterogeneous, so the discriminator is the gap
          metadata fills, and kind resolution already read it
         2 skipped: `guarded` forbids hedging, and this engine has no pattern set
           for it
         2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this
           engine has no rules for it
-       21 skipped: this document writes no fragment into itself
-       24 skipped: change-scoped-only: the prior version is available only in
+       22 skipped: this document writes no fragment into itself
+       25 skipped: change-scoped-only: the prior version is available only in
          change-scoped evaluation, and this run carries no change
     a check read .headwater/ids, which the census never walked
     a check read .headwater/ids, which the census never walked
@@ -75,28 +75,29 @@ checks
     1 pairs open, 0 closed, holding 1 finding, in 1 task
     AD-1 1 open, 0 closed, holding 1 finding, owner the fixture tree, until
       2027-01-01
-      one pair, so that a run carries a migration-pending finding25 documents in
+      one pair, so that a run carries a migration-pending finding26 documents in
         the read set, and 4 barriers that no gate carries across a merge
-       22 instances of facet.required.missing
-       22 instances of facet.value.not_permitted
-       22 instances of identifier.pattern.not_met
-       23 instances of shelf.placement_is_primary
+       23 instances of facet.required.missing
+       23 instances of facet.value.not_permitted
+       23 instances of facet.value.blank
+       23 instances of identifier.pattern.not_met
+       24 instances of shelf.placement_is_primary
        10 instances of relation.target.unresolved
         4 instances of relation.reciprocity.missing
         7 instances of relation.endpoint.not_permitted
         7 instances of relation.participation.overdue
-       22 instances of relation.declaration.unusable
-       22 instances of identifier.unusable
+       23 instances of relation.declaration.unusable
+       23 instances of identifier.unusable
         1 instances of identifier.claimed_twice
         1 instances of identifier.claim.missing
         1 instances of identifier.claim.stale
-       15 instances of voice.forbidden_construction
-       15 instances of language.controlled.not_met
-       13 instances of language.retired_term.used
-       13 instances of language.source_form.not_met
+       16 instances of voice.forbidden_construction
+       16 instances of language.controlled.not_met
+       14 instances of language.retired_term.used
+       14 instances of language.source_form.not_met
         2 instances of section.required.missing
-       23 instances of link.fragment.unresolved
-       23 instances of warrant.promoted
+       24 instances of link.fragment.unresolved
+       24 instances of warrant.promoted
         1 instances of lifecycle.deletion.not_permitted
   suppressions
     2 findings hidden by 2 directives
@@ -113,6 +114,8 @@ checks
     facet.required.missing
       document scope, one document and its front matter
     facet.value.not_permitted
+      document scope, one document and its front matter
+    facet.value.blank
       document scope, one document and its front matter
     identifier.pattern.not_met
       document scope, one document and its front matter
@@ -211,6 +214,7 @@ checks
         1 producing facts rather than findings
     escaped findings, in the precedence spec 4 fixes: no waiver reaches a check
       finding, 1 migration-pending, 2 suppressed
+    facet.value.blank reaches no obligation, so it names none
     relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding
       names one obligation, so it names none
     lifecycle.dependency.on_terminal reaches no obligation, so it names none
@@ -223,9 +227,9 @@ checks
     lifecycle.deletion.not_permitted reaches no obligation, so it names none
     coverage.document_unchecked reaches no obligation, so it names none
     adoption.task.expired reaches no obligation, so it names none
-  44 findings
-       26 ✗ error
-       18 ▲ warn
+  48 findings
+       29 ✗ error
+       19 ▲ warn
 
   check/evaluations/epsilon.md:4:1 ▲ warn
     relation.participation.overdue (OB-FIX-6): `evidence-cited`: 219 days since
@@ -425,6 +429,23 @@ checks
     fix: write one identifier of this document under the `id` key, because a
       relation names a document by its identifier and a document with none can
       stand at neither end of one
+  check/spec/18-blank-facets.md:6:10 ✗ error
+    facet.value.blank: `summary` is declared with no value
+    fix: write the value of `summary` into check/spec/18-blank-facets.md, which
+      this kind requires
+  check/spec/18-blank-facets.md:7:8 ✗ error
+    facet.value.blank: `title` is declared as empty text
+    fix: write the value of `title` into check/spec/18-blank-facets.md, or
+      remove the key
+  check/spec/18-blank-facets.md:8:9 ✗ error
+    facet.value.blank: `oracle` is declared as a sequence, and its declaration
+      says `string`
+    fix: write the value of `oracle` into check/spec/18-blank-facets.md, or
+      remove the key
+  check/spec/18-blank-facets.md:15:26 ▲ warn
+    language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
+      a sentence, and this one has 32
+    fix: split the sentence, or move a clause into its own sentence
   engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
     control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-15 names the
       mechanism check:no.such.rule, which this engine does not implement, so
@@ -466,7 +487,7 @@ checks
       {reasoning: …}}` on it, and exactly one of the three
 
 read set
-  lock f56bcd0fbdb55db9caf432a8df7904bc47d417d9333f5561baceece2d6f94037
+  lock 9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0
   clock 2026-08-12
   barrier identifier.claimed_twice
   barrier identifier.claim.missing
@@ -475,6 +496,7 @@ read set
   windowed relation.participation.overdue
   version facet.required.missing 1
   version facet.value.not_permitted 1
+  version facet.value.blank 1
   version identifier.pattern.not_met 1
   version shelf.placement_is_primary 1
   version relation.target.unresolved 1
@@ -527,3 +549,4 @@ read set
   input check/spec/15-unusable-entries.md sha256:b0cec4bd6cad730288e9c126bf7daabd890f52975e80840ec1266fef86eacb87
   input check/spec/16-no-identifier.md sha256:2f42a485abe65d5e2c22de86c8bfecb7bbfc1e06e64ef2f6c64c914fc7792b85
   input check/spec/17-identifier-not-a-word.md sha256:9d82bc120f67b7b5a999433bbae8502e18587777cf94bcc8254491ebe9c73981
+  input check/spec/18-blank-facets.md sha256:ab8d0eb139f3733cde3ca712a0f637ff8fe82f70fc93a55f87b27273fad00d57
