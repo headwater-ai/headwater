@@ -1920,6 +1920,13 @@ fn destination(written: &str) -> String {
 /// closing fence carries no information string, so a line with anything else on
 /// it stays content.
 ///
+/// **The information string is read at both ends.** CommonMark refuses a
+/// backtick run as an opener when the text after it carries a backtick, and the
+/// first cut of this tested that at the closing end alone. A line like
+/// ` ```a`b ` therefore opened a fence that nothing ever closed, and every line
+/// to the end of the file went unread. A tilde run takes any information string,
+/// so the rule belongs to the backtick.
+///
 /// # An indented block is code here, and the boundary is deliberate
 ///
 /// Four spaces after a blank line open an indented code block, and this reads
@@ -1958,10 +1965,22 @@ fn links(text: &str) -> Vec<String> {
         previous_blank = blank;
         for character in ['`', '~'] {
             let run = opener.chars().take_while(|held| *held == character).count();
-            if run >= 3 {
-                fence = Some((character, run));
-                break;
+            if run < 3 {
+                continue;
             }
+            // The same information-string rule the closer already applies, on
+            // the other end. CommonMark refuses a backtick run as an opener when
+            // the text after it carries a backtick, because that text would be
+            // ambiguous with a code span. Reading it as an opener here opens a
+            // fence that nothing ever closes, and **every line to the end of the
+            // file then goes unread** — the invisibility this rule exists to
+            // refuse, reached through the one end that had no test. A tilde run
+            // takes any information string, so the rule is the backtick's alone.
+            if character == '`' && opener.trim_start_matches('`').contains('`') {
+                continue;
+            }
+            fence = Some((character, run));
+            break;
         }
         if fence.is_some() {
             continue;
