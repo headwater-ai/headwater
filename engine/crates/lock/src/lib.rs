@@ -169,7 +169,12 @@ pub enum LockError {
     Absent(PathBuf),
     Unreadable(String),
     Malformed(String),
-    /// A later format than this engine knows.
+    /// The declared `format` token is not the one this engine writes. `read`
+    /// compares the raw token to [`FORMAT`] for inequality and never orders the
+    /// two, so this variant carries a mismatch and no direction: a lock at an
+    /// earlier format, a lock at a later one, and a token that is not a number
+    /// at all all arrive here, and the message says which token was found
+    /// rather than which engine wrote it.
     Format {
         found: String,
     },
@@ -204,8 +209,9 @@ impl std::fmt::Display for LockError {
             LockError::Malformed(what) => write!(f, "the lock is malformed: {what}"),
             LockError::Format { found } => write!(
                 f,
-                "the lock declares format `{found}` and this engine writes {FORMAT}. \
-                 A newer engine wrote it"
+                "the lock declares format `{found}` and this engine reads and writes {FORMAT}. \
+                 The lock was written by an engine that does not write {FORMAT}. \
+                 Run `headwater taxonomy resolve` to write one this engine reads"
             ),
             LockError::Tampered { declared, actual } => write!(
                 f,
@@ -476,9 +482,11 @@ pub fn authored_at(root: &Path) -> Authored {
 
 /// What is still legible of the authored block, behind a lock that did not read.
 fn behind(why: LockError, text: &str) -> Authored {
-    // A lock a newer engine wrote may declare its authored block in a shape
-    // this engine does not know, so this engine cannot say it has seen one.
-    // That is the refusal `FORMAT` already argues for, stated where it bites.
+    // A lock at a format this engine does not write may declare its authored
+    // block in a shape this engine does not know, so this engine cannot say it
+    // has seen one. That holds whichever side of `FORMAT` the declared token
+    // falls on, because an unreadable shape is opaque in either direction. It
+    // is the refusal `FORMAT` already argues for, stated where it bites.
     if matches!(why, LockError::Format { .. }) {
         return Authored::Opaque { why };
     }
@@ -853,7 +861,7 @@ core:
     }
 
     #[test]
-    fn a_lock_from_a_later_engine_says_so_rather_than_guessing() {
+    fn a_format_this_engine_does_not_write_is_refused_rather_than_guessed_at() {
         let (sources, resolution) = resolved(VALID);
         let text =
             write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
