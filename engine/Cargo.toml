@@ -36,6 +36,25 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
+# The oldest Rust this workspace builds on, declared where a machine reads it.
+# Until this line the floor lived in prose in `engine/README.md` and in the
+# `rust:<tag>-slim` image its two container commands pin, and neither is a place
+# cargo looks. `docs/obligations/0148-…` predicted the consequence and named the
+# margin as zero on 2026-08-26. On that same day `ordered-float 5.5.0` entered
+# `engine/Cargo.lock` transitively under `saphyr` carrying `rust-version =
+# "1.90"`, and both container commands began exiting 101 before compiling a
+# line. Nothing noticed for twelve days.
+#
+# The number is the highest `rust-version` in the resolved graph rather than a
+# floor this code needs on its own: a dependency's floor is the workspace's
+# floor. `tools/engine-readme-fixtures.sh` compares the two and reddens when the
+# lock moves above the pin, which is the reading nothing performed before.
+#
+# Like `license` below, this key is an inheritance SOURCE and not an inheritance
+# rule. A member that omits `rust-version.workspace = true` reports
+# `rust_version: null` and answers to no floor at all.
+rust-version = "1.90"
+
 # The license, restated where a machine reads it. `LICENSE` at the repository
 # root is Apache 2.0, and every source file under `crates/` that is not a test
 # fixture opens with `// SPDX-License-Identifier: Apache-2.0`.

@@ -123,8 +123,12 @@ jobs:
           key: cargo-${{ runner.os }}-engine-${{ hashFiles('engine/Cargo.lock') }}
           restore-keys: cargo-${{ runner.os }}-engine-
       - name: The toolchain this build needs
-        # Rust 1.85 or later. `saphyr-parser` is on edition 2024, and an older
-        # cargo reports `feature edition2024 is required` and nothing else.
+        # Rust 1.90 or later, which `[workspace.package]` in `engine/Cargo.toml`
+        # declares and `tools/engine-readme-fixtures.sh` holds against the lock.
+        # This step installs current stable, which is above that floor, so the
+        # floor is never exercised here — the container commands in
+        # `engine/README.md` are the only place it is, and they are the place it
+        # broke unnoticed for twelve days.
         run: |
           rustup update --no-self-update stable
           rustup default stable
@@ -714,6 +718,34 @@ jobs:
         # repository instead. It builds no engine and writes only under a
         # temporary directory.
         run: sh tools/readme-fixtures.sh
+      - name: The command an outsider runs still runs
+        # `engine/README.md` carries two `docker run` recipes, and on 2026-09-07
+        # both exited 101 before compiling a line: `ordered-float 5.5.0` had
+        # entered `engine/Cargo.lock` on 2026-08-26 declaring `rust-version =
+        # "1.90"`, and both recipes pinned a 1.85 image. They were dead for
+        # twelve days and a hundred and eleven commits, this repository went
+        # public with them dead, and a change on the day it went public edited
+        # both of them without running either.
+        #
+        # Nothing could have noticed. The floor was prose in a Markdown file and
+        # a string in an image tag, and no crate of this workspace declared
+        # `rust-version`, so a routine `cargo update` could raise the real floor
+        # above the pinned image with every gate here green.
+        #
+        # The case this step exists for compares the highest `rust-version`
+        # across `cargo metadata --locked` against the tag those recipes pin. It
+        # runs no container and builds nothing, which is the whole reason it can
+        # be a required step: the container itself is minutes of cold compile
+        # for a floor this reading establishes in milliseconds.
+        #
+        # It also holds the four things those recipes explain at length and
+        # nothing else reads — the `--user` on the test half and root on the
+        # other, the `git rev-parse --show-toplevel` mount, the two blocks that
+        # a blank line alone would render as one `<pre>`, and the absence of
+        # `-D warnings` — and it holds the nine files that state the floor to
+        # one another. `--locked` on those recipes belongs to
+        # `tools/build-declaration-fixtures.sh` and is not read twice here.
+        run: sh tools/engine-readme-fixtures.sh
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every

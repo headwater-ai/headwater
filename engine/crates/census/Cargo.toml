@@ -5,6 +5,7 @@ version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 # A row carries the digest of the bytes it read, which is the content hash a

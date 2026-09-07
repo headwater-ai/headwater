@@ -5,6 +5,7 @@ version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 # Front matter is YAML, so it loads through the loader rather than through a

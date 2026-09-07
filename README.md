@@ -8,7 +8,7 @@
 
 ## Obtaining a named version
 
-`v0.1.0` is the name of the first tagged release, and it is the version to build if you want a tree that does not move under you. **The tag is not cut yet**, so the third line below fails today, and a shell that does not stop on an error goes on to build the default branch instead. Omit that line until the tag exists, and know that you are building a tree that moves. There is no published binary and no package registry entry: the install path is a source build, and it needs a Rust toolchain at **1.85 or later**, a floor `engine/README.md` explains.
+`v0.1.0` is the name of the first tagged release, and it is the version to build if you want a tree that does not move under you. **The tag is not cut yet**, so the third line below fails today, and a shell that does not stop on an error goes on to build the default branch instead. Omit that line until the tag exists, and know that you are building a tree that moves. There is no published binary and no package registry entry: the install path is a source build, and it needs a Rust toolchain at **1.90 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
 
 ```
 git clone https://github.com/headwater-ai/headwater.git

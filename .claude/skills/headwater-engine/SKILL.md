@@ -22,11 +22,11 @@ Build from the repository root with `--manifest-path`, or from `engine/` with ne
 
 ## The toolchain floor
 
-Rust 1.85 or later. `saphyr-parser` is on edition 2024, and an older cargo reports `feature edition2024 is required` and nothing else. Check the toolchain first when a clean checkout will not build, because that message names no crate and reads like a corrupt tree.
+Rust 1.90 or later. `[workspace.package]` in `engine/Cargo.toml` declares it, so cargo refuses an older toolchain and names the crate that raised the floor. Below 1.85 the message is worse: `saphyr-parser` is on edition 2024, and a cargo older than that reports `feature edition2024 is required`, names no crate, and reads like a corrupt tree. Check the toolchain first when a clean checkout will not build.
 
 A machine that installed Rust from its distribution usually has neither rustfmt nor clippy. `engine/README.md` carries the container that supplies both and pins the floor at the same time. Run it before a change to the engine is proposed: CI runs `cargo fmt --check` and `cargo clippy --all-targets --locked -- -D warnings`, and both are blocking. Clippy on the current stable knows lints that the pinned floor does not, so a clean container run is not a clean CI run.
 
-It is two `docker run` commands there and not one. The first installs the components as root, which is the only user `rustup` can write for in that image. The second passes `--user` and runs `cargo test`, because three tests require a process that a `0444` file can stop and root is not one. Run both and read each exit status on its own, and never join them with a pipe. Do not add `-D warnings` to the container half: the workspace denies a clippy lint that 1.85 does not know, so the flag turns `unknown lint` into an error in every crate there.
+It is two `docker run` commands there and not one. The first installs the components as root, which is the only user `rustup` can write for in that image. The second passes `--user` and runs `cargo test`, because three tests require a process that a `0444` file can stop and root is not one. Run both and read each exit status on its own, and never join them with a pipe. Do not add `-D warnings` to the container half: the workspace denies `clippy::manual_assert_eq`, which clippy in the pinned image does not know, so the flag turns `unknown lint` into an error in every crate there. `tools/engine-readme-fixtures.sh` refuses that flag in either command, and it also refuses an image tag below the highest `rust-version` in the resolved lock.
 
 ## Which test suite to name
 
