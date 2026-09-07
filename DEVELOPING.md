@@ -16,6 +16,12 @@ Keep that path relative. An absolute path makes every worktree of this repositor
 
 `.githooks/pre-commit` needs a built engine and **fails open with one printed line when there is none**. A fresh worktree has no `engine/target`, so the hook there exits 0 without checking anything. Do not read that silence as a pass.
 
+Either profile builds an engine the gate accepts, and so does every hook under `.claude/hooks/`. `release` is what CI builds and what a release artifact ships. `--profile dev-release` is the same optimization level without the `lto = true` and `codegen-units = 1` link, and on an eight core host a one crate relink under it costs 25 seconds of CPU against 153 for the shipped profile. Nothing here runs the engine for longer than a fifth of a second, so the cheaper binary is the one to build when what you want is a checked commit rather than an artifact:
+
+    cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked
+
+When both are built the **newer** one answers, rather than the shipped profile by name. A stale `release` binary beside a `dev-release` one built after it would check your change through an engine that predates it, which is a failure that reads as a pass. `sh .claude/hooks/fixtures.sh` and `sh .githooks/fixtures.sh` hold that rule on both sides.
+
 ## The toolchain floor
 
 **Rust 1.90 or later.** `[workspace.package]` in `engine/Cargo.toml` declares it and every crate inherits it, so cargo refuses an older toolchain and names the crate that raised the floor. Below 1.85 the message is worse: a dependency is on edition 2024, and a cargo older than that reports `feature edition2024 is required`, names no crate, and reads like a corrupt tree. Check your toolchain first when a clean checkout will not build.
@@ -53,6 +59,10 @@ The digest of the resolved taxonomy lock reaches several recorded fixtures and t
 
 This builds the binary a person runs by hand. It is **not** a verification step. `lto = true` and `codegen-units = 1` cost minutes on the link, and a debug `cargo check` and `cargo test` prove the same fix in seconds. Reach for `--release` when the session needs the binary itself: to hand it to somebody, to run a verb against a real corpus, or to measure a performance claim, which debug and release answer differently by roughly an order of magnitude. `--profile dev-release` links faster at a smaller optimization cost.
 
+That link is **single threaded**, which is what makes it expensive rather than merely slow. Measured on an eight core host: a one crate relink costs 153 seconds of CPU under `release` and 25 under `dev-release`, and the `release` figure is one core held for two and a half minutes rather than eight cores held for twenty seconds. On a machine running anything else at the time, that is the difference the other work feels. `lto = "thin"` is not the answer either, and it was measured before it was ruled out: 287 seconds of CPU against 153, spread over more cores, so it halves the wall clock and nearly doubles the load.
+
+**A hook or the commit gate is not a reason to build this profile.** Both accept a `dev-release` binary, which is what the first section of this page says to build.
+
 Every verb of that binary takes `--root`, which names the corpus to read. Without it a verb reads the current directory, and the current directory after a build is the engine workspace rather than the corpus.
 
 `--locked` on that command is not decoration. `engine/Cargo.lock` is committed, and the flag is what holds a cargo run to it. Every cargo step in CI **that resolves a manifest** carries it, and so does every copy of the install command in this repository. Two are exempt and neither is an omission: `cargo fmt` rejects the flag, and `cargo --version` accepts and ignores it. Neither reads a manifest, so neither can rewrite a lock. A maintainer adding a dependency drops the flag deliberately, because there a rewritten lock is the intended result. `sh tools/build-declaration-fixtures.sh` is what holds all of that, one occurrence at a time.
@@ -70,6 +80,8 @@ Two things to know before you run it.
     cargo clean -p <crate>
 
 Then run the test again. Because `cargo test` stops at the first failing target, one poisoned crate can hide the rest of the suite behind it.
+
+**`-p <crate>` is the whole command, and the bare `cargo clean` is not a stronger version of it.** The bare form removes the build output of every crate in the workspace and every dependency under it, so the next `cargo test` recompiles from nothing and the next `--release` build pays the link again. One session here ran it three times in an afternoon, once immediately before a `cargo test`, and bought a full rebuild each time to clear one crate's stale object. Name the crate. Reach for the bare form when the question is whether the build directory itself is corrupt, which is rare enough that it has not happened here yet.
 
 ## What CI runs
 

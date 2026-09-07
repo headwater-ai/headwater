@@ -99,10 +99,32 @@ if [ -z "$(git config merge.headwater-regenerate.driver 2>/dev/null)" ]; then
     echo "        git config merge.headwater-regenerate.driver \".githooks/merge-regenerate %O %A %B %P\""
 fi
 
-engine="$root/engine/target/release/headwater"
-if [ ! -x "$engine" ]; then
+# Either profile builds an engine this gate can run, and the newer of the two
+# answers. `release` is what CI builds and what a release artifact ships;
+# `dev-release` is the same optimization level without the `lto = true` and
+# `codegen-units = 1` link, which is single threaded and costs minutes. This
+# gate read the `release` path alone, so a clone that wanted a checked commit
+# bought that link for a binary this hook runs for a fifth of a second.
+#
+# The newer one wins rather than `release` by name: a stale `release` binary
+# beside a `dev-release` one built after it would check the commit through an
+# engine older than the change in front of it, which is a quieter failure than
+# the cost. `.claude/hooks/lib.sh` resolves the same two paths the same way, and
+# `sh .githooks/fixtures.sh` and `sh .claude/hooks/fixtures.sh` hold each copy.
+release="$root/engine/target/release/headwater"
+dev_release="$root/engine/target/dev-release/headwater"
+engine=
+[ -x "$release" ] && engine=$release
+if [ -x "$dev_release" ] && { [ -z "$engine" ] || [ "$dev_release" -nt "$engine" ]; }; then
+    engine=$dev_release
+fi
+if [ -z "$engine" ]; then
     echo "headwater: no built engine, so this commit is not checked for prose."
-    echo "  build it once: cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked"
+    echo "  build it once:"
+    echo "        cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked"
+    echo "  that is the cheap profile, and this gate runs it. Build --release when"
+    echo "  what you want is the shipped artifact rather than a checked commit:"
+    echo "        cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked"
     exit 0
 fi
 

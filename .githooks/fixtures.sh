@@ -726,6 +726,34 @@ unset_driver=$(cd "$scratch" && git config --unset merge.headwater-regenerate.dr
 judge 'the gate reports a clone with no merge driver configured' 0 0 \
     'this clone has no merge driver for a derived artifact' "$unset_driver"
 
+# Either profile builds an engine this gate runs.
+#
+# The tree these two cases stand on is one the gate must refuse, which is what
+# makes them mean anything. A clean tree cannot state this: the gate exits 0
+# when it ran and found nothing, and it exits 0 when it found no engine at all,
+# so a case over a clean tree passes on a gate that never ran a rule. A refusal
+# can only come from an engine that ran.
+reset
+seed_draft
+move "$draft" draft discharged
+mkdir -p "$scratch/engine/target/dev-release"
+mv "$scratch/engine/target/release/headwater" "$scratch/engine/target/dev-release/headwater"
+out=$(gate); status=$?
+judge 'a dev-release engine and no release one refuses the same movement' 1 "$status" \
+    'lifecycle.transition.not_permitted (OB-LIFE-1): HW-OBL-0126 moved from `draft` to `discharged`' "$out"
+
+# And neither profile, over that same refusable tree. The gate says so and lets
+# the commit through, because a clone behind on a setup step is not a defect in
+# the commit in front of it. This is the one case here that passes a tree every
+# other case refuses, so it is also the control for the case above.
+mv "$scratch/engine/target/dev-release/headwater" "$hold/moved-engine"
+out=$(gate); status=$?
+judge 'no engine of either profile passes that same tree through, and says so' 0 "$status" \
+    'no built engine, so this commit is not checked for prose' "$out"
+judge 'the fail-open line names the cheaper build as well as the shipped one' 0 0 \
+    '--profile dev-release -p headwater-cli' "$out"
+mv "$hold/moved-engine" "$scratch/engine/target/release/headwater"
+
 reset
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
