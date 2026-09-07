@@ -237,6 +237,39 @@ pub struct Proposal {
     /// documents and propose an edge between two of them, and the first path it
     /// names is then a document the proposed edge says nothing about.
     pub path: String,
+    /// The half the document at the far end owes, when the relation requires
+    /// both ends, and nothing when it does not.
+    ///
+    /// `None` for a symmetric relation and for one that declares no
+    /// reciprocity, because there a second block would tell a person to declare
+    /// an edge their taxonomy never asked for.
+    pub owed: Option<Owed>,
+}
+
+/// The second half of a `reciprocal: required` pair, as front matter.
+///
+/// A sweep prints front matter for a person to paste, and
+/// [`headwater_check::reciprocity`] reports a pair carrying one half as an
+/// error. So a report that prints one block alone hands a reader an
+/// instruction that their own commit gate refuses, and the reader has no way
+/// back to the sweep from the error they get.
+///
+/// The name is direction-dependent, and it is computed here the way that rule
+/// computes it: the inverse name when the printed half is the declared one, and
+/// the declared name when the printed half is the inverse one. The two have to
+/// agree, and a disagreement is silent — the report prints a block and the gate
+/// rejects it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Owed {
+    /// The path of the document at the far end, which is the one that owes it.
+    ///
+    /// It is the `to` end of the proposal as the finding wrote it, resolved
+    /// through the graph, and never the second path the finding names.
+    pub path: String,
+    /// The relation name that half is written under.
+    pub relation: String,
+    /// The identifier it names, which is the proposal's `from`.
+    pub id: String,
 }
 
 /// One finding that survived every test above.
@@ -471,11 +504,33 @@ fn one(
                 }
             }
             let path = source.path.clone();
+            // The second half, when the relation requires one. See [`Owed`]:
+            // the owed name is `relation.inverse` where the printed half is the
+            // declared one and `relation.name` where the printed half is the
+            // inverse one, which is what `headwater_check::reciprocity` reads.
+            // A required relation that declares no inverse owes its own name,
+            // the same fallback that rule takes.
+            let owed = (named.relation.reciprocal == Reciprocal::Required).then(|| {
+                let relation = match named.direction {
+                    Direction::AsDeclared => named
+                        .relation
+                        .inverse
+                        .clone()
+                        .unwrap_or_else(|| named.relation.name.clone()),
+                    Direction::Inverse => named.relation.name.clone(),
+                };
+                Owed {
+                    path: target.path.clone(),
+                    relation,
+                    id: from.clone(),
+                }
+            });
             Some(Proposal {
                 relation,
                 from,
                 to,
                 path,
+                owed,
             })
         }
     };
@@ -753,6 +808,23 @@ impl Report {
                 let _ = writeln!(out, "      relations:");
                 let _ = writeln!(out, "        {}:", proposal.relation);
                 let _ = writeln!(out, "          - {}", proposal.to);
+                // The other half, for a relation that requires both ends. A
+                // reader who pastes the block above and stops has a corpus that
+                // `relation.reciprocity.missing` refuses, so the instruction is
+                // incomplete rather than wrong. See [`Owed`].
+                if let Some(owed) = &proposal.owed {
+                    let _ = writeln!(
+                        out,
+                        "  {} `{}` {}, in the front matter of {}:",
+                        dim("and, because", mode),
+                        proposal.relation,
+                        dim("requires both ends", mode),
+                        paint(Role::Path, &owed.path, mode)
+                    );
+                    let _ = writeln!(out, "      relations:");
+                    let _ = writeln!(out, "        {}:", owed.relation);
+                    let _ = writeln!(out, "          - {}", owed.id);
+                }
             }
             let _ = writeln!(out);
         }
