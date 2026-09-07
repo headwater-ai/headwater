@@ -127,6 +127,8 @@ The stages are adjudication, construction, verification and integration, and int
 
 `tools/run-census.sh` takes these from a session log, and the run that follows this design writes its numbers into this table.
 
+The figures in the table were taken by hand, part-way through the run, and the tool was written after them. Over the whole transcript of that run the tool reports 880 turns and 227.3 million cache reads. Mentions of `gh pr view` cost 66 calls, 66 turns and 18.1 million cache reads, which is 8.0% of the run. Mentions of `gh pr list` cost 24 calls, 24 turns and 6.7 million, which is 2.9%. The tool counts a call once per turn and a turn once per message, and it reads a verb past a leading `cd` or `set -e`, because that run wrote nearly every command in that shape. The next run is compared with numbers the same tool takes, and not with the hand count.
+
 ## What this evaluation cannot show
 
 One run measured the orchestrator, and one run reported the refusals. The width comparison is confounded and is recorded as such. The claim that a compaction preserves a short numbered list and not a long narrative is plausible and untested, and the doctrine sizing rests on it. The integrator's net saving of about five parent turns per merge is arithmetic from the measured turn classes and not a measurement of the new shape. Each of these is a thing the next measurement can settle.
