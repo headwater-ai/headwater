@@ -33,12 +33,17 @@ WHY BOTH HALVES CALL THIS, AND WITH WHICH DIRECTORY
 
 WHAT MKDOCS WRITES, AND WHY IT IS NOT ENOUGH
 
-  `mkdocs build` writes a `sitemap.xml` of its own into the generated half. On
-  this tree it carries zero URLs: the MkDocs template emits a `<loc>` from
-  `page.canonical_url`, `mkdocs.yml` sets no `site_url`, and a page with no
-  canonical URL contributes no line. So the generated sitemap is an empty
-  `<urlset>`, and serving it would tell a crawler this site has no pages at
-  all. It knows nothing of the hand-built half either.
+  `mkdocs build` writes a `sitemap.xml` of its own into the generated half. It
+  knows only that half, which is why it is never enough whatever it carries.
+
+  It carried zero URLs until #556: the MkDocs template emits a `<loc>` from
+  `page.canonical_url`, `mkdocs.yml` set no `site_url`, and a page with no
+  canonical URL contributes no line, so the generated sitemap was an empty
+  `<urlset>` and serving it would have told a crawler this site has no pages at
+  all. `mkdocs.yml` now declares `site_url`, so it carries one `<loc>` per
+  generated page. The eight hand-built pages are still absent from it, and a
+  sitemap that omits the page served at the site root is the wrong one to
+  serve.
 
 USAGE
 
