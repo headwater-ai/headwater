@@ -43,7 +43,8 @@
 //! [`Format::Json`] is not an adapter. It is the finding shape
 //! [spec 4](../../../../docs/spec/04-assurance-model.md#findings) already
 //! declares, written out, for an adapter that this repository did not write.
-//! Its loss set is empty and [`census`] is what audits that claim.
+//! Being nobody else's vocabulary bought it an empty loss set for a year and it
+//! does not any more: see [`json::LOSS`].
 //!
 //! # Every format declares a loss set
 //!
@@ -128,19 +129,26 @@ impl Format {
 
     /// What this format cannot carry, and why.
     ///
-    /// Empty for [`Format::Json`], which is the claim that it drops nothing,
-    /// and [`census`] is what holds that claim.
+    /// **An empty set here would be audited by nothing.** [`census`] resolves
+    /// each declared entry's carrier against the emitted bytes and holds every
+    /// finding of the run to the output. A set with no entry has no carrier to
+    /// resolve, so it passes over any artifact whatever the run carried, and
+    /// the audit is over the declaration rather than over the completeness of
+    /// the format. No empty set here has ever been the claim that a format
+    /// drops nothing, and nothing here could have held such a claim.
     ///
-    /// [`Format::Text`] was empty on the same claim and for a different reason:
-    /// a loss is a member of a target vocabulary that a run has no value for,
-    /// and the terminal is the engine's own vocabulary rather than a target.
-    /// That reason still stands for every value but one, and the report still
+    /// Two formats did stand on an emptier reading, and both have given it up.
+    /// A loss is a member of a *target* vocabulary that a run has no value for,
+    /// and neither the terminal nor this engine's own emitted shape is a target
+    /// somebody else fixed. That argument holds for a member either one could
+    /// add on demand. It does not hold for a value the engine computes, a run
+    /// carries, and the artifact does not write, which is what [`text::LOSS`]
+    /// and [`json::LOSS`] each declare one of. The terminal report still
     /// carries more than the other three in every other respect, because the
-    /// census and the graph are in it. The one entry it now declares is a value
-    /// the engine computes and JSON writes: see [`text::LOSS`].
+    /// census and the graph are in it.
     pub fn loss(self) -> &'static [Loss] {
         match self {
-            Format::Json => &[],
+            Format::Json => json::LOSS,
             Format::Text => text::LOSS,
             Format::Sarif => sarif::LOSS,
             Format::Markdown => markdown::LOSS,

@@ -49,6 +49,7 @@ use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::change::{Change, Unbound, FORMAT};
+use headwater_check::coverage::Document;
 use headwater_check::{
     Cache, Context, Coverage, Date, Declared, Grain, Input, Instance, Register, Run, Severity,
     Shape,
@@ -532,13 +533,13 @@ fn every_entry_of_every_loss_set_is_accounted_for() {
 /// asserted the verdict alone could not tell the two apart. Five of SARIF's
 /// seven entries name a member of the document and two name nowhere. All five of
 /// Markdown's name nowhere in it, because that artifact is prose, and so does the
-/// one entry `text` declares. `json` declares no loss at all.
+/// one entry `text` declares and the one `json` declares.
 #[test]
 fn the_audited_and_the_unaudited_are_counted_apart() {
     for ran in [fixture_run(), scoped_run()] {
         for (format, entries, held, unaudited) in [
             (Format::Text, 1, 0, 1),
-            (Format::Json, 0, 0, 0),
+            (Format::Json, 1, 0, 1),
             (Format::Sarif, 7, 5, 2),
             (Format::Markdown, 5, 0, 5),
         ] {
@@ -2599,5 +2600,107 @@ fn the_routings_of_a_class_and_its_unrouted_exceed_its_instances_by_the_extra_en
             excess > 0,
             "this tree carries no edge-scoped skip, so a case asserting equality here would pass"
         );
+    }
+}
+
+/// Every field of `Coverage::Document` is either written into the JSON
+/// `coverage` object or named by an entry of `Format::Json.loss()`.
+///
+/// The half of [#235](https://github.com/headwater-ai/headwater/issues/235) that
+/// the routing member did not close. `Format::Json` declared an empty loss set
+/// and the crate documented that as the claim that it drops nothing, while
+/// `Coverage::Document` carried a `class`, a `created` and a `ran` for every
+/// census row and this artifact wrote none of the three. Nothing held the claim:
+/// [`headwater_adapter::census`] resolves each declared entry against the bytes,
+/// so a set with no entry passes over any artifact whatever the run carried.
+///
+/// **What it prints when the thing it protects is absent.** Delete the entry
+/// from `json::LOSS` and this case names `class`, `created` and `ran` as
+/// emitted nowhere and declared nowhere, and fails. Add a sixth field to
+/// `Document` and the destructure below stops compiling until somebody decides
+/// which side of the disjunction it falls on. Adding an entry that names no
+/// field of the row does not make it pass, because the entry has to name a
+/// field this case found unwritten.
+#[test]
+fn every_field_of_a_per_document_coverage_row_is_emitted_or_declared_lost() {
+    let ran = fixture_run();
+    let (here, _) = two_documents(&ran);
+    let run = also_skipping(&ran, Grain::Document, &[&here]);
+    let row = run
+        .coverage
+        .documents
+        .iter()
+        .find(|document| document.path == here)
+        .expect("the census row the skip was routed to")
+        .clone();
+
+    // The field list, enumerated off the struct. No `..`, so a field added to
+    // `Document` fails to compile here rather than passing silently, and every
+    // binding is read once below, so a binding added without a name beside it
+    // is an unused variable and this workspace denies warnings.
+    let Document {
+        path,
+        class,
+        created,
+        ran: instances_run,
+        skipped,
+    } = row;
+    let fields: [(&str, &dyn std::fmt::Debug); 5] = [
+        ("path", &path),
+        ("class", &class),
+        ("created", &created),
+        ("ran", &instances_run),
+        ("skipped", &skipped),
+    ];
+
+    // Every member name the emitter writes anywhere under `coverage`, read off
+    // the rendered value rather than off a list here. `path` is in it through
+    // `coverage.skips[].documents[].path`, which is why this run is one that
+    // skipped over a document: over a run with no skip at all there are no
+    // per-document rows to find, and the case would report `path` adrift.
+    let mut emitted = BTreeSet::new();
+    names_under(
+        &headwater_adapter::json::coverage(&run.coverage, &run.instances),
+        &mut emitted,
+    );
+    assert!(
+        emitted.contains("documents"),
+        "this run wrote no per-document rows, so the case cannot tell an unwritten \
+         field from an unskipped run: {emitted:?}"
+    );
+
+    let declared: String = Format::Json
+        .loss()
+        .iter()
+        .map(|entry| format!("{} {}", entry.field, entry.reason))
+        .collect::<Vec<String>>()
+        .join(" ");
+    let adrift: Vec<&str> = fields
+        .iter()
+        .map(|(name, _)| *name)
+        .filter(|name| !emitted.contains(*name) && !declared.contains(*name))
+        .collect();
+    assert!(
+        adrift.is_empty(),
+        "the JSON artifact writes no {adrift:?} and `Format::Json` declares no loss for it. \
+         The coverage object writes {emitted:?} and the loss set reads `{declared}`"
+    );
+}
+
+/// Every member name of a JSON value, at every depth.
+fn names_under(value: &Json, into: &mut BTreeSet<String>) {
+    match value {
+        Json::Object(members) => {
+            for (name, held) in members {
+                into.insert(name.clone());
+                names_under(held, into);
+            }
+        }
+        Json::Array(items) => {
+            for item in items {
+                names_under(item, into);
+            }
+        }
+        _ => {}
     }
 }

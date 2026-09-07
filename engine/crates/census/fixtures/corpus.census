@@ -562,6 +562,8 @@ docs/obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-whil
   typed: obligation_record
 docs/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md
   typed: obligation_record
+docs/obligations/0178-the-every-instance-report-detail-reaches-four-test-files-and-no-caller-outside-them.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probes/README.md
