@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.1.0
+version: 4.2.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -969,8 +969,8 @@ obligations:
     prevents: content.incomplete
     severity: high
   OB-LINK-1:
-    statement: "A fragment that a document writes into itself names a heading of that document"
-    rationale: "A link that lands nowhere costs the reader the paragraph it was written to reach, and an anchor rots silently when the heading beside it is edited"
+    statement: "A fragment of a prose link names a heading of the document that the link points at"
+    rationale: "A link that lands nowhere costs the reader the paragraph it was written to reach, and an anchor rots silently when the heading beside it is edited. The target is another document as often as it is the citing one, and a rename in the target touches no byte of the document that cited it"
     class: cohesion
     prevents: content.inconsistent
     severity: medium
