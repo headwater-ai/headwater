@@ -2,11 +2,11 @@
       6 to a document
       3 to an anchor
       4 unbound
-7 prose links
+8 prose links
       4 to a corpus file
       1 to this document
       1 outside the repository
-      1 broken
+      2 broken
       1 skipped, quoted from another author
 
 anchors
@@ -64,6 +64,8 @@ links
     graph/notes/a spaced.md (untyped)
   graph/notes/loose.md -> a%20literal.md
     graph/notes/a%20literal.md (untyped)
+  graph/notes/loose.md -> a%20missing.md
+    no `graph/notes/a%20missing.md` in the repository
   graph/spec/00-first.md -> 01-second.md#a-heading
     graph/spec/01-second.md (typed)
   graph/spec/00-first.md -> ../excluded/note.md
@@ -75,6 +77,8 @@ links
   graph/spec/00-first.md -> #the-well-formed-document
     this document
 
+graph/notes/loose.md:11:26
+  link: `a%20missing.md` no `graph/notes/a%20missing.md` in the repository
 graph/spec/00-first.md:11:7
   relations: `governs` names graph/spec/01-second.md twice, and the second declares no second edge
 graph/spec/00-first.md:13:7
