@@ -26,7 +26,7 @@ The design phase deferred the implementation language, and four candidates were 
 
 Python and TypeScript are out on distribution. Spec 6 requires a single binary and no toolchain per check, and it gives 200 ms to the change-scoped run that a commit hook performs. An interpreter start spends a large part of that budget before any work begins.
 
-Rust and Go were the real question, and the table that the open-question entry used to carry decided it on the wrong axis. **Performance does not separate them.** A thousand Markdown documents is a small corpus, and both languages clear every target in [spec 6](../spec/06-engine-architecture.md#performance-targets) comfortably. The performance argument is completely spent on the exclusion of the two interpreted candidates, and to carry it forward is to count it twice.
+Rust and Go were the real question, and performance is the wrong axis on which to decide it. **Performance does not separate them.** A thousand Markdown documents is a small corpus, and both languages clear every target in [spec 6](../spec/06-engine-architecture.md#performance-targets) comfortably. The performance argument is completely spent on the exclusion of the two interpreted candidates, and to carry it forward is to count it twice.
 
 Three arguments decide it, and each one comes from a constraint that the specification already made.
 
@@ -42,7 +42,7 @@ Three arguments that look decisive are not, and are recorded so that nobody re-r
 
 ## Decision
 
-The language is **Rust**, with a WebAssembly build of the same crate for editor and browser embedding. Go is no longer the fallback.
+The language is **Rust**, with a WebAssembly build of the same crate for editor and browser embedding. This record names no fallback language.
 
 ## Consequences
 
