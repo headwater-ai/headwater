@@ -138,7 +138,7 @@ Two things are deliberately absent from that list. `.githooks/change-manifest` i
 
 ## What holds this repository
 
-[`CLAUDE.md`](CLAUDE.md) states the rules every agent obeys, and this section is where each of them is enforced, what holds the pages outside the corpus root, and what the build declares about itself. It moved here from `CLAUDE.md` because that file loads into every dispatched agent and this narration is for a developer who wants the mechanism ([HW-DR-0060](docs/decisions/0060-orchestration-prose-has-one-owner-per-sentence.md)).
+[`CLAUDE.md`](CLAUDE.md) states the rules every agent obeys, and this section is where each of them is enforced, what holds the pages outside the corpus root, and what the build declares about itself. It moved here from `CLAUDE.md` because that file loads into every dispatched agent and this narration is for a developer who wants the mechanism ([HW-PD-0001](docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md)).
 
 ### How the language rules are enforced
 
