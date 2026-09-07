@@ -26,7 +26,77 @@
 #   Nothing here is typed by a person. A figure appears in the HTML inside a
 #   `<span data-figure="KEY">` element, and this script rewrites the text of
 #   every such element from the measurement above. A key with no measurement is
-#   an error, and a measurement with no key in any page is reported.
+#   an error, and a measurement that reaches no page is an error too. The
+#   second half of that is the denominator: a renamed marker, a moved page or
+#   an empty `site/` leaves every figure unused, and a check with no
+#   denominator passes over a site that proves nothing.
+#   `tools/refresh-site-tokens.sh` refuses an unmarked page for the same
+#   reason, and HW-DR-0050 rules it: a page that opts out of the register is
+#   refused rather than skipped.
+#
+#   WHAT THAT DENOMINATOR STILL DOES NOT CATCH, measured on 2026-09-06:
+#
+#     `used` is a union across pages, so a figure lost on ONE page is invisible
+#     while any other page still carries it. Renaming the marker attribute on
+#     `site/how-it-works/index.html` alone gives exit 0 at `34 used across 8
+#     pages, 0 stale`; renaming it on all eight refuses. Five of the eight
+#     pages carry no figure at all, and nothing here notices which page holds
+#     which key. The fix is a declaration of what each page owes, which this
+#     script has nowhere to read.
+#
+#     The element pattern requires the text to hold no `<`, so a figure with a
+#     nested child element is not matched at all. `<b data-figure="rules.wired"
+#     ><b>99</b></b>` serves 99 where the run says 29, at exit 0, and it is not
+#     even reported as an unknown key. An off-shape key such as `rules.wired2`
+#     matches nothing for the same reason and is equally silent. A count of
+#     `data-figure` occurrences in the file, held against the count the pattern
+#     matched, is what would catch both.
+#
+# WHAT `--check` COMPARES, AND WHAT IT DOES NOT
+#
+#   `--check` compares the 26 figures that are a function of the corpus and the
+#   lock. Eight are a function of the clock as well, and those are reported and
+#   never failed. `headwater generate` already states this rule of its own
+#   `coverage_report` projection, in the sentence it prints on every run:
+#
+#     "its content is a function of the clock as well as of the corpus and the
+#      lock, because a migration task lapses and a suppression expires on a
+#      date. A committed copy would fail this check on a morning when nothing
+#      changed."
+#
+#   The eight are `run.date` and the seven that read the findings list:
+#   `findings.raised`, `findings.reported`, `findings.suppressed`,
+#   `findings.errors`, `findings.advisory`, `findings.directives` and
+#   `rules.fired`. Two dated mechanisms move a finding between reported and
+#   suppressed with no file touched, and both are in this engine:
+#   `check/src/adoption.rs` retires a migration task at `task.until < now`, and
+#   `check/src/suppression.rs` expires an escape directive at
+#   `suppression.until < now`.
+#
+#   Measured on 2026-09-06, each arm on a tree that nothing else touched:
+#
+#     the clock at 2027-07-01, past `AD-1`'s `until: 2027-06-30`
+#       `findings.errors` 0->1, `findings.raised` 7->8,
+#       `findings.reported` 7->8, `rules.fired` 1->2
+#     one escape directive, live today and lapsed the day after its `until`
+#       `findings.reported` 6->7, `findings.suppressed` 1->0,
+#       `findings.advisory` 6->7, `findings.directives` 1->0
+#
+#   The second arm is the one that matters, because `headwater check --strict`
+#   exits 0 on both sides of it. So on the morning a directive lapses, a gate
+#   over these figures is the only thing that goes red, on a tree nobody
+#   touched, saying a page disagrees with a run. `until` is required on every
+#   directive, so every directive reaches that morning.
+#
+#   The page's claim is that these numbers came from a run on the date beside
+#   them, and that claim stays true. Write mode rewrites all eight on every
+#   run, and counts them on a line of their own.
+#
+#   `run.date` is a UTC date and not the date of the machine that ran this.
+#   Measured on a host at CEST: `date +%F` read 2026-09-07 while the engine
+#   read 2026-09-06, because UTC had two hours left. So the figure rolls at UTC
+#   midnight, and an author between their own midnight and that one reads a
+#   page that disagrees with their calendar and agrees with the run.
 #
 # WHY THIS SCRIPT EXISTS AT ALL
 #
@@ -47,11 +117,17 @@
 #   hand-run figure has a source, a date, and a command that reproduces it — and
 #   `--check` fails when the page and the run disagree.
 #
-# THE DISCIPLINE
+# THE DISCIPLINE, AND WHAT RUNS IT
 #
 #   Run this before any commit that touches a page carrying a figure, and read
 #   what it prints. `--check` writes nothing and exits non-zero when a page is
 #   stale, which is the form to put in front of a reviewer.
+#
+#   Two callers run it, and a person is neither of them. `.githooks/pre-commit`
+#   refuses a commit whose page disagrees with a fresh run, under
+#   `HEADWATER_SKIP_FIGURE_CHECK`, and it announces the skip. The CI step named
+#   "The figures on the hand-built pages came from a run" reads the committed
+#   tree, has no escape hatch, and is the half that holds.
 #
 # USAGE
 #
@@ -211,11 +287,20 @@ m = re.search(r"pub enum Emitter \{(.*?)\n\}", prof, re.S)
 if not m:
     sys.exit("refresh-figures.sh: no `Emitter` enum in profile.rs")
 variants = re.findall(r"^\s{4}([A-Z]\w*),\s*$", m.group(1), re.M)
-m = re.search(r"pub fn is_built\(self\) -> bool \{\s*matches!\(self, (.*?)\)",
-              prof, re.S)
+m = re.search(r"pub fn is_built\(self\) -> bool \{\n(.*?)\n    \}", prof, re.S)
 if not m:
     sys.exit("refresh-figures.sh: no `is_built` in profile.rs")
-built = re.findall(r"Emitter::(\w+)", m.group(1))
+# Every arm of that `match`, whichever way rustfmt wrapped its patterns. The
+# two lists are compared with the variants below rather than trusted, so a
+# wildcard arm or a variant nobody judged is a refusal and never a miscount.
+built, unbuilt = [], []
+for pats, verdict in re.findall(
+        r"((?:\s*Emitter::\w+\s*\|?)+)\s*=>\s*(true|false)\s*,", m.group(1)):
+    (built if verdict == "true" else unbuilt).extend(
+        re.findall(r"Emitter::(\w+)", pats))
+if sorted(built + unbuilt) != sorted(variants):
+    sys.exit("refresh-figures.sh: the arms of `is_built` in profile.rs do not "
+             "name every `Emitter` variant exactly once")
 put("emitters.total", len(variants),
     "engine/crates/generate/src/profile.rs, the `Emitter` variants")
 put("emitters.built", len(built),
@@ -263,11 +348,42 @@ for page in pages:
     if mode == "write" and after != before:
         page.write_text(after)
 
+# The partition. A figure is gateable where it is a function of the corpus and
+# the lock, and these eight are not: each one reads the clock, or reads the
+# findings list, and two dated mechanisms move a finding between reported and
+# suppressed with the tree untouched. An adoption task lapses
+# (`check/src/adoption.rs`, `task.until < now`) and an escape directive expires
+# (`check/src/suppression.rs`, `suppression.until < now`). `rules.fired` counts
+# distinct rule names among the findings, so it moves with them.
+#
+# The other 26 keys are gateable. See WHAT `--check` COMPARES above for the
+# measurement behind this list, and why it is eight rather than one.
+CLOCK_KEYS = {
+    "run.date",
+    "findings.raised", "findings.reported", "findings.suppressed",
+    "findings.errors", "findings.advisory", "findings.directives",
+    "rules.fired",
+}
+
+# The partition names keys, so it goes stale the moment one is renamed. This is
+# that list held against the run rather than trusted, the same way the page
+# denominator below is.
+missing = sorted(CLOCK_KEYS - set(fig))
+if missing:
+    sys.exit("refresh-figures.sh: the clock partition names %s, which this run "
+             "does not measure" % ", ".join(missing))
+stale_measured = [s for s in stale if s[1] not in CLOCK_KEYS]
+stale_clock = [s for s in stale if s[1] in CLOCK_KEYS]
+
 rel = lambda p: p.relative_to(root)
 for page, key in unknown:
     print("unknown figure key %s in %s" % (key, rel(page)), file=sys.stderr)
-for page, key, was, now in stale:
+for page, key, was, now in stale_measured:
     verb = "rewrote" if mode == "write" else "stale"
+    print("%s %s in %s: %s -> %s" % (verb, key, rel(page), was, now),
+          file=sys.stderr)
+for page, key, was, now in stale_clock:
+    verb = "rewrote" if mode == "write" else "clock only"
     print("%s %s in %s: %s -> %s" % (verb, key, rel(page), was, now),
           file=sys.stderr)
 
@@ -278,60 +394,92 @@ for page, key, was, now in stale:
 # the page that is no longer in that document is drift, and this is what
 # catches it. Nothing here rewrites the page: the remedy is to regenerate the
 # blocks from the document, and never to edit the page.
+#
+# The page is not optional. HW-DR-0037 governs it by name, so a page that is
+# gone takes 43 checked blocks with it, and that is an error rather than a
+# skip. The same reasoning as the denominator guard below, one layer up.
+import html as _html
+
 drift = []
 tutpage = root / "site/tutorial/index.html"
-if tutpage.exists():
-    import html as _html
-    tut = (root / "docs/tutorials/your-first-governed-corpus.md").read_text()
-    page = tutpage.read_text()
-    blocks = re.findall(r'<pre class="[^"]*\bverbatim\b[^"]*">(.*?)</pre>',
-                        page, re.S)
-    for block in blocks:
-        if _html.unescape(block).rstrip("\n") not in tut:
-            drift.append(_html.unescape(block).split("\n")[0][:70])
-    m = re.search(r"<span data-tutorial-date>([^<]*)</span>", page)
-    stated = m.group(1) if m else None
-    m = re.search(r"The date of the run is (\d{4}-\d{2}-\d{2})\.", tut)
-    real = m.group(1) if m else None
-    if stated != real:
-        drift.append("the run date: page says %r, the document says %r"
-                     % (stated, real))
-    for d in drift:
-        print("tutorial drift: %s" % d, file=sys.stderr)
-    print("%d verbatim tutorial blocks checked against the document, %d adrift"
-          % (len(blocks), len(drift)))
+if not tutpage.exists():
+    sys.exit("refresh-figures.sh: site/tutorial/index.html is not there, and "
+             "HW-DR-0037 governs that page by name, so its absence is an error "
+             "and not a skip")
+tut = (root / "docs/tutorials/your-first-governed-corpus.md").read_text()
+page = tutpage.read_text()
+blocks = re.findall(r'<pre class="[^"]*\bverbatim\b[^"]*">(.*?)</pre>',
+                    page, re.S)
+for block in blocks:
+    if _html.unescape(block).rstrip("\n") not in tut:
+        drift.append(_html.unescape(block).split("\n")[0][:70])
+m = re.search(r"<span data-tutorial-date>([^<]*)</span>", page)
+stated = m.group(1) if m else None
+m = re.search(r"The date of the run is (\d{4}-\d{2}-\d{2})\.", tut)
+real = m.group(1) if m else None
+if stated != real:
+    drift.append("the run date: page says %r, the document says %r"
+                 % (stated, real))
+for d in drift:
+    print("tutorial drift: %s" % d, file=sys.stderr)
+print("%d verbatim tutorial blocks checked against the document, %d adrift"
+      % (len(blocks), len(drift)))
 
 # --- the landing page's quotation of HW-DR-0037 --------------------------
 # The hero card quotes the front matter of the record that governs these
 # pages. A field that record no longer carries is drift of the same kind the
 # tutorial check catches, so it is caught the same way.
+#
+# `landing` is the landing check's own list, and it is printed rather than a
+# tail of `drift`. A slice of `drift` here printed the last three TUTORIAL
+# entries under the label `landing drift:` on every run where the tutorial had
+# any, which is a refusal naming a check that did not fail.
+landing = []
 home = root / "site/index.html"
-if home.exists():
-    import html as _html
-    rec = next(root.glob("docs/decisions/0037-*.md")).read_text()
-    m = re.search(r'<pre class="quotes-0037">(.*?)</pre>',
-                  home.read_text(), re.S)
-    if not m:
-        drift.append("site/index.html no longer quotes HW-DR-0037")
-    else:
-        quoted = _html.unescape(re.sub(r"<[^>]+>", "", m.group(1)))
-        for line in quoted.split("\n"):
-            if line.strip() in ("", "---"):
-                continue
-            if line not in rec:
-                drift.append("HW-DR-0037 no longer carries %r" % line.strip())
-        for d in drift[-3:]:
-            print("landing drift: %s" % d, file=sys.stderr)
+if not home.exists():
+    sys.exit("refresh-figures.sh: site/index.html is not there, and HW-DR-0037 "
+             "governs that page by name, so its absence is an error and not a "
+             "skip")
+rec = next(root.glob("docs/decisions/0037-*.md")).read_text()
+m = re.search(r'<pre class="quotes-0037">(.*?)</pre>', home.read_text(), re.S)
+if not m:
+    landing.append("site/index.html no longer quotes HW-DR-0037")
+else:
+    quoted = _html.unescape(re.sub(r"<[^>]+>", "", m.group(1)))
+    for line in quoted.split("\n"):
+        if line.strip() in ("", "---"):
+            continue
+        if line not in rec:
+            landing.append("HW-DR-0037 no longer carries %r" % line.strip())
+for d in landing:
+    print("landing drift: %s" % d, file=sys.stderr)
+drift.extend(landing)
 
+# --- the denominator ------------------------------------------------------
+# A measured figure that reaches no page is the whole check contributing
+# nothing, silently. An empty `site/`, a renamed marker attribute and a moved
+# page all produce it, and all three used to exit 0.
 never = sorted(set(fig) - used)
 if never:
     print("measured but on no page: %s" % ", ".join(never), file=sys.stderr)
+    print("  a figure that reaches no page means a page stopped carrying it. "
+          "HW-DR-0050 refuses a page that opts out of the register rather than "
+          "skipping it, and this refuses the same thing for a figure.",
+          file=sys.stderr)
 
+# The headline counts the measurements alone, and the run date is counted on
+# its own line beside it. So the two numbers add up to the lines above them, in
+# either mode, and neither one is silently folded into the other.
 print("%d figures measured, %d used across %d pages, %d stale, run of %s"
-      % (len(fig), len(used), len(pages), len(stale), fig["run.date"]))
+      % (len(fig), len(used), len(pages), len(stale_measured), fig["run.date"]))
+if stale_clock:
+    print("%d further occurrences differ in a figure that is a function of the "
+          "clock. A lapsed adoption task, an expired escape directive and the "
+          "run date each move one without the tree moving, so they are counted "
+          "here and they fail no check." % len(stale_clock))
 
-if unknown or drift:
+if unknown or drift or never:
     raise SystemExit(1)
-if mode == "check" and stale:
+if mode == "check" and stale_measured:
     raise SystemExit(1)
 PY

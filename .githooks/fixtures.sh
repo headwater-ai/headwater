@@ -238,9 +238,15 @@ judge 'the same document renamed at the same state is not a deletion' 0 "$status
 
 # A document that never reached a terminal state. `$draft` opens at `draft`,
 # which reaches `current` and `deprecated`, so nothing about it is retained.
+#
+# `HEADWATER_SKIP_FIGURE_CHECK` is set for the same reason the site cases below
+# set `HEADWATER_SKIP_CRAWLER_CHECK`: removing a document moves `census.seen`
+# and every figure derived from it, so the figures clause refuses this commit
+# for a reason that has nothing to do with the lifecycle. That clause has its
+# own cases, and one of them provokes exactly this in the other direction.
 reset
 git -C "$scratch" rm -q "$draft"
-out=$(gate); status=$?
+out=$(cd "$scratch" && HEADWATER_SKIP_FIGURE_CHECK=1 sh .githooks/pre-commit 2>&1); status=$?
 judge 'deleting a document that stands at no terminal state is not refused' 0 "$status" '' "$out"
 
 # A file that is no document of this corpus. Its prior version does not parse as
@@ -420,6 +426,132 @@ reset
 sed -i 's|--accent: #1d5c54|--accent: #b30000|' "$scratch/site/proof/index.html"
 out=$(cd "$scratch" && HEADWATER_SKIP_TOKEN_CHECK=1 sh .githooks/pre-commit 2>&1); status=$?
 judge 'and the named variable releases that one clause' 0 "$status" '' "$out"
+
+# The figures clause. Every number on a hand-built page comes from a run of
+# this engine, written into a `data-figure` element by
+# `tools/refresh-figures.sh`, and HW-DR-0039 rules it. The five cases below are
+# the three directions a derived figure has to move in, plus the escape hatch
+# and the denominator.
+#
+# The three directions are the whole argument that these are figures rather
+# than numbers a script once wrote: a hand edit of one has to fail, an
+# unrelated edit has to pass, and a change to the corpus the figure measures
+# has to make it stale.
+
+# Direction 1 — a figure edited by hand is refused, and the refusal names the
+# figure and the page.
+#
+# The value is read off the page rather than written here. A constant would
+# stop matching the next time this corpus grows, and the case would then edit
+# nothing and pass while measuring nothing, which is the failure the
+# escape-hatch case above is also written to avoid. `run.date` is deliberately
+# not the figure chosen: it is the clock rather than a function of the tree,
+# and the clause exempts it.
+reset
+figpage="site/proof/index.html"
+seen=$(grep -o 'data-figure="census.seen"[^>]*>[0-9]*<' "$scratch/$figpage" \
+    | head -1 | sed 's/.*>//; s/<$//')
+[ -n "$seen" ] || seen=none
+judge 'the figure case still finds a census.seen figure on the page it names' 0 0 \
+    'a number' "$(case $seen in none) echo "no census.seen span in $figpage" ;; *) echo "a number ($seen)" ;; esac)"
+sed -i "s|data-figure=\"census.seen\">$seen<|data-figure=\"census.seen\">$((seen - 1))<|g" \
+    "$scratch/$figpage"
+out=$(gate); status=$?
+judge 'a figure edited by hand on a page of the deployed site is refused' 1 "$status" \
+    'disagrees with a fresh run' "$out"
+judge 'and the refusal names the figure and the page' 1 "$status" \
+    "census.seen in $figpage" "$out"
+judge 'and it names the command that repairs it' 1 "$status" \
+    'sh tools/refresh-figures.sh' "$out"
+
+# The escape hatch, which is a silent pass in the two clauses above and an
+# announced one here. The hook cannot write into the commit, so the line it
+# prints on the author's terminal is the whole local record of the bypass, and
+# the CI step of the same name carries no hatch at all.
+reset
+sed -i "s|data-figure=\"census.seen\">$seen<|data-figure=\"census.seen\">$((seen - 1))<|g" \
+    "$scratch/$figpage"
+out=$(cd "$scratch" && HEADWATER_SKIP_FIGURE_CHECK=1 sh .githooks/pre-commit 2>&1); status=$?
+judge 'and the named variable releases that one clause' 0 "$status" '' "$out"
+judge 'and the release is announced rather than silent' 0 "$status" \
+    'HEADWATER_SKIP_FIGURE_CHECK is set' "$out"
+
+# Direction 2 — an edit that touches no figure is not refused. Without this the
+# case above only proves the gate refuses something about `site/`.
+#
+# `site/compare/index.html` carries no `data-figure` element, no marker the
+# crawler files read beyond its title, and the edit changes neither its title
+# nor its description, so this clause is the only one with anything to say
+# about it.
+reset
+printf '\n<p>A paragraph added by hand, carrying no figure.</p>\n' \
+    >> "$scratch/site/compare/index.html"
+out=$(gate); status=$?
+judge 'an edit to a page that carries no figure is not refused' 0 "$status" '' "$out"
+
+# Direction 3 — a change to the corpus a figure measures makes that figure
+# stale. This is the direction that separates a derived figure from a number
+# somebody typed once, and no other case here can reach it: directions 1 and 2
+# both move the page, and this one moves what the page is about.
+#
+# An untyped Markdown file is the cheapest probe. It moves `census.seen` and
+# `census.untyped` and touches no blessed fixture of the engine. The judge
+# names `census.seen` rather than any count, because the count moves whenever
+# this corpus does.
+reset
+printf 'A file added to move the census.\n' > "$scratch/docs/ZZ-census-probe.md"
+out=$(gate); status=$?
+judge 'a document added to the corpus makes a figure on the site stale' 1 "$status" \
+    'census.seen in site/index.html' "$out"
+
+# The denominator. `never` is the set of figures this run measured that reached
+# no page, and it used to be printed and dropped: an empty `site/`, a renamed
+# marker attribute or a moved page all left the figures half reporting
+# `0 used across 8 pages` at exit 0, so the check ran over nothing and passed.
+# HW-DR-0050 already refuses a page that opts out of the shared register rather
+# than skipping it, and this is the same discipline for a figure.
+reset
+find "$scratch/site" -name '*.html' -exec sed -i 's/data-figure=/data-figurex=/g' {} +
+out=$(gate); status=$?
+judge 'a renamed marker that leaves every figure on no page is refused' 1 "$status" \
+    'measured but on no page' "$out"
+judge 'and the refusal states the denominator it ran over' 1 "$status" \
+    '0 used across 8 pages' "$out"
+
+# The two pages HW-DR-0037 governs by name, absent. Both checks used to be
+# guarded by `.exists()`, so renaming `site/tutorial/index.html` dropped 43
+# checked blocks in silence and renaming `site/index.html` dropped the
+# HW-DR-0037 quotation. Both are now an error, and these are what hold that.
+#
+# These two run the script rather than the gate, and the reason is worth
+# stating. Removing a page under `site/` raises `relation.target.unresolved`,
+# because HW-DR-0037 declares `governs` over each one, so `headwater check
+# --strict` fails and the figures clause never runs at all. The gate cannot
+# reach either guard, so a case written through it would assert a refusal that
+# came from somewhere else.
+reset
+mv "$scratch/site/tutorial/index.html" "$scratch/site/tutorial/away.html"
+out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+judge 'the tutorial page missing is an error rather than a skip' 1 "$status" \
+    'site/tutorial/index.html is not there' "$out"
+judge 'and the refusal says which record governs it by name' 1 "$status" \
+    'HW-DR-0037 governs that page by name' "$out"
+
+reset
+mv "$scratch/site/index.html" "$scratch/site/away.html"
+out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+judge 'the landing page missing is an error rather than a skip' 1 "$status" \
+    'site/index.html is not there' "$out"
+
+# The partition of the 34 figures into the 26 a gate compares and the 8 that
+# are a function of the clock is a list of key names, so it goes stale the
+# moment a key is renamed and the exemption then covers nothing. The script
+# holds its own list against the run, and this provokes that guard.
+reset
+sed -i 's/put("rules.fired"/put("rules.firedX"/' "$scratch/tools/refresh-figures.sh"
+out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+judge 'a clock-partition entry that no run measures is refused' 1 "$status" \
+    'the clock partition names rules.fired, which this run does not measure' "$out"
 
 # A finding whose location line lands on the width boundary, printed whole.
 #

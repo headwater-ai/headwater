@@ -276,7 +276,7 @@ wrote .headwater/overlay.yml
 
 what this read off the tree
   corpus root docs
-  package headwater/standard is not under `packages/`, and nothing here fetches one. Copy a package directory into `packages/` to resolve against it, or run `headwater taxonomy vendor &lt;dir&gt;` on a published artifact to reach `pin.current` too
+  package headwater/standard is not under `packages/`, and nothing here fetches one. Two routes reach a lock, and each one needs a different field of `.headwater/taxonomy.yml`. Copy a package directory into `packages/`, and pin `taxonomy.version` at the version that package declares. Or run `headwater taxonomy vendor &lt;dir&gt;` on a published artifact: that verb reads `taxonomy.digest` and refuses until it holds the digest the publisher printed, and `headwater taxonomy resolve` reads `taxonomy.version` after it, so the vendor route needs the digest first and the version as well
 
 what it cannot read off a tree, and asked instead
   the phrases each purpose answers, which decide what a task routes to
@@ -300,12 +300,14 @@ Answer them in .headwater/overlay.yml, then run `headwater taxonomy resolve` and
       <div>
         <h2><span class="n">03</span>Copy the package into your tree</h2>
         <p class="prose">A package carries a taxonomy: the kinds, the facets, the shelves and the rules. Nothing in this engine fetches a package over a network, so a package arrives in your tree by a copy that you can read. What you copied is a package source directory rather than a published artifact, and step 16 says what that costs.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>ls packages/headwater-standard</code> prints three lines.</span></p>
+        <p class="check"><span class="checkword">Check</span> <span><code>ls packages/headwater-standard</code> prints five lines.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">cp -r "$HEADWATER_SRC/taxonomy-source" packages</pre>
-          <p class="blocklabel">the three lines that check prints</p>
-          <pre class="out verbatim">conformance.yml
+          <p class="blocklabel">the five lines that check prints</p>
+          <pre class="out verbatim">assemblies
+conformance.yml
+doctrine
 package.yml
 taxonomy.yml</pre>
       </div>
@@ -329,7 +331,7 @@ taxonomy.yml</pre>
       <div>
           <pre class="cmd verbatim">headwater taxonomy resolve</pre>
           <pre class="out verbatim">headwater: the taxonomy did not resolve, so no lock is possible
-  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 3.3.0</pre>
+  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 4.1.0</pre>
       </div>
     </div>
   </div>
@@ -350,7 +352,7 @@ taxonomy.yml</pre>
       </div>
       <div>
           <p class="blocklabel">the line to change it to</p>
-          <pre class="edit verbatim">  version: 3.3.0</pre>
+          <pre class="edit verbatim">  version: 4.1.0</pre>
           <pre class="cmd verbatim">headwater taxonomy resolve</pre>
           <pre class="out verbatim">headwater: the taxonomy does not validate, so no lock is written. A lock is a validated taxonomy or it is nothing
   the resolved taxonomy `identifier_schemes.decision_id`: identifier integrity: carries no namespace after resolution. A package leaves the namespace to the corpus that adopts it, so an overlay of this corpus has to declare one</pre>
@@ -407,7 +409,7 @@ taxonomy.yml</pre>
 
   docs/decisions/postgres-note.md
     untyped: no front matter, so nobody has typed this file</pre>
-          <pre class="out verbatim">  1 seen, 0 classified, 0 checked, 2 check instances</pre>
+          <pre class="out verbatim">  1 seen, 0 classified, 0 checked, 4 check instances</pre>
           <pre class="out verbatim">  0 findings</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
       </div>
@@ -480,7 +482,7 @@ TODO write this section.</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">09</span>Check again, and read the difference</h2>
-        <p class="prose">The corpus did not grow, and the count of checks that ran went from 2 to 14, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and fourteen questions become answerable about it.</p>
+        <p class="prose">The corpus did not grow, and the count of checks that ran went from 4 to 17, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and seventeen questions become answerable about it.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater check 2&gt;/dev/null | grep 'check instances'</code> prints the last block.</span></p>
       </div>
       <div>
@@ -489,7 +491,7 @@ TODO write this section.</pre>
   1 files under the corpus root
         1 typed
         1 typed decision</pre>
-          <pre class="out verbatim">  1 seen, 1 classified, 1 checked, 14 check instances</pre>
+          <pre class="out verbatim">  1 seen, 1 classified, 1 checked, 17 check instances</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
       </div>
     </div>
@@ -507,7 +509,7 @@ TODO write this section.</pre>
       <div>
         <h2><span class="n">10</span>Say what does not belong in the repository, and commit</h2>
         <p class="prose">The lock is committed and the cache is not, and the difference is the point. A reviewer reads the lock, because it is the taxonomy a verdict came from — a verdict you cannot trace to a schema is one nobody can argue with. The cache holds no fact of its own, and every entry in it is recomputable from the tree it was written over.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>git ls-files .headwater</code> prints four files and no cache.</span></p>
+        <p class="check"><span class="checkword">Check</span> <span><code>git ls-files .headwater</code> prints five files and no cache.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">printf '.headwater/cache/\n' &gt; .gitignore
@@ -515,6 +517,7 @@ git add -A
 git commit -m "A first governed corpus"</pre>
           <p class="blocklabel">what that check prints</p>
           <pre class="out verbatim">.headwater/capture-cost.jsonl
+.headwater/ids/decision_id/ACME-DR-0001
 .headwater/overlay.yml
 .headwater/taxonomy.lock
 .headwater/taxonomy.yml</pre>
@@ -566,17 +569,20 @@ edited docs/decisions/0001-store-attempts-in-postgres.md</pre>
           <pre class="cmd verbatim">git checkout -- docs/decisions/0001-store-attempts-in-postgres.md
 headwater check</pre>
           <pre class="out verbatim">  1 findings
-        1 error
+        1 ✗ error
 
-  docs/decisions/0002-deliver-at-least-once.md:9:7 error
-    relation.reciprocity.missing (OB-REL-1): `ACME-DR-0002` declares `supersedes: ACME-DR-0001`, and `supersedes` requires both ends, so docs/decisions/0001-store-attempts-in-postgres.md owes `superseded_by`
-    fix (mechanical): add `superseded_by: ACME-DR-0002` under `relations:` in docs/decisions/0001-store-attempts-in-postgres.md</pre>
+  docs/decisions/0002-deliver-at-least-once.md:9:7 ✗ error
+    relation.reciprocity.missing (OB-REL-1): `ACME-DR-0002` declares
+      `supersedes: ACME-DR-0001`, and `supersedes` requires both ends, so
+      docs/decisions/0001-store-attempts-in-postgres.md owes `superseded_by`
+    fix (mechanical): add `superseded_by: ACME-DR-0002` under `relations:` in
+      docs/decisions/0001-store-attempts-in-postgres.md</pre>
           <pre class="out verbatim">  register
-    28 obligations: 28 verified, 0 gap, 0 unverifiable, 0 with no disposition
-       11 high, 11 verified
-       12 medium, 12 verified
+    31 obligations: 31 verified, 0 gap, 0 unverifiable, 0 with no disposition
+       13 high, 13 verified
+       13 medium, 13 verified
         5 low, 5 verified</pre>
-          <pre class="out verbatim">    every rule this engine carries reaches one obligation</pre>
+          <pre class="out verbatim">    facet.value.blank reaches no obligation, so it names none</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
       </div>
     </div>
@@ -629,16 +635,22 @@ headwater check</pre>
     shelf `decisions` matched on `docs/decisions/**`
     `decisions` is homogeneous, so placement carries the kind `decision`
   purpose rationale, to explain why a choice was made and what it forecloses
-  summary TODO one sentence: what a reader learns here, which is what routing reads
+  summary TODO one sentence: what a reader learns here, which is what routing
+    reads
   requires the facets status, status_since, summary, last_verified
   requires the sections Context, Decision, Consequences
-  may declare supersedes to governed_document, and the other end writes superseded_by
+  may declare supersedes to governed_document, and the other end writes
+    superseded_by
   may declare governs to code_path
   may declare constrains to decision
   may declare conflicts_with to decision
   may declare traces_to to governed_document, code_path
-  to ACME-DR-0001 supersedes — TODO one sentence: what a reader learns here, which is what routing reads (the target's own summary) [this document governs the reading]
-  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — TODO one sentence: what a reader learns here, which is what routing reads (the target's own summary) [this document governs the reading]</pre>
+  to ACME-DR-0001 supersedes — TODO one sentence: what a reader learns here,
+    which is what routing reads (the target's own summary) [this document
+    governs the reading]
+  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — TODO
+    one sentence: what a reader learns here, which is what routing reads (the
+    target's own summary) [this document governs the reading]</pre>
       </div>
     </div>
   </div>
@@ -664,7 +676,8 @@ headwater check</pre>
   distinctive why do we keep attempts in postgres
   purpose behavior 3
   purpose rationale 3
-  docs/decisions/0001-store-attempts-in-postgres.md — TODO one sentence: what a reader learns here, which is what routing reads</pre>
+  docs/decisions/0001-store-attempts-in-postgres.md — TODO one sentence: what a
+    reader learns here, which is what routing reads</pre>
       </div>
     </div>
   </div>
@@ -693,7 +706,7 @@ headwater check</pre>
   L2 Regenerated — not reached, 2 of 4 rules met
     2 gaps, 0 of them waived
 
-no level reached, against headwater/standard 3.3.0
+no level reached, against headwater/standard 4.1.0
   a level states what this repository wired up. It measures nothing about the
   corpus, no key declares one, and a waiver moves the exit status and never the
   level.</pre>
