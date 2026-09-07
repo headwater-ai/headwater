@@ -394,7 +394,7 @@ Trimmed to the head of the register and to its last line. The same run printed b
 
 **Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `31 obligations:` line of the register block above, and nothing else.
 
-**One of those readings is about the package and one is about your run.** The thirty-one obligations and their severities come from `headwater/standard`, so they read the same on your first day and your thousandth. The last line is derived from the run in front of you. It names every rule that fired at you with no obligation behind it, and the identifier in your finding is worth reading because most rules carry one.
+**One of those readings is about the package and one is about your run.** The thirty-one obligations and their severities come from `headwater/standard`. They read the same on your first day and on your thousandth. The last line is derived from the run in front of you. It names every rule that fired at you with no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.
 
 One rule is named there. `facet.value.blank` reports a facet a document declares and leaves empty, and no control in `headwater/standard` names it yet. [HW-OBL-0170](https://github.com/headwater-ai/headwater/blob/main/docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md) records that debt. A finding it raises is a true finding, and the line above is how a report tells you which of its rules answers to nothing.
 
