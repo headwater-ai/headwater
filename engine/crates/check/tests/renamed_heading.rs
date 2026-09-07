@@ -258,7 +258,10 @@ fn the_two_arms_of_the_rule_do_not_share_a_sentence() {
     let source = std::fs::read_to_string(&at).expect("the citing document reads");
     std::fs::write(
         &at,
-        source.replace("## Where the pair is written", "## Where the pair was written"),
+        source.replace(
+            "## Where the pair is written",
+            "## Where the pair was written",
+        ),
     )
     .expect("the same-document heading moves");
 
@@ -316,12 +319,7 @@ fn the_cross_document_fragments_are_a_population_and_not_an_empty_set() {
         .links
         .iter()
         .filter(|link| !link.fragment.as_deref().unwrap_or_default().is_empty())
-        .filter(|link| {
-            matches!(
-                link.binding,
-                headwater_graph::links::Binding::Corpus { .. }
-            )
-        })
+        .filter(|link| matches!(link.binding, headwater_graph::links::Binding::Corpus { .. }))
         .count();
     assert!(
         across > 0,

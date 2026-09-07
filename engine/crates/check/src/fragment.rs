@@ -131,7 +131,12 @@ impl CorpusCheck for Fragments {
         // to an asset. Both were dropped by the graph build, which is the one
         // reader of this corpus's prose links, so this rule inherits that
         // answer rather than writing a second one.
-        Outcome::failed(links.iter().filter_map(|link| finding(link, anchors)).collect())
+        Outcome::failed(
+            links
+                .iter()
+                .filter_map(|link| finding(link, anchors))
+                .collect(),
+        )
     }
 }
 
@@ -160,10 +165,7 @@ fn finding(link: &Link, anchors: &Anchors) -> Option<Finding> {
             format!("point it at a heading of {target}, or write the heading it names"),
         ),
         _ => (
-            format!(
-                "`{}` names no heading of `{target}`",
-                link.destination
-            ),
+            format!("`{}` names no heading of `{target}`", link.destination),
             format!(
                 "point it at a heading that `{target}` has, or write the heading it names there"
             ),
