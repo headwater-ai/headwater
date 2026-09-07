@@ -2,8 +2,8 @@
 id: HW-SPEC-the-recorder-contract
 status: current
 status_since: 2026-09-06
-summary: Everything an external recorder writes into a transcript, the closed key sets that refuse a file, and the one member of the run identity this engine compares.
-last_verified: 2026-08-14
+summary: Everything an external recorder writes into a transcript, the closed key sets that refuse a file, the one member of the run identity this engine compares, and the period a result stays citable.
+last_verified: 2026-09-07
 doc_type: design_spec
 sequence: 15
 title: "The recorder contract"
@@ -156,8 +156,22 @@ The distinction between a recorded artifact and a written one lives in `provenan
 
 What the design does buy is narrower and it is worth stating exactly. **A rate is not a value that anybody types.** `headwater generate` derives it from the events, and `generate --check` holds the committed result to the derivation. So a forged rate needs a forged event log. That is a claim about which documents a session opened, rather than a number in a summary. A reader who doubts a result reads the transcript and counts events. Every satisfied verdict names the event it came from.
 
-## This corpus declares three probes and holds no transcript
+## How long a result stays citable, and why that period is not a number this schema produces
 
-`docs/probes/` holds three probes. `docs/probe-runs/` is a declared shelf that holds nothing, so `headwater generate` writes no probe result and prints the reason on every run.
+A published rate is a claim that a reader can re-derive. `headwater generate` writes a probe result from three committed inputs and from nothing else. They are the transcript, the expectations the probes of this corpus declare, and the version of the grader. The result states that in its own first paragraph. So the retention window of a transcript is the period in which a reader can still fetch those three. [HW-DR-0008](../decisions/0008-probe-cost-and-cadence.md) commits the transcript and states nothing about how long it stays.
+
+**Storage does not bound the window, and the reason is a choice this contract already made.** A tool call records the identity of what it returned and never the bytes. A produced artifact does the same. The bytes a tool returned are the corpus, which the transcript already names by tree digest. So a transcript of a session that read forty documents is forty digests rather than forty documents.
+
+**The schema fixes the keys and not their number, so no byte figure follows from it.** The four tables above close what a key may be. They do not bound `calls`, which is an ordered list whose length is the behavior of the model. They do not bound `cites` and `findings`, which the artifact bounds rather than the session. A figure multiplied out of the key counts, the probe count and the session count sizes the identity block alone. It undercounts every transcript that carries a produced artifact. The session counts are derived and the byte size is not. `headwater probe plan` reads the probes from the tree, and `.headwater/probe.yml` declares the arms and the repetitions of each tier. Every plan prints the product. The first committed transcript is what turns a byte size from a guess into a measurement, and this corpus holds none.
+
+**Two of the three inputs never expire, and the third is the whole window.** The transcript and the probes are documents of this corpus. The history of the repository holds them for as long as the repository stands, and no verb of this engine deletes one. The grader version is a string rather than an artifact. To re-derive a result at it a reader needs the source of this engine at that version and a toolchain that builds it. So the window is the period in which somebody can build the named grader, and nothing in this part sets it.
+
+**A release stales every committed result until somebody regenerates it.** The grader version is the engine version. A release that bumps it leaves each committed result a function of a version that is not the current one. The result names the version that graded it. A report over a set of results says how many versions the set spans rather than one average across them. Two results graded by two versions are two instruments.
+
+**`headwater probe stale` names no window, and it answers a different question.** It recomposes the read set over the tree in front of the reader and reports which recorded results a change to the corpus voided. Age expires a result and an edit voids one. They are two facts, and neither one substitutes for the other. A window is a policy of the repository that runs the probes, and `.headwater/probe.yml` is where such a policy already lives.
+
+## This corpus declares its probes on one shelf and holds no transcript
+
+`docs/probes/` is the shelf that declares them, and `headwater probe plan` prints the count it reads from the tree. No count is written here, because a hand-kept count of a shelf drifts as the shelf grows. `docs/probe-runs/` is a declared shelf that holds nothing, so `headwater generate` writes no probe result and prints the reason on every run.
 
 The reason is this part, read from the other end. A recorder observes a session from outside it, and no process in this repository does that. An agent that works here and writes a file about the documents it opened produces the self-report that spec 5 refuses. No check here tells that file from a recorded one. So the transcript is owed by a component that this repository does not hold. [HW-OBL-0124](../obligations/0124-a-probe-result-is-printed-and-never-committed-so-nothing-regenerates-one.md) carries the debt.
