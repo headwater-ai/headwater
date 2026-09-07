@@ -242,6 +242,15 @@ pub struct Minting {
     /// a scheme whose pattern carries none. A shelf layout may name it, which
     /// is how a file name carries the number its identifier already holds.
     pub sequence: Option<u64>,
+    /// The claim file this mint owes, and nothing where it owes none.
+    ///
+    /// The predicate that decides it is
+    /// [`headwater_check::claim::takes_a_claim`], asked here at plan time and
+    /// nowhere else in this crate. The answer rides on the plan so that
+    /// [`crate::claim::write`] carries no copy of it: a writer and a rule with
+    /// two readings of one declaration would cover two different sets of
+    /// shelves and nothing would report the difference.
+    pub claim: Option<String>,
 }
 
 /// A relation the new document may declare and this run did not write.
@@ -762,8 +771,8 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
     // name the sequence the identifier carries. Nothing is written either way,
     // so the only thing this ordering decides is which refusal a request that
     // trips two of them reports first.
-    let minting = mint(sources, kind, &slug)?;
-    let path = place(&directory, sources, shelf, &fields, &slug, minting.as_ref())?;
+    let minting = mint(sources, kind, shelf, &slug)?;
+    let path = place(&directory, shelf, &fields, &slug, minting.as_ref())?;
 
     if sources.index.by_path(&path).is_some() {
         return Err(Refusal::PathTaken { path });
@@ -910,13 +919,12 @@ fn literal_directory(shelf: &Shelf) -> Result<String, Refusal> {
 /// for, and the declaration that produced it is the thing to repair.
 fn place(
     directory: &str,
-    sources: &Sources<'_>,
     shelf: &Shelf,
     fields: &[Field],
     slug: &str,
     minting: Option<&Minting>,
 ) -> Result<String, Refusal> {
-    let Some(layout) = declared::layout(sources.resolved, &shelf.name) else {
+    let Some(layout) = shelf.layout.as_deref() else {
         return Ok(format!("{directory}/{slug}.md"));
     };
     match render_layout(layout, |key| match key {
@@ -1127,7 +1135,7 @@ fn front_matter(
                 // a series, and the series is on the shelf. Nothing else in a
                 // taxonomy says that an integer counts, so this reads the one
                 // declaration that does.
-                _ if declared_type == Some("integer") && names(sources, shelf, &name) => Field {
+                _ if declared_type == Some("integer") && names(shelf, &name) => Field {
                     key: name.clone(),
                     value: next_in_series(sources, shelf, &name).to_string(),
                     quoted: false,
@@ -1164,8 +1172,8 @@ fn front_matter(
 }
 
 /// Whether a shelf's layout writes this facet into a file name.
-fn names(sources: &Sources<'_>, shelf: &Shelf, facet: &str) -> bool {
-    let Some(layout) = declared::layout(sources.resolved, &shelf.name) else {
+fn names(shelf: &Shelf, facet: &str) -> bool {
+    let Some(layout) = shelf.layout.as_deref() else {
         return false;
     };
     segments(layout)
@@ -1204,7 +1212,12 @@ fn prompt(facet: &str, role: Option<&str>) -> String {
 }
 
 /// The identifier, minted under the scheme the kind names.
-fn mint(sources: &Sources<'_>, kind: &str, slug: &str) -> Result<Option<Minting>, Refusal> {
+fn mint(
+    sources: &Sources<'_>,
+    kind: &str,
+    shelf: &Shelf,
+    slug: &str,
+) -> Result<Option<Minting>, Refusal> {
     let Some(scheme) = sources.shape.identifier_scheme_of(kind) else {
         // A kind that no relation may name needs no identifier, and that is a
         // true statement about a corpus with no edge to it. A kind a relation
@@ -1286,12 +1299,18 @@ fn mint(sources: &Sources<'_>, kind: &str, slug: &str) -> Result<Option<Minting>
         });
     }
 
+    // The one call to the predicate, and the only place this crate decides
+    // whether a mint owes a claim. See [`Minting::claim`].
+    let claim = headwater_check::claim::takes_a_claim(shelf, scheme)
+        .then(|| headwater_check::claim::path_of(&scheme.name, &id));
+
     Ok(Some(Minting {
         id,
         scheme: scheme.name.clone(),
         allocation: declared::allocation(sources.resolved, &scheme.name).map(str::to_string),
         reconciled_from,
         sequence: next,
+        claim,
     }))
 }
 

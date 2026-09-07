@@ -34,14 +34,18 @@
 //! `identifier.claim.missing` exists to report.
 
 use crate::{Plan, Refusal};
-use headwater_check::claim::{contents_for, path_of};
+use headwater_check::claim::contents_for;
 use std::path::Path;
 
 /// Write the claim this plan mints, and nothing for a plan that mints none.
 ///
-/// A run that mints no identifier writes no file, and so does a run whose
-/// scheme allocates `minted-once`: a slug collision renames a document and git
-/// reports it, so the store has no work to do there.
+/// A run that mints no identifier writes no file, and neither does a run whose
+/// shelf declares no `layout` under a scheme that does not reconcile: there the
+/// file name is the slug the identifier already patterns, so a collision
+/// renames a document and git reports it.
+/// [`headwater_check::claim::takes_a_claim`] is the predicate,
+/// [`crate::propose`] is the one caller of it, and the answer reaches here on
+/// the plan.
 pub fn write(root: &Path, plan: &Plan) -> Result<Option<String>, Refusal> {
     let Some(claim) = claimed(plan) else {
         return Ok(None);
@@ -78,12 +82,11 @@ pub fn make(root: &Path, claim: &str, claimant: &str) -> Result<(), Refusal> {
 }
 
 /// The claim path this plan owes, and nothing where it owes none.
+///
+/// It reads the plan and decides nothing. The decision was made once, against
+/// the shelf and the scheme, by the predicate
+/// [`headwater_check::claim::takes_a_claim`] that `identifier.claim.missing`
+/// reads too.
 pub fn claimed(plan: &Plan) -> Option<String> {
-    let minting = plan.minting.as_ref()?;
-    match minting.allocation.as_deref() {
-        Some(headwater_check::claim::RECONCILE_FIRST) => {
-            Some(path_of(&minting.scheme, &minting.id))
-        }
-        _ => None,
-    }
+    plan.minting.as_ref()?.claim.clone()
 }

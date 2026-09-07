@@ -19,7 +19,7 @@
 #
 # # THE ONE CASE THAT LOOKS LIKE A PASS AND IS THE WHOLE DESIGN
 #
-# Case 5 merges two branches that both add the same claim path holding zero
+# Case 6 merges two branches that both add the same claim path holding zero
 # bytes, and it merges CLEAN. Git compares blobs before it selects a merge
 # strategy, and two identical empty blobs read as the same change. So the
 # claimant path written inside a claim file is not documentation: it is the
@@ -250,12 +250,26 @@ echo "the attribute that would restore that silence over the real store"
 #    attribute here. Asked of the attribute rather than of the file, because
 #    `.gitattributes` carries many lines and a grep of it would redden on an
 #    unrelated one.
-attr=$(cd "$root" && git check-attr merge -- "$store/decision_id/HW-DR-0001")
-same "no merge attribute is set on a claim file" \
-    "$store/decision_id/HW-DR-0001: merge: unspecified" "$attr"
-attr=$(cd "$root" && git check-attr merge -- "$store/obligation_record_id/HW-OBL-0001")
-same "  nor on another scheme's" \
-    "$store/obligation_record_id/HW-OBL-0001: merge: unspecified" "$attr"
+#    Asked once for every scheme directory the shipped store holds, read off
+#    the tree, so a scheme that the store starts covering is in the population
+#    with no edit here.
+bad_attr=0
+schemes=0
+for scheme in $(cd "$root/$store" && find . -mindepth 1 -maxdepth 1 -type d | sed 's|^\./||' | sort); do
+    schemes=$((schemes + 1))
+    probe="$store/$scheme/A-CLAIM-THIS-SCHEME-COULD-HOLD"
+    attr=$(cd "$root" && git check-attr merge -- "$probe")
+    if [ "$attr" != "$probe: merge: unspecified" ]; then
+        bad_attr=$((bad_attr + 1))
+        echo "          $attr"
+    fi
+done
+same "no merge attribute is set on any scheme of the store ($schemes read)" 0 "$bad_attr"
+if [ "$schemes" -gt 0 ]; then
+    pass "  and the store covers at least one scheme"
+else
+    fail "  and the store covers at least one scheme" "no scheme directory was read"
+fi
 attr=$(cd "$root" && git check-attr merge -- "$store")
 same "  nor on the directory itself" "$store: merge: unspecified" "$attr"
 
@@ -304,6 +318,53 @@ if [ "$claims" -gt 0 ]; then
 else
     fail "the store is not empty" "no claim file was read, so nothing above was measured"
 fi
+
+echo "the shelf whose layout writes the file name"
+
+# 10. The half of the store that #584 added. `spec_series` declares
+#     `{sequence:02d}-{slug}.md`, so two branches minting one `HW-SPEC-…` at two
+#     sequences write two document paths, and two paths merge clean. The claim
+#     is the only path they share, and it is what refuses the merge. Measured
+#     here rather than assumed: the engine decides which identifiers take a
+#     claim, git decides what a shared path does at a merge, and only the first
+#     of those has a test inside the engine.
+repo="$scratch/layout"
+base "$repo"
+branch "$repo" a
+mkdir -p "$repo/docs/spec"
+printf 'the replay contract, as branch a wrote it\n' >"$repo/docs/spec/17-the-replay-contract.md"
+claim "$repo" spec_id HW-SPEC-the-replay-contract docs/spec/17-the-replay-contract.md
+commit "$repo" "branch a places the part at 17"
+branch "$repo" b
+git_q -C "$repo" reset -q --hard main
+mkdir -p "$repo/docs/spec"
+printf 'the replay contract, as branch b wrote it\n' >"$repo/docs/spec/18-the-replay-contract.md"
+claim "$repo" spec_id HW-SPEC-the-replay-contract docs/spec/18-the-replay-contract.md
+commit "$repo" "branch b places the part at 18"
+git_q -C "$repo" checkout -q a
+status=$(merge "$repo" b)
+if [ "$status" = 0 ]; then
+    fail "one identifier at two sequences refuses the merge" "the merge exited 0"
+else
+    pass "one identifier at two sequences refuses the merge"
+fi
+files=$(git -C "$repo" ls-files -u | awk '{print $4}' | sort -u | tr '\n' ' ' | sed 's/ $//')
+same "  and the claim is the only unmerged path" \
+    "$store/spec_id/HW-SPEC-the-replay-contract" "$files"
+ours=$(git -C "$repo" cat-file blob ":2:$store/spec_id/HW-SPEC-the-replay-contract" 2>/dev/null)
+theirs=$(git -C "$repo" cat-file blob ":3:$store/spec_id/HW-SPEC-the-replay-contract" 2>/dev/null)
+same "  and stage 2 names the sequence this branch chose" \
+    docs/spec/17-the-replay-contract.md "$ours"
+same "  and stage 3 names the sequence the other branch chose" \
+    docs/spec/18-the-replay-contract.md "$theirs"
+
+# 11. And the two documents are both present and both unmerged-free, which is
+#     the measurement that says the store did the work: with no claim file this
+#     tree is exactly what merges at exit 0.
+both=no
+[ -f "$repo/docs/spec/17-the-replay-contract.md" ] &&
+    [ -f "$repo/docs/spec/18-the-replay-contract.md" ] && both=yes
+same "  and both documents stand, which is why they merged clean before" yes "$both"
 
 echo
 echo "$passed passed, $failed failed"
