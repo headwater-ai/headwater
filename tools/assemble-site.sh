@@ -44,11 +44,15 @@
 #   Both halves carried a `sitemap.xml` and each was wrong on its own. The
 #   hand-built one was a list of seven URLs a person typed, and it already
 #   omitted `site/changelog/` on the day it was committed. The MkDocs one
-#   carries zero URLs, because `mkdocs.yml` sets no `site_url` and the MkDocs
-#   template emits a `<loc>` only from a canonical URL. So the rule at the
-#   top of this file — the hand-built half wins a collision — would have
-#   served the stale typed list, and reversing it would have served an empty
-#   `<urlset>`. #554 is the report, and this is the disposition it took.
+#   knows only the generated half, which is the durable half of the argument
+#   and the one that survives a change to `mkdocs.yml`. It carried zero URLs
+#   when #554 reported this, because `mkdocs.yml` set no `site_url` and the
+#   MkDocs template emits a `<loc>` only from a canonical URL; #556 set that
+#   value, so it now carries one `<loc>` per generated page and still none
+#   for the eight hand-built pages. So the rule at the top of this file — the
+#   hand-built half wins a collision — would have served the stale typed
+#   list, and reversing it would serve a list missing every hand-built page.
+#   #554 is the report, and this is the disposition it took.
 #
 #   `sitemap.xml.gz`, which `mkdocs build` writes beside its own sitemap, is
 #   removed rather than recomputed. Nothing links it, and a compressed second
