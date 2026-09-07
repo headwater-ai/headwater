@@ -93,8 +93,9 @@ use std::path::{Path, PathBuf};
 /// The file a published package carries at its root.
 pub const RECORD: &str = "release.yml";
 
-/// The format of that file. A reader that meets a later one says so rather than
-/// guessing, on the same terms the lock takes.
+/// The format of that file. A reader that meets any other token refuses rather
+/// than guessing, on the same terms the lock takes. It compares and never
+/// orders, so it says nothing about which of the two came first.
 pub const FORMAT: u32 = 1;
 
 /// The version of this engine, which is what a `requires_engine` range is read
@@ -141,7 +142,16 @@ pub enum ReleaseError {
     Absent(PathBuf),
     Unreadable(String),
     Malformed(String),
-    /// A later format than this engine knows.
+    /// The declared `format` token is not the one this engine writes. [`read`]
+    /// compares the raw token to [`FORMAT`] for inequality and never orders the
+    /// two, so this variant carries a mismatch and no direction: a record at an
+    /// earlier format, a record at a later one, and a token that is not a
+    /// number at all all arrive here. No engine need have written any of them.
+    /// A hand-edited `format` field lands here and nowhere else, because this
+    /// check runs before the digest check below it, and that digest covers the
+    /// member list rather than the `release:` header. The message therefore
+    /// says which token was found and which one this engine wants, and names no
+    /// author.
     Format {
         found: String,
     },
@@ -226,8 +236,8 @@ impl std::fmt::Display for ReleaseError {
             ReleaseError::Malformed(what) => write!(f, "the release record is malformed: {what}"),
             ReleaseError::Format { found } => write!(
                 f,
-                "the release record declares format `{found}` and this engine writes {FORMAT}. \
-                 A newer engine published it"
+                "the release record declares format `{found}` and this engine reads and writes \
+                 {FORMAT}. Run `headwater taxonomy publish` to write one this engine reads"
             ),
             ReleaseError::RecordMoved { declared, actual } => write!(
                 f,
@@ -773,7 +783,7 @@ mod tests {
     }
 
     #[test]
-    fn a_record_from_a_later_engine_says_so_rather_than_guessing() {
+    fn a_format_this_engine_does_not_write_is_refused_rather_than_guessed_at() {
         let release = Release {
             package: "acme/taxonomy".to_string(),
             version: "3.2.0".to_string(),

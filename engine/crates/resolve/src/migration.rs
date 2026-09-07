@@ -67,9 +67,10 @@ use crate::release;
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
-/// The format of a payload file. A reader that meets a later one says so rather
-/// than guessing, on the terms the lock, the release record and the conformance
-/// rule set all take.
+/// The format of a payload file. A reader that meets any other token refuses
+/// rather than guessing, on the terms the lock, the release record and the
+/// conformance rule set all take. It compares and never orders, so it says
+/// nothing about which of the two came first.
 pub const FORMAT: u32 = 1;
 
 /// The manifest key under `contents` that points at the payload directory.
@@ -325,7 +326,13 @@ pub enum PayloadError {
         at: String,
         what: String,
     },
-    /// A later format than this engine knows.
+    /// The declared `format` token is not the one this engine reads. The reader
+    /// compares the trimmed token to [`FORMAT`] for inequality and never orders
+    /// the two, so this variant carries a mismatch and no direction: a payload
+    /// at an earlier format, one at a later format, and a token that is not a
+    /// number at all all arrive here. No engine need have written any of them.
+    /// The message therefore says which token was found and which one this
+    /// engine wants, and names no author.
     Format {
         at: String,
         found: String,

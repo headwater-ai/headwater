@@ -176,7 +176,7 @@ conformance:
 }
 
 #[test]
-fn a_rule_set_from_a_later_engine_says_so_rather_than_guessing() {
+fn a_format_this_engine_does_not_read_is_refused_rather_than_guessed_at() {
     let later = source("lock.current").replace("format: 1", "format: 9");
     assert!(matches!(
         read(&later, "acme/taxonomy"),
@@ -776,8 +776,8 @@ fn an_earlier_format_rule_set_is_refused_without_naming_a_publisher() {
     let earlier = text.replace("format: 1", "format: 0");
     assert_ne!(earlier, text, "the mutation substituted nothing:\n{text}");
 
-    let refused = read(&earlier, "acme/taxonomy")
-        .expect_err("format 0 is not the format this engine reads");
+    let refused =
+        read(&earlier, "acme/taxonomy").expect_err("format 0 is not the format this engine reads");
     let message = refused.to_string();
     assert!(matches!(refused, SetError::Format { .. }), "{message}");
 

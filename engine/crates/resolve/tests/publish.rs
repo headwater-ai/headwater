@@ -4650,7 +4650,8 @@ fn an_earlier_format_record_is_refused_without_naming_a_publisher() {
     let earlier = text.replace("format: 1", "format: 0");
     assert_ne!(earlier, text, "the mutation substituted nothing:\n{text}");
 
-    let refused = release::read(&earlier).expect_err("format 0 is not the format this engine reads");
+    let refused =
+        release::read(&earlier).expect_err("format 0 is not the format this engine reads");
     let message = refused.to_string();
     assert!(matches!(refused, ReleaseError::Format { .. }), "{message}");
 
