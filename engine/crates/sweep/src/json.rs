@@ -142,6 +142,11 @@ fn finding(verified: &crate::intake::Verified) -> Json {
                 ("relation", Json::string(&proposal.relation)),
                 ("from", Json::string(&proposal.from)),
                 ("to", Json::string(&proposal.to)),
+                // The document that would carry the front matter, which is the
+                // one at the `from` end and never the first path the finding
+                // names. The text report prints the same path on the line that
+                // tells a person where to write.
+                ("path", Json::string(&proposal.path)),
                 ("declared", Json::Bool(false)),
             ]),
         ));

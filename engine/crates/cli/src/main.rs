@@ -3650,6 +3650,7 @@ fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
         census: &loaded.census,
         graph: &loaded.graph,
         relations: &loaded.relations,
+        shape: &loaded.shape,
         lock: &loaded.bound.digest,
     };
     let report = headwater_sweep::Report::read(&source, &tree);
