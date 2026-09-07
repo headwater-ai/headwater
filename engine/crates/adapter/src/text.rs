@@ -49,8 +49,9 @@
 //!
 //! Nothing else is exempt. A word longer than the room it lands in is written
 //! past the width, whole, so a path, a rule name and a digest arrive intact
-//! wherever they are — which is what `crate::census` needs, because it audits
-//! every format by `artifact.contains(path)`.
+//! wherever they are — which is what `crate::census` needs, because it reads
+//! this format by cutting it into blocks and asking each one for the location
+//! it opens on.
 
 use crate::Subject;
 use headwater_census::census::{Census, Detail as CensusDetail};

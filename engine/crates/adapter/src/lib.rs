@@ -399,6 +399,9 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
 /// this type exists to make impossible.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Census {
+    /// The findings this format writes a record for, which [`recorded`] names.
+    /// Every reported finding for three of the four formats, and the live ones
+    /// for the text report.
     pub findings: usize,
     pub carried: usize,
     /// Findings the output does not carry and no loss reason covers. A
@@ -470,8 +473,9 @@ impl Census {
 /// The artifact is parsed rather than searched. `headwater_yaml::load` is the
 /// reader that `headwater_yaml::json` names as the other half of its writer,
 /// because JSON is a subset of the YAML 1.2 core schema that loader implements.
-/// A search would carry the defect the finding half of [`census`] still has: a
-/// substring reaches a document's index of names as readily as its records.
+/// A search would carry the defect the finding half of [`census`] carried until
+/// [`records`] replaced it: a substring reaches a document's index of names as
+/// readily as its records.
 struct Objects<'a> {
     /// What a [`Carrier::Run`] place is relative to.
     run: &'a Spanned<Value>,
@@ -592,22 +596,210 @@ fn per_finding(
         .collect()
 }
 
+/// One record of an artifact: the place a format writes one reported finding,
+/// and none of the document around it.
+///
+/// Two strings rather than one, because a finding's rule and its path have to
+/// meet inside one record. What this replaced was a pair of `contains` calls
+/// over the whole artifact, and every format prints an index of rule names and
+/// an index of read paths for reasons of its own, so that reading graded an
+/// artifact carrying no findings at all as carrying every one of them.
+struct Record {
+    /// The path the record names, with the line and column stripped off it.
+    path: String,
+    /// The text the record's rule has to be found in. No rule name of this
+    /// engine is a substring of another, so one containment test names one
+    /// rule.
+    rule: String,
+}
+
+/// One line with its escape sequences removed, so a colored report cuts the way
+/// an uncolored one does.
+///
+/// `headwater check` colors the text report when stdout is a terminal, and the
+/// census reads the bytes that terminal was given.
+fn plain(line: &str) -> String {
+    let mut out = String::new();
+    let mut rest = line;
+    while let Some(at) = rest.find('\u{1b}') {
+        out.push_str(&rest[..at]);
+        rest = match rest[at..].find('m') {
+            Some(end) => &rest[at + end + 1..],
+            None => "",
+        };
+    }
+    out.push_str(rest);
+    out
+}
+
+/// A location with the numbers a format appended to it removed.
+///
+/// `Finding::location` writes `path:line:column` and a Markdown row writes
+/// `path:line`, so this strips at most two trailing numbers and leaves a path
+/// that carries none.
+fn bare_path(location: &str) -> &str {
+    let mut at = location;
+    for _ in 0..2 {
+        match at.rsplit_once(':') {
+            Some((head, tail))
+                if !tail.is_empty() && tail.chars().all(|char| char.is_ascii_digit()) =>
+            {
+                at = head;
+            }
+            _ => return at,
+        }
+    }
+    at
+}
+
+/// One member of a parsed record, as the string it holds.
+fn scalar(value: &Spanned<Value>, path: &[&str]) -> Option<String> {
+    let found = member(value, path)?.value.as_scalar()?;
+    Some(headwater_yaml::core_schema::as_str(found).to_string())
+}
+
+/// The three severity glyphs, from the one function that prints them.
+///
+/// Read off `headwater_check::paint` rather than written here, so a fourth
+/// severity reaches this reader with the report.
+fn glyphs() -> [&'static str; 3] {
+    [Severity::Error, Severity::Warn, Severity::Info].map(headwater_check::paint::glyph)
+}
+
+/// Every record one artifact writes, cut at the grain its format writes them.
+///
+/// The two machine formats are parsed and the two prose ones are cut, which is
+/// the split the module comment above [`census`] states.
+fn records(format: Format, artifact: &str) -> Vec<Record> {
+    match format {
+        Format::Json | Format::Sarif => parsed_records(format, artifact),
+        Format::Markdown => rows(artifact),
+        Format::Text => blocks(artifact),
+    }
+}
+
+/// The records of a machine format, read out of the parsed document.
+///
+/// Parsed whether or not the loss set names a member. [`Format::Json`] declares
+/// no loss at all, so the carrier half below never reaches a parser for that
+/// format, and the finding half needs one of its own.
+fn parsed_records(format: Format, artifact: &str) -> Vec<Record> {
+    let Ok(root) = headwater_yaml::load(artifact) else {
+        return Vec::new();
+    };
+    let Some(read) = objects(format, &root) else {
+        return Vec::new();
+    };
+    read.records
+        .iter()
+        .filter_map(|record| match format {
+            Format::Sarif => Some(Record {
+                path: scalar(
+                    member(record, &["locations"])?.value.as_seq()?.first()?,
+                    &["physicalLocation", "artifactLocation", "uri"],
+                )?,
+                rule: scalar(record, &["ruleId"])?,
+            }),
+            _ => Some(Record {
+                path: scalar(record, &["path"])?,
+                rule: scalar(record, &["rule"])?,
+            }),
+        })
+        .collect()
+}
+
+/// The rows of the Markdown tables, and no other line of the page.
+///
+/// Two tables and one reader over both: the live findings are in the first and
+/// the escaped ones are in the `<details>` block under it, and both write the
+/// same four columns. The second and the third are read, so a path a message
+/// names in the fourth reaches no record.
+fn rows(artifact: &str) -> Vec<Record> {
+    artifact
+        .lines()
+        .filter(|line| line.starts_with('|'))
+        .filter_map(|line| {
+            let cells: Vec<&str> = line.split('|').collect();
+            let cell = |at: usize| cells.get(at).map(|text| text.trim().trim_matches('`'));
+            Some(Record {
+                path: bare_path(cell(2)?).to_string(),
+                rule: cell(3)?.to_string(),
+            })
+        })
+        .collect()
+}
+
+/// The finding blocks of the text report, and no block around them.
+///
+/// `text::indent` moves every line of the report two columns right, so a line
+/// indented exactly two opens a block and every deeper line continues it.
+/// `Finding::render` writes the location on the opening line and the rule on
+/// the next, and `headwater_check::fill` never breaks inside a word, so the
+/// location arrives whole however the block was laid out.
+///
+/// A severity glyph is what tells a finding block from the census, graph and
+/// read-set blocks, each of which opens on a path for a reason of its own.
+fn blocks(artifact: &str) -> Vec<Record> {
+    let mut found: Vec<Record> = Vec::new();
+    for line in artifact.lines() {
+        let line = plain(line);
+        match line.starts_with("  ") && !line.starts_with("   ") {
+            true => found.push(Record {
+                path: bare_path(line.split_whitespace().next().unwrap_or_default()).to_string(),
+                rule: line,
+            }),
+            false => {
+                if let Some(open) = found.last_mut() {
+                    open.rule.push('\n');
+                    open.rule.push_str(&line);
+                }
+            }
+        }
+    }
+    found.retain(|record| glyphs().iter().any(|glyph| record.rule.contains(glyph)));
+    found
+}
+
+/// Which of a run's reported findings a format writes a record for.
+///
+/// Three of the four write one per reported finding, escape class included:
+/// SARIF and `json` write every one into their record list, and Markdown writes
+/// the escaped ones into a second table. The text report writes a block for a
+/// live finding alone — `headwater_check::Run::render` walks `run.findings` —
+/// and it accounts for the escaped ones by count, in its adoption block and its
+/// suppression block.
+///
+/// That is a measurement of that emitter and not a permission granted to it.
+/// The reading this replaced graded all 47 findings of the recorded fixture as
+/// carried by a text artifact that holds 44 blocks, and this states the 44.
+fn recorded<'a, 'b>(format: Format, all: &'a [Reported<'b>]) -> Vec<&'a Reported<'b>> {
+    all.iter()
+        .filter(|entry| format != Format::Text || entry.is_live())
+        .collect()
+}
+
 /// Audit one rendered artifact against the run it came from.
 ///
 /// It reads the bytes rather than the emitter, for the reason
 /// `headwater_generate::export::audit` does: an emitter that audited itself
 /// would be the untrusted projector one layer out.
 ///
-/// # The finding half, and what it still cannot say
+/// # The finding half, and the grain each format is read at
 ///
-/// A finding is carried when the output names its rule and its path. Those are
-/// two independent substring tests over the whole document, so a format that
-/// prints an index of rule names and an index of paths passes them whatever its
-/// records hold. `HW-OBL-0110` records the measurement, and this function still
-/// carries the defect. That record proposes a test per line or per record and
-/// says that none of the four formats needs a parser for it. [`Objects`] is a
-/// second route, available to the two machine-readable formats and to neither
-/// prose one, and nothing here settles which of the two that record takes.
+/// A finding is carried when one record of the artifact names both its rule and
+/// its path. A record is the grain [`records`] cuts the artifact into, and it
+/// is one of two instruments: SARIF and `json` are parsed, and the record is the
+/// member of `runs[0].results` or of `findings`; Markdown and the text report
+/// are cut, and the record is the table row or the finding block. `HW-OBL-0110`
+/// proposed one instrument over all four and this takes the record grain where
+/// a parser reaches and the block grain where none does, because a positional
+/// pairing does not reach the two prose formats: both split `reported` order
+/// into two places, the escaped findings into a second Markdown table and out of
+/// the text report altogether.
+///
+/// Each record is spent by the first finding that claims it, so a run carrying
+/// one `(rule, path)` pair twice needs two records for it. That is what fails a
+/// single dropped record, which a set membership test would pass.
 ///
 /// # The carrier half
 ///
@@ -644,14 +836,23 @@ pub fn census(run: &Run, format: Format, artifact: &str) -> Census {
 /// audit" is to hand the audit a wrong declaration.
 pub fn census_with(run: &Run, format: Format, artifact: &str, loss: &[Loss]) -> Census {
     let all = reported(run);
+    let held_to = recorded(format, &all);
+    let written = records(format, artifact);
+    let mut spent = vec![false; written.len()];
     let mut unaccounted = Vec::new();
     let mut carried = 0;
-    for entry in &all {
-        let rule = artifact.contains(entry.finding.rule);
-        let path = artifact.contains(entry.finding.path.as_str());
-        match rule && path {
-            true => carried += 1,
-            false => unaccounted.push(format!(
+    for entry in &held_to {
+        let found = written.iter().enumerate().position(|(at, record)| {
+            !spent[at]
+                && record.path == entry.finding.path
+                && record.rule.contains(entry.finding.rule)
+        });
+        match found {
+            Some(at) => {
+                spent[at] = true;
+                carried += 1;
+            }
+            None => unaccounted.push(format!(
                 "{} {} at {}",
                 entry.finding.rule, entry.finding.path, entry.finding.line
             )),
@@ -707,7 +908,7 @@ pub fn census_with(run: &Run, format: Format, artifact: &str, loss: &[Loss]) -> 
     }
 
     Census {
-        findings: all.len(),
+        findings: held_to.len(),
         carried,
         unaccounted,
         entries: loss.len(),

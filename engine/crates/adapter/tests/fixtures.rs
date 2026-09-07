@@ -1946,3 +1946,172 @@ fn the_members_a_carrier_names_are_the_members_the_artifact_writes() {
     // entry that a full-corpus run does not write.
     assert_eq!(checked, 3);
 }
+
+/// The `read set` heading, which is where every artifact's finding region ends
+/// in the text report.
+const READ_SET: &str = "read set";
+
+/// Every span of an artifact that carries one finding, as a half-open range of
+/// line numbers.
+///
+/// The suite cuts the artifact for itself rather than calling the reader under
+/// test, because a test that cut with the instrument it audits would report that
+/// the instrument agrees with itself.
+fn spans(format: Format, lines: &[&str]) -> Vec<(usize, usize)> {
+    match format {
+        Format::Sarif | Format::Json => {
+            let (key, outer) = match format {
+                Format::Sarif => ("\"results\": [", "      "),
+                _ => ("\"findings\": [", "  "),
+            };
+            let indent = format!("{outer}  ");
+            let open = lines
+                .iter()
+                .position(|line| line.trim() == key)
+                .expect("the finding array opens");
+            let close = (open + 1..lines.len())
+                .find(|line| {
+                    lines[*line] == format!("{outer}]") || lines[*line] == format!("{outer}],")
+                })
+                .expect("the finding array closes");
+            let mut found = Vec::new();
+            let mut at = None;
+            for (line, text) in lines.iter().enumerate().take(close).skip(open + 1) {
+                if *text == format!("{indent}{{") {
+                    at = Some(line);
+                }
+                if *text == format!("{indent}}}") || *text == format!("{indent}}},") {
+                    found.push((at.expect("a record opened"), line + 1));
+                    at = None;
+                }
+            }
+            found
+        }
+        // A row of either table. The two header rows name `Where` in the column
+        // a finding names its path in, and a separator row names none.
+        Format::Markdown => lines
+            .iter()
+            .enumerate()
+            .filter(|(_, line)| line.starts_with('|') && !line.starts_with("|---"))
+            .filter(|(_, line)| line.split('|').nth(2).map(str::trim) != Some("Where"))
+            .map(|(line, _)| (line, line + 1))
+            .collect(),
+        // Every block of the region between the tally and the read set, each one
+        // opening on a line indented exactly two.
+        Format::Text => {
+            let tally = lines
+                .iter()
+                .position(|line| line.trim_end().ends_with(" findings"))
+                .expect("the findings tally");
+            let end = lines
+                .iter()
+                .position(|line| *line == READ_SET)
+                .expect("the read-set heading");
+            let opens: Vec<usize> = (tally + 1..end)
+                .filter(|line| lines[*line].starts_with("  ") && !lines[*line].starts_with("   "))
+                .collect();
+            opens
+                .iter()
+                .enumerate()
+                .map(|(at, open)| (*open, *opens.get(at + 1).unwrap_or(&end)))
+                .collect()
+        }
+    }
+}
+
+/// One artifact with the lines of the named spans removed.
+fn without(artifact: &str, cut: &[(usize, usize)]) -> String {
+    let lines: Vec<&str> = artifact.lines().collect();
+    let kept: Vec<&str> = lines
+        .iter()
+        .enumerate()
+        .filter(|(line, _)| !cut.iter().any(|(from, to)| line >= from && line < to))
+        .map(|(_, text)| *text)
+        .collect();
+    kept.join("\n") + "\n"
+}
+
+/// One `(rule, path)` pair that at least two live findings of the run share.
+///
+/// Live, because the text report writes a block for a live finding alone, and a
+/// pair this suite drops has to be one every format wrote twice. The recorded
+/// corpus supplies four `obligation.disposition.not_one` findings on the
+/// taxonomy fixture, and this reads the pair off the run rather than naming it.
+fn a_repeated_pair(ran: &Ran) -> (&'static str, String) {
+    let live: Vec<(&'static str, String)> = reported(&ran.run)
+        .iter()
+        .filter(|entry| entry.is_live())
+        .map(|entry| (entry.finding.rule, entry.finding.path.clone()))
+        .collect();
+    live.iter()
+        .find(|pair| live.iter().filter(|other| other == pair).count() > 1)
+        .expect("two live findings share a rule and a path")
+        .clone()
+}
+
+/// **The decisive case.** One dropped record is one unaccounted finding, in
+/// every format.
+///
+/// The record dropped is one of a pair another finding of the same run repeats,
+/// so a reader that asked whether the artifact mentions the rule and the path
+/// anywhere passes it, and so does one that asked whether some record names
+/// them. Measured on the substring reading this replaced: `unaccounted == 0` and
+/// `carried == findings` in all four formats, which is a green census over an
+/// artifact that lost a finding.
+#[test]
+fn one_dropped_record_is_one_unaccounted_finding() {
+    let ran = fixture_run();
+    let (rule, path) = a_repeated_pair(&ran);
+    for format in Format::ALL {
+        let artifact = render(&ran, format);
+        let lines: Vec<&str> = artifact.lines().collect();
+        let cut = spans(format, &lines)
+            .into_iter()
+            .find(|(from, to)| {
+                let text = lines[*from..*to].join("\n");
+                text.contains(rule) && text.contains(path.as_str())
+            })
+            .expect("a record naming the repeated pair");
+        let dropped = without(&artifact, &[cut]);
+        assert_ne!(dropped, artifact, "{}: a record was removed", format.name());
+
+        let full = headwater_adapter::census(&ran.run, format, &artifact);
+        let after = headwater_adapter::census(&ran.run, format, &dropped);
+        assert_eq!(
+            (full.carried, full.unaccounted.len()),
+            (full.findings, 0),
+            "{}: the whole artifact",
+            format.name()
+        );
+        assert_eq!(
+            (after.carried, after.unaccounted.len()),
+            (after.findings - 1, 1),
+            "{}: one record dropped",
+            format.name()
+        );
+        assert!(after.is_defective(), "{}", format.name());
+    }
+}
+
+/// An artifact emptied of its finding records carries none of them, in every
+/// format.
+///
+/// Relative rather than literal: the recorded corpus grows, and a count written
+/// here would be a second copy of it. Measured on the substring reading this
+/// replaced, over the real corpus of this repository: 68 of 68 carried and exit
+/// 0 in `json`, `sarif` and `text`, over an artifact holding no finding at all.
+#[test]
+fn an_artifact_emptied_of_its_records_carries_no_finding() {
+    for ran in [fixture_run(), scoped_run()] {
+        for format in Format::ALL {
+            let artifact = render(&ran, format);
+            let lines: Vec<&str> = artifact.lines().collect();
+            let emptied = without(&artifact, &spans(format, &lines));
+            let after = headwater_adapter::census(&ran.run, format, &emptied);
+            assert!(after.findings > 0, "{}", format.name());
+            assert_eq!(after.carried, 0, "{}: {:?}", format.name(), after.carried);
+            assert_eq!(after.unaccounted.len(), after.findings, "{}", format.name());
+            assert!(after.is_defective(), "{}", format.name());
+        }
+    }
+}
