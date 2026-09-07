@@ -112,7 +112,7 @@ pub const ENGINE: &str = env!("CARGO_PKG_VERSION");
 /// A member added moves the minor and a member removed or renamed moves the
 /// major, which is the rule every other document this binary writes states
 /// for itself.
-pub const DOCUMENT: &str = "1.0";
+pub const DOCUMENT: &str = "1.1";
 
 /// One published package: what it is, and the digest of every file in it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -433,16 +433,33 @@ release:
 /// The JSON document `taxonomy publish --json` writes, for the caller who
 /// scripts the handoff rather than reading a paragraph.
 ///
-/// It carries what the prose run prints and nothing the record does not hold:
-/// the package identity from the manifest, the directory the artifact went
-/// into, the digest a consumer pins, and every member with its own digest.
-/// `requires_engine` is absent where the manifest declares none, rather than
-/// an empty string a consumer could not tell from a range somebody wrote.
+/// It carries what the prose run prints: the package identity from the
+/// manifest, the directory the artifact went into, the digest a consumer pins,
+/// and every member with its own digest. `requires_engine` is absent where the
+/// manifest declares none, rather than an empty string a consumer could not
+/// tell from a range somebody wrote.
+///
+/// **`delivery` is the one member here the record does not hold, and it is here
+/// deliberately.** This document said "nothing the record does not hold" until
+/// [#664](https://github.com/headwater-ai/headwater/issues/664), and the reason
+/// that had to give way is that how the artifact reached `--out` is a fact about
+/// the publish rather than about the artifact. Putting it in
+/// [`Release`] would write it into `release.yml` and move the digest a consumer
+/// pins, so it travels beside the record from
+/// [`crate::package::Delivery`] instead. Every other member here is still read
+/// out of the record.
+///
+/// `delivery` is written on **every** publish, `renamed` or `direct`, and never
+/// only on the weaker path: a member that appears only when something went
+/// wrong cannot be told apart from an engine that does not know the member
+/// exists.
 ///
 /// `version` is [`DOCUMENT`] and never [`ENGINE`]: a consumer pins the shape
 /// it reads, and the engine that wrote it is a fact about the publisher's
-/// machine.
-pub fn document(release: &Release, out: &Path) -> Json {
+/// machine. Adding `delivery` moved it to `1.1` and not `2.0`, which is what
+/// the seven other document shapes in this engine do for an added member — a
+/// consumer pinning the major keeps reading.
+pub fn document(release: &Release, out: &Path, delivery: &crate::package::Delivery) -> Json {
     let mut identity: Vec<(&'static str, Json)> = vec![
         ("name", Json::string(release.package.clone())),
         ("version", Json::string(release.version.clone())),
@@ -454,6 +471,7 @@ pub fn document(release: &Release, out: &Path) -> Json {
         ("version", Json::string(DOCUMENT)),
         ("package", Json::object(identity)),
         ("out", Json::string(out.display().to_string())),
+        ("delivery", Json::string(delivery.wire().to_string())),
         ("digest", Json::string(release.digest.clone())),
         (
             "members",
