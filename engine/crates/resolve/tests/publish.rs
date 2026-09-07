@@ -3047,6 +3047,235 @@ fn an_output_directory_that_holds_a_complete_publish_is_refused_with_the_origina
     );
 }
 
+// ---------------------------------------------------------------------------
+// `--clear-killed`, which removes the residue of a publish killed while it
+// wrote straight into `--out`, and removes nothing else. #485.
+//
+// The two cases above are the states this must not touch. The cases below are
+// the same table with the flag held against it: one state is cleared and every
+// other state is left exactly as the two cases above leave it.
+// ---------------------------------------------------------------------------
+
+/// The staging path a publish derives from `out`.
+fn staging_beside(out: &Path) -> PathBuf {
+    let mut name = out
+        .file_name()
+        .expect("the output path has a name")
+        .to_os_string();
+    name.push("~staging");
+    out.with_file_name(name)
+}
+
+/// Plant, by hand, the state a publish killed inside a direct write leaves:
+/// files at `out` with no release record, and a staging directory beside it
+/// holding both the marker and the note that names `names` as the path being
+/// written into.
+///
+/// `killed_publish.rs` reaches this state with a real signal to a real process
+/// inside a real mount point. That is the evidence that a kill can produce it;
+/// this is the cheaper instrument for what a later run does with it once it is
+/// there, and the two literals below are the ones `claim_staging` and
+/// `claim_direct` write.
+fn plant_a_killed_direct_write(out: &Path, names: &Path) -> PathBuf {
+    let staging = staging_beside(out);
+    std::fs::create_dir_all(&staging).expect("the staging directory is made");
+    std::fs::write(
+        staging.join(".headwater-publish-staging"),
+        "an earlier run claimed this directory\n",
+    )
+    .expect("the marker is written");
+    std::fs::write(
+        staging.join(".headwater-publish-direct"),
+        format!(
+            "an earlier run could not move its artifact into place\nThe output path is: {}\n",
+            names.display()
+        ),
+    )
+    .expect("the note is written");
+    std::fs::create_dir_all(out).expect("the output directory is made");
+    std::fs::write(out.join("taxonomy.yml"), "half of an artifact\n")
+        .expect("the residue is written");
+    staging
+}
+
+/// **The case the flag exists to not be.** `--clear-killed` over a non-empty
+/// `--out` with no staging directory beside it removes nothing, the publish
+/// refuses exactly as it does without the flag, and the caller's file is still
+/// there byte for byte.
+///
+/// The predicate the issue asked for was *files at `--out` and no release
+/// record*, which is byte-for-byte what this directory is. Firing on it would
+/// be the undecidable recursive delete [#355] was closed over, moved behind a
+/// flag. What fires instead is the pair of files a publish writes into
+/// `<out>~staging` before it starts the one write it cannot undo, and no
+/// unrelated directory produces that pair.
+///
+/// [#355]: https://github.com/headwater-ai/headwater/issues/355
+/// [#485]: https://github.com/headwater-ai/headwater/issues/485
+#[test]
+fn clearing_a_killed_run_removes_nothing_where_nothing_says_a_run_was_killed() {
+    let scratch = Scratch::new("clear-killed-unrelated");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    std::fs::create_dir_all(&out).expect("the caller's directory is made");
+    std::fs::write(out.join("theirs.txt"), "the caller's own file").expect("their file is written");
+
+    let cleared = package::clear_killed(&root, &out).expect("the clear reads the path");
+    assert!(
+        matches!(cleared, package::Cleared::Nothing),
+        "the flag removed a directory that nothing says a publish wrote"
+    );
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("Check what is there before you delete it"),
+        "the refusal with the flag is not the refusal without it: {message}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(out.join("theirs.txt")).expect("their file reads"),
+        "the caller's own file"
+    );
+    assert_eq!(walk_files(&out), 1, "the clear or the publish wrote here");
+}
+
+/// `--clear-killed` over the residue of a killed direct write removes both
+/// paths, and the publish that follows it in the same run lands the artifact.
+#[test]
+fn clearing_a_killed_run_removes_both_paths_and_the_same_run_publishes() {
+    let scratch = Scratch::new("clear-killed-residue");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    let staging = plant_a_killed_direct_write(&out, &out);
+
+    let cleared = package::clear_killed(&root, &out).expect("the clear removes the residue");
+    assert!(
+        matches!(cleared, package::Cleared::KilledDirectWrite { .. }),
+        "the flag did not name what it removed"
+    );
+    assert!(!out.exists(), "the killed run's files are still at the output path");
+    assert!(!staging.exists(), "the killed run's staging directory is still beside it");
+
+    package::publish(&root, "acme/fixture", &out).expect("the same run publishes");
+    assert!(
+        release::at(&out).is_ok(),
+        "the publish after the clear left no record"
+    );
+}
+
+/// `--clear-killed` over an `--out` that carries a readable release record
+/// removes nothing, whatever is beside it. A complete artifact is #486's
+/// question and not this flag's.
+///
+/// [#486]: https://github.com/headwater-ai/headwater/issues/486
+#[test]
+fn clearing_a_killed_run_removes_nothing_from_an_output_that_holds_a_complete_publish() {
+    let scratch = Scratch::new("clear-killed-complete");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    package::publish(&root, "acme/fixture", &out).expect("the first publish lands");
+    let before = walk_files(&out);
+    let staging = staging_beside(&out);
+    std::fs::create_dir_all(&staging).expect("the staging directory is made");
+    std::fs::write(
+        staging.join(".headwater-publish-staging"),
+        "an earlier run claimed this directory\n",
+    )
+    .expect("the marker is written");
+    std::fs::write(
+        staging.join(".headwater-publish-direct"),
+        format!("an earlier run\nThe output path is: {}\n", out.display()),
+    )
+    .expect("the note is written");
+
+    let cleared = package::clear_killed(&root, &out).expect("the clear reads the path");
+    assert!(
+        matches!(cleared, package::Cleared::Nothing),
+        "the flag removed a complete published artifact"
+    );
+    assert!(
+        release::at(&out).is_ok(),
+        "the complete artifact's record went with the clear"
+    );
+    assert_eq!(walk_files(&out), before, "the complete artifact lost files");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not republish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("the output directory holds files already"),
+        "the refusal for a complete publish moved under the flag: {message}"
+    );
+}
+
+/// A staging directory whose note names a **different** output path is not this
+/// `--out`'s residue, and the flag removes nothing.
+///
+/// The marker and the note say *a publish was killed writing into some path*.
+/// Reading the path out of the note is what turns that into *a publish was
+/// killed writing into this one*, and it is one string comparison.
+#[test]
+fn clearing_a_killed_run_removes_nothing_where_the_note_names_another_path() {
+    let scratch = Scratch::new("clear-killed-elsewhere");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    let staging = plant_a_killed_direct_write(&out, &scratch.path().join("somewhere-else"));
+
+    let cleared = package::clear_killed(&root, &out).expect("the clear reads the path");
+    assert!(
+        matches!(cleared, package::Cleared::Nothing),
+        "the flag removed files a note named another path for"
+    );
+    assert_eq!(
+        std::fs::read_to_string(out.join("taxonomy.yml")).expect("the residue reads"),
+        "half of an artifact\n"
+    );
+    assert!(staging.exists(), "the staging directory went anyway");
+}
+
+/// A staging directory holding the marker and **no** note is what every killed
+/// publish leaves, including one killed on the rename path where `--out` was
+/// never touched. The flag removes nothing on it.
+///
+/// `DIRECT`'s doc comment in `package.rs` carries the argument: a person who
+/// then fills `--out` themselves produces files at `--out`, no record, marker
+/// beside it, which is byte-for-byte the state a killed direct write leaves.
+#[test]
+fn clearing_a_killed_run_removes_nothing_where_the_staging_directory_holds_only_the_marker() {
+    let scratch = Scratch::new("clear-killed-marker-only");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    let staging = plant_a_killed_direct_write(&out, &out);
+    std::fs::remove_file(staging.join(".headwater-publish-direct")).expect("the note goes");
+
+    let cleared = package::clear_killed(&root, &out).expect("the clear reads the path");
+    assert!(
+        matches!(cleared, package::Cleared::Nothing),
+        "the flag removed files that only a marker spoke for"
+    );
+    assert_eq!(
+        std::fs::read_to_string(out.join("taxonomy.yml")).expect("the residue reads"),
+        "half of an artifact\n"
+    );
+}
+
+/// `--clear-killed` on an `--out` that is not there at all is not an error. The
+/// flag is a recovery a person passes without first checking whether they need
+/// it, and a publish into a fresh path is the ordinary case.
+#[test]
+fn clearing_a_killed_run_is_quiet_where_the_output_path_is_absent() {
+    let scratch = Scratch::new("clear-killed-absent");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+
+    let cleared = package::clear_killed(&root, &out).expect("the clear reads a path that is not there");
+    assert!(
+        matches!(cleared, package::Cleared::Nothing),
+        "the flag claims to have removed a path that was never there"
+    );
+    package::publish(&root, "acme/fixture", &out).expect("the same run publishes");
+    assert!(release::at(&out).is_ok(), "the publish left no record");
+}
+
 /// A directory that holds artifact-shaped files and no release record, and what
 /// the next run says about it, which is [#355]'s third Done-when clause.
 ///
