@@ -11,7 +11,9 @@ The first code meant to survive. The [Q1 spike](../spike) retired four risks and
 
 **Why the commands above carry no `--locked` and the two container commands below do.** `engine/Cargo.lock` is committed, and `--locked` refuses any cargo run that would rewrite it. That is what CI wants and what the one install route in the root `README.md` wants: on those, a rewritten lock means the run tested a dependency set nobody recorded, and it happens in silence. It is the opposite of what a maintainer's own loop wants, where rewriting the lock is the intended result of adding a dependency, so the loop above and the bless commands at the end of this file take no flag. The two container commands reproduce CI's floor, so they match CI. `tools/build-declaration-fixtures.sh` holds the sites where the flag is required and states this boundary as the reason it holds no others.
 
-Needs Rust 1.85 or later. The floor comes from `saphyr-parser`, which is on edition 2024. A distribution `cargo` older than that reports `feature edition2024 is required` and nothing else, so check the toolchain first when a clean checkout will not build.
+Needs Rust 1.90 or later. `engine/Cargo.toml` declares that under `[workspace.package]`, so `cargo` refuses an older toolchain by name rather than by symptom. The floor is the highest `rust-version` in the resolved graph, which is `ordered-float` at 1.90; `saphyr-parser` is on edition 2024 and holds a lower one, and a `cargo` older than 1.85 reports `feature edition2024 is required` and names no crate at all, so check the toolchain first when a clean checkout will not build.
+
+That number is stated in nine files, and `tools/engine-readme-fixtures.sh` is what holds them to one another and to the lock. Its first case compares the highest `rust-version` across `cargo metadata --locked` against the image tag the two commands below pin, and it needs no container and no build to do it. The case exists because that comparison was true of nobody for twelve days: `ordered-float` raised the graph's floor to 1.90 on 2026-08-26, both commands below exited 101 before compiling a line from that day on, and every gate in this repository stayed green through a change that edited both of them.
 
 ## Format, lint and test in a container
 
@@ -21,7 +23,7 @@ First the format and the lint, as root, because that is the only user `rustup` c
 
     docker run --rm -v "$(git rev-parse --show-toplevel)":/w:ro -w /w/engine \
       -e CARGO_HOME=/tmp/cargo -e CARGO_TARGET_DIR=/tmp/target \
-      rust:1.85-slim sh -c "rustup component add rustfmt clippy && cargo fmt --check && cargo clippy --all-targets --locked"
+      rust:1.90-slim sh -c "rustup component add rustfmt clippy && cargo fmt --check && cargo clippy --all-targets --locked"
 
 Only the clippy half of that line carries `--locked`. `cargo fmt` rejects the flag — `error: unexpected argument '--locked' found` — because it reads no manifest and resolves nothing, so there is no lock for it to rewrite.
 
@@ -30,13 +32,13 @@ Then the tests, as yourself, because three of them require a process that a read
     docker run --rm --user "$(id -u):$(id -g)" \
       -v "$(git rev-parse --show-toplevel)":/w:ro -w /w/engine \
       -e CARGO_HOME=/tmp/cargo -e CARGO_TARGET_DIR=/tmp/target \
-      rust:1.85-slim cargo test --locked
+      rust:1.90-slim cargo test --locked
 
 Run them in that order and read each exit status on its own. The first is red on a format or a lint finding and the second on a test, and a shell that joins the two with a pipe reports the wrong one. The second run reports the same target count, the same test count and the same `0 failed` as a bare `cargo test` on your host, and that equality is the thing to check rather than any number written here. A container run that reports fewer tests than your host is filtering something.
 
 **Why the second run is not root.** Three tests set a path unwritable and require the engine to refuse it. They are `a_document_that_cannot_be_written_leaves_every_other_document_as_it_was` and `an_unwritable_overlay_leaves_the_document_beside_it_untouched` in `headwater-cli`, and `tree::tests::a_read_only_target_is_named_and_nothing_is_written` in `headwater-scaffold`. Those three guard the all-or-nothing write path, the one whose failure leaves a reader's tree half migrated with nothing recording which half. Root writes through a `0444` mode, so under root the engine writes, `migrate --apply` exits 0 where the test requires 1, and all three report a defect the engine does not have. `--user` makes the process one that a read-only file can stop, and the tests then pass by refusing rather than by being skipped. Read the three names in the run output to see that they executed.
 
-**Why the first run is root.** `rustup component add` writes into `RUSTUP_HOME`, which is `/usr/local/rustup` in this image and is not writable by an arbitrary user. Neither `rust:1.85-slim` nor `rust:1.85` carries rustfmt or clippy, so the install cannot be dropped and no `--user` value can perform it. That is the whole reason for the split. Format and lint read the tree and write nothing outside the container, so root costs nothing in the first run.
+**Why the first run is root.** `rustup component add` writes into `RUSTUP_HOME`, which is `/usr/local/rustup` in this image and is not writable by an arbitrary user. Neither `rust:1.90-slim` nor `rust:1.90` carries rustfmt or clippy, so the install cannot be dropped and no `--user` value can perform it. That is the whole reason for the split. Format and lint read the tree and write nothing outside the container, so root costs nothing in the first run.
 
 **Why the split is not a filter.** `cargo test` stops at the first target that fails, and the two `headwater-cli` failures come before `headwater-scaffold` runs. So the old single command never reached the third of the three tests at all, and a reader who filtered the two away to get a green run would have been hiding the guard rather than running it. Nothing here excludes a test, and the third name appearing as `ok` is the evidence.
 
@@ -44,7 +46,7 @@ Run them in that order and read each exit status on its own. The first is red on
 
 The mount is read only, the target directory sits inside the container, and the second run is your own user, so neither run writes into the checkout and neither can leave a file you cannot delete. `git status` and `ls engine/target` after a run are the check on that. A container that leaves a root-owned `engine/target` behind has moved a failure into the next unrelated run rather than fixed one, and the symptom there is a `NotFound` out of `std::fs::copy`.
 
-**This command is not CI, in two ways that each cost a run.** CI runs `cargo clippy --all-targets --locked -- -D warnings` and this command does not run the `-D warnings` half, and must not. `[workspace.lints.clippy]` denies `manual_assert_eq`, which clippy at 1.85 does not know, so `-D warnings` here turns `unknown lint` into an error in every crate. Clippy at 1.85 also reports `nonminimal_bool` on code that the current stable passes. So a lint CI reports and this command does not is newer than 1.85, and one this command reports and CI does not is older than the fix. The message names the remedy in both directions. Second, the image carries no `python3`, so the two differential suites skip here, while CI sets `HEADWATER_STOCK_VALIDATOR` and `HEADWATER_SARIF_VALIDATOR` to `required` and fails instead of skipping.
+**This command is not CI, in two ways that each cost a run.** CI runs `cargo clippy --all-targets --locked -- -D warnings` and this command does not run the `-D warnings` half, and must not. `[workspace.lints.clippy]` denies `manual_assert_eq`, which clippy at 1.90 still does not know — it answers `unknown lint: clippy::manual_assert_eq, did you mean clippy::manual_assert` — so `-D warnings` here turns that into an error in every crate. Clippy at 1.90 also reports `nonminimal_bool` on `crates/generate/src/verb_index.rs`, which the current stable passes. Both were measured on 2026-09-07 in the pinned image, where the recipe above exits 0 and prints exactly those two warnings and nothing else. So a lint CI reports and this command does not is newer than 1.90, and one this command reports and CI does not is older than the fix. The message names the remedy in both directions. Second, the image carries no `python3`, so the two differential suites skip here, while CI sets `HEADWATER_STOCK_VALIDATOR` and `HEADWATER_SARIF_VALIDATOR` to `required` and fails instead of skipping.
 
 ## What is here
 
