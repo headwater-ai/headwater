@@ -100,7 +100,7 @@
 //! payload against no prior version, and `taxonomy migrate` is the verb that
 //! would fill that field in.
 
-use headwater_resolve::{Resolution, ResolveError, ResolveErrorKind, Source};
+use headwater_resolve::{FoundingRecord, Resolution, ResolveError, ResolveErrorKind, Source};
 use headwater_yaml::{Mapping, Span};
 use std::path::{Path, PathBuf};
 
@@ -120,6 +120,36 @@ pub const LOCK: &str = ".headwater/taxonomy.lock";
 /// whose `rules` disagrees with [`headwater_resolve::rules::RULE_SET`] is
 /// refused by [`LockError::RuleSet`] instead, because it has the field and the
 /// field is stale.
+///
+/// # Why [`Lock::founded`] did not move it to 4
+///
+/// The bar this token answers to is whether the two engines disagree about a
+/// verdict. A `format` bump is expensive in a way this file understates: [`read`]
+/// compares the token for inequality and orders nothing, so a bump makes every
+/// committed lock unreadable until its owner runs `taxonomy resolve` again.
+///
+/// Three properties make the founding record fit under 3, and each one is
+/// mechanical rather than a judgment.
+///
+/// - **An older engine reads a newer lock.** [`read`] takes the keys it names
+///   and ignores every other one, so a `founded` block it does not know about
+///   is a block it does not see. The digest is over the canonical taxonomy text
+///   and has never covered the header or any sibling block, so the block moves
+///   no digest either.
+/// - **A newer engine reads an older lock.** The block is absent and reads back
+///   as the empty list, which is the reading `taxonomy diff` already had for
+///   every lock ever written.
+/// - **The file of a corpus that founds nothing does not move.** [`render`]
+///   writes the block only where the list is non-empty, so this repository's own
+///   lock is byte-identical, and so is every adopter's whose overlays reach into
+///   declarations the base already carries.
+///
+/// What an older engine still does is report a founding that a newer one calls
+/// preserved, which is the direction that over-reports rather than the one that
+/// goes quiet. A `taxonomy resolve --check` run under an older engine over a
+/// lock that carries the block reports the lock as stale, because that
+/// comparison is over whole files. That is a red build with `taxonomy resolve`
+/// as its remedy, and not a lock nobody can read.
 pub const FORMAT: u32 = 3;
 
 /// One lock, read or about to be written.
@@ -141,6 +171,20 @@ pub struct Lock {
     /// against are the only guarantee a reader of it has, and a rule can move
     /// between the write and the read.
     pub rules: u32,
+    /// Every operation of this resolution that makes the key it addresses.
+    ///
+    /// The record `taxonomy diff` compares its candidate against. It is written
+    /// only where the resolution has one, so a lock of a corpus that founds
+    /// nothing is the file it always was, and an older lock that predates the
+    /// record reads back as an empty list.
+    ///
+    /// **An empty list is the conservative reading and not a claim.** Absent and
+    /// empty are one value here, so a lock written before this field existed
+    /// says "no founding was carried forward" and every founding the candidate
+    /// records is reported. That is what `taxonomy diff` did for every lock, so
+    /// the first diff after an upgrade reads as it used to and the resolve that
+    /// follows it writes the record.
+    pub founded: Vec<FoundingRecord>,
     /// The resolved taxonomy itself.
     pub taxonomy: Mapping,
     /// The adoption payload, as it was written, or `None` where the file
@@ -274,6 +318,7 @@ pub fn write(
             .collect(),
         digest: digest(&canonical),
         rules: headwater_resolve::rules::RULE_SET,
+        founded: resolution.founding_records(),
         taxonomy: resolution.taxonomy.clone(),
         adoption: adoption.cloned(),
     };
@@ -369,6 +414,28 @@ pub fn read(text: &str) -> Result<Lock, LockError> {
         })
         .unwrap_or_default();
 
+    // Absent and empty are one value here, and that is the reading `Lock::founded`
+    // argues for: a lock written before this record existed carries no founding
+    // forward, and `taxonomy diff` then reports every founding the candidate
+    // records, which is what it did for every lock before this field.
+    let founded = map
+        .get("founded")
+        .and_then(|node| node.value.as_seq())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.value.as_map())
+                .filter_map(|entry| {
+                    Some(FoundingRecord {
+                        source: text_of(entry, "source")?.to_string(),
+                        at: text_of(entry, "at")?.to_string(),
+                        founds: text_of(entry, "founds")?.to_string(),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
     // A block that is present and is not a mapping is malformed rather than
     // absent. The two read the same downstream and mean opposite things: one
     // adopter declared no debt, the other wrote a payload this cannot see.
@@ -391,6 +458,7 @@ pub fn read(text: &str) -> Result<Lock, LockError> {
         sources,
         digest: declared.to_string(),
         rules,
+        founded,
         taxonomy,
         adoption,
     })
@@ -589,6 +657,28 @@ lock:
             source.path, source.digest
         ));
     }
+    if !lock.founded.is_empty() {
+        out.push_str(
+            "
+# Every operation of an overlay that makes the key it addresses, rather than
+# reaching into a key the taxonomy under it declared. Nothing refuses one: an
+# `add` states a precondition about the addressed key alone, so two overlays
+# that write leaves nowhere near each other commute and the declared order
+# decides which of them creates the parent. `taxonomy diff` reads this record
+# against the record the candidate produces, so a founding this release
+# introduces is a break and one this release already carried is not.
+
+founded:
+",
+        );
+        for founding in &lock.founded {
+            out.push_str(&format!(
+                "    - source: {}\n      at: {}\n      founds: {}\n",
+                founding.source, founding.at, founding.founds
+            ));
+        }
+    }
+
     if let Some(adoption) = &lock.adoption {
         out.push_str(
             "
@@ -954,6 +1044,83 @@ tasks:
         assert!(laden.adoption.is_some());
     }
 
+    /// The founding record round trips, and a lock that predates it reads back
+    /// as the empty list rather than as a refusal.
+    ///
+    /// The three claims that let this field arrive without moving [`FORMAT`].
+    /// A resolution that founds nothing writes no block, so the file of every
+    /// corpus whose overlays reach declarations that are there does not move.
+    /// A lock with no block reads back empty, which is the reading
+    /// `taxonomy diff` had for every lock before the field existed. And the
+    /// block moves no digest, because the digest is over the taxonomy text and
+    /// an older reader takes the keys it names and ignores every other one.
+    #[test]
+    fn a_founding_record_round_trips_and_a_lock_without_one_reads_back_empty() {
+        let (sources, resolution) = resolved(VALID);
+        let text = write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("ok");
+        assert!(
+            !text.contains("\nfounded:\n"),
+            "a resolution that founds nothing writes no block: {text}"
+        );
+
+        let bare = read(&text).expect("the lock reads");
+        assert!(bare.founded.is_empty(), "{:?}", bare.founded);
+
+        let mut carrying = bare.clone();
+        carrying.founded = vec![FoundingRecord {
+            source: "docs/taxonomies/zz-a/bundle.yml".to_string(),
+            at: "add.kinds.ruling.voice".to_string(),
+            founds: "kinds.ruling".to_string(),
+        }];
+        let laden = read(&render(&carrying, &carrying.canonical())).expect("the lock reads");
+        assert_eq!(laden.founded, carrying.founded);
+        assert_eq!(
+            laden.digest, bare.digest,
+            "the record is not part of a resolution"
+        );
+    }
+
+    /// The record sits outside the authored span, where a `parts` split can see
+    /// it as generated.
+    ///
+    /// [`parts`] bounds the authored half between the `adoption` key and
+    /// [`GENERATED_TRAILER`]. A block written under `adoption` would land inside
+    /// that span, and a generated line would then be reported to a reviewer as
+    /// something a person edited.
+    #[test]
+    fn the_founding_record_is_generated_and_not_part_of_the_authored_block() {
+        let (sources, resolution) = resolved(VALID);
+        let payload = headwater_yaml::load("tasks: []\n").expect("it loads");
+        let payload = payload.value.as_map().expect("a mapping").clone();
+        let mut lock = read(
+            &write(
+                "acme/fixture",
+                "1.0.0",
+                &sources,
+                &resolution,
+                Some(&payload),
+            )
+            .expect("ok"),
+        )
+        .expect("reads");
+        lock.founded = vec![FoundingRecord {
+            source: "docs/taxonomies/zz-a/bundle.yml".to_string(),
+            at: "add.kinds.ruling.voice".to_string(),
+            founds: "kinds.ruling".to_string(),
+        }];
+
+        let text = render(&lock, &lock.canonical());
+        let (before, authored, _) = parts(&text);
+        assert!(
+            before.contains("\nfounded:\n"),
+            "the record is in the generated half above the payload: {text}"
+        );
+        assert!(
+            !authored.contains("founded:"),
+            "the authored span took a generated block: {authored}"
+        );
+    }
+
     /// An `adoption` key that is not a mapping is refused rather than skipped.
     ///
     /// Absent and unreadable mean opposite things. One adopter declared no
@@ -1253,6 +1420,7 @@ core:
                 .collect(),
             digest: digest(&canonical),
             rules: stale,
+            founded: resolution.founding_records(),
             taxonomy: resolution.taxonomy.clone(),
             adoption: None,
         };

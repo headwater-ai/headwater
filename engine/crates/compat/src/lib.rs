@@ -44,7 +44,7 @@ use headwater_check::Run;
 use headwater_generate::Plan;
 use headwater_graph::Graph;
 use headwater_resolve::migration::Step;
-use headwater_resolve::{Adopted, Founding};
+use headwater_resolve::{Adopted, FoundingRecord};
 use std::collections::{BTreeMap, BTreeSet};
 
 pub mod migrate;
@@ -213,23 +213,51 @@ impl Measured {
 /// `headwater_resolve`'s `tests/founded.rs` is where that is a case rather than
 /// a sentence: every overlay this repository selects reaches a declaration that
 /// is there.
-pub fn addressability(founded: &[Founding], sources: &[String], refused: Vec<Break>) -> Outcome {
+///
+/// # Why the quiet half takes two sides, like the other five
+///
+/// It read one side until
+/// [#386](https://github.com/headwater-ai/headwater/issues/386), and the cost of
+/// that was a verdict that depended on nothing the release under test did. A
+/// founding is a property of the application order rather than of a taxonomy:
+/// two overlays that write leaves near each other commute, and the consumer's
+/// declared order decides which of them creates the shared parent. So a
+/// consumer whose `bundles:` list happens to run the reaching overlay first
+/// carries a founding on every resolution, on both sides of every diff, and a
+/// one-sided reading reported it as a break of every release. The same consumer
+/// with the same two bundles listed the other way was told the same release
+/// preserved everything. One legal reordering of the consumer's own list, and
+/// the opposite version verdict.
+///
+/// The comparison the other five dimensions make is the one that answers the
+/// question this dimension is for: **did this release remove a declaration the
+/// overlay was addressing?** A founding the release the lock names already
+/// carried did not. A founding this release introduces did, and it is reported.
+///
+/// The identity is [`headwater_resolve::FoundingRecord::key`], the operation and
+/// the key it makes, and never the source path — the two sides read the same
+/// overlay out of two places, so the path differs on a founding that moved
+/// nothing.
+pub fn addressability(
+    before: &[FoundingRecord],
+    after: &[FoundingRecord],
+    refused: Vec<Break>,
+) -> Outcome {
+    let carried: BTreeSet<(&str, &str)> = before.iter().map(FoundingRecord::key).collect();
     let mut breaks = refused;
-    breaks.extend(founded.iter().map(|founding| Break {
-        at: format!(
-            "{} in {}",
-            founding.at,
-            sources
-                .get(founding.source)
-                .map(String::as_str)
-                .unwrap_or("a source this resolution does not name")
-        ),
-        was: format!(
-            "an address into `{}`, which the taxonomy under it declared",
-            founding.founds
-        ),
-        now: founding.sentence(),
-    }));
+    breaks.extend(
+        after
+            .iter()
+            .filter(|founding| !carried.contains(&founding.key()))
+            .map(|founding| Break {
+                at: format!("{} in {}", founding.at, founding.source),
+                was: format!(
+                    "an address into `{}`, which the taxonomy under it declared",
+                    founding.founds
+                ),
+                now: founding.sentence(),
+            }),
+    );
     Outcome::over(breaks)
 }
 

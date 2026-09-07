@@ -21,9 +21,10 @@
 //! # What this repository's own overlays make
 //!
 //! [`headwater_resolve::Founding`] is a reading that `taxonomy diff` turns into
-//! a broken `addressability` dimension, and a dimension that fires on a corpus
-//! that is right is a dimension nobody reads. So the claim that the reading is
-//! quiet here is a case rather than a sentence in a comment.
+//! a broken `addressability` dimension where the candidate adds one the lock
+//! did not already carry, and a dimension that fires on a corpus that is right
+//! is a dimension nobody reads. So the claim that the reading is quiet here is
+//! a case rather than a sentence in a comment.
 //!
 //! It is also the one place the claim can be made. Every fixture overlay in
 //! this engine is cut down to the declarations one case needs, so a fixture
