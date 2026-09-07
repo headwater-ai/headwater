@@ -76,9 +76,6 @@ struct Built {
     shape: Shape,
     taxonomy: Taxonomy,
     relations: Declarations,
-    /// The resolved taxonomy, for the one shelf member that no typed reader
-    /// carries: `layout`.
-    resolved: Mapping,
 }
 
 impl Built {
@@ -100,7 +97,6 @@ impl Built {
             shape,
             taxonomy,
             relations,
-            resolved: root.clone(),
         }
     }
 
@@ -129,7 +125,6 @@ impl Built {
             &self.taxonomy,
             &self.shape,
             &self.relations,
-            &self.resolved,
             series(lock, date),
         )
     }

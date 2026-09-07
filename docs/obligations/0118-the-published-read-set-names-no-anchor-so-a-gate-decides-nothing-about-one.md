@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[HW-OBL-0117](0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md) is the same gap in the cache key, and it is discharged. The key of an edge instance names the binding that the resolver returned, so two states of one anchor no longer share an entry.
+[HW-OBL-0117](0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md) is the same gap in the cache key, and it is discharged. The key of an edge instance names the binding that the resolver returned, so two states of one anchor take separate entries.
 
 The key is one of the two uses that [spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) gives the read set. The other one is the artifact that `headwater check --read-set` writes and that `headwater gate` reads back. This record is about the second use, and the fix for the first one does not reach it. A key is computed inside one run, where a resolver has already answered. An artifact is read by a later process over a later tree, which has no answer of any resolver in front of it.
 
