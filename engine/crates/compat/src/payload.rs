@@ -24,11 +24,68 @@
 //! source this repository does not hold is reported and never refused: the
 //! consumer's old taxonomy is the base under its own overlays, so a step that is
 //! right for the publisher can be vacuous here.
+//!
+//! # Two taxonomies, and the source half is held against both
+//!
+//! [`Accounted::declared`] reads the taxonomy this repository *takes*, which is
+//! the one every `from` of the payload was written against.
+//! [`Accounted::stands`] reads the other one: the candidate, resolved under this
+//! repository's own selection and overlays, which is the taxonomy an adopter
+//! holds after the upgrade. A step whose `from` that taxonomy still declares is
+//! a step that did not happen for this consumer.
+//!
+//! `taxonomy publish` may not refuse such a step and this end must
+//! ([#388](https://github.com/headwater-ai/headwater/issues/388)). A bundle is
+//! add-only, so a value the base declares is declared under every selection, and
+//! a value only a bundle declares moved for the consumers who selected that
+//! bundle and for no other. The publisher holds one taxonomy and cannot state
+//! the condition; this end holds both and reads it.
 
 use headwater_census::census::Census;
-use headwater_resolve::migration::{Payload, Step, Subject};
-use headwater_resolve::Adopted;
+use headwater_resolve::migration::{declares, Payload, Step, Subject};
+use headwater_resolve::{Adopted, Resolution};
 use std::collections::BTreeSet;
+
+/// The sentence a report states about a step whose source the taxonomy this
+/// artifact gives this repository still declares.
+///
+/// Here rather than at each caller, because `taxonomy diff` and
+/// `taxonomy migrate` both say it and two spellings of one condition would read
+/// as two conditions.
+pub const STANDS: &str = "the taxonomy this artifact gives this repository still declares the old \
+                          value, so this step does not complete here";
+
+/// Whether the taxonomy this artifact gives *this* consumer still declares the
+/// value a step says moved.
+///
+/// Two readings and not one, and the second was measured rather than reasoned
+/// to. [`headwater_resolve::migration::declares`] over the resolved candidate is
+/// the first, and alone it is wrong in one direction that four committed cases
+/// met at once: an `add` addressed *below* a key the new base no longer declares
+/// grafts that key back into the tree, so a rename the publisher really
+/// performed reads as a value that still stands. `kinds.decision.language` in an
+/// adopter's overlay does exactly that to a base that renamed `decision`.
+///
+/// That graft is [`headwater_resolve::Founding`], the report measures it on the
+/// `addressability` line, and an `overlay_address` step is the remedy for it. It
+/// is a different condition from this one, so a value that no source declares
+/// and an address merely created does not stand.
+pub fn stands(candidate: &Resolution, subject: &Subject, from: &str) -> bool {
+    if !declares(&candidate.taxonomy, subject, from) {
+        return false;
+    }
+    // The key that holds the value. A facet value lives in a `values` list that
+    // no address founds, so the key is the facet's own declaration: an overlay
+    // that grafts `facets.status` back is the same graft over the same reading.
+    let held = match subject {
+        Subject::Kind => format!("kinds.{from}"),
+        Subject::FacetValue { facet } => format!("facets.{facet}"),
+        Subject::OverlayAddress => from.to_string(),
+    };
+    !candidate.founded.iter().any(|founding| {
+        held == founding.founds || held.starts_with(&format!("{}.", founding.founds))
+    })
+}
 
 /// One payload, against one corpus.
 #[derive(Clone, Debug)]
@@ -60,6 +117,9 @@ pub struct Accounted {
     pub subjects: BTreeSet<String>,
     /// Whether the taxonomy this repository takes declares the value at all.
     pub declared: bool,
+    /// Whether the taxonomy this artifact gives *this* repository still
+    /// declares the value. See the module comment.
+    pub stands: bool,
     pub task: Option<String>,
     pub because: String,
 }
@@ -76,6 +136,7 @@ pub fn account(
     census: &Census,
     overlay: &Adopted,
     declares: impl Fn(&Step) -> bool,
+    stands: impl Fn(&Step) -> bool,
     moved: &BTreeSet<String>,
 ) -> Accounting {
     let steps: Vec<Accounted> = payload
@@ -88,6 +149,7 @@ pub fn account(
             remedies: step.subject.remedies(),
             subjects: crate::subjects(step, census, overlay),
             declared: declares(step),
+            stands: stands(step),
             task: step.apply.task().map(str::to_string),
             because: step.because.clone(),
         })
@@ -180,15 +242,25 @@ impl Accounting {
 impl Accounted {
     /// What this step reaches in this corpus, as one sentence.
     ///
-    /// Three sentences rather than a count, because zero has two meanings and a
+    /// Four sentences rather than a count, because zero has two meanings and a
     /// consumer acts differently on each. See the module comment.
+    ///
+    /// The vacuous arm stays first. A step whose source this repository never
+    /// held migrates nothing here whatever the artifact declares, and that is a
+    /// weaker statement than the one below it rather than a competing one.
+    /// [`Accounted::stands`] comes next, ahead of both counts, because a step
+    /// that did not happen for this consumer is what a reader acts on first: the
+    /// count of documents under it is the size of the damage rather than the
+    /// reason.
     pub fn reach(&self) -> String {
-        match (self.declared, self.subjects.len()) {
-            (false, _) => "the taxonomy this repository takes declares no such value, so this \
-                           step migrates nothing here"
+        match (self.declared, self.stands, self.subjects.len()) {
+            (false, _, _) => "the taxonomy this repository takes declares no such value, so this \
+                              step migrates nothing here"
                 .to_string(),
-            (true, 0) => self.subject.reached_nothing().to_string(),
-            (true, count) => self.subject.reached(count),
+            (true, true, 0) => STANDS.to_string(),
+            (true, true, count) => format!("{STANDS}, and {}", self.subject.reached(count)),
+            (true, false, 0) => self.subject.reached_nothing().to_string(),
+            (true, false, count) => self.subject.reached(count),
         }
     }
 }

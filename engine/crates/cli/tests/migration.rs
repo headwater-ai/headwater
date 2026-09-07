@@ -436,6 +436,23 @@ impl Root {
         std::fs::read_to_string(self.at.join(path)).expect("the document reads")
     }
 
+    /// Write one document that takes the bundle-declared `decision_register`,
+    /// and return the path it was written to.
+    ///
+    /// The three committed fixture documents are `decision`, which the base
+    /// declares, so no case built on them alone reaches a document whose kind
+    /// only a bundle declares. `shelves.spec_series` is heterogeneous and
+    /// discriminated by `doc_type`, so this document holds its kind in a
+    /// front-matter key — which is the byte a mechanical `kind` step rewrites.
+    fn register(&self) -> &'static str {
+        let path = "docs/spec/09-the-register.md";
+        let at = self.at.join(path);
+        std::fs::create_dir_all(at.parent().expect("it has a parent"))
+            .expect("the shelf directory is there");
+        std::fs::write(&at, REGISTER).expect("the document writes");
+        path
+    }
+
     /// Move the consumer declaration onto `version` and re-resolve.
     ///
     /// `taxonomy migrate` writes documents, the overlay and the lock's
@@ -1841,4 +1858,174 @@ fn an_unwritable_overlay_leaves_the_document_beside_it_untouched() {
         "the document is in the same write set as the overlay, so neither moved"
     );
     assert_eq!(root.read(".headwater/overlay.yml"), overlay);
+}
+
+// ---------------------------------------------------------------------------
+// Which taxonomy the *source* half of a step is held against, for a consumer.
+// ---------------------------------------------------------------------------
+
+/// The one document of these cases that takes a kind only a bundle declares.
+///
+/// `doc_type` is the discriminator of `shelves.spec_series`, so the kind sits
+/// in a front-matter key and a mechanical `kind` step rewrites it. Every
+/// sentence of the body is one line and carries no contraction, so the house
+/// language regime the copied overlay binds to this kind reports nothing.
+const REGISTER: &str = "---\nid: HW-REG-the-register\ntitle: The register of settled \
+                        decisions\nstatus: current\nstatus_since: 2026-08-01\nlast_verified: \
+                        2026-08-01\nsummary: The one document of this scratch corpus that \
+                        records what the corpus settled.\ndoc_type: \
+                        decision_register\nsequence: 9\nprovenance:\n  warrant: asserted\n  \
+                        agency: model\n  evidence_basis: unevidenced\n---\n\n# 9 — The register \
+                        of settled decisions\n\nThis document takes its kind from the `doc_type` \
+                        key above.\n\nA bundle of the package declares that kind, and the base \
+                        package declares no such kind.\n";
+
+/// The line a report prints for a step whose source the artifact still declares
+/// for this repository.
+const STANDS: &str = "the taxonomy this artifact gives this repository still declares the old \
+                      value, so this step does not complete here";
+
+/// The line a report prints for a step that really did move and reached nothing.
+const NO_OP: &str = "no document of this corpus carries the old value, so this step is a no-op \
+                     here";
+
+/// The state [#388](https://github.com/headwater-ai/headwater/issues/388) is
+/// about: a step the publisher may ship and this consumer must not apply.
+///
+/// The bundle is left declaring `decision_register` and the payload says it
+/// became `specification`, which
+/// [`a_source_only_a_bundle_declares_is_not_the_publishers_to_refuse`] measures
+/// as a publish this end may not refuse. This repository selects that bundle,
+/// so the taxonomy the artifact gives it still declares the old value: the step
+/// did not happen here. Before this case the report said only that no document
+/// of the corpus carried the value, which is true of the corpus and silent
+/// about the step.
+///
+/// The absent line is asserted beside two present ones, so the case cannot pass
+/// on a report that never reached the step, on a payload nothing selected, or
+/// on a run that failed.
+#[test]
+fn a_step_whose_source_this_selection_still_declares_is_reported_by_diff() {
+    let root = Root::new("bundle-source-stands-diff");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate_of(&[], Some(&register_payload("specification")));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let ran = root.diff("2.0.0");
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        ran.out.contains("kind decision_register"),
+        "the report reached the step: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("remedies classification"),
+        "the report accounted the step: {ran:?}"
+    );
+    assert!(ran.out.contains(STANDS), "{ran:?}");
+    assert!(
+        !ran.out.contains(NO_OP),
+        "the no-op sentence is what this state was being told as: {ran:?}"
+    );
+}
+
+/// The same payload subject, the same selection, and a rename the artifact
+/// really performed.
+///
+/// One edit apart from the case above: the bundle moves the kind too, so the
+/// taxonomy this repository would take declares no `decision_register` and the
+/// step did happen here. This is the direction that must keep its old sentence,
+/// and without it the case above is satisfied by printing the new sentence over
+/// every step.
+///
+/// The issue asked for "a root that selects no bundle" here. This fixture has
+/// none: its overlay founds five kinds under the shelves of `design-spec`, so
+/// dropping the bundle leaves twelve validation refusals and dropping every
+/// bundle leaves an identifier scheme with no pattern. One bundle edit reaches
+/// the same opposite direction and needs no second consumer declaration.
+#[test]
+fn a_step_whose_source_this_selection_no_longer_declares_keeps_its_sentence() {
+    let root = Root::new("bundle-source-moved-diff");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.in_bundle("design-spec", &BUNDLE_KIND);
+    root.candidate_of(&[], Some(&register_payload("ruling_register")));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let ran = root.diff("2.0.0");
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        ran.out.contains("kind decision_register"),
+        "the report reached the step: {ran:?}"
+    );
+    assert!(ran.out.contains(NO_OP), "{ran:?}");
+    assert!(
+        !ran.out.contains(STANDS),
+        "the source moved for this selection: {ran:?}"
+    );
+}
+
+/// The write the condition stops, measured against the bytes of a document.
+///
+/// The corpus carries one document that takes the bundle-declared kind, so the
+/// step is mechanical and reaches a front-matter key. `--apply` counted it
+/// mechanical, rewrote the key, moved the lock's `adoption` block and exited 0,
+/// which is a corpus typed `specification` under a taxonomy that declares
+/// `decision_register` and no `specification` on that shelf. The refusal is the
+/// whole run rather than the one step, because a payload half of which does not
+/// apply here leaves the corpus in neither version.
+#[test]
+fn an_apply_refuses_a_step_whose_source_this_selection_still_declares() {
+    let root = Root::new("bundle-source-stands-apply");
+    let path = root.register();
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate_of(&[], Some(&register_payload("specification")));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let before = root.read(path);
+    assert!(
+        before.contains("doc_type: decision_register"),
+        "the document takes the bundle-declared kind"
+    );
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.out.contains("kind decision_register"),
+        "the run reached the step: {ran:?}"
+    );
+    assert!(ran.out.contains(STANDS), "{ran:?}");
+    assert!(
+        ran.err.contains("would rewrite"),
+        "the refusal says what it stopped: {ran:?}"
+    );
+    assert_eq!(root.read(path), before, "no byte of the document moved");
+    assert!(
+        !root.read(".headwater/taxonomy.lock").contains("adoption:"),
+        "a refused run records no migration: {ran:?}"
+    );
+}
+
+/// The same document, the same subject, and the rename the artifact performed.
+///
+/// This is the anchor that the refusal above is a condition rather than a
+/// blanket. The bundle moves the kind, so the step did happen for this
+/// selection, and `--apply` writes the one key it names.
+#[test]
+fn an_apply_writes_a_bundle_declared_kind_the_artifact_really_moved() {
+    let root = Root::new("bundle-source-moved-apply");
+    let path = root.register();
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.in_bundle("design-spec", &BUNDLE_KIND);
+    root.candidate_of(&[], Some(&register_payload("ruling_register")));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        root.read(path).contains("doc_type: ruling_register"),
+        "the step wrote the one key it names: {ran:?}"
+    );
+    assert!(
+        !ran.out.contains(STANDS),
+        "the source moved for this selection: {ran:?}"
+    );
 }
