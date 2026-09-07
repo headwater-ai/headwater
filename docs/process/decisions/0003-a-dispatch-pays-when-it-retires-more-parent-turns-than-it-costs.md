@@ -1,5 +1,5 @@
 ---
-id: HW-DR-0062
+id: HW-PD-0003
 status: current
 status_since: 2026-09-07
 summary: "The unit of orchestration cost is one parent turn at full context, so a dispatch is worth making only when it retires more parent turns than the one it spends, which the integrator passes and a fresh agent per poll fails."
@@ -21,7 +21,7 @@ Pull request #685 measured the orchestrator's polling. Seventy-six `gh pr view` 
 
 The obvious remedy fails the same measurement. A fresh agent dispatched to make one poll is a parent turn at the same context, plus a prompt, and it returns a report that enters the context too. Delegating a cheap call does not save the turn that delegates it.
 
-An earlier design argued that decomposing the command into agent definitions reduced parent turns. It does not. It reduces the size of the context each turn re-reads, which is a different quantity. [The evaluation](../evaluations/the-build-order-as-a-multi-agent-system.md) records both.
+An earlier design argued that decomposing the command into agent definitions reduced parent turns. It does not. It reduces the size of the context each turn re-reads, which is a different quantity. [The evaluation](../../evaluations/the-build-order-as-a-multi-agent-system.md) records both.
 
 ## Decision
 

@@ -15,7 +15,7 @@ Run the verb:
 
     headwater new <kind> --title "<the title>"
 
-It writes the file, prints the origin of every value, and prints the relations the document may declare and this run did not. The concrete kinds are `acceptance_criterion`, `decision`, `decision_register`, `design_spec`, `evaluation`, `interface_contract`, `obligation_record`, `obligation_register`, `probe`, `probe_result`, `probe_transcript`, `requirement`, `review_prompt`, `review_record`, `specification` and `tutorial`.
+It writes the file, prints the origin of every value, and prints the relations the document may declare and this run did not. The concrete kinds are `acceptance_criterion`, `decision`, `decision_register`, `design_spec`, `evaluation`, `interface_contract`, `obligation_record`, `obligation_register`, `probe`, `probe_result`, `probe_transcript`, `process_decision`, `requirement`, `review_prompt`, `review_record`, `specification` and `tutorial`.
 
 A `Write` of a new document under `docs/` is refused by the `PreToolUse` hook, which names this verb. An `Edit` of a document that already exists passes, and that is the repair path: scaffold first, then edit the file the verb wrote.
 
@@ -73,6 +73,6 @@ Neither is worked around. Hand both to the `headwater-taxonomy` skill, which own
 
 Errors must reach zero, which is what the commit gate holds. `headwater check --fix` writes the corrections the engine derives without judgment — a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal half — and it leaves every finding whose remedy is a rewrite. Read the diff.
 
-Prose under `docs/spec/`, `docs/decisions/`, `docs/evaluations/`, `docs/obligations/`, `docs/interfaces/`, `docs/requirements/`, `docs/acceptance-criteria/` and `docs/tutorials/` answers to the `ste_house` language regime. Invoke the `ste-editor` skill for the rules that no check reads.
+Prose under `docs/spec/`, `docs/decisions/`, `docs/evaluations/`, `docs/obligations/`, `docs/interfaces/`, `docs/requirements/`, `docs/acceptance-criteria/`, `docs/tutorials/` and `docs/process/decisions/` answers to the `ste_house` language regime. Invoke the `ste-editor` skill for the rules that no check reads.
 
 Adding or removing a document under `docs/` moves three recorded fixtures. Run `cargo test --workspace --manifest-path engine/Cargo.toml`, re-record with `HEADWATER_BLESS=1`, and read the diff: `check --strict` and `generate --check` both pass while all three are stale.

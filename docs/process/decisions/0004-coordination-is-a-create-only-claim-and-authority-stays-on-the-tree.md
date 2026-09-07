@@ -1,5 +1,5 @@
 ---
-id: HW-DR-0063
+id: HW-PD-0004
 status: current
 status_since: 2026-09-07
 summary: "Workers coordinate through create-only claim directories that every worktree can reach and the parent never relays, while the merge veto and a re-verification stay messages from the parent, because a peer's message carries no owner authority."
@@ -19,7 +19,7 @@ provenance:
 
 The orchestrator of the measured run sent 67 messages, and they were of two kinds. Most were authority: a branch sent back with a named defect, or a delta sent for re-verification. A few were coordination: a warning to one worker that another was about to regenerate the same derived artifact. The command already ruled that a worker claims its issue through the board and never through a coordinator, because a coordinator holding N workers' states re-reads its whole context on every message it routes. The collision warnings were that failure in miniature, and the parent was relaying them by hand.
 
-[HW-DR-0054](0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md) already holds a claim store for identifiers, one file per claim, written once, with an `add/add` conflict when two branches claim one value. That shape is right for allocation and wrong for scheduling, because a merge-time conflict is too late to order the merges and the merge driver on `.gitattributes` already refuses a two-sided regenerate. The value of knowing that two branches touch one artifact is at dispatch and at merge ordering.
+[HW-DR-0054](../../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md) already holds a claim store for identifiers, one file per claim, written once, with an `add/add` conflict when two branches claim one value. That shape is right for allocation and wrong for scheduling, because a merge-time conflict is too late to order the merges and the merge driver on `.gitattributes` already refuses a two-sided regenerate. The value of knowing that two branches touch one artifact is at dispatch and at merge ordering.
 
 One session demonstrated the other half of this ruling. It declined to edit `CLAUDE.md` on a peer session's reasoning, because a peer's message carries no owner authority, and the refusal was correct. In a mesh of agents every message has to be adjudicated for provenance. On a tree, authority flows down and provenance is never in question.
 

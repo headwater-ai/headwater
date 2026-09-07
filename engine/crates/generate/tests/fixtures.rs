@@ -655,24 +655,27 @@ fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() 
             "docs/probes/README.md",
             "docs/reviews/README.md",
             "docs/tutorials/README.md",
+            "docs/process/decisions/README.md",
             "docs/spec/09-open-questions.md",
             "docs/interfaces/README.md",
             ".headwater/export.json",
             ".headwater/nav.yml",
             descriptor::PATH
         ],
-        "this repository writes an index for each of its nine shelves that hold a \
+        "this repository writes an index for each of its ten shelves that hold a \
          document, then the redirect map, the verb index, the graph export, the \
          site navigation and the descriptor, in that order"
     );
-    // One declared shelf that holds no document, one declared projection whose
-    // source this corpus does not hold, and the register. Nothing is passed
-    // over: a projection that produced no file states a reason. The other four
-    // are the declarable kinds this engine does not emit and this corpus does
-    // not declare — `relation_view`, `agent_rules`, `template` and
-    // `transcription` — which a run states whether or not a declaration named
-    // them, because the reason is a property of this engine rather than of the
-    // corpus.
+    // One declared shelf that holds no document (`specifications`; the
+    // `process_decisions` shelf held none for one commit, which put this
+    // literal at 8 and left `docs/process/decisions/README.md` out of the list
+    // above), one declared projection whose source this corpus does not hold,
+    // and the register. Nothing is passed over: a projection that produced no
+    // file states a reason. The other four are the declarable kinds this
+    // engine does not emit and this corpus does not declare — `relation_view`,
+    // `agent_rules`, `template` and `transcription` — which a run states
+    // whether or not a declaration named them, because the reason is a
+    // property of this engine rather than of the corpus.
     assert_eq!(
         plan.unwritten.len(),
         7,

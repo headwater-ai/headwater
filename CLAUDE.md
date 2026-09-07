@@ -1,6 +1,6 @@
 # Headwater authoring conventions
 
-This file holds only what every agent in this repository must obey, because every agent pays for it on every dispatch ([HW-DR-0060](docs/decisions/0060-orchestration-prose-has-one-owner-per-sentence.md)). How each rule is enforced lives in [DEVELOPING.md](DEVELOPING.md) under *What holds this repository*.
+This file holds only what every agent in this repository must obey, because every agent pays for it on every dispatch ([HW-PD-0001](docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md)). How each rule is enforced lives in [DEVELOPING.md](DEVELOPING.md) under *What holds this repository*.
 
 ## Work in a worktree
 
@@ -14,7 +14,7 @@ Write it as `headwater` in lower case only when it is an identifier: the CLI ver
 
 ## No arbitrary line breaks in Markdown
 
-Do not hard-wrap Markdown source. Write each paragraph, list item, and blockquote paragraph as one logical line; editors and renderers reflow as appropriate. Never insert a line break for line-length reasons, and remove such breaks when you edit a file that has them.
+Do not hard-wrap Markdown source. Write each paragraph, list item, and blockquote paragraph as one logical line. Never insert a line break for line-length reasons, and remove such breaks when you edit a file that has them.
 
 Line breaks are structural only: blank lines between blocks, one line per list item or table row, fenced/indented code kept verbatim. A deliberate hard break inside a paragraph (rare) uses a trailing backslash, not two spaces.
 
@@ -48,7 +48,7 @@ One harness hook you will meet: `.claude/hooks/write.sh` refuses a raw `Write` o
 
 `reason` is `false_positive` where the rule is wrong and `accepted_deviation` where the rule is right and the text stands anyway. `scope` is `file` or `block`. `until` is required, so no exception is permanent. The second hatch is for debt: `headwater infer --owner <name> --write` records `(document, rule)` pairs under a task in the `adoption` block of `.headwater/taxonomy.lock`, and a pending finding does not fail a strict run.
 
-**Writing governed prose.** Invoke the `ste-editor` skill before you rewrite a document under `docs/spec/`, `docs/decisions/`, `docs/evaluations/`, `docs/obligations/`, `docs/interfaces/`, `docs/requirements/`, `docs/acceptance-criteria/` or `docs/tutorials/`, and run `headwater check` on the result. The skill carries the rules that no check reads.
+**Writing governed prose.** Invoke the `ste-editor` skill before you rewrite a document under `docs/spec/`, `docs/decisions/`, `docs/evaluations/`, `docs/obligations/`, `docs/interfaces/`, `docs/requirements/`, `docs/acceptance-criteria/`, `docs/tutorials/` or `docs/process/decisions/`, and run `headwater check` on the result. The skill carries the rules that no check reads.
 
 ## The seven skills, and when each one loads
 

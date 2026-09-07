@@ -447,6 +447,19 @@ kinds:
         - "Run identity"
         - Events
     voice: narrative
+  process_decision:
+    identifier:
+      scheme: process_decision_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: rationale
+    sections:
+      require:
+        - Context
+        - Decision
+        - Consequences
+    voice: declarative
   requirement:
     facets:
       require:
@@ -688,6 +701,12 @@ shelves:
     kind: probe
     path: "docs/probes/**"
     title: Probes
+  process_decisions:
+    homogeneous: true
+    kind: process_decision
+    layout: "{seq:04d}-{slug}.md"
+    path: "docs/process/decisions/**"
+    title: "Process decisions"
   requirements:
     homogeneous: true
     kind: requirement
@@ -742,6 +761,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "{namespace}-PROBE-{slug}"
+  process_decision_id:
+    allocation: reconcile-first
+    namespace: HW
+    pattern: "{namespace}-PD-{seq:04d}"
   register_id:
     allocation: minted-once
     namespace: HW
@@ -795,6 +818,7 @@ projections:
       - probes
       - reviews
       - tutorials
+      - process_decisions
     output: "{shelf}/README.md"
   - kind: shelf_sections
     for:
