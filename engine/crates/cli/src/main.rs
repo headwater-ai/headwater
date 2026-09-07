@@ -1131,9 +1131,6 @@ fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
         &loaded.taxonomy,
         &loaded.shape,
         &loaded.relations,
-        // The resolved taxonomy, for the one member of a shelf that no typed
-        // reader carries. See `headwater_scaffold::declared`.
-        &loaded.bound.taxonomy,
         headwater_audit::Series {
             reading,
             recorded,

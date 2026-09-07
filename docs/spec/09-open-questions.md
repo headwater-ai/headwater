@@ -10,7 +10,7 @@ relations:
 
 # Decision records
 
-55 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+56 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -231,3 +231,7 @@ relations:
 ## A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile
 
 [HW-DR-0056](../decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md) — No kind in the base package or in any bundle binds a language regime. A package that set the default value would change nothing, so the doctrine page of the starter kit carries the promise. (asserted, and no human has accepted it)
+
+## A shelf layout is the second half of what the identifier claim store covers
+
+[HW-DR-0057](../decisions/0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md) — The claim store covers an identifier where the file name does not determine it: a shelf that declares a layout, or a scheme that reconciles

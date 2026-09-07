@@ -49,8 +49,9 @@
 //! # The two rules, and the direction that is deliberately not one
 //!
 //! `identifier.claim.missing` is an error and it carries a patch: an identifier
-//! the corpus spends under a `reconcile-first` scheme with no file claiming it.
-//! The correction is one file whose content is the document's own path, with no
+//! the corpus spends on a shelf the store covers with no file claiming it.
+//! [`takes_a_claim`] is the predicate that decides which those are. The
+//! correction is one file whose content is the document's own path, with no
 //! judgment in it, which is the [fixability](../../../../docs/spec/12-check-layer.md#fixability)
 //! bar.
 //!
@@ -68,7 +69,8 @@ use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
 use crate::patch::Patch;
 use crate::scope::{CorpusCheck, CorpusView};
-use crate::shape::Shape;
+use crate::shape::{IdentifierScheme, Shape};
+use headwater_census::shelves::{Shelf, Taxonomy};
 use headwater_graph::index::{Defect, Index};
 use std::path::Path;
 
@@ -76,11 +78,46 @@ use std::path::Path;
 /// root is where documents live, and no claim is a document.
 pub const STORE: &str = ".headwater/ids";
 
-/// The allocation a scheme declares for the store to have a job at all. Every
-/// scheme that declares it patterns a `{seq:04d}`, and every scheme that does
-/// not patterns a `{slug}`, so a collision under one of the others renames a
-/// file and git reports it.
+/// The allocation a scheme declares that the store covers whatever its shelf
+/// says. See [`takes_a_claim`], which is the predicate and the reason.
 pub const RECONCILE_FIRST: &str = "reconcile-first";
+
+/// Whether an identifier minted onto this shelf under this scheme takes a claim
+/// file.
+///
+/// **The store has a job wherever the file name does not determine the
+/// identifier**, because that is exactly the case where two branches minting
+/// one value land at two paths and git merges both without a word. Two
+/// declarations put a corpus in that state, and the predicate is their union.
+///
+/// **A shelf that declares a `layout`.** The name is written from a template,
+/// so two documents holding one identifier can differ in a segment the
+/// identifier does not carry. `spec_series` of this repository declares
+/// `{sequence:02d}-{slug}.md`, and two branches that both mint
+/// `HW-SPEC-the-replay-contract` at sequences 17 and 18 write two files, both
+/// merge clean, and `identifier.claimed_twice` reports the pair on `main` after
+/// the second merge, where no gate is looking.
+///
+/// **A scheme that allocates `reconcile-first`.** The value is a sequence read
+/// off the tree, so every branch cut from one `main` mints the same one, and a
+/// pattern that carries no slug puts none of it in the file name. The fixture
+/// taxonomy of `headwater_scaffold` declares that shape — `decisions` names its
+/// files from the slug alone and `decision_id` patterns `DR-{namespace}-{seq}`
+/// — so the layout half alone would take coverage away from a corpus that has
+/// it.
+///
+/// [HW-DR-0054](../../../../docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)
+/// ruled the second half and declined the first.
+/// [HW-DR-0057](../../../../docs/decisions/0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md)
+/// adds the first, which is a widening and takes nothing away.
+///
+/// This is the one reader of that predicate. `headwater_scaffold` asks it once,
+/// at plan time, and carries the answer on the plan, so the writer of a claim
+/// and the rule that reports a missing one can not disagree about what the
+/// store covers.
+pub fn takes_a_claim(shelf: &Shelf, scheme: &IdentifierScheme) -> bool {
+    shelf.layout.is_some() || scheme.allocation.as_deref() == Some(RECONCILE_FIRST)
+}
 
 pub const MISSING: &str = "identifier.claim.missing";
 pub const STALE: &str = "identifier.claim.stale";
@@ -256,18 +293,18 @@ fn contended(identity: &[headwater_graph::index::Reported]) -> Vec<&str> {
     out
 }
 
-/// An identifier the corpus spends under a `reconcile-first` scheme that no
-/// file of the store claims.
+/// An identifier the corpus spends on a shelf the store covers that no file of
+/// the store claims.
 pub struct Missing<'a> {
     index: &'a Index,
-    /// Each kind that mints under a `reconcile-first` scheme, and the scheme's
-    /// name. Computed once from the taxonomy, as [`crate::identifier`] does.
+    /// Each kind whose shelf takes claims, and the name of the scheme it mints
+    /// under. Computed once from the taxonomy, as [`crate::identifier`] does.
     schemes: Vec<(String, String)>,
 }
 
 impl<'a> Missing<'a> {
-    pub fn over(shape: &Shape, index: &'a Index) -> Self {
-        let schemes = reconcile_first(shape);
+    pub fn over(shape: &Shape, taxonomy: &Taxonomy, index: &'a Index) -> Self {
+        let schemes = claiming(shape, taxonomy);
         Missing { index, schemes }
     }
 
@@ -279,17 +316,30 @@ impl<'a> Missing<'a> {
     }
 }
 
-/// Each kind whose scheme allocates `reconcile-first`, with that scheme's name.
-fn reconcile_first(shape: &Shape) -> Vec<(String, String)> {
+/// Each kind [`takes_a_claim`] admits, with the name of the scheme it mints
+/// under.
+///
+/// A kind on several shelves takes a claim where any one of them admits it: the
+/// store covers an identifier the moment one placement of it can be renamed
+/// away from a collision. A kind on no shelf at all still reaches the
+/// allocation half, because a scheme that reconciles over a tree collides
+/// wherever its documents stand.
+fn claiming(shape: &Shape, taxonomy: &Taxonomy) -> Vec<(String, String)> {
     let mut out: Vec<(String, String)> = shape
         .kinds
         .iter()
         .filter_map(|kind| {
             let scheme = shape.identifier_scheme_of(&kind.name)?;
-            match scheme.allocation.as_deref() == Some(RECONCILE_FIRST) {
-                true => Some((kind.name.clone(), scheme.name.clone())),
-                false => None,
-            }
+            let shelves: Vec<&Shelf> = taxonomy
+                .shelves
+                .iter()
+                .filter(|shelf| shelf.carries(&kind.name))
+                .collect();
+            let claims = match shelves.is_empty() {
+                true => scheme.allocation.as_deref() == Some(RECONCILE_FIRST),
+                false => shelves.iter().any(|shelf| takes_a_claim(shelf, scheme)),
+            };
+            claims.then(|| (kind.name.clone(), scheme.name.clone()))
         })
         .collect();
     out.sort();
