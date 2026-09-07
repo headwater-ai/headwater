@@ -2983,13 +2983,17 @@ fn out_of(scratch: &Scratch) -> PathBuf {
 ///
 /// The precondition is what makes the undo total, so it is the one thing here
 /// that a fix to the undo must not weaken. A publish into a directory somebody
-/// else is using is refused before anything is read. [`release::at`] cannot
-/// tell this caller's own file from what a killed publish leaves — neither
-/// carries a record — so the refusal says so rather than picking one. [#355]
-/// is the case that draws the line this test sits beside: a directory that
-/// does carry a record gets the original message back, unconditionally.
+/// else is using is refused before anything is read. [`release::at`] could never
+/// tell this caller's own file from what a killed publish left, because neither
+/// carries a record, and [#485] closed the second half of that pair rather than
+/// sharpening the reading: a publish assembles the artifact beside `--out` and
+/// moves it there in one step, so this is the caller's file and the refusal now
+/// says so. It still deletes nothing. [#355] is the case that draws the line
+/// this test sits beside: a directory that does carry a record gets the original
+/// message back, unconditionally.
 ///
 /// [#355]: https://github.com/headwater-ai/headwater/issues/355
+/// [#485]: https://github.com/headwater-ai/headwater/issues/485
 #[test]
 fn an_output_directory_that_holds_a_file_is_refused_and_the_file_survives() {
     let scratch = Scratch::new("occupied-out");
@@ -3005,8 +3009,8 @@ fn an_output_directory_that_holds_a_file_is_refused_and_the_file_survives() {
         "the refusal no longer names what the directory is missing: {message}"
     );
     assert!(
-        message.contains("check what is there before deleting it"),
-        "the refusal no longer holds off from calling this a dead run: {message}"
+        message.contains("Check what is there before you delete it"),
+        "the refusal no longer holds off from deciding what these files are: {message}"
     );
     assert_eq!(
         std::fs::read_to_string(out.join("theirs.txt")).expect("their file reads"),
@@ -3043,19 +3047,24 @@ fn an_output_directory_that_holds_a_complete_publish_is_refused_with_the_origina
     );
 }
 
-/// The state a kill during `put` leaves — a partially written `--out` with no
-/// release record — and what the next run says about it, which is [#355]'s
-/// third Done-when clause.
+/// A directory that holds artifact-shaped files and no release record, and what
+/// the next run says about it, which is [#355]'s third Done-when clause.
 ///
-/// Nothing here sends a signal to a running publish: [`publisher`] already
-/// establishes that phase 2 writes every artifact file before it writes
-/// [`release::RECORD`] last, so this plants the state that lands in directly,
-/// the same way [`publisher_that_fails_inside_the_write`] plants the state a
-/// returned error unwinds from. The two cases are `held`'s two branches.
+/// It plants the state directly, the same way
+/// [`publisher_that_fails_inside_the_write`] plants the state a returned error
+/// unwinds from. The two cases are `held`'s two branches.
+///
+/// **This case used to be named for a kill, and it never sent one.** It plants a
+/// state and reads a message, which is evidence about the message and no
+/// evidence at all about what a kill can reach. `killed_publish.rs` is where the
+/// second question is asked, of a real process and a real signal, and it is why
+/// the refusal below no longer offers a kill as the explanation: a publish
+/// assembles the artifact beside `--out` and moves it there in one step, so what
+/// is here is somebody else's.
 ///
 /// [#355]: https://github.com/headwater-ai/headwater/issues/355
 #[test]
-fn a_kill_during_the_write_phase_is_reported_as_leftovers_and_not_silently_repaired() {
+fn files_at_the_output_path_with_no_record_are_reported_and_not_silently_repaired() {
     let scratch = Scratch::new("killed-mid-write");
     let root = publisher(&scratch, None);
     let out = scratch.path().join("artifact");
@@ -3070,8 +3079,12 @@ fn a_kill_during_the_write_phase_is_reported_as_leftovers_and_not_silently_repai
         "the refusal does not name the missing record: {message}"
     );
     assert!(
-        message.contains("a run killed while writing this artifact would leave exactly this"),
-        "the refusal does not connect the state to a kill: {message}"
+        message.contains("a killed run leaves this directory as it found it"),
+        "the refusal no longer says what a kill cannot reach: {message}"
+    );
+    assert!(
+        !message.contains("a run killed while writing this artifact would leave exactly this"),
+        "the refusal still offers a kill as the explanation for this state: {message}"
     );
     assert!(
         matches!(release::at(&out), Err(ReleaseError::Absent(_))),
@@ -3079,7 +3092,7 @@ fn a_kill_during_the_write_phase_is_reported_as_leftovers_and_not_silently_repai
     );
     assert!(
         out.join("package.yml").exists(),
-        "the kill's own files are untouched"
+        "the planted files are untouched"
     );
 }
 
