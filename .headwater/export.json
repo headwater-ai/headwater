@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 371,
-      "carried": 371,
+      "in the graph": 375,
+      "carried": 375,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 594,
-      "carried": 594,
+      "in the graph": 598,
+      "carried": 598,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1600,6 +1600,27 @@
           "summary": "No kind in the base package or in any bundle binds a language regime. A package that set the default value would change nothing, so the doctrine page of the starter kit carries the promise.",
           "last_verified": "2026-09-06",
           "title": "A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md",
+        "kind": "decision",
+        "id": "HW-DR-0058",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0058",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "A declared facet that carries no content is a state that neither the required-facet rule nor the enum rule reaches. A new rule reports it, over every facet a taxonomy types as a string, at error severity.",
+          "last_verified": "2026-09-07",
+          "title": "A blank facet value is a rule of its own and it reads every string facet",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
@@ -7107,6 +7128,62 @@
         }
       },
       {
+        "path": "docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0170",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0170",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Every other rule this engine carries reaches one obligation. `facet.value.blank` reaches none, because the control that would bind it sits in the vendored package and the edit moves the pin digest.",
+          "last_verified": "2026-09-07",
+          "title": "The blank facet value rule reaches no obligation so the report names none",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0058",
+              "engine/crates/check/src/facet_blank.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0171-no-rule-reads-a-document-facet-value-against-the-type-its-declaration-states.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0171",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0171",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "A facet declares `type: date`, `type: integer` or `type: string`, and no check reads a document's value against that declaration. A mapping where a date belongs reaches a strict run at exit 0.",
+          "last_verified": "2026-09-07",
+          "title": "No rule reads a document facet value against the type its declaration states",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0058",
+              "engine/crates/check/src/facet_blank.rs"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
@@ -8173,6 +8250,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/check/src/dependency.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/check/src/facet_blank.rs",
         "resolver": "source-tree"
       },
       {
@@ -13408,6 +13490,50 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/check/src/voice.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0058",
+          "path": "docs/decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/facet_blank.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0171-no-rule-reads-a-document-facet-value-against-the-type-its-declaration-states.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0058",
+          "path": "docs/decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0171-no-rule-reads-a-document-facet-value-against-the-type-its-declaration-states.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/facet_blank.rs",
           "resolver": "source-tree"
         }
       },

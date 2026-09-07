@@ -1,16 +1,16 @@
-403 files under the corpus root
-    291 typed
+406 files under the corpus root
+    294 typed
      11 generated
       2 untyped
      97 excluded
       2 not a document
       1 typed acceptance_criterion
-     55 typed decision
+     56 typed decision
       1 typed decision_register
      13 typed design_spec
      19 typed evaluation
      20 typed interface_contract
-    168 typed obligation_record
+    170 typed obligation_record
       1 typed obligation_register
       4 typed probe
       1 typed requirement

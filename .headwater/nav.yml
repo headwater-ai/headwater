@@ -58,6 +58,7 @@ nav:
       - "The upper bound of a reconcile-first allocator is the corpus and a claim store": "decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md"
       - "A hook reads a wire format through the engine and not through an interpreter": "decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md"
       - "A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile": "decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md"
+      - "A blank facet value is a rule of its own and it reads every string facet": "decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
@@ -274,6 +275,8 @@ nav:
       - "Spec 2 states a corpus-wide default language regime that no rule of this engine reads": "obligations/0166-spec-2-states-a-corpus-wide-default-language-regime-that-no-rule-of-this-engine-reads.md"
       - "The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it": "obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md"
       - "A saturated pattern set and a clean corpus are the same zero, and no report separates them": "obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md"
+      - "The blank facet value rule reaches no obligation so the report names none": "obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md"
+      - "No rule reads a document facet value against the type its declaration states": "obligations/0171-no-rule-reads-a-document-facet-value-against-the-type-its-declaration-states.md"
   - "Probes":
       - "Probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"

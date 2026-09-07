@@ -295,12 +295,12 @@ census
 ```
 
 ```
-  1 seen, 1 classified, 1 checked, 16 check instances
+  1 seen, 1 classified, 1 checked, 17 check instances
 ```
 
 **Check.** `headwater check 2>/dev/null | grep 'check instances'` prints the second block above.
 
-The corpus did not grow. The count of checks that ran went from 2 to 14, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and fourteen questions become answerable about it.
+The corpus did not grow. The count of checks that ran went from 2 to 15, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and fifteen questions become answerable about it.
 
 ### Step 10 — Say what does not belong in the repository, and commit
 
@@ -389,12 +389,14 @@ Trimmed to the head of the register and to its last line. The same run printed b
 ```
 
 ```
-    every rule this engine carries reaches one obligation
+    facet.value.blank reaches no obligation, so it names none
 ```
 
 **Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `31 obligations:` line of the register block above, and nothing else.
 
-**One of those readings is about the package and one is about your run.** The thirty-one obligations and their severities come from `headwater/standard`, so they read the same on your first day and your thousandth. The last line is derived from the run in front of you. It says that no rule fired at you without an obligation behind it, and that is what makes the identifier in your finding worth reading.
+**One of those readings is about the package and one is about your run.** The thirty-one obligations and their severities come from `headwater/standard`, so they read the same on your first day and your thousandth. The last line is derived from the run in front of you. It names every rule that fired at you with no obligation behind it, and the identifier in your finding is worth reading because most rules carry one.
+
+One rule is named there. `facet.value.blank` reports a facet a document declares and leaves empty, and no control in `headwater/standard` names it yet. [HW-OBL-0170](https://github.com/headwater-ai/headwater/blob/main/docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md) records that debt. A finding it raises is a true finding, and the line above is how a report tells you which of its rules answers to nothing.
 
 **Your corpus will not show you a gap, and the reason is worth knowing.** A `gap` is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads `0 gap` on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares three obligations no mechanism verifies. The same block there reads `32 obligations: 29 verified, 2 gap, 1 unverifiable`, and it names the owner of each gap. The number worth watching is the one that is not `verified`.
 
