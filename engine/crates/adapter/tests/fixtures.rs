@@ -2036,9 +2036,20 @@ fn spans(format: Format, lines: &[&str]) -> Vec<(usize, usize)> {
             // are painted under `Ansi` and the cut has to land in the same place
             // under both renderings.
             let bare: Vec<String> = lines.iter().map(|line| uncolored(line)).collect();
+            // The tally line itself, `  <count> findings`, and not the first
+            // line of the report that happens to end in that word. The block it
+            // opens is a summary rather than a record, and a cut that swept it
+            // in would report a deletion the census is right to pass over.
             let tally = bare
                 .iter()
-                .position(|line| line.trim_end().ends_with(" findings"))
+                .position(|line| {
+                    let mut token = line.split_whitespace();
+                    matches!(
+                        (token.next(), token.next(), token.next()),
+                        (Some(count), Some("findings"), None)
+                            if count.chars().all(|char| char.is_ascii_digit())
+                    )
+                })
                 .expect("the findings tally");
             let end = bare
                 .iter()
