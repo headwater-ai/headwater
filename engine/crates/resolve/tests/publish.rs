@@ -4669,7 +4669,19 @@ fn an_earlier_format_record_is_refused_without_naming_a_publisher() {
         "the message drops the token it found: {message}"
     );
     assert!(
-        message.contains("headwater taxonomy publish"),
+        message.contains("Take an engine"),
         "the message names no remedy: {message}"
+    );
+    // Every population that reaches this arm is a consumer holding an artifact
+    // somebody else published: `verify` under `taxonomy vendor`, the record
+    // read under `taxonomy diff` and `migrate`, and the one the conformance
+    // crate reads out of an installed package. None of them can publish it.
+    // `publish_at` in `src/package.rs` refuses a directory that carries a
+    // record outright, and a directory whose record this engine cannot read is
+    // refused a step earlier still. A remedy sentence is checkable, so naming
+    // a verb that answers with a second refusal is as false as naming a writer.
+    assert!(
+        !message.contains("headwater taxonomy publish"),
+        "the message names a verb this engine refuses on the artifact it is about: {message}"
     );
 }

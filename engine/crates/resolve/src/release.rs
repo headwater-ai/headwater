@@ -152,6 +152,16 @@ pub enum ReleaseError {
     /// member list rather than the `release:` header. The message therefore
     /// says which token was found and which one this engine wants, and names no
     /// author.
+    ///
+    /// The remedy it names is a consumer's, because every population that
+    /// reaches this arm is a consumer's: [`verify`] under `headwater taxonomy
+    /// vendor`, the record read under `taxonomy diff` and `migrate`, and the
+    /// one the conformance crate reads out of an installed package. In all of
+    /// them the reader holds an artifact somebody else published and cannot
+    /// publish it, and `headwater taxonomy publish` over that directory refuses
+    /// with "this directory carries a release record" rather than helping. So
+    /// this arm points at an engine and at an artifact, and at no verb of this
+    /// one.
     Format {
         found: String,
     },
@@ -237,7 +247,8 @@ impl std::fmt::Display for ReleaseError {
             ReleaseError::Format { found } => write!(
                 f,
                 "the release record declares format `{found}` and this engine reads and writes \
-                 {FORMAT}. Run `headwater taxonomy publish` to write one this engine reads"
+                 {FORMAT}. Take an engine that reads format `{found}`, or an artifact at \
+                 format {FORMAT}"
             ),
             ReleaseError::RecordMoved { declared, actual } => write!(
                 f,
