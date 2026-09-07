@@ -1152,12 +1152,16 @@ pub enum Cleared {
 /// Four things must all hold, and any one of them missing removes nothing:
 ///
 /// 1. `out` has a sibling path to derive, which [`out_staging`] answers.
-/// 2. That sibling holds both [`MARKER`] and [`DIRECT`], which
-///    [`killed_direct_write`] answers. [`DIRECT`]'s doc comment carries why the
-///    marker on its own is a different question.
+/// 2. That sibling holds both [`MARKER`] and [`DIRECT`]. [`DIRECT`]'s doc
+///    comment carries why the marker on its own is a different question.
 /// 3. [`DIRECT`] names *this* `out`, which [`direct_names`] answers.
 /// 4. `out` carries no release record that reads back, so nothing complete is
 ///    being removed.
+///
+/// The first three are [`killed_direct_write`], and they are read there rather
+/// than here so that [`found::held`] — which tells a person to pass this flag —
+/// cannot offer it in a state where this function would remove nothing. That
+/// function's own doc comment carries the account of when the two disagreed.
 ///
 /// Only one history produces all four: a run that reached the mount branch of
 /// [`deliver`], wrote both files, and was killed inside the one write this verb
@@ -1189,7 +1193,7 @@ pub fn clear_killed(root: &Path, out: &Path) -> Result<Cleared, Vec<ResolveError
     let Some(staging) = out_staging(out) else {
         return Ok(Cleared::Nothing);
     };
-    if !killed_direct_write(out) || !direct_names(&staging, out) || release::at(out).is_ok() {
+    if !killed_direct_write(out) || release::at(out).is_ok() {
         return Ok(Cleared::Nothing);
     }
     std::fs::remove_dir_all(out).map_err(|error| {
@@ -2992,13 +2996,31 @@ fn direct_names(staging: &Path, out: &Path) -> bool {
 /// Whether the staging directory beside `out` says a publish was killed while
 /// it was writing straight into `out`.
 ///
-/// Both files are asked for. See [`DIRECT`] for why the marker on its own
-/// answers a different question.
+/// Both files are asked for, and the note is read. See [`DIRECT`] for why the
+/// marker on its own answers a different question, and [`direct_names`] for why
+/// the pair on its own answers a different question again.
+///
+/// # One function, because two callers ask one question
+///
+/// [`found::held`] decides what to tell a person, and [`clear_killed`] decides
+/// what to remove. Those are one question — *is the residue at `out` this
+/// tool's own?* — and while the two evaluated it separately they disagreed on a
+/// state that is reachable: a marker and a note naming **another** path. There
+/// the refusal said the files were a killed publish's and told a person to pass
+/// `--clear-killed`, and the flag then removed nothing, said nothing, and the
+/// same run repeated. That is the two-functions-answering-one-question defect
+/// [#581](https://github.com/headwater-ai/headwater/issues/581) exists for,
+/// which the first cut of this change carried while citing it.
+///
+/// So the note is read here rather than by one caller. Neither caller can now
+/// hold a predicate the other does not.
+/// `the_refusal_offers_the_flag_only_where_the_flag_would_remove_something` in
+/// `tests/publish.rs` is what holds the pair together.
 fn killed_direct_write(out: &Path) -> bool {
     let Some(staging) = out_staging(out) else {
         return false;
     };
-    staging.join(MARKER).is_file() && staging.join(DIRECT).is_file()
+    staging.join(MARKER).is_file() && staging.join(DIRECT).is_file() && direct_names(&staging, out)
 }
 
 /// Whether a failed rename means the output path is a mount rather than a path

@@ -3240,6 +3240,60 @@ fn clearing_a_killed_run_removes_nothing_where_the_note_names_another_path() {
     assert!(staging.exists(), "the staging directory went anyway");
 }
 
+/// **The refusal and the delete answer one question, so they read one
+/// predicate.** In the state above the refusal must not offer `--clear-killed`,
+/// because the flag removes nothing there and the same run repeats forever.
+///
+/// The message arm and the removal used to evaluate different conjunct sets:
+/// the arm fired on the marker and the note both being present, and the removal
+/// also asked whether the note names *this* `--out`. Between the two sits a
+/// state — a note naming another path — where the message said the files were
+/// this tool's and told a person to pass a flag that then did nothing, printed
+/// nothing, and reprinted the same message. Two functions answering one
+/// question separately is the defect
+/// [#581](https://github.com/headwater-ai/headwater/issues/581) exists for, and
+/// the branch that introduced this arm cited that shape while carrying it.
+///
+/// # What it would print if the property were absent
+///
+/// The refusal, with `--clear-killed` in it, for a directory the flag will not
+/// touch.
+#[test]
+fn the_refusal_offers_the_flag_only_where_the_flag_would_remove_something() {
+    let scratch = Scratch::new("clear-killed-advice");
+    let root = publisher(&scratch, None);
+
+    // The note names this `--out`: the flag clears it, so the refusal may
+    // name the flag.
+    let mine = scratch.path().join("mine");
+    plant_a_killed_direct_write(&mine, &mine);
+    let refused = package::publish(&root, "acme/fixture", &mine).expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("--clear-killed"),
+        "the refusal does not offer the flag where the flag would clear it: {message}"
+    );
+
+    // The note names another path: the flag removes nothing, so the refusal
+    // must not send a person round the same run twice.
+    let theirs = scratch.path().join("theirs");
+    plant_a_killed_direct_write(&theirs, &scratch.path().join("somewhere-else"));
+    let refused =
+        package::publish(&root, "acme/fixture", &theirs).expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        !message.contains("--clear-killed"),
+        "the refusal offers a flag that removes nothing here, so the same run repeats: {message}"
+    );
+    assert!(
+        matches!(
+            package::clear_killed(&root, &theirs).expect("the clear reads the path"),
+            package::Cleared::Nothing
+        ),
+        "the flag the refusal declined to offer would in fact have removed something"
+    );
+}
+
 /// A staging directory holding the marker and **no** note is what every killed
 /// publish leaves, including one killed on the rename path where `--out` was
 /// never touched. The flag removes nothing on it.
