@@ -26,7 +26,7 @@ The verb evaluates the repository against the conformance rules in its selected 
 
 `headwater conformance` reads the package rule set and evaluates the four readings this engine holds: `pin.current`, `lock.current`, `corpus.classified` and `projections.current`.
 
-`pin.current` is the reading that holds the installed bytes to the pin. It recomputes the digest of every file under the selected package directory and compares the result to the record the publisher wrote. It then compares that record to the digest the consumer pinned. It names the same three divergences `vendor` names, and it writes nothing. `headwater taxonomy resolve` reads the version the manifest declares and no digest. So this verb is where a build asks whether a vendored package is still what its pin names.
+`pin.current` is the reading that holds the installed bytes to the pin. It compares the version the installed package declares to the version the consumer pinned. It then compares the digest the consumer pinned to the digest in the record the publisher wrote. It then recomputes the digest of every file under the package directory and compares each one to that record. It names the same three divergences `vendor` names, and it writes nothing. `headwater taxonomy resolve` performs only the first of those comparisons and reads no digest.
 
 The report identifies the package, version, digest and date. It lists every rule, each level and the highest level reached by met rules. A level is cumulative, so it includes the rules of earlier levels.
 
