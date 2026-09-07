@@ -551,7 +551,16 @@ fn permitted(taxonomy: &Mapping, facet: &str) -> Option<Vec<String>> {
 /// document only as the `inverse` those two name. Two of the four keys the
 /// library shipped at the top level are of that half, so a walk over the keys
 /// alone reports two of the four and reads as a working check.
-fn relations(taxonomy: &Mapping) -> Vec<String> {
+///
+/// **It is the second enumeration of this population, and a test is what holds
+/// it to the first.** `headwater_graph::declarations::Declarations::named` is
+/// the reader a real document meets, and it admits the same two halves. This
+/// crate cannot call it, because `headwater-graph` depends on this one and the
+/// reverse is a dependency inversion, so the two are held against each other
+/// rather than merged: `headwater-graph`'s `tests/vocabulary.rs` resolves this
+/// repository and fails on any name one collects and the other does not. It is
+/// `pub` for that test and for no caller.
+pub fn relations(taxonomy: &Mapping) -> Vec<String> {
     let Some(declared) = taxonomy
         .get("relations")
         .and_then(|node| node.value.as_map())
