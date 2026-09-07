@@ -272,15 +272,70 @@ This is the seventh Done-when bullet of #492 and the sixth of #508. Two entries 
 
 **One note, which is not fixed here.** This document is a `kinds.evaluation`, and `evaluation` moved out of design-spec into the `evidence-and-obligation` entry with HW-DR-0044. That entry is not in the admitted-entry table of `docs/taxonomies/README.md`, which still lists five rows while `docs/taxonomies/` holds six directories. Two admitted entries now declare `requires: [evidence-and-obligation]`. That gap is [#510](https://github.com/headwater-ai/headwater/issues/510) and is not touched here.
 
+## What `.agents/skills/` states, and what the tree holds
+
+The third corpus that [#492](https://github.com/headwater-ai/headwater/issues/492) names is `.agents/skills/`, and this section reports one finding in it. It does not type the corpus. No admitted entry declares a procedure-shaped concrete kind, so a skill file has nothing to be, and that ruling stays open as [#509](https://github.com/headwater-ai/headwater/issues/509). The finding below needs no kind, because it is a claim the corpus makes about itself.
+
+At the pin, `.agents/skills/spec-driven-development/SKILL.md:8` states this:
+
+> Specs live in `.agents/specs/`. They are the source of truth for architectural decisions, API contracts, and implementation scope.
+
+The tree at the pin holds no such path. `.agents/` holds two entries, `review-rules` and `skills`, and 58 files below them. The count of paths under `.agents/specs/` is zero. Five lines name that path and all five are in this one file: the front-matter `description`, and lines 8, 20, 23 and 66. No other file under `.agents/` names it.
+
+**The directory is absent, and it is not ignored.** `.gitignore` at the pin runs to 96 lines and names `.agents/specs/` on none of them. Line 84 excludes `.claude/specs/`, which is a different path under a different directory. A reader who expects an ignore rule to explain the absence will not find one.
+
+**The skill anticipates a missing spec for one feature, not a missing root.** Step 3 of *Before Starting Work* reads "If no spec exists and the task is non-trivial (new module, new API, architectural change), ask the user whether to create one first." That step handles a feature with no spec. It does not handle a root that holds no specs at all, which is what this tree has. Step 1 gives a literal command, `ls .agents/specs/`, and at this pin that command fails for every feature and not for some.
+
+### What this taxonomy would report, and what it does not
+
+Two relations in the resolved taxonomy have the shape this needs. `governs` runs from a `governed_document` to a `code_path`, and `traces_to` runs from a `governed_document` to a `governed_document` or a `code_path`. Either one could carry the claim that a stated practice makes, and a check could then ask whether the target exists. Neither relation is required on any kind, and no rule asks a document to declare one.
+
+So this taxonomy has the vocabulary for the claim and no obligation to state it. This document already records the near case. The unresolved link at `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` reaches `headwater check` as [a fact in the graph section, and never as a finding](#the-broken-link-that-no-rule-reports). The `.agents/specs/` claim does not reach the engine at all, because the corpus that holds it has no kind and no run reads it. That is two gaps and not one, and [#509](https://github.com/headwater-ai/headwater/issues/509) is only the second of them.
+
+Whether a rule should report a stated practice that no artifact backs is [#496](https://github.com/headwater-ai/headwater/issues/496), and this section decides nothing about it.
+
+### What was enumerated here, and what was not
+
+Every number below came from the tree at the pin, measured on 2026-09-08. The `last_verified` date in the front matter covers the rest of this document and not this section.
+
+| fact | number | of what |
+|---|---|---|
+| entries directly under `.agents/` | 2, and neither is `specs` | the tracked tree at the pin |
+| blobs under `.agents/` | 58 | 35 under `skills`, 23 under `review-rules` |
+| skill directories under `.agents/skills/` | 22 | 34 files inside them, plus a top-level `AGENTS.md` |
+| lines that name `.agents/specs/` | 5, in 1 file | of the 58 files |
+| lines that claim a source of truth | 15, in 10 files | of the 58 files |
+| those lines that name a repository-root path | 5, in 4 files | of the 15 lines |
+| those root paths that the tree does not hold | 1, `.agents/specs/` | of the 5 paths |
+
+The source-of-truth count ignores letter case. A case-sensitive match on the lower-case phrase gives 13 lines in 9 files, because `db-migrations/SKILL.md` opens two of them with a capital.
+
+The last two rows were enumerated and not sampled. Four files name a repository-root path as a source of truth. One of them is `spec-driven-development/SKILL.md`, and the other three each resolve at the pin:
+
+- `db-migrations/SKILL.md` names `packages/@n8n/db/src/migrations/migration-types.ts` and `packages/@n8n/db/src/migrations/dsl/column.ts`.
+- `community-pr-readiness-check/reference/checks.md` names `.github/pull_request_template.md`.
+- `public-api/SKILL.md` names `packages/@n8n/decorators/src/controller/`, which holds 35 files.
+
+The other six of the ten files point at a symbol, a service, or a file inside a package. None of those six was resolved, and this section claims nothing about them.
+
+To take the finding again, run this against the pin:
+
+```bash
+gh api "repos/headwater-ai/n8n/git/trees/b0550cb3cb4d1752546a69056c55eccfb9111a12?recursive=1" \
+  --jq '.tree[].path' | grep -c '^\.agents/specs'
+```
+
+It prints `0`. Any other number makes this section false.
+
 ## What this did not cover
 
-The third of the three kinds [#492](https://github.com/headwater-ai/headwater/issues/492) names. `.agents/skills/` is [#509](https://github.com/headwater-ai/headwater/issues/509), and it is blocked on a ruling rather than on effort, because no admitted entry declares a procedure-shaped concrete kind.
+Typing `.agents/skills/` as documents of this library, which is the third of the three kinds [#492](https://github.com/headwater-ai/headwater/issues/492) names. That work is [#509](https://github.com/headwater-ai/headwater/issues/509), and it is blocked on a ruling rather than on effort, because no admitted entry declares a procedure-shaped concrete kind. The section above reports one finding in that corpus without typing any of it.
 
 A census of all 22 review-rule files as typed documents. Seven is the sample, and #508's own scope note sets that bar.
 
 Fixing any finding, or sending anything upstream to n8n, is [#495](https://github.com/headwater-ai/headwater/issues/495). Nothing here was reported to n8n and no pull request was opened against their repository.
 
-Whether the gap between a stated practice and an absent artifact deserves a check rule is [#496](https://github.com/headwater-ai/headwater/issues/496).
+Whether the gap between a stated practice and an absent artifact deserves a check rule is [#496](https://github.com/headwater-ai/headwater/issues/496). [One instance of that gap is reported above](#what-this-taxonomy-would-report-and-what-it-does-not), and the rule question stays open.
 
 A census of every architecture document in the monorepo. Four is the sample, and the fourth Done-when bullet of [#492](https://github.com/headwater-ai/headwater/issues/492) asks for one document of this kind at minimum.
 
