@@ -277,6 +277,7 @@ nav:
       - "Spec 2 states a corpus-wide default language regime that no rule of this engine reads": "obligations/0166-spec-2-states-a-corpus-wide-default-language-regime-that-no-rule-of-this-engine-reads.md"
       - "The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it": "obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md"
       - "A saturated pattern set and a clean corpus are the same zero, and no report separates them": "obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md"
+      - "The coverage report lists one path twice, so the self-assessment page publishes two unaccounted files where one exists": "obligations/0169-the-coverage-report-lists-one-path-twice-so-the-self-assessment-page-publishes-two-unaccounted-files-where-one-exists.md"
       - "The blank facet value rule reaches no obligation so the report names none": "obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md"
       - "No rule reads a document facet value against the type its declaration states": "obligations/0171-no-rule-reads-a-document-facet-value-against-the-type-its-declaration-states.md"
       - "Nine hand-kept constants enumerate an enum and nothing holds one against the variants": "obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md"

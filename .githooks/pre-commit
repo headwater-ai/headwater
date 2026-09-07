@@ -188,6 +188,74 @@ if [ "$status" -eq 0 ] && [ -z "${HEADWATER_SKIP_TOKEN_CHECK:-}" ]; then
     fi
 fi
 
+# The figures on the hand-built pages, which HW-DR-0039 rules. Every number a
+# page under `site/` states comes from a run of this engine, written into a
+# `data-figure` element by `tools/refresh-figures.sh`, and the page carries no
+# source of its own. HW-DR-0039 recorded that nothing ran the check. This is
+# the first of the two callers that now do.
+#
+# WHY IT SITS HERE. The same reason as the two clauses above. A page added or
+# deleted under `site/` moves this too, and an engine finding outranks a
+# regenerable one, so this runs only once the engine has passed. It is also
+# below the built-engine guard, which is the only correct place for it: the
+# script runs the engine three times and exits 2 without a binary.
+#
+# WHAT IT DOES NOT CATCH. A clone with no built engine exits above this line.
+# The script reads the working tree rather than the index, so a partially
+# staged commit can pass here. And the date of a run is not compared, because
+# it is the clock rather than a function of the tree — the script's own header
+# states that. The CI step named "The figures on the hand-built pages came
+# from a run" reads the committed tree, has no escape hatch and no skip
+# variable, and is the half that holds.
+#
+# WHY THE `python3` GUARD, WHICH LETS A COMMIT THROUGH. `refresh-figures.sh`
+# runs `python3` under `set -eu`, so a missing interpreter makes it exit
+# non-zero and this clause would refuse the commit while reporting stale
+# figures, which is a refusal whose message is false. The guard turns a lying
+# refusal into a printed line. `mktemp` is not covered the same way: the script
+# calls it itself, so a host with no `mktemp` fails closed here, and the
+# script's own error is printed in the indented block below.
+#
+# COST, AND WHY IT IS WORTH IT. This clause runs the engine three times, so it
+# is the most expensive one in this file by a wide margin. No number is written
+# here on purpose: two measurements of it on one machine on one day, under
+# different loads, disagreed by a factor of six, and a timing with no load
+# beside it misleads. Measure it where you are, with
+# `time sh tools/refresh-figures.sh --check`.
+#
+# What justifies the cost is the miss rate rather than the seconds. The crawler
+# clause above was adopted on a measured one-in-three miss over the life of the
+# files it guards. This one is measured at a hundred percent over three weeks:
+# nothing ran this check between 2026-08-26 and 2026-09-06, every corpus-moving
+# commit in that window staled a figure, and 59 figure occurrences and 11
+# verbatim tutorial blocks were adrift when it was first run again.
+if [ "$status" -eq 0 ]; then
+    if [ -n "${HEADWATER_SKIP_FIGURE_CHECK:-}" ]; then
+        # A skip nobody can see is a skip nobody counts. The hook cannot write
+        # into the commit, so this line on the author's terminal is the whole
+        # local record, and the CI step above is the durable half.
+        echo "headwater: HEADWATER_SKIP_FIGURE_CHECK is set, so the figures on the"
+        echo "  hand-built pages are not checked. CI checks them with no such hatch."
+    elif command -v python3 >/dev/null 2>&1; then
+        if ! figures=$(sh "$root/tools/refresh-figures.sh" --check 2>&1); then
+            echo "headwater: a figure on a hand-built page under \`site/\` disagrees with"
+            echo "  a fresh run of this engine. Every such figure is written by"
+            echo "  \`tools/refresh-figures.sh\` from a run, and none of them by hand."
+            printf '%s\n' "$figures" | sed 's/^/    /'
+            echo "  Measure again and stage the result:"
+            echo "        sh tools/refresh-figures.sh"
+            echo "  A verbatim tutorial block is the one thing that command will not"
+            echo "  repair. Copy the block out of the document it names."
+            echo "  Or skip this one clause for one commit:"
+            echo "        HEADWATER_SKIP_FIGURE_CHECK=1 git commit ..."
+            exit 1
+        fi
+    else
+        echo "headwater: no python3, so the figures on the hand-built pages are not"
+        echo "  checked."
+    fi
+fi
+
 [ "$status" -eq 0 ] && exit 0
 
 # The error findings alone, whole. Every other finding is advisory and belongs

@@ -111,6 +111,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/library-index-fixtures.sh
     sh tools/readme-fixtures.sh
     sh tools/refresh-crawler-files.sh --check
+    sh tools/refresh-figures.sh --check
     sh tools/refresh-site-tokens.sh --check
     sh tools/site-canonical-fixtures.sh
     sh tools/site-console-fixtures.sh

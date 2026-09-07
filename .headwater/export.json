@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 388,
-      "carried": 388,
+      "in the graph": 389,
+      "carried": 389,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -7158,6 +7158,28 @@
               "HW-OBL-0002",
               "engine/crates/check/src/voice.rs"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0169-the-coverage-report-lists-one-path-twice-so-the-self-assessment-page-publishes-two-unaccounted-files-where-one-exists.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0169",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0169",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "coverage.unaccounted reads ['.headwater/ids', '.headwater/ids'], so the self-assessment page publishes 2 under a label that names files nobody accounted for.",
+          "last_verified": "2026-09-06",
+          "title": "The coverage report lists one path twice, so the self-assessment page publishes two unaccounted files where one exists",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
           }
         }
       },
