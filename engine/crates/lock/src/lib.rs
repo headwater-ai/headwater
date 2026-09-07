@@ -173,8 +173,11 @@ pub enum LockError {
     /// compares the raw token to [`FORMAT`] for inequality and never orders the
     /// two, so this variant carries a mismatch and no direction: a lock at an
     /// earlier format, a lock at a later one, and a token that is not a number
-    /// at all all arrive here, and the message says which token was found
-    /// rather than which engine wrote it.
+    /// at all all arrive here. No engine need have written any of them: this
+    /// check runs before [`LockError::Tampered`]'s, and that digest covers the
+    /// taxonomy text and not the `lock:` header, so a hand-edited `format`
+    /// field lands here and nowhere else. The message therefore says which
+    /// token was found and which one this engine wants, and names no author.
     Format {
         found: String,
     },
@@ -210,7 +213,6 @@ impl std::fmt::Display for LockError {
             LockError::Format { found } => write!(
                 f,
                 "the lock declares format `{found}` and this engine reads and writes {FORMAT}. \
-                 The lock was written by an engine that does not write {FORMAT}. \
                  Run `headwater taxonomy resolve` to write one this engine reads"
             ),
             LockError::Tampered { declared, actual } => write!(
