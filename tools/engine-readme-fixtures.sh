@@ -123,7 +123,7 @@ readme="$root/engine/README.md"
 manifest="$root/engine/Cargo.toml"
 clippy_toml="$root/engine/clippy.toml"
 
-for tool in git awk cargo sort; do
+for tool in git awk cargo sort comm; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "no \`$tool\` on the path, and every case below needs it. This suite" >&2
         echo "  stops rather than reporting a row of passes over a set it could" >&2
@@ -478,6 +478,70 @@ same "a file left behind at another floor is named" "README.md:11 says 1.42|" "$
 members=$(grep -c '^rust-version\.workspace = true' "$root"/engine/crates/*/Cargo.toml | awk -F: '{ s += $2 } END { print s }')
 crates=$(ls -d "$root"/engine/crates/*/Cargo.toml | wc -l | tr -d ' ')
 same "every crate inherits the declared floor" "$crates" "$members"
+
+echo "every crate has a row, and every row is a crate"
+
+# table_crates FILE — the crate directory of every row of the "What is here"
+# table, sorted and one per line. A row's first cell is a code span holding the
+# package name; every package of this workspace is `headwater-<dir>`, so the
+# prefix comes off and what is left is the directory under `engine/crates/`.
+#
+# The selector is anchored to the section rather than to the whole page,
+# because a code span naming a crate appears in prose all over this file and
+# only a table row starts a line with one.
+table_crates() {
+    awk '
+        /^## What is here[ \t]*$/ { inside = 1; next }
+        inside && /^## / { inside = 0 }
+        inside && /^\| *`headwater-[a-z0-9-]+` *\|/ {
+            row = $0
+            sub(/^\| *`headwater-/, "", row)
+            sub(/`.*$/, "", row)
+            print row
+        }
+    ' "$1" | sort -u
+}
+
+# 7a. Both populations, before either is compared to the other. A selector that
+#     stopped matching reports an empty table as agreeing with an empty tree.
+table_crates "$readme" >"$scratch/table-crates"
+ls "$root/engine/crates" | sort -u >"$scratch/tree-crates"
+
+rows=$(grep -c . "$scratch/table-crates" || true)
+dirs=$(grep -c . "$scratch/tree-crates" || true)
+more_than "the table names several crates" "20" "$rows"
+more_than "the workspace holds several crates" "20" "$dirs"
+
+# 7b. The diff, in both directions. A crate with no row is a crate an outside
+#     reader cannot find from this page; a row with no crate is a name that
+#     sends one to a directory that is not there. #188 found the first at 12 of
+#     23, and nothing here could see it.
+missing=$(comm -13 "$scratch/table-crates" "$scratch/tree-crates" | tr '\n' ' ' | sed 's/ *$//')
+same "every crate in the tree has a row" "" "$missing"
+
+invented=$(comm -23 "$scratch/table-crates" "$scratch/tree-crates" | tr '\n' ' ' | sed 's/ *$//')
+same "every row names a crate in the tree" "" "$invented"
+
+same "the table has one row per crate" "$dirs" "$rows"
+
+# 7c. Provoked, on both refusals. The first arm deletes a row and the second
+#     adds one for a crate that does not exist, and each arm is judged by the
+#     same comparison as the case above it.
+sed '/^| *`headwater-hash` *|/d' "$readme" >"$scratch/arms/rowgone.md"
+table_crates "$scratch/arms/rowgone.md" >"$scratch/arms/rowgone.list"
+same "a crate whose row was deleted is named" "hash" \
+    "$(comm -13 "$scratch/arms/rowgone.list" "$scratch/tree-crates" | tr '\n' ' ' | sed 's/ *$//')"
+
+awk '
+    { print }
+    !added && /^\| *`headwater-[a-z0-9-]+` *\|/ {
+        print "| `headwater-nonesuch` | A crate that is not in the tree. |"
+        added = 1
+    }
+' "$readme" >"$scratch/arms/rowextra.md"
+table_crates "$scratch/arms/rowextra.md" >"$scratch/arms/rowextra.list"
+same "a row naming no crate is named" "nonesuch" \
+    "$(comm -23 "$scratch/arms/rowextra.list" "$scratch/tree-crates" | tr '\n' ' ' | sed 's/ *$//')"
 
 echo
 echo "$passed passed, $failed failed"
