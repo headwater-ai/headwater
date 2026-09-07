@@ -99,6 +99,37 @@ if [ -z "$(git config merge.headwater-regenerate.driver 2>/dev/null)" ]; then
     echo "        git config merge.headwater-regenerate.driver \".githooks/merge-regenerate %O %A %B %P\""
 fi
 
+# `core.hooksPath` is shared by every worktree of a clone, and an absolute value
+# names one checkout. A worktree on another branch then runs that checkout's
+# hook body while committing its own, which reads exactly like a gate that
+# passed: a clause the branch carries does not run, and a clause it does not
+# carry can refuse it naming a file the branch never had. A relative value
+# resolves inside the working tree the commit happens in, which is the one
+# `CLAUDE.md` instructs.
+#
+# It reports and does not block, for the reason the driver above gives and for
+# one more. Nobody sets this value by hand: the `EnterWorktree` tool of the
+# harness rewrites it to an absolute path on every call and never restores it,
+# so a refusal would punish the committer for a tool the committer did not
+# choose to run. The last line says the value comes back, because a reader who
+# fixes it, watches it return and was not told stops believing the report.
+#
+# One consequence works in this clause's favor. Under an absolute value every
+# worktree runs the main checkout's copy of this file, so the report reaches a
+# worktree as soon as the main checkout carries it, whatever branch the
+# worktree is on.
+hooks_path=$(git config --get core.hooksPath 2>/dev/null)
+case $hooks_path in
+    /*)
+        echo "headwater: core.hooksPath is absolute ($hooks_path), so every worktree of"
+        echo "  this clone runs the hook body of that one checkout instead of its own"
+        echo "  branch's. Set it relative, once per clone:"
+        echo "        git config core.hooksPath .githooks"
+        echo "  \`EnterWorktree\` sets it absolute again on every call, so expect this"
+        echo "  line back after the next one, and set it again."
+        ;;
+esac
+
 # Either profile builds an engine this gate can run, and the newer of the two
 # answers. `release` is what CI builds and what a release artifact ships;
 # `dev-release` is the same optimization level without the `lto = true` and
