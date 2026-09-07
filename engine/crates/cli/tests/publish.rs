@@ -1391,6 +1391,212 @@ fn the_vendored_bundles_agree_with_a_fresh_publish_of_the_maintained_source() {
     );
 }
 
+/// #518: an artifact carries no bundle reference corpus, and the publisher
+/// keeps every one of its own.
+///
+/// Spec 7's Publishing section rules that publication takes the package
+/// directory whole, and it names one exception: a `fixtures/` directory at the
+/// root of a bundle. Those corpora are how a publisher measures its own
+/// taxonomy against prose it controls. No consumer verb opens one, and before
+/// this exception they were 71 of the 102 members of this repository's own
+/// release record.
+///
+/// This runs the real publisher over the maintained source rather than a
+/// description of it, and it holds the publisher's side as well, because the
+/// exception is about what the artifact carries and it must delete nothing.
+#[test]
+fn a_fresh_publish_carries_no_bundle_fixtures_and_the_publisher_keeps_its_own() {
+    let root = Root::scratch("bundle-fixtures");
+    let out = root.path().join("release");
+
+    let (code, message) = publish_real_source_into(&out);
+    assert_eq!(
+        code,
+        Some(0),
+        "the publish this case depends on failed: {message}"
+    );
+
+    let mut carried: Vec<String> = relative_files(&out.join("bundles"))
+        .into_iter()
+        .filter(|path| path.split('/').nth(1) == Some("fixtures"))
+        .collect();
+    carried.sort();
+    assert!(
+        carried.is_empty(),
+        "the artifact carries {} bundle fixture files that no consumer verb opens: {carried:#?}",
+        carried.len()
+    );
+
+    assert!(
+        repository()
+            .join("docs/taxonomies/standards-spec/fixtures/README.md")
+            .is_file(),
+        "the exception is about the artifact. The publisher's own reference corpora stay where \
+         they are"
+    );
+}
+
+/// #518: no file the artifact carries links at a path inside the bundle tree
+/// that the artifact does not carry.
+///
+/// A publish decides the shape of `bundles/`, and this case is the reason that
+/// decision is not free. Dropping each bundle's own corpus left fifteen links
+/// across seven carried files pointing at `fixtures/README.md`,
+/// `fixtures/n8n/README.md` and `../<bundle>/fixtures/README.md`. Every one of
+/// them resolved in the publisher's tree and in the artifact before, and none
+/// resolved in the artifact after. **Nothing else in this repository can see
+/// that.** The referential integrity a publish runs reads `contents` key
+/// scalars and never a carried file's body, `release::verify` compares the
+/// record against the bytes and reads no body either, and `docs/taxonomies/**`
+/// is outside the corpus root, so `link.fragment.unresolved` never opens the
+/// sources.
+///
+/// **The population is enumerated and never listed.** Every `.md` file in the
+/// artifact, every inline link in it, and every target that lands inside
+/// `bundles/` after the `..` segments are resolved. A link that climbs out of
+/// the artifact is passed over rather than judged: `../../spec/…` out of a
+/// doctrine file names the publisher's specification, which no artifact ever
+/// carried, and that is a separate question from the one this case asks.
+///
+/// A code span and a fenced block are read past, because this repository
+/// prints a link as an example inside both, and a check that reddens on correct
+/// Markdown is a check the first person it annoys turns off.
+#[test]
+fn no_file_the_artifact_carries_links_into_a_bundle_tree_it_does_not_carry() {
+    let root = Root::scratch("bundle-links");
+    let out = root.path().join("release");
+
+    let (code, message) = publish_real_source_into(&out);
+    assert_eq!(
+        code,
+        Some(0),
+        "the publish this case depends on failed: {message}"
+    );
+
+    let mut read = 0usize;
+    let mut dangling: Vec<String> = Vec::new();
+    for member in relative_files(&out) {
+        if !member.ends_with(".md") {
+            continue;
+        }
+        let text = std::fs::read_to_string(out.join(&member)).expect("a member reads");
+        let directory = Path::new(&member)
+            .parent()
+            .unwrap_or(Path::new(""))
+            .to_owned();
+        for target in markdown_links(&text) {
+            let body = target.split('#').next().unwrap_or_default();
+            if body.is_empty() || body.contains("://") {
+                continue;
+            }
+            let Some(at) = inside_the_artifact(&directory, body) else {
+                continue;
+            };
+            if !at.starts_with("bundles") {
+                continue;
+            }
+            read += 1;
+            if !out.join(&at).exists() {
+                dangling.push(format!("{member} -> {target}"));
+            }
+        }
+    }
+
+    // A scanner that reads nothing passes everything, and this one reads the
+    // real library rather than a fixture, so it says how much it saw.
+    assert!(
+        read > 0,
+        "the scanner found no link into the bundle tree at all, so it held nothing"
+    );
+    assert!(
+        dangling.is_empty(),
+        "{} of the {read} links into the bundle tree do not resolve inside the artifact. Every \
+         one of them resolves in `docs/taxonomies/`, so the publish carried the prose and left \
+         the target behind:\n{dangling:#?}",
+        dangling.len()
+    );
+}
+
+/// The destination of every inline Markdown link on a line that is not inside a
+/// fenced block, with a code span removed first and a CommonMark link title
+/// dropped.
+fn markdown_links(text: &str) -> Vec<String> {
+    let mut found = Vec::new();
+    let mut fenced = false;
+    for line in text.lines() {
+        let opener = line.trim_start();
+        if opener.starts_with("```") || opener.starts_with("~~~") {
+            fenced = !fenced;
+            continue;
+        }
+        if fenced {
+            continue;
+        }
+        let mut outside = String::new();
+        let mut spanned = false;
+        for character in line.chars() {
+            match character {
+                '`' => spanned = !spanned,
+                _ if !spanned => outside.push(character),
+                _ => {}
+            }
+        }
+        let characters: Vec<char> = outside.chars().collect();
+        let mut at = 0;
+        while at < characters.len() {
+            if characters[at] != '[' {
+                at += 1;
+                continue;
+            }
+            let Some(close) = (at..characters.len()).find(|index| characters[*index] == ']') else {
+                break;
+            };
+            if characters.get(close + 1) != Some(&'(') {
+                at = close + 1;
+                continue;
+            }
+            let Some(end) = (close + 2..characters.len()).find(|index| characters[*index] == ')')
+            else {
+                break;
+            };
+            let destination: String = characters[close + 2..end].iter().collect();
+            let destination = destination
+                .split_whitespace()
+                .next()
+                .unwrap_or_default()
+                .trim_start_matches('<')
+                .trim_end_matches('>');
+            if !destination.is_empty() {
+                found.push(destination.to_string());
+            }
+            at = end + 1;
+        }
+    }
+    found
+}
+
+/// Where a relative link written in `directory` lands inside the artifact, or
+/// `None` where it climbs out of it.
+///
+/// The resolution is lexical, because the artifact carries no symlink a publish
+/// left dereferenced and the question is where the text points.
+fn inside_the_artifact(directory: &Path, target: &str) -> Option<PathBuf> {
+    let mut at = PathBuf::new();
+    for part in directory.join(target).components() {
+        match part {
+            std::path::Component::ParentDir => {
+                if !at.pop() {
+                    return None;
+                }
+            }
+            std::path::Component::CurDir => {}
+            std::path::Component::Normal(name) => at.push(name),
+            _ => return None,
+        }
+    }
+    Some(at)
+}
+
 /// Every regular file under `root`, as a path relative to it, in no
 /// particular order.
 /// #353: the digest a publisher hands on is readable without a text search.

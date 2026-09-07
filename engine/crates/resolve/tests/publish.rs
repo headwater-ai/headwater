@@ -226,6 +226,21 @@ fn a_published_package_carries_its_bundles_and_no_path_that_leaves_it() {
     let root = publisher(&scratch, None);
     let out = scratch.path().join("artifact");
 
+    // #518: a reference corpus at the root of the bundle, and a directory
+    // deeper inside it that only shares the name. The exception spec 7 names is
+    // stated over one path and not over a name, so the first is left behind and
+    // the second travels. Both are planted here rather than taken from this
+    // repository's own library, because what is held is the rule and not those
+    // particular files.
+    scratch.write(
+        "publisher/library/extra/fixtures/corpus/note.md",
+        "# a corpus the publisher measures its own taxonomy against\n",
+    );
+    scratch.write(
+        "publisher/library/extra/corpora/fixtures/note.md",
+        "# a directory that is not a bundle's own reference corpus\n",
+    );
+
     let record = package::publish(&root, "acme/fixture", &out).expect("it publishes");
     assert_eq!(record.package, "acme/fixture");
 
@@ -244,6 +259,28 @@ fn a_published_package_carries_its_bundles_and_no_path_that_leaves_it() {
     assert!(paths.contains(&"bundles/extra/bundle.yml"));
     assert!(!paths.contains(&release::RECORD));
 
+    // #518: the copier left the bundle's own reference corpus behind, and the
+    // manifest writer named nothing the copier did not write. #581 is the shape
+    // where those two enumerate different sets, so both are asserted.
+    assert!(
+        !out.join("bundles/extra/fixtures").exists(),
+        "the artifact carries the bundle's reference corpus"
+    );
+    assert!(
+        !paths
+            .iter()
+            .any(|path| path.starts_with("bundles/extra/fixtures/")),
+        "the release record names a reference corpus the artifact does not carry: {paths:?}"
+    );
+
+    // And a `fixtures` directory that is not at the root of a bundle is carried
+    // like any other file, because the exception is about the path.
+    assert!(
+        out.join("bundles/extra/corpora/fixtures/note.md").is_file(),
+        "a `fixtures` directory deeper inside a bundle was dropped by name"
+    );
+    assert!(paths.contains(&"bundles/extra/corpora/fixtures/note.md"));
+
     // And the artifact resolves for a consumer that vendors it.
     consumer(&scratch, &record.digest);
     let consumer_root = scratch.path().join("consumer");
@@ -251,6 +288,64 @@ fn a_published_package_carries_its_bundles_and_no_path_that_leaves_it() {
     let declaration = package::consumer(&consumer_root).expect("it reads");
     let sources = package::sources(&consumer_root, &declaration).expect("the sources are found");
     assert_eq!(sources.len(), 2, "the taxonomy and the bundle it selects");
+}
+
+/// #518: the exception is a directory, and a *file* named `fixtures` at a
+/// bundle root is carried.
+///
+/// This is the boundary a compiling regression breaks in silence. The matcher
+/// asks for a segment after `fixtures`, and widening it to accept none —
+/// `(Some(FIXTURES), Some(_))` written as `(Some(FIXTURES), _)` — compiles,
+/// passes every other case in this workspace, and drops a member. A publisher
+/// who writes a file rather than a directory has written no reference corpus,
+/// and a publish that eats it loses a file the manifest may name.
+///
+/// The bundle is named `fixtures` as well, because the exception is read one
+/// segment under the bundles directory and a bundle root that carries the name
+/// is where an off-by-one lands.
+#[test]
+fn a_file_named_fixtures_at_a_bundle_root_is_carried() {
+    let scratch = Scratch::new("fixtures-file");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+
+    scratch.write(
+        "publisher/library/fixtures/bundle.yml",
+        &BUNDLE
+            .replace("bundle: extra", "bundle: fixtures")
+            .replace("purposes.procedure", "purposes.narrative"),
+    );
+    scratch.write(
+        "publisher/library/fixtures/fixtures",
+        "a file, and so not a reference corpus\n",
+    );
+    scratch.write(
+        "publisher/library/fixtures/fixtures.md",
+        "# a name the directory is a prefix of\n",
+    );
+    // The bundle whose own root carries the name still loses its corpus, and
+    // that corpus is planted in the other bundle of this tree because a file
+    // and a directory cannot share one path.
+    scratch.write(
+        "publisher/library/extra/fixtures/README.md",
+        "# left behind\n",
+    );
+
+    let record = package::publish(&root, "acme/fixture", &out).expect("it publishes");
+    let paths: Vec<&str> = record.members.iter().map(|m| m.path.as_str()).collect();
+
+    assert!(
+        out.join("bundles/fixtures/fixtures").is_file(),
+        "a file named `fixtures` at a bundle root was dropped as though it were the directory"
+    );
+    assert!(paths.contains(&"bundles/fixtures/fixtures"));
+    assert!(out.join("bundles/fixtures/fixtures.md").is_file());
+    assert!(paths.contains(&"bundles/fixtures/fixtures.md"));
+    assert!(paths.contains(&"bundles/fixtures/bundle.yml"));
+    assert!(
+        !out.join("bundles/extra/fixtures").exists(),
+        "a bundle root named `fixtures` moved where the exception is read"
+    );
 }
 
 /// One byte changed in one file is refused, and the message names the file.
