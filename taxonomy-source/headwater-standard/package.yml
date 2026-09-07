@@ -118,9 +118,12 @@ contents:
 # vendored this package reads the same key against the tree they received.
 #
 # #619 ruled the staging. The bar as filed refused every dangling reference,
-# and it refuses this package: 122 references over the 51 pairs below, from 9
-# carried files, naming 23 targets under `spec/`, `evaluations/`,
-# `obligations/` and `decisions/`. None of them was ever resolvable in any
+# and it refuses this package: #619 measured 122 references over 51 pairs,
+# from 9 carried files, naming 23 targets under `spec/`, `evaluations/`,
+# `obligations/` and `decisions/`. That measurement is of the day it was
+# taken, and the list below is the authority now: a pair added or deleted
+# moves the list rather than the sentence above. None of them was ever
+# resolvable in any
 # artifact this project has published. They are links a doctrine page writes
 # for the publisher's own `docs/` layout — `../../spec/07-…` resolves inside
 # `docs/` and normalizes to `spec/07-…` once the same file is published at
@@ -140,6 +143,7 @@ contents:
 # a line to delete here. That is how this list is meant to end.
 unresolved_references:
   bundles/README.md:
+    - decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md
     - evaluations/default-taxonomy-first-run.md
     - evaluations/linkml-worked-example.md
     - obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md
