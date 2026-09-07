@@ -812,6 +812,171 @@ fn the_shipped_starter_recipe_publishes_vendors_and_resolves() {
     assert!(stdout.contains("L1"), "{stdout}");
 }
 
+/// **Which verb an adopter runs decides whether a hand edit to a vendored
+/// package is found.** `headwater conformance --level L0` recomputes the digest
+/// of every installed member and refuses; `headwater taxonomy resolve` exits 0
+/// over the same tree, because it compares the version the manifest declares
+/// against the version the consumer pinned and reads no digest at all
+/// (`headwater_resolve::package::sources`).
+///
+/// This is [#517](https://github.com/headwater-ai/headwater/issues/517)'s only
+/// surviving complaint. The recheck it asked for landed in `c09625a` on
+/// 2026-08-25, eleven days before the issue was filed, so what remains is the
+/// pairing: the recheck exists and the verb an adopter is most likely to put in
+/// a build does not perform it.
+///
+/// The conformance crate holds the same pairing at the library level. This case
+/// is the CLI half of it, because an exit status is what a build reads, and a
+/// library call that returns `Ok` is not the same claim as a process that
+/// returns 0.
+///
+/// **The order is the assertion.** Publish, then pin, then vendor, then resolve,
+/// and the hand edit lands after the publish that computed the pinned digest. A
+/// resolve before the publish would move the sources with the record and both
+/// sides of the comparison would agree.
+///
+/// The edited member is a doctrine file, which is a member of the release and
+/// names no path in the lock's `sources:` list. That is the same shape as
+/// `conformance.yml` in this repository's own package, and it is the shape that
+/// no other gate covers.
+///
+/// **Two arms, because the two numbers fail differently.** A pin that no longer
+/// names the installed bytes is a gap in a reading, so a plain run exits 0 with
+/// `pin.current` in its report and `--level L0` is what turns that into a
+/// non-zero exit. Installed bytes that no longer match their own record refuse
+/// ahead of every reading and at every level, because a rule set read out of a
+/// diverged package is a rule set the run cannot trust. Only the first arm is
+/// the one `--level` decides, and a sentence that credited `--level` with both
+/// would be wrong about the second.
+#[test]
+fn a_pin_that_no_longer_names_the_installed_bytes_is_refused_by_conformance_and_not_by_resolve() {
+    let root = Root::scratch("pin-recheck-pairing");
+    let source = repository().join("taxonomy-source/headwater-standard");
+    let artifact = root.path().join("release");
+
+    let (code, _stdout, stderr) = publish_assembly_from(&repository(), &source, &artifact);
+    assert_eq!(code, Some(0), "{stderr}");
+    let release = headwater_resolve::release::read(
+        &std::fs::read_to_string(artifact.join("release.yml")).expect("the release reads"),
+    )
+    .expect("the published record reads");
+
+    let source_manifest = package::manifest_at(&source).expect("the source manifest reads");
+    let recipe = assembly::read(&repository(), &source, &source_manifest, "starter")
+        .expect("the shipped starter recipe reads");
+    let consumer = root.path().join("consumer");
+    write(
+        &consumer.join(".headwater/taxonomy.yml"),
+        &format!(
+            "taxonomy:\n  package: {}\n  version: {}\n  digest: {}\n  overlay: .headwater/overlay.yml\ncorpus:\n  root: docs\n",
+            recipe.package, recipe.version, release.digest
+        ),
+    );
+    write(
+        &consumer.join(".headwater/overlay.yml"),
+        "add:\n  identifier_schemes.decision_id.namespace: ACME\n  identifier_schemes.obligation_record_id.namespace: ACME\n",
+    );
+    std::fs::create_dir_all(consumer.join("docs")).expect("the corpus root is made");
+
+    let (code, _stdout, stderr) = consumer_run(
+        &consumer,
+        &[
+            "taxonomy",
+            "vendor",
+            artifact.to_str().expect("the artifact is UTF-8"),
+        ],
+    );
+    assert_eq!(code, Some(0), "{stderr}");
+
+    // Both verbs agree over the tree `vendor` wrote. Without this, a later
+    // non-zero could be anything the fixture got wrong.
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "resolve"]);
+    assert_eq!(code, Some(0), "{stderr}");
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["conformance", "--level", "L0"]);
+    assert_eq!(
+        code,
+        Some(0),
+        "the freshly vendored tree does not reach L0: {stderr}"
+    );
+
+    // ---- Arm one: the pin moved and the bytes did not. ------------------
+    //
+    // `pin.current` reports a gap, so `--level L0` is what turns the report
+    // into a non-zero exit and a plain run still exits 0 with the gap in the
+    // report. The resolver exits 0 over the same tree because it never reads a
+    // digest.
+    let stale = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+    let authored = consumer.join(".headwater/taxonomy.yml");
+    let pin = std::fs::read_to_string(&authored).expect("the authored pin reads");
+    write(&authored, &pin.replace(&release.digest, stale));
+
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "resolve"]);
+    assert_eq!(
+        code,
+        Some(0),
+        "the resolver read the pinned digest, so this pairing no longer holds: {stderr}"
+    );
+    let (code, stdout, stderr) = consumer_run(&consumer, &["conformance"]);
+    assert_eq!(code, Some(0), "a plain run moved its exit status: {stderr}");
+    assert!(
+        stdout.contains("pin.current"),
+        "the report does not name the reading that found the stale pin: {stdout}"
+    );
+    let (code, stdout, stderr) = consumer_run(&consumer, &["conformance", "--level", "L0"]);
+    assert_ne!(code, Some(0), "a stale pin reached L0: {stdout}\n{stderr}");
+    assert!(
+        format!("{stdout}\n{stderr}").contains("pin.current"),
+        "the refusal does not name the reading: {stdout}\n{stderr}"
+    );
+
+    // ---- Arm two: the bytes moved and the pin did not. -------------------
+    //
+    // The hand edit lands after the publish that computed the pinned digest and
+    // after the vendor that installed the bytes it names.
+    write(&authored, &pin);
+    let installed = consumer.join("packages/headwater-starter/doctrine/starter/starter.md");
+    let carried = std::fs::read_to_string(&installed).expect("the installed doctrine reads");
+    std::fs::write(
+        &installed,
+        format!("{carried}\n<!-- hand-edited after vendor, never through `vendor` -->\n"),
+    )
+    .expect("the hand edit writes");
+
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "resolve"]);
+    assert_eq!(
+        code,
+        Some(0),
+        "the resolver refused the edited tree, so this pairing no longer holds: {stderr}"
+    );
+
+    // Moved bytes are refused ahead of every reading and at every level: a rule
+    // set read out of a package whose bytes no longer match its record is a rule
+    // set nothing can trust, so the run ends rather than reports. `--level` is
+    // therefore not what makes this one non-zero, which is the difference
+    // between this arm and the one above.
+    for arguments in [
+        vec!["conformance"],
+        vec!["conformance", "--level", "L0"],
+        vec!["conformance", "--level", "L1"],
+    ] {
+        let (code, stdout, stderr) = consumer_run(&consumer, &arguments);
+        assert_eq!(
+            code,
+            Some(1),
+            "an edited member passed `{arguments:?}`: {stdout}\n{stderr}"
+        );
+        let said = format!("{stdout}\n{stderr}");
+        assert!(
+            said.contains("doctrine/starter/starter.md"),
+            "the refusal does not name the member that moved: {said}"
+        );
+        assert!(
+            said.contains("no longer match"),
+            "the refusal does not say the bytes moved: {said}"
+        );
+    }
+}
+
 #[test]
 fn an_invalid_assembly_refuses_before_it_creates_output() {
     let root = Root::scratch("assembly-refuses");
