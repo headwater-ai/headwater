@@ -30,6 +30,8 @@ The verb evaluates the repository against the conformance rules in its selected 
 
 The report identifies the package, version, digest and date. It lists every rule, each level and the highest level reached by met rules. A level is cumulative, so it includes the rules of earlier levels.
 
+Beside the digest, the report states whether this run compared that digest to the release record of the installed package. Where a rule of the set reads the pin, the report names that rule. Where no rule reads it, the report states what the installed package declares about itself. That statement carries no verdict. No level and no exit status reads it, and a set that declares `pin.current` is the only set in which a rule decides the pin.
+
 A waiver covers a gap only for a requested level and only until its inclusive expiry date. It never changes the reported level, because the reported level reads met rules alone. A rule with no engine reading, an orphan waiver or malformed conformance data ends the run rather than being skipped.
 
 Without `--level`, the verb measures and exits successfully even when gaps exist. With `--level`, it exits successfully only when every rule under that rung is met or covered by a live waiver. Text goes to standard output. JSON carries the same report and adds a `gate` member only when a level was requested.
