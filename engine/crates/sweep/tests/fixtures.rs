@@ -126,16 +126,43 @@ fn report_of(source: &str) -> Report {
     let taken = fixture_census(&root);
     let graph = fixture_graph(&root, &taken);
     let relations = Declarations::read(&root).expect("the declarations read");
+    let shape = Shape::read(&root).expect("the shape reads");
     let base = fixtures_dir();
     let tree = Tree {
         root: &base,
         census: &taken,
         graph: &graph,
         relations: &relations,
+        shape: &shape,
         lock: LOCK,
     };
     Report::read(source, &tree)
 }
+
+/// A one-finding return file, written around a proposal.
+///
+/// The cases below differ in the proposal and in nothing else, so the rest of
+/// the file is written once here. Every quotation is a passage of the document
+/// it names, because a finding refused for its citation would never reach the
+/// proposal tests at all.
+fn returned_with(documents: &[&str], proposal: &str) -> String {
+    let listed = documents
+        .iter()
+        .map(|path| format!("      - {path}\n"))
+        .collect::<String>();
+    format!(
+        "taxonomy: {LOCK}\nslice: corpus\nfindings:\n  - class: undeclared_conflict\n    \
+         documents:\n{listed}    evidence:\n      - path: {FIRST}\n        quote: An operator \
+         may disable the cache for one run.\n    message: One document gives an operator a \
+         setting the other says does not exist.\n    proposal:\n{proposal}"
+    )
+}
+
+/// The document every case below quotes, and the `from` end of every legal
+/// proposal it makes.
+const FIRST: &str = "corpus/0001-an-operator-may-disable-the-cache.md";
+const SECOND: &str = "corpus/0002-the-cache-is-not-an-operator-setting.md";
+const THIRD: &str = "corpus/0003-every-check-may-be-disabled-by-an-operator.md";
 
 fn returned() -> String {
     std::fs::read_to_string(fixtures_dir().join("return.yml")).expect("the return file")
@@ -361,6 +388,198 @@ fn a_file_that_is_not_yaml_refuses_itself_and_never_the_process() {
     let report = report_of("findings: [\n  - class: undeclared_conflict\n");
     assert!(report.verified.is_empty());
     assert!(report.refusal.is_some());
+}
+
+// --- what the intake refuses about a proposal -------------------------------
+//
+// A proposal is the one thing a sweep prints that a person is told to paste
+// into their own front matter, and until this section existed the whole
+// explicit-proposal path had no case anywhere in the workspace. The one
+// proposal in `return.yml` is a carried one whose first named document happens
+// to be its own source, so nothing here could tell a printer that reads the
+// proposal from one that reads the document list.
+
+fn proposal(relation: &str, from: &str, to: &str) -> String {
+    format!("      relation: {relation}\n      from: {from}\n      to: {to}\n")
+}
+
+fn refusals(report: &Report) -> Vec<String> {
+    report
+        .rejected
+        .iter()
+        .map(|rejected| rejected.reason.to_string())
+        .collect()
+}
+
+/// The decisive case, and the reason it names three documents.
+///
+/// A finding may compare three documents and propose an edge between two of
+/// them. The line that tells a person where to write the front matter then has
+/// to name the source of the proposed edge, and the first path the finding
+/// names is a different document. Before this, the printer read
+/// `documents[0]`, so the report stated the edge on one line and named a
+/// document outside it on the next.
+#[test]
+fn the_document_told_to_declare_an_edge_is_its_source_and_not_the_first_path_named() {
+    let source = returned_with(
+        &[THIRD, FIRST, SECOND],
+        &proposal("conflicts_with", "DR-SWP-0001", "DR-SWP-0002"),
+    );
+    let report = report_of(&source);
+    assert_eq!(
+        report.verified.len(),
+        1,
+        "the finding did not carry: {:?}",
+        refusals(&report)
+    );
+    let rendered = report.render(ColorMode::Plain);
+    assert!(
+        rendered.contains(&format!("in the front matter of {FIRST}:")),
+        "the report tells a person to write the edge somewhere else:\n{rendered}"
+    );
+    assert!(
+        !rendered.contains(&format!("in the front matter of {THIRD}:")),
+        "the report names a document that is neither end of the edge:\n{rendered}"
+    );
+    assert_eq!(
+        report.verified[0]
+            .proposal
+            .as_ref()
+            .map(|found| found.path.as_str()),
+        Some(FIRST)
+    );
+}
+
+#[test]
+fn a_proposal_the_relation_does_not_admit_at_an_end_is_refused() {
+    let source = returned_with(
+        &[FIRST, SECOND],
+        &proposal("annotates", "DR-SWP-0001", "DR-SWP-0002"),
+    );
+    let report = report_of(&source);
+    assert!(
+        report.verified.is_empty(),
+        "an illegal edge reached a reader"
+    );
+    let refused = refusals(&report);
+    assert!(
+        refused.iter().any(|reason| reason
+            == "`annotates` admits `note` at the `from` end, and `DR-SWP-0001` there has the \
+                kind `decision_record`"),
+        "the endpoint refusal did not fire: {refused:?}"
+    );
+}
+
+/// The same pair of documents, under the relation's inverse name.
+///
+/// `annotates` admits `note` at its `from` end and `decision_record` at its
+/// `to` end. A proposal written as `annotated_by` puts its own `from` at the
+/// declared `to` end, so the offending end is the other one. An intake that
+/// discards the direction refuses this too, and names the wrong end while it
+/// does.
+#[test]
+fn a_proposal_under_an_inverse_name_reads_the_ends_the_other_way_round() {
+    let source = returned_with(
+        &[FIRST, SECOND],
+        &proposal("annotated_by", "DR-SWP-0001", "DR-SWP-0002"),
+    );
+    let report = report_of(&source);
+    assert!(
+        report.verified.is_empty(),
+        "an illegal edge reached a reader"
+    );
+    let refused = refusals(&report);
+    assert!(
+        refused.iter().any(|reason| reason
+            == "`annotated_by` admits `note` at the `to` end, and `DR-SWP-0002` there has the \
+                kind `decision_record`"),
+        "the refusal names the end the declared direction would have named: {refused:?}"
+    );
+}
+
+#[test]
+fn a_proposal_from_a_document_to_itself_is_refused() {
+    let source = returned_with(
+        &[FIRST, SECOND],
+        &proposal("conflicts_with", "DR-SWP-0001", "DR-SWP-0001"),
+    );
+    let report = report_of(&source);
+    assert!(report.verified.is_empty(), "a self-edge reached a reader");
+    let refused = refusals(&report);
+    assert!(
+        refused
+            .iter()
+            .any(|reason| reason.contains("to itself, and a document declares nothing")),
+        "the self-edge refusal did not fire: {refused:?}"
+    );
+}
+
+/// Novelty, read backwards.
+///
+/// `conflicts_with` is its own inverse, and the corpus declares
+/// `DR-SWP-0004 conflicts_with DR-SWP-0005`. So the same edge proposed the
+/// other way round is the same edge, and a report that carried it would tell a
+/// person to declare what their own front matter already says. The finding
+/// names two other documents here, because the class-implied novelty test
+/// already reads both orders over the pair a finding names and this test is
+/// about the explicit proposal.
+#[test]
+fn a_proposal_that_reverses_a_declared_symmetric_edge_is_refused() {
+    let source = returned_with(
+        &[FIRST, SECOND],
+        &proposal("conflicts_with", "DR-SWP-0005", "DR-SWP-0004"),
+    );
+    let report = report_of(&source);
+    assert!(
+        report.verified.is_empty(),
+        "a restatement of a declared symmetric edge reached a reader"
+    );
+    let refused = refusals(&report);
+    assert!(
+        refused
+            .iter()
+            .any(|reason| reason.contains("is already declared, so this restates the graph")),
+        "the symmetric novelty refusal did not fire: {refused:?}"
+    );
+}
+
+/// The other direction, which is the half a refusal that never fires looks
+/// exactly like.
+///
+/// A legal proposal between two documents the relation admits still carries,
+/// and the recorded return file's one proposal is still one of them.
+#[test]
+fn a_legal_proposal_still_carries() {
+    let source = returned_with(
+        &[FIRST, SECOND],
+        &proposal("conflicts_with", "DR-SWP-0001", "DR-SWP-0002"),
+    );
+    let report = report_of(&source);
+    assert_eq!(
+        report.rejected.len(),
+        0,
+        "a legal proposal was refused: {:?}",
+        refusals(&report)
+    );
+    assert_eq!(report.verified.len(), 1);
+
+    let recorded = report_of(&returned());
+    let carried = recorded
+        .verified
+        .iter()
+        .filter(|verified| verified.proposal.is_some())
+        .count();
+    assert_eq!(
+        carried, 1,
+        "the recorded return file no longer carries its one proposal"
+    );
+    assert!(
+        !refusals(&recorded)
+            .iter()
+            .any(|reason| reason.contains("admits") || reason.contains("to itself")),
+        "a new refusal now fires on the recorded file: {:?}",
+        refusals(&recorded)
+    );
 }
 
 // --- the quotation match ----------------------------------------------------

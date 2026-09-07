@@ -30,7 +30,14 @@ use crate::PROVENANCE;
 use headwater_yaml::json::Json;
 
 /// The version of this document's own shape.
-pub const VERSION: &str = "1.0";
+///
+/// `1.1` added `path` to [`finding`]'s `proposal` member, which names the
+/// document that would carry the front matter. A reader of a `1.0` document has
+/// only `from`, and resolving that identifier to a path needs the graph the
+/// reader does not hold. A `1.1` document that carries a proposal carries the
+/// path, so the absence of the member is a statement about the producer rather
+/// than about the proposal.
+pub const VERSION: &str = "1.1";
 
 pub fn render(report: &Report) -> String {
     document(report).render_pretty()
@@ -142,6 +149,11 @@ fn finding(verified: &crate::intake::Verified) -> Json {
                 ("relation", Json::string(&proposal.relation)),
                 ("from", Json::string(&proposal.from)),
                 ("to", Json::string(&proposal.to)),
+                // The document that would carry the front matter, which is the
+                // one at the `from` end and never the first path the finding
+                // names. The text report prints the same path on the line that
+                // tells a person where to write.
+                ("path", Json::string(&proposal.path)),
                 ("declared", Json::Bool(false)),
             ]),
         ));

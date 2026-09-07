@@ -1,5 +1,5 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "tool": "headwater",
   "mechanism": "sweep",
   "provenance": "agent",
@@ -47,6 +47,7 @@
         "relation": "conflicts_with",
         "from": "DR-SWP-0001",
         "to": "DR-SWP-0002",
+        "path": "corpus/0001-an-operator-may-disable-the-cache.md",
         "declared": false
       }
     },
