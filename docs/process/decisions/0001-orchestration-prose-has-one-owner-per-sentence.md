@@ -1,5 +1,5 @@
 ---
-id: HW-DR-0060
+id: HW-PD-0001
 status: current
 status_since: 2026-09-07
 summary: "Every sentence of orchestration prose has exactly one home, decided by who must obey it and whether it changes per dispatch, so the command holds only what the parent decides and each agent loads only what it must obey."
@@ -19,7 +19,7 @@ provenance:
 
 `.claude/commands/next-run.md` grew to 67 KB, about 16,850 tokens, over eleven runs. The whole of it loaded into the orchestrator's context for the whole of a run. Half of it was text destined for a subagent's prompt: the seven parts of an iteration's prompt, and the adversarial verification checklist. The parent carried that text on every turn and then wrote it out again into each dispatch, so it was paid twice.
 
-Two failures on record follow from that shape. A rule the parent obeyed and did not propagate cost 21% of one run, because the parent was the only holder of the rule and had to remember to paste it. Skill files drifted past rulings unchecked, because the fixtures that held them asserted only engine-verb claims. [The evaluation](../evaluations/the-build-order-as-a-multi-agent-system.md) records the third failure: the parent compacted five times, and its doctrine was prose of a length a compaction summarizes rather than preserves.
+Two failures on record follow from that shape. A rule the parent obeyed and did not propagate cost 21% of one run, because the parent was the only holder of the rule and had to remember to paste it. Skill files drifted past rulings unchecked, because the fixtures that held them asserted only engine-verb claims. [The evaluation](../../evaluations/the-build-order-as-a-multi-agent-system.md) records the third failure: the parent compacted five times, and its doctrine was prose of a length a compaction summarizes rather than preserves.
 
 An agent definition is selected by name and loads on every dispatch. A skill is selected by a model reading a description, which this repository treats as a measurement rather than a property. A narrow definition that names a skill to invoke is a reliable draw where a broad session is not.
 

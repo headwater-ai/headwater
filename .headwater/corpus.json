@@ -47,6 +47,11 @@
           "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor"
         },
         {
+          "shelf": "process_decisions",
+          "path": "docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md",
+          "id": "HW-PD-0001"
+        },
+        {
           "shelf": "requirements",
           "path": "docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md",
           "id": "HW-REQ-0001"

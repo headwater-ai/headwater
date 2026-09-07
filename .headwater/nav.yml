@@ -62,12 +62,6 @@ nav:
       - "A shelf layout is the second half of what the identifier claim store covers": "decisions/0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md"
       - "A blank facet value is a rule of its own and it reads every string facet": "decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md"
       - "A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to": "decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md"
-      - "Orchestration prose has one owner per sentence": "decisions/0060-orchestration-prose-has-one-owner-per-sentence.md"
-      - "Adjudication is a separate stage, and refusal is licensed": "decisions/0061-adjudication-is-a-separate-stage-and-refusal-is-licensed.md"
-      - "A dispatch pays when it retires more parent turns than it costs": "decisions/0062-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md"
-      - "Coordination is a create-only claim, and authority stays on the tree": "decisions/0063-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md"
-      - "The ledger is split, its tabular parts are JSONL, and its totals are derived": "decisions/0064-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md"
-      - "The entrypoint keeps its name and becomes a resumable run": "decisions/0065-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
@@ -301,6 +295,14 @@ nav:
       - "A counted tombstone separates a withheld answer from an absent answer": "probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md"
       - "An agent reaches the adjudication from the document that lost it": "probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md"
       - "The authoring skill reaches an agent that is about to write a governed document": "probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md"
+  - "Process decisions":
+      - "Process decisions": "process/decisions/README.md"
+      - "Orchestration prose has one owner per sentence": "process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md"
+      - "Adjudication is a separate stage, and refusal is licensed": "process/decisions/0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md"
+      - "A dispatch pays when it retires more parent turns than it costs": "process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md"
+      - "Coordination is a create-only claim, and authority stays on the tree": "process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md"
+      - "The ledger is split, its tabular parts are JSONL, and its totals are derived": "process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md"
+      - "The entrypoint keeps its name and becomes a resumable run": "process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md"
   - "Requirements":
       - "Requirements": "requirements/README.md"
       - "The engine reaches no network at check time": "requirements/0001-the-engine-reaches-no-network-at-check-time.md"

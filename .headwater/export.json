@@ -1694,132 +1694,6 @@
         }
       },
       {
-        "path": "docs/decisions/0060-orchestration-prose-has-one-owner-per-sentence.md",
-        "kind": "decision",
-        "id": "HW-DR-0060",
-        "warrant": "asserted",
-        "facets": {
-          "id": "HW-DR-0060",
-          "status": "current",
-          "status_since": "2026-09-07",
-          "summary": "Every sentence of orchestration prose has exactly one home, decided by who must obey it and whether it changes per dispatch, so the command holds only what the parent decides and each agent loads only what it must obey.",
-          "last_verified": "2026-09-07",
-          "title": "Orchestration prose has one owner per sentence",
-          "provenance": {
-            "warrant": "asserted",
-            "agency": "agent",
-            "drafted_by": "claude-fable-5-1",
-            "activity": "measure+draft",
-            "evidence_basis": "evidenced"
-          }
-        }
-      },
-      {
-        "path": "docs/decisions/0061-adjudication-is-a-separate-stage-and-refusal-is-licensed.md",
-        "kind": "decision",
-        "id": "HW-DR-0061",
-        "warrant": "asserted",
-        "facets": {
-          "id": "HW-DR-0061",
-          "status": "current",
-          "status_since": "2026-09-07",
-          "summary": "Adjudication runs as its own stage before construction and its prompt licenses refusal, because a run that separated them returned a refusal or a correction from six of eight slots, and that costs one parent turn per issue which is paid.",
-          "last_verified": "2026-09-07",
-          "title": "Adjudication is a separate stage, and refusal is licensed",
-          "provenance": {
-            "warrant": "asserted",
-            "agency": "agent",
-            "drafted_by": "claude-fable-5-1",
-            "activity": "measure+draft",
-            "evidence_basis": "evidenced"
-          }
-        }
-      },
-      {
-        "path": "docs/decisions/0062-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md",
-        "kind": "decision",
-        "id": "HW-DR-0062",
-        "warrant": "asserted",
-        "facets": {
-          "id": "HW-DR-0062",
-          "status": "current",
-          "status_since": "2026-09-07",
-          "summary": "The unit of orchestration cost is one parent turn at full context, so a dispatch is worth making only when it retires more parent turns than the one it spends, which the integrator passes and a fresh agent per poll fails.",
-          "last_verified": "2026-09-07",
-          "title": "A dispatch pays when it retires more parent turns than it costs",
-          "provenance": {
-            "warrant": "asserted",
-            "agency": "agent",
-            "drafted_by": "claude-fable-5-1",
-            "activity": "measure+draft",
-            "evidence_basis": "evidenced"
-          }
-        }
-      },
-      {
-        "path": "docs/decisions/0063-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md",
-        "kind": "decision",
-        "id": "HW-DR-0063",
-        "warrant": "asserted",
-        "facets": {
-          "id": "HW-DR-0063",
-          "status": "current",
-          "status_since": "2026-09-07",
-          "summary": "Workers coordinate through create-only claim directories that every worktree can reach and the parent never relays, while the merge veto and a re-verification stay messages from the parent, because a peer's message carries no owner authority.",
-          "last_verified": "2026-09-07",
-          "title": "Coordination is a create-only claim, and authority stays on the tree",
-          "provenance": {
-            "warrant": "asserted",
-            "agency": "agent",
-            "drafted_by": "claude-fable-5-1",
-            "activity": "measure+draft",
-            "evidence_basis": "evidenced"
-          }
-        }
-      },
-      {
-        "path": "docs/decisions/0064-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md",
-        "kind": "decision",
-        "id": "HW-DR-0064",
-        "warrant": "asserted",
-        "facets": {
-          "id": "HW-DR-0064",
-          "status": "current",
-          "status_since": "2026-09-07",
-          "summary": "The run ledger is one directory of small files rather than one markdown file, its per-iteration log and its findings are JSONL read by the line, every total is derived and never stored, and a database is deferred until a cross-run question asks for one.",
-          "last_verified": "2026-09-07",
-          "title": "The ledger is split, its tabular parts are JSONL, and its totals are derived",
-          "provenance": {
-            "warrant": "asserted",
-            "agency": "agent",
-            "drafted_by": "claude-fable-5-1",
-            "activity": "measure+draft",
-            "evidence_basis": "evidenced"
-          }
-        }
-      },
-      {
-        "path": "docs/decisions/0065-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md",
-        "kind": "decision",
-        "id": "HW-DR-0065",
-        "warrant": "asserted",
-        "facets": {
-          "id": "HW-DR-0065",
-          "status": "current",
-          "status_since": "2026-09-07",
-          "summary": "The build order keeps the name next-run and gains a run directory it writes as it goes, so that a compaction, a crash or a second invocation resumes from a doctrine block of ten lines and a log read by the line, with each stage's model declared in its own frontmatter.",
-          "last_verified": "2026-09-07",
-          "title": "The entrypoint keeps its name and becomes a resumable run",
-          "provenance": {
-            "warrant": "asserted",
-            "agency": "agent",
-            "drafted_by": "claude-fable-5-1",
-            "activity": "measure+draft",
-            "evidence_basis": "evidenced"
-          }
-        }
-      },
-      {
         "path": "docs/evaluations/adjacent-work.md",
         "kind": "evaluation",
         "id": "HW-EVAL-adjacent-work",
@@ -7731,6 +7605,132 @@
             "traces_to": [
               "HW-SPEC-ai-integration"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0001",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0001",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Every sentence of orchestration prose has exactly one home, decided by who must obey it and whether it changes per dispatch, so the command holds only what the parent decides and each agent loads only what it must obey.",
+          "last_verified": "2026-09-07",
+          "title": "Orchestration prose has one owner per sentence",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-fable-5-1",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0002",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0002",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Adjudication runs as its own stage before construction and its prompt licenses refusal, because a run that separated them returned a refusal or a correction from six of eight slots, and that costs one parent turn per issue which is paid.",
+          "last_verified": "2026-09-07",
+          "title": "Adjudication is a separate stage, and refusal is licensed",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-fable-5-1",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0003",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0003",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "The unit of orchestration cost is one parent turn at full context, so a dispatch is worth making only when it retires more parent turns than the one it spends, which the integrator passes and a fresh agent per poll fails.",
+          "last_verified": "2026-09-07",
+          "title": "A dispatch pays when it retires more parent turns than it costs",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-fable-5-1",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0004",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0004",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Workers coordinate through create-only claim directories that every worktree can reach and the parent never relays, while the merge veto and a re-verification stay messages from the parent, because a peer's message carries no owner authority.",
+          "last_verified": "2026-09-07",
+          "title": "Coordination is a create-only claim, and authority stays on the tree",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-fable-5-1",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0005",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0005",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "The run ledger is one directory of small files rather than one markdown file, its per-iteration log and its findings are JSONL read by the line, every total is derived and never stored, and a database is deferred until a cross-run question asks for one.",
+          "last_verified": "2026-09-07",
+          "title": "The ledger is split, its tabular parts are JSONL, and its totals are derived",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-fable-5-1",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0006",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0006",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "The build order keeps the name next-run and gains a run directory it writes as it goes, so that a compaction, a crash or a second invocation resumes from a doctrine block of ten lines and a log read by the line, with each stage's model declared in its own frontmatter.",
+          "last_verified": "2026-09-07",
+          "title": "The entrypoint keeps its name and becomes a resumable run",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-fable-5-1",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
           }
         }
       },

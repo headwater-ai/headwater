@@ -1,5 +1,5 @@
 ---
-id: HW-DR-0064
+id: HW-PD-0005
 status: current
 status_since: 2026-09-07
 summary: "The run ledger is one directory of small files rather than one markdown file, its per-iteration log and its findings are JSONL read by the line, every total is derived and never stored, and a database is deferred until a cross-run question asks for one."
@@ -21,7 +21,7 @@ The ledger was one markdown file at `~/.claude/headwater-build-order-ledger.md`,
 
 Run 22 measured the other hazard. It spent 31,568 tokens and 2.8 million token-reads writing the ledger through forty `cat >>` heredocs, because a shell argument is context as permanent as any result. Any store whose writes go through a shell command inherits that cost.
 
-[HW-DR-0049](0049-a-corpus-wide-fold-is-derived-and-never-stored.md) rules that a recorded artifact holds one record per entity and derives every total. The ledger's log carried a net issue delta as a hand-maintained number, which is a stored fold.
+[HW-DR-0049](../../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) rules that a recorded artifact holds one record per entity and derives every total. The ledger's log carried a net issue delta as a hand-maintained number, which is a stored fold.
 
 ## Decision
 
