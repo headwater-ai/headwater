@@ -5671,9 +5671,19 @@ corpus:
 # A relation names its target by identifier. A corpus whose documents carry none
 # has no edges, and no check about an edge can say anything about it.
 #
+# `add` states a value the package leaves unstated, and `override` replaces one
+# the package already states, so the operation follows the package rather than
+# the taste of the writer. `{package}` declares `decision_id` with no namespace
+# and gives `decision` that scheme, so the namespace below is an `add` on a leaf
+# the package leaves empty, and the kind below is an `override` because `add`
+# over a value the package already states is refused. Replace ACME with the
+# prefix this corpus uses.
+#
 #   add:
 #     identifier_schemes.doc_id: {{pattern: \"{{namespace}}-DOC-{{slug}}\", namespace: ACME, allocation: minted-once}}
-#     kinds.<kind>.identifier: {{scheme: doc_id}}
+#     identifier_schemes.decision_id.namespace: ACME
+#   override:
+#     kinds.decision.identifier: {{scheme: doc_id}}
 #
 # INTERVIEW 3 --- what does this corpus already write?
 #
