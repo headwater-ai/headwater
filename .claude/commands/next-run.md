@@ -34,7 +34,7 @@ Ten lines the parent of a build-order run obeys on every turn. `.claude/commands
 
 ## The loop
 
-The run directory is `$(git rev-parse --git-common-dir)/headwater-run/<run-id>/`, reachable from every worktree. Make it on your first turn, copy `.claude/run/doctrine.md` into it, and give every agent its path. Until the ledger split lands, the ledger stays at `~/.claude/headwater-build-order-ledger.md`; read its Lessons once at the top and never again.
+`sh tools/run-dir.sh start` makes the run directory under the git common dir, reachable from every worktree, with the doctrine copied in and the last run's lessons and decisions seeded; it prints the path, and every dispatch carries it. That directory is the ledger ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)): `run-dir.sh log` takes one line per iteration, `run-dir.sh tail` is what you read, `run-dir.sh net` derives opened minus closed, and `lessons.md` and `decisions.md` are yours to append with `Edit`. Read `lessons.md` once at the top and never again.
 
 1. **Top of the run.** Dispatch `headwater-product-owner` and `hw-queue` in one turn. The queue agent writes the ordered eligible issues into the run directory; read its report and nothing else.
 2. **Fill.** While fewer than N issues are in flight and the queue holds one, dispatch `hw-adjudicate` for the next issue with the template below.

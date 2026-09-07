@@ -727,6 +727,28 @@ jobs:
         # shipped store. It builds no engine and writes only under a temporary
         # directory.
         run: sh tools/id-store-fixtures.sh
+      - name: The run directory refuses a reused id, a short line and a stored total
+        # `tools/run-dir.sh` is the ledger of a build-order run: a directory
+        # under the git common dir, its tabular parts as JSON lines, and every
+        # total derived by the reader and never stored, which is HW-DR-0049
+        # applied to a ledger and HW-PD-0005 is why. The tool refuses a
+        # second start under one id, a log line missing a key, and a line
+        # that carries a total. This suite provokes each refusal, holds the
+        # derived total against the lines it wrote, and checks that the
+        # doctrine a run copies in is the checked-in doctrine byte for byte.
+        #
+        # It needs `jq`, which is a developer dependency and nothing an
+        # adopter runs. A runner without it skips with a warning rather than
+        # failing, the way the browser console step does. It writes only
+        # under a temporary directory.
+        run: |
+          status=0
+          sh tools/run-dir-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Run directory fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
       - name: The build still declares its license and still refuses to rewrite its lock
         # Two declarations that are green the day they land and green forever.
         # `--locked` on a lock that is in sync changes no exit status, so

@@ -41,7 +41,7 @@ Then `HEADWATER_BLESS=1 cargo test --workspace --no-fail-fast --manifest-path en
 
 **Write back, because it is the part that compounds.** Comment on the issue wherever the work found it wrong, through `gh api -X PATCH` and `gh api ... /comments` rather than `gh issue view`, which fails on a deprecated field. Close the issue the pull request closes and confirm the close took; an agent can state a write-back and not land it. Route a finding that sharpens a closed decision to spec 13, never to spec 9, which accepts no new question.
 
-**Write the ledger line.** One line for this iteration, appended to the run's log: issue, pull request, merge commit, verdict, what verification proved, issues opened and closed. Totals are derived by whoever reads the log and never stored ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)).
+**Write the ledger line.** `sh tools/run-dir.sh log <run> '<json>'` with `iter`, `issue`, `pr`, `merge`, `verdict`, `proved` (what verification proved, never what the build claimed), `opened` and `closed`. The tool refuses a missing key and a stored total, because totals are derived by whoever reads the log and never stored ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)).
 
 **Wait by blocking.** CI on the merge commit is one blocking wait, never a check per turn, and a red `main` is the first line of `LEFT`, for the next iteration's branch to fix before its own work.
 
