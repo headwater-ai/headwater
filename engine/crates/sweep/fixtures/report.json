@@ -1,5 +1,5 @@
 {
-  "version": "1.1",
+  "version": "1.2",
   "tool": "headwater",
   "mechanism": "sweep",
   "provenance": "agent",
@@ -10,8 +10,8 @@
     "corpus": 5
   },
   "counts": {
-    "read": 6,
-    "carried": 2,
+    "read": 7,
+    "carried": 3,
     "refused": 4
   },
   "findings": [
@@ -48,6 +48,7 @@
         "from": "DR-SWP-0001",
         "to": "DR-SWP-0002",
         "path": "corpus/0001-an-operator-may-disable-the-cache.md",
+        "owed": null,
         "declared": false
       }
     },
@@ -78,27 +79,68 @@
           "quote": "TODO one sentence: what a reader learns here, which is what routing reads"
         }
       ]
+    },
+    {
+      "rule": "sweep.quiet_supersession",
+      "class": "quiet_supersession",
+      "provenance": "agent",
+      "severity": "info",
+      "obligation": null,
+      "path": "corpus/0005-a-run-records-nothing-about-what-it-read.md",
+      "line": 17,
+      "column": 1,
+      "message": "The later decision withdraws the read set the earlier one requires, and neither says so.",
+      "remediation": "read both passages. Declare `supersedes` from the newer document, or correct the older one",
+      "fixable": false,
+      "documents": [
+        "corpus/0005-a-run-records-nothing-about-what-it-read.md",
+        "corpus/0004-a-read-set-is-recorded-for-every-run.md"
+      ],
+      "evidence": [
+        {
+          "path": "corpus/0005-a-run-records-nothing-about-what-it-read.md",
+          "line": 17,
+          "quote": "A run reports its findings and records nothing about its inputs."
+        },
+        {
+          "path": "corpus/0004-a-read-set-is-recorded-for-every-run.md",
+          "line": 20,
+          "quote": "Every run records the content hash of every document and every edge it read."
+        }
+      ],
+      "proposal": {
+        "relation": "supersedes",
+        "from": "DR-SWP-0005",
+        "to": "DR-SWP-0004",
+        "path": "corpus/0005-a-run-records-nothing-about-what-it-read.md",
+        "owed": {
+          "path": "corpus/0004-a-read-set-is-recorded-for-every-run.md",
+          "relation": "superseded_by",
+          "id": "DR-SWP-0005"
+        },
+        "declared": false
+      }
     }
   ],
   "refused": [
     {
       "at": 3,
-      "line": 51,
+      "line": 56,
       "reason": "`corpus/0001-an-operator-may-disable-the-cache.md` does not hold the quotation \"The cache is written to a database that survives the run.\""
     },
     {
       "at": 4,
-      "line": 60,
+      "line": 65,
       "reason": "`DR-SWP-0004 conflicts_with DR-SWP-0005` is already declared, so this restates the graph"
     },
     {
       "at": 5,
-      "line": 72,
+      "line": 77,
       "reason": "`corpus/0009-the-document-that-is-not-there.md` is not a classified document of this corpus"
     },
     {
       "at": 6,
-      "line": 81,
+      "line": 86,
       "reason": "`prose_quality` is not a class of this sweep. The classes are: undeclared_conflict, quiet_supersession, undefined_concept, audience_mismatch, unwritten_section"
     }
   ]

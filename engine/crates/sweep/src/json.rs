@@ -37,7 +37,14 @@ use headwater_yaml::json::Json;
 /// reader does not hold. A `1.1` document that carries a proposal carries the
 /// path, so the absence of the member is a statement about the producer rather
 /// than about the proposal.
-pub const VERSION: &str = "1.1";
+///
+/// `1.2` added `owed`, which carries the second half of a `reciprocal:
+/// required` pair. It is `null` for every relation that requires one end, so a
+/// reader tells the two apart. A `1.1` producer wrote one half of a required
+/// pair and named the other nowhere, so a consumer that applied a `1.1`
+/// proposal to a corpus produced one that `relation.reciprocity.missing`
+/// refuses.
+pub const VERSION: &str = "1.2";
 
 pub fn render(report: &Report) -> String {
     document(report).render_pretty()
@@ -154,6 +161,22 @@ fn finding(verified: &crate::intake::Verified) -> Json {
                 // names. The text report prints the same path on the line that
                 // tells a person where to write.
                 ("path", Json::string(&proposal.path)),
+                // The half the far document owes, when the relation says
+                // `reciprocal: required`, and `null` when it says anything
+                // else. A consumer that writes the member above and stops
+                // writes one half of a pair, and the check layer reports the
+                // other half as an error against the document it just wrote.
+                (
+                    "owed",
+                    match &proposal.owed {
+                        Some(owed) => Json::object([
+                            ("path", Json::string(&owed.path)),
+                            ("relation", Json::string(&owed.relation)),
+                            ("id", Json::string(&owed.id)),
+                        ]),
+                        None => Json::Raw("null".to_string()),
+                    },
+                ),
                 ("declared", Json::Bool(false)),
             ]),
         ));

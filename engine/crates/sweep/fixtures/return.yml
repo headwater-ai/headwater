@@ -2,14 +2,19 @@
 #
 # What an agent writes back, in the shape `headwater sweep plan` prints.
 #
-# Six findings, and two of them reach a reader. This file is written by hand and
-# it stands for a model's output: no test here claims that a model would return
-# these six, and the suite over it is a test of the intake rather than of a
-# model. That distinction is the point of the mechanism. The sample is not
+# Seven findings, and three of them reach a reader. This file is written by hand
+# and it stands for a model's output: no test here claims that a model would
+# return these seven, and the suite over it is a test of the intake rather than
+# of a model. That distinction is the point of the mechanism. The sample is not
 # reproducible and everything this engine says about a sample is.
 #
 # The four refusals are one per test the intake runs, so a regression in any of
 # them shows up as a finding that reached a reader and should not have.
+#
+# The two carried proposals are one per reciprocity a relation can declare:
+# `conflicts_with` is symmetric and prints one block, `supersedes` requires both
+# ends and prints two. Without the second, `report.txt` and `report.json` print
+# the same bytes whether or not the printer knows about the second half.
 
 taxonomy: sha256:fixture
 slice: corpus
@@ -85,3 +90,25 @@ findings:
       - path: corpus/0002-the-cache-is-not-an-operator-setting.md
         quote: The cache is an implementation detail
     message: The prose here is harder to read than it needs to be.
+
+  # Carried, and last so that the refusals above keep the numbers they report
+  # under. `supersedes` says `reciprocal: required`, so the report prints two
+  # blocks for this one: the half the source document writes, and the half the
+  # target document owes. A report that printed the first alone would tell a
+  # reader to write front matter that their own commit gate then refuses with
+  # `relation.reciprocity.missing`, which is the whole reason this finding is
+  # in the file.
+  - class: quiet_supersession
+    documents:
+      - corpus/0005-a-run-records-nothing-about-what-it-read.md
+      - corpus/0004-a-read-set-is-recorded-for-every-run.md
+    evidence:
+      - path: corpus/0005-a-run-records-nothing-about-what-it-read.md
+        quote: A run reports its findings and records nothing about its inputs.
+      - path: corpus/0004-a-read-set-is-recorded-for-every-run.md
+        quote: Every run records the content hash of every document and every edge it read.
+    message: The later decision withdraws the read set the earlier one requires, and neither says so.
+    proposal:
+      relation: supersedes
+      from: DR-SWP-0005
+      to: DR-SWP-0004
