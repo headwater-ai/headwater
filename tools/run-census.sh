@@ -22,13 +22,18 @@
 # tables together say both what a turn was for and what it ran. A row is the
 # calls in that group, the distinct turns that made one, the cache reads
 # those turns re-read, and that as a share of the whole session's cache reads.
+# A fleet section follows the tables, read from the agent transcripts the
+# harness writes beside the session file: the share of the span with no agent
+# in flight, the mean number in flight, the gap around each compaction, and
+# the parent's turns per agent of each type.
 #
 # Usage is taken once per `message.id`. One response is written to the log as
 # several lines, one per content block, each carrying the same usage record,
 # so a count per line inflates turns and tokens by about 2.3 times and does so
 # unevenly. Every figure the evaluation cites is per message, and so is this.
 #
-# It gates nothing, it reads one file, and it needs `jq`.
+# It gates nothing, it reads one session and the agent transcripts beside it,
+# and it needs `jq`.
 
 set -u
 
@@ -128,3 +133,75 @@ table 'Bash, by what the command mentions (a call can be in several rows)' '
           "git merge", "git rebase", "until ", "while ", "for ", "sleep "]
        | map(select(. as $p | $c | test("(^|[^A-Za-z0-9_/.-])" + $p))))
     end'
+
+
+# The fleet: what the agents this session dispatched were doing while its
+# turns were spent. The harness writes each agent's own transcript beside the
+# session's, as `<session>/subagents/agent-<id>.jsonl` with a `.meta.json`
+# naming its type, its depth and the `Agent` call that dispatched it, and the
+# first and last timestamps of that file are the interval the agent was in
+# flight. The parent's transcript is not enough for this: a completion notice
+# that lands while the parent is mid-turn is written as an attachment and
+# not as a message, so a count of notices misses a fifth of the fleet. A
+# sweep over the depth-one intervals gives the share of the span with no
+# agent in flight and the mean number in flight, which are the two figures
+# the evaluation's baseline row took by hand. Each compaction is listed with
+# the gap from the parent's last turn before it and the gap to its first
+# dispatch after it. Turns per dispatch is this session's turns over the
+# agents of that type, so the row for the integrator is the parent's turns
+# per merge.
+printf '\nfleet\n'
+subdir="${file%.jsonl}/subagents"
+if ! ls "$subdir"/agent-*.meta.json >/dev/null 2>&1; then
+    echo "no agent transcripts beside the session file, so no fleet"
+    exit 0
+fi
+spans=$(jq -R -c -n '
+    reduce (inputs | try fromjson catch null) as $l ({};
+        if ($l | type) != "object" or $l.timestamp == null then . else
+          (input_filename | split("/") | last | sub("\\.jsonl$"; "")) as $k
+          | .[$k] |= {min: ([.min, $l.timestamp] | map(select(. != null)) | min),
+                      max: ([.max, $l.timestamp] | map(select(. != null)) | max)}
+        end)
+' "$subdir"/agent-*.jsonl)
+metas=$(jq -c '
+    {id: (input_filename | split("/") | last | sub("\\.meta\\.json$"; "")),
+     type: (.agentType // "default"), depth: (.spawnDepth // 1)}
+' "$subdir"/agent-*.meta.json | jq -s .)
+jq -r -n --argjson turns "$total_turns" --argjson spans "$spans" --argjson metas "$metas" '
+    def ts: sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601;
+    def mins: . / 6 | round / 10;
+    def hours: . / 360 | round / 10;
+    def pct: . * 1000 | round / 10;
+    def pad($w): tostring | " " * ($w - length) + .;
+    [inputs] as $all
+    | ($all | map(select(.type == "assistant" and .timestamp != null) | .timestamp | ts)) as $tt
+    | [ $all[] | select(.type == "assistant" and .timestamp != null) | (.timestamp | ts) as $t
+        | .message.content[]? | select(.type == "tool_use" and .name == "Agent") | $t ] as $disp
+    | [ $metas[] | select($spans[.id] != null)
+        | . + {t: ($spans[.id].min | ts), end: ($spans[.id].max | ts)} ] as $every
+    | ($every | map(select(.depth == 1))) as $agents
+    | "dispatched \($disp | length) by Agent calls, \($agents | length) agents at depth one, \($every | length - ($agents | length)) deeper",
+      (if ($agents | length) == 0 then "no agent at depth one, so no span" else
+        (($agents | map({t: .t, d: 1})) + ($agents | map({t: .end, d: -1})) | sort_by(.t, .d)) as $ev
+        | (reduce $ev[] as $e ({n: 0, t: null, busy: 0, area: 0, gap: 0};
+              (if .t == null then 0 else ($e.t - .t) end) as $dt
+              | {n: (.n + $e.d), t: $e.t,
+                 busy: (.busy + (if .n > 0 then $dt else 0 end)),
+                 area: (.area + .n * $dt),
+                 gap: (if .n == 0 and .t != null and $dt > .gap then $dt else .gap end)})) as $sw
+        | (($agents | map(.end) | max) - ($agents | map(.t) | min)) as $span
+        | "span \($span | hours) h from the first agent'"'"'s start to the last agent'"'"'s end",
+          "idle \(if $span > 0 then ((1 - $sw.busy / $span) | pct) else 0 end)% of the span with no agent in flight, \(($span - $sw.busy) | hours) h, largest window \($sw.gap | mins) min",
+          "mean concurrency \(if $span > 0 then ($sw.area / $span * 100 | round / 100) else 0 end) agents in flight"
+       end),
+      ($all | map(select(.isCompactSummary == true) | .timestamp | ts)) as $comp
+      | "compactions \($comp | length)",
+        ($comp[] | . as $c
+          | "  \($c | todate)  \(($c - ([$tt[] | select(. < $c)] | max // $c)) | mins) min since the parent'"'"'s last turn, \((([$disp[] | select(. > $c)] | min // $c) - $c) | mins) min to its next dispatch"),
+      (if ($agents | length) > 0 then
+        "by agent type                    agents   mean_min   turns_per_agent",
+        ($agents | group_by(.type) | sort_by(-length)[]
+          | "\(.[0].type | . + " " * (32 - length))\(length | pad(6))\((map(.end - .t) | add) / length | mins | pad(11))\($turns / length * 10 | round / 10 | pad(18))")
+       else empty end)
+' "$file"

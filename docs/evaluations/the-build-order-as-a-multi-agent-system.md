@@ -115,19 +115,21 @@ The stages are adjudication, construction, verification and integration, and int
 
 ## The numbers the next run is held against
 
-| Measure | Baseline | Target |
-|---|---|---|
-| Parent turns per issue | not measured as such | 4 |
-| Share of the window with no agent in flight | 20.9% | near zero |
-| Mean in-flight concurrency at width 5 | 4.00 | at or above 4.00 |
-| Largest gap after a compaction | 82.8 min | under the dispatch cost |
-| Parent `gh` calls | 92 | 0 |
-| `cargo build` in the parent | 26 calls, 67 min | 0 |
-| First-to-last completion spread per batch | 9.3 h total | not applicable, no batches |
+| Measure | Baseline by hand | Baseline by the tool | Target |
+|---|---|---|---|
+| Parent turns per issue | not measured as such | 19.6, as 880 turns over 45 pull requests | 4 |
+| Share of the window with no agent in flight | 20.9% | 0%, largest window 0 min | near zero |
+| Mean in-flight concurrency at width 5 | 4.00 | 9.54 over the whole run | at or above 4.00 |
+| Largest gap after a compaction | 82.8 min | 22.3 min after, 87.6 min before | under the dispatch cost |
+| Parent `gh` calls | 92 | 88 by leading verb | 0 |
+| `cargo build` in the parent | 26 calls, 67 min | 8 by leading verb, 15 mentioned | 0 |
+| First-to-last completion spread per batch | 9.3 h total | not taken | not applicable, no batches |
 
-`tools/run-census.sh` takes these from a session log, and the run that follows this design writes its numbers into this table.
+`tools/run-census.sh` takes these from a session log and the agent transcripts beside it. The run that follows this design writes its numbers into this table.
 
 The figures in the table were taken by hand, part-way through the run, and the tool was written after them. Over the whole transcript of that run the tool reports 880 turns and 227.3 million cache reads. Mentions of `gh pr view` cost 66 calls, 66 turns and 18.1 million cache reads, which is 8.0% of the run. Mentions of `gh pr list` cost 24 calls, 24 turns and 6.7 million, which is 2.9%. The tool counts a call once per turn and a turn once per message, and it reads a verb past a leading `cd` or `set -e`, because that run wrote nearly every command in that shape. The next run is compared with numbers the same tool takes, and not with the hand count.
+
+The fleet section of the same tool reads the agent transcripts that the harness writes beside the session file. Over the whole run it does not reproduce the hand count. It finds 165 agents at depth one over a span of 20 hours. No window had nothing in flight, and 9.54 agents were in flight on average. The hand count found 20.9% idle and a mean between 3.03 and 4.00. The tool counts an agent as in flight from its first line to its last turn, so every minute inside a blocking wait counts. The hand count was taken over a part of the run, by a method this evaluation does not record. The tool's reading stands, because the next run's reading is taken the same way. The largest gap before a compaction was 87.6 minutes from the parent's last turn. The largest gap after one was 22.3 minutes to its next dispatch. The parent took 5.5 turns per agent over 161 agents of one type, and 19.6 turns per pull request over 45.
 
 ## What this evaluation cannot show
 
