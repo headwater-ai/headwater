@@ -1162,8 +1162,31 @@ fn apply_records_the_migration_state_in_the_lock() {
     );
 }
 
+/// The whole sentence `migrate` prints when nothing pins the artifact.
+///
+/// Asserted entire, and not as a prefix of itself. The clause this constant
+/// replaced said `taxonomy vendor` pins the digest, and the assertion below
+/// stopped one word before it, so a false remedy stood in the engine's own
+/// output with a passing case over it. A prefix cannot see the end of a
+/// sentence, so the end of the sentence is what the case now carries.
+const NO_PIN_REMEDY: &str = "  `.headwater/taxonomy.yml` pins no digest, so this run cannot write \
+                             a verifiable `adoption.from` (HW-DR-0046). The pin is authored: take \
+                             the digest the publisher states and write it as `taxonomy.digest` in \
+                             `.headwater/taxonomy.yml` by hand, and a later run of this verb \
+                             records the migration. Every other file below is still written on \
+                             `--apply`";
+
 /// A run with no digest pinned writes every other file and leaves the lock
 /// exactly as it was, rather than writing a `from` this run cannot verify.
+///
+/// It also holds the remedy that run prints, by performing both halves of it.
+/// `taxonomy vendor --expect <digest>` is run first, on the artifact this case
+/// published, and the declaration is read back byte for byte: the check passes,
+/// the artifact installs, and no pin is recorded. Then the digest is written
+/// into the declaration by hand and the same `migrate --apply` is run again,
+/// and the lock records the `adoption.from` the first run could not write. So
+/// the sentence is measured at both ends rather than quoted from the source
+/// beside it.
 #[test]
 fn apply_with_no_pinned_digest_writes_no_migration_state() {
     let root = Root::new("no-digest-no-lock-write");
@@ -1181,18 +1204,62 @@ fn apply_with_no_pinned_digest_writes_no_migration_state() {
     std::fs::write(root.at.join(".headwater/taxonomy.yml"), unpinned)
         .expect("the consumer declaration writes");
 
-    assert_eq!(root.publish("1.0.0").code, Some(0));
+    let published = root.publish("1.0.0");
+    assert_eq!(published.code, Some(0));
+    let at = published
+        .out
+        .find("sha256:")
+        .expect("the publish prints the digest it wrote");
+    let digest = published.out[at..at + "sha256:".len() + 64].to_string();
     root.candidate(Some(&payload()));
     assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    // The first half of the remedy, measured. A passing `--expect` check
+    // installs the artifact and records nothing, which is what makes the
+    // sentence below a measurement rather than a restatement of the source.
+    //
+    // The maintained source moves aside first and comes back after. `taxonomy
+    // vendor` refuses to write over a `packages/<name>` that carries no release
+    // record — "a package somebody maintains rather than one that was
+    // vendored" — and this fixture root is exactly that case. The move is the
+    // remedy that verb names, and it moves out of `packages/` entirely
+    // because the refusal is by declared package name and not by directory
+    // name. The restore leaves the tree the later assertions read byte for
+    // byte what it was.
+    let maintained = root.at.join("packages/headwater-standard");
+    let aside = root.at.join("maintained-source");
+    std::fs::rename(&maintained, &aside).expect("the maintained source moves aside");
+    let vendored = root.run(&[
+        "taxonomy",
+        "vendor",
+        root.released("1.0.0").to_str().expect("utf-8"),
+        "--expect",
+        &digest,
+    ]);
+    assert_eq!(vendored.code, Some(0), "the check passes: {vendored:?}");
+    assert!(
+        vendored.out.contains(&digest),
+        "over the digest this case published: {vendored:?}"
+    );
+    assert!(
+        !root.read(".headwater/taxonomy.yml").contains("digest: "),
+        "and it wrote no pin: {}",
+        root.read(".headwater/taxonomy.yml")
+    );
+    std::fs::remove_dir_all(&maintained).expect("the vendored artifact goes");
+    std::fs::rename(&aside, &maintained).expect("the maintained source comes back");
 
     let before =
         std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads");
     let ran = root.migrate("2.0.0", &["--apply"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(
-        ran.out
-            .contains("pins no digest, so this run cannot write a verifiable `adoption.from`"),
-        "the run states why: {ran:?}"
+        ran.out.contains(NO_PIN_REMEDY),
+        "the run states why, and the whole sentence stands: {ran:?}"
+    );
+    assert!(
+        !ran.out.contains("`taxonomy vendor` pins"),
+        "and it names no verb that would refuse this adopter: {ran:?}"
     );
     assert!(
         ran.out.contains("wrote 1 value in 1 file"),
@@ -1202,6 +1269,32 @@ fn apply_with_no_pinned_digest_writes_no_migration_state() {
         std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads"),
         before,
         "and the lock is byte for byte what it was"
+    );
+
+    // The second half of the remedy, performed. The digest goes into the
+    // declaration by hand, where the sentence says it goes, and the same run
+    // then writes the migration state it refused to write above.
+    let repinned = std::fs::read_to_string(root.at.join(".headwater/taxonomy.yml"))
+        .expect("the consumer declaration reads")
+        .replace(
+            "\n  version: ",
+            &format!("\n  digest: {digest}\n  version: "),
+        );
+    assert!(repinned.contains(&digest), "the pin is written by hand");
+    std::fs::write(root.at.join(".headwater/taxonomy.yml"), repinned)
+        .expect("the consumer declaration writes");
+    let after = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(after.code, Some(0), "{after:?}");
+    assert!(
+        !after.out.contains("pins no digest"),
+        "the run has a pin now: {after:?}"
+    );
+    let lock =
+        std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads");
+    assert!(
+        lock.contains(&digest),
+        "and a later run of this verb records the migration, which is what the remedy \
+         promises: {lock}"
     );
 }
 
