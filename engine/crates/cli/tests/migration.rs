@@ -1426,6 +1426,53 @@ fn a_break_a_step_reaches_still_asks_for_a_payload() {
     );
 }
 
+/// And the half of the fork that answers on an *empty* rule set.
+///
+/// The two cases above both move a rule, so both of them exercise the `all()`
+/// half of the guard and neither reaches the emptiness half. A rename of a kind
+/// is the break that answers the empty set: `classification` is keyed by a
+/// document path and names no rule, so the rules a payload is accounted against
+/// are deliberately empty for it. `all()` answers `true` on an empty set, so
+/// without the emptiness half of the guard this run tells a publisher that no
+/// step reaches a break `kind` is one of the three subjects for.
+///
+/// The candidate is [`KIND`] with no payload, and [`Root::without`] takes the
+/// house language regime off the kind first, for the reason
+/// [`a_kind_step_is_accounted_against_classification`] states: the isolation of
+/// the two dimensions is built here rather than assumed.
+#[test]
+fn a_classification_only_break_still_asks_for_a_payload() {
+    let root = Root::new("classification-only-break");
+    root.without("  kinds.decision.language:            ste_house\n");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate_of(&KIND, None);
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let ran = root.diff("2.0.0");
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert_eq!(
+        ran.dimension("classification"),
+        "BROKEN, 3 of them",
+        "the break is the rename: {ran:?}"
+    );
+    assert_eq!(
+        ran.dimension("instance_validity"),
+        "preserved",
+        "and no rule moved, or the empty set this case is about is not empty: {ran:?}"
+    );
+    assert!(
+        ran.out.contains(
+            "the artifact ships no migration payload for 1.0.0 to 2.0.0, and 3 documents \
+             stopped validating. Spec 2 makes a major version ship one"
+        ),
+        "a kind step reaches this break, so the publisher owes the file: {ran:?}"
+    );
+    assert!(
+        !ran.out.contains("No step can express this break"),
+        "and nothing tells the publisher the vocabulary cannot reach a rename of a kind: {ran:?}"
+    );
+}
+
 /// An artifact with no payload for this transition is a refusal rather than a
 /// run that migrated nothing and said it was done.
 #[test]
