@@ -223,3 +223,132 @@ fn carries(value: &headwater_yaml::Value, wanted: &str) -> bool {
         headwater_yaml::Value::Map(_) => false,
     }
 }
+
+/// Whether the transition from the version the lock names to the version the
+/// artifact publishes is one a migration payload can run.
+///
+/// `Ok(())` where `to` is strictly greater than `from`. `Err` carries the whole
+/// sentence a caller prints, in one of two arms.
+///
+/// # Why this reads the lock header and asks nothing else about the lock
+///
+/// The lock header sits outside the digest that `headwater_lock::read`
+/// verifies, so a header that already names the artifact's own version reads
+/// clean and reaches payload selection. Every other field of the header is
+/// already refused there: a `format` token this engine does not read, a rule
+/// set it does not validate against, and a `resolved` block that does not hash
+/// to the digest beside it. The version pair is the one field nothing held.
+///
+/// **This is not a currency check and it must not become one.** `taxonomy
+/// migrate` runs in a tree where the candidate has already replaced the source
+/// the lock was built from, so `taxonomy resolve --check` refuses every correct
+/// run of this verb. And `taxonomy resolve` is the one command a consumer must
+/// not run at that moment: it moves the lock onto the candidate and destroys
+/// the record of where the consumer started. A refusal naming it would make a
+/// migration unrecoverable.
+/// `engine/crates/cli/tests/migration.rs::the_ordinary_upgrade_is_not_refused`
+/// is what fails if anybody reaches for one.
+///
+/// # Why an unreadable version is not this predicate's refusal
+///
+/// A version neither side can parse is `Ok(())` here.
+/// [`headwater_resolve::release::parts`] refuses the same strings the range
+/// reader refuses, so the payload's own `covers` reports it against the range
+/// it failed under, which names the file the caller has to edit. A second
+/// refusal here would name neither.
+pub fn transition(from: &str, to: &str) -> Result<(), String> {
+    let (Ok(before), Ok(after)) = (
+        headwater_resolve::release::parts(from),
+        headwater_resolve::release::parts(to),
+    ) else {
+        return Ok(());
+    };
+    if after > before {
+        return Ok(());
+    }
+    if after == before {
+        // Names no publisher fault, and names neither `taxonomy diff` nor
+        // `headwater infer`. The publisher shipped a sound artifact, a `diff`
+        // over this pair reports every dimension preserved, and `infer` would
+        // record adoption debt in the consumer's own lock for a break that
+        // does not exist.
+        return Err(format!(
+            "the lock already takes {to}, which is the version this artifact publishes, so this \
+             tree records no earlier version to migrate from. A migration that ran and was \
+             resolved leaves the tree in this state, so a second run of the same command reads \
+             it. The version this repository moved from is now recoverable from version control \
+             alone"
+        ));
+    }
+    Err(format!(
+        "the lock takes {from} and this artifact publishes {to}. A migration payload runs forward \
+         only, so this verb applies no transition down to a version below the one the lock names"
+    ))
+}
+
+#[cfg(test)]
+mod transitions {
+    use super::transition;
+
+    #[test]
+    fn a_forward_transition_is_not_refused() {
+        assert_eq!(transition("1.0.0", "2.0.0"), Ok(()));
+        assert_eq!(transition("1.0.0", "1.0.1"), Ok(()));
+        assert_eq!(transition("1.9.0", "2.0.0"), Ok(()));
+    }
+
+    #[test]
+    fn the_equal_arm_blames_no_publisher_and_names_no_command_that_worsens_the_tree() {
+        let why = transition("4.1.0", "4.1.0").expect_err("a pair that is not forward");
+        assert!(why.contains("the lock already takes 4.1.0"), "{why}");
+        assert!(
+            why.contains("no earlier version to migrate from"),
+            "the tree records no source side: {why}"
+        );
+        assert!(
+            why.contains("second run of the same command"),
+            "the route a consumer took to get here: {why}"
+        );
+        assert!(
+            why.contains("version control"),
+            "where the version it moved from survives: {why}"
+        );
+        assert!(
+            !why.contains("Spec 2 makes a major version ship one"),
+            "the publisher shipped a sound artifact: {why}"
+        );
+        assert!(
+            !why.contains("headwater infer"),
+            "recording adoption debt for a break that does not exist: {why}"
+        );
+        assert!(
+            !why.contains("taxonomy diff"),
+            "a diff over this pair reports every dimension preserved: {why}"
+        );
+    }
+
+    #[test]
+    fn the_lesser_arm_says_a_payload_runs_forward_only() {
+        let why = transition("2.0.0", "1.0.0").expect_err("a pair that is not forward");
+        assert!(why.contains("the lock takes 2.0.0"), "{why}");
+        assert!(why.contains("this artifact publishes 1.0.0"), "{why}");
+        assert!(why.contains("runs forward only"), "{why}");
+        assert!(!why.contains("headwater infer"), "{why}");
+    }
+
+    /// A version this engine cannot read is refused where the range that
+    /// cannot cover it is, and not a second time here.
+    #[test]
+    fn an_unreadable_version_is_left_to_the_payload_reader() {
+        assert_eq!(transition("1.0", "not-a-version"), Ok(()));
+        assert_eq!(transition("", "2.0.0"), Ok(()));
+    }
+
+    /// The ordering is over the three numbers and never over the text. `10`
+    /// sorts above `9` as a number and below it as a string.
+    #[test]
+    fn the_ordering_is_numeric_and_not_lexical() {
+        assert_eq!(transition("9.0.0", "10.0.0"), Ok(()));
+        assert!(transition("10.0.0", "9.0.0").is_err());
+    }
+}

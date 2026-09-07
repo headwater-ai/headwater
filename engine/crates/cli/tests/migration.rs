@@ -483,6 +483,28 @@ impl Root {
         );
     }
 
+    /// Rewrite the lock header's `version:` and nothing else.
+    ///
+    /// Legal, and that is the point of it. The header sits outside the digest
+    /// over the `resolved` block, so a lock edited this way reads clean through
+    /// `headwater_lock::read` and reaches the verb with a version pair nobody
+    /// held. A real consumer arrives at the same state by re-running a
+    /// migration that already succeeded and was resolved.
+    ///
+    /// The anchor takes `sources:` with it because the `resolved` block below
+    /// carries a `version:` of its own at the same indent.
+    fn heads(&self, version: &str) {
+        let at = self.at.join(".headwater/taxonomy.lock");
+        let text = std::fs::read_to_string(&at).expect("the lock reads");
+        let was = "\n  version: 1.0.0\n  sources:\n";
+        assert!(text.contains(was), "the lock header names 1.0.0:\n{text}");
+        std::fs::write(
+            &at,
+            text.replacen(was, &format!("\n  version: {version}\n  sources:\n"), 1),
+        )
+        .expect("the lock writes");
+    }
+
     /// Add one `add` entry to the copied overlay, under the `add:` block it
     /// already declares.
     fn addresses(&self, entry: &str) {
@@ -2028,4 +2050,104 @@ fn an_apply_writes_a_bundle_declared_kind_the_artifact_really_moved() {
         !ran.out.contains(STANDS),
         "the source moved for this selection: {ran:?}"
     );
+}
+
+/// A migration that is not forward, and the ordinary one beside it.
+///
+/// The lock header sits outside the digest `headwater_lock::read` verifies, so
+/// a header that already names the artifact's own version reads clean and used
+/// to reach payload selection. What it met there was the no-payload arm, whose
+/// sentence accuses the publisher of shipping a non-conformant artifact and
+/// offers `taxonomy diff`, which reports every dimension preserved, and
+/// `headwater infer --owner <name> --write`, which records adoption debt in the
+/// consumer's own lock for a break that does not exist. Every population of
+/// that sentence is consumer-side
+/// ([#649](https://github.com/headwater-ai/headwater/issues/649)).
+///
+/// The two negative assertions are the case. A regression to the old sentence
+/// fails on them and on nothing else, because the old sentence also exits 1.
+#[test]
+fn a_lock_already_on_the_artifacts_version_is_refused() {
+    let root = Root::new("lock-already-on-the-version");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(Some(&payload()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+    root.heads("2.0.0");
+
+    for flags in [&[][..], &["--apply"][..]] {
+        let ran = root.migrate("2.0.0", flags);
+        assert_eq!(ran.code, Some(1), "{ran:?}");
+        assert!(
+            ran.err.contains("the lock already takes 2.0.0"),
+            "the refusal names the lock and the version it holds: {ran:?}"
+        );
+        assert!(
+            ran.err.contains("no earlier version to migrate from"),
+            "and says what that leaves this run nothing to do: {ran:?}"
+        );
+        assert!(
+            !ran.err.contains("Spec 2 makes a major version ship one"),
+            "the publisher shipped a sound artifact: {ran:?}"
+        );
+        assert!(
+            !ran.err.contains("headwater infer"),
+            "and no remedy records debt for a break that does not exist: {ran:?}"
+        );
+    }
+}
+
+/// The ordinary correct upgrade, unchanged.
+///
+/// This case exists to be broken by the wrong fix rather than by a regression.
+/// The refusal above is about the version pair alone, and any currency check
+/// reached for in its place — `Lock::moved`, a `resolve --check`, a re-hash of
+/// `sources[]` — refuses this run too. `taxonomy resolve --check` exits 1 on
+/// **every** correct `taxonomy migrate`, because `migrate` is by construction
+/// run in a tree where the vendored candidate has already replaced the source
+/// the lock was built from. So a currency gate turns this case red, which is
+/// the whole reason it is written down.
+#[test]
+fn the_ordinary_upgrade_is_not_refused() {
+    let root = Root::new("ordinary-upgrade-still-runs");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(Some(&payload()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let ran = root.migrate("2.0.0", &[]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        ran.out.contains("from 1.0.0 to 2.0.0"),
+        "the report still names the pair it read off the lock: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("1-to-2.yml"),
+        "and the payload it selected: {ran:?}"
+    );
+}
+
+/// An artifact below the version the lock names.
+///
+/// One arm and one sentence away from the case above it, and it reaches the
+/// guard by the other side of the same comparison. A payload runs forward, so
+/// there is nothing here for `covers` to select and no report to print.
+#[test]
+fn an_artifact_below_the_locked_version_is_refused() {
+    let root = Root::new("artifact-below-the-lock");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(Some(&payload()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+    root.heads("3.0.0");
+
+    let ran = root.migrate("2.0.0", &[]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err
+            .contains("the lock takes 3.0.0 and this artifact publishes 2.0.0"),
+        "the refusal names both sides: {ran:?}"
+    );
+    assert!(
+        ran.err.contains("runs forward only"),
+        "and why that is not a migration: {ran:?}"
+    );
+    assert!(!ran.err.contains("headwater infer"), "{ran:?}");
 }
