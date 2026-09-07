@@ -452,7 +452,8 @@ pub enum Verb {
                  into the artifact. `markdown` declares one in the source and not in the \
                  artifact, because nothing it writes is machine-readable. `text` declares one \
                  drop there too, the routing of each skip, and carries the census and the graph \
-                 that no other format holds. `json` declares that it drops nothing. ",
+                 that no other format holds. `json` declares one there as well, the \
+                 per-document account of coverage, and writes no loss set of its own. ",
                 a_refusal_is_not_an_artifact!()
             )
         )]

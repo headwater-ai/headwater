@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 393,
-      "carried": 393,
+      "in the graph": 394,
+      "carried": 394,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 613,
-      "carried": 613,
+      "in the graph": 614,
+      "carried": 614,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -7436,6 +7436,33 @@
         }
       },
       {
+        "path": "docs/obligations/0178-the-every-instance-report-detail-reaches-four-test-files-and-no-caller-outside-them.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0178",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0178",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "The check runner declares a report detail that prints every check instance, and only four test targets ever select it, because no flag and no library consumer can.",
+          "last_verified": "2026-09-07",
+          "title": "The every-instance report detail reaches four test files and no caller outside them",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "engine/crates/check/src/lib.rs"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
@@ -13991,6 +14018,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": ".claude/commands/next-run.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0178-the-every-instance-report-detail-reaches-four-test-files-and-no-caller-outside-them.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/lib.rs",
           "resolver": "source-tree"
         }
       },

@@ -34,7 +34,9 @@
 //! to [`Report`], [`LevelState`], [`Reading`], [`Rule`] or [`Waiver`] and not to
 //! the document below does not compile.
 
-use crate::{Cover, DecidedBy, LevelState, Reading, Report, Rule, Verdict, Waiver};
+use crate::{
+    Cover, DecidedBy, Installed, LevelState, PinCheck, Reading, Report, Rule, Verdict, Waiver,
+};
 use headwater_yaml::json::Json;
 
 /// The version of the document this module writes.
@@ -58,6 +60,7 @@ fn document(report: &Report, gate: Option<(&str, bool)>) -> Json {
         package,
         version,
         digest,
+        pin,
         now,
         readings,
         levels,
@@ -69,6 +72,7 @@ fn document(report: &Report, gate: Option<(&str, bool)>) -> Json {
     ];
     if let Some(digest) = digest {
         identity.push(("digest", Json::string(digest.clone())));
+        identity.push(("pin", pinned(pin)));
     }
     let mut members: Vec<(&'static str, Json)> = vec![
         ("version", Json::string(VERSION)),
@@ -98,6 +102,47 @@ fn document(report: &Report, gate: Option<(&str, bool)>) -> Json {
         ));
     }
     Json::object(members)
+}
+
+/// Whether the run compared the pinned digest against the installed release
+/// record, and by what.
+///
+/// Written beside the digest and only where there is one, on the same terms
+/// [`crate::render`] prints it: a member about a digest nobody pinned is a
+/// statement about nothing. It carries no verdict and no rung reads it — a
+/// consumer that wants the verdict reads the `pin.current` entry of `readings`,
+/// which is what `checked_by` names.
+fn pinned(check: &PinCheck) -> Json {
+    match check {
+        PinCheck::By(rule) => Json::object([
+            ("state", Json::string("checked")),
+            ("checked_by", Json::string(rule.clone())),
+        ]),
+        PinCheck::Unchecked(installed) => {
+            let mut members: Vec<(&'static str, Json)> = vec![
+                ("state", Json::string("unchecked")),
+                (
+                    "installed",
+                    Json::string(match installed {
+                        Installed::Declares(_) => "declares",
+                        Installed::NoRecord => "no_record",
+                        Installed::Absent => "absent",
+                        Installed::Unreadable(_) => "unreadable",
+                    }),
+                ),
+            ];
+            match installed {
+                Installed::Declares(digest) => {
+                    members.push(("installed_digest", Json::string(digest.clone())));
+                }
+                Installed::Unreadable(says) => {
+                    members.push(("says", Json::string(says.clone())));
+                }
+                Installed::NoRecord | Installed::Absent => {}
+            }
+            Json::object(members)
+        }
+    }
 }
 
 fn level(level: &LevelState) -> Json {
@@ -273,6 +318,7 @@ mod tests {
             package: "headwater/standard".to_string(),
             version: "1.0.0".to_string(),
             digest: None,
+            pin: crate::PinCheck::By("pin.current".to_string()),
             now: Date::parse("2026-08-24").expect("a date"),
             readings,
             levels: vec![LevelState {

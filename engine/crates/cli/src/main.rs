@@ -1874,6 +1874,47 @@ fn migrate(
         record.package, payload.at
     );
 
+    // Which steps of this payload did not happen for this repository.
+    //
+    // The source half of a step is held against two taxonomies. `taking` is the
+    // one every `from` was written against, and a step whose `from` it never
+    // declared is vacuous here. The candidate under this repository's own
+    // selection and overlays is the other one, and a step whose `from` that
+    // still declares is a step the publisher may ship and this consumer must not
+    // apply: `taxonomy publish` holds the source half against the base alone,
+    // where a value only a bundle declares is invisible (#194). Applying it
+    // rewrites documents into a name the taxonomy they resolve against has not
+    // moved off (#388). See `headwater_compat::payload`, which states the same
+    // condition for the report `taxonomy diff` prints.
+    let candidate = headwater_resolve::package::sources_at(root, fetched, &manifest, &consumer)
+        .and_then(|sources| headwater_resolve::resolve(&sources));
+    let standing: Vec<String> = match &candidate {
+        Ok(candidate) => payload
+            .steps
+            .iter()
+            .filter(|step| {
+                headwater_resolve::migration::declares(
+                    &taking.bound.taxonomy,
+                    &step.subject,
+                    &step.from,
+                ) && headwater_compat::payload::stands(candidate, &step.subject, &step.from)
+            })
+            .map(|step| step.at())
+            .collect(),
+        // Stated rather than assumed away. A run that could not resolve the
+        // candidate could not ask the question, and silence here would read as
+        // an answer of none. `taxonomy diff` is the verb that measures an
+        // unresolvable candidate, so the line sends a reader there.
+        Err(_) => {
+            println!(
+                "  the candidate did not resolve under this repository's overlays, so this run \
+                 could not tell whether any step of this payload names a value this repository \
+                 would still declare. `headwater taxonomy diff` measures that\n"
+            );
+            Vec::new()
+        }
+    };
+
     // --- the half the engine writes ---------------------------------------
     let mut moves: Vec<headwater_scaffold::migrate::Move> = Vec::new();
     let mut readdressed: Vec<headwater_scaffold::overlay::Move> = Vec::new();
@@ -1884,8 +1925,15 @@ fn migrate(
             continue;
         };
         mechanical += 1;
-        let sites = headwater_compat::migrate::sites(step, &taking.census, &overlay);
         println!("  {}  becomes `{to}`", step.at());
+        // Ahead of `sites`, and the sites are never read. A step that did not
+        // happen here has documents under it, and listing them under a step this
+        // run refuses would read as a plan to write them.
+        if standing.contains(&step.at()) {
+            println!("    {}\n", headwater_compat::payload::STANDS);
+            continue;
+        }
+        let sites = headwater_compat::migrate::sites(step, &taking.census, &overlay);
         match sites.is_empty() {
             true => println!("    {}", step.subject.reached_nothing()),
             false => {
@@ -1971,6 +2019,10 @@ fn migrate(
             "      task  {}",
             step.apply.task().expect("a judgment step carries one")
         );
+        if standing.contains(&step.at()) {
+            println!("      {}", headwater_compat::payload::STANDS);
+            continue;
+        }
         let sites = headwater_compat::migrate::sites(step, &taking.census, &overlay);
         match sites.is_empty() {
             true => println!("      {}", step.subject.reached_nothing()),
@@ -2022,6 +2074,34 @@ fn migrate(
                 _ => "",
             }
         );
+    }
+
+    // The whole run and never the one step. A payload half of which does not
+    // apply to this repository leaves the corpus in neither version, and the
+    // remedy is a conversation with the publisher rather than a flag here.
+    //
+    // `refuse` (#455): the artifact is the one the caller meant and the corpus
+    // is sound. What is wrong is the pairing of a payload with a selection, and
+    // no spelling of this command line repairs it.
+    if applying && !standing.is_empty() {
+        return refuse(&format!(
+            "{} step{} of this payload name{} a value the taxonomy this artifact gives this \
+             repository still declares, so applying this payload would rewrite documents into a \
+             name that did not move for this selection: {}. A bundle is add-only, so a value only \
+             a bundle declares moved for the consumers who selected that bundle and for no other, \
+             and `taxonomy publish` holds the source half against the base alone. Ask the \
+             publisher whether the bundles this repository selects were meant to move too",
+            standing.len(),
+            match standing.len() {
+                1 => "",
+                _ => "s",
+            },
+            match standing.len() {
+                1 => "s",
+                _ => "",
+            },
+            standing.join(", ")
+        ));
     }
 
     let mut written = headwater_scaffold::migrate::compose(root, &moves);
@@ -2424,7 +2504,10 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     if let Err(code) = payload(
         fetched,
         &manifest,
-        &taking,
+        Sides {
+            taking: &taking,
+            candidate: &resolution,
+        },
         &overlay,
         &lock_version,
         &record.version,
@@ -2451,6 +2534,19 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     // is the ordinary case rather than an error ([spec 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
     // What does fail is a run that could not measure, which is above.
     ExitCode::SUCCESS
+}
+
+/// The two taxonomies the source half of a payload step is held against.
+///
+/// `taking` is what this repository committed, which is the taxonomy every
+/// `from` of the payload was written against. `candidate` is what the artifact
+/// gives this repository under its own selection and overlays. A step's source
+/// is held against both
+/// ([#388](https://github.com/headwater-ai/headwater/issues/388)), and a caller
+/// that passed one without the other would be asking half the question.
+struct Sides<'a> {
+    taking: &'a Loaded,
+    candidate: &'a headwater_resolve::Resolution,
 }
 
 /// What the artifact's migration payload says about the breaks measured above.
@@ -2485,15 +2581,21 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
 /// instead — `headwater infer --write`, which derives the pair set, and
 /// `headwater check`, which then reports it as migration-pending. Every other
 /// break keeps the sentence spec 2 makes true of it.
+///
+/// # The two taxonomies the source half is held against
+///
+/// [`Sides`] carries both, and it is one parameter because the pair is one
+/// reading.
 fn payload(
     fetched: &Path,
     manifest: &headwater_yaml::Mapping,
-    taking: &Loaded,
+    sides: Sides<'_>,
     overlay: &headwater_resolve::Adopted,
     from: &str,
     to: &str,
     moved: &Movement,
 ) -> Result<(), ExitCode> {
+    let Sides { taking, candidate } = sides;
     let payloads = match headwater_resolve::migration::at(fetched, manifest) {
         Ok(payloads) => payloads,
         Err(refusals) => {
@@ -2518,6 +2620,14 @@ fn payload(
     let declares = |step: &headwater_resolve::migration::Step| {
         headwater_resolve::migration::declares(taxonomy, &step.subject, &step.from)
     };
+    // The other end of the source half. One reader, two trees: `declares` asks
+    // the taxonomy every `from` was written against, and this asks the one the
+    // artifact gives *this* repository under its own selection and overlays. A
+    // step whose source that taxonomy still declares did not happen here, and
+    // only this end holds both taxonomies and can say so (#388).
+    let stands = |step: &headwater_resolve::migration::Step| {
+        headwater_compat::payload::stands(candidate, &step.subject, &step.from)
+    };
 
     let mut selected = 0;
     for carried in &payloads {
@@ -2539,6 +2649,7 @@ fn payload(
                         &taking.census,
                         overlay,
                         declares,
+                        stands,
                         &moved.documents
                     )
                     .render()

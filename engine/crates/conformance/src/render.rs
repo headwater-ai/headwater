@@ -36,7 +36,7 @@
 //! every line, and it may not do both.** That is why the disclaimer below is one
 //! logical sentence now rather than a literal carrying its own break.
 
-use crate::{Cover, LevelState, Reading, Report, Verdict};
+use crate::{Cover, Installed, LevelState, PinCheck, Reading, Report, Verdict};
 use std::fmt::Write;
 
 /// The widest line this report prints, in characters.
@@ -74,15 +74,17 @@ impl Report {
     pub fn render(&self) -> String {
         let mut out = String::new();
 
-        // The four header lines are identity rather than prose: a package name,
-        // a version, a digest, a date. Each is one or two tokens that a fill
-        // could only leave alone — a digest is 73 characters with its indent —
-        // so they are written as they are and the boundary is stated here.
+        // Four of the header lines are identity rather than prose: a package
+        // name, a version, a digest, a date. Each is one or two tokens that a
+        // fill could only leave alone — a digest is 73 characters with its
+        // indent — so they are written as they are and the boundary is stated
+        // here. The fifth is [`pin`], which is a sentence, so it is filled.
         out.push_str("conformance\n");
         let _ = writeln!(out, "  {} {}", self.package, self.version);
         match &self.digest {
             Some(digest) => {
                 let _ = writeln!(out, "  {digest}");
+                block(&mut out, 2, "", &pin(&self.pin, digest));
             }
             None => out.push_str("  no digest pinned\n"),
         }
@@ -148,6 +150,42 @@ impl Report {
         }
 
         out
+    }
+}
+
+/// The line under the digest that says whether this run checked it.
+///
+/// **It is printed only where a digest is printed.** A header that already says
+/// `no digest pinned` states no number, so there is nothing there to qualify,
+/// and a second sentence about a digest nobody wrote is noise.
+///
+/// Where a rule of the set reads the pin, this names it and stops: that rule's
+/// own line below carries `met` or `gap`, and a second statement of the same
+/// verdict here would be a second answer to one question. Where no rule reads
+/// it, this reports what the installed package declares and compares nothing —
+/// the two numbers are put in front of the reader and no rung and no exit
+/// status moves, which is the whole of what this change does.
+fn pin(check: &PinCheck, pinned: &str) -> String {
+    match check {
+        PinCheck::By(rule) => {
+            format!("checked against the installed release record by `{rule}`")
+        }
+        PinCheck::Unchecked(installed) => format!(
+            "not checked by any rule of this set: {}",
+            match installed {
+                Installed::Declares(digest) if digest == pinned =>
+                    "the installed release record declares the same digest".to_string(),
+                Installed::Declares(digest) =>
+                    format!("the installed release record declares {digest}"),
+                Installed::NoRecord =>
+                    "the installed package carries no release record, so no published artifact \
+                     stands behind it"
+                        .to_string(),
+                Installed::Absent => "no package of that name is installed".to_string(),
+                Installed::Unreadable(says) =>
+                    format!("the installed release record does not read: {says}"),
+            }
+        ),
     }
 }
 

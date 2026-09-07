@@ -2,7 +2,7 @@
 
 # Obligation records
 
-177 documents on this shelf, in the reading order this corpus derives.
+178 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for.
@@ -181,3 +181,4 @@
 - [Two documents take one sequence on a sequence-declaring shelf and no rule reads it](0175-two-documents-take-one-sequence-on-a-sequence-declaring-shelf-and-no-rule-reads-it.md) — Two design specs declaring sequence 16, whose file names both open with 16-, give check --strict exit 0 and the same finding count as the tree without them. (asserted, and no human has accepted it)
 - [A blessed fixture is read by a sibling case that runs while the write truncates it](0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md) — Under HEADWATER_BLESS one case truncates crates/conformance/fixtures/wrapped.report while a sibling thread of the same binary reads it, which can panic the run and cannot corrupt the artifact. (asserted, and no human has accepted it)
 - [The value rule writes adopter on every self-audit record and most of them wait on a build](0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md) — The value rule prescribes waiting_on=adopter on every self-audit record, HW-DR-0030 defines that value as waiting on an outside corpus, and almost none of those records does. (asserted, and no human has accepted it)
+- [The every-instance report detail reaches four test files and no caller outside them](0178-the-every-instance-report-detail-reaches-four-test-files-and-no-caller-outside-them.md) — The check runner declares a report detail that prints every check instance, and only four test targets ever select it, because no flag and no library consumer can. (asserted, and no human has accepted it)

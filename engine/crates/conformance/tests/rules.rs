@@ -18,7 +18,8 @@
 
 use headwater_check::context::Date;
 use headwater_conformance::{
-    assemble, read, waivers, Cover, DecidedBy, Identity, Reason, SetError, Verdict, Waiver,
+    assemble, pin_check, read, waivers, Cover, DecidedBy, Identity, Installed, PinCheck, Reason,
+    SetError, Verdict, Waiver,
 };
 use std::path::{Path, PathBuf};
 
@@ -31,6 +32,25 @@ fn repository_root() -> PathBuf {
 
 fn at(text: &str) -> Date {
     Date::parse(text).expect("a date")
+}
+
+/// The pin statement for a report assembled in memory from hand-built verdicts.
+///
+/// Every identity below pins no digest, so `render` prints no pin line and this
+/// value reaches nothing these cases assert. The case that does assert the line
+/// calls [`pin_check`] over a real package directory instead.
+fn no_pin() -> PinCheck {
+    PinCheck::Unchecked(Installed::NoRecord)
+}
+
+/// A rendered report with every run of whitespace collapsed to one space.
+///
+/// The report is filled to a width, so a sentence of it is a sentence only
+/// after this: `contains` over the raw render asks whether the words happen to
+/// fall on one line, which is a question about the fill and not about what the
+/// report says.
+fn collapsed(rendered: &str) -> String {
+    rendered.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 /// A rule set with one tree rule and one attestation rule, over two rungs.
@@ -355,6 +375,7 @@ fn a_waiver_against_no_rule_ends_the_run() {
         &identity,
         &[],
         at("2026-08-14"),
+        no_pin(),
     )
     .expect_err("no rule of the set carries that name");
     assert_eq!(refused.len(), 1);
@@ -394,11 +415,13 @@ fn an_expired_waiver_is_reported_rather_than_honored() {
     ];
     let held = [waiver("lock.current", "2027-02-28")];
 
-    let live = assemble(&set, &held, &identity, &taken, at("2027-02-28")).expect("it assembles");
+    let live =
+        assemble(&set, &held, &identity, &taken, at("2027-02-28"), no_pin()).expect("it assembles");
     assert!(matches!(live.readings[0].cover, Cover::Live(_)));
     assert_eq!(live.gate("L0"), Ok(true), "a live waiver passes the gate");
 
-    let lapsed = assemble(&set, &held, &identity, &taken, at("2027-03-01")).expect("it assembles");
+    let lapsed =
+        assemble(&set, &held, &identity, &taken, at("2027-03-01"), no_pin()).expect("it assembles");
     assert!(matches!(lapsed.readings[0].cover, Cover::Expired(_)));
     assert_eq!(
         lapsed.gate("L0"),
@@ -435,13 +458,15 @@ fn a_live_waiver_moves_the_gate_and_never_the_level() {
         ("corpus.classified".to_string(), Verdict::Met),
     ];
 
-    let bare = assemble(&set, &[], &identity, &taken, at("2026-08-14")).expect("it assembles");
+    let bare =
+        assemble(&set, &[], &identity, &taken, at("2026-08-14"), no_pin()).expect("it assembles");
     let waived = assemble(
         &set,
         &[waiver("lock.current", "2027-02-28")],
         &identity,
         &taken,
         at("2026-08-14"),
+        no_pin(),
     )
     .expect("it assembles");
 
@@ -480,8 +505,15 @@ fn a_rung_includes_every_rung_below_it() {
         ("lock.current".to_string(), Verdict::Gap("it moved".into())),
         ("corpus.classified".to_string(), Verdict::Met),
     ];
-    let report =
-        assemble(&set, &[], &identity, &upper_only, at("2026-08-14")).expect("it assembles");
+    let report = assemble(
+        &set,
+        &[],
+        &identity,
+        &upper_only,
+        at("2026-08-14"),
+        no_pin(),
+    )
+    .expect("it assembles");
     assert!(!report.levels[0].reached);
     assert!(
         !report.levels[1].reached,
@@ -493,7 +525,8 @@ fn a_rung_includes_every_rung_below_it() {
         ("lock.current".to_string(), Verdict::Met),
         ("corpus.classified".to_string(), Verdict::Met),
     ];
-    let climbed = assemble(&set, &[], &identity, &both, at("2026-08-14")).expect("it assembles");
+    let climbed =
+        assemble(&set, &[], &identity, &both, at("2026-08-14"), no_pin()).expect("it assembles");
     assert_eq!(climbed.reached, Some("L1".to_string()));
 }
 
@@ -526,7 +559,8 @@ conformance:
         "gates.required".to_string(),
         Verdict::NotDecided("record an attestation".into()),
     )];
-    let report = assemble(&set, &[], &identity, &taken, at("2026-08-14")).expect("it assembles");
+    let report =
+        assemble(&set, &[], &identity, &taken, at("2026-08-14"), no_pin()).expect("it assembles");
     assert!(!report.levels[0].reached);
     assert_eq!(report.reached, None);
     assert_eq!(report.levels[0].undecided, 1);
@@ -562,7 +596,8 @@ fn a_level_the_package_does_not_declare_is_an_error_that_names_the_ones_it_does(
         version: "1.0.0".to_string(),
         digest: None,
     };
-    let report = assemble(&set, &[], &identity, &[], at("2026-08-14")).expect("it assembles");
+    let report =
+        assemble(&set, &[], &identity, &[], at("2026-08-14"), no_pin()).expect("it assembles");
     let refused = report.gate("L9").expect_err("there is no L9");
     assert!(refused.contains("L9"));
     assert!(refused.contains("`L0`"));
@@ -584,7 +619,7 @@ fn the_report_says_what_a_level_is_not_even_when_every_rung_is_reached() {
         ("lock.current".to_string(), Verdict::Met),
         ("corpus.classified".to_string(), Verdict::Met),
     ];
-    let rendered = assemble(&set, &[], &identity, &all, at("2026-08-14"))
+    let rendered = assemble(&set, &[], &identity, &all, at("2026-08-14"), no_pin())
         .expect("it assembles")
         .render();
     assert!(rendered.contains("L1 reached"));
@@ -797,5 +832,165 @@ fn an_earlier_format_rule_set_is_refused_without_naming_a_publisher() {
     assert!(
         message.contains("requires_engine"),
         "the message names no remedy: {message}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// #415's residual: the header prints a digest, and says whether it read it
+// ---------------------------------------------------------------------------
+
+/// **A digest the run never read is printed as one nobody read.**
+///
+/// `diverged_package_root` publishes a package declaring `lock.current` and
+/// `corpus.classified` and **no `pin.current`**, which is what an adopter who
+/// forks the rule set to drop a rule they have not wired up is left with. The
+/// consumer below pins a digest that names no artifact anywhere.
+///
+/// Before this, the header printed that digest and the report said nothing
+/// about it at all — over the whole rendered report,
+/// `grep -ci 'digest\|release record\|pin'` returned 0 — and deleting the
+/// release record out of the package left the report **byte-identical**. Both
+/// halves of that symptom are asserted here, the second by rendering the same
+/// report twice over a directory that loses its record between the two.
+///
+/// Nothing about a rung moves: `L0` reads `lock.current` and
+/// `corpus.classified`, both met on both sides, and both reports still reach it.
+#[test]
+fn a_pinned_digest_that_no_rule_reads_is_printed_as_one_nothing_checked() {
+    let (root, dir) = diverged_package_root("unchecked-pin");
+    let mut consumer = taxonomy_consumer();
+    let names_nothing =
+        "sha256:0000000000000000000000000000000000000000000000000000000000000000".to_string();
+    consumer.digest = Some(names_nothing.clone());
+
+    let set = headwater_conformance::at(&root, &consumer).expect("the rule set reads");
+    assert!(
+        set.rule("pin.current").is_none(),
+        "the case stopped being the one it was written for: this set does read the pin"
+    );
+    let declared = headwater_resolve::release::at(&dir)
+        .expect("the freshly published record")
+        .digest;
+    assert_ne!(
+        declared, names_nothing,
+        "the pin matches the installed artifact, so there is nothing unchecked here"
+    );
+
+    let taken = [
+        ("lock.current".to_string(), Verdict::Met),
+        ("corpus.classified".to_string(), Verdict::Met),
+    ];
+    let with_record = assemble(
+        &set,
+        &[],
+        &Identity::of(&consumer),
+        &taken,
+        at("2026-08-14"),
+        pin_check(&set, &root, &consumer),
+    )
+    .expect("it assembles");
+    assert_eq!(
+        with_record.reached.as_deref(),
+        Some("L0"),
+        "the rung this change must not move has moved"
+    );
+    let with_record = with_record.render();
+
+    assert!(
+        with_record.contains(&names_nothing),
+        "the header stopped printing the pinned digest:\n{with_record}"
+    );
+    assert!(
+        collapsed(&with_record).contains("not checked by any rule of this set"),
+        "the header prints a digest and says nothing about whether the run read it:\n\
+         {with_record}"
+    );
+    assert!(
+        with_record.contains(&declared),
+        "and it does not print the digest the installed artifact declares of itself:\n\
+         {with_record}"
+    );
+
+    // The second half. `drop-norecord` against `drop-clean`: a package that
+    // carries no release record at all, and therefore no published artifact
+    // behind it, once rendered a report byte-identical to the one above.
+    std::fs::remove_file(dir.join(headwater_resolve::release::RECORD)).expect("the record goes");
+    let without_record = assemble(
+        &set,
+        &[],
+        &Identity::of(&consumer),
+        &taken,
+        at("2026-08-14"),
+        pin_check(&set, &root, &consumer),
+    )
+    .expect("it assembles")
+    .render();
+
+    assert_ne!(
+        with_record, without_record,
+        "a package with a release record and one with none render the same report"
+    );
+    assert!(
+        collapsed(&without_record).contains(
+            "the installed package carries no release record, so no published artifact \
+                       stands behind it"
+        ),
+        "the report does not say that no published artifact stands behind the package:\n\
+         {without_record}"
+    );
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// The other state of the same line, and the two things that decide it.
+///
+/// A set that declares `pin.current` as a **tree** rule has a reading of the pin
+/// and the header names it. Nothing is read off disk to answer that, which the
+/// root below holds: it does not exist. Declaring the same name under
+/// `decided_by: attestation` is not a reading — [`headwater_conformance::reading`]
+/// is never called for one — so the header says the pin was not checked, and
+/// over a root with no package on it that is all it can say.
+#[test]
+fn the_header_names_the_rule_that_read_the_pin_and_reads_no_tree_to_say_so() {
+    let nowhere = Path::new("/nonexistent-headwater-415");
+    let mut consumer = taxonomy_consumer();
+    consumer.digest = Some("sha256:abc".to_string());
+
+    let reads_it = read(&source("pin.current"), "acme/taxonomy").expect("it reads");
+    assert_eq!(
+        pin_check(&reads_it, nowhere, &consumer),
+        PinCheck::By("pin.current".to_string()),
+        "a declared tree reading of the pin is what the header names"
+    );
+    let rendered = assemble(
+        &reads_it,
+        &[],
+        &Identity::of(&consumer),
+        &[("pin.current".to_string(), Verdict::Met)],
+        at("2026-08-14"),
+        pin_check(&reads_it, nowhere, &consumer),
+    )
+    .expect("it assembles")
+    .render();
+    assert!(
+        collapsed(&rendered)
+            .contains("checked against the installed release record by `pin.current`"),
+        "the header does not name the rule that read the pin:\n{rendered}"
+    );
+
+    let attested = source("pin.current").replace(
+        "    - name: pin.current\n      title: The lock is current\n      decided_by: tree",
+        "    - name: pin.current\n      title: The lock is current\n      decided_by: attestation",
+    );
+    let attested = read(&attested, "acme/taxonomy").expect("it reads");
+    assert_eq!(
+        attested.rule("pin.current").expect("the rule").decided_by,
+        DecidedBy::Attestation,
+        "the substitution did nothing"
+    );
+    assert_eq!(
+        pin_check(&attested, nowhere, &consumer),
+        PinCheck::Unchecked(Installed::Absent),
+        "a rule no tree decides read the pin"
     );
 }
