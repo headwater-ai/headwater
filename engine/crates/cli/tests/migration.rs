@@ -615,6 +615,16 @@ fn the_payload_names_every_document_whose_validity_moved() {
         ran.dimension("instance_validity"),
         "BROKEN, 3 failed / 3 skipped"
     );
+    // The same six breaks, read by the dimension that is a superset of the one
+    // above, and the two lines are adjacent in the report. `consequence` said
+    // `BROKEN, 6 of them` here until #396: one number over three failures and
+    // three hand-offs, printed directly under a line that had already told
+    // them apart.
+    assert_eq!(
+        ran.dimension("consequence"),
+        "BROKEN, 3 failed / 3 skipped",
+        "the superset dimension tells the same six apart: {ran:?}"
+    );
     assert!(
         ran.out.contains(
             "3 of the 3 documents a dimension reports as moved lie under a step of this payload"

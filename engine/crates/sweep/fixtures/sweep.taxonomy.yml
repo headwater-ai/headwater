@@ -52,6 +52,13 @@ kinds:
     abstract: true
     facets: {require: [status, status_since, summary]}
 
+  # A kind no shelf assigns, so no document of this tree carries it. It is here
+  # to be the end of `annotates` below: an endpoint set that admits nothing in
+  # this corpus is what a refused proposal needs.
+  note:
+    is_a: governed_document
+    abstract: true
+
   decision_record:
     is_a: governed_document
     identifier: {scheme: decision_id}
@@ -66,18 +73,31 @@ shelves:
     kind: decision_record
 
 relations:
-  # No reciprocity and no inverse. A declared conflict is a deterministic check
-  # in the real taxonomy, and what this fixture needs from it is one thing: an
-  # edge the graph carries, so that a sweep finding restating it is refused.
+  # No inverse name, because the relation is its own. What this fixture needs
+  # from it is two things: an edge the graph carries, so that a sweep finding
+  # restating it is refused, and a relation that is its own inverse, so that a
+  # finding restating that edge backwards is refused too.
   conflicts_with:
     family: decision
     from: [governed_document]
     to:   [governed_document]
+    reciprocal: symmetric
 
   supersedes:
     family: decision
     from: [governed_document]
     to:   [governed_document]
+
+  # An asymmetric relation with an inverse name, and the only relation here
+  # whose two ends differ. Its `from` end admits `note`, which no document of
+  # this corpus is, so a proposal that puts a decision record there is refused.
+  # Written under `annotated_by` the two ends swap, and the refusal has to name
+  # the other end. That pair is what holds the direction the intake reads.
+  annotates:
+    family: decision
+    from: [note]
+    to:   [decision_record]
+    inverse: annotated_by
 
 obligations:
   OB-SWP-1:

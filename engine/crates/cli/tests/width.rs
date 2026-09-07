@@ -747,8 +747,9 @@ fn laid_out(report: &str) -> &str {
 /// The literal bar #340 asked for — no line over 80 at all — cannot be met and
 /// should not be. `headwater_check::fill` never breaks inside a word, because a
 /// path broken across a fold point is a path a caller cannot retype and a path
-/// `headwater_adapter::census` no longer finds when it audits the artifact by
-/// `contains`. So the wide lines are partitioned: **avoidable**, where the
+/// `headwater_adapter::census` no longer reads off the line a finding block
+/// opens on, which is where that audit takes the location of a text finding. So
+/// the wide lines are partitioned: **avoidable**, where the
 /// longest word plus the line's own indent would have fitted and the fill should
 /// have narrowed it, and **unfoldable**, where one word is already past the
 /// room. The avoidable count is asserted to be zero and the unfoldable one names
