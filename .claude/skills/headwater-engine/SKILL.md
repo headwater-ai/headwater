@@ -24,21 +24,17 @@ Build from the repository root with `--manifest-path`, or from `engine/` with ne
 
 ## The toolchain floor
 
-Rust 1.90 or later. `[workspace.package]` in `engine/Cargo.toml` declares it, so cargo refuses an older toolchain and names the crate that raised the floor. Below 1.85 the message is worse: `saphyr-parser` is on edition 2024, and a cargo older than that reports `feature edition2024 is required`, names no crate, and reads like a corrupt tree. Check the toolchain first when a clean checkout will not build.
+Rust 1.90 or later, declared by `[workspace.package]` in `engine/Cargo.toml`. Check the toolchain first when a clean checkout will not build; [DEVELOPING.md](../../../DEVELOPING.md) says which of the two refusal messages names the crate that raised the floor and which one names nothing and reads like a corrupt tree.
 
-A machine that installed Rust from its distribution usually has neither rustfmt nor clippy. `engine/README.md` carries the container that supplies both and pins the floor at the same time. Run it before a change to the engine is proposed: CI runs `cargo fmt --check` and `cargo clippy --all-targets --locked -- -D warnings`, and both are blocking. Clippy on the current stable knows lints that the pinned floor does not, so a clean container run is not a clean CI run.
+A machine that installed Rust from its distribution usually has neither rustfmt nor clippy. `engine/README.md` carries the container that supplies both and pins the floor at the same time. Run it before a change to the engine is proposed: the format check and the lint are both blocking in CI, and [DEVELOPING.md](../../../DEVELOPING.md) is where every gate that blocks is named. Clippy on the current stable knows lints that the pinned floor does not, so a clean container run is not a clean CI run.
 
 It is two `docker run` commands there and not one. The first installs the components as root, which is the only user `rustup` can write for in that image. The second passes `--user` and runs `cargo test`, because three tests require a process that a `0444` file can stop and root is not one. Run both and read each exit status on its own, and never join them with a pipe. Do not add `-D warnings` to the container half: the workspace denies `clippy::manual_assert_eq`, which clippy in the pinned image does not know, so the flag turns `unknown lint` into an error in every crate there. `tools/engine-readme-fixtures.sh` refuses that flag in either command, and it also refuses an image tag below the highest `rust-version` in the resolved lock.
 
 ## Which test suite to name
 
-    cargo test                                   # from engine/, the whole workspace
-    cargo test -p headwater-check                # one crate
-    cargo test -p headwater-probe --test fixtures  # one file
+The workspace, from `engine/`. CI runs it with no filter, so the workspace is the bar. Name one crate, or one test file inside one crate, to shorten a loop, and run the workspace again before proposing the change. A recorded fixture is re-recorded rather than edited by hand, and a taxonomy change moves recorded files that the change itself never named.
 
-CI runs the workspace with no filter, so the workspace is the bar. Name a crate to shorten a loop, and run the workspace before proposing the change.
-
-A recorded fixture is re-recorded with `HEADWATER_BLESS=1` and never edited by hand. The digest of the lock reaches `.headwater/corpus.json` and several recorded fixtures, so a taxonomy change moves files that the change itself did not touch. Read that diff rather than blessing past it.
+[DEVELOPING.md](../../../DEVELOPING.md) carries the three invocations, the environment variable that re-records, and which files move. This file used to carry them too, and a second copy of a command is a second thing to keep true.
 
 ## The five mistakes
 
@@ -58,9 +54,7 @@ A recorded fixture is re-recorded with `HEADWATER_BLESS=1` and never edited by h
 
 `tools/dev-fast-build-setup.sh` wires `mold` (linker) and `sccache` (compile cache) into `~/.cargo/config.toml` — the user's own, not `engine/.cargo/config.toml`, and never checked into a repo, because CI and a fresh clone have neither binary and must not start depending on them. It is idempotent, installs nothing itself (it names the two binaries and stops if either is missing, rather than writing a config that would break every cargo invocation on a rustc-wrapper it can't find), and `--remove` undoes exactly the block it wrote. On a host that also runs a self-hosted CI runner as the same OS user, that runner reads the same file, so check there before suspecting the repo if a runner build starts behaving differently.
 
-The one gotcha worth knowing before setting this up: sccache cannot cache an incremental build, and `cargo check`/`cargo test` use incremental compilation by default, so sccache gives it roughly zero benefit there — cargo's own incremental cache already covers that case. sccache earns its place on the builds that already run without incremental: `--release`, `--profile dev-release`, and a clean or cross-branch rebuild. mold helps every link regardless of incremental.
-
-The failure it can cause is worth recognizing on sight, and [DEVELOPING.md](../../../DEVELOPING.md) states it in full. Some test binaries here resolve a fixture directory from `env!("CARGO_MANIFEST_DIR")`, which bakes an absolute path into the object, and sccache shares one object cache across every checkout on the machine. A cargo test failure that quotes a worktree path is a cache hit on an object compiled in a checkout that no longer exists, not a defect in the change. `cargo clean -p <crate>` clears it.
+Two things about it are worth knowing before you run it, and [DEVELOPING.md](../../../DEVELOPING.md) states both in full: sccache buys close to nothing on the incremental builds an authoring loop actually runs, and it can hand a test binary an object compiled in a checkout that no longer exists. `cargo clean -p <crate>` clears the second. Neither is repeated here, because a gotcha copied into two files is a gotcha that goes stale in one of them.
 
 ## What this skill does not decide
 

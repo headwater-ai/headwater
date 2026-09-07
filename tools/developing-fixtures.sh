@@ -398,7 +398,19 @@ fixture_workflow="$scratch/ci-2026-09-06.yml"
     echo '          # sh .claude/hooks/fixtures-live.sh is not run here: it'
     echo '          # spends real credits against a real login.'
     echo '          echo skipped'
-    echo '      # sh tools/never-run-fixtures.sh lives in a YAML comment.'
+    # Two commented-out steps rather than a sentence in a comment, because a
+    # sentence carries no `run:` at all and would stay out of the population
+    # however badly the parser were broken — a case nothing holds.
+    #
+    # The first is held by two guards in series: the comment skip fires on it,
+    # and if that were removed the "everything before `run:` is blank or a list
+    # dash" guard still refuses the `#` in front of `run:`. The second is held
+    # by the prefix guard ALONE, because its first non-blank character is the
+    # dash and the comment skip never sees it. So this case reddens when the
+    # prefix guard is widened, which is a different mutation from the one the
+    # case above catches, and the two are independent.
+    echo '      # run: sh tools/never-run-fixtures.sh'
+    echo '      - # run: sh tools/never-listed-fixtures.sh'
     echo '      - name: The verbs'
     echo '        run: |'
     echo '          ./engine/target/release/headwater taxonomy resolve --check'
@@ -414,12 +426,17 @@ side script < "$scratch/fx.all" > "$scratch/fx.script"
 side cargo < "$scratch/fx.all" > "$scratch/fx.cargo"
 side verb < "$scratch/fx.all" > "$scratch/fx.verb"
 
+# An EXACT count, and it must never be softened to `>=`. The floor guard above
+# catches a parser that stopped matching; it does not catch a parser that
+# dropped a whole class from both sides at once. Delete `.py` from the script
+# pattern and every bidirectional comparison stays green, because the page and
+# the workflow lose the same two members together. This line is what notices.
 same "the pinned workflow parses to the fifteen scripts it ran that day" \
     15 "$(wc -l < "$scratch/fx.script" | tr -d ' ')"
 same "  and a script named only in a shell comment is not a gate" \
     "" "$(grep -c 'fixtures-live' "$scratch/fx.script" | sed 's/^0$//')"
-same "  and a script named only in a YAML comment is not a gate" \
-    "" "$(grep -c 'never-run-fixtures' "$scratch/fx.script" | sed 's/^0$//')"
+same "  and a step commented out in the YAML is not a gate, in either shape" \
+    "" "$(grep -c 'never-run-fixtures\|never-listed-fixtures' "$scratch/fx.script" | sed 's/^0$//')"
 same "  and a gate behind a \`cd\` inside a block scalar is found" \
     "tools/assemble-site.sh" "$(grep '^tools/assemble-site' "$scratch/fx.script")"
 same "  and the five cargo commands are five" \

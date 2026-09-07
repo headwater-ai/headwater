@@ -55,7 +55,7 @@ This builds the binary a person runs by hand. It is **not** a verification step.
 
 Every verb of that binary takes `--root`, which names the corpus to read. Without it a verb reads the current directory, and the current directory after a build is the engine workspace rather than the corpus.
 
-`--locked` on that command is not decoration. `engine/Cargo.lock` is committed, and the flag is what holds a cargo run to it. Every cargo step in CI carries it, and so does every copy of the install command in this repository. A maintainer adding a dependency drops the flag deliberately, because there a rewritten lock is the intended result.
+`--locked` on that command is not decoration. `engine/Cargo.lock` is committed, and the flag is what holds a cargo run to it. Every cargo step in CI **that resolves a manifest** carries it, and so does every copy of the install command in this repository. Two are exempt and neither is an omission: `cargo fmt` rejects the flag, and `cargo --version` accepts and ignores it. Neither reads a manifest, so neither can rewrite a lock. A maintainer adding a dependency drops the flag deliberately, because there a rewritten lock is the intended result. `sh tools/build-declaration-fixtures.sh` is what holds all of that, one occurrence at a time.
 
 ## A faster build, and the one failure it causes
 
@@ -74,6 +74,8 @@ Then run the test again. Because `cargo test` stops at the first failing target,
 ## What CI runs
 
 `.github/workflows/ci.yml` defines two jobs, `engine` and `headwater`, and a pull request triggers both. Everything below is blocking. This list is checked against the workflow by `sh tools/developing-fixtures.sh`, in both directions, so a gate added to CI and not written here fails, and a gate written here that CI does not run fails too.
+
+**What that check holds is the name of each gate, and not the flags printed beside it.** The commands below are written as CI writes them so that you can copy a line and run it, but no case compares a flag: `--check` deleted from a line here moves nothing, and `--check` deleted from the workflow moves nothing either. The reason is that the flags on these commands are a pinned clock, a change manifest, an output shape and a check-versus-write switch, and a suite that compared them would redden on a reordering that changed no gate. `--locked` is the one flag anything in this repository holds, and `sh tools/build-declaration-fixtures.sh` is what holds it.
 
 The cargo commands. The `engine` job runs the first four; the `headwater` job runs the build, because it needs the binary before it can run a verb over the corpus:
 
@@ -109,8 +111,10 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/readme-fixtures.sh
     sh tools/refresh-crawler-files.sh --check
     sh tools/refresh-site-tokens.sh --check
+    sh tools/site-canonical-fixtures.sh
     sh tools/site-console-fixtures.sh
     sh tools/site-fragments-fixtures.sh
+    python3 tools/check-site-canonical.py .headwater/site-build
     python3 tools/check-site-console.py
     python3 tools/check-site-fragments.py
 
