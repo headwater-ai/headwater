@@ -1387,8 +1387,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 25);
-    assert_eq!(run.coverage.classified(), 23);
+    assert_eq!(run.coverage.seen(), 26);
+    assert_eq!(run.coverage.classified(), 24);
 
     // A file this engine wrote is the third state, and it is accounted for
     // without being judged. `check/spec/12-generated.md` sits on a heterogeneous
@@ -1466,6 +1466,7 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
     assert_eq!(
         grains,
         [
+            Grain::Document,
             Grain::Document,
             Grain::Document,
             Grain::Document,
@@ -1552,11 +1553,17 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         "document scope, one document and its front matter"
     );
 
+    // The blank-value rule sits third, beside the two rules it completes: a
+    // key that is absent, a value outside a closed set, and a key that carries
+    // no content. It reads front matter for the same reason they do.
+    assert!(!run.served[2].scope.needs_body());
+    assert_eq!(run.served[2].rule, headwater_check::facet_blank::RULE);
+
     // The identifier rule is the same, and it is worth stating: an identifier
     // is front matter, so a rule that read the body to find one would be
     // reading a mention of an identifier rather than the document's own.
-    assert!(!run.served[2].scope.needs_body());
-    assert_eq!(run.served[2].rule, headwater_check::identifier::RULE);
+    assert!(!run.served[3].scope.needs_body());
+    assert_eq!(run.served[3].rule, headwater_check::identifier::RULE);
 
     // The five Graph-origin rules are consecutive, and the target rule is the
     // first of them. Whether a target resolved is prior to every other question
@@ -1565,11 +1572,11 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
     // nothing has no revision to have moved.
     assert_eq!(
         [
-            run.served[4].rule,
             run.served[5].rule,
             run.served[6].rule,
             run.served[7].rule,
-            run.served[8].rule
+            run.served[8].rule,
+            run.served[9].rule
         ],
         [
             target::RULE,
@@ -1632,15 +1639,15 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         )
     );
     assert_eq!(
-        run.served[10].scope.render(),
+        run.served[11].scope.render(),
         "document scope, one document and its front matter, and what phase A could not make of it"
     );
     // The same declaration at the other grain, and the sentence says what the
     // difference is: one document's news against the identity of every
     // document. A reader counting the barriers finds the word here.
-    assert_eq!(run.served[12].rule, duplicate::RULE);
+    assert_eq!(run.served[13].rule, duplicate::RULE);
     assert_eq!(
-        run.served[12].scope.render(),
+        run.served[13].scope.render(),
         "corpus scope, every row of the census, and what phase A could not make of each \
          document's identity, and it is a barrier"
     );
@@ -1654,9 +1661,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .map(|served| served.rule)
         .collect();
     assert_eq!(clocked, [participation::RULE]);
-    assert_eq!(run.served[9].rule, participation::RULE);
+    assert_eq!(run.served[10].rule, participation::RULE);
     assert_eq!(
-        run.served[9].scope.render(),
+        run.served[10].scope.render(),
         "neighbourhood scope, one document and the documents one relation away from it, \
          and the injected clock"
     );
@@ -1702,7 +1709,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
         &mut Cache::disabled(),
     );
 
-    assert_eq!(declared.len(), 23, "one instance per typed document");
+    assert_eq!(declared.len(), 24, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()

@@ -2,7 +2,7 @@
 
 # Obligation records
 
-168 documents on this shelf, in the reading order this corpus derives.
+170 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for.
@@ -172,3 +172,5 @@
 - [Spec 2 states a corpus-wide default language regime that no rule of this engine reads](0166-spec-2-states-a-corpus-wide-default-language-regime-that-no-rule-of-this-engine-reads.md) — Spec 2 tells an adopter that a corpus declares one default language regime. The engine resolves a regime through a kind and implements no fallback, so the first half of that sentence describes nothing. (asserted, and no human has accepted it)
 - [The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it](0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md) — The ruleset on the default branch requires zero approving reviews, which is the posture HW-DR-0034 named as the thing that erases its line. The corpus owes a ruling. (asserted, and no human has accepted it)
 - [A saturated pattern set and a clean corpus are the same zero, and no report separates them](0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md) — The voice rule reports zero because not one of its forty patterns occurs here, and that reads the same as a clean corpus. (asserted, and no human has accepted it)
+- [The blank facet value rule reaches no obligation so the report names none](0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md) — Every other rule this engine carries reaches one obligation. `facet.value.blank` reaches none, because the control that would bind it sits in the vendored package and the edit moves the pin digest. (asserted, and no human has accepted it)
+- [No rule reads a document facet value against the type its declaration states](0171-no-rule-reads-a-document-facet-value-against-the-type-its-declaration-states.md) — A facet declares `type: date`, `type: integer` or `type: string`, and no check reads a document's value against that declaration. A mapping where a date belongs reaches a strict run at exit 0. (asserted, and no human has accepted it)

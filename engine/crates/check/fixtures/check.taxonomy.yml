@@ -30,9 +30,25 @@ facets:
     role: state_entered
     required: true
 
+  # `type: string`, which is what puts this facet in `facet.value.blank`'s
+  # population. It is also required, so one document declaring it blank shows
+  # the asymmetry the rule closes: the key is there, so nothing is missing, and
+  # the value is not.
   summary:
     role: scent
     required: true
+    type: string
+
+  # Two optional string-typed facets, so one document carries all three
+  # families the blank rule reports and the remediation is read in both of its
+  # forms: a required facet has one repair and an optional one has two.
+  title:
+    type: string
+    volatility: stable
+
+  oracle:
+    type: string
+    volatility: stable
 
   # The discriminator of the heterogeneous shelf. It declares no value set, so
   # the shelf's own `kinds` list is the only thing that says what it may hold,
@@ -111,14 +127,17 @@ kinds:
     language: ste_strict
     sections: {require: [Context, Decision]}
 
-  # A kind that forbids every facet the two Shape rules read and mints under no
-  # identifier scheme, so none of the three generates an instance over it. That
-  # is what leaves a classified document with no instance at all, which is the
-  # failing fixture the coverage rule needs. See
+  # A kind that forbids every facet the three Shape rules read and mints under
+  # no identifier scheme, so none of the four generates an instance over it.
+  # That is what leaves a classified document with no instance at all, which is
+  # the failing fixture the coverage rule needs. See
   # `crates/check/src/facet_value.rs` for why a rule that instantiated over
-  # every typed document would make that finding unreachable.
+  # every typed document would make that finding unreachable, and note that
+  # `facet.value.blank` reads two more facets than the enum rule does: a
+  # taxonomy that types one more facet as a string has to forbid it here as
+  # well, or the coverage fixture stops being reachable.
   note:
-    facets: {forbid: [status, status_since, summary]}
+    facets: {forbid: [status, status_since, summary, title, oracle]}
 
 shelves:
   spec_series:

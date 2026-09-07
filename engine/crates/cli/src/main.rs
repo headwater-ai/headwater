@@ -2213,6 +2213,13 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     // an empty list, which reports every founding the candidate records — the
     // reading every lock had before `headwater_lock::Lock::founded` existed.
     let carried = lock.founded.clone();
+    // Where the previous side came from, stated on the face of the report. It
+    // re-hashes the files the lock records and never resolves them, which is
+    // the cheap half of `taxonomy resolve --check`. It is a caveat and not a
+    // precondition: the publisher shape this verb is written for edits the
+    // package source in place, so a full currency test refuses the ordinary
+    // correct run. See `headwater_compat::Caveat`.
+    let moved_sources = lock.moved(root);
     let (resolution, addressability, tasks) = match candidate {
         Ok(resolution) => {
             // The quiet half. The candidate resolved, and it may have resolved
@@ -2255,6 +2262,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
             from: lock.version.clone(),
             to: record.version.clone(),
             base: headwater_compat::Base::Unresolved,
+            moved_sources: moved_sources.clone(),
             measured: headwater_compat::Measured::against_nothing(
                 addressability,
                 "the candidate taxonomy did not resolve under this repository's overlays, so no \
@@ -2372,6 +2380,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
         from,
         to,
         base,
+        moved_sources,
         measured,
     };
     print!("{}", report.render());
