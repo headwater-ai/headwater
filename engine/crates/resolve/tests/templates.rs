@@ -87,6 +87,14 @@ add:
     functional_spec: {is_a: governed_document, purpose: rationale}
     technical_spec: {is_a: governed_document, purpose: rationale}
     standard: {is_a: governed_document, purpose: rationale, facets: {forbid: [spec_layer]}}
+  relations:
+    supersedes:
+      family: succession
+      from: [governed_document]
+      to:   [governed_document]
+      inverse: superseded_by
+      reciprocal: required
+      created_by: scaffold
   shelves:
     component_specs:
       path: docs/component-specs/**
@@ -318,6 +326,55 @@ fn a_facet_the_kind_forbids_is_refused_at_publish() {
     assert!(
         message.contains("`spec_layer` is a facet `kinds.standard` forbids"),
         "the refusal does not name the facet and the kind:\n{message}"
+    );
+    assert!(!out.exists(), "the refused publish wrote an artifact");
+}
+
+/// A relation written as a top-level key is refused, and the inverse half of a
+/// relation is refused on the same ground as the declared half.
+///
+/// This is the defect [#507](https://github.com/headwater-ai/headwater/issues/507)
+/// was filed for, in the shape it shipped in: three templates of this
+/// repository's library wrote four relation names at the top level, and the
+/// artifact an adopter vendors carried all four.
+/// [HW-DR-0004](../../../../docs/decisions/0004-relation-storage.md) puts a
+/// relation under a `relations:` block and nowhere else, so an edge written
+/// beside the facets is an edge the graph never sees.
+///
+/// **Both halves are planted, because two of the four live keys were inverse
+/// halves.** `applies` and `cited_by` are not keys of any `relations:` map — a
+/// bundle names them as the `inverse` of `applied_in` and `cites_evidence` — so
+/// a reader that walks the keys alone refuses two of the four and looks like a
+/// working check.
+#[test]
+fn a_relation_written_at_the_top_level_is_refused_at_publish() {
+    let scratch = Scratch::new("relation-at-top-level");
+    let root = publisher(
+        &scratch,
+        &[(
+            "standard.md",
+            "---\nstatus: draft\nsupersedes:\n  - \"{{what this replaces}}\"\nsuperseded_by: \
+             \"{{what replaces this}}\"\n---\n\n# x\n",
+        )],
+    );
+    let out = scratch.path().join("artifact");
+
+    let message = refused(&root, &out);
+    assert!(
+        message.contains("`supersedes` is a relation this package declares"),
+        "the refusal does not name the relation the taxonomy declares:\n{message}"
+    );
+    assert!(
+        message.contains("`superseded_by` is a relation this package declares"),
+        "the refusal does not name the inverse half:\n{message}"
+    );
+    assert!(
+        message.contains("under a `relations:` block"),
+        "the refusal does not say where the key belongs:\n{message}"
+    );
+    assert!(
+        message.contains("bundles/specs/templates/standard.md"),
+        "the refusal does not name the file a person edits:\n{message}"
     );
     assert!(!out.exists(), "the refused publish wrote an artifact");
 }
@@ -561,6 +618,10 @@ fn every_refusal_branch_has_a_case() {
             "functional_spec.md",
             "# functional_spec\n\nNo front matter here at all.\n",
         ),
+        (
+            "standard.md",
+            "---\nstatus: draft\nsuperseded_by: \"{{what replaces this}}\"\n---\n\n# x\n",
+        ),
     ] {
         let root = publisher(&scratch, &[(name, body)]);
         reached.extend(variants(&root));
@@ -598,8 +659,14 @@ fn every_refusal_branch_has_a_case() {
 /// This is the half of the change that a synthetic fixture cannot state. A rule
 /// that stops a thing from existing cannot be scoped to that thing: the reader
 /// is general over every template in every bundle a package ships, so a template
-/// nobody expected to trip has to stay silent. Thirteen templates across five
-/// bundles reach it, and the count is over the library as this commit ships it.
+/// nobody expected to trip has to stay silent.
+///
+/// **A count of them is asserted rather than written down.** Thirteen templates
+/// across five bundles reached this case on the commit that added the sentence,
+/// and nothing read either number, so a bundle that shipped no template at all
+/// would have left the case green and the sentence true-looking. The `walked`
+/// assertion below is what holds both, and it fails on the number rather than on
+/// the silence.
 #[test]
 fn the_library_this_repository_ships_passes_its_own_reader() {
     // Canonical, so that the paths a refusal names are repository-relative:
@@ -610,6 +677,35 @@ fn the_library_this_repository_ships_passes_its_own_reader() {
     let directory = root.join("taxonomy-source/headwater-standard");
     let manifest = package::manifest_at(&directory).expect("the base package manifest reads");
     let taxonomy = package::maximal(&root, &directory).expect("the shipped bundle set resolves");
+
+    // What the reader walks, counted the way `template::files` walks it: every
+    // directory under the declared bundle root that carries a `bundle.yml`, and
+    // every `*.md` directly under its `templates/`.
+    let bundles = root.join("docs/taxonomies");
+    let mut carrying = 0usize;
+    let mut walked = 0usize;
+    for entry in std::fs::read_dir(&bundles).expect("the bundle root reads") {
+        let at = entry.expect("the entry reads").path();
+        if !at.join("bundle.yml").is_file() {
+            continue;
+        }
+        let Ok(templates) = std::fs::read_dir(at.join("templates")) else {
+            continue;
+        };
+        let here = templates
+            .filter_map(|one| one.ok())
+            .filter(|one| one.path().extension().is_some_and(|kind| kind == "md"))
+            .count();
+        if here > 0 {
+            carrying += 1;
+        }
+        walked += here;
+    }
+    assert_eq!(
+        (walked, carrying),
+        (13, 5),
+        "the library this case reads is not the one its doc comment describes"
+    );
 
     let refused = template::refusals(&root, &directory, &manifest, &taxonomy.taxonomy);
     let named: Vec<String> = refused
