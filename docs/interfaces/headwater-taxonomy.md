@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-taxonomy
 status: current
 status_since: 2026-09-06
 summary: "How to validate, resolve, audit, publish, vendor, compare and migrate taxonomy packages."
-last_verified: 2026-09-05
+last_verified: 2026-09-07
 title: "headwater taxonomy"
 relations:
   governs:
@@ -32,6 +32,10 @@ The grouped command validates taxonomy sources, resolves the lock, measures sche
 `publish --json` writes the release record as one JSON document on standard output, in place of the paragraph a person reads. The document names the package, the output directory, the digest a consumer pins, and every member with its own digest. It names its own shape in a `version` member, so a consumer pins that rather than the version of this engine.
 
 `vendor` reads a fetched artifact into the package area after digest validation. `diff` compares a fetched artifact with the current taxonomy. `migrate` reports migration steps and writes them only with `--apply`.
+
+`diff` reads the lock and it re-resolves no source. It states two caveats where they hold, and it gates on neither. The first caveat is a base that resolved to the same text beside a broken `addressability`. A lock that lost its founding record produces that pair. So does a release that moves a declaration between two bundles whose operations commute, and that lock is current. The run separates neither, so the caveat states both readings and refuses nothing. The second caveat names the source files the lock records that have since changed on disk.
+
+`diff` does not apply the test that `resolve --check` applies. That test refuses the publisher who edits a package source in place, which is the correct run this verb is written for. It also passes a lock that a person resolved after the candidate was installed, where `diff` reports the wrong answer.
 
 ## Preconditions
 
@@ -65,7 +69,7 @@ The command reads the system date when a subcommand has `--now` and no date is s
 | Path | How this verb treats it |
 |---|---|
 | `.headwater/taxonomy.yml`, package sources and overlay | Read by validation and resolution. |
-| `.headwater/taxonomy.lock` | Written by `resolve` without `--check`. |
+| `.headwater/taxonomy.lock` | Written by `resolve` without `--check`. Read by `diff`, which also re-hashes the source files it records. |
 | `.headwater/adoption.jsonl` | Read by `audit`, and appended to by `audit --record`. |
 | Package and artifact directories | Read by `vendor`, `diff` and `migrate`, and written by `publish` or `migrate --apply`. |
 
