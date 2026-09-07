@@ -36,7 +36,7 @@ The first typing of this corpus supplies the other end of that scale. An agent t
 
 **One run is not a trend, and the metric that Q4 tests is a trend.** The claim is that author-attributable edges rise without a rise in hand entry. That compares two populations over time, and a verb that prints one number stores nothing.
 
-**The store exists, and it holds one reading of this corpus.** `.headwater/capture-cost.jsonl` takes a line from every run of `headwater new`, and `headwater capture` reads it back. So the reading is no longer lost when a run ends, and this record can stop asking for a store.
+**The store exists, and it holds one reading of this corpus.** `.headwater/capture-cost.jsonl` takes a line from every run of `headwater new`, and `headwater capture` reads it back. So the reading survives the end of a run, and this record can stop asking for a store.
 
 **The term that Q4's claim is about is the term that reads zero here.** Q4 tests edges, and the fourth term of the denominator is the halves of each proposed edge. Every reading this repository holds carries `edge halves 0 of 0`, because no run of the verb named a relation. A run that names one reads 9 of 11, which is 1 supplied of 2 halves. So the instrument works on the term and this corpus has not exercised it.
 

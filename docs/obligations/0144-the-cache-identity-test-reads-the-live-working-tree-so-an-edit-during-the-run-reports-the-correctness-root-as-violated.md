@@ -27,7 +27,7 @@ This is the same class of failure as issue #302, a blocking local failure that n
 
 ## Obligation
 
-The corpus owes a fix to `this_repository_reports_the_same_run_from_a_cache_as_from_none` so the test no longer reads a tree that a concurrent edit can move. Today it compares three renders of `repository_root()`. Either of the two assertions, at fixtures.rs:475 or fixtures.rs:476, can fail for an edit landing in its window rather than for a cache defect.
+The corpus owes a fix to `this_repository_reports_the_same_run_from_a_cache_as_from_none` so the test does not read a tree that a concurrent edit can move. Today it compares three renders of `repository_root()`. Either of the two assertions, at fixtures.rs:475 or fixtures.rs:476, can fail for an edit landing in its window rather than for a cache defect.
 
 The cache property itself is not in question. Every measurement here is of a test reading a moving input, not of a cache changing a verdict. `tests/cache.rs` already proves the same property over its own fixture tree, which nothing outside the test can move. Its reasoning for reading the live corpus here still holds and is not disputed. The report and the property then describe one set of numbers.
 

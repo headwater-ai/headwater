@@ -39,7 +39,7 @@ The same gap reaches identifier publication. `engine/crates/generate/src/profile
 
 Discharge requires `identifier_scheme` to declare the prefix, the namespace, and the local-part form as separate members, with the `# gap:` comment removed rather than reworded. `Template` must be built from those members, with `Template::parse` gone or kept only as a shim pinned by a test.
 
-The existing tests in `check/src/identifier.rs` must still pass, and `mint`, `admits`, `sequence_of`, `render`, and `needs` must keep their current behavior. `identifier_integrity` must decide disjointness from declared prefixes, `literal_prefix` must be gone, and `headwater taxonomy validate` must no longer print a not-decided clause.
+The existing tests in `check/src/identifier.rs` must still pass, and `mint`, `admits`, `sequence_of`, `render`, and `needs` must keep their current behavior. `identifier_integrity` must decide disjointness from declared prefixes, `literal_prefix` must be gone, and `headwater taxonomy validate` must not print a not-decided clause.
 
 All nine schemes must declare the new members, `.headwater/taxonomy.lock` must regenerate, and every string `mint` produces must stay byte-identical to what it produces today. The taxonomy major version must bump, per the cost that HW-OBL-0046 states, and spec 2 and spec 3 must describe the new members.
 
