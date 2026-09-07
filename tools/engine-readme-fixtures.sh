@@ -79,6 +79,12 @@
 # `rust-version` key. A file added later that states the floor in one of those
 # shapes joins the population with no edit to this script.
 #
+# `*.html` is in that glob because `site/` is the hand-built public half under
+# HW-DR-0037 and nothing regenerates it. `site/tutorial/index.html` told an
+# outside reader the floor was 1.85 for a day after this repository went public,
+# and a glob of Markdown and manifests could not see it. Nine tracked HTML files
+# are read and exactly one of them states a floor.
+#
 # Two exclusions, each stated rather than assumed. `engine/crates/*/fixtures/`
 # holds copies of pages under test by the engine's own suites and is not prose
 # anybody reads. This script is excluded from its own population, because the
@@ -257,7 +263,7 @@ floor_versions() {
     # untracked scratch copy of a page cannot join the population of a real run.
     (
         cd "$1" || exit 1
-        files=$(git ls-files -- '*.md' '*.yml' '*.yaml' '*.toml' 2>/dev/null |
+        files=$(git ls-files -- '*.md' '*.yml' '*.yaml' '*.toml' '*.html' 2>/dev/null |
             grep -v '^docs/reviews/' |
             grep -v '/fixtures/')
         [ -n "$files" ] || exit 0
