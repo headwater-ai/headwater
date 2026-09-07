@@ -25,6 +25,27 @@
 #     sh tools/run-dir.sh tail <dir> [n]        the last n lines, default 5
 #     sh tools/run-dir.sh net <dir>             opened minus closed, derived
 #     sh tools/run-dir.sh import <ledger> <dir> split an old ledger into it
+#     sh tools/run-dir.sh claim <dir> <issue> <branch> <artifact>...
+#                                               claim each artifact, or say who holds it
+#     sh tools/run-dir.sh release <dir> <issue>  drop every claim the issue holds
+#     sh tools/run-dir.sh claims <dir>           every claim, one per line
+#
+# A claim is a file at `<dir>/claims/artifacts/<artifact>`, opened with
+# `set -C`, which dash implements as O_EXCL, so two parents claiming one
+# artifact at once cannot both succeed: the kernel serializes the create, and
+# the second reads the first's file and reports `WAITS-ON: <issue>`. A claim is
+# never empty: the file holds the issue and the branch, which is what
+# [HW-PD-0004] asks of a claim and what the identifier claim store learned the
+# hard way. Authority stays on the tree: a claim orders the integrator, it
+# refuses nobody, and the veto still travels by message.
+#
+# NOT `mkdir`, which was the first choice and the textbook primitive. On a host
+# whose `/bin/mkdir` is uutils coreutils 0.8.0, two racing `mkdir` calls on
+# one path both succeeded in 17 of 20 races, while a sequential second call is
+# refused, so every test that did not race passed. A noclobber redirect, `ln`,
+# `ln -s` and Python's `os.mkdir` each held at 0 of 20. The race case in
+# `tools/run-dir-fixtures.sh` is what found it, and it stays there so that a
+# primitive that stops being atomic is reported rather than trusted.
 #
 # `start` is create-only: an id that exists is refused rather than reused, so
 # two parents cannot share a directory by accident. `log` refuses a line that
@@ -152,8 +173,86 @@ import() {
     done
 }
 
+# An artifact name is a path segment, so a slash in it would make a claim on
+# `docs/foo` a file two levels down and a different claim from `docs-foo`.
+# Slashes fold to `-` before the claim is made. A leading dot goes too: a claim
+# on `.headwater/export.json` would otherwise be a dotfile that the `*` glob in
+# `release` and `claims` never sees, which the suite caught as a claim that was
+# made and could not be freed.
+slug() {
+    printf '%s' "$1" | tr '/' '-' | sed 's/^\.*//'
+}
+
+# The create-only primitive. Exit 0 and the file written with the given
+# content, or exit 1 and nothing written because the path already existed.
+create_only() {
+    path=$1 content=$2
+    (set -C; printf '%s' "$content" > "$path") 2>/dev/null
+}
+
+claim() {
+    dir=$1 issue=$2 branch=$3
+    shift 3
+    [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
+    [ $# -gt 0 ] || { echo "run-dir: claim needs at least one artifact." >&2; exit 2; }
+    mkdir -p "$dir/claims/artifacts" "$dir/claims/issues"
+    printf 'issue %s\nbranch %s\n' "$issue" "$branch" > "$dir/claims/issues/$issue"
+    waits=''
+    for artifact in "$@"; do
+        s=$(slug "$artifact")
+        if create_only "$dir/claims/artifacts/$s" "$(printf 'issue %s\nbranch %s\nartifact %s\n' "$issue" "$branch" "$artifact")"; then
+            printf 'CLAIMED: %s\n' "$artifact"
+        else
+            holder=$(sed -n 's/^issue //p' "$dir/claims/artifacts/$s" 2>/dev/null)
+            if [ "$holder" = "$issue" ]; then
+                printf 'CLAIMED: %s (already held)\n' "$artifact"
+            else
+                printf 'HELD: %s by #%s\n' "$artifact" "${holder:-unknown}"
+                case " $waits " in
+                    *" ${holder:-unknown} "*) ;;
+                    *) waits="$waits ${holder:-unknown}" ;;
+                esac
+            fi
+        fi
+    done
+    if [ -n "$waits" ]; then
+        printf 'WAITS-ON:%s\n' "$waits"
+        printf 'WAITS-ON:%s\n' "$waits" >> "$dir/claims/issues/$issue"
+    fi
+}
+
+release() {
+    dir=$1 issue=$2
+    [ -d "$dir/claims" ] || { echo "run-dir: no claims under $dir." >&2; exit 1; }
+    freed=0
+    for owner in "$dir"/claims/artifacts/*; do
+        [ -f "$owner" ] || continue
+        [ "$(sed -n 's/^issue //p' "$owner")" = "$issue" ] || continue
+        rm -f "$owner"
+        freed=$((freed + 1))
+    done
+    rm -f "$dir/claims/issues/$issue"
+    printf 'RELEASED: %s artifacts held by #%s\n' "$freed" "$issue"
+}
+
+claims() {
+    dir=$1
+    [ -d "$dir/claims/artifacts" ] || return 0
+    for owner in "$dir"/claims/artifacts/*; do
+        [ -f "$owner" ] || continue
+        if [ ! -s "$owner" ]; then
+            printf 'EMPTY: %s\n' "$(basename "$owner")"
+            continue
+        fi
+        printf '%s #%s %s\n' "$(sed -n 's/^artifact //p' "$owner")" "$(sed -n 's/^issue //p' "$owner")" "$(sed -n 's/^branch //p' "$owner")"
+    done
+}
+
 case ${1:-} in
     start) shift; start "$@" ;;
+    claim) [ $# -ge 5 ] || usage; shift; claim "$@" ;;
+    release) [ $# -eq 3 ] || usage; release "$2" "$3" ;;
+    claims) [ $# -eq 2 ] || usage; claims "$2" ;;
     log) [ $# -eq 3 ] || usage; log "$2" "$3" ;;
     tail) [ $# -ge 2 ] || usage; tail_log "$2" "${3:-5}" ;;
     net) [ $# -eq 2 ] || usage; net "$2" ;;

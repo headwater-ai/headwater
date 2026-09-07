@@ -43,6 +43,8 @@ Leave the shared checkout on `main` and untouched. Build the engine in your work
 
 **Before you open the pull request**, rebase onto `origin/main`, rebuild the engine, then run `headwater generate` and re-bless the recorded fixtures, and read that diff. A binary built before the rebase writes what the previous engine produced, and `headwater check --strict` passes it because the same binary wrote and checked it.
 
+**A `waits-on` line in your dispatch is the integrator's to honor, not yours to build around.** Build against `origin/main` as it stands; the integrator merges the awaited change first and rebases yours behind it. Do not rebase onto another agent's unmerged branch.
+
 **Commit and push in small steps.** `git push -u origin <branch>`, never a bare push. Only pushed commits survive an agent death, and a parent resumes you by your id rather than replacing you.
 
 ## What you never do

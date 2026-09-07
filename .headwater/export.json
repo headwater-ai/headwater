@@ -7680,7 +7680,7 @@
           "id": "HW-PD-0004",
           "status": "current",
           "status_since": "2026-09-07",
-          "summary": "Workers coordinate through create-only claim directories that every worktree can reach and the parent never relays, while the merge veto and a re-verification stay messages from the parent, because a peer's message carries no owner authority.",
+          "summary": "Workers coordinate through create-only claim files that every worktree can reach and the parent never relays, while the merge veto and a re-verification stay messages from the parent, because a peer's message carries no owner authority.",
           "last_verified": "2026-09-07",
           "title": "Coordination is a create-only claim, and authority stays on the tree",
           "provenance": {
