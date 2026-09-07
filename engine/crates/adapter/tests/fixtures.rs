@@ -56,6 +56,7 @@ use headwater_check::{
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
+use headwater_yaml::json::Json;
 use headwater_yaml::Mapping;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -322,10 +323,58 @@ fn scoped_at(adoption: Option<&Mapping>, scoping: Scoping) -> Ran {
         &mut Cache::disabled(),
     );
     Ran {
-        run,
+        run: with_an_edge_scoped_skip(run, &taken),
         census: taken,
         graph,
     }
+}
+
+/// The reason the injected edge-scoped skip is recorded under.
+///
+/// The wording `crate::dependency` writes when the document at one end of an
+/// edge declares no value for the state facet, with an identifier this fixture
+/// tree does not otherwise carry, so the class is legible as what it is.
+const EDGE_SKIP: &str = "the document at the target end, `FIX-REG-open-questions`, declares no \
+                         value for the state facet, so there is no state to read there";
+
+/// One edge-scoped skipped instance, added to a run before it is recorded.
+///
+/// Injected here for the reason the adoption payload above is injected: the
+/// state does not occur in this fixture tree and the recorded artifacts are
+/// worth nothing without it. An edge-scoped rule that skips has to meet a corpus
+/// that declares the relation and an endpoint that is missing the facet, and
+/// `headwater_check::dependency` over `HW-REG-open-questions` in this
+/// repository's own corpus is the only place it happens.
+///
+/// It is what makes the coverage block's three numbers distinguishable. An
+/// edge-scoped instance is routed to both of its endpoints, so it is one
+/// instance and two routings, and every class of every recorded artifact of this
+/// crate summed to `instances` exactly until this instance existed. A suite
+/// where the true relation and the false one agree on every case is a suite that
+/// holds neither.
+fn with_an_edge_scoped_skip(mut run: Run, taken: &Census) -> Run {
+    let ends: Vec<&str> = taken
+        .rows
+        .iter()
+        .map(|row| row.path.as_str())
+        .take(2)
+        .collect();
+    run.instances.push(Instance::skipped(
+        headwater_check::dependency::RULE,
+        Grain::Edge,
+        ends.iter()
+            .map(|path| Input {
+                path: (*path).to_string(),
+                digest: None,
+            })
+            .collect(),
+        EDGE_SKIP,
+    ));
+    // The runner's own accounting, recomputed over the record this function
+    // extended. The findings are the runner's and are not touched: a skipped
+    // instance reaches none.
+    run.coverage = Coverage::of(taken, &run.instances);
+    run
 }
 
 fn subject(lock: &str) -> Subject<'_> {
@@ -1129,8 +1178,8 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
 
     let text_report = render(&ran, Format::Text);
     let markdown = render(&ran, Format::Markdown);
-    assert!(text_report.contains("304 check instances"));
-    assert!(markdown.contains("It created 304 check instances, and 70 of them reached no verdict."));
+    assert!(text_report.contains("305 check instances"));
+    assert!(markdown.contains("It created 305 check instances, and 71 of them reached no verdict."));
     // The report is laid out at a width, so a long reason arrives over more
     // than one line. The class is a run of words either way.
     let flat = flowed(&text_report);
@@ -2258,21 +2307,79 @@ fn also_skipping(ran: &Ran, grain: Grain, over: &[&str]) -> Run {
     run
 }
 
-/// The one entry of the coverage block for the class [`ROUTED_SKIP`] names.
+/// Every entry of `coverage.skips`, as the emitter wrote them.
+fn skip_classes(run: &Run) -> Vec<Vec<(String, Json)>> {
+    let Json::Object(block) = headwater_adapter::json::coverage(&run.coverage, &run.instances)
+    else {
+        panic!("the coverage block is an object")
+    };
+    let (_, skips) = block
+        .iter()
+        .find(|(key, _)| key == "skips")
+        .expect("the skip classes");
+    let Json::Array(classes) = skips else {
+        panic!("the skip classes are an array")
+    };
+    classes
+        .iter()
+        .map(|class| match class {
+            Json::Object(members) => members.clone(),
+            _ => panic!("a class is an object"),
+        })
+        .collect()
+}
+
+fn text_of(members: &[(String, Json)], key: &str) -> Option<String> {
+    members
+        .iter()
+        .find(|(name, _)| name == key)
+        .map(|(_, value)| match value {
+            Json::String(text) => text.clone(),
+            Json::Raw(number) => number.clone(),
+            _ => panic!("{key} is a scalar"),
+        })
+}
+
+fn count_of(members: &[(String, Json)], key: &str) -> usize {
+    text_of(members, key)
+        .unwrap_or_else(|| panic!("no `{key}`"))
+        .parse()
+        .expect("a number")
+}
+
+/// The one entry of `coverage.skips` whose reason is the one named.
 ///
-/// The whole block is the wrong grain to assert on: this fixture tree already
-/// skips 71 instances under eight classes, so a document named anywhere in it is
-/// named for reasons that have nothing to do with the case at hand.
+/// Selected out of the parsed structure rather than cut out of the rendered
+/// bytes. The first version of this helper split the text on the reason and then
+/// on the next `"reason"` key, and the class this suite pushes is always the
+/// last one, so the cut ran to the end of the coverage object and carried
+/// `unaccounted` with it. Benign while nothing in that member names a document,
+/// and a red case over correct output the day one does.
+fn class_of(run: &Run, reason: &str) -> Vec<(String, Json)> {
+    skip_classes(run)
+        .into_iter()
+        .find(|members| text_of(members, "reason").as_deref() == Some(reason))
+        .unwrap_or_else(|| panic!("no class reads `{reason}`"))
+}
+
+/// The same entry, as the bytes a reader of the artifact sees.
 fn routed_class(run: &Run) -> String {
-    headwater_adapter::json::coverage(&run.coverage, &run.instances)
-        .render_pretty()
-        .split(ROUTED_SKIP)
-        .nth(1)
-        .expect("the class this case skipped under")
-        .split("\"reason\"")
-        .next()
-        .expect("up to the next class")
-        .to_string()
+    Json::Object(class_of(run, ROUTED_SKIP)).render_pretty()
+}
+
+/// The routings of one class, summed over the rows it names.
+fn routings_of(members: &[(String, Json)]) -> usize {
+    let Some((_, Json::Array(documents))) = members.iter().find(|(key, _)| key == "documents")
+    else {
+        panic!("the routed documents")
+    };
+    documents
+        .iter()
+        .map(|row| match row {
+            Json::Object(fields) => count_of(fields, "routings"),
+            _ => panic!("a row is an object"),
+        })
+        .sum()
 }
 
 fn render_run(run: &Run, ran: &Ran, format: Format) -> String {
@@ -2419,6 +2526,78 @@ fn a_skip_routed_to_no_document_is_reported_as_routed_to_no_document() {
             render_run(&unrouted, &ran, format),
             "{}",
             format.name()
+        );
+    }
+}
+
+/// The three numbers of a skip class are two populations, and this tree is what
+/// tells them apart.
+///
+/// `instances` and `unrouted` count instances once each. `routings` counts
+/// routings. So the sum a reader reaches for is wrong in one direction: the
+/// routings of a class plus its `unrouted` are **at least** its `instances`, and
+/// larger by one for every extra endpoint a routed instance was routed to.
+///
+/// The excess is asserted rather than tolerated, and it is asserted to be
+/// non-zero. Every recorded artifact of this crate closed exactly until
+/// [`with_an_edge_scoped_skip`] existed, so a case that asserted equality here
+/// would have passed on this suite, on the check crate's fixtures, and on this
+/// repository's own corpus for every class but one.
+#[test]
+fn the_routings_of_a_class_and_its_unrouted_exceed_its_instances_by_the_extra_endpoints() {
+    for ran in [fixture_run(), scoped_run(), named_nothing_run()] {
+        let walked: BTreeSet<&str> = ran
+            .census
+            .rows
+            .iter()
+            .map(|row| row.path.as_str())
+            .collect();
+        // The oracle, off the instance record rather than off the artifact: how
+        // many census rows each skipped instance was routed to.
+        let mut extra = 0;
+        let mut skipped = 0;
+        for instance in &ran.run.instances {
+            if instance.ran() {
+                continue;
+            }
+            skipped += 1;
+            let rows = match instance.grain.routes() {
+                true => instance
+                    .paths()
+                    .iter()
+                    .filter(|path| walked.contains(*path))
+                    .count(),
+                false => 0,
+            };
+            extra += rows.saturating_sub(1);
+        }
+        assert_eq!(skipped, ran.run.coverage.skipped());
+
+        let mut stated = 0;
+        let mut excess = 0;
+        for class in skip_classes(&ran.run) {
+            let instances = count_of(&class, "instances");
+            let unrouted = count_of(&class, "unrouted");
+            let routings = routings_of(&class);
+            assert!(
+                routings + unrouted >= instances,
+                "{}: {routings} routings and {unrouted} unrouted under {instances} instances",
+                text_of(&class, "reason").expect("a reason")
+            );
+            stated += instances;
+            excess += routings + unrouted - instances;
+        }
+        assert_eq!(
+            stated, skipped,
+            "the classes partition the skipped instances"
+        );
+        assert_eq!(
+            excess, extra,
+            "the excess is the extra endpoints and nothing else"
+        );
+        assert!(
+            excess > 0,
+            "this tree carries no edge-scoped skip, so a case asserting equality here would pass"
         );
     }
 }

@@ -166,10 +166,7 @@ pub fn coverage(coverage: &Coverage, instances: &[Instance]) -> Json {
 ///
 /// `documents` is the routing, read off [`Coverage::documents`] in census order.
 /// One entry per census row that class of skip was routed to, with the rules
-/// that skipped over that row and the number of routed instances. It is a count
-/// of **routings** and not of instances: an edge-scoped instance is routed to
-/// both of its endpoints, so it is one instance and two entries here, which is
-/// why the entries do not sum to `instances` above and are not meant to.
+/// that skipped over that row and a count named `routings`.
 ///
 /// `unrouted` is the other arm. A corpus-scoped instance is routed to no
 /// document at all — `lifecycle.deletion.not_permitted` is the live one — and an
@@ -179,8 +176,27 @@ pub fn coverage(coverage: &Coverage, instances: &[Instance]) -> Json {
 /// where a skip fell". This member is what separates them, and it is written on
 /// every run including a zero for the same reason every other member here is.
 ///
-/// The two arms partition the instances of the class: an instance is routed to
-/// at least one census row or it is counted here, never both and never neither.
+/// # The three numbers, and the relation that actually holds between them
+///
+/// `instances` and `unrouted` count **instances**, once each whatever they were
+/// routed to. `routings` counts **routings**. So the arithmetic a reader reaches
+/// for is wrong, and it is wrong in one direction only:
+///
+/// > the routings of a class, summed, plus its `unrouted`, is **at least** its
+/// > `instances`, and larger by one for every extra endpoint a routed instance
+/// > was routed to.
+///
+/// A document-scoped instance is routed to one census row and contributes one
+/// routing. An edge-scoped one is routed to both of its endpoints and
+/// contributes two, so a class holding a single edge-scoped skip reports
+/// `instances: 1`, one or two rows summing to `routings: 2`, and `unrouted: 0`.
+/// Equality holds exactly where no routed instance of the class is edge-scoped,
+/// which is most classes and is not a property of the shape.
+///
+/// What does partition the instances is the *presence* of a row rather than the
+/// count on it: every instance of the class was routed to at least one census
+/// row, and then it appears under `documents`, or it was routed to none, and
+/// then it is counted in `unrouted`. Never both, and never neither.
 fn skips(coverage: &Coverage, instances: &[Instance]) -> Json {
     let walked: HashSet<&str> = coverage
         .documents
@@ -230,6 +246,13 @@ fn skips(coverage: &Coverage, instances: &[Instance]) -> Json {
 /// skipped over the row and each is named once, because a rule that skipped four
 /// instances over one document is one fact for a reader and four lines for
 /// nobody.
+///
+/// The count on each row is named `routings` and not `instances`, and the word
+/// is the whole of what tells a reader the two are different populations. An
+/// edge-scoped instance is routed to both of its endpoints, so it is one
+/// instance and two routings, and a member called `instances` sitting under a
+/// sibling `instances` that counts instances would report the same word for two
+/// numbers that do not add up together.
 fn routed(coverage: &Coverage, reason: &str) -> Json {
     Json::Array(
         coverage
@@ -237,24 +260,24 @@ fn routed(coverage: &Coverage, reason: &str) -> Json {
             .iter()
             .filter_map(|document| {
                 let mut rules: Vec<&'static str> = Vec::new();
-                let mut instances = 0;
+                let mut routings = 0;
                 for (rule, fell) in &document.skipped {
                     if fell != reason {
                         continue;
                     }
-                    instances += 1;
+                    routings += 1;
                     if !rules.contains(rule) {
                         rules.push(rule);
                     }
                 }
-                (instances > 0).then(|| {
+                (routings > 0).then(|| {
                     Json::object([
                         ("path", Json::string(document.path.clone())),
                         (
                             "rules",
                             Json::Array(rules.into_iter().map(Json::string).collect()),
                         ),
-                        ("instances", number(instances)),
+                        ("routings", number(routings)),
                     ])
                 })
             })

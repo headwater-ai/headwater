@@ -12,8 +12,8 @@
     "classified": 24,
     "checked": 23,
     "generated": 1,
-    "instances": 304,
-    "skipped": 70,
+    "instances": 305,
+    "skipped": 71,
     "skips": [
       {
         "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
@@ -24,7 +24,7 @@
             "rules": [
               "identifier.pattern.not_met"
             ],
-            "instances": 1
+            "routings": 1
           }
         ],
         "unrouted": 0
@@ -38,7 +38,7 @@
             "rules": [
               "identifier.pattern.not_met"
             ],
-            "instances": 1
+            "routings": 1
           }
         ],
         "unrouted": 0
@@ -52,119 +52,119 @@
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/01-one-half.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/02-cited-only.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/03-no-instance.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/05-no-summary.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/06-retired.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/07-prose-defects.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/08-contract-met.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/09-contract-missing.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/10-suppressed.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/11-identifier-mismatch.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/13-dangling.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/14-relations-not-a-mapping.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/15-unusable-entries.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/16-no-identifier.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/17-identifier-not-a-word.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/18-blank-facets.md",
             "rules": [
               "shelf.placement_is_primary"
             ],
-            "instances": 1
+            "routings": 1
           }
         ],
         "unrouted": 0
@@ -178,14 +178,14 @@
             "rules": [
               "voice.forbidden_construction"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/09-contract-missing.md",
             "rules": [
               "voice.forbidden_construction"
             ],
-            "instances": 1
+            "routings": 1
           }
         ],
         "unrouted": 0
@@ -199,14 +199,14 @@
             "rules": [
               "language.controlled.not_met"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/09-contract-missing.md",
             "rules": [
               "language.controlled.not_met"
             ],
-            "instances": 1
+            "routings": 1
           }
         ],
         "unrouted": 0
@@ -220,154 +220,154 @@
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/evaluations/beta.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/evaluations/delta.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/evaluations/epsilon.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/evaluations/eta.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/evaluations/gamma.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/evaluations/zeta.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/01-one-half.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/02-cited-only.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/03-no-instance.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/05-no-summary.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/06-retired.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/08-contract-met.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/09-contract-missing.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/10-suppressed.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/11-identifier-mismatch.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/13-dangling.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/14-relations-not-a-mapping.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/15-unusable-entries.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/16-no-identifier.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/17-identifier-not-a-word.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/18-blank-facets.md",
             "rules": [
               "link.fragment.unresolved"
             ],
-            "instances": 1
+            "routings": 1
           }
         ],
         "unrouted": 0
@@ -381,171 +381,192 @@
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/evaluations/beta.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/evaluations/delta.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/evaluations/epsilon.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/evaluations/eta.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/evaluations/gamma.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/evaluations/zeta.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/00-both-halves.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/01-one-half.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/02-cited-only.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/03-no-instance.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/05-no-summary.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/06-retired.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/07-prose-defects.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/08-contract-met.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/09-contract-missing.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/10-suppressed.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/11-identifier-mismatch.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/13-dangling.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/14-relations-not-a-mapping.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/15-unusable-entries.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/16-no-identifier.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/17-identifier-not-a-word.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           },
           {
             "path": "check/spec/18-blank-facets.md",
             "rules": [
               "warrant.promoted"
             ],
-            "instances": 1
+            "routings": 1
           }
         ],
         "unrouted": 1
+      },
+      {
+        "reason": "the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there",
+        "instances": 1,
+        "documents": [
+          {
+            "path": "check/evaluations/alpha.md",
+            "rules": [
+              "lifecycle.dependency.on_terminal"
+            ],
+            "routings": 1
+          },
+          {
+            "path": "check/evaluations/beta.md",
+            "rules": [
+              "lifecycle.dependency.on_terminal"
+            ],
+            "routings": 1
+          }
+        ],
+        "unrouted": 0
       }
     ],
     "unaccounted": [

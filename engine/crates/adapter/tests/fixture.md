@@ -2,7 +2,7 @@
 
 48 findings, 29 of them errors across 23 of 26 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
 
-**Coverage.** This run saw 26 files and classified 24 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 304 check instances, and 70 of them reached no verdict.
+**Coverage.** This run saw 26 files and classified 24 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 305 check instances, and 71 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
@@ -11,6 +11,7 @@
 - 2 — `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
 - 22 — this document writes no fragment into itself
 - 25 — change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+- 1 — the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there
 
 2 readings of a path the census never walked, so the coverage above is computed over a set that does not hold them:
 
