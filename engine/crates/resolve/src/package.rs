@@ -1892,7 +1892,9 @@ fn stage(
         return Err(refusal(&name, "`contents.bundles` is not a path"));
     };
     if !leaves(&scalar.text) {
-        // A path that stays inside was read with everything else.
+        // A path that stays inside was read with everything else, and it keeps
+        // the name the manifest wrote, so that name is where the bundles are.
+        staged.retain(|file| !a_bundles_own_corpus(&file.path, &scalar.text));
         return Ok(staged);
     }
 
@@ -1908,6 +1910,10 @@ fn stage(
         &mut staged,
     )
     .map_err(|why| refusal(&name, &why))?;
+    // The bundles walk wrote everything under `BUNDLES`, which is where the
+    // rewrite below points the manifest, so that is the prefix the exception is
+    // read against.
+    staged.retain(|file| !a_bundles_own_corpus(&file.path, BUNDLES));
 
     let Some(at) = staged.iter().position(|file| file.path == MANIFEST) else {
         return Err(refusal(&name, "the package carries no manifest to rewrite"));
@@ -1922,6 +1928,40 @@ fn stage(
     })?;
     staged[at].bytes = rewritten.into_bytes();
     Ok(staged)
+}
+
+/// Whether a staged path is a bundle's own reference corpus, which is the one
+/// exception to publication taking the package directory whole.
+///
+/// **`at` is where the bundles sit inside the artifact**, and it is not always
+/// [`BUNDLES`]: a `contents.bundles` that leaves the package is rewritten to
+/// `bundles` by [`stage`], and one that stays inside keeps the name the
+/// manifest wrote. A bundle root is one segment under that, so what this
+/// answers to is `<at>/<bundle>/fixtures/…` and nothing else. A `fixtures`
+/// directory elsewhere in the package, or deeper inside a bundle, is carried
+/// like any other file, because spec 7 states the exception over one path
+/// rather than over a name. A *file* named `fixtures` at a bundle root is
+/// carried too, because the exception is a directory.
+///
+/// [#518]: https://github.com/headwater-ai/headwater/issues/518
+fn a_bundles_own_corpus(path: &str, at: &str) -> bool {
+    let at = at.trim_start_matches("./").trim_end_matches('/');
+    let inside = match at.is_empty() || at == "." {
+        true => path,
+        false => match path
+            .strip_prefix(at)
+            .and_then(|rest| rest.strip_prefix('/'))
+        {
+            Some(rest) => rest,
+            None => return false,
+        },
+    };
+    let mut segments = inside.split('/');
+    let _bundle = segments.next();
+    matches!(
+        (segments.next(), segments.next()),
+        (Some(FIXTURES), Some(_))
+    )
 }
 
 /// Read a directory tree into the staged set, under a prefix inside the
@@ -2071,6 +2111,19 @@ fn migrations(
 
 /// Where a published package keeps the bundles it ships.
 pub const BUNDLES: &str = "bundles";
+
+/// Where a bundle keeps the corpora its publisher measures the bundle against.
+///
+/// It is the one directory a publish reads and does not carry. The corpora are
+/// prose the publisher controls and no consumer verb opens one, so a consumer
+/// that vendors this repository's own package took 71 of 102 members and 40 per
+/// cent of the bytes in files nothing reads. [`a_bundles_own_corpus`] is the
+/// reader, and spec 7's Publishing section is the ruling, stated in the same
+/// paragraph that rules publication takes the package directory whole.
+///
+/// A publisher keeps its corpora where they are. This names what leaves the
+/// artifact and never what leaves the disk.
+pub const FIXTURES: &str = "fixtures";
 
 /// Where a source package keeps named assembly recipes.
 ///

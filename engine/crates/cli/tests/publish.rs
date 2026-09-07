@@ -1391,6 +1391,51 @@ fn the_vendored_bundles_agree_with_a_fresh_publish_of_the_maintained_source() {
     );
 }
 
+/// #518: an artifact carries no bundle reference corpus, and the publisher
+/// keeps every one of its own.
+///
+/// Spec 7's Publishing section rules that publication takes the package
+/// directory whole, and it names one exception: a `fixtures/` directory at the
+/// root of a bundle. Those corpora are how a publisher measures its own
+/// taxonomy against prose it controls. No consumer verb opens one, and before
+/// this exception they were 71 of the 102 members of this repository's own
+/// release record.
+///
+/// This runs the real publisher over the maintained source rather than a
+/// description of it, and it holds the publisher's side as well, because the
+/// exception is about what the artifact carries and it must delete nothing.
+#[test]
+fn a_fresh_publish_carries_no_bundle_fixtures_and_the_publisher_keeps_its_own() {
+    let root = Root::scratch("bundle-fixtures");
+    let out = root.path().join("release");
+
+    let (code, message) = publish_real_source_into(&out);
+    assert_eq!(
+        code,
+        Some(0),
+        "the publish this case depends on failed: {message}"
+    );
+
+    let mut carried: Vec<String> = relative_files(&out.join("bundles"))
+        .into_iter()
+        .filter(|path| path.split('/').nth(1) == Some("fixtures"))
+        .collect();
+    carried.sort();
+    assert!(
+        carried.is_empty(),
+        "the artifact carries {} bundle fixture files that no consumer verb opens: {carried:#?}",
+        carried.len()
+    );
+
+    assert!(
+        repository()
+            .join("docs/taxonomies/standards-spec/fixtures/README.md")
+            .is_file(),
+        "the exception is about the artifact. The publisher's own reference corpora stay where \
+         they are"
+    );
+}
+
 /// Every regular file under `root`, as a path relative to it, in no
 /// particular order.
 /// #353: the digest a publisher hands on is readable without a text search.

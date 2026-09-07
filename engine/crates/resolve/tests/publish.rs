@@ -226,6 +226,21 @@ fn a_published_package_carries_its_bundles_and_no_path_that_leaves_it() {
     let root = publisher(&scratch, None);
     let out = scratch.path().join("artifact");
 
+    // #518: a reference corpus at the root of the bundle, and a directory
+    // deeper inside it that only shares the name. The exception spec 7 names is
+    // stated over one path and not over a name, so the first is left behind and
+    // the second travels. Both are planted here rather than taken from this
+    // repository's own library, because what is held is the rule and not those
+    // particular files.
+    scratch.write(
+        "publisher/library/extra/fixtures/corpus/note.md",
+        "# a corpus the publisher measures its own taxonomy against\n",
+    );
+    scratch.write(
+        "publisher/library/extra/corpora/fixtures/note.md",
+        "# a directory that is not a bundle's own reference corpus\n",
+    );
+
     let record = package::publish(&root, "acme/fixture", &out).expect("it publishes");
     assert_eq!(record.package, "acme/fixture");
 
@@ -243,6 +258,28 @@ fn a_published_package_carries_its_bundles_and_no_path_that_leaves_it() {
     assert!(paths.contains(&"taxonomy.yml"));
     assert!(paths.contains(&"bundles/extra/bundle.yml"));
     assert!(!paths.contains(&release::RECORD));
+
+    // #518: the copier left the bundle's own reference corpus behind, and the
+    // manifest writer named nothing the copier did not write. #581 is the shape
+    // where those two enumerate different sets, so both are asserted.
+    assert!(
+        !out.join("bundles/extra/fixtures").exists(),
+        "the artifact carries the bundle's reference corpus"
+    );
+    assert!(
+        !paths
+            .iter()
+            .any(|path| path.starts_with("bundles/extra/fixtures/")),
+        "the release record names a reference corpus the artifact does not carry: {paths:?}"
+    );
+
+    // And a `fixtures` directory that is not at the root of a bundle is carried
+    // like any other file, because the exception is about the path.
+    assert!(
+        out.join("bundles/extra/corpora/fixtures/note.md").is_file(),
+        "a `fixtures` directory deeper inside a bundle was dropped by name"
+    );
+    assert!(paths.contains(&"bundles/extra/corpora/fixtures/note.md"));
 
     // And the artifact resolves for a consumer that vendors it.
     consumer(&scratch, &record.digest);

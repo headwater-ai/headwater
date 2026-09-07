@@ -74,14 +74,14 @@ No relation in the base is `created_by: author`, because the claim under test is
 
 ## What an entry ships
 
-One directory per entry, named for the bundle that it will publish as. Four parts, and each one has a destination in the published package, so promotion is a move rather than a rewrite.
+One directory per entry, named for the bundle that it will publish as. Four parts, and three of them have a destination in the published package, so promotion is a move rather than a rewrite. The fourth stays here, and the row below says why.
 
 | Part | Path in the draft | Where it lands when the entry is published |
 |---|---|---|
-| Schema | `bundle.yml` | `bundles/<name>.yml` ([spec 7](../spec/07-distribution-and-federation.md#publishing)) |
+| Schema | `bundle.yml` | `bundles/<name>/bundle.yml` ([spec 7](../spec/07-distribution-and-federation.md#publishing)) |
 | Doctrine | `doctrine.md` | the `doctrine/` path, vendored to consumers |
-| Templates | `templates/` | the `templates/` path |
-| Fixtures | `fixtures/` | the publisher's reference corpora, which [spec 7](../spec/07-distribution-and-federation.md#upgrading) measures compatibility against |
+| Templates | `templates/` | `bundles/<name>/templates/`, which a publish reads and carries |
+| Fixtures | `fixtures/` | nowhere. A publish reads this directory and leaves it out of the artifact, because no consumer verb opens one. It stays here, as the corpus this publisher measures the bundle against ([spec 7](../spec/07-distribution-and-federation.md#publishing)) |
 
 **`bundle.yml` is the overlay.** It names the bundle, the base version that it was written against, its `requires` closure, and its `add` operations. The per-file shape of a bundle is not specified anywhere yet, so a draft adopts this one and says so:
 
