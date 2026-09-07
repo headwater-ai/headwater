@@ -402,6 +402,29 @@ pub fn instance_validity(before: &Run, after: &Run) -> (Outcome, BTreeSet<String
     (Outcome::over(breaks), moved)
 }
 
+/// The rules whose instances stopped agreeing, read off an `instance_validity`
+/// outcome.
+///
+/// A caller that wants to know *what kind* of break it is looking at has one
+/// honest source for it, and this is that source. [`key`] is what puts the rule
+/// at the front of `Break::at`, and the reading of that shape stays in this
+/// module: a caller that split the field itself would carry a second copy of a
+/// format only [`key`] decides.
+///
+/// Answers an empty set for a preserved dimension and for one that did not run,
+/// which is the same answer as "no rule broke here". A caller that must tell
+/// those apart is asking about the [`Outcome`] and matches it.
+pub fn broken_rules(outcome: &Outcome) -> BTreeSet<String> {
+    let Outcome::Broken(breaks) = outcome else {
+        return BTreeSet::new();
+    };
+    breaks
+        .iter()
+        .filter_map(|entry| entry.at.split(' ').next())
+        .map(str::to_string)
+        .collect()
+}
+
 /// The summary word for `instance_validity` alone.
 ///
 /// A break here is a rule that stopped agreeing between the two runs, and
