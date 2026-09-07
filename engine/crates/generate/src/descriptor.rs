@@ -105,7 +105,16 @@ pub const PATH: &str = ".headwater/corpus.json";
 /// hard failure with a message. A minor mismatch is a warning and the reader
 /// continues. So a member added later moves the minor, and a member removed or
 /// re-meant moves the major.
-pub const VERSION: &str = "1.0";
+///
+/// `1.1` added `emitter_set`, which is a member added later.
+pub const VERSION: &str = "1.1";
+
+/// The member that records which emitters wrote this file.
+///
+/// Named here rather than spelled at both ends, because the writer below and
+/// the reader in [`crate::committed_emitter_set`] are the two halves of one
+/// agreement and a second spelling of the key is a way for them to disagree.
+pub const EMITTER_SET_MEMBER: &str = "emitter_set";
 
 pub(crate) fn emit(
     surface: &Surface<'_>,
@@ -146,6 +155,13 @@ pub(crate) fn emit(
             Json::string(headwater_mark::marker_text(Kind::CorpusDescriptor.name())),
         ),
         ("descriptor_version", Json::string(VERSION)),
+        // A number rather than a string, because a reader compares it and
+        // never renders it. `rules:` in the taxonomy lock is written the same
+        // way for the same reason.
+        (
+            EMITTER_SET_MEMBER,
+            Json::Raw(crate::emitters::EMITTER_SET.to_string()),
+        ),
         ("corpora", Json::Array(vec![corpus])),
     ]);
 

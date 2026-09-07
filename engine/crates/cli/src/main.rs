@@ -4302,28 +4302,12 @@ fn generate(root: &Path, check_only: bool) -> ExitCode {
         false => headwater_generate::write(root, &plan),
     };
     print!("{}", report.render());
-    if report.has_errors() {
-        // A projection that drifted and a marked file this run did not write
-        // are two failures with two remedies, and printing the first remedy
-        // for the second tells a reader to run the verb that cannot help.
-        let drifted = report.wrote.iter().any(|wrote| wrote.verdict.is_error());
-        match (check_only, drifted) {
-            (true, true) => eprintln!(
-                "headwater: {}",
-                err(
-                    "a projection is not what this corpus and this lock produce. Run \
-                     `headwater generate` and commit the result"
-                )
-            ),
-            (true, false) => eprintln!(
-                "headwater: {}",
-                err(
-                    "a marked file is committed that this run does not write. Running this \
-                     verb again writes it no more, and the line under it above says why"
-                )
-            ),
-            (false, _) => eprintln!("headwater: {}", err("a projection did not write")),
-        }
+    // Which sentence a failing run ends with is a fact about the run, and
+    // `Report::remedy` owns it. A producer difference in particular must not
+    // carry the instruction to regenerate, and one owner is what keeps that
+    // bar in one place a fixture can reach.
+    if let Some(remedy) = report.remedy() {
+        eprintln!("headwater: {}", err(&remedy));
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS
@@ -4383,6 +4367,13 @@ fn export(
             false => headwater_generate::write(root, &plan),
         };
         print!("{}", report.render());
+        // A declared export was written by an emitter set too, so the same
+        // producer difference reaches here. It has to be said before the drift
+        // sentence, which asserts what this run cannot know in that state.
+        if let Some(producer) = report.producer {
+            eprintln!("headwater: {}", err(&producer.line()));
+            return ExitCode::FAILURE;
+        }
         if report.has_errors() {
             eprintln!(
                 "headwater: {}",
