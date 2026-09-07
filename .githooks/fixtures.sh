@@ -742,6 +742,21 @@ unset_driver=$(cd "$scratch" && git config --unset merge.headwater-regenerate.dr
 judge 'the gate reports a clone with no merge driver configured' 0 0 \
     'this clone has no merge driver for a derived artifact' "$unset_driver"
 
+# And the gate reports an absolute `core.hooksPath`, which `EnterWorktree`
+# writes on every call, and says nothing about the relative one `CLAUDE.md`
+# instructs. Both arms exit 0: the value is reset by a tool the committer did
+# not run, so the gate reports it and lets the commit through. The second
+# assertion on the absolute arm is the one that matters: a report that omits
+# that the value comes back is believed exactly once.
+absolute_hooks=$(cd "$scratch" && git config core.hooksPath "$scratch/.githooks" && sh .githooks/pre-commit 2>&1); absolute_status=$?
+judge 'the gate reports an absolute core.hooksPath and lets the commit through' 0 "$absolute_status" \
+    'core.hooksPath is absolute' "$absolute_hooks"
+judge 'and the report says the value comes back after the next EnterWorktree' 0 0 \
+    'expect this line back after the next one' "$absolute_hooks"
+relative_hooks=$(cd "$scratch" && git config core.hooksPath .githooks && sh .githooks/pre-commit 2>&1); relative_status=$?
+judge 'a relative core.hooksPath lets the commit through' 0 "$relative_status" '' "$relative_hooks"
+refute 'and says nothing about the hooks path' 'core.hooksPath is absolute' "$relative_hooks"
+
 # Either profile builds an engine this gate runs.
 #
 # The tree these two cases stand on is one the gate must refuse, which is what
