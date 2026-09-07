@@ -5001,3 +5001,35 @@ fn a_reference_inside_an_indented_block_is_not_read() {
     package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
         .expect("an indented block prints a path rather than referring to one");
 }
+
+/// A backtick run whose information string carries a backtick opens no fence,
+/// so the document after it is still read.
+///
+/// CommonMark refuses such a run as an opener, because the text after it is
+/// ambiguous with a code span. The reader tested that rule at the closing end
+/// and not at the opening one, so a line like `` ```a`b `` opened a fence that
+/// nothing ever closed and **every line to the end of the file went unread**.
+/// That is the invisibility this whole rule exists to refuse, reached through
+/// the one end that had no test.
+///
+/// **No line in this corpus is shaped that way, and the case is here anyway.**
+/// A hole in a check whose purpose is to not go blind is worth closing on the
+/// day it is found rather than on the day somebody writes the line.
+#[test]
+fn a_backtick_run_with_a_backtick_in_its_information_string_opens_no_fence() {
+    let scratch = Scratch::new("reference-opener");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\n```a`b\n\nThe worked example is [in the corpus](corpus/after-the-run.md).\n",
+    );
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect_err("the run opens no fence, so the reference below it is a reference");
+
+    assert!(
+        headwater_resolve::render_errors(&refused).contains("corpus/after-the-run.md"),
+        "the reader opened a fence nothing closes and stopped seeing the document"
+    );
+}
