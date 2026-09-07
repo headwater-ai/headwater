@@ -156,6 +156,8 @@ docs/evaluations/shacl-worked-example.md
   typed: evaluation
 docs/evaluations/specifying-the-engine.md
   typed: evaluation
+docs/evaluations/the-build-order-as-a-multi-agent-system.md
+  typed: evaluation
 docs/evaluations/the-measurement-layer.md
   typed: evaluation
 docs/evaluations/the-serving-boundary.md
@@ -576,6 +578,20 @@ docs/probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md
   typed: probe
 docs/probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md
   typed: probe
+docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md
+  typed: process_decision
+docs/process/decisions/0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md
+  typed: process_decision
+docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md
+  typed: process_decision
+docs/process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md
+  typed: process_decision
+docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md
+  typed: process_decision
+docs/process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md
+  typed: process_decision
+docs/process/decisions/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md
   typed: requirement
 docs/requirements/README.md

@@ -81,6 +81,7 @@ nav:
       - "Choosing the schema format — a cognitive-dimensions walkthrough": "evaluations/schema-format-walkthrough.md"
       - "The Headwater checks in SHACL — a worked example": "evaluations/shacl-worked-example.md"
       - "Specifying the engine": "evaluations/specifying-the-engine.md"
+      - "The build order as a multi-agent system": "evaluations/the-build-order-as-a-multi-agent-system.md"
       - "The measurement layer — the Q8 and Q20 evaluation": "evaluations/the-measurement-layer.md"
       - "The serving boundary — what is advertised, what is withheld, what is written back": "evaluations/the-serving-boundary.md"
       - "Theoretical foundations": "evaluations/theoretical-foundations.md"
@@ -294,6 +295,14 @@ nav:
       - "A counted tombstone separates a withheld answer from an absent answer": "probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md"
       - "An agent reaches the adjudication from the document that lost it": "probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md"
       - "The authoring skill reaches an agent that is about to write a governed document": "probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md"
+  - "Process decisions":
+      - "Process decisions": "process/decisions/README.md"
+      - "Orchestration prose has one owner per sentence": "process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md"
+      - "Adjudication is a separate stage, and refusal is licensed": "process/decisions/0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md"
+      - "A dispatch pays when it retires more parent turns than it costs": "process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md"
+      - "Coordination is a create-only claim, and authority stays on the tree": "process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md"
+      - "The ledger is split, its tabular parts are JSONL, and its totals are derived": "process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md"
+      - "The entrypoint keeps its name and becomes a resumable run": "process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md"
   - "Requirements":
       - "Requirements": "requirements/README.md"
       - "The engine reaches no network at check time": "requirements/0001-the-engine-reaches-no-network-at-check-time.md"
