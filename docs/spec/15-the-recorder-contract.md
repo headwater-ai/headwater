@@ -24,11 +24,31 @@ relations:
 
 A person who writes a recorder reads this part. Everything below is a contract that `engine/crates/probe/src/intake.rs` enforces, and `engine/crates/probe/tests/contract.rs` holds this text to the constants that carry the four closed key sets. A key added to the engine and not to the table below fails that test.
 
+## A recorder is a driver and a transform, and the channel between them is the condition
+
+[HW-DR-0059](../decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md) admits a second shape of recorder. A **driver** starts the session and reads what the harness emits. A **transform** filters that stream into a transcript. The driver reaches the network and the transform reaches nothing, so the sentence above describes the driver.
+
+A harness already tags each block of its own session log by type, and the model states no tag on any block. So a filter that keeps the tool calls and their results reads no account the model wrote of its own process. That filter is an outside observation on one condition. **The log has to reach the transform through a channel that the model has no handle on.**
+
+A file on a filesystem the session reaches is not such a channel. On the host that runs this repository, every process of one user can write the live log of a session. A `Bash` call of that session is one of those processes. The standard output of the harness process is such a channel, because the session holds no handle on the parent's pipe. `claude -p --output-format stream-json`, read by the driver from that stream, is the channel the first recorder reads. A recorder that reads the log from disk states nothing about who wrote a line of it. The transcript it produces is a self-report that no key set can detect.
+
+Both parts sit outside this engine. The transform is the second half of one component, and it stands on the path from a live session to a transcript. That is the position the paragraph above keeps out of the engine.
+
+### The values a session log omits, and the step that derives each one
+
+A harness log carries the calls and not the rest of the contract below. Each value the log omits is derived after the session by a named step. The list is prose rather than a table, because the four tables of this part are the four closed key sets and `engine/crates/probe/tests/contract.rs` counts them.
+
+- `result` on a call is the content digest of the document, in the form `headwater probe plan` prints, and never the bytes returned.
+- `cites` on a produced artifact is every identifier of this corpus that appears in the artifact.
+- `findings` on a produced artifact is every rule that reported over the artifact. Both are computed the same way for every probe, and neither reads a probe.
+- The six identity members are `lock`, `tree`, `selection`, `read_set`, `seed` and `harness`, copied from the plan.
+- `served_version` and `cost_cents` are derived from the provider metadata of the run, because a usage record carries token counts and not cents.
+
 ## The engine fixes six members of the identity, and the recorder supplies the rest
 
 `headwater probe plan` composes a selection and prints the six members of the run identity that exist before any session starts. They are the lock, the corpus tree, the selection, the read set, the seed and the harness version. The plan also prints the probes selected, the task of each one, and the documents each one examines. It prints the read set that the digest covers, one line for each document.
 
-The recorder copies those five into the transcript without change. It supplies the four that belong to the run: the model, the served version, the wall-clock time and the realized cost. It supplies the tier and the arm, which the plan states and which a reader of the transcript alone would otherwise have to guess.
+The recorder copies those six into the transcript without change. It supplies the four that belong to the run: the model, the served version, the wall-clock time and the realized cost. It supplies the tier and the arm, which the plan states and which a reader of the transcript alone would otherwise have to guess.
 
 A model name is not a pin. The recorder writes the served version where the provider exposes one, and it writes the name as a name where no version is exposed.
 

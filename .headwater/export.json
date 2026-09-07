@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 387,
-      "carried": 387,
+      "in the graph": 388,
+      "carried": 388,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1634,6 +1634,27 @@
           "summary": "A declared facet that carries no content is a state that neither the required-facet rule nor the enum rule reaches. A new rule reports it, over every facet a taxonomy types as a string, at error severity.",
           "last_verified": "2026-09-07",
           "title": "A blank facet value is a rule of its own and it reads every string facet",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md",
+        "kind": "decision",
+        "id": "HW-DR-0059",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0059",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "A filter that keeps the tool calls of a harness session log and drops every block the model wrote is an outside observation, because the type tag it reads is the harness's and not the model's. The condition is the channel the log arrives by, and a file the session can open is not one.",
+          "last_verified": "2026-09-07",
+          "title": "A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
