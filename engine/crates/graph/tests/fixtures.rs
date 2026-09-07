@@ -289,6 +289,45 @@ fn a_quoted_link_is_counted_and_never_bound() {
     assert_eq!(bound, 1, "the quoted link reached the binding");
 }
 
+/// One destination is read twice, and a file may wear either spelling.
+///
+/// `notes/loose.md` writes two escaped destinations. `a%20spaced.md` means the
+/// file `a spaced.md`, which is how CommonMark spells a space in a path.
+/// `a%20literal.md` means the file of that exact name, which no disk decodes.
+/// A binder that read only the bytes the author typed would lose the first,
+/// and one that decoded before looking would lose the second, so this pair is
+/// what holds the binder to reading both.
+///
+/// It is a pair rather than one case because `link.path.unresolved` is an
+/// error that stops a commit, and the first corpus to meet it with a space in
+/// a filename would have met a red gate on correct Markdown.
+#[test]
+fn a_destination_binds_under_either_reading_of_its_escapes() {
+    let graph = fixture_graph();
+    for (destination, path) in [
+        ("a%20spaced.md", "graph/notes/a spaced.md"),
+        ("a%20literal.md", "graph/notes/a%20literal.md"),
+    ] {
+        let link = graph
+            .links
+            .iter()
+            .find(|link| {
+                link.source_path == "graph/notes/loose.md" && link.destination == destination
+            })
+            .unwrap_or_else(|| panic!("`{destination}` reached the binding"));
+        assert!(
+            !link.binding.is_broken(),
+            "`{destination}` is `{path}`: {:#?}",
+            link.binding
+        );
+        assert!(
+            format!("{}", link.binding).contains(path),
+            "and it names that file: {:#?}",
+            link.binding
+        );
+    }
+}
+
 /// A generated document that declares an identity is a node at both ends.
 ///
 /// [Spec 6](../../../../docs/spec/06-engine-architecture.md#projections) says

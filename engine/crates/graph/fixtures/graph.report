@@ -2,8 +2,8 @@
       6 to a document
       3 to an anchor
       4 unbound
-5 prose links
-      2 to a corpus file
+7 prose links
+      4 to a corpus file
       1 to this document
       1 outside the repository
       1 broken
@@ -60,6 +60,10 @@ edges
     design_spec at graph/spec/00-first.md
 
 links
+  graph/notes/loose.md -> a%20spaced.md
+    graph/notes/a spaced.md (untyped)
+  graph/notes/loose.md -> a%20literal.md
+    graph/notes/a%20literal.md (untyped)
   graph/spec/00-first.md -> 01-second.md#a-heading
     graph/spec/01-second.md (typed)
   graph/spec/00-first.md -> ../excluded/note.md
