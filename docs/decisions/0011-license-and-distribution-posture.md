@@ -56,4 +56,4 @@ It satisfies the embedding requirement. It grants a patent license that MIT does
 
 **Where money could sit, because the question arrives with this one.** [Q7](0007-scope-of-the-mcp-surface.md) and [Q17](0017-governed-access-and-the-solution-layer.md) both leave open what a hosted server is operationally, and [Q8](0008-probe-cost-and-cadence.md) prices a campaign run at real money. Those two surfaces are the only places in this specification where a commercial tier could sit, and neither is specified. The closest observed analog draws its line there: [Vale](../spec/00-vision-and-scope.md#what-we-do-not-build) is MIT, and its author sells a hosted authoring layer beside it ([HW-EVAL-adjacent-work §S.3](../evaluations/adjacent-work.md#s3-where-the-closest-analog-draws-the-commercial-line)).
 
-**This entry names no link to [Q7](0007-scope-of-the-mcp-surface.md).** Q7 closed on the ruling that a landed write never ships, and no license term changes that.
+**Nothing in this record depends on [Q7](0007-scope-of-the-mcp-surface.md).** Q7 closed on the ruling that a landed write never ships, and no license term changes that.

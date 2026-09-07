@@ -42,7 +42,7 @@ Three arguments that look decisive are not, and are recorded so that nobody re-r
 
 ## Decision
 
-The language is **Rust**, with a WebAssembly build of the same crate for editor and browser embedding. This record names no fallback language.
+The language is **Rust**, with a WebAssembly build of the same crate for editor and browser embedding. The ruling is unconditional, and Go stands as a rejected candidate rather than a fallback.
 
 ## Consequences
 
