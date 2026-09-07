@@ -18,15 +18,23 @@
 //! [`crate::markdown`] — read the same run through the same crate, and neither
 //! reads this.
 //!
-//! # An empty loss set is a claim, and it is audited
+//! # The loss set of a format that is nobody else's vocabulary
 //!
-//! [`crate::Format::Json`] declares no loss. Every finding of the run is here,
-//! live, held and hidden alike, with the escape that holds each one beside it,
-//! and every field of every finding is a member. [`crate::census`] is what
-//! holds the claim: a finding the output does not name is a defect in this
-//! module, not a fact about the corpus.
+//! Every finding of the run is here, live, held and hidden alike, with the
+//! escape that holds each one beside it, and every field of every finding is a
+//! member. [`crate::census`] is what holds that half: a finding the output does
+//! not name is a defect in this module, not a fact about the corpus.
+//!
+//! A run carries more than its findings, and the census reads no further. This
+//! module declared an empty loss set for its first year on the argument that a
+//! loss is a member of a *target* vocabulary a run has no value for, and that
+//! the shape here is the engine's own rather than a target somebody else fixed.
+//! That argument holds for a member this shape could add on demand. It does not
+//! hold for a value the engine computes, a run carries, and these bytes do not
+//! write, which is the same test [`crate::text::LOSS`] was written under. See
+//! [`LOSS`] for the one such value.
 
-use crate::{reported, Reported, Subject};
+use crate::{reported, Carrier, Loss, Reported, Subject};
 use headwater_check::register::Bound;
 use headwater_check::{Coverage, Instance, Outcome, Run, Scoped};
 use headwater_yaml::json::Json;
@@ -67,6 +75,30 @@ use std::collections::HashSet;
 /// what the SARIF property bag carries, so this constant versions them for that
 /// artifact too and [`crate::sarif`] writes it there.
 pub const VERSION: &str = "1.3";
+
+/// What a run carries that these bytes do not write.
+///
+/// One entry, and it is not a member this shape refused. `Coverage` holds one
+/// [`headwater_check::coverage::Document`] per census row, and each of those
+/// rows holds a `class`, a `created` and a `ran`. [`coverage`] below writes a
+/// corpus total for each of the three, folded into `classified`, `checked` and
+/// `instances`, and it writes a row for a document only where a skip fell on
+/// it. So a consumer can ask whether a document was checked and never how
+/// thoroughly, and the run holds the answer either way.
+///
+/// The entry is a declaration and not a promise to emit. A row per document of
+/// the corpus is a second census inside a check artifact, which is a question
+/// no reader has asked for and a payload every reader would pay for, so
+/// [`Carrier::Nowhere`] is the honest carrier rather than a member added to
+/// make the set empty again. Declaring it costs no emitted byte, which is why
+/// [`VERSION`] does not move for it.
+pub const LOSS: &[Loss] = &[Loss {
+    field: "the per-document account of coverage",
+    reason: "a run holds a `class`, a `created` and a `ran` for every row of the census, and \
+             this block writes the corpus total of each and a row only for a document some \
+             skip fell on. A row per document is a second census inside a check artifact",
+    carrier: Carrier::Nowhere,
+}];
 
 /// One run as JSON.
 pub fn render(run: &Run, subject: &Subject<'_>) -> String {

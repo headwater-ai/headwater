@@ -73,6 +73,8 @@ anchors
     cited by HW-EVAL-what-a-check-can-know
   code_path `engine/crates/check/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-check
+  code_path `engine/crates/check/src/lib.rs` via source-tree
+    cited by HW-OBL-0178
   code_path `engine/crates/check/src/lifecycle_state.rs` via source-tree
     cited by HW-DR-0026
   code_path `engine/crates/check/src/voice.rs` via source-tree

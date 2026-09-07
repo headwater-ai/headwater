@@ -287,6 +287,7 @@ nav:
       - "Two documents take one sequence on a sequence-declaring shelf and no rule reads it": "obligations/0175-two-documents-take-one-sequence-on-a-sequence-declaring-shelf-and-no-rule-reads-it.md"
       - "A blessed fixture is read by a sibling case that runs while the write truncates it": "obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md"
       - "The value rule writes adopter on every self-audit record and most of them wait on a build": "obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md"
+      - "The every-instance report detail reaches four test files and no caller outside them": "obligations/0178-the-every-instance-report-detail-reaches-four-test-files-and-no-caller-outside-them.md"
   - "Probes":
       - "Probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
