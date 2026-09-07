@@ -26,9 +26,17 @@
 //! `lock.current` reports a gap over.
 //!
 //! That assertion is decisive rather than tautological, and
-//! [`the_table_discriminates`] is why: it fails unless the four roots are not
-//! all in one state. Two verbs that both answered "fine" to everything would
-//! satisfy correspondence and fail that.
+//! [`the_table_discriminates`] is why: it fails unless the perturbations below
+//! put the resolver in both of its states. Two verbs that both answered "fine"
+//! to everything would satisfy correspondence and fail that.
+//!
+//! **Two rows hold a ruling and are the reason this target is a gate rather
+//! than a record.** `a_lock_whose_founding_record_was_deleted_by_hand_is_a_gap_to_both_verbs`
+//! reddens on the reading that shipped before #648.
+//! `an_adoption_block_hand_edited_into_another_form_is_a_gap_to_both_verbs`
+//! reddens when `Divergence::Form` is reported met, which was a judgment call and
+//! passes every other case in this workspace. Each of the two was run in both
+//! directions, and each is the only row that moves.
 //!
 //! # One case is deliberately outside the table
 //!
@@ -38,6 +46,14 @@
 //! `taxonomy resolve --check` to correspond to. That is also why the fix for
 //! #648 is in the rule and not in the digest: bringing `founded:` inside the
 //! digest turns the quiet wrong answer below into a loud one with no report.
+//!
+//! **A lock whose `format:` is not this engine's is the same class and not a
+//! defect.** `headwater_lock::read` refuses a `format: 2` file, so `conformance`
+//! ends the run and prints no `lock.current` line, exactly as it does for a
+//! digest that does not verify. Both verbs refuse the tree loudly and neither
+//! reports a verdict about it, so there is nothing for the table to hold. It is
+//! named here because it reads at a glance like the case this target exists for
+//! — a lock the resolver refuses — and it is the opposite of it.
 
 mod common;
 use common::{Root, DECLARES, FOUNDS};
@@ -51,6 +67,12 @@ struct Pair {
     current: String,
     /// The whole report, so a failure names what the rule actually said.
     report: String,
+    /// What `taxonomy resolve --check` said when it refused, so a case can
+    /// assert **which** divergence its perturbation produced. That is a
+    /// property of the perturbation, read off the reference verb, and it is not
+    /// a verdict about the rule under test — which stays derived from the exit
+    /// status alone.
+    refusal: String,
 }
 
 impl Pair {
@@ -73,6 +95,7 @@ impl Pair {
             resolves: checked.code == Some(0),
             current,
             report: ran.out,
+            refusal: checked.err,
         }
     }
 
@@ -191,6 +214,85 @@ fn a_re_resolved_lock_with_no_founding_left_is_current_to_both_verbs() {
     );
 
     Pair::over(&root).corresponds("the two `add:` blocks swapped, and re-resolved");
+}
+
+/// An `adoption` block hand-edited into a form the renderer does not write.
+///
+/// **This is the row that holds a ruling, and without it the ruling is held by
+/// nothing.** `Divergence::Form` means the committed file says exactly what the
+/// sources resolve to and its bytes are not what the renderer writes. Nothing
+/// about the taxonomy moved, so the reading of the rule's own sentence — "the
+/// lock is what the sources resolve to" — argues met. `taxonomy resolve --check`
+/// exits 1 on the file, so correspondence argues gap. It is a gap. The whole
+/// point of the change this target came with is that the two verbs stop
+/// disagreeing, and a met here would leave the same contradiction #648 is about
+/// standing in a second place: an adopter told they are current, and refused by
+/// their commit gate one command later.
+///
+/// Reversing that one arm to `Verdict::Met` passes every other case in this
+/// workspace. This case is the only thing that reddens.
+///
+/// The `adoption` block is the honest place to provoke it, because it is the one
+/// part of the file whose own header invites a person to edit it, so a form
+/// difference there is the one a real adopter reaches. The block is written by
+/// hand, `taxonomy resolve` renders it canonically, and only then is one scalar
+/// requoted — so what differs is form and nothing else. The case asserts that
+/// the resolver placed it as a form difference before it asserts anything about
+/// correspondence, because a perturbation that had become a `Generated`
+/// difference would pass this row for the wrong reason and stop holding the
+/// ruling.
+#[test]
+fn an_adoption_block_hand_edited_into_another_form_is_a_gap_to_both_verbs() {
+    let root = Root::founding("conformance-lock-adoption");
+    let path = root.at.join(".headwater/taxonomy.lock");
+
+    // Step one: give the lock a block to carry. The trailer is where the
+    // generated half resumes, and `headwater_lock::parts` bounds the authored
+    // span on exactly it.
+    const TRAILER: &str =
+        "\n# The resolved taxonomy. The digest above is over this text with the two\n";
+    const BLOCK: &str = "\nadoption:\n  tasks:\n    - id: AD-1\n      statement: \"a scratch \
+                         task, so this lock has an authored block to carry\"\n      owner: \"the \
+                         fixture\"\n      until: 2027-06-30\n      pairs:\n        - path: \
+                         docs/spec/01-overview.md\n          rule: language.controlled.not_met\n";
+    let text = std::fs::read_to_string(&path).expect("the lock reads");
+    let (before, after) = text
+        .split_once(TRAILER)
+        .expect("the lock carries its trailer");
+    std::fs::write(&path, format!("{before}{BLOCK}{TRAILER}{after}")).expect("the lock writes");
+
+    // Step two: let the resolver render the block in its own form, so the lock
+    // is current again and the only thing left to perturb is form.
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(
+        resolved.code,
+        Some(0),
+        "a resolve carries an authored block through: {resolved:?}"
+    );
+    let text = std::fs::read_to_string(&path).expect("the lock reads");
+    const CANONICAL: &str = "      until: 2027-06-30\n";
+    assert!(
+        text.contains("\nadoption:\n") && text.contains(CANONICAL),
+        "the resolver kept the block and wrote this scalar unquoted, which is the form the \
+         perturbation below departs from: {text}"
+    );
+
+    // Step three: one scalar, requoted. The same string on the way back in, so
+    // the file re-renders to what the sources resolve to and its bytes do not.
+    std::fs::write(
+        &path,
+        text.replacen(CANONICAL, "      until: \"2027-06-30\"\n", 1),
+    )
+    .expect("the lock writes");
+
+    let pair = Pair::over(&root);
+    assert!(
+        pair.refusal.contains("is not written in the form"),
+        "this perturbation has to reach the resolver as a difference of form and not of \
+         content, or the row holds nothing about the arm it exists for:\n{}",
+        pair.refusal
+    );
+    pair.corresponds("the `adoption` block requoted, nothing re-resolved");
 }
 
 /// The guard that stops correspondence from being a tautology.
