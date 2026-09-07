@@ -26,16 +26,16 @@ release:
   package: headwater/standard
   version: 4.1.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:29a906802b41769798619adb54a440ebed6ca9cd3c777cd3507d27f75e615425
+  digest: sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163
   members:
     - path: assemblies/starter/assembly.yml
       digest: sha256:2a1671162a92e6ba15eb98ea8d0eeb24fe9393aec47403b738c6ca943d3a30f4
     - path: bundles/README.md
-      digest: sha256:bb83d84d31415ee7836eaad61a7f368e8dece6760e19fa89c95fd1f6e4354a2f
+      digest: sha256:6bc9423725facc42b06305d74e9594fcc989f8588cbffe3814bfb7f4471efc38
     - path: bundles/brd-prd/bundle.yml
       digest: sha256:af0637e7fd79d135b52d6eeca56eeeae9f3d1c1d0790669df0469fb13ca604a8
     - path: bundles/brd-prd/doctrine.md
-      digest: sha256:8f99b492a2a9720736d73e1d142d725b2b54e7c8635e9fbd8566135dedc08ceb
+      digest: sha256:26b8d2f708391fca58dd76a35087c0d91e990a329eefa785c876c1a6e6d22361
     - path: bundles/brd-prd/templates/brd.md
       digest: sha256:9e8af08e04e10db061401e5030693f0e0d58edd3dd340c82161f90ea05db25cf
     - path: bundles/brd-prd/templates/prd.md
@@ -69,7 +69,7 @@ release:
     - path: bundles/evidence-and-obligation/bundle.yml
       digest: sha256:b44a6d2dcddffde1f210efbf51b553fdf4b02dd7d5b63dc9892b5743b81dccbe
     - path: bundles/evidence-and-obligation/doctrine.md
-      digest: sha256:791106d3eb31327e213fcb106dafa46074548eb723402a92651cb84aa6f167a5
+      digest: sha256:0996687a3303924121cb738fee72efaf0bfcc17e2724d317e483f45fa7d28977
     - path: bundles/evidence-and-obligation/templates/evaluation.md
       digest: sha256:289405aa083ad7a708827118520bd9951bc82c560d4cf07a17c4a10acee9b0dd
     - path: bundles/standards-spec/bundle.yml
@@ -87,6 +87,6 @@ release:
     - path: doctrine/starter.md
       digest: sha256:6f080e8de172fd15b5cf398475076f281ca5872abd41458e68260f46aa3e9c00
     - path: package.yml
-      digest: sha256:20ea64abfec1ede9347a46592bf6c89f57a17c8f3b17deaa7383b921b93409f2
+      digest: sha256:108945124b059bd94b6bd8580a29265a74c25889bcb9f067715d0af990b90acf
     - path: taxonomy.yml
       digest: sha256:72c8617b3db4a8d3206b95f03c9a5823f891d2df2da16434f6ea0a44c7a6f405
