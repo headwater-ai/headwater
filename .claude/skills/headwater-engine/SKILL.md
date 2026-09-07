@@ -9,6 +9,8 @@ The engine is a cargo workspace under `engine/`, and the corpus it reads is the 
 
 [engine/README.md](../../../engine/README.md) is the reference for the design of each crate and for what its tests hold. This file is the shorter thing: what to type, and the five mistakes that cost a session more than they should.
 
+[DEVELOPING.md](../../../DEVELOPING.md) at the repository root is the contributor loop in full, and it is where a human reads the same material: the toolchain floor, which suite to name, how a recorded fixture is re-recorded, the whole list of what CI runs, and the two build failures that cost an afternoon. It is the source for that list, and this file cites it rather than carrying a second copy — a skill reaches an agent only when a model picks it from a description, so the account a stranger can find has to be the one on the page.
+
 ## The invocation
 
     cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked
@@ -22,21 +24,17 @@ Build from the repository root with `--manifest-path`, or from `engine/` with ne
 
 ## The toolchain floor
 
-Rust 1.85 or later. `saphyr-parser` is on edition 2024, and an older cargo reports `feature edition2024 is required` and nothing else. Check the toolchain first when a clean checkout will not build, because that message names no crate and reads like a corrupt tree.
+Rust 1.90 or later, declared by `[workspace.package]` in `engine/Cargo.toml`. Check the toolchain first when a clean checkout will not build; [DEVELOPING.md](../../../DEVELOPING.md) says which of the two refusal messages names the crate that raised the floor and which one names nothing and reads like a corrupt tree.
 
-A machine that installed Rust from its distribution usually has neither rustfmt nor clippy. `engine/README.md` carries the container that supplies both and pins the floor at the same time. Run it before a change to the engine is proposed: CI runs `cargo fmt --check` and `cargo clippy --all-targets --locked -- -D warnings`, and both are blocking. Clippy on the current stable knows lints that the pinned floor does not, so a clean container run is not a clean CI run.
+A machine that installed Rust from its distribution usually has neither rustfmt nor clippy. `engine/README.md` carries the container that supplies both and pins the floor at the same time. Run it before a change to the engine is proposed: the format check and the lint are both blocking in CI, and [DEVELOPING.md](../../../DEVELOPING.md) is where every gate that blocks is named. Clippy on the current stable knows lints that the pinned floor does not, so a clean container run is not a clean CI run.
 
-It is two `docker run` commands there and not one. The first installs the components as root, which is the only user `rustup` can write for in that image. The second passes `--user` and runs `cargo test`, because three tests require a process that a `0444` file can stop and root is not one. Run both and read each exit status on its own, and never join them with a pipe. Do not add `-D warnings` to the container half: the workspace denies a clippy lint that 1.85 does not know, so the flag turns `unknown lint` into an error in every crate there.
+It is two `docker run` commands there and not one. The first installs the components as root, which is the only user `rustup` can write for in that image. The second passes `--user` and runs `cargo test`, because three tests require a process that a `0444` file can stop and root is not one. Run both and read each exit status on its own, and never join them with a pipe. Do not add `-D warnings` to the container half: the workspace denies `clippy::manual_assert_eq`, which clippy in the pinned image does not know, so the flag turns `unknown lint` into an error in every crate there. `tools/engine-readme-fixtures.sh` refuses that flag in either command, and it also refuses an image tag below the highest `rust-version` in the resolved lock.
 
 ## Which test suite to name
 
-    cargo test                                   # from engine/, the whole workspace
-    cargo test -p headwater-check                # one crate
-    cargo test -p headwater-probe --test fixtures  # one file
+The workspace, from `engine/`. CI runs it with no filter, so the workspace is the bar. Name one crate, or one test file inside one crate, to shorten a loop, and run the workspace again before proposing the change. A recorded fixture is re-recorded rather than edited by hand, and a taxonomy change moves recorded files that the change itself never named.
 
-CI runs the workspace with no filter, so the workspace is the bar. Name a crate to shorten a loop, and run the workspace before proposing the change.
-
-A recorded fixture is re-recorded with `HEADWATER_BLESS=1` and never edited by hand. The digest of the lock reaches `.headwater/corpus.json` and several recorded fixtures, so a taxonomy change moves files that the change itself did not touch. Read that diff rather than blessing past it.
+[DEVELOPING.md](../../../DEVELOPING.md) carries the three invocations, the environment variable that re-records, and which files move. This file used to carry them too, and a second copy of a command is a second thing to keep true.
 
 ## The five mistakes
 
@@ -48,7 +46,7 @@ A recorded fixture is re-recorded with `HEADWATER_BLESS=1` and never edited by h
 
 **A green run read as a green corpus.** `headwater check` exits 0 with findings on standard output, because the posture is advisory. `--strict` is the gate, and it is what `.githooks/pre-commit` runs. Read the findings.
 
-**A `--release` build as a verification step.** `.github/workflows/ci.yml` already runs `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings`, the whole test suite under `--locked`, `taxonomy resolve --check`, `generate --check` and `headwater check` on every pull request. A debug `cargo check` and `cargo test` prove the same fix, in seconds rather than the minutes `lto = true` and `codegen-units = 1` cost a release link, and a session that also builds `--release` and runs the binary by hand to double-check a passing test suite is spending real time and real machine load on evidence it already had. Push and read CI rather than reproducing it locally. Reach for `--release`, or `--profile dev-release` for a faster link at a smaller optimization cost, only when the session needs the binary itself: to hand it to somebody, to run it once by hand against a real corpus, or to measure a performance claim, which debug and release answer differently by roughly an order of magnitude.
+**A `--release` build as a verification step.** `.github/workflows/ci.yml` already runs the format check, the lint, the whole test suite, every projection the corpus declares and every fixture suite on every pull request. [DEVELOPING.md](../../../DEVELOPING.md) names each one; no copy of that list lives here, because `tools/developing-fixtures.sh` derives it from the workflow in both directions and a hand-kept second copy would be stale within a week. It was: the list this paragraph used to carry named six gates on a day the workflow ran twenty-eight steps. A debug `cargo check` and `cargo test` prove the same fix, in seconds rather than the minutes `lto = true` and `codegen-units = 1` cost a release link, and a session that also builds `--release` and runs the binary by hand to double-check a passing test suite is spending real time and real machine load on evidence it already had. Push and read CI rather than reproducing it locally. Reach for `--release`, or `--profile dev-release` for a faster link at a smaller optimization cost, only when the session needs the binary itself: to hand it to somebody, to run it once by hand against a real corpus, or to measure a performance claim, which debug and release answer differently by roughly an order of magnitude.
 
 `engine/.cargo/config.toml` names four aliases for the invocations on this page that cargo has no shorthand for, so a session reaches for the cheap one by name instead of retyping the flags that make it cheap: `test-crate <crate>` (`test -p <crate>`), `test-timings` (`test --workspace --timings`, an HTML report under `target/cargo-timings/`), `release-cli` and `dev-release-cli` (the two builds in the paragraph above). Each is a rename of a flag combination already explained here, not a new behavior, so nothing depends on a session using them. There is no alias for plain `check`/`test`: cargo already ships `c` and `t` for those, and this workspace has no `default-members`, so `cargo c`/`cargo t` from `engine/` already cover the whole workspace.
 
@@ -56,7 +54,7 @@ A recorded fixture is re-recorded with `HEADWATER_BLESS=1` and never edited by h
 
 `tools/dev-fast-build-setup.sh` wires `mold` (linker) and `sccache` (compile cache) into `~/.cargo/config.toml` — the user's own, not `engine/.cargo/config.toml`, and never checked into a repo, because CI and a fresh clone have neither binary and must not start depending on them. It is idempotent, installs nothing itself (it names the two binaries and stops if either is missing, rather than writing a config that would break every cargo invocation on a rustc-wrapper it can't find), and `--remove` undoes exactly the block it wrote. On a host that also runs a self-hosted CI runner as the same OS user, that runner reads the same file, so check there before suspecting the repo if a runner build starts behaving differently.
 
-The one gotcha worth knowing before setting this up: sccache cannot cache an incremental build, and `cargo check`/`cargo test` use incremental compilation by default, so sccache gives it roughly zero benefit there — cargo's own incremental cache already covers that case. sccache earns its place on the builds that already run without incremental: `--release`, `--profile dev-release`, and a clean or cross-branch rebuild. mold helps every link regardless of incremental.
+Two things about it are worth knowing before you run it, and [DEVELOPING.md](../../../DEVELOPING.md) states both in full: sccache buys close to nothing on the incremental builds an authoring loop actually runs, and it can hand a test binary an object compiled in a checkout that no longer exists. `cargo clean -p <crate>` clears the second. Neither is repeated here, because a gotcha copied into two files is a gotcha that goes stale in one of them.
 
 ## What this skill does not decide
 

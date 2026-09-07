@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! What comes back, and the four things this engine can confirm about it.
+//! What comes back, and the five things this engine can confirm about it.
 //!
 //! # This is the reproducible half of an unreproducible mechanism
 //!
@@ -30,6 +30,13 @@
 //!    the graph already joins by that relation, is refused. Spec 4's fourth
 //!    constraint: "A finding that restates an edge already in the front matter
 //!    is a defect in the sweep, not a finding about the corpus."
+//! 5. **The endpoints of a proposal.** A proposed edge joins two documents the
+//!    relation admits at the ends it names, and it never joins a document to
+//!    itself. The report prints the front matter that would declare the edge,
+//!    so a proposal the taxonomy refuses is an instruction whose reader is then
+//!    told by `relation.endpoint.not_permitted` that their own commit is wrong.
+//!    The judge is `headwater_check::Shape::descends_from`, which is the same
+//!    function that rule reads.
 //!
 //! # What is not confirmed, and is not confirmable
 //!
@@ -49,8 +56,8 @@
 use crate::{Class, PROVENANCE};
 use headwater_census::census::{Census, Outcome};
 use headwater_check::paint::{dim, paint, ColorMode, Role};
-use headwater_check::{Finding, Severity};
-use headwater_graph::declarations::Declarations;
+use headwater_check::{Finding, Severity, Shape};
+use headwater_graph::declarations::{Declarations, Direction, Reciprocal};
 use headwater_graph::edges::Target;
 use headwater_graph::Graph;
 use headwater_yaml::value::{Mapping, Value};
@@ -64,6 +71,11 @@ pub struct Tree<'a> {
     pub census: &'a Census,
     pub graph: &'a Graph,
     pub relations: &'a Declarations,
+    /// The kind hierarchy, which is what says whether a document may sit at an
+    /// end of a relation. A proposal is front matter a person is told to write,
+    /// so it answers to the same endpoint declarations `relation.endpoint`
+    /// reads over a written edge.
+    pub shape: &'a Shape,
     /// The digest of the lock this tree carries.
     pub lock: &'a str,
 }
@@ -110,6 +122,24 @@ pub enum Reason {
     },
     UnknownRelation(String),
     UnknownEndpoint(String),
+    /// One document at both ends.
+    SelfEdge {
+        relation: String,
+        id: String,
+    },
+    /// A document whose kind the relation does not admit at the end it was
+    /// proposed at. This is the refusal that keeps a sweep from printing front
+    /// matter that `relation.endpoint.not_permitted` would then report as an
+    /// error, in the corpus of whoever ran the sweep.
+    EndpointNotPermitted {
+        relation: String,
+        /// `from` or `to`, as the proposal wrote them rather than as the
+        /// relation declares them.
+        end: &'static str,
+        id: String,
+        kind: String,
+        permitted: Vec<String>,
+    },
     AlreadyDeclared {
         from: String,
         relation: String,
@@ -149,6 +179,23 @@ impl std::fmt::Display for Reason {
                     "`{id}` is not an identifier of a document of this corpus"
                 )
             }
+            Reason::SelfEdge { relation, id } => write!(
+                f,
+                "it proposes `{relation}` from `{id}` to itself, and a document declares nothing \
+                 about itself by naming itself"
+            ),
+            Reason::EndpointNotPermitted {
+                relation,
+                end,
+                id,
+                kind,
+                permitted,
+            } => write!(
+                f,
+                "`{relation}` admits `{}` at the `{end}` end, and `{id}` there has the kind \
+                 `{kind}`",
+                permitted.join(", ")
+            ),
             Reason::AlreadyDeclared { from, relation, to } => write!(
                 f,
                 "`{from} {relation} {to}` is already declared, so this restates the graph"
@@ -182,6 +229,14 @@ pub struct Proposal {
     pub relation: String,
     pub from: String,
     pub to: String,
+    /// The path of the document at the `from` end, which is the one that would
+    /// carry the front matter.
+    ///
+    /// It is resolved from the graph rather than taken from the finding's
+    /// `documents`. The two are not the same list: a finding may compare three
+    /// documents and propose an edge between two of them, and the first path it
+    /// names is then a document the proposed edge says nothing about.
+    pub path: String,
 }
 
 /// One finding that survived every test above.
@@ -352,18 +407,76 @@ fn one(
             let relation = text(block, "relation").ok_or(Reason::Missing("proposal relation"))?;
             let from = text(block, "from").ok_or(Reason::Missing("proposal source"))?;
             let to = text(block, "to").ok_or(Reason::Missing("proposal target"))?;
-            if tree.relations.named(&relation).is_none() {
+            let Some(named) = tree.relations.named(&relation) else {
                 return Err(Reason::UnknownRelation(relation));
+            };
+            let Some(source) = tree.graph.index.node(&from) else {
+                return Err(Reason::UnknownEndpoint(from));
+            };
+            let Some(target) = tree.graph.index.node(&to) else {
+                return Err(Reason::UnknownEndpoint(to));
+            };
+            if from == to {
+                return Err(Reason::SelfEdge { relation, id: from });
             }
-            for id in [&from, &to] {
-                if tree.graph.index.node(id).is_none() {
-                    return Err(Reason::UnknownEndpoint(id.clone()));
+
+            // Which end each identifier sits at, from the name the finding
+            // wrote. A relation reached under its inverse name puts the
+            // proposal's `from` at the declared `to` end, so the two endpoint
+            // sets swap and the identifiers do not.
+            // `crates/scaffold/src/lib.rs` reads the same `Direction` for the
+            // same reason on the write path.
+            let (near, far) = match named.direction {
+                Direction::AsDeclared => (&named.relation.from, &named.relation.to),
+                Direction::Inverse => (&named.relation.to, &named.relation.from),
+            };
+            // The judge is `Shape::descends_from`, so an endpoint that names an
+            // abstract parent admits every kind under it. This is the same
+            // question `headwater_check`'s `relation.endpoint` rule asks of a
+            // written edge, and the answer has to agree: a proposal is front
+            // matter, and the person told to write it runs that rule next.
+            let admits = |permitted: &[String], kind: &str| {
+                permitted
+                    .iter()
+                    .any(|allowed| tree.shape.descends_from(kind, allowed))
+            };
+            for (end, node, permitted) in [("from", source, near), ("to", target, far)] {
+                let kind = node.kind.clone().unwrap_or_default();
+                if !admits(permitted, &kind) {
+                    return Err(Reason::EndpointNotPermitted {
+                        relation: relation.clone(),
+                        end,
+                        id: node.id.clone(),
+                        kind,
+                        permitted: permitted.clone(),
+                    });
                 }
             }
-            if declares(tree.graph, &from, &relation, &to) {
-                return Err(Reason::AlreadyDeclared { from, relation, to });
+
+            // Novelty, in both orders when the relation is its own inverse. A
+            // symmetric relation declared one way round is the same edge read
+            // the other way round, so `B conflicts_with A` in the front matter
+            // makes a proposed `A conflicts_with B` a restatement.
+            let mut orders: Vec<(&str, &str)> = vec![(&from, &to)];
+            if named.relation.reciprocal == Reciprocal::Symmetric {
+                orders.push((&to, &from));
             }
-            Some(Proposal { relation, from, to })
+            for (one, other) in orders {
+                if declares(tree.graph, one, &relation, other) {
+                    return Err(Reason::AlreadyDeclared {
+                        from: one.to_string(),
+                        relation: relation.clone(),
+                        to: other.to_string(),
+                    });
+                }
+            }
+            let path = source.path.clone();
+            Some(Proposal {
+                relation,
+                from,
+                to,
+                path,
+            })
         }
     };
 
@@ -635,7 +748,7 @@ impl Report {
                     out,
                     "  {} {}:",
                     dim("to declare it, in the front matter of", mode),
-                    paint(Role::Path, &verified.documents[0], mode)
+                    paint(Role::Path, &proposal.path, mode)
                 );
                 let _ = writeln!(out, "      relations:");
                 let _ = writeln!(out, "        {}:", proposal.relation);

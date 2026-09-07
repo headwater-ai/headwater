@@ -132,8 +132,10 @@ pub struct Resolution {
 /// candidate resolves, and the corpus is left holding a declaration its
 /// taxonomy removed.
 ///
-/// So the resolver records it, `taxonomy diff` reads it as the `addressability`
-/// dimension, `taxonomy validate` states the record on standard output and
+/// So the resolver records it, the lock carries the record forward,
+/// `taxonomy diff` reads the record the candidate adds to the one the lock
+/// already held as the `addressability` dimension, `taxonomy validate` states
+/// the record of the resolution in front of it on standard output and
 /// `taxonomy resolve` reports it on standard error. No verb refuses on it,
 /// under any flag, and no exit status moves because of it.
 /// [#193](https://github.com/headwater-ai/headwater/issues/193) ruled that, and
@@ -171,12 +173,67 @@ pub struct Founding {
 impl Founding {
     /// One line a reader acts on, without the source, which a caller prints.
     pub fn sentence(&self) -> String {
-        format!(
-            "{} makes `{}` rather than reaching into it, so the address resolves because this \
-             operation creates what it addresses",
-            self.at, self.founds
-        )
+        sentence(&self.at, &self.founds)
     }
+
+    /// The same founding with its source named rather than indexed.
+    pub fn record(&self, sources: &[String]) -> FoundingRecord {
+        FoundingRecord {
+            source: sources
+                .get(self.source)
+                .cloned()
+                .unwrap_or_else(|| "a source this resolution does not name".to_string()),
+            at: self.at.clone(),
+            founds: self.founds.clone(),
+        }
+    }
+}
+
+/// One founding with its source named rather than indexed, which is the form
+/// that outlives the resolution that produced it.
+///
+/// [`Founding::source`] is an index into [`Resolution::sources`], so it means
+/// nothing outside the one resolution it came out of. A lock carries a founding
+/// record forward to the next release, and `taxonomy diff` compares the record
+/// the lock holds against the record the candidate produces, so both sides need
+/// a form that does not depend on a list neither side shares.
+///
+/// # The identity is the operation and the key it makes, and not the source
+///
+/// [`FoundingRecord::key`] reads `at` and `founds` and never `source`. The two
+/// sides of a diff read the same overlay out of two different places — the
+/// consumer's own tree on the side the lock was written from, and the fetched
+/// artifact on the candidate side — so the path differs on every founding a
+/// release carries through unchanged. The path is what a reader needs printed
+/// and the operation is what decides whether two records are the same founding.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct FoundingRecord {
+    /// The source that carries the operation, as the resolution named it.
+    pub source: String,
+    /// The operation as an overlay writes it: `add.kinds.decision.facets`.
+    pub at: String,
+    /// The shallowest path this operation creates on the way to its address.
+    pub founds: String,
+}
+
+impl FoundingRecord {
+    /// One line a reader acts on, in the wording [`Founding::sentence`] uses.
+    pub fn sentence(&self) -> String {
+        sentence(&self.at, &self.founds)
+    }
+
+    /// What makes two records the same founding across two resolutions.
+    pub fn key(&self) -> (&str, &str) {
+        (self.at.as_str(), self.founds.as_str())
+    }
+}
+
+/// The one wording of a founding, which three verbs print and a fourth compares.
+fn sentence(at: &str, founds: &str) -> String {
+    format!(
+        "{at} makes `{founds}` rather than reaching into it, so the address resolves because this \
+         operation creates what it addresses"
+    )
 }
 
 impl Resolution {
@@ -213,6 +270,17 @@ impl Resolution {
     /// [`rules::render`] sets for `WAITING`: a list that empties says so rather
     /// than looking like a list nobody printed. The trailing note prints only
     /// when the count is non-zero, and it is the one place the reason lives.
+    /// Every founding of this resolution, with each source named.
+    ///
+    /// This is what a lock writes down and what `taxonomy diff` compares. See
+    /// [`FoundingRecord`].
+    pub fn founding_records(&self) -> Vec<FoundingRecord> {
+        self.founded
+            .iter()
+            .map(|founding| founding.record(&self.sources))
+            .collect()
+    }
+
     pub fn foundings(&self) -> String {
         let mut out = format!(
             "operations that make what they address: {}\n",
@@ -226,8 +294,10 @@ impl Resolution {
             out.push_str(
                 "  Nothing here refuses a founding. The precondition of an `add` is about the \
                  addressed key alone, so the resolver creates what it needs on the way down and \
-                 two overlays commute. `taxonomy diff` reads this record as the `addressability` \
-                 dimension, where a base that dropped the declaration is a break.\n",
+                 two overlays commute. `taxonomy diff` reads this record against the record the \
+                 lock carries, as the `addressability` dimension: a founding this release \
+                 introduces is a break, and one the release the lock names already carried is \
+                 not.\n",
             );
         }
         out

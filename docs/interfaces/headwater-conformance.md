@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-conformance
 status: current
 status_since: 2026-09-06
 summary: "How a package's rules measure adoption, how waivers affect a requested rung, and what exits non-zero."
-last_verified: 2026-08-25
+last_verified: 2026-09-07
 title: "headwater conformance"
 relations:
   governs:
@@ -25,6 +25,8 @@ The verb evaluates the repository against the conformance rules in its selected 
 ## Description
 
 `headwater conformance` reads the package rule set and evaluates the four readings this engine holds: `pin.current`, `lock.current`, `corpus.classified` and `projections.current`.
+
+`pin.current` is the reading that holds the installed bytes to the pin. It compares the version the installed package declares to the version the consumer pinned. It then compares the digest the consumer pinned to the digest in the record the publisher wrote. It then recomputes the digest of every file under the package directory and compares each one to that record. It names the same three divergences `vendor` names, and it writes nothing. `headwater taxonomy resolve` performs only the first of those comparisons and reads no digest.
 
 The report identifies the package, version, digest and date. It lists every rule, each level and the highest level reached by met rules. A level is cumulative, so it includes the rules of earlier levels.
 
@@ -60,6 +62,8 @@ The projections must read from the resolved taxonomy. The host must provide a da
 **1** means that the command line, taxonomy, package, conformance file, waiver set or date was refused, or that the requested level did not pass. An ordinary report is printed before a failed requested gate is reported on standard error.
 
 **A level that did not pass still wrote its whole document, and a refusal wrote none.** Take `conformance --json --level L1` over a corpus that does not reach L1. It exits 1 with the whole document on standard output, because the gate is a member of that document. A refusal writes nothing there, and its account is one English sentence on standard error. So the property is that a refusal writes no document, and not that a non-zero exit writes none, which is what [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules.
+
+**Installed bytes that differ from the release record end the run, whatever level was requested.** The rule set this verb reads lives inside the package, so a package whose bytes moved carries a rule set the run cannot trust. The refusal names each member that moved, and `--level` does not decide it.
 
 **A rung the package does not declare is a refusal, and the two formats print it in a different order.** The text report is written before the gate is asked, so an undeclared rung is refused under the gaps it is about. The document cannot take that order, so `--json` writes nothing at all on that run.
 

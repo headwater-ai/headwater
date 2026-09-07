@@ -5,6 +5,7 @@ version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
+rust-version.workspace = true
 
 # The dependency direction is the whole argument that a probe cannot gate, and
 # it is the argument `headwater-sweep` already makes.

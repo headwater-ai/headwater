@@ -287,11 +287,20 @@ m = re.search(r"pub enum Emitter \{(.*?)\n\}", prof, re.S)
 if not m:
     sys.exit("refresh-figures.sh: no `Emitter` enum in profile.rs")
 variants = re.findall(r"^\s{4}([A-Z]\w*),\s*$", m.group(1), re.M)
-m = re.search(r"pub fn is_built\(self\) -> bool \{\s*matches!\(self, (.*?)\)",
-              prof, re.S)
+m = re.search(r"pub fn is_built\(self\) -> bool \{\n(.*?)\n    \}", prof, re.S)
 if not m:
     sys.exit("refresh-figures.sh: no `is_built` in profile.rs")
-built = re.findall(r"Emitter::(\w+)", m.group(1))
+# Every arm of that `match`, whichever way rustfmt wrapped its patterns. The
+# two lists are compared with the variants below rather than trusted, so a
+# wildcard arm or a variant nobody judged is a refusal and never a miscount.
+built, unbuilt = [], []
+for pats, verdict in re.findall(
+        r"((?:\s*Emitter::\w+\s*\|?)+)\s*=>\s*(true|false)\s*,", m.group(1)):
+    (built if verdict == "true" else unbuilt).extend(
+        re.findall(r"Emitter::(\w+)", pats))
+if sorted(built + unbuilt) != sorted(variants):
+    sys.exit("refresh-figures.sh: the arms of `is_built` in profile.rs do not "
+             "name every `Emitter` variant exactly once")
 put("emitters.total", len(variants),
     "engine/crates/generate/src/profile.rs, the `Emitter` variants")
 put("emitters.built", len(built),

@@ -226,6 +226,21 @@ fn a_published_package_carries_its_bundles_and_no_path_that_leaves_it() {
     let root = publisher(&scratch, None);
     let out = scratch.path().join("artifact");
 
+    // #518: a reference corpus at the root of the bundle, and a directory
+    // deeper inside it that only shares the name. The exception spec 7 names is
+    // stated over one path and not over a name, so the first is left behind and
+    // the second travels. Both are planted here rather than taken from this
+    // repository's own library, because what is held is the rule and not those
+    // particular files.
+    scratch.write(
+        "publisher/library/extra/fixtures/corpus/note.md",
+        "# a corpus the publisher measures its own taxonomy against\n",
+    );
+    scratch.write(
+        "publisher/library/extra/corpora/fixtures/note.md",
+        "# a directory that is not a bundle's own reference corpus\n",
+    );
+
     let record = package::publish(&root, "acme/fixture", &out).expect("it publishes");
     assert_eq!(record.package, "acme/fixture");
 
@@ -244,6 +259,28 @@ fn a_published_package_carries_its_bundles_and_no_path_that_leaves_it() {
     assert!(paths.contains(&"bundles/extra/bundle.yml"));
     assert!(!paths.contains(&release::RECORD));
 
+    // #518: the copier left the bundle's own reference corpus behind, and the
+    // manifest writer named nothing the copier did not write. #581 is the shape
+    // where those two enumerate different sets, so both are asserted.
+    assert!(
+        !out.join("bundles/extra/fixtures").exists(),
+        "the artifact carries the bundle's reference corpus"
+    );
+    assert!(
+        !paths
+            .iter()
+            .any(|path| path.starts_with("bundles/extra/fixtures/")),
+        "the release record names a reference corpus the artifact does not carry: {paths:?}"
+    );
+
+    // And a `fixtures` directory that is not at the root of a bundle is carried
+    // like any other file, because the exception is about the path.
+    assert!(
+        out.join("bundles/extra/corpora/fixtures/note.md").is_file(),
+        "a `fixtures` directory deeper inside a bundle was dropped by name"
+    );
+    assert!(paths.contains(&"bundles/extra/corpora/fixtures/note.md"));
+
     // And the artifact resolves for a consumer that vendors it.
     consumer(&scratch, &record.digest);
     let consumer_root = scratch.path().join("consumer");
@@ -251,6 +288,64 @@ fn a_published_package_carries_its_bundles_and_no_path_that_leaves_it() {
     let declaration = package::consumer(&consumer_root).expect("it reads");
     let sources = package::sources(&consumer_root, &declaration).expect("the sources are found");
     assert_eq!(sources.len(), 2, "the taxonomy and the bundle it selects");
+}
+
+/// #518: the exception is a directory, and a *file* named `fixtures` at a
+/// bundle root is carried.
+///
+/// This is the boundary a compiling regression breaks in silence. The matcher
+/// asks for a segment after `fixtures`, and widening it to accept none —
+/// `(Some(FIXTURES), Some(_))` written as `(Some(FIXTURES), _)` — compiles,
+/// passes every other case in this workspace, and drops a member. A publisher
+/// who writes a file rather than a directory has written no reference corpus,
+/// and a publish that eats it loses a file the manifest may name.
+///
+/// The bundle is named `fixtures` as well, because the exception is read one
+/// segment under the bundles directory and a bundle root that carries the name
+/// is where an off-by-one lands.
+#[test]
+fn a_file_named_fixtures_at_a_bundle_root_is_carried() {
+    let scratch = Scratch::new("fixtures-file");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+
+    scratch.write(
+        "publisher/library/fixtures/bundle.yml",
+        &BUNDLE
+            .replace("bundle: extra", "bundle: fixtures")
+            .replace("purposes.procedure", "purposes.narrative"),
+    );
+    scratch.write(
+        "publisher/library/fixtures/fixtures",
+        "a file, and so not a reference corpus\n",
+    );
+    scratch.write(
+        "publisher/library/fixtures/fixtures.md",
+        "# a name the directory is a prefix of\n",
+    );
+    // The bundle whose own root carries the name still loses its corpus, and
+    // that corpus is planted in the other bundle of this tree because a file
+    // and a directory cannot share one path.
+    scratch.write(
+        "publisher/library/extra/fixtures/README.md",
+        "# left behind\n",
+    );
+
+    let record = package::publish(&root, "acme/fixture", &out).expect("it publishes");
+    let paths: Vec<&str> = record.members.iter().map(|m| m.path.as_str()).collect();
+
+    assert!(
+        out.join("bundles/fixtures/fixtures").is_file(),
+        "a file named `fixtures` at a bundle root was dropped as though it were the directory"
+    );
+    assert!(paths.contains(&"bundles/fixtures/fixtures"));
+    assert!(out.join("bundles/fixtures/fixtures.md").is_file());
+    assert!(paths.contains(&"bundles/fixtures/fixtures.md"));
+    assert!(paths.contains(&"bundles/fixtures/bundle.yml"));
+    assert!(
+        !out.join("bundles/extra/fixtures").exists(),
+        "a bundle root named `fixtures` moved where the exception is read"
+    );
 }
 
 /// One byte changed in one file is refused, and the message names the file.
@@ -2888,13 +2983,17 @@ fn out_of(scratch: &Scratch) -> PathBuf {
 ///
 /// The precondition is what makes the undo total, so it is the one thing here
 /// that a fix to the undo must not weaken. A publish into a directory somebody
-/// else is using is refused before anything is read. [`release::at`] cannot
-/// tell this caller's own file from what a killed publish leaves — neither
-/// carries a record — so the refusal says so rather than picking one. [#355]
-/// is the case that draws the line this test sits beside: a directory that
-/// does carry a record gets the original message back, unconditionally.
+/// else is using is refused before anything is read. [`release::at`] could never
+/// tell this caller's own file from what a killed publish left, because neither
+/// carries a record, and [#485] closed the second half of that pair rather than
+/// sharpening the reading: a publish assembles the artifact beside `--out` and
+/// moves it there in one step, so this is the caller's file and the refusal now
+/// says so. It still deletes nothing. [#355] is the case that draws the line
+/// this test sits beside: a directory that does carry a record gets the original
+/// message back, unconditionally.
 ///
 /// [#355]: https://github.com/headwater-ai/headwater/issues/355
+/// [#485]: https://github.com/headwater-ai/headwater/issues/485
 #[test]
 fn an_output_directory_that_holds_a_file_is_refused_and_the_file_survives() {
     let scratch = Scratch::new("occupied-out");
@@ -2910,8 +3009,8 @@ fn an_output_directory_that_holds_a_file_is_refused_and_the_file_survives() {
         "the refusal no longer names what the directory is missing: {message}"
     );
     assert!(
-        message.contains("check what is there before deleting it"),
-        "the refusal no longer holds off from calling this a dead run: {message}"
+        message.contains("Check what is there before you delete it"),
+        "the refusal no longer holds off from deciding what these files are: {message}"
     );
     assert_eq!(
         std::fs::read_to_string(out.join("theirs.txt")).expect("their file reads"),
@@ -2948,19 +3047,24 @@ fn an_output_directory_that_holds_a_complete_publish_is_refused_with_the_origina
     );
 }
 
-/// The state a kill during `put` leaves — a partially written `--out` with no
-/// release record — and what the next run says about it, which is [#355]'s
-/// third Done-when clause.
+/// A directory that holds artifact-shaped files and no release record, and what
+/// the next run says about it, which is [#355]'s third Done-when clause.
 ///
-/// Nothing here sends a signal to a running publish: [`publisher`] already
-/// establishes that phase 2 writes every artifact file before it writes
-/// [`release::RECORD`] last, so this plants the state that lands in directly,
-/// the same way [`publisher_that_fails_inside_the_write`] plants the state a
-/// returned error unwinds from. The two cases are `held`'s two branches.
+/// It plants the state directly, the same way
+/// [`publisher_that_fails_inside_the_write`] plants the state a returned error
+/// unwinds from. The two cases are `held`'s two branches.
+///
+/// **This case used to be named for a kill, and it never sent one.** It plants a
+/// state and reads a message, which is evidence about the message and no
+/// evidence at all about what a kill can reach. `killed_publish.rs` is where the
+/// second question is asked, of a real process and a real signal, and it is why
+/// the refusal below no longer offers a kill as the explanation: a publish
+/// assembles the artifact beside `--out` and moves it there in one step, so what
+/// is here is somebody else's.
 ///
 /// [#355]: https://github.com/headwater-ai/headwater/issues/355
 #[test]
-fn a_kill_during_the_write_phase_is_reported_as_leftovers_and_not_silently_repaired() {
+fn files_at_the_output_path_with_no_record_are_reported_and_not_silently_repaired() {
     let scratch = Scratch::new("killed-mid-write");
     let root = publisher(&scratch, None);
     let out = scratch.path().join("artifact");
@@ -2975,8 +3079,12 @@ fn a_kill_during_the_write_phase_is_reported_as_leftovers_and_not_silently_repai
         "the refusal does not name the missing record: {message}"
     );
     assert!(
-        message.contains("a run killed while writing this artifact would leave exactly this"),
-        "the refusal does not connect the state to a kill: {message}"
+        message.contains("a killed run leaves this directory as it found it"),
+        "the refusal no longer says what a kill cannot reach: {message}"
+    );
+    assert!(
+        !message.contains("a run killed while writing this artifact would leave exactly this"),
+        "the refusal still offers a kill as the explanation for this state: {message}"
     );
     assert!(
         matches!(release::at(&out), Err(ReleaseError::Absent(_))),
@@ -2984,7 +3092,7 @@ fn a_kill_during_the_write_phase_is_reported_as_leftovers_and_not_silently_repai
     );
     assert!(
         out.join("package.yml").exists(),
-        "the kill's own files are untouched"
+        "the planted files are untouched"
     );
 }
 
@@ -4534,5 +4642,407 @@ fn contents_doctrine_may_not_name_a_path_outside_the_package() {
     assert!(
         !out.exists(),
         "the publish that was refused wrote an artifact anyway"
+    );
+}
+
+/// The format guard on a release record is a string inequality on the raw
+/// token. It establishes what the record says, and never who wrote it or when.
+/// An earlier token reaches the same arm as a later one, and a hand edit reaches
+/// it with no engine anywhere near the file, so the message may name no party.
+/// The token that mutates here is **lower** than the one this engine writes,
+/// which is the case a message about a newer publisher gets exactly backwards.
+#[test]
+fn an_earlier_format_record_is_refused_without_naming_a_publisher() {
+    let scratch = Scratch::new("format");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    package::publish(&root, "acme/fixture", &out).expect("it publishes");
+
+    let path = out.join(release::RECORD);
+    let text = std::fs::read_to_string(&path).expect("the record is there");
+    let earlier = text.replace("format: 1", "format: 0");
+    assert_ne!(earlier, text, "the mutation substituted nothing:\n{text}");
+
+    let refused =
+        release::read(&earlier).expect_err("format 0 is not the format this engine reads");
+    let message = refused.to_string();
+    assert!(matches!(refused, ReleaseError::Format { .. }), "{message}");
+
+    let lowered = message.to_lowercase();
+    assert!(
+        !lowered.contains("newer") && !lowered.contains("older"),
+        "the message names a direction the guard never compared: {message}"
+    );
+    assert!(
+        !lowered.contains("published it") && !lowered.contains("wrote it"),
+        "the message names a writer the guard never read: {message}"
+    );
+    assert!(
+        message.contains("`0`"),
+        "the message drops the token it found: {message}"
+    );
+    assert!(
+        message.contains("Take an engine"),
+        "the message names no remedy: {message}"
+    );
+    // Every population that reaches this arm is a consumer holding an artifact
+    // somebody else published: `verify` under `taxonomy vendor`, the record
+    // read under `taxonomy diff` and `migrate`, and the one the conformance
+    // crate reads out of an installed package. None of them can publish it.
+    // `publish_at` in `src/package.rs` refuses a directory that carries a
+    // record outright, and a directory whose record this engine cannot read is
+    // refused a step earlier still. A remedy sentence is checkable, so naming
+    // a verb that answers with a second refusal is as false as naming a writer.
+    assert!(
+        !message.contains("headwater taxonomy publish"),
+        "the message names a verb this engine refuses on the artifact it is about: {message}"
+    );
+}
+
+/// #619: a document the artifact carries writes a reference to a file the
+/// artifact does not carry, and the publish refuses naming all three.
+///
+/// The declared half of referential integrity has refused since
+/// [#608](https://github.com/headwater-ai/headwater/pull/608), and it reads
+/// `contents` key scalars. This is the half that reads a body. The two were
+/// separated by a control before either was written: on the same tree, a planted
+/// `contents.corpora` naming a dropped path refused with exit 1, and a planted
+/// prose link to the same dropped path published with exit 0 and shipped.
+///
+/// The refusal is held to naming the document, the reference as the document
+/// wrote it, and the target it resolves to, which is the shape the `contents`
+/// refusal already had. A publisher who is told only that something dangles has
+/// to find it.
+#[test]
+fn a_reference_a_carried_document_writes_to_a_file_the_artifact_lacks_is_refused() {
+    let scratch = Scratch::new("reference-dangles");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\nThe worked example is [in the corpus](corpus/note.md).\n",
+    );
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect_err("the artifact carries no corpus/note.md");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(
+        message.contains("`notes.md`"),
+        "the document that writes the reference is not named:\n{message}"
+    );
+    assert!(
+        message.contains("corpus/note.md"),
+        "the target the reference resolves to is not named:\n{message}"
+    );
+    assert!(
+        message.contains("does not carry it"),
+        "the refusal does not say what is wrong with it:\n{message}"
+    );
+    assert!(
+        !out.exists(),
+        "the refusal runs before anything is written, the way the declared half does"
+    );
+}
+
+/// A reference that resolves inside the artifact is not refused, as a file and
+/// as a directory.
+///
+/// The sibling of the case above, and the reason it is here is that a rule which
+/// refuses everything passes that one. The directory arm matters on its own: a
+/// staged set is a list of files, so a link naming `corpus/` is held by a file
+/// under it and by nothing else.
+#[test]
+fn a_reference_that_resolves_inside_the_artifact_publishes() {
+    let scratch = Scratch::new("reference-resolves");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\nThe worked example is [in the corpus](corpus/note.md), which sits [in this \
+         directory](corpus/).\n",
+    );
+    scratch.write(
+        "publisher/packages/acme-fixture/corpus/note.md",
+        "# A note\n",
+    );
+    let out = scratch.path().join("artifact");
+
+    let record = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect("both references resolve inside the artifact");
+
+    assert!(
+        record
+            .members
+            .iter()
+            .any(|member| member.path == "notes.md"),
+        "the document that writes the references did not ship: {:#?}",
+        record.members
+    );
+}
+
+/// A reference the manifest records is reported and does not refuse, and the
+/// record is read as the pair `(member, target)`.
+///
+/// This is the staging the issue ruled. The bar as filed refuses this
+/// repository's own package over 122 references that were never resolvable in
+/// any artifact it has published, so the rule refuses what the record does not
+/// hold and the record names the population that predates it.
+///
+/// **The identity is the pair and the case proves it is the pair.** A record
+/// naming the right target under the wrong member admits nothing, which is what
+/// makes the record specific enough to be worth keeping: a member added later
+/// that writes the same dangling reference is still refused.
+#[test]
+fn a_reference_the_manifest_records_is_admitted_and_the_record_is_a_pair() {
+    let scratch = Scratch::new("reference-recorded");
+    let root = publisher(&scratch, None);
+    let manifest = root.join("packages/acme-fixture/package.yml");
+    let base = std::fs::read_to_string(&manifest).expect("the manifest was just written");
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\nThe worked example is [in the corpus](corpus/note.md).\n",
+    );
+
+    std::fs::write(
+        &manifest,
+        format!("{base}unresolved_references:\n  notes.md:\n    - corpus/note.md\n"),
+    )
+    .expect("the record is written");
+    let out = scratch.path().join("recorded");
+    let record = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect("the record admits the one reference that dangles");
+    assert!(
+        record
+            .members
+            .iter()
+            .any(|member| member.path == "notes.md"),
+        "the recorded document did not ship"
+    );
+
+    std::fs::write(
+        &manifest,
+        format!("{base}unresolved_references:\n  taxonomy.yml:\n    - corpus/note.md\n"),
+    )
+    .expect("the misdirected record is written");
+    let elsewhere = scratch.path().join("misdirected");
+    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &elsewhere)
+        .expect_err("a record against another member admits nothing");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("`notes.md`"),
+        "the record was read by target alone rather than as a pair:\n{message}"
+    );
+}
+
+/// A reference that leaves the artifact is told apart from one that dangles
+/// inside it, and only the second is refused.
+///
+/// One document writes both, and the difference is two `..` segments. `../spec`
+/// out of a member at the artifact root climbs above the root, which is a
+/// statement about the publisher's own tree and nothing a publish decides.
+/// `spec/x.md` at the root names a member, and no member is there.
+///
+/// This is the distinction the 122 references in `headwater/standard` sit on
+/// the wrong side of: `../../spec/07-…` written in `docs/taxonomies/design-spec/`
+/// normalizes to `spec/07-…` once the same file is published two directories
+/// down, so it lands inside the artifact rather than climbing out of it. The
+/// rule admits what climbs out and records what lands.
+#[test]
+fn a_reference_that_climbs_out_of_the_artifact_is_not_judged() {
+    let scratch = Scratch::new("reference-outside");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\nThe rule is [in the specification](../spec/07.md).\n",
+    );
+    let out = scratch.path().join("outside");
+
+    package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect("a reference that climbs out of the artifact is not this rule's to judge");
+
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\nThe rule is [in the specification](spec/07.md).\n",
+    );
+    let inside = scratch.path().join("inside");
+    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &inside)
+        .expect_err("the same reference without the climb lands inside and dangles");
+    assert!(
+        headwater_resolve::render_errors(&refused).contains("spec/07.md"),
+        "the two are not being told apart by where the reference lands"
+    );
+}
+
+/// A reference printed as an example is not a reference, in a code span and in a
+/// fenced block.
+///
+/// A rule that refuses a publish over correct Markdown is a rule the first
+/// publisher it meets turns off, and prose about this engine prints a path
+/// inside both forms. The same two shapes reached the first cut of the
+/// README suite and are cases there for the same reason.
+#[test]
+fn a_reference_inside_a_code_span_or_a_fence_is_not_read() {
+    let scratch = Scratch::new("reference-example");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\nWrite `[the corpus](corpus/note.md)` to point at it.\n\n```\n[the \
+         corpus](corpus/other.md)\n```\n",
+    );
+    let out = scratch.path().join("example");
+
+    package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect("neither an example nor a fenced block is a reference a consumer follows");
+}
+
+/// A reference after an unbalanced fence marker is still read.
+///
+/// The first cut of the reader toggled one boolean on ` ``` ` or on `~~~`. A
+/// `~~~` line inside a backtick fence closed it, and every line after the
+/// imbalance was read with the flag inverted, so the rest of the document went
+/// unseen. **That is the failure this whole rule exists to refuse, wearing the
+/// other face**: a check that reports success because it stopped looking. The
+/// document below plants the sequence and then writes a dangling reference two
+/// blocks later, where a reader that lost track of the fence sees nothing.
+///
+/// Both halves are asserted. The reference inside the backtick fence stays an
+/// example, and the one after the fence closes is refused.
+#[test]
+fn a_reference_after_an_unbalanced_fence_marker_is_still_read() {
+    let scratch = Scratch::new("reference-fence");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\n```\n~~~\n[an example](corpus/inside-the-fence.md)\n~~~\n```\n\nThe worked \
+         example is [in the corpus](corpus/after-the-fence.md).\n",
+    );
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect_err("the reference after the fence closes is a reference");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(
+        message.contains("corpus/after-the-fence.md"),
+        "the reader lost the fence and stopped seeing the document:\n{message}"
+    );
+    assert!(
+        !message.contains("corpus/inside-the-fence.md"),
+        "a line inside the fence was read as a reference:\n{message}"
+    );
+}
+
+/// A recorded pair whose member the artifact does not carry is refused.
+///
+/// A record names what one artifact carries. A pair that outlives its member is
+/// a standing admission: it admits nothing today, and it admits whatever is
+/// published at that path later, with nobody having decided that. The way a
+/// record reaches an artifact it was not written for is `publish --assembly`,
+/// because a flattened package takes a new member layout — `flatten::manifest`
+/// drops the key for that reason, and this is what holds the plain path.
+#[test]
+fn a_recorded_pair_whose_member_the_artifact_lacks_is_refused() {
+    let scratch = Scratch::new("reference-scope");
+    let root = publisher(&scratch, None);
+    let manifest = root.join("packages/acme-fixture/package.yml");
+    let base = std::fs::read_to_string(&manifest).expect("the manifest was just written");
+    std::fs::write(
+        &manifest,
+        format!("{base}unresolved_references:\n  gone.md:\n    - corpus/note.md\n"),
+    )
+    .expect("the record is written");
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect_err("the artifact carries no gone.md for the record to be about");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(
+        message.contains("gone.md"),
+        "the member the record names is not named:\n{message}"
+    );
+    assert!(
+        message.contains("unresolved_references"),
+        "the refusal does not say which key is wrong:\n{message}"
+    );
+}
+
+/// A percent escape is decoded and a query is dropped before the target is
+/// resolved.
+///
+/// A link destination is a URL and a member path is a path on disk, so
+/// `a%20note.md` names `a note.md` and a reader who follows the link opens that
+/// file. Reading the escape as written reports a file that is there as a file
+/// that is not, which is a refused publish over a correct link. The same holds
+/// for a query, which no path carries.
+#[test]
+fn a_percent_escape_is_decoded_and_a_query_is_not_part_of_the_path() {
+    let scratch = Scratch::new("reference-escape");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\nThe example is [in the corpus](corpus/a%20note.md), and the same file [with a \
+         query](corpus/a%20note.md?raw=1).\n",
+    );
+    scratch.write("publisher/packages/acme-fixture/corpus/a note.md", "# A\n");
+    let out = scratch.path().join("artifact");
+
+    package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect("both references name a file the artifact carries");
+}
+
+/// A reference inside an indented code block is an example.
+///
+/// This repository writes a command as four spaces after a blank line, in
+/// `CLAUDE.md` and in its specification, and a publisher who does the same is
+/// printing rather than referring. The boundary is stated where the reader
+/// carries it: CommonMark opens no indented block inside a list item and this
+/// does, so a link in a list continuation indented four spaces is not read.
+/// A missed reference is what that costs, and a publish refused over a printed
+/// example is what it buys.
+#[test]
+fn a_reference_inside_an_indented_block_is_not_read() {
+    let scratch = Scratch::new("reference-indented");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\nRun it like this:\n\n    open [the corpus](corpus/note.md)\n\nAnd that is \
+         all.\n",
+    );
+    let out = scratch.path().join("artifact");
+
+    package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect("an indented block prints a path rather than referring to one");
+}
+
+/// A backtick run whose information string carries a backtick opens no fence,
+/// so the document after it is still read.
+///
+/// CommonMark refuses such a run as an opener, because the text after it is
+/// ambiguous with a code span. The reader tested that rule at the closing end
+/// and not at the opening one, so a line like `` ```a`b `` opened a fence that
+/// nothing ever closed and **every line to the end of the file went unread**.
+/// That is the invisibility this whole rule exists to refuse, reached through
+/// the one end that had no test.
+///
+/// **No line in this corpus is shaped that way, and the case is here anyway.**
+/// A hole in a check whose purpose is to not go blind is worth closing on the
+/// day it is found rather than on the day somebody writes the line.
+#[test]
+fn a_backtick_run_with_a_backtick_in_its_information_string_opens_no_fence() {
+    let scratch = Scratch::new("reference-opener");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\n```a`b\n\nThe worked example is [in the corpus](corpus/after-the-run.md).\n",
+    );
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect_err("the run opens no fence, so the reference below it is a reference");
+
+    assert!(
+        headwater_resolve::render_errors(&refused).contains("corpus/after-the-run.md"),
+        "the reader opened a fence nothing closes and stopped seeing the document"
     );
 }

@@ -176,7 +176,7 @@ conformance:
 }
 
 #[test]
-fn a_rule_set_from_a_later_engine_says_so_rather_than_guessing() {
+fn a_format_this_engine_does_not_read_is_refused_rather_than_guessed_at() {
     let later = source("lock.current").replace("format: 1", "format: 9");
     assert!(matches!(
         read(&later, "acme/taxonomy"),
@@ -762,4 +762,40 @@ fn stripping_a_rule_out_of_its_own_level_does_not_let_the_level_pass() {
         "the refusal is not the divergence this test provoked: {refused}"
     );
     let _ = std::fs::remove_dir_all(&root);
+}
+
+/// The format guard on a rule set is a string inequality on the raw token. It
+/// establishes what the file says, and never who published it or when. An
+/// earlier token reaches the same arm as a later one, and a hand edit reaches it
+/// with no engine anywhere near the file, so the message may name no party. The
+/// token that mutates here is **lower** than the one this engine reads, which is
+/// the case a message about a newer publisher gets exactly backwards.
+#[test]
+fn an_earlier_format_rule_set_is_refused_without_naming_a_publisher() {
+    let text = source("lock.current");
+    let earlier = text.replace("format: 1", "format: 0");
+    assert_ne!(earlier, text, "the mutation substituted nothing:\n{text}");
+
+    let refused =
+        read(&earlier, "acme/taxonomy").expect_err("format 0 is not the format this engine reads");
+    let message = refused.to_string();
+    assert!(matches!(refused, SetError::Format { .. }), "{message}");
+
+    let lowered = message.to_lowercase();
+    assert!(
+        !lowered.contains("newer") && !lowered.contains("older"),
+        "the message names a direction the guard never compared: {message}"
+    );
+    assert!(
+        !lowered.contains("published it") && !lowered.contains("wrote it"),
+        "the message names a party the guard never read: {message}"
+    );
+    assert!(
+        message.contains("`0`"),
+        "the message drops the token it found: {message}"
+    );
+    assert!(
+        message.contains("requires_engine"),
+        "the message names no remedy: {message}"
+    );
 }

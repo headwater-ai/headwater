@@ -9,9 +9,10 @@ provenance:
   agency: "{{human | agent | mixed}}"
   accepted_by: "{{a human, always named}}"
   evidence_basis: evidenced
-applies: "{{the review prompt this run applied}}"
-assesses:
-  - "{{each document that this review read}}"
+relations:
+  applies: "{{the identifier of the review prompt this run applied}}"
+  assesses:
+    - "{{the identifier of each document that this review read}}"
 ---
 
 # {{title}}

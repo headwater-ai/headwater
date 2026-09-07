@@ -160,6 +160,92 @@ fn a_member_that_carries_no_taxonomy_source_reopens_the_pin_when_hand_edited() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// **The pairing: one tree where `pin.current` reports a gap and the resolver
+/// reports nothing.** The case above proves the recheck happens. This one
+/// proves what it costs an adopter to run the wrong verb, which is
+/// [#517](https://github.com/headwater-ai/headwater/issues/517)'s only surviving
+/// complaint once the recheck itself is measured rather than recalled.
+///
+/// `headwater taxonomy resolve` reaches the installed package through
+/// [`headwater_resolve::package::sources`], and that function compares the
+/// version the manifest declares against the version the consumer pinned and
+/// reads no digest at all. So a hand edit to a member that carries no taxonomy
+/// source moves the bytes under the pin and leaves the resolution byte for byte
+/// where it was. An adopter whose build runs `resolve` and not
+/// `conformance --level L0` learns nothing.
+///
+/// **The order is the assertion.** The publish that computes the digest runs
+/// before the pin, and the hand edit runs after both. Resolving first would move
+/// the sources with the record, both sides of the comparison would agree, and
+/// the gap this case is named for would never open.
+///
+/// The resolver's answer is compared as text rather than as an exit status,
+/// because "it also exited 0" and "it read the same bytes" are two different
+/// claims and the second is the one that says the digest was never opened.
+#[test]
+fn a_hand_edit_that_reopens_the_pin_leaves_the_resolver_reading_the_same_bytes() {
+    let root = scratch("pin-resolver-blind");
+    let dir = package(&root, "1.0.0");
+    std::fs::write(dir.join("conformance.yml"), "conformance:\n  format: 1\n")
+        .expect("the extra member writes");
+    // publish, then pin. The digest below names the bytes as they stand now.
+    let digest = publish(&dir);
+    let pinned = consumer("1.0.0", Some(&digest));
+
+    assert_eq!(
+        pin_current(&root, &pinned),
+        Verdict::Met,
+        "the freshly published artifact does not read as met"
+    );
+    let before = headwater_resolve::package::sources(&root, &pinned)
+        .map(read_sources)
+        .expect("the resolver reads the freshly vendored package");
+    // Two guards against a comparison that holds because there is nothing to
+    // compare. The resolution loaded the taxonomy source, and it never opened
+    // the member the hand edit below moves.
+    assert!(
+        before
+            .iter()
+            .any(|(_, text)| text.contains("acme/taxonomy")),
+        "the resolution loaded no taxonomy source: {before:?}"
+    );
+    assert!(
+        !before.iter().any(|(name, _)| name.contains("conformance")),
+        "the resolver already reads the member this case hand-edits: {before:?}"
+    );
+
+    // The hand edit, after the publish that produced the pinned digest.
+    std::fs::write(
+        dir.join("conformance.yml"),
+        "conformance:\n  format: 1\n  # hand-edited after publish, never through `vendor`\n",
+    )
+    .expect("the hand edit writes");
+
+    let message = gap(&pin_current(&root, &pinned));
+    assert!(
+        message.contains("conformance.yml"),
+        "the hand edit did not reopen the pin: {message}"
+    );
+
+    let after = headwater_resolve::package::sources(&root, &pinned)
+        .map(read_sources)
+        .expect("the resolver refused a tree whose taxonomy sources did not move");
+    assert_eq!(
+        before, after,
+        "the resolver saw the hand edit, so this pairing no longer holds"
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// Every source a resolution loaded, as the name it is called by and the bytes
+/// it carries.
+fn read_sources(sources: Vec<headwater_resolve::source::Source>) -> Vec<(String, String)> {
+    sources
+        .into_iter()
+        .map(|source| (source.name, source.text))
+        .collect()
+}
+
 /// **The arm a version-only rule would get wrong.** The version agrees and the
 /// digest does not, so a reading of the version alone would call this met. That
 /// repository takes an artifact that nobody publishes any more.
@@ -477,18 +563,29 @@ fn the_remediation_of_pin_current_names_every_step_of_the_route_in_order() {
 // lock.current
 // ---------------------------------------------------------------------------
 
-/// The failing arm, and it is the one that matters. The lock records the digest
-/// of every source it was written from, so a source whose bytes moved is a lock
-/// that no run can reproduce.
+/// The failing arm, and it is the one that matters. A root that does not
+/// resolve cannot say what its sources resolve to, so the rule says that rather
+/// than reporting a met.
+///
+/// **This case moved with the fix for
+/// [#648](https://github.com/headwater-ai/headwater/issues/648), and the
+/// sentence it used to assert is the whole reason.** The scratch root holds
+/// none of the sources the lock names, and the reading that hashed source files
+/// alone called every one of them moved. The reading now runs the comparison
+/// `taxonomy resolve --check` decides with, and that one fails on a root with no
+/// consumer declaration before a source is hashed — which is what the verb does
+/// over this same root. The moved-source sentence is reached from a root that
+/// resolves, and `engine/crates/cli/tests/conformance_lock.rs` is where a root
+/// that resolves is built and perturbed.
 #[test]
-fn a_source_that_moved_since_the_lock_was_written_is_a_gap() {
-    let root = scratch("lock-moved");
+fn a_root_that_does_not_resolve_is_a_gap_and_not_a_met() {
+    let root = scratch("lock-unresolvable");
     let lock = headwater_lock::at(&repository_root()).expect("this repository's lock reads");
-    // The lock names sources relative to a root, and this scratch root holds
-    // none of them, so every source reads as moved.
     let detail = gap(&lock_current(&root, &lock));
-    assert!(detail.contains("moved since the lock was written"));
-    assert!(detail.contains(".headwater/overlay.yml"));
+    assert!(
+        detail.contains("the sources do not resolve"),
+        "a root with no declaration says so rather than naming a moved source: {detail}"
+    );
     let _ = std::fs::remove_dir_all(&root);
 
     // The met arm, over the tree the lock was actually written from.

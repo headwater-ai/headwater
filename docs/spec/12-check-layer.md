@@ -47,7 +47,7 @@ Spec 6 sketched three tiers. The correct decomposition is five. It comes from th
 
 | Origin | Comes from | Examples | Exportable as |
 |---|---|---|---|
-| **Shape** | the TBox, generated | required facet, enum membership, identifier pattern, cardinality, unknown-facet detection | JSON Schema, and LinkML or SHACL when either emitter arrives |
+| **Shape** | the TBox, generated | required facet, enum membership, blank value, identifier pattern, cardinality, unknown-facet detection | JSON Schema, and LinkML or SHACL when either emitter arrives |
 | **Graph** | relation declarations, generated | reciprocity, endpoint kinds, lifecycle-sensitivity, satellite inheritance, live conflicts, windowed participation expectations | SHACL (via SPARQL), when that emitter arrives |
 | **Corpus** | declarations that need many documents | facet orthogonality, continuity distribution, scent distinctiveness | — |
 | **Document** | regimes, applied to the body | voice, section contract, normative language, size budgets, prose-link resolution | — |

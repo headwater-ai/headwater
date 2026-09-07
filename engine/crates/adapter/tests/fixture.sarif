@@ -45,6 +45,20 @@
               }
             },
             {
+              "id": "facet.value.blank",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "identifier.pattern.not_met",
               "shortDescription": {
                 "text": "document scope, one document and its front matter"
@@ -225,7 +239,7 @@
               "properties": {
                 "headwater": {
                   "scope": "corpus",
-                  "version": 1,
+                  "version": 2,
                   "obligations": [],
                   "exportable_as": []
                 }
@@ -741,12 +755,23 @@
           "hashes": {
             "sha-256": "9d82bc120f67b7b5a999433bbae8502e18587777cf94bcc8254491ebe9c73981"
           }
+        },
+        {
+          "location": {
+            "uri": "check/spec/18-blank-facets.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "ab8d0eb139f3733cde3ca712a0f637ff8fe82f70fc93a55f87b27273fad00d57"
+          }
         }
       ],
       "results": [
         {
           "ruleId": "relation.reciprocity.missing",
-          "ruleIndex": 6,
+          "ruleIndex": 7,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -791,7 +816,7 @@
         },
         {
           "ruleId": "relation.participation.overdue",
-          "ruleIndex": 9,
+          "ruleIndex": 10,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -824,7 +849,7 @@
         },
         {
           "ruleId": "relation.endpoint.not_permitted",
-          "ruleIndex": 7,
+          "ruleIndex": 8,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -855,7 +880,7 @@
         },
         {
           "ruleId": "shelf.placement_is_primary",
-          "ruleIndex": 3,
+          "ruleIndex": 4,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -888,7 +913,7 @@
         },
         {
           "ruleId": "relation.reciprocity.missing",
-          "ruleIndex": 6,
+          "ruleIndex": 7,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -921,7 +946,7 @@
         },
         {
           "ruleId": "relation.reciprocity.missing",
-          "ruleIndex": 6,
+          "ruleIndex": 7,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -954,7 +979,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 16,
+          "ruleIndex": 17,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -987,7 +1012,7 @@
         },
         {
           "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 25,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1043,7 +1068,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 16,
+          "ruleIndex": 17,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1109,7 +1134,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 16,
+          "ruleIndex": 17,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1142,7 +1167,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 15,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1175,7 +1200,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 15,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1208,7 +1233,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 15,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1241,7 +1266,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 16,
+          "ruleIndex": 17,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1274,7 +1299,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 16,
+          "ruleIndex": 17,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1307,7 +1332,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 16,
+          "ruleIndex": 17,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1340,7 +1365,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 16,
+          "ruleIndex": 17,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1373,7 +1398,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 16,
+          "ruleIndex": 17,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1406,7 +1431,7 @@
         },
         {
           "ruleId": "language.retired_term.used",
-          "ruleIndex": 17,
+          "ruleIndex": 18,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1439,7 +1464,7 @@
         },
         {
           "ruleId": "language.retired_term.used",
-          "ruleIndex": 17,
+          "ruleIndex": 18,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1472,7 +1497,7 @@
         },
         {
           "ruleId": "language.source_form.not_met",
-          "ruleIndex": 18,
+          "ruleIndex": 19,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1505,7 +1530,7 @@
         },
         {
           "ruleId": "language.source_form.not_met",
-          "ruleIndex": 18,
+          "ruleIndex": 19,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1538,7 +1563,7 @@
         },
         {
           "ruleId": "link.fragment.unresolved",
-          "ruleIndex": 20,
+          "ruleIndex": 21,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1571,7 +1596,7 @@
         },
         {
           "ruleId": "identifier.claim.missing",
-          "ruleIndex": 13,
+          "ruleIndex": 14,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1602,7 +1627,7 @@
         },
         {
           "ruleId": "section.required.missing",
-          "ruleIndex": 19,
+          "ruleIndex": 20,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1631,7 +1656,7 @@
         },
         {
           "ruleId": "identifier.claim.missing",
-          "ruleIndex": 13,
+          "ruleIndex": 14,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1662,7 +1687,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 15,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1707,7 +1732,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 16,
+          "ruleIndex": 17,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1752,7 +1777,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 16,
+          "ruleIndex": 17,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1785,7 +1810,7 @@
         },
         {
           "ruleId": "identifier.pattern.not_met",
-          "ruleIndex": 2,
+          "ruleIndex": 3,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1818,7 +1843,7 @@
         },
         {
           "ruleId": "relation.target.unresolved",
-          "ruleIndex": 4,
+          "ruleIndex": 5,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1851,7 +1876,7 @@
         },
         {
           "ruleId": "relation.target.unresolved",
-          "ruleIndex": 4,
+          "ruleIndex": 5,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1884,7 +1909,7 @@
         },
         {
           "ruleId": "relation.declaration.unusable",
-          "ruleIndex": 10,
+          "ruleIndex": 11,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1917,7 +1942,7 @@
         },
         {
           "ruleId": "relation.declaration.unusable",
-          "ruleIndex": 10,
+          "ruleIndex": 11,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1950,7 +1975,7 @@
         },
         {
           "ruleId": "relation.declaration.unusable",
-          "ruleIndex": 10,
+          "ruleIndex": 11,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1983,7 +2008,7 @@
         },
         {
           "ruleId": "relation.declaration.unusable",
-          "ruleIndex": 10,
+          "ruleIndex": 11,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2016,7 +2041,7 @@
         },
         {
           "ruleId": "relation.declaration.unusable",
-          "ruleIndex": 10,
+          "ruleIndex": 11,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2049,7 +2074,7 @@
         },
         {
           "ruleId": "identifier.unusable",
-          "ruleIndex": 11,
+          "ruleIndex": 12,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2082,7 +2107,7 @@
         },
         {
           "ruleId": "identifier.unusable",
-          "ruleIndex": 11,
+          "ruleIndex": 12,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2114,8 +2139,134 @@
           }
         },
         {
+          "ruleId": "facet.value.blank",
+          "ruleIndex": 2,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`summary` is declared with no value",
+            "markdown": "`summary` is declared with no value\n\n**Fix:** write the value of `summary` into check/spec/18-blank-facets.md, which this kind requires"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/18-blank-facets.md"
+                },
+                "region": {
+                  "startLine": 6,
+                  "startColumn": 10
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "write the value of `summary` into check/spec/18-blank-facets.md, which this kind requires",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "facet.value.blank",
+          "ruleIndex": 2,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`title` is declared as empty text",
+            "markdown": "`title` is declared as empty text\n\n**Fix:** write the value of `title` into check/spec/18-blank-facets.md, or remove the key"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/18-blank-facets.md"
+                },
+                "region": {
+                  "startLine": 7,
+                  "startColumn": 8
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "write the value of `title` into check/spec/18-blank-facets.md, or remove the key",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "facet.value.blank",
+          "ruleIndex": 2,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`oracle` is declared as a sequence, and its declaration says `string`",
+            "markdown": "`oracle` is declared as a sequence, and its declaration says `string`\n\n**Fix:** write the value of `oracle` into check/spec/18-blank-facets.md, or remove the key"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/18-blank-facets.md"
+                },
+                "region": {
+                  "startLine": 8,
+                  "startColumn": 9
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "write the value of `oracle` into check/spec/18-blank-facets.md, or remove the key",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 17,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 32",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 32\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/18-blank-facets.md"
+                },
+                "region": {
+                  "startLine": 15,
+                  "startColumn": 26
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 27,
+          "ruleIndex": 28,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2144,7 +2295,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 27,
+          "ruleIndex": 28,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2173,7 +2324,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2202,7 +2353,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2231,7 +2382,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2260,7 +2411,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2290,48 +2441,573 @@
       ],
       "properties": {
         "headwater": {
-          "shape": "1.2",
+          "shape": "1.3",
           "taxonomy": {
             "package": "headwater/fixture",
             "version": "1.0.0",
-            "lock": "f56bcd0fbdb55db9caf432a8df7904bc47d417d9333f5561baceece2d6f94037"
+            "lock": "9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0"
           },
           "clock": "2026-08-12",
           "coverage": {
-            "seen": 25,
-            "classified": 23,
-            "checked": 22,
+            "seen": 26,
+            "classified": 24,
+            "checked": 23,
             "generated": 1,
-            "instances": 269,
-            "skipped": 67,
+            "instances": 305,
+            "skipped": 71,
             "skips": [
               {
                 "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
-                "instances": 1
+                "instances": 1,
+                "documents": [
+                  {
+                    "path": "check/spec/16-no-identifier.md",
+                    "rules": [
+                      "identifier.pattern.not_met"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
               },
               {
                 "reason": "the `id` facet is a sequence, and an identifier is a word",
-                "instances": 1
+                "instances": 1,
+                "documents": [
+                  {
+                    "path": "check/spec/17-identifier-not-a-word.md",
+                    "rules": [
+                      "identifier.pattern.not_met"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
               },
               {
                 "reason": "the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it",
-                "instances": 16
+                "instances": 17,
+                "documents": [
+                  {
+                    "path": "check/spec/00-both-halves.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/01-one-half.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/02-cited-only.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/03-no-instance.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/05-no-summary.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/06-retired.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/07-prose-defects.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/08-contract-met.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/09-contract-missing.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/10-suppressed.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/11-identifier-mismatch.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/13-dangling.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/14-relations-not-a-mapping.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/15-unusable-entries.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/16-no-identifier.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/17-identifier-not-a-word.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/18-blank-facets.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
               },
               {
                 "reason": "`guarded` forbids hedging, and this engine has no pattern set for it",
-                "instances": 2
+                "instances": 2,
+                "documents": [
+                  {
+                    "path": "check/spec/08-contract-met.md",
+                    "rules": [
+                      "voice.forbidden_construction"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/09-contract-missing.md",
+                    "rules": [
+                      "voice.forbidden_construction"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
               },
               {
                 "reason": "`ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it",
-                "instances": 2
+                "instances": 2,
+                "documents": [
+                  {
+                    "path": "check/spec/08-contract-met.md",
+                    "rules": [
+                      "language.controlled.not_met"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/09-contract-missing.md",
+                    "rules": [
+                      "language.controlled.not_met"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
               },
               {
                 "reason": "this document writes no fragment into itself",
-                "instances": 21
+                "instances": 22,
+                "documents": [
+                  {
+                    "path": "check/evaluations/alpha.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/beta.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/delta.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/epsilon.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/eta.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/gamma.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/zeta.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/01-one-half.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/02-cited-only.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/03-no-instance.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/05-no-summary.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/06-retired.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/08-contract-met.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/09-contract-missing.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/10-suppressed.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/11-identifier-mismatch.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/13-dangling.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/14-relations-not-a-mapping.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/15-unusable-entries.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/16-no-identifier.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/17-identifier-not-a-word.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/18-blank-facets.md",
+                    "rules": [
+                      "link.fragment.unresolved"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
               },
               {
                 "reason": "change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change",
-                "instances": 24
+                "instances": 25,
+                "documents": [
+                  {
+                    "path": "check/evaluations/alpha.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/beta.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/delta.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/epsilon.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/eta.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/gamma.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/zeta.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/00-both-halves.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/01-one-half.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/02-cited-only.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/03-no-instance.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/05-no-summary.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/06-retired.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/07-prose-defects.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/08-contract-met.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/09-contract-missing.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/10-suppressed.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/11-identifier-mismatch.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/13-dangling.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/14-relations-not-a-mapping.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/15-unusable-entries.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/16-no-identifier.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/17-identifier-not-a-word.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/18-blank-facets.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 1
+              },
+              {
+                "reason": "the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there",
+                "instances": 1,
+                "documents": [
+                  {
+                    "path": "check/evaluations/alpha.md",
+                    "rules": [
+                      "lifecycle.dependency.on_terminal"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/beta.md",
+                    "rules": [
+                      "lifecycle.dependency.on_terminal"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
               }
             ],
             "unaccounted": [
@@ -2345,7 +3021,7 @@
             "suppressed": 2
           },
           "read_set": {
-            "inputs": 25,
+            "inputs": 26,
             "unhashed": 0
           },
           "loss_set": [
@@ -2366,7 +3042,7 @@
             },
             {
               "field": "coverage",
-              "reason": "a `kind: \"pass\"` result would count check instances, and the census counts documents, including the ones no check classified. What is carried is every number the text report writes: the counts, the skip classes with their reasons, and the paths no census row accounts for",
+              "reason": "a `kind: \"pass\"` result would count check instances, and the census counts documents, including the ones no check classified. What is carried is every number the text report writes and one it does not: the counts, the skip classes with their reasons, the documents each class was routed to, and the paths no census row accounts for",
               "carried_in": "run.properties.headwater.coverage"
             },
             {

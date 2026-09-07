@@ -8,7 +8,7 @@
 
 ## Obtaining a named version
 
-`v0.1.0` is the name of the first tagged release, and it is the version to build if you want a tree that does not move under you. **The tag is not cut yet**, so the third line below fails today, and a shell that does not stop on an error goes on to build the default branch instead. Omit that line until the tag exists, and know that you are building a tree that moves. There is no published binary and no package registry entry: the install path is a source build, and it needs a Rust toolchain at **1.85 or later**, a floor `engine/README.md` explains.
+`v0.1.0` is the name of the first tagged release, and it is the version to build if you want a tree that does not move under you. **The tag is not cut yet**, so the third line below fails today, and a shell that does not stop on an error goes on to build the default branch instead. Omit that line until the tag exists, and know that you are building a tree that moves. There is no published binary and no package registry entry: the install path is a source build, and it needs a Rust toolchain at **1.90 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
 
 ```
 git clone https://github.com/headwater-ai/headwater.git
@@ -23,7 +23,7 @@ The tutorial above builds whatever tree you cloned, which is the default branch 
 
 ## Status
 
-> **The engine runs, and two of its layers are unfinished.** M1 to M5 shipped, so this repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. Six milestones are open: distribution and the measurement layer are the two unfinished layers, and the canonical taxonomy library, ecosystem tooling, taxonomy expressiveness and this first release are the rest. Every efficacy claim in this repository is still marked unmeasured.
+> **The engine runs, and two of its layers are unfinished.** This repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. Distribution and the measurement layer are the unfinished layers, and the canonical taxonomy library, ecosystem tooling, taxonomy expressiveness and this first release are the rest of what is still open. Every efficacy claim in this repository is still marked unmeasured.
 
 ## What problem this solves
 

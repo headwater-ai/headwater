@@ -49,14 +49,38 @@
 //!
 //! Nothing else is exempt. A word longer than the room it lands in is written
 //! past the width, whole, so a path, a rule name and a digest arrive intact
-//! wherever they are — which is what `crate::census` needs, because it audits
-//! every format by `artifact.contains(path)`.
+//! wherever they are — which is what `crate::census` needs, because it reads
+//! this format by cutting it into blocks and asking each one for the location
+//! it opens on.
 
-use crate::Subject;
+use crate::{Carrier, Loss, Subject};
 use headwater_census::census::{Census, Detail as CensusDetail};
 use headwater_check::paint::{paint, ColorMode, Role};
 use headwater_check::{fill, Run};
 use headwater_graph::{Detail as GraphDetail, Graph};
+
+/// What the terminal cannot carry, and where the value went instead.
+///
+/// One entry, and it took until #235 for this format to have one. The argument
+/// for the empty set was that a loss is a member of a *target* vocabulary that a
+/// run has no value for, and the terminal is the engine's own words rather than
+/// a target. That argument still holds for every other value: this report
+/// carries the census and the graph, which no other format does. It does not
+/// hold for a value the engine computes, JSON writes, and this report drops.
+///
+/// The entry names nowhere inside these bytes, so [`crate::census`] reports it
+/// as unaudited and a person is the only thing holding the declaration. That is
+/// the same posture all four of [`crate::markdown::LOSS`] stand in.
+pub const LOSS: &[Loss] = &[Loss {
+    field: "the routing of each skip",
+    reason: "the classes and their counts are four lines and the routing is one line per \
+             document, and a report that prints two hundred and ninety of them is a report \
+             nobody finishes",
+    carrier: Carrier::Elsewhere(
+        "the classes and their counts alone, and `--format json` for \
+                                 the documents each class fell on",
+    ),
+}];
 
 /// One run of the check layer, as a terminal reads it, at the standard width,
 /// with no color.

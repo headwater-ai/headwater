@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-generate
 status: current
 status_since: 2026-09-06
 summary: "How to write the projections declared by the taxonomy and detect stale generated files."
-last_verified: 2026-08-25
+last_verified: 2026-09-07
 title: "headwater generate"
 relations:
   governs:
@@ -25,6 +25,8 @@ The command writes every generated projection that the resolved taxonomy declare
 Without `--check`, it computes projections and writes marked generated files. With `--check`, it writes nothing and compares committed projections with the same plan.
 
 It refuses to overwrite a file that lacks the generated-file marker. A stale projection or a marked file that the plan does not write is an error.
+
+Under *what this verb does not write, and why*, a run reports every projection kind this engine does not emit. It reports a kind the taxonomy declared at the output path of that declaration, and a kind no declaration named at `no declaration names one`. A reason is a property of this engine rather than of the corpus, so a reader gets it before writing the declaration.
 
 ## Preconditions
 

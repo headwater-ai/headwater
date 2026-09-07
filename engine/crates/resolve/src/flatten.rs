@@ -152,6 +152,15 @@ fn manifest(
         .iter()
         .filter(|entry| entry.key.value != "package" && entry.key.value != "version")
         .filter(|entry| entry.key.value != "contents" && entry.key.value != "distribution")
+        // A record of unresolved references names the members of one artifact,
+        // and a flattened package takes a new member layout: `doctrine` lands
+        // at `doctrine/<recipe>/` and the bundle tree is absorbed, so not one
+        // recorded member is carried here. Copying the key through gave the
+        // starter recipe a record of 51 pairs against members it does not hold,
+        // which `package::references` refuses as a standing admission. The
+        // recipe's own artifact records what its own publish finds, which today
+        // is nothing.
+        .filter(|entry| entry.key.value != package::RECORDED_REFERENCES)
         .cloned()
         .collect();
     entries.insert(0, entry("package", scalar(&recipe.package)));

@@ -63,8 +63,10 @@ use std::path::Path;
 pub mod json;
 pub mod render;
 
-/// The format of the rule set file. A reader that meets a later one says so
-/// rather than guessing, on the terms the lock and the release record take.
+/// The format of the rule set file. A reader that meets any other token refuses
+/// rather than guessing, on the terms the lock and the release record take. It
+/// compares and never orders, so it says nothing about which of the two came
+/// first.
 pub const FORMAT: u32 = 1;
 
 /// The manifest key under `contents` that points at the rule set.
@@ -157,6 +159,14 @@ pub enum SetError {
     Undeclared(String),
     Unreadable(String),
     Malformed(String),
+    /// The declared `format` token is not the one this engine reads. [`read`]
+    /// compares the raw token to [`FORMAT`] for inequality and never orders the
+    /// two, so this variant carries a mismatch and no direction: a rule set at
+    /// an earlier format, one at a later format, and a token that is not a
+    /// number at all all arrive here. No engine need have published any of
+    /// them, because a hand-edited `format` field lands here too. The message
+    /// therefore says which token was found and which one this engine wants,
+    /// and names no publisher.
     Format {
         found: String,
     },
@@ -194,7 +204,7 @@ impl std::fmt::Display for SetError {
             SetError::Format { found } => write!(
                 f,
                 "the conformance rule set declares format `{found}` and this engine reads \
-                 {FORMAT}. A newer engine published it"
+                 {FORMAT}. Take an engine whose `requires_engine` range the package allows"
             ),
             SetError::NoReading { rule, package } => write!(
                 f,
@@ -901,23 +911,137 @@ pub fn pin_current(root: &Path, consumer: &Consumer) -> Verdict {
 
 /// The lock is what the sources resolve to.
 ///
-/// The reading is the source digests the lock itself carries, which is what
-/// `taxonomy resolve --check` prints when it fails. A second comparison here
-/// would be a second answer to one question.
+/// **The reading is the comparison `taxonomy resolve --check` decides with,
+/// called rather than approximated.** The sources are resolved, a lock is
+/// written from them carrying the authored block the committed file holds, and
+/// [`headwater_lock::diverged`] says how the committed bytes differ from that
+/// text. That is the single question the CLI already prints an answer to, so
+/// this is the reading that keeps the two verbs from being two answers.
+///
+/// **The reading it replaced was the explanatory half of that verb and not the
+/// deciding one.** [`Lock::moved`] re-hashes the source files on disk against
+/// the digests the lock records, and `taxonomy resolve --check` calls it only
+/// after it has failed, to name which source moved. Everything the lock states
+/// that is not a source file was invisible to it: the header, the `sources`
+/// list itself, and the `founded:` record, which sits outside the digest
+/// [`headwater_lock::read`] verifies. A lock with its `founded:` block deleted
+/// by hand was reported met by this rule and refused by `taxonomy resolve
+/// --check` one command later, which is a red build an adopter was told they
+/// did not have.
+///
+/// **The cost this accepts:** the rule now resolves the taxonomy from source,
+/// where before it read only the committed lock. `taxonomy resolve --check`
+/// already pays exactly that, so the cost is known and bounded, and a root
+/// whose sources no longer resolve is now a gap here rather than a met.
 pub fn lock_current(root: &Path, lock: &Lock) -> Verdict {
-    let moved = lock.moved(root);
-    match moved.is_empty() {
-        true => Verdict::Met,
-        false => Verdict::Gap(format!(
-            "{} source{} moved since the lock was written: {}",
-            moved.len(),
-            match moved.len() {
-                1 => "",
-                _ => "s",
-            },
-            moved.join(", ")
+    let repository = match headwater_resolve::repository(root) {
+        Ok(repository) => repository,
+        Err(errors) => {
+            return Verdict::Gap(format!(
+                "the sources do not resolve, so nothing here can say what they resolve to: {}",
+                joined(&errors)
+            ))
+        }
+    };
+    let sources = match headwater_resolve::package::sources(root, &repository.consumer) {
+        Ok(sources) => sources,
+        Err(errors) => {
+            return Verdict::Gap(format!(
+                "the sources this lock names cannot be read: {}",
+                joined(&errors)
+            ))
+        }
+    };
+    // The authored block is carried through from the committed file, exactly as
+    // the resolver carries it. A comparison that dropped it would report every
+    // adopter holding an `adoption` block as a lock that moved, over a block
+    // this file's own header invites them to write.
+    let authored = headwater_lock::authored_at(root);
+    let text = match headwater_lock::write(
+        &repository.consumer.package,
+        &repository.consumer.version,
+        &sources,
+        &repository.resolution,
+        authored.payload(),
+    ) {
+        Ok(text) => text,
+        Err(findings) => {
+            return Verdict::Gap(format!(
+                "the taxonomy these sources resolve to does not validate, so there is no lock \
+                 for this one to be: {}",
+                joined(&findings)
+            ))
+        }
+    };
+
+    let committed = std::fs::read_to_string(root.join(headwater_lock::LOCK)).unwrap_or_default();
+    match headwater_lock::diverged(&committed, &text) {
+        headwater_lock::Divergence::Same => Verdict::Met,
+        // The generated half moved. Which source moved is the line an author
+        // acts on, and an empty list is the case this rule used to read as met:
+        // what differs is generated from the resolution rather than hashed from
+        // a file.
+        headwater_lock::Divergence::Generated => {
+            let moved = lock.moved(root);
+            match moved.is_empty() {
+                true => Verdict::Gap(format!(
+                    "{} is not what the sources resolve to, and no source file under it moved. \
+                     What differs is produced by the resolution rather than hashed from a \
+                     source. Run `headwater taxonomy resolve` and commit the result",
+                    headwater_lock::LOCK
+                )),
+                false => Verdict::Gap(format!(
+                    "{} is not what the sources resolve to: {} source{} moved since it was \
+                     written: {}",
+                    headwater_lock::LOCK,
+                    moved.len(),
+                    match moved.len() {
+                        1 => "",
+                        _ => "s",
+                    },
+                    moved.join(", ")
+                )),
+            }
+        }
+        // A gap, and the sentence says why it is not a met. The content agrees,
+        // so the temptation is to call it met — but `taxonomy resolve --check`
+        // exits 1 on this file, and a rule that said met here would leave the
+        // adopter holding the same contradiction in a second place.
+        headwater_lock::Divergence::Form { adoption } => Verdict::Gap(format!(
+            "{} carries the taxonomy its sources resolve to, and is not written in the form \
+             `headwater taxonomy resolve` writes it. Nothing about the sources changed, and \
+             `headwater taxonomy resolve --check` refuses this file. {}",
+            headwater_lock::LOCK,
+            match adoption {
+                true =>
+                    "The `adoption` block is where the two differ. That block is authored, \
+                         so what moved is its form and not the debt it declares: a resolve \
+                         carries every task, owner, expiry and pair through",
+                false =>
+                    "The difference is not inside the `adoption` block. Run `headwater \
+                          taxonomy resolve` and commit the result",
+            }
+        )),
+        // Unreachable from `headwater conformance`, which reads the lock before
+        // any rule runs and refuses a run over one that will not read. The arm
+        // says so rather than assuming it, because a caller that built a
+        // [`Subject`] some other way would reach it.
+        headwater_lock::Divergence::Unreadable(why) => Verdict::Gap(format!(
+            "{} did not read, so nothing here can say whether it is what the sources resolve \
+             to: {why}",
+            headwater_lock::LOCK
         )),
     }
+}
+
+/// Several errors as one sentence, on the terms [`release::diverged`]'s caller
+/// above already takes.
+fn joined<E: ToString>(errors: &[E]) -> String {
+    errors
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>()
+        .join("; ")
 }
 
 /// Every file under the corpus root is classified or accounted for.

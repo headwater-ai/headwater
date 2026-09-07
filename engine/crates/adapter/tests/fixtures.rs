@@ -49,10 +49,14 @@ use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::change::{Change, Unbound, FORMAT};
-use headwater_check::{Cache, Context, Date, Declared, Register, Run, Severity, Shape};
+use headwater_check::{
+    Cache, Context, Coverage, Date, Declared, Grain, Input, Instance, Register, Run, Severity,
+    Shape,
+};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
+use headwater_yaml::json::Json;
 use headwater_yaml::Mapping;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -319,10 +323,58 @@ fn scoped_at(adoption: Option<&Mapping>, scoping: Scoping) -> Ran {
         &mut Cache::disabled(),
     );
     Ran {
-        run,
+        run: with_an_edge_scoped_skip(run, &taken),
         census: taken,
         graph,
     }
+}
+
+/// The reason the injected edge-scoped skip is recorded under.
+///
+/// The wording `crate::dependency` writes when the document at one end of an
+/// edge declares no value for the state facet, with an identifier this fixture
+/// tree does not otherwise carry, so the class is legible as what it is.
+const EDGE_SKIP: &str = "the document at the target end, `FIX-REG-open-questions`, declares no \
+                         value for the state facet, so there is no state to read there";
+
+/// One edge-scoped skipped instance, added to a run before it is recorded.
+///
+/// Injected here for the reason the adoption payload above is injected: the
+/// state does not occur in this fixture tree and the recorded artifacts are
+/// worth nothing without it. An edge-scoped rule that skips has to meet a corpus
+/// that declares the relation and an endpoint that is missing the facet, and
+/// `headwater_check::dependency` over `HW-REG-open-questions` in this
+/// repository's own corpus is the only place it happens.
+///
+/// It is what makes the coverage block's three numbers distinguishable. An
+/// edge-scoped instance is routed to both of its endpoints, so it is one
+/// instance and two routings, and every class of every recorded artifact of this
+/// crate summed to `instances` exactly until this instance existed. A suite
+/// where the true relation and the false one agree on every case is a suite that
+/// holds neither.
+fn with_an_edge_scoped_skip(mut run: Run, taken: &Census) -> Run {
+    let ends: Vec<&str> = taken
+        .rows
+        .iter()
+        .map(|row| row.path.as_str())
+        .take(2)
+        .collect();
+    run.instances.push(Instance::skipped(
+        headwater_check::dependency::RULE,
+        Grain::Edge,
+        ends.iter()
+            .map(|path| Input {
+                path: (*path).to_string(),
+                digest: None,
+            })
+            .collect(),
+        EDGE_SKIP,
+    ));
+    // The runner's own accounting, recomputed over the record this function
+    // extended. The findings are the runner's and are not touched: a skipped
+    // instance reaches none.
+    run.coverage = Coverage::of(taken, &run.instances);
+    run
 }
 
 fn subject(lock: &str) -> Subject<'_> {
@@ -478,17 +530,17 @@ fn every_entry_of_every_loss_set_is_accounted_for() {
 /// The counts rather than the verdict. `is_defective` is false over a format
 /// that audited nothing and over one that audited everything, so a suite that
 /// asserted the verdict alone could not tell the two apart. Five of SARIF's
-/// seven entries name a member of the document and two name nowhere. All four of
-/// Markdown's name nowhere in it, because that artifact is prose. `text` and
-/// `json` declare no loss at all.
+/// seven entries name a member of the document and two name nowhere. All five of
+/// Markdown's name nowhere in it, because that artifact is prose, and so does the
+/// one entry `text` declares. `json` declares no loss at all.
 #[test]
 fn the_audited_and_the_unaudited_are_counted_apart() {
     for ran in [fixture_run(), scoped_run()] {
         for (format, entries, held, unaudited) in [
-            (Format::Text, 0, 0, 0),
+            (Format::Text, 1, 0, 1),
             (Format::Json, 0, 0, 0),
             (Format::Sarif, 7, 5, 2),
-            (Format::Markdown, 4, 0, 4),
+            (Format::Markdown, 5, 0, 5),
         ] {
             let artifact = render(&ran, format);
             let audited = headwater_adapter::census(&ran.run, format, &artifact);
@@ -1126,8 +1178,8 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
 
     let text_report = render(&ran, Format::Text);
     let markdown = render(&ran, Format::Markdown);
-    assert!(text_report.contains("269 check instances"));
-    assert!(markdown.contains("It created 269 check instances, and 67 of them reached no verdict."));
+    assert!(text_report.contains("305 check instances"));
+    assert!(markdown.contains("It created 305 check instances, and 71 of them reached no verdict."));
     // The report is laid out at a width, so a long reason arrives over more
     // than one line. The class is a run of words either way.
     let flat = flowed(&text_report);
@@ -1177,7 +1229,7 @@ fn a_path_the_census_never_walked_is_named_and_not_counted() {
         )],
     );
     assert_eq!(outside.unaccounted, [stray]);
-    let block = parse(&headwater_adapter::json::coverage(&outside).render_pretty());
+    let block = parse(&headwater_adapter::json::coverage(&outside, &[]).render_pretty());
     let named: Vec<String> = member(&block, "unaccounted")
         .expect("the unaccounted paths")
         .as_seq()
@@ -1208,8 +1260,8 @@ fn a_path_the_census_never_walked_is_named_and_not_counted() {
     );
     assert!(clean.unaccounted.is_empty());
     assert_ne!(
-        headwater_adapter::json::coverage(&clean).render_pretty(),
-        headwater_adapter::json::coverage(&outside).render_pretty()
+        headwater_adapter::json::coverage(&clean, &[]).render_pretty(),
+        headwater_adapter::json::coverage(&outside, &[]).render_pretty()
     );
 
     // The run's own block is not the empty one, and it names the store rather
@@ -1270,7 +1322,7 @@ fn a_run_that_skipped_nothing_is_not_a_run_that_reports_no_skips() {
     let ran = fixture_run();
     let nothing = headwater_check::Coverage::of(&ran.census, &[]);
     assert_eq!(nothing.skipped(), 0);
-    let block = parse(&headwater_adapter::json::coverage(&nothing).render_pretty());
+    let block = parse(&headwater_adapter::json::coverage(&nothing, &[]).render_pretty());
     assert_eq!(count(&block, "skipped"), 0);
     assert_eq!(
         member(&block, "skips")
@@ -1280,16 +1332,18 @@ fn a_run_that_skipped_nothing_is_not_a_run_that_reports_no_skips() {
             .len(),
         0
     );
-    let skipping = parse(&headwater_adapter::json::coverage(&ran.run.coverage).render_pretty());
+    let skipping = parse(
+        &headwater_adapter::json::coverage(&ran.run.coverage, &ran.run.instances).render_pretty(),
+    );
     assert_ne!(
-        headwater_adapter::json::coverage(&nothing).render_pretty(),
-        headwater_adapter::json::coverage(&ran.run.coverage).render_pretty(),
+        headwater_adapter::json::coverage(&nothing, &[]).render_pretty(),
+        headwater_adapter::json::coverage(&ran.run.coverage, &ran.run.instances).render_pretty(),
         "a run that skipped nothing and a run that skipped 66 write one block"
     );
     assert!(count(&skipping, "skipped") > 0);
     // And the shape version is what dates the member, so a reader of a document
     // that carries no `skipped` knows which of the two it is holding.
-    assert_eq!(headwater_adapter::json::VERSION, "1.2");
+    assert_eq!(headwater_adapter::json::VERSION, "1.3");
 }
 
 /// A change that named nothing is not a full-corpus run, in any of the four.
@@ -1945,4 +1999,605 @@ fn the_members_a_carrier_names_are_the_members_the_artifact_writes() {
     // Two entries over the full-corpus run and the scoped one, minus the change
     // entry that a full-corpus run does not write.
     assert_eq!(checked, 3);
+}
+
+/// The `read set` heading, which is where every artifact's finding region ends
+/// in the text report.
+const READ_SET: &str = "read set";
+
+/// One line with its escape sequences removed.
+fn uncolored(line: &str) -> String {
+    let mut out = String::new();
+    let mut rest = line;
+    while let Some(at) = rest.find('\u{1b}') {
+        out.push_str(&rest[..at]);
+        rest = match rest[at..].find('m') {
+            Some(end) => &rest[at + end + 1..],
+            None => "",
+        };
+    }
+    out.push_str(rest);
+    out
+}
+
+/// The text report as a person at a terminal reads it: colored.
+///
+/// `headwater check` picks `Ansi` for that format on a terminal and hands those
+/// bytes to the census, so this is the rendering the audit meets on a real
+/// desk. No other caller of this suite renders it.
+fn painted(ran: &Ran, width: usize) -> String {
+    let lock = lock_digest();
+    headwater_adapter::render_at(
+        &ran.run,
+        &ran.census,
+        &ran.graph,
+        &subject(&lock),
+        Format::Text,
+        width,
+        headwater_check::paint::ColorMode::Ansi,
+    )
+}
+
+/// Every span of an artifact that carries one finding, as a half-open range of
+/// line numbers.
+///
+/// The suite cuts the artifact for itself rather than calling the reader under
+/// test, because a test that cut with the instrument it audits would report that
+/// the instrument agrees with itself.
+fn spans(format: Format, lines: &[&str]) -> Vec<(usize, usize)> {
+    match format {
+        Format::Sarif | Format::Json => {
+            let (key, outer) = match format {
+                Format::Sarif => ("\"results\": [", "      "),
+                _ => ("\"findings\": [", "  "),
+            };
+            let indent = format!("{outer}  ");
+            let open = lines
+                .iter()
+                .position(|line| line.trim() == key)
+                .expect("the finding array opens");
+            let close = (open + 1..lines.len())
+                .find(|line| {
+                    lines[*line] == format!("{outer}]") || lines[*line] == format!("{outer}],")
+                })
+                .expect("the finding array closes");
+            let mut found = Vec::new();
+            let mut at = None;
+            for (line, text) in lines.iter().enumerate().take(close).skip(open + 1) {
+                if *text == format!("{indent}{{") {
+                    at = Some(line);
+                }
+                if *text == format!("{indent}}}") || *text == format!("{indent}}},") {
+                    found.push((at.expect("a record opened"), line + 1));
+                    at = None;
+                }
+            }
+            found
+        }
+        // A row of either table. The two header rows name `Where` in the column
+        // a finding names its path in, and a separator row names none.
+        Format::Markdown => lines
+            .iter()
+            .enumerate()
+            .filter(|(_, line)| line.starts_with('|') && !line.starts_with("|---"))
+            .filter(|(_, line)| line.split('|').nth(2).map(str::trim) != Some("Where"))
+            .map(|(line, _)| (line, line + 1))
+            .collect(),
+        // Every block of the region between the tally and the read set, each one
+        // opening on a line indented exactly two.
+        Format::Text => {
+            // Uncolored copies, because the two headings this cut is bounded by
+            // are painted under `Ansi` and the cut has to land in the same place
+            // under both renderings.
+            let bare: Vec<String> = lines.iter().map(|line| uncolored(line)).collect();
+            // The tally line itself, `  <count> findings`, and not the first
+            // line of the report that happens to end in that word. The block it
+            // opens is a summary rather than a record, and a cut that swept it
+            // in would report a deletion the census is right to pass over.
+            let tally = bare
+                .iter()
+                .position(|line| {
+                    let mut token = line.split_whitespace();
+                    matches!(
+                        (token.next(), token.next(), token.next()),
+                        (Some(count), Some("findings"), None)
+                            if count.chars().all(|char| char.is_ascii_digit())
+                    )
+                })
+                .expect("the findings tally");
+            let end = bare
+                .iter()
+                .position(|line| line.trim() == READ_SET)
+                .expect("the read-set heading");
+            let opens: Vec<usize> = (tally + 1..end)
+                .filter(|line| lines[*line].starts_with("  ") && !lines[*line].starts_with("   "))
+                .collect();
+            opens
+                .iter()
+                .enumerate()
+                .map(|(at, open)| (*open, *opens.get(at + 1).unwrap_or(&end)))
+                .collect()
+        }
+    }
+}
+
+/// One artifact with the lines of the named spans removed.
+fn without(artifact: &str, cut: &[(usize, usize)]) -> String {
+    let lines: Vec<&str> = artifact.lines().collect();
+    let kept: Vec<&str> = lines
+        .iter()
+        .enumerate()
+        .filter(|(line, _)| !cut.iter().any(|(from, to)| line >= from && line < to))
+        .map(|(_, text)| *text)
+        .collect();
+    kept.join("\n") + "\n"
+}
+
+/// One `(rule, path)` pair that at least two live findings of the run share.
+///
+/// Live, because the text report writes a block for a live finding alone, and a
+/// pair this suite drops has to be one every format wrote twice. The recorded
+/// corpus supplies four `obligation.disposition.not_one` findings on the
+/// taxonomy fixture, and this reads the pair off the run rather than naming it.
+fn a_repeated_pair(ran: &Ran) -> (&'static str, String) {
+    let live: Vec<(&'static str, String)> = reported(&ran.run)
+        .iter()
+        .filter(|entry| entry.is_live())
+        .map(|entry| (entry.finding.rule, entry.finding.path.clone()))
+        .collect();
+    live.iter()
+        .find(|pair| live.iter().filter(|other| other == pair).count() > 1)
+        .expect("two live findings share a rule and a path")
+        .clone()
+}
+
+/// **The decisive case.** One dropped record is one unaccounted finding, in
+/// every format.
+///
+/// The record dropped is one of a pair another finding of the same run repeats,
+/// so a reader that asked whether the artifact mentions the rule and the path
+/// anywhere passes it, and so does one that asked whether some record names
+/// them. Measured on the substring reading this replaced: `unaccounted == 0` and
+/// `carried == findings` in all four formats, which is a green census over an
+/// artifact that lost a finding.
+#[test]
+fn one_dropped_record_is_one_unaccounted_finding() {
+    let ran = fixture_run();
+    let (rule, path) = a_repeated_pair(&ran);
+    for format in Format::ALL {
+        let artifact = render(&ran, format);
+        let lines: Vec<&str> = artifact.lines().collect();
+        let cut = spans(format, &lines)
+            .into_iter()
+            .find(|(from, to)| {
+                let text = lines[*from..*to].join("\n");
+                text.contains(rule) && text.contains(path.as_str())
+            })
+            .expect("a record naming the repeated pair");
+        let dropped = without(&artifact, &[cut]);
+        assert_ne!(dropped, artifact, "{}: a record was removed", format.name());
+
+        let full = headwater_adapter::census(&ran.run, format, &artifact);
+        let after = headwater_adapter::census(&ran.run, format, &dropped);
+        assert_eq!(
+            (full.carried, full.unaccounted.len()),
+            (full.findings, 0),
+            "{}: the whole artifact",
+            format.name()
+        );
+        assert_eq!(
+            (after.carried, after.unaccounted.len()),
+            (after.findings - 1, 1),
+            "{}: one record dropped",
+            format.name()
+        );
+        assert!(after.is_defective(), "{}", format.name());
+    }
+}
+
+/// An artifact emptied of its finding records carries none of them, in every
+/// format.
+///
+/// Relative rather than literal: the recorded corpus grows, and a count written
+/// here would be a second copy of it. Measured on the substring reading this
+/// replaced, over the real corpus of this repository: 68 of 68 carried and exit
+/// 0 in `json`, `sarif` and `text`, over an artifact holding no finding at all.
+#[test]
+fn an_artifact_emptied_of_its_records_carries_no_finding() {
+    for ran in [fixture_run(), scoped_run()] {
+        for format in Format::ALL {
+            let artifact = render(&ran, format);
+            let lines: Vec<&str> = artifact.lines().collect();
+            let emptied = without(&artifact, &spans(format, &lines));
+            let after = headwater_adapter::census(&ran.run, format, &emptied);
+            assert!(after.findings > 0, "{}", format.name());
+            assert_eq!(after.carried, 0, "{}: {:?}", format.name(), after.carried);
+            assert_eq!(after.unaccounted.len(), after.findings, "{}", format.name());
+            assert!(after.is_defective(), "{}", format.name());
+        }
+    }
+}
+
+/// **The colored report is read the way the piped one is.**
+///
+/// The case that was missing, and the reason a regression reached a reviewer.
+/// `headwater check` renders `Ansi` for the text report when stdout is a
+/// terminal and censuses those bytes, and every automated eye on this
+/// repository — CI, `cargo test`, the commit gate and the `Stop` hook — captures
+/// stdout and therefore gets `Plain`. So a reader keyed on anything color
+/// removes is green everywhere a machine looks and red everywhere a person
+/// does. `paint::severity_word` writes a glyph under `Plain` and none under
+/// `Ansi`, and keying the block cut on that glyph exited 1 on a real terminal
+/// with all 68 findings of this repository reported as dropped.
+///
+/// Both renderings of one run, at three widths, because a fold moves the
+/// severity word off the line the location opens.
+#[test]
+fn the_colored_report_is_read_the_way_the_piped_one_is() {
+    for ran in [fixture_run(), scoped_run()] {
+        let (rule, path) = a_repeated_pair(&ran);
+        for width in [80, 100, 120] {
+            let artifact = painted(&ran, width);
+            assert!(artifact.contains('\u{1b}'), "the report is colored");
+            let full = headwater_adapter::census(&ran.run, Format::Text, &artifact);
+            assert!(
+                !full.is_defective(),
+                "the colored report at {width}: {:?}",
+                full.unaccounted
+            );
+            assert_eq!((full.carried, full.findings), (full.findings, full.carried));
+            assert!(full.findings > 0);
+
+            // And it still fails for the right reason, so this is not a case
+            // that passes by reading nothing.
+            let lines: Vec<&str> = artifact.lines().collect();
+            let cut = spans(Format::Text, &lines)
+                .into_iter()
+                .find(|(from, to)| {
+                    let text = uncolored(&lines[*from..*to].join("\n"));
+                    text.contains(rule) && text.contains(path.as_str())
+                })
+                .expect("a record naming the repeated pair");
+            let after =
+                headwater_adapter::census(&ran.run, Format::Text, &without(&artifact, &[cut]));
+            assert_eq!(
+                (after.carried, after.unaccounted.len()),
+                (after.findings - 1, 1),
+                "the colored report at {width}, one record dropped"
+            );
+        }
+    }
+}
+
+/// The reason the three cases below skip under. One string, so the class is the
+/// same class in every run they build and the routing is what differs.
+const ROUTED_SKIP: &str = "this fixture skipped an instance so that its routing could be read";
+
+/// One run of the fixture tree with one more skipped instance, over the
+/// documents named.
+///
+/// A clone of a run rather than a second walk, and a second corpus least of
+/// all. Two corpora that differ by one line differ in the digest of that file,
+/// and every artifact of this engine carries the read set, so a pair of runs
+/// built that way differs whatever the coverage block says. That pair passes
+/// against an engine that carries no routing at all, which is what a
+/// corpus-shaped version of this case did on the tree that filed #235: markdown
+/// was byte-identical and text, JSON and SARIF differed on two lines each, all
+/// of them content digests, with the `coverage` and `findings` values comparing
+/// equal. Cloning one run holds the census, the read set, the findings and every
+/// other skip to the same values rather than to equal ones, so the routing is
+/// the only thing left that can move a byte.
+fn also_skipping(ran: &Ran, grain: Grain, over: &[&str]) -> Run {
+    let mut run = ran.run.clone();
+    run.instances.push(Instance::skipped(
+        "link.fragment.unresolved",
+        grain,
+        over.iter()
+            .map(|path| Input {
+                path: (*path).to_string(),
+                digest: None,
+            })
+            .collect(),
+        ROUTED_SKIP,
+    ));
+    // The runner's own accounting, over the record this case just extended.
+    // Recomputed rather than edited, so the two arms of the routing are decided
+    // by `Coverage::of` here exactly as they are on a real run.
+    run.coverage = Coverage::of(&ran.census, &run.instances);
+    run
+}
+
+/// Every entry of `coverage.skips`, as the emitter wrote them.
+fn skip_classes(run: &Run) -> Vec<Vec<(String, Json)>> {
+    let Json::Object(block) = headwater_adapter::json::coverage(&run.coverage, &run.instances)
+    else {
+        panic!("the coverage block is an object")
+    };
+    let (_, skips) = block
+        .iter()
+        .find(|(key, _)| key == "skips")
+        .expect("the skip classes");
+    let Json::Array(classes) = skips else {
+        panic!("the skip classes are an array")
+    };
+    classes
+        .iter()
+        .map(|class| match class {
+            Json::Object(members) => members.clone(),
+            _ => panic!("a class is an object"),
+        })
+        .collect()
+}
+
+fn text_of(members: &[(String, Json)], key: &str) -> Option<String> {
+    members
+        .iter()
+        .find(|(name, _)| name == key)
+        .map(|(_, value)| match value {
+            Json::String(text) => text.clone(),
+            Json::Raw(number) => number.clone(),
+            _ => panic!("{key} is a scalar"),
+        })
+}
+
+fn count_of(members: &[(String, Json)], key: &str) -> usize {
+    text_of(members, key)
+        .unwrap_or_else(|| panic!("no `{key}`"))
+        .parse()
+        .expect("a number")
+}
+
+/// The one entry of `coverage.skips` whose reason is the one named.
+///
+/// Selected out of the parsed structure rather than cut out of the rendered
+/// bytes. The first version of this helper split the text on the reason and then
+/// on the next `"reason"` key, and the class this suite pushes is always the
+/// last one, so the cut ran to the end of the coverage object and carried
+/// `unaccounted` with it. Benign while nothing in that member names a document,
+/// and a red case over correct output the day one does.
+fn class_of(run: &Run, reason: &str) -> Vec<(String, Json)> {
+    skip_classes(run)
+        .into_iter()
+        .find(|members| text_of(members, "reason").as_deref() == Some(reason))
+        .unwrap_or_else(|| panic!("no class reads `{reason}`"))
+}
+
+/// The same entry, as the bytes a reader of the artifact sees.
+fn routed_class(run: &Run) -> String {
+    Json::Object(class_of(run, ROUTED_SKIP)).render_pretty()
+}
+
+/// The routings of one class, summed over the rows it names.
+fn routings_of(members: &[(String, Json)]) -> usize {
+    let Some((_, Json::Array(documents))) = members.iter().find(|(key, _)| key == "documents")
+    else {
+        panic!("the routed documents")
+    };
+    documents
+        .iter()
+        .map(|row| match row {
+            Json::Object(fields) => count_of(fields, "routings"),
+            _ => panic!("a row is an object"),
+        })
+        .sum()
+}
+
+fn render_run(run: &Run, ran: &Ran, format: Format) -> String {
+    let lock = lock_digest();
+    headwater_adapter::render(run, &ran.census, &ran.graph, &subject(&lock), format)
+}
+
+/// The first two documents of the census, in walk order.
+///
+/// Read off the census rather than written here, for the reason every other
+/// path in this file is: a case that pinned a name stops describing the tree the
+/// day somebody renames a document.
+fn two_documents(ran: &Ran) -> (String, String) {
+    let mut paths = ran.census.rows.iter().map(|row| row.path.clone());
+    (
+        paths.next().expect("a row"),
+        paths.next().expect("a second"),
+    )
+}
+
+/// Two runs that skipped the same count under the same class over different
+/// documents write different artifacts.
+///
+/// The Done-when of [#235](https://github.com/headwater-ai/headwater/issues/235),
+/// and the case the coverage block failed before `1.3`. Both runs skip one
+/// instance of one rule under one reason. Everything else is the same value:
+/// the same census, the same read set, the same findings, the same class counts,
+/// the same instance total. The document each one fell on is the whole
+/// difference, and before `1.3` it reached no format, so the two runs wrote one
+/// artifact in all four.
+#[test]
+fn two_runs_that_skipped_over_different_documents_write_different_artifacts() {
+    let ran = fixture_run();
+    let (here, there) = two_documents(&ran);
+    let over_here = also_skipping(&ran, Grain::Document, &[&here]);
+    let over_there = also_skipping(&ran, Grain::Document, &[&there]);
+
+    // The two runs are the same run in every account that is not the routing.
+    assert_eq!(over_here.coverage.instances, over_there.coverage.instances);
+    assert_eq!(over_here.coverage.skipped(), over_there.coverage.skipped());
+    assert_eq!(over_here.coverage.skips(), over_there.coverage.skips());
+    assert_eq!(over_here.findings.len(), over_there.findings.len());
+    assert_eq!(
+        over_here.read_set.inputs.len(),
+        over_there.read_set.inputs.len()
+    );
+
+    // The content, before the artifacts. A case that asserted only that two
+    // strings differ would pass on a digest, which is exactly how the defect
+    // hid.
+    let block_here = routed_class(&over_here);
+    let block_there = routed_class(&over_there);
+    assert_ne!(block_here, block_there);
+    assert!(
+        block_here.contains(&here) && !block_here.contains(&there),
+        "the coverage block names the document the skip fell on and no other:\n{block_here}"
+    );
+    assert!(
+        block_there.contains(&there) && !block_there.contains(&here),
+        "and the same in the other direction:\n{block_there}"
+    );
+
+    // The two machine-readable formats carry it. The two prose formats declare
+    // the loss instead, which is why they are asserted equal here rather than
+    // left unsaid: a later change that carries the routing into one of them has
+    // to come back and say so.
+    for format in [Format::Json, Format::Sarif] {
+        assert_ne!(
+            render_run(&over_here, &ran, format),
+            render_run(&over_there, &ran, format),
+            "{}",
+            format.name()
+        );
+    }
+    for format in [Format::Text, Format::Markdown] {
+        assert_eq!(
+            render_run(&over_here, &ran, format),
+            render_run(&over_there, &ran, format),
+            "{}",
+            format.name()
+        );
+        assert!(
+            format
+                .loss()
+                .iter()
+                .any(|entry| entry.field.contains("routing")),
+            "{} carries no routing and declares no loss for it",
+            format.name()
+        );
+    }
+}
+
+/// The mirror: two runs that skipped the same count over the *same* document
+/// write one artifact.
+///
+/// So the new member is a function of the routing and not of the order two runs
+/// were taken in, and the case above is reporting a difference rather than
+/// noise.
+#[test]
+fn two_runs_that_skipped_over_one_document_write_one_artifact() {
+    let ran = fixture_run();
+    let (here, _) = two_documents(&ran);
+    let once = also_skipping(&ran, Grain::Document, &[&here]);
+    let again = also_skipping(&ran, Grain::Document, &[&here]);
+    for format in Format::ALL {
+        assert_eq!(
+            render_run(&once, &ran, format),
+            render_run(&again, &ran, format),
+            "{}",
+            format.name()
+        );
+    }
+}
+
+/// A skip routed to no document says so, and is not the same artifact as a skip
+/// routed to one.
+///
+/// The second arm, and the one a document-keyed member alone would leave out. A
+/// corpus-scoped instance is routed to no document at all, so it reaches
+/// `documents` in neither run, and a reader of that member alone cannot tell
+/// "this class fell on no census row" from "this producer does not report where
+/// a skip fell". `unrouted` is what separates them.
+#[test]
+fn a_skip_routed_to_no_document_is_reported_as_routed_to_no_document() {
+    let ran = fixture_run();
+    let (here, _) = two_documents(&ran);
+    let routed = also_skipping(&ran, Grain::Document, &[&here]);
+    let unrouted = also_skipping(&ran, Grain::Corpus, &[&here]);
+
+    let routed_block = routed_class(&routed);
+    let unrouted_block = routed_class(&unrouted);
+
+    assert!(
+        routed_block.contains(&here) && routed_block.contains("\"unrouted\": 0"),
+        "a routed skip names its document and counts no unrouted instance:\n{routed_block}"
+    );
+    assert!(
+        !unrouted_block.contains(&here) && unrouted_block.contains("\"unrouted\": 1"),
+        "and a corpus-scoped one names no document and says so:\n{unrouted_block}"
+    );
+    for format in [Format::Json, Format::Sarif] {
+        assert_ne!(
+            render_run(&routed, &ran, format),
+            render_run(&unrouted, &ran, format),
+            "{}",
+            format.name()
+        );
+    }
+}
+
+/// The three numbers of a skip class are two populations, and this tree is what
+/// tells them apart.
+///
+/// `instances` and `unrouted` count instances once each. `routings` counts
+/// routings. So the sum a reader reaches for is wrong in one direction: the
+/// routings of a class plus its `unrouted` are **at least** its `instances`, and
+/// larger by one for every extra endpoint a routed instance was routed to.
+///
+/// The excess is asserted rather than tolerated, and it is asserted to be
+/// non-zero. Every recorded artifact of this crate closed exactly until
+/// [`with_an_edge_scoped_skip`] existed, so a case that asserted equality here
+/// would have passed on this suite, on the check crate's fixtures, and on this
+/// repository's own corpus for every class but one.
+#[test]
+fn the_routings_of_a_class_and_its_unrouted_exceed_its_instances_by_the_extra_endpoints() {
+    for ran in [fixture_run(), scoped_run(), named_nothing_run()] {
+        let walked: BTreeSet<&str> = ran
+            .census
+            .rows
+            .iter()
+            .map(|row| row.path.as_str())
+            .collect();
+        // The oracle, off the instance record rather than off the artifact: how
+        // many census rows each skipped instance was routed to.
+        let mut extra = 0;
+        let mut skipped = 0;
+        for instance in &ran.run.instances {
+            if instance.ran() {
+                continue;
+            }
+            skipped += 1;
+            let rows = match instance.grain.routes() {
+                true => instance
+                    .paths()
+                    .iter()
+                    .filter(|path| walked.contains(*path))
+                    .count(),
+                false => 0,
+            };
+            extra += rows.saturating_sub(1);
+        }
+        assert_eq!(skipped, ran.run.coverage.skipped());
+
+        let mut stated = 0;
+        let mut excess = 0;
+        for class in skip_classes(&ran.run) {
+            let instances = count_of(&class, "instances");
+            let unrouted = count_of(&class, "unrouted");
+            let routings = routings_of(&class);
+            assert!(
+                routings + unrouted >= instances,
+                "{}: {routings} routings and {unrouted} unrouted under {instances} instances",
+                text_of(&class, "reason").expect("a reason")
+            );
+            stated += instances;
+            excess += routings + unrouted - instances;
+        }
+        assert_eq!(
+            stated, skipped,
+            "the classes partition the skipped instances"
+        );
+        assert_eq!(
+            excess, extra,
+            "the excess is the extra endpoints and nothing else"
+        );
+        assert!(
+            excess > 0,
+            "this tree carries no edge-scoped skip, so a case asserting equality here would pass"
+        );
+    }
 }

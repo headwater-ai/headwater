@@ -123,8 +123,12 @@ jobs:
           key: cargo-${{ runner.os }}-engine-${{ hashFiles('engine/Cargo.lock') }}
           restore-keys: cargo-${{ runner.os }}-engine-
       - name: The toolchain this build needs
-        # Rust 1.85 or later. `saphyr-parser` is on edition 2024, and an older
-        # cargo reports `feature edition2024 is required` and nothing else.
+        # Rust 1.90 or later, which `[workspace.package]` in `engine/Cargo.toml`
+        # declares and `tools/engine-readme-fixtures.sh` holds against the lock.
+        # This step installs current stable, which is above that floor, so the
+        # floor is never exercised here — the container commands in
+        # `engine/README.md` are the only place it is, and they are the place it
+        # broke unnoticed for twelve days.
         run: |
           rustup update --no-self-update stable
           rustup default stable
@@ -375,6 +379,43 @@ jobs:
             printf '%s\n' "$missing" >&2
             exit 1
           fi
+      - name: Every rendered page carries its own canonical URL
+        # This blocks, and it is a step of its own for the same reason the step
+        # above is: this file runs one step per defect, and the two defects are
+        # independent. The pointer to the corpus descriptor dies when
+        # `theme.custom_dir` is dropped. The canonical URL dies when `site_url`
+        # is dropped from `mkdocs.yml`, and `mkdocs build --strict` exits 0 with
+        # no warning while every one of the 302 pages loses the element.
+        # HW-DR-0048 recorded that absence and #556 closed it.
+        #
+        # It is a tool rather than two more lines of `grep` because the
+        # assertion a `grep` can make is the weaker half. A page whose canonical
+        # names some other page carries the string `rel="canonical"` and passes
+        # a presence test, and a wrong canonical is worse than none: it hands a
+        # crawler a confident wrong answer. So the tool compares each page's
+        # canonical against the URL that page is served at, which is what
+        # catches a wrong origin, a dropped trailing slash and a typo in
+        # `site_url`. That is a parser and a URL join rather than a pattern, and
+        # a tool can be held by a fixtures suite where an inline `grep` cannot.
+        #
+        # It reads the generated half and never the assembled root. None of the
+        # eight hand-built pages carries a canonical URL, so the presence
+        # assertion over the assembled root would be red on correct input from
+        # its first run.
+        #
+        # The population is walked from the built directory, `404.html` is
+        # exempt for the structural reason the tool's header states, and an
+        # empty population exits 2 rather than passing. The step below provokes
+        # each of those.
+        run: python3 tools/check-site-canonical.py .headwater/site-build
+      - name: The canonical URL checker refuses what it claims to refuse
+        # Spec 12 refuses a check that ships with no failing fixture, and
+        # `tools/site-fragments-fixtures.sh` is the shape this follows. Two of
+        # its cases run over a scratch copy of the real build: one deletes a
+        # page's canonical element, the other points it at another URL, and the
+        # second is the one a presence grep would pass. It writes only under a
+        # temporary directory.
+        run: sh tools/site-canonical-fixtures.sh
       - name: The crawler files are what the committed pages say
         # `tools/refresh-crawler-files.sh` derives `site/llms.txt`,
         # `site/robots.txt` and `site/sitemap.xml` from the `<title>`, the
@@ -619,6 +660,63 @@ jobs:
         # refuses everything is as useless as one that refuses nothing. It
         # writes only under a temporary directory.
         run: sh tools/site-fragments-fixtures.sh
+      - name: Every served page loads in a browser with an empty console
+        # THE READER THAT RUNS THE PAGE RATHER THAN PARSING IT
+        #
+        #   Three steps above this one walk the same directory and none of them
+        #   runs a line of JavaScript. #532 is what lived in that gap: on 13 of
+        #   the served pages the theme's own `js/base.js` threw twice on load,
+        #   every specification part a visitor reads first was affected, and
+        #   `mkdocs build --strict`, `check-site-fragments.py` and the assembly
+        #   check all reported green for as long as it stood.
+        #
+        #   This serves the assembled directory on a loopback port and loads
+        #   every page in headless Chrome. It asserts three things per page and
+        #   not one, because an absence-of-errors check goes quiet the moment
+        #   its own mechanism breaks: HTTP 200, a probe it injects at serve
+        #   time having actually run, and an empty console with `keyCodes`
+        #   defined on the pages that load the theme script. The tool's header
+        #   states why each bar is there, and the 404s that first read as
+        #   passes are recorded in it.
+        #
+        # THE SKIP, AND WHY IT IS NOISY
+        #
+        #   Exit 3 means no browser was found, so nothing was loaded. It is a
+        #   separate status precisely so that a caller cannot read it as a
+        #   pass, and this step turns it into a workflow annotation rather than
+        #   a silent green tick. `.claude/hooks/fixtures-live.sh` takes the
+        #   same posture toward a harness it cannot install: it skips what is
+        #   not there and says so, rather than failing or going quiet.
+        #
+        #   The verb this repository ships for reaching a model is deliberately
+        #   not named on this line. `.claude/skills/fixtures.sh` asserts that
+        #   no CI job calls it by grepping this file for its name, and that
+        #   grep does not distinguish a comment from a `run:` step — measured,
+        #   by writing one here and watching the job fail.
+        run: |
+          status=0
+          python3 tools/check-site-console.py || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Browser console check skipped::No Chrome or Chromium on this runner, so no page was loaded and this step checked nothing. Install one, or set HEADWATER_CHROME."
+            exit 0
+          fi
+          exit "$status"
+      - name: The console checker refuses what it claims to refuse
+        # Spec 12 refuses a check that ships with no failing fixture, and the
+        # reason carries double weight for a check whose verdict is an absence.
+        # The suite injects a page that throws, and points the checker at
+        # `/bin/true` — which exits 0 and prints nothing, byte for byte what a
+        # clean run looks like — to prove the probe is what tells those apart.
+        # It writes only under a temporary directory, and it skips with exit 3
+        # on a host with no browser for the reason the step above does.
+        run: |
+          status=0
+          sh tools/site-console-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Browser console fixtures skipped::No Chrome or Chromium on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
       - name: The identifier claim store conflicts on a collision and merges on a coincidence
         # The store answers "is this number taken" through git rather than
         # through a rule, so the two outcomes it rests on are properties of
@@ -646,6 +744,123 @@ jobs:
         # planted defect so that an empty offender list means something. It
         # builds nothing: its one cargo call is `metadata --no-deps --locked`.
         run: sh tools/build-declaration-fixtures.sh
+      - name: The first screen resolves, and says one true thing about its own tag
+        # Two properties of the root `README.md`, and NOT its prose. Nothing
+        # else here reads that file at all: `docs/` is the corpus root, so no
+        # engine rule sees it; `docs_dir: docs`, so `mkdocs build --strict`
+        # never sees it; and every `README` named in a workflow, a hook or
+        # another script under `tools/` is `engine/README.md` or
+        # `docs/interfaces/README.md`.
+        #
+        # What this step holds is the referential integrity of that page —
+        # every relative link and every fragment resolving — together with four
+        # claims the page makes about itself: the opening image at 1280 by 640
+        # under 1 MB, every GitHub URL naming the owner and repository the
+        # remote names, the exclusive or below, and no count of milestones.
+        #
+        # What it does NOT hold is the prose. A British spelling, a
+        # contraction, a hard-wrapped paragraph, a retired term and `headwater`
+        # lower case in running prose all pass, because the language regime
+        # binds kinds under the corpus root and this file is not a governed
+        # document. A second copy of a rule living in a script is what this
+        # repository refuses everywhere else, so this suite reimplements none
+        # of them.
+        #
+        # The case it exists for is the exclusive or between the pinned
+        # `git checkout` in the paste block and the sentence above the fence
+        # that says the tag is not cut. Cutting the tag without deleting that
+        # sentence leaves the first screen telling a stranger to omit a line
+        # that now works, and every other gate here stays green.
+        #
+        # It asks the configured remote whether the tag resolves, which is one
+        # `git ls-remote` and the only network any fixture suite performs. A
+        # remote it cannot read is reported red rather than skipped, because
+        # the exclusive or is then undecided and an undecided invariant is not
+        # a passing one. Every scratch arm stubs that remote with a local bare
+        # repository instead. It builds no engine and writes only under a
+        # temporary directory.
+        run: sh tools/readme-fixtures.sh
+      - name: The library index accounts for every bundle, and the vendored copy has not drifted
+        # Two properties of `docs/taxonomies/README.md`, and NOT its prose.
+        #
+        # The first is set equality. The library carried six bundles and the
+        # admission table listed five, and the missing one,
+        # `evidence-and-obligation`, is required by two of the entries the
+        # table does admit and selected by the `headwater/starter` recipe. So
+        # a composer reading the index was made to select a bundle the index
+        # gave no name, no link and no reason for. Nothing reported it: the
+        # lock names no `README.md`, no rule of the engine reads a table, and
+        # `taxonomy resolve --check` and `headwater check --strict` both exit
+        # 0 over the omission. This step reads the bundles out of
+        # `contents.bundles` and the accounted-for entries out of the section,
+        # and compares the two sets in both directions. It writes down no
+        # count of either, because the ordinal narrative the same section used
+        # to carry was a count in disguise and it went stale the same way.
+        #
+        # The second is that `docs/taxonomies/README.md` and
+        # `packages/headwater-standard/bundles/README.md` are byte-identical,
+        # along with every doctrine and template the anatomy table declares as
+        # carried. Measured on 2026-09-07: one line appended to either copy
+        # alone leaves `taxonomy resolve --check` and `headwater check
+        # --strict` at exit 0 with a byte-identical report, because the lock
+        # names neither file and the release digest is compared only at
+        # `vendor` time. The authored page and the page a consumer receives
+        # could disagree indefinitely with every other gate green.
+        #
+        # It holds no reading of the seven admission criteria, and it holds
+        # none of the prose. That page classifies to no kind, so no language
+        # rule reads it, and a second copy of a rule living in a script is
+        # what this repository refuses everywhere else.
+        #
+        # It runs `awk`, `sed` and `cmp`, builds no engine, opens no socket,
+        # and writes only under a temporary directory.
+        run: sh tools/library-index-fixtures.sh
+      - name: The command an outsider runs still runs
+        # `engine/README.md` carries two `docker run` recipes, and on 2026-09-07
+        # both exited 101 before compiling a line: `ordered-float 5.5.0` had
+        # entered `engine/Cargo.lock` on 2026-08-26 declaring `rust-version =
+        # "1.90"`, and both recipes pinned a 1.85 image. They were dead for
+        # twelve days and a hundred and eleven commits, this repository went
+        # public with them dead, and a change on the day it went public edited
+        # both of them without running either.
+        #
+        # Nothing could have noticed. The floor was prose in a Markdown file and
+        # a string in an image tag, and no crate of this workspace declared
+        # `rust-version`, so a routine `cargo update` could raise the real floor
+        # above the pinned image with every gate here green.
+        #
+        # The case this step exists for compares the highest `rust-version`
+        # across `cargo metadata --locked` against the tag those recipes pin. It
+        # runs no container and builds nothing, which is the whole reason it can
+        # be a required step: the container itself is minutes of cold compile
+        # for a floor this reading establishes in milliseconds.
+        #
+        # It also holds the four things those recipes explain at length and
+        # nothing else reads — the `--user` on the test half and root on the
+        # other, the `git rev-parse --show-toplevel` mount, the two blocks that
+        # a blank line alone would render as one `<pre>`, and the absence of
+        # `-D warnings` — and it holds the nine files that state the floor to
+        # one another. `--locked` on those recipes belongs to
+        # `tools/build-declaration-fixtures.sh` and is not read twice here.
+        run: sh tools/engine-readme-fixtures.sh
+      - name: The contributor loop still lists what this job runs
+        # `DEVELOPING.md` is the contributor loop, and one section of it is a
+        # copy of this file: the list of what CI runs. A hand-kept list of that
+        # kind goes stale with no exit status moving, and the measurement is on
+        # record — the best hand-written one this repository produced named 8
+        # script invocations on 2026-09-06, on a day this workflow ran 15.
+        #
+        # This step derives the population from every `run:` value of this file
+        # — scripts that are executed, cargo commands, and engine verbs — and
+        # compares it against the page in both directions, so a gate added here
+        # without a line on the page fails the day it lands, and a gate the page
+        # names that no job runs fails too. It is the second `run:` walk under
+        # `tools/`; the header of the script says why it is not shared with
+        # `tools/build-declaration-fixtures.sh`.
+        #
+        # This step is therefore a member of its own population, and the page
+        # names it. It builds nothing, runs no container and opens no socket.
+        run: sh tools/developing-fixtures.sh
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every

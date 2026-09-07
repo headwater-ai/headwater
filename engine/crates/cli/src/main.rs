@@ -1131,9 +1131,6 @@ fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
         &loaded.taxonomy,
         &loaded.shape,
         &loaded.relations,
-        // The resolved taxonomy, for the one member of a shelf that no typed
-        // reader carries. See `headwater_scaffold::declared`.
-        &loaded.bound.taxonomy,
         headwater_audit::Series {
             reading,
             recorded,
@@ -1423,6 +1420,32 @@ fn publish(
         );
     }
 
+    // #619, and beside `dropped` for the same two reasons: on standard error, so
+    // a publisher reads it in both output modes and the `--json` document stays
+    // one document. This half is the report and the refusal is the gate — the
+    // publish only reached here because every reference a carried document
+    // writes either resolves inside the artifact or is one of these. The list is
+    // read out of the manifest the artifact carries rather than out of a second
+    // copy of the key, so what is printed is what shipped.
+    let recorded = headwater_resolve::package::recorded_references(out);
+    if !recorded.is_empty() {
+        eprintln!(
+            "headwater: the artifact records {} references that resolve nowhere inside it, and \
+             this publish carries no other",
+            recorded.len()
+        );
+        eprintln!(
+            "{}",
+            indent(&format!(
+                "`{}` in the manifest names each one as a carried document and a target the \
+                 artifact does not hold, and the manifest ships with the artifact, so a consumer \
+                 reads the same list. A reference this record does not hold is refused rather \
+                 than reported. A pair the artifact stops dangling is a line to delete from it.",
+                headwater_resolve::package::RECORDED_REFERENCES
+            ))
+        );
+    }
+
     if json {
         print!(
             "{}",
@@ -1648,7 +1671,9 @@ fn artifact(
 /// Every other question `adoption:` still has to answer stays where #61 left
 /// it. This run merges `from` and `to` into whatever the block already
 /// declares and carries every other key, `tasks` above all, through
-/// unchanged.
+/// unchanged. Where there is no `tasks` key to carry, it writes an empty one,
+/// for the reason [`migrated`] states: the next verb spec 7 names refuses a
+/// block that declares none.
 fn migrate(
     root: &Path,
     fetched: &Path,
@@ -1741,10 +1766,19 @@ fn migrate(
             // transition is not covered by, which the message says by naming
             // spec 2. A different `--to` is a different migration rather than
             // a repair of this one.
+            // The second sentence is unconditional, and it is unconditional
+            // because nothing has been measured yet: this arm is reached
+            // before the two check runs that would say which rules broke. So
+            // it names the condition rather than asserting it, and `taxonomy
+            // diff` — which has measured — says which of the two sentences
+            // applies to this artifact.
             return refuse(&format!(
                 "the artifact ships no migration payload for {from} to {to}. Spec 2 makes a major \
                  version ship one, and this verb applies a payload rather than deriving one. \
-                 `headwater taxonomy diff {}` reports what moved",
+                 `headwater taxonomy diff {}` reports what moved. Where every break is a facet \
+                 that became required, no payload can cover it — that is a break no subject of \
+                 this vocabulary reaches — and `headwater infer --owner <name> --write` records \
+                 it as adoption debt instead",
                 fetched.display()
             ));
         }
@@ -1917,10 +1951,21 @@ fn migrate(
              {{version: {from}, digest: {digest}}} and `adoption.to` becomes {to} \
              (HW-DR-0046). The open task set, if any, is carried through unchanged"
         ),
+        // The remedy names hand authorship, and it named `taxonomy vendor`
+        // until #516 was adjudicated. That verb pins nothing: `--expect`
+        // verifies the artifact against a digest the caller supplied, installs
+        // it, exits 0 and leaves the declaration byte-identical, and the
+        // identical next `vendor` refuses with "nothing pins this artifact".
+        // So the sentence sent an adopter with no pin to a verb that refuses
+        // them and sends them back here. The pin is authored (spec 7), and
+        // `apply_with_no_pinned_digest_writes_no_migration_state` performs
+        // every clause of what stands here now.
         None => println!(
             "  `.headwater/taxonomy.yml` pins no digest, so this run cannot write a verifiable \
-             `adoption.from` (HW-DR-0046). `taxonomy vendor` pins one; every other file below is \
-             still written on `--apply`"
+             `adoption.from` (HW-DR-0046). The pin is authored: take the digest the publisher \
+             states and write it as `taxonomy.digest` in `.headwater/taxonomy.yml` by hand, and \
+             a later run of this verb records the migration. Every other file below is still \
+             written on `--apply`"
         ),
     }
 
@@ -2007,6 +2052,15 @@ fn migrate(
         state.push_str(&format!("  version: {}\n", quoted(&from)));
         state.push_str(&format!("  digest: {}\n", quoted(digest)));
         state.push_str(&format!("to: {}\n", quoted(&to)));
+        // The empty standing list, which is what makes this block one the next
+        // verb can add to. `headwater infer --write` merges into `tasks` and
+        // refuses a block that declares no such key, because replacing an
+        // authored block is the defect that refusal exists for. A block this
+        // run generated carried `from` and `to` and no `tasks`, so the two
+        // verbs spec 7 puts in order refused each other on every first
+        // migration. `migrated` takes this entry only where nothing else
+        // carried one through, so a standing task list is never touched.
+        state.push_str("tasks: []\n");
         let fresh =
             match headwater_yaml::load(&state) {
                 Ok(node) => match node.value.as_map() {
@@ -2150,14 +2204,30 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
         .and_then(|sources| headwater_resolve::resolve(&sources));
     // The third element is the judgment task an `add` collision owes a
     // consumer, empty where no refusal is one. See `headwater_resolve::error`.
+    // The founding record of the release the lock names, which is the previous
+    // side of the quiet half. The lock is moved into `Bound::of` further down,
+    // so the record is taken here. An older lock carries none and reads back as
+    // an empty list, which reports every founding the candidate records — the
+    // reading every lock had before `headwater_lock::Lock::founded` existed.
+    let carried = lock.founded.clone();
+    // Where the previous side came from, stated on the face of the report. It
+    // re-hashes the files the lock records and never resolves them, which is
+    // the cheap half of `taxonomy resolve --check`. It is a caveat and not a
+    // precondition: the publisher shape this verb is written for edits the
+    // package source in place, so a full currency test refuses the ordinary
+    // correct run. See `headwater_compat::Caveat`.
+    let moved_sources = lock.moved(root);
     let (resolution, addressability, tasks) = match candidate {
         Ok(resolution) => {
             // The quiet half. The candidate resolved, and it may have resolved
             // because an overlay `add` created the declaration the new base
-            // removed. See `headwater_compat::addressability`.
+            // removed. A founding the previous release already carried is a
+            // property of the consumer's bundle order rather than of anything
+            // this release did, so only the ones this release introduces are
+            // breaks. See `headwater_compat::addressability`.
             let outcome = headwater_compat::addressability(
-                &resolution.founded,
-                &resolution.sources,
+                &carried,
+                &resolution.founding_records(),
                 Vec::new(),
             );
             (Some(resolution), outcome, String::new())
@@ -2189,6 +2259,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
             from: lock.version.clone(),
             to: record.version.clone(),
             base: headwater_compat::Base::Unresolved,
+            moved_sources: moved_sources.clone(),
             measured: headwater_compat::Measured::against_nothing(
                 addressability,
                 "the candidate taxonomy did not resolve under this repository's overlays, so no \
@@ -2255,8 +2326,20 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let (classification, reclassified) =
         headwater_compat::classification(&taking.census, &against.census);
     let (validity, invalidated) = headwater_compat::instance_validity(&before, &after);
-    let moved: std::collections::BTreeSet<String> =
-        reclassified.union(&invalidated).cloned().collect();
+    let moved = Movement {
+        documents: reclassified.union(&invalidated).cloned().collect(),
+        // The rules behind the movement, and not a second reading of it. Read
+        // off `instance_validity` alone, because that is the one dimension
+        // whose breaks are keyed by a rule: a `classification` break is keyed
+        // by a document path and it is a `kind` step's business, which is a
+        // step the vocabulary does have. So a change that reclassified
+        // anything answers the empty set here and keeps the sentence spec 2
+        // states.
+        rules: match &classification {
+            headwater_compat::Outcome::Broken(_) => std::collections::BTreeSet::new(),
+            _ => headwater_compat::broken_rules(&validity),
+        },
+    };
     let measured = headwater_compat::Measured {
         classification,
         instance_validity: validity,
@@ -2294,6 +2377,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
         from,
         to,
         base,
+        moved_sources,
         measured,
     };
     print!("{}", report.render());
@@ -2348,6 +2432,20 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
 ///
 /// The error arm is a payload the artifact carries and this engine cannot read,
 /// which is the one state that says nothing about the corpus at all.
+///
+/// # When "ship a payload" is not the remedy
+///
+/// `moved.rules` is the rules the measured dimensions report, and it decides
+/// which
+/// closing sentence a reader gets. A break every rule of which is
+/// [`FACET_REQUIRED`] is a break no step of this vocabulary reaches: spec 7
+/// names three subjects, a facet that became required is none of them, and
+/// there is no old value for a `facet_value` step to move. Telling a publisher
+/// to ship a payload for that is telling them to write a file the format
+/// cannot express, so the sentence names the route the engine does reach
+/// instead — `headwater infer --write`, which derives the pair set, and
+/// `headwater check`, which then reports it as migration-pending. Every other
+/// break keeps the sentence spec 2 makes true of it.
 fn payload(
     fetched: &Path,
     manifest: &headwater_yaml::Mapping,
@@ -2355,7 +2453,7 @@ fn payload(
     overlay: &headwater_resolve::Adopted,
     from: &str,
     to: &str,
-    moved: &std::collections::BTreeSet<String>,
+    moved: &Movement,
 ) -> Result<(), ExitCode> {
     let payloads = match headwater_resolve::migration::at(fetched, manifest) {
         Ok(payloads) => payloads,
@@ -2402,7 +2500,7 @@ fn payload(
                         &taking.census,
                         overlay,
                         declares,
-                        moved
+                        &moved.documents
                     )
                     .render()
                 );
@@ -2410,18 +2508,68 @@ fn payload(
         }
     }
 
-    if selected == 0 && !moved.is_empty() {
-        println!(
-            "\nthe artifact ships no migration payload for {from} to {to}, and {} document{} \
-             stopped validating. Spec 2 makes a major version ship one",
-            moved.len(),
-            match moved.len() {
+    if selected == 0 && !moved.documents.is_empty() {
+        let documents = format!(
+            "{} document{}",
+            moved.documents.len(),
+            match moved.documents.len() {
                 1 => "",
                 _ => "s",
             }
         );
+        match unreachable_by_a_step(&moved.rules) {
+            true => println!(
+                "\nthe artifact ships no migration payload for {from} to {to}, and {documents} \
+                 stopped validating. No step can express this break: a facet that became \
+                 required is none of the three subjects spec 7 declares, and there is no old \
+                 value for a `facet_value` step to move. `headwater infer --owner <name> \
+                 --write` records the breakage as adoption debt, and `headwater check` then \
+                 reports it as migration-pending"
+            ),
+            false => println!(
+                "\nthe artifact ships no migration payload for {from} to {to}, and {documents} \
+                 stopped validating. Spec 2 makes a major version ship one"
+            ),
+        }
     }
     Ok(())
+}
+
+/// What the two dimensions a subject names measured, as the payload reader
+/// needs it.
+///
+/// Both halves fall out of the same two comparisons that decided the
+/// dimensions, which is what [`payload`] states about the denominator and holds
+/// for the rules as well: a second pass over the instances could disagree with
+/// the pass that decided the verdict.
+struct Movement {
+    /// Every document that stopped resolving to its kind or stopped
+    /// validating, which is the denominator a payload is accounted against.
+    documents: std::collections::BTreeSet<String>,
+    /// The rules whose instances stopped agreeing. Empty where a document was
+    /// reclassified, because a `classification` break is keyed by a path and
+    /// names no rule.
+    rules: std::collections::BTreeSet<String>,
+}
+
+/// The one rule a break can consist entirely of and still be unreachable by any
+/// step of the migration vocabulary.
+///
+/// Spec 7 (*The migration payload*) declares three subjects — a facet value, a
+/// kind, and an overlay address — and each one names an old thing that a step
+/// moves. A facet that became required names no old thing: the documents never
+/// carried the facet, so there is no value for a step to move and no address
+/// that changed. See [`headwater_resolve::migration::Subject`].
+const FACET_REQUIRED: &str = "facet.required.missing";
+
+/// Whether every rule that broke is one no step of the vocabulary reaches.
+///
+/// Non-empty is required, and it is the whole reason this is a function rather
+/// than an `iter().all()` at the call site: `all` answers `true` for an empty
+/// set, and a dimension that broke on nothing is not a break this sentence
+/// should describe.
+fn unreachable_by_a_step(broken: &std::collections::BTreeSet<String>) -> bool {
+    !broken.is_empty() && broken.iter().all(|rule| rule == FACET_REQUIRED)
 }
 
 /// One run of the check layer, with the cache off.
@@ -3508,6 +3656,7 @@ fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
         census: &loaded.census,
         graph: &loaded.graph,
         relations: &loaded.relations,
+        shape: &loaded.shape,
         lock: &loaded.bound.digest,
     };
     let report = headwater_sweep::Report::read(&source, &tree);
@@ -5341,6 +5490,17 @@ fn merged(
 /// survives. `from` and `to` are placed first, which is the order [spec
 /// 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
 /// states them in.
+///
+/// # The one entry this adds rather than carries
+///
+/// A block that declares no `tasks` key at all gets an empty one. Carrying
+/// through what is not there wrote a block naming `from` and `to` and nothing
+/// else, and [`merged`] refuses exactly that block, so `headwater infer
+/// --write` refused this verb's own output on every migration of a corpus with
+/// no prior adoption block. That refusal protects an authored task list from
+/// being replaced, and an absent key holds no owner, no expiry and no pair, so
+/// adding an empty sequence discards nothing and leaves the guard standing. A
+/// declared list, malformed or not, is carried and never rewritten.
 fn migrated(
     declared: Option<&headwater_yaml::Mapping>,
     fresh: &headwater_yaml::Mapping,
@@ -5356,6 +5516,17 @@ fn migrated(
             if entry.key.value != "from" && entry.key.value != "to" {
                 entries.push(entry.clone());
             }
+        }
+    }
+    // The empty `tasks` sequence, taken from the fresh state only where the
+    // declared block carried none. A block with a standing list keeps it
+    // exactly as it was loaded, which is the line above; a block with no such
+    // key — the one this verb wrote before, and the one an adopter has on a
+    // first migration — gets an empty one. That is additive: no entry is
+    // dropped, and the block [`merged`] refuses becomes one it can add to.
+    if !entries.iter().any(|entry| entry.key.value == "tasks") {
+        if let Some(entry) = fresh.entry("tasks") {
+            entries.push(entry.clone());
         }
     }
     headwater_yaml::Mapping::new(entries)
@@ -5427,11 +5598,32 @@ taxonomy:
         // artifact. So it named a dead end in the file they then edit and commit.
         // It names both routes now, and says where the number comes from either
         // way.
+        //
+        // **The two routes do not need the same field, and saying "either way"
+        // held that they did.**
+        // [#641](https://github.com/headwater-ai/headwater/issues/641) is the
+        // adopter who ran the command this comment names and met `nothing pins
+        // this artifact`. The copy route needs the version alone. The vendor
+        // route needs the digest before `vendor` will accept the artifact, and
+        // the version as well before `resolve` will accept the package, so it
+        // needs two fields in that order. The commented `digest` line below is
+        // the only place an adopter learns the key exists, and it is left
+        // commented because the value is theirs to write.
+        //
+        // `--expect <digest>` is deliberately not named here. It exits 0 and
+        // writes nothing into this file, so an adopter who took it would commit
+        // a declaration that pins nothing and meet the same refusal on the next
+        // clone.
         None => declaration_text.push_str(
             "  # INTERVIEW: no package of this name is under `packages/`, and nothing in this\n\
-             \x20 # engine fetches one. Copy a package directory into `packages/`, or run\n\
-             \x20 # `headwater taxonomy vendor <dir>` on a published artifact. Either way, pin\n\
-             \x20 # the version that the package itself declares.\n\
+             \x20 # engine fetches one. Two routes reach a lock, and each one needs a different\n\
+             \x20 # field below. Copy a package directory into `packages/`, and pin `version` at\n\
+             \x20 # the version that package declares. Or run `headwater taxonomy vendor <dir>`\n\
+             \x20 # on a published artifact: that verb reads `digest` and refuses until it holds\n\
+             \x20 # the digest the publisher printed, and `headwater taxonomy resolve` reads\n\
+             \x20 # `version` after it, so the vendor route needs the digest first and the\n\
+             \x20 # version as well.\n\
+             \x20 # digest: sha256:<the digest the publisher printed>\n\
              \x20 version: 0.0.0\n",
         ),
     }
@@ -5523,10 +5715,19 @@ add: {{}}
         // paragraph repairing. So the copy is named, because it is what an
         // adopter can do, and `vendor` keeps its own sense with the artifact
         // beside it.
+        //
+        // The routes need different fields, which is the same correction the
+        // written comment carries and for the same reason. See the arm above,
+        // and [#641](https://github.com/headwater-ai/headwater/issues/641).
         None => println!(
-            "  package {package} is not under `packages/`, and nothing here fetches one. Copy a \
-             package directory into `packages/` to resolve against it, or run `headwater taxonomy \
-             vendor <dir>` on a published artifact to reach `pin.current` too"
+            "  package {package} is not under `packages/`, and nothing here fetches one. Two \
+             routes reach a lock, and each one needs a different field of \
+             `.headwater/taxonomy.yml`. Copy a package directory into `packages/`, and pin \
+             `taxonomy.version` at the version that package declares. Or run `headwater taxonomy \
+             vendor <dir>` on a published artifact: that verb reads `taxonomy.digest` and refuses \
+             until it holds the digest the publisher printed, and `headwater taxonomy resolve` \
+             reads `taxonomy.version` after it, so the vendor route needs the digest first and \
+             the version as well"
         ),
     }
     println!("\nwhat it cannot read off a tree, and asked instead");

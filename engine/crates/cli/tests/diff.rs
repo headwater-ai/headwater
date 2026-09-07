@@ -36,85 +36,17 @@
 //! gate holds current, and it would go stale in silence. A base package that
 //! stops classifying this document fails these cases loudly instead.
 
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::path::PathBuf;
 
 mod common;
-use common::pin;
+use common::{Ran, Root};
 
-fn repository() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../..")
-        .canonicalize()
-        .expect("the repository root resolves")
-}
-
-/// A repository root that removes itself.
+/// The two edits only this target makes to a root.
 ///
-/// `label` names the test and not the case. Cargo runs the cases of one target
-/// as threads of one process, so a directory keyed on the process identifier
-/// alone is a directory one case removes while another is reading it.
-struct Root {
-    at: PathBuf,
-}
-
+/// [`Root`] itself is in `common`, because `conformance_lock.rs` runs over the
+/// same one. These two are about publishing a second version of the package,
+/// which is a question this target asks and that one does not.
 impl Root {
-    fn new(label: &str) -> Root {
-        let at =
-            std::env::temp_dir().join(format!("headwater-cli-diff-{}-{label}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&at);
-        std::fs::create_dir_all(&at).expect("the root is made");
-
-        let repository = repository();
-        // `packages/headwater-standard/` is a vendored artifact since #366
-        // (it carries a `release.yml`, and `taxonomy publish` now refuses to
-        // publish a directory in that state — the guard this fixture would
-        // otherwise trip, since every case here calls `taxonomy publish` by
-        // name with no `--from`). The maintained source is
-        // `taxonomy-source/headwater-standard/`, copied here to the path the
-        // by-name lookup expects.
-        copy(
-            &repository.join("taxonomy-source/headwater-standard"),
-            &at.join("packages/headwater-standard"),
-        );
-        copy(
-            &repository.join("docs/taxonomies"),
-            &at.join("docs/taxonomies"),
-        );
-        copy(
-            &repository.join("engine/crates/cli/fixtures/change/docs"),
-            &at.join("docs"),
-        );
-        for name in ["taxonomy.yml", "overlay.yml"] {
-            let to = at.join(".headwater").join(name);
-            std::fs::create_dir_all(to.parent().expect("it has a parent"))
-                .expect("the declaration directory is there");
-            std::fs::copy(repository.join(".headwater").join(name), to)
-                .expect("the declaration copies");
-        }
-
-        pin(&at, "1.0.0");
-
-        let root = Root { at };
-        let resolved = root.run(&["taxonomy", "resolve"]);
-        assert_eq!(resolved.code, Some(0), "the fixture resolves: {resolved:?}");
-        root
-    }
-
-    fn run(&self, arguments: &[&str]) -> Ran {
-        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
-            .args(arguments)
-            .arg("--root")
-            .arg(&self.at)
-            .output()
-            .expect("the binary runs");
-        Ran {
-            code: output.status.code(),
-            out: String::from_utf8_lossy(&output.stdout).into_owned(),
-            err: String::from_utf8_lossy(&output.stderr).into_owned(),
-        }
-    }
-
     /// Publish the package as it stands, into a directory named for the release.
     fn publish(&self, name: &str) -> PathBuf {
         let out = self.at.join("released").join(name);
@@ -156,19 +88,6 @@ impl Root {
     }
 }
 
-impl Drop for Root {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.at);
-    }
-}
-
-#[derive(Debug)]
-struct Ran {
-    code: Option<i32>,
-    out: String,
-    err: String,
-}
-
 impl Ran {
     /// The word one dimension reported, out of the summary block.
     fn dimension(&self, name: &str) -> String {
@@ -178,19 +97,24 @@ impl Ran {
             .map(|rest| rest.trim().to_string())
             .unwrap_or_else(|| panic!("the report names `{name}`: {self:?}"))
     }
-}
 
-fn copy(from: &Path, to: &Path) {
-    std::fs::create_dir_all(to).expect("the directory is there");
-    for entry in std::fs::read_dir(from).expect("the fixture directory reads") {
-        let entry = entry.expect("the entry reads");
-        let target = to.join(entry.file_name());
-        match entry.file_type().expect("the file type reads").is_dir() {
-            true => copy(&entry.path(), &target),
-            false => {
-                std::fs::copy(entry.path(), &target).expect("the fixture copies");
-            }
-        }
+    /// Every report this file produces from an honest lock states this caveat
+    /// nowhere.
+    ///
+    /// `headwater_compat::Caveat::FoundingOutsideTheDigest` fires on a base
+    /// that resolved to the same text beside a broken `addressability`, which
+    /// says the founding record of the previous side and the taxonomy beside it
+    /// came from two resolutions. A guard that nothing ever provokes reports
+    /// nothing forever and reads exactly like a working one, so every case here
+    /// that receives a report asserts the quiet direction and
+    /// `a_lock_whose_founding_record_was_stripped_says_it_cannot_settle_the_answer`
+    /// asserts the loud one.
+    fn states_no_contradiction(&self) -> &Ran {
+        assert!(
+            !self.out.contains("this run cannot settle it"),
+            "the lock of this case is honest, so nothing here contradicts itself: {self:?}"
+        );
+        self
     }
 }
 
@@ -238,10 +162,26 @@ fn a_version_bump_alone_moves_no_dimension() {
         "2026-08-01",
     ]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
+    ran.states_no_contradiction();
     assert!(
         ran.out.contains("the base resolved to different text"),
         "the taxonomy did move, and this case is about a diff that stays silent \
          anyway: {ran:?}"
+    );
+    // The provenance of the previous side, on the face of the report. This is
+    // the publisher-in-one-tree shape: `Root::edit` rewrote the package source
+    // the lock records, so the previous side is the taxonomy the lock carries
+    // and not what that file resolves to now. It is stated and never gated on,
+    // because gating here would refuse this run, which is a correct one.
+    assert!(
+        ran.out
+            .contains("the previous side was read from a lock whose sources have moved"),
+        "{ran:?}"
+    );
+    assert!(
+        ran.out
+            .contains("moved  packages/headwater-standard/taxonomy.yml"),
+        "the caveat names the file: {ran:?}"
     );
     for dimension in [
         "classification",
@@ -260,6 +200,178 @@ fn a_version_bump_alone_moves_no_dimension() {
     assert!(
         ran.out.contains("nothing here requires a major version"),
         "{ran:?}"
+    );
+}
+
+/// The same silent direction, on a root whose bundle order founds a key.
+///
+/// `addressability` was the one dimension of six that read a single side, so it
+/// reported the candidate's whole founding record as a break whether or not the
+/// release under test introduced any of it. A consumer whose bundle order
+/// happens to found a key was then told that every release of the package
+/// requires a major version, on every diff, until they reordered a list they
+/// were free to write either way. Only the version string moves here, so the
+/// answer is the same one the other five give: preserved.
+///
+/// The `operations that make what they address: 1` assertion is what keeps this
+/// case about something. A root that stopped founding anything would pass this
+/// on a dimension that never had an entry to carry.
+#[test]
+fn a_founding_the_previous_release_already_carried_is_not_a_break() {
+    let root = Root::founding("founding-carried");
+    let validated = root.run(&["taxonomy", "validate"]);
+    assert_eq!(validated.code, Some(0), "{validated:?}");
+    assert!(
+        validated
+            .out
+            .contains("operations that make what they address: 1"),
+        "the bundle order founds a key, or this case is about nothing: {validated:?}"
+    );
+
+    let first = root.publish("1.0.0");
+    root.edit("version: 1.1.0", &[]);
+    let second = root.publish("1.1.0");
+    assert_eq!(
+        std::fs::read_to_string(first.join("taxonomy.yml"))
+            .expect("the first reads")
+            .replacen("version: 1.0.0", "version: 1.1.0", 1),
+        std::fs::read_to_string(second.join("taxonomy.yml")).expect("the second reads"),
+        "nothing but the version moved between the two artifacts"
+    );
+
+    let ran = root.run(&[
+        "taxonomy",
+        "diff",
+        second.to_str().expect("utf-8"),
+        "--to",
+        "1.1.0",
+        "--now",
+        "2026-08-01",
+    ]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    ran.states_no_contradiction();
+    assert_eq!(
+        ran.dimension("addressability"),
+        "preserved",
+        "a founding the release the lock names already carried is not a break this \
+         release introduced: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("nothing here requires a major version"),
+        "{ran:?}"
+    );
+}
+
+/// A lock whose founding record no longer describes the taxonomy beside it.
+///
+/// # The report contradicted itself and nothing noticed
+///
+/// [#628](https://github.com/headwater-ai/headwater/issues/628). The `founded:`
+/// block of a lock sits outside the digest the lock declares, so a lock that
+/// lost it still reads, `conformance`'s `lock.current` rule still reports `met`
+/// over it, and `taxonomy diff` still runs. What came out said three things at
+/// once: the base resolved to the same text byte for byte, `addressability`
+/// BROKEN, and this change requires a major version. A publisher who changed
+/// nothing was told to bump the major.
+///
+/// # Why the caveat and not a refusal
+///
+/// The five other dimensions read the taxonomy body, which the digest covers,
+/// so an identical base makes them agree by construction. The founding record
+/// is the one reading of the previous side outside that digest, and it is a
+/// property of which operation created a key during the merge rather than of
+/// the text the merge produced. Two merges can reach identical text by
+/// different routes, so a release that moved a founding without moving a
+/// declaration reaches this state honestly. Nothing this run holds separates
+/// the two, and the report says so rather than picking one.
+///
+/// The second half of this case is the remedy the report names, run: a
+/// `taxonomy resolve` rewrites the block, and the same comparison then reports
+/// the release that changed nothing as changing nothing.
+#[test]
+fn a_lock_whose_founding_record_was_stripped_says_it_cannot_settle_the_answer() {
+    let root = Root::founding("founding-stripped");
+    let artifact = root.publish("1.0.0");
+
+    let lock = root.at.join(".headwater/taxonomy.lock");
+    let text = std::fs::read_to_string(&lock).expect("the lock reads");
+    let start = text
+        .find("\nfounded:")
+        .expect("this root resolves with a founding, so its lock records one")
+        + 1;
+    // The block runs to the next key at column zero.
+    let end = text[start..]
+        .match_indices('\n')
+        .find(|(offset, _)| {
+            text[start + offset + 1..]
+                .chars()
+                .next()
+                .is_some_and(|first| !first.is_whitespace())
+        })
+        .map(|(offset, _)| start + offset + 1)
+        .unwrap_or(text.len());
+    let stripped = format!("{}{}", &text[..start], &text[end..]);
+    assert!(
+        !stripped.contains("\nfounded:"),
+        "the whole block goes, and not its first line"
+    );
+    assert!(
+        stripped.len() < text.len(),
+        "the strip removed something: {}",
+        text.len()
+    );
+    std::fs::write(&lock, stripped).expect("the lock writes");
+
+    // Nothing between the edit and the report refuses it. The digest the lock
+    // declares still matches the taxonomy it carries, which is the one currency
+    // question `headwater_lock::read` asks of every reader.
+    let ran = root.run(&[
+        "taxonomy",
+        "diff",
+        artifact.to_str().expect("utf-8"),
+        "--now",
+        "2026-08-01",
+    ]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        ran.out.contains("the base resolved to the same text"),
+        "the artifact is the one this lock was written from: {ran:?}"
+    );
+    assert!(
+        ran.dimension("addressability").starts_with("BROKEN"),
+        "the stripped block reads back as a founding this release introduced: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("this run cannot settle it"),
+        "the report names its own contradiction: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("`headwater taxonomy resolve` rewrites"),
+        "and names the one remedy it can name: {ran:?}"
+    );
+    // Not one source file moved: what moved is the lock itself. So the other
+    // caveat is silent here, and the two are independent readings rather than
+    // one staleness reading printed twice.
+    assert!(
+        !ran.out.contains("whose sources have moved"),
+        "the sources are untouched: {ran:?}"
+    );
+
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "{resolved:?}");
+    let ran = root.run(&[
+        "taxonomy",
+        "diff",
+        artifact.to_str().expect("utf-8"),
+        "--now",
+        "2026-08-01",
+    ]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    ran.states_no_contradiction();
+    assert_eq!(ran.dimension("addressability"), "preserved", "{ran:?}");
+    assert!(
+        ran.out.contains("nothing here requires a major version"),
+        "the release that changed nothing changed nothing: {ran:?}"
     );
 }
 
@@ -297,6 +409,7 @@ fn a_declaration_that_breaks_a_document_names_that_document() {
         "2026-08-01",
     ]);
     assert_eq!(ran.code, Some(0), "a measured break is a report: {ran:?}");
+    ran.states_no_contradiction();
     assert!(
         ran.dimension("instance_validity").starts_with("BROKEN"),
         "{ran:?}"
@@ -364,6 +477,7 @@ fn an_overlay_address_the_new_base_takes_is_the_addressability_dimension() {
         Some(1),
         "a run that could not measure fails: {ran:?}"
     );
+    ran.states_no_contradiction();
     assert!(
         ran.dimension("addressability").starts_with("BROKEN"),
         "{ran:?}"
@@ -486,6 +600,7 @@ fn the_version_flag_refuses_an_artifact_that_is_not_that_version() {
         "2026-08-01",
     ]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
+    ran.states_no_contradiction();
     assert_eq!(ran.dimension("classification"), "preserved", "{ran:?}");
 }
 
@@ -552,6 +667,7 @@ fn a_finding_about_the_taxonomy_alone_is_consequence_and_not_instance_validity()
         "2026-08-01",
     ]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
+    ran.states_no_contradiction();
     assert!(
         ran.dimension("consequence").starts_with("BROKEN"),
         "a rule the new base breaks is a consequence: {ran:?}"
@@ -598,6 +714,7 @@ fn a_shelf_that_moves_reaches_classification_identifier_and_projection() {
         "2026-08-01",
     ]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
+    ran.states_no_contradiction();
     for dimension in ["classification", "identifier", "projection"] {
         assert!(
             ran.dimension(dimension).starts_with("BROKEN"),
@@ -612,6 +729,28 @@ fn a_shelf_that_moves_reaches_classification_identifier_and_projection() {
     assert!(
         ran.out.contains("HW-DR-0001"),
         "and the identifier that stopped resolving: {ran:?}"
+    );
+    // Every one of the sixteen breaks reads `now  no instance`: the document
+    // resolved to no kind, so every document-grained rule stopped
+    // instantiating over it and not one of them failed. Against the tree
+    // before this assertion, the word was `BROKEN, 16 failed / 0 skipped`,
+    // which is not an ambiguity about sixteen documents but a false statement
+    // about them. Sixteen and not seventeen because `identifier.claim.missing`
+    // is corpus-grained and belongs to `consequence` alone.
+    assert_eq!(
+        ran.dimension("instance_validity"),
+        "BROKEN, 16 no longer measured",
+        "no document failed here, so no count of failures may be printed: {ran:?}"
+    );
+    // The same sixteen, plus the corpus-grained claim rule, which went from
+    // `failed: …` to `passed` because the identifier it reported as unclaimed
+    // left the index with the document. An improvement, inside a total the
+    // line above still calls BROKEN, and it is named rather than counted as a
+    // seventeenth failure.
+    assert_eq!(
+        ran.dimension("consequence"),
+        "BROKEN, 16 no longer measured / 1 now passing",
+        "a check that started passing is not a failure: {ran:?}"
     );
     assert!(
         ran.out.contains("this change requires a major version"),

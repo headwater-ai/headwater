@@ -9,8 +9,9 @@ provenance:
   agency: "{{human | agent | mixed}}"
   accepted_by: "{{a human, always named}}"
   evidence_basis: evidenced
-applied_in:
-  - "{{the review record this instrument produced, once it exists}}"
+relations:
+  applied_in:
+    - "{{the identifier of the review record this instrument produced, once it exists}}"
 ---
 
 # {{title}}

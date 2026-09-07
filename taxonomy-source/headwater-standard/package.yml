@@ -106,3 +106,100 @@ contents:
   # name>/`. So one page here reaches both a consumer of `headwater/standard`
   # and a consumer of any flattened package derived from it.
   doctrine: doctrine/
+
+# Every reference a document in this artifact writes that resolves nowhere
+# inside it. `headwater_resolve::package::references` reads this key, reports
+# what it holds, and refuses a dangling reference it does not hold.
+#
+# THIS KEY IS WRITTEN IN ARTIFACT COORDINATES, WHICH NO OTHER KEY IN THIS FILE
+# IS. `contents.bundles` above names `../../docs/taxonomies` in the publisher's
+# tree; the members below are named as the artifact carries them, because what
+# this key describes is the artifact and it ships inside it. A consumer who
+# vendored this package reads the same key against the tree they received.
+#
+# #619 ruled the staging. The bar as filed refused every dangling reference,
+# and it refuses this package: #619 measured 122 references over 51 pairs,
+# from 9 carried files, naming 23 targets under `spec/`, `evaluations/`,
+# `obligations/` and `decisions/`. That measurement is of the day it was
+# taken, and the list below is the authority now: a pair added or deleted
+# moves the list rather than the sentence above. None of them was ever
+# resolvable in any
+# artifact this project has published. They are links a doctrine page writes
+# for the publisher's own `docs/` layout — `../../spec/07-…` resolves inside
+# `docs/` and normalizes to `spec/07-…` once the same file is published at
+# `bundles/<name>/doctrine.md`, and no artifact has ever carried a `spec/`
+# directory. Repairing them needs a ruling on what a doctrine link to a
+# publisher's own specification becomes in a consumer's tree, and #619 does
+# not hold that ruling. So the population is named here and the rule refuses
+# what this list does not hold, which is the class a publish creates.
+#
+# The identity of an entry is the pair (member, target). Both are
+# artifact-relative, both are derived from the source alone, and neither
+# carries a version or a digest, so a republish of the same source records the
+# same pairs. Regenerate the list by taking the key out and reading what the
+# publish refuses.
+#
+# A pair the artifact no longer dangles is not refused, so a repaired link is
+# a line to delete here. That is how this list is meant to end.
+unresolved_references:
+  bundles/README.md:
+    - decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md
+    - evaluations/default-taxonomy-first-run.md
+    - evaluations/linkml-worked-example.md
+    - obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md
+    - spec/02-taxonomy-model.md
+    - spec/03-authoring-and-lifecycle.md
+    - spec/07-distribution-and-federation.md
+    - spec/09-decisions.md
+    - spec/13-open-obligations.md
+  bundles/brd-prd/doctrine.md:
+    - obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md
+    - spec/02-taxonomy-model.md
+    - spec/07-distribution-and-federation.md
+    - spec/13-open-obligations.md
+  bundles/decision-record/doctrine.md:
+    - decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md
+    - decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md
+    - evaluations/adjacent-work.md
+    - obligations/0031-list-extension-in-an-add-only-overlay.md
+    - obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md
+    - spec/01-conceptual-model.md
+    - spec/02-taxonomy-model.md
+    - spec/04-assurance-model.md
+    - spec/09-decisions.md
+    - spec/12-check-layer.md
+    - spec/13-open-obligations.md
+    - spec/glossary.md
+  bundles/design-spec/doctrine.md:
+    - decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md
+    - evaluations/default-taxonomy-first-run.md
+    - evaluations/n8n-worked-example.md
+    - spec/02-taxonomy-model.md
+    - spec/03-authoring-and-lifecycle.md
+    - spec/07-distribution-and-federation.md
+    - spec/13-open-obligations.md
+  bundles/diataxis/bundle.yml:
+    - evaluations/theoretical-foundations.md
+    - spec/02-taxonomy-model.md
+  bundles/diataxis/doctrine.md:
+    - decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md
+    - evaluations/adjacent-work.md
+    - evaluations/default-taxonomy-first-run.md
+    - evaluations/first-contact.md
+    - evaluations/theoretical-foundations.md
+    - obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md
+    - obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md
+    - spec/01-conceptual-model.md
+    - spec/02-taxonomy-model.md
+    - spec/13-open-obligations.md
+  bundles/evidence-and-obligation/bundle.yml:
+    - obligations/0031-list-extension-in-an-add-only-overlay.md
+  bundles/evidence-and-obligation/doctrine.md:
+    - decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md
+  bundles/standards-spec/doctrine.md:
+    - evaluations/n8n-worked-example.md
+    - obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md
+    - spec/02-taxonomy-model.md
+    - spec/04-assurance-model.md
+    - spec/07-distribution-and-federation.md
+    - spec/13-open-obligations.md

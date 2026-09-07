@@ -812,6 +812,171 @@ fn the_shipped_starter_recipe_publishes_vendors_and_resolves() {
     assert!(stdout.contains("L1"), "{stdout}");
 }
 
+/// **Which verb an adopter runs decides whether a hand edit to a vendored
+/// package is found.** `headwater conformance --level L0` recomputes the digest
+/// of every installed member and refuses; `headwater taxonomy resolve` exits 0
+/// over the same tree, because it compares the version the manifest declares
+/// against the version the consumer pinned and reads no digest at all
+/// (`headwater_resolve::package::sources`).
+///
+/// This is [#517](https://github.com/headwater-ai/headwater/issues/517)'s only
+/// surviving complaint. The recheck it asked for landed in `c09625a` on
+/// 2026-08-25, eleven days before the issue was filed, so what remains is the
+/// pairing: the recheck exists and the verb an adopter is most likely to put in
+/// a build does not perform it.
+///
+/// The conformance crate holds the same pairing at the library level. This case
+/// is the CLI half of it, because an exit status is what a build reads, and a
+/// library call that returns `Ok` is not the same claim as a process that
+/// returns 0.
+///
+/// **The order is the assertion.** Publish, then pin, then vendor, then resolve,
+/// and the hand edit lands after the publish that computed the pinned digest. A
+/// resolve before the publish would move the sources with the record and both
+/// sides of the comparison would agree.
+///
+/// The edited member is a doctrine file, which is a member of the release and
+/// names no path in the lock's `sources:` list. That is the same shape as
+/// `conformance.yml` in this repository's own package, and it is the shape that
+/// no other gate covers.
+///
+/// **Two arms, because the two numbers fail differently.** A pin that no longer
+/// names the installed bytes is a gap in a reading, so a plain run exits 0 with
+/// `pin.current` in its report and `--level L0` is what turns that into a
+/// non-zero exit. Installed bytes that no longer match their own record refuse
+/// ahead of every reading and at every level, because a rule set read out of a
+/// diverged package is a rule set the run cannot trust. Only the first arm is
+/// the one `--level` decides, and a sentence that credited `--level` with both
+/// would be wrong about the second.
+#[test]
+fn a_pin_that_no_longer_names_the_installed_bytes_is_refused_by_conformance_and_not_by_resolve() {
+    let root = Root::scratch("pin-recheck-pairing");
+    let source = repository().join("taxonomy-source/headwater-standard");
+    let artifact = root.path().join("release");
+
+    let (code, _stdout, stderr) = publish_assembly_from(&repository(), &source, &artifact);
+    assert_eq!(code, Some(0), "{stderr}");
+    let release = headwater_resolve::release::read(
+        &std::fs::read_to_string(artifact.join("release.yml")).expect("the release reads"),
+    )
+    .expect("the published record reads");
+
+    let source_manifest = package::manifest_at(&source).expect("the source manifest reads");
+    let recipe = assembly::read(&repository(), &source, &source_manifest, "starter")
+        .expect("the shipped starter recipe reads");
+    let consumer = root.path().join("consumer");
+    write(
+        &consumer.join(".headwater/taxonomy.yml"),
+        &format!(
+            "taxonomy:\n  package: {}\n  version: {}\n  digest: {}\n  overlay: .headwater/overlay.yml\ncorpus:\n  root: docs\n",
+            recipe.package, recipe.version, release.digest
+        ),
+    );
+    write(
+        &consumer.join(".headwater/overlay.yml"),
+        "add:\n  identifier_schemes.decision_id.namespace: ACME\n  identifier_schemes.obligation_record_id.namespace: ACME\n",
+    );
+    std::fs::create_dir_all(consumer.join("docs")).expect("the corpus root is made");
+
+    let (code, _stdout, stderr) = consumer_run(
+        &consumer,
+        &[
+            "taxonomy",
+            "vendor",
+            artifact.to_str().expect("the artifact is UTF-8"),
+        ],
+    );
+    assert_eq!(code, Some(0), "{stderr}");
+
+    // Both verbs agree over the tree `vendor` wrote. Without this, a later
+    // non-zero could be anything the fixture got wrong.
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "resolve"]);
+    assert_eq!(code, Some(0), "{stderr}");
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["conformance", "--level", "L0"]);
+    assert_eq!(
+        code,
+        Some(0),
+        "the freshly vendored tree does not reach L0: {stderr}"
+    );
+
+    // ---- Arm one: the pin moved and the bytes did not. ------------------
+    //
+    // `pin.current` reports a gap, so `--level L0` is what turns the report
+    // into a non-zero exit and a plain run still exits 0 with the gap in the
+    // report. The resolver exits 0 over the same tree because it never reads a
+    // digest.
+    let stale = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+    let authored = consumer.join(".headwater/taxonomy.yml");
+    let pin = std::fs::read_to_string(&authored).expect("the authored pin reads");
+    write(&authored, &pin.replace(&release.digest, stale));
+
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "resolve"]);
+    assert_eq!(
+        code,
+        Some(0),
+        "the resolver read the pinned digest, so this pairing no longer holds: {stderr}"
+    );
+    let (code, stdout, stderr) = consumer_run(&consumer, &["conformance"]);
+    assert_eq!(code, Some(0), "a plain run moved its exit status: {stderr}");
+    assert!(
+        stdout.contains("pin.current"),
+        "the report does not name the reading that found the stale pin: {stdout}"
+    );
+    let (code, stdout, stderr) = consumer_run(&consumer, &["conformance", "--level", "L0"]);
+    assert_ne!(code, Some(0), "a stale pin reached L0: {stdout}\n{stderr}");
+    assert!(
+        format!("{stdout}\n{stderr}").contains("pin.current"),
+        "the refusal does not name the reading: {stdout}\n{stderr}"
+    );
+
+    // ---- Arm two: the bytes moved and the pin did not. -------------------
+    //
+    // The hand edit lands after the publish that computed the pinned digest and
+    // after the vendor that installed the bytes it names.
+    write(&authored, &pin);
+    let installed = consumer.join("packages/headwater-starter/doctrine/starter/starter.md");
+    let carried = std::fs::read_to_string(&installed).expect("the installed doctrine reads");
+    std::fs::write(
+        &installed,
+        format!("{carried}\n<!-- hand-edited after vendor, never through `vendor` -->\n"),
+    )
+    .expect("the hand edit writes");
+
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "resolve"]);
+    assert_eq!(
+        code,
+        Some(0),
+        "the resolver refused the edited tree, so this pairing no longer holds: {stderr}"
+    );
+
+    // Moved bytes are refused ahead of every reading and at every level: a rule
+    // set read out of a package whose bytes no longer match its record is a rule
+    // set nothing can trust, so the run ends rather than reports. `--level` is
+    // therefore not what makes this one non-zero, which is the difference
+    // between this arm and the one above.
+    for arguments in [
+        vec!["conformance"],
+        vec!["conformance", "--level", "L0"],
+        vec!["conformance", "--level", "L1"],
+    ] {
+        let (code, stdout, stderr) = consumer_run(&consumer, &arguments);
+        assert_eq!(
+            code,
+            Some(1),
+            "an edited member passed `{arguments:?}`: {stdout}\n{stderr}"
+        );
+        let said = format!("{stdout}\n{stderr}");
+        assert!(
+            said.contains("doctrine/starter/starter.md"),
+            "the refusal does not name the member that moved: {said}"
+        );
+        assert!(
+            said.contains("no longer match"),
+            "the refusal does not say the bytes moved: {said}"
+        );
+    }
+}
+
 #[test]
 fn an_invalid_assembly_refuses_before_it_creates_output() {
     let root = Root::scratch("assembly-refuses");
@@ -1226,6 +1391,394 @@ fn the_vendored_bundles_agree_with_a_fresh_publish_of_the_maintained_source() {
     );
 }
 
+/// #518: an artifact carries no bundle reference corpus, and the publisher
+/// keeps every one of its own.
+///
+/// Spec 7's Publishing section rules that publication takes the package
+/// directory whole, and it names one exception: a `fixtures/` directory at the
+/// root of a bundle. Those corpora are how a publisher measures its own
+/// taxonomy against prose it controls. No consumer verb opens one, and before
+/// this exception they were 71 of the 102 members of this repository's own
+/// release record.
+///
+/// This runs the real publisher over the maintained source rather than a
+/// description of it, and it holds the publisher's side as well, because the
+/// exception is about what the artifact carries and it must delete nothing.
+#[test]
+fn a_fresh_publish_carries_no_bundle_fixtures_and_the_publisher_keeps_its_own() {
+    let root = Root::scratch("bundle-fixtures");
+    let out = root.path().join("release");
+
+    let (code, message) = publish_real_source_into(&out);
+    assert_eq!(
+        code,
+        Some(0),
+        "the publish this case depends on failed: {message}"
+    );
+
+    let mut carried: Vec<String> = relative_files(&out.join("bundles"))
+        .into_iter()
+        .filter(|path| path.split('/').nth(1) == Some("fixtures"))
+        .collect();
+    carried.sort();
+    assert!(
+        carried.is_empty(),
+        "the artifact carries {} bundle fixture files that no consumer verb opens: {carried:#?}",
+        carried.len()
+    );
+
+    assert!(
+        repository()
+            .join("docs/taxonomies/standards-spec/fixtures/README.md")
+            .is_file(),
+        "the exception is about the artifact. The publisher's own reference corpora stay where \
+         they are"
+    );
+}
+
+/// #518: no file the artifact carries links at a path inside the bundle tree
+/// that the artifact does not carry.
+///
+/// A publish decides the shape of `bundles/`, and this case is the reason that
+/// decision is not free. Dropping each bundle's own corpus left fifteen links
+/// across seven carried files pointing at `fixtures/README.md`,
+/// `fixtures/n8n/README.md` and `../<bundle>/fixtures/README.md`. Every one of
+/// them resolved in the publisher's tree and in the artifact before, and none
+/// resolved in the artifact after. **Nothing else in this repository can see
+/// that.** The referential integrity a publish runs reads `contents` key
+/// scalars and never a carried file's body, `release::verify` compares the
+/// record against the bytes and reads no body either, and `docs/taxonomies/**`
+/// is outside the corpus root, so `link.fragment.unresolved` never opens the
+/// sources.
+///
+/// **The population is enumerated and never listed.** Every `.md` file in the
+/// artifact, every inline link in it, and every target that lands inside
+/// `bundles/` after the `..` segments are resolved. A link that climbs out of
+/// the artifact is passed over rather than judged: `../../spec/…` out of a
+/// doctrine file names the publisher's specification, which no artifact ever
+/// carried, and that is a separate question from the one this case asks.
+///
+/// A code span and a fenced block are read past, because this repository
+/// prints a link as an example inside both, and a check that reddens on correct
+/// Markdown is a check the first person it annoys turns off.
+#[test]
+fn no_file_the_artifact_carries_links_into_a_bundle_tree_it_does_not_carry() {
+    let root = Root::scratch("bundle-links");
+    let out = root.path().join("release");
+
+    let (code, message) = publish_real_source_into(&out);
+    assert_eq!(
+        code,
+        Some(0),
+        "the publish this case depends on failed: {message}"
+    );
+
+    let mut read = 0usize;
+    let mut dangling: Vec<String> = Vec::new();
+    for member in relative_files(&out) {
+        if !member.ends_with(".md") {
+            continue;
+        }
+        let text = std::fs::read_to_string(out.join(&member)).expect("a member reads");
+        let directory = Path::new(&member)
+            .parent()
+            .unwrap_or(Path::new(""))
+            .to_owned();
+        for target in markdown_links(&text) {
+            let body = target.split('#').next().unwrap_or_default();
+            if body.is_empty() || body.contains("://") {
+                continue;
+            }
+            let Some(at) = inside_the_artifact(&directory, body) else {
+                continue;
+            };
+            if !at.starts_with("bundles") {
+                continue;
+            }
+            read += 1;
+            if !out.join(&at).exists() {
+                dangling.push(format!("{member} -> {target}"));
+            }
+        }
+    }
+
+    // A scanner that reads nothing passes everything, and this one reads the
+    // real library rather than a fixture, so it says how much it saw.
+    assert!(
+        read > 0,
+        "the scanner found no link into the bundle tree at all, so it held nothing"
+    );
+    assert!(
+        dangling.is_empty(),
+        "{} of the {read} links into the bundle tree do not resolve inside the artifact. Every \
+         one of them resolves in `docs/taxonomies/`, so the publish carried the prose and left \
+         the target behind:\n{dangling:#?}",
+        dangling.len()
+    );
+}
+
+/// #619: the real package publishes, and the population its manifest records is
+/// exactly the population the artifact carries.
+///
+/// Two clauses of the issue meet in one case. The first is that `headwater
+/// taxonomy publish` still exits 0 on this repository's own package, proved on
+/// the maintained source rather than on a fixture, because the bar as filed
+/// refused it: 122 references over 51 pairs, none of them resolvable in any
+/// artifact this project has published. The second is that the record which
+/// admits them is held to the artifact in both directions.
+///
+/// **Both directions, and each one catches a different mistake.** A recorded
+/// pair the artifact does not dangle is a line somebody repaired and forgot to
+/// delete, and a record that outlives its population is a record that quietly
+/// admits a reference nobody looked at. A dangling pair the record does not hold
+/// cannot reach here at all — publish refuses it — so that half of the equality
+/// is a statement that the engine and this walker agree about what dangles,
+/// which is the reason this walker is written here rather than called out of the
+/// crate under test.
+///
+/// The walker reads every member and not only the `.md` ones, because two
+/// `bundle.yml` files in this library write a link inside a comment.
+#[test]
+fn the_real_package_records_exactly_the_references_it_carries() {
+    let root = Root::scratch("recorded-references");
+    let out = root.path().join("release");
+
+    let (code, message) = publish_real_source_into(&out);
+    assert_eq!(
+        code,
+        Some(0),
+        "the maintained source no longer publishes, which is the clause this case holds: {message}"
+    );
+
+    let members: Vec<String> = relative_files(&out);
+    let mut dangling: Vec<(String, String)> = Vec::new();
+    let mut read = 0usize;
+    for member in &members {
+        let Ok(text) = std::fs::read_to_string(out.join(member)) else {
+            continue;
+        };
+        let directory = Path::new(member)
+            .parent()
+            .unwrap_or(Path::new(""))
+            .to_owned();
+        for written in markdown_links(&text) {
+            let target = written.split('#').next().unwrap_or_default();
+            if target.is_empty() || target.contains("://") || target.starts_with("mailto:") {
+                continue;
+            }
+            let Some(at) = inside_the_artifact(&directory, target) else {
+                continue;
+            };
+            read += 1;
+            if !out.join(&at).exists() {
+                dangling.push((member.clone(), at.display().to_string()));
+            }
+        }
+    }
+    dangling.sort();
+    dangling.dedup();
+
+    assert!(
+        read > 0,
+        "the walker resolved no reference at all, so it held nothing"
+    );
+
+    let recorded = recorded_references(&out.join("package.yml"));
+    assert_eq!(
+        recorded,
+        dangling,
+        "the manifest records {} pairs and the artifact carries {} of {read} resolved references \
+         that resolve nowhere. A pair on the left and not on the right is a repair nobody deleted \
+         the record of; a pair on the right and not on the left could not have published at all",
+        recorded.len(),
+        dangling.len()
+    );
+
+    // The publish said so on standard error, and the count it printed is the
+    // one this walker derived. `dropped` is the other line that reaches here
+    // and it names a `contents` key, so a substring of the count alone would
+    // pass on the wrong line.
+    assert!(
+        message.contains(&format!(
+            "the artifact records {} references that resolve nowhere inside it",
+            recorded.len()
+        )),
+        "the publish did not report the population it shipped: {message}"
+    );
+}
+
+/// The `(member, target)` pairs a manifest records under
+/// `unresolved_references`, sorted.
+///
+/// Read by hand rather than through the engine's loader, so what this case
+/// compares is the file as written and not the engine's reading of it. The block
+/// is a mapping of sequences at a fixed indentation, which is the whole shape
+/// the key takes.
+fn recorded_references(manifest: &Path) -> Vec<(String, String)> {
+    let text = std::fs::read_to_string(manifest).expect("the published manifest reads");
+    let mut pairs = Vec::new();
+    let mut member: Option<String> = None;
+    let mut inside = false;
+    for line in text.lines() {
+        if line.starts_with("unresolved_references:") {
+            inside = true;
+            continue;
+        }
+        if !inside {
+            continue;
+        }
+        if line.starts_with('#') || line.trim().is_empty() {
+            continue;
+        }
+        match line.strip_prefix("    - ") {
+            Some(target) => match &member {
+                Some(at) => pairs.push((at.clone(), target.trim().to_string())),
+                None => panic!("a recorded target with no member above it: {line}"),
+            },
+            None => match line.strip_prefix("  ").map(str::trim_end) {
+                Some(key) if key.ends_with(':') && !key.starts_with(' ') => {
+                    member = Some(key.trim_end_matches(':').to_string());
+                }
+                // Anything at the left margin ends the block.
+                _ => break,
+            },
+        }
+    }
+    pairs.sort();
+    pairs
+}
+
+/// #619: a flattened package inherits no record of another artifact's
+/// references.
+///
+/// `flatten::manifest` copies every source key it does not replace, and
+/// `unresolved_references` rode through on the first cut. The starter recipe
+/// then shipped four members and a record of 51 pairs naming members like
+/// `bundles/README.md` that its artifact does not hold, and the publish printed
+/// the count of them. **That is a standing admission**: a recipe inherits
+/// permission to dangle a reference it does not contain, and the first
+/// assembly that writes a real one at a recorded path is admitted by it.
+///
+/// A flattened package takes a new member layout — `doctrine` lands at
+/// `doctrine/<recipe>/` and the bundle tree is absorbed — so not one recorded
+/// member of the source is carried, and the key is dropped rather than
+/// filtered. What the recipe's own publish finds is what its own record would
+/// hold, and today that is nothing at all.
+#[test]
+fn the_shipped_starter_recipe_inherits_no_record_of_another_artifacts_references() {
+    let root = Root::scratch("starter-record");
+    let source = repository().join("taxonomy-source/headwater-standard");
+    let artifact = root.path().join("release");
+
+    let (code, _stdout, stderr) = publish_assembly_from(&repository(), &source, &artifact);
+    assert_eq!(code, Some(0), "{stderr}");
+
+    let carried = std::fs::read_to_string(artifact.join("package.yml"))
+        .expect("the flattened manifest reads");
+    assert!(
+        !carried.contains(headwater_resolve::package::RECORDED_REFERENCES),
+        "the flattened manifest inherited a record written for another artifact:\n{carried}"
+    );
+    assert!(
+        recorded_references(&artifact.join("package.yml")).is_empty(),
+        "the flattened artifact records a pair it cannot be about"
+    );
+    assert!(
+        !stderr.contains("resolve nowhere inside it"),
+        "the publish reported a population this artifact does not carry: {stderr}"
+    );
+
+    // The source it was flattened from does record a population, so this case
+    // is about the flattening and not about a record that is empty everywhere.
+    let plain = root.path().join("plain");
+    let (code, message) = publish_real_source_into(&plain);
+    assert_eq!(code, Some(0), "{message}");
+    assert!(
+        !recorded_references(&plain.join("package.yml")).is_empty(),
+        "the source package records nothing, so this case holds nothing"
+    );
+}
+
+/// The destination of every inline Markdown link on a line that is not inside a
+/// fenced block, with a code span removed first and a CommonMark link title
+/// dropped.
+fn markdown_links(text: &str) -> Vec<String> {
+    let mut found = Vec::new();
+    let mut fenced = false;
+    for line in text.lines() {
+        let opener = line.trim_start();
+        if opener.starts_with("```") || opener.starts_with("~~~") {
+            fenced = !fenced;
+            continue;
+        }
+        if fenced {
+            continue;
+        }
+        let mut outside = String::new();
+        let mut spanned = false;
+        for character in line.chars() {
+            match character {
+                '`' => spanned = !spanned,
+                _ if !spanned => outside.push(character),
+                _ => {}
+            }
+        }
+        let characters: Vec<char> = outside.chars().collect();
+        let mut at = 0;
+        while at < characters.len() {
+            if characters[at] != '[' {
+                at += 1;
+                continue;
+            }
+            let Some(close) = (at..characters.len()).find(|index| characters[*index] == ']') else {
+                break;
+            };
+            if characters.get(close + 1) != Some(&'(') {
+                at = close + 1;
+                continue;
+            }
+            let Some(end) = (close + 2..characters.len()).find(|index| characters[*index] == ')')
+            else {
+                break;
+            };
+            let destination: String = characters[close + 2..end].iter().collect();
+            let destination = destination
+                .split_whitespace()
+                .next()
+                .unwrap_or_default()
+                .trim_start_matches('<')
+                .trim_end_matches('>');
+            if !destination.is_empty() {
+                found.push(destination.to_string());
+            }
+            at = end + 1;
+        }
+    }
+    found
+}
+
+/// Where a relative link written in `directory` lands inside the artifact, or
+/// `None` where it climbs out of it.
+///
+/// The resolution is lexical, because the artifact carries no symlink a publish
+/// left dereferenced and the question is where the text points.
+fn inside_the_artifact(directory: &Path, target: &str) -> Option<PathBuf> {
+    let mut at = PathBuf::new();
+    for part in directory.join(target).components() {
+        match part {
+            std::path::Component::ParentDir => {
+                if !at.pop() {
+                    return None;
+                }
+            }
+            std::path::Component::CurDir => {}
+            std::path::Component::Normal(name) => at.push(name),
+            _ => return None,
+        }
+    }
+    Some(at)
+}
+
 /// Every regular file under `root`, as a path relative to it, in no
 /// particular order.
 /// #353: the digest a publisher hands on is readable without a text search.
@@ -1247,9 +1800,23 @@ fn a_json_publish_carries_the_digest_a_consumer_pins() {
     assert_eq!(code, Some(0), "{stderr}");
     let (code, document, stderr) = publish_real_source(&json_out, true);
     assert_eq!(code, Some(0), "{stderr}");
+    // #619 put one account on this stream that a successful run makes, and
+    // `dropped` above it has had the same shape since #580: both are things the
+    // publisher asked for that the artifact represents differently, and both are
+    // printed in either output mode so a `--json` caller is not the one reader
+    // who never hears them. So the guard subtracts the account it expects rather
+    // than being dropped — anything else here on a run that succeeded is still a
+    // defect, and standard output is still one document.
+    let unaccounted: Vec<&str> = stderr
+        .lines()
+        .filter(|line| !line.contains("references that resolve nowhere inside it"))
+        .filter(|line| !line.contains(headwater_resolve::package::RECORDED_REFERENCES))
+        .filter(|line| !line.trim().is_empty())
+        .collect();
     assert!(
-        stderr.is_empty(),
-        "a JSON run that succeeded accounts for nothing on standard error: {stderr}"
+        unaccounted.is_empty(),
+        "a JSON run that succeeded accounts for nothing on standard error beyond the population \
+         the artifact records: {unaccounted:#?}"
     );
 
     let record = std::fs::read_to_string(json_out.join("release.yml")).expect("the record reads");

@@ -32,7 +32,7 @@
 //! `functional_spec.md` teaches `functional_spec` — and front matter alone
 //! cannot say, because a homogeneous shelf carries no discriminator at all.
 //!
-//! Four checks, and no fifth:
+//! Five checks, and no sixth:
 //!
 //! 1. The stem names a kind the package declares, and that kind is not abstract.
 //! 2. Every top-level key that names a facet with an enumerated `values` list
@@ -40,6 +40,12 @@
 //! 3. A facet some shelf uses as a discriminator carries the stem's own kind
 //!    name.
 //! 4. No facet the stem's kind forbids is present.
+//! 5. No top-level key names a relation the package declares, the `inverse`
+//!    half of one included.
+//!
+//! That count is prose and nothing reads it. `BRANCHES` is the list a test
+//! holds, and it is longer than five because three of its branches are about
+//! reading the file rather than about what the file says.
 //!
 //! **A placeholder is skipped rather than typed.** A placeholder is a scalar
 //! whose trimmed text opens `{{` and closes `}}`. Without that rule the reader
@@ -151,6 +157,11 @@ pub enum Reason {
     /// exists but the parser cannot see it, which is indistinguishable from
     /// its own perspective and must not be indistinguishable from a refusal.
     NoFrontMatterForKnownKind { kind: String },
+    /// A relation the taxonomy declares is written as a top-level key.
+    /// [HW-DR-0004](../../../../docs/decisions/0004-relation-storage.md) puts a
+    /// relation under a `relations:` block and nowhere else, so a top-level key
+    /// of that name is an edge no reader of the graph can see.
+    RelationAtTopLevel { relation: String },
 }
 
 branches![
@@ -162,6 +173,7 @@ branches![
     DiscriminatorDisagrees,
     ForbiddenFacetPresent,
     NoFrontMatterForKnownKind,
+    RelationAtTopLevel,
 ];
 
 impl std::fmt::Display for Reason {
@@ -237,6 +249,14 @@ impl std::fmt::Display for Reason {
                  with no checkable block is indistinguishable from one this reader never saw, so a \
                  file named for a real kind is held to it even here: add the block, or rename the \
                  file so it no longer claims a kind"
+            ),
+            Reason::RelationAtTopLevel { relation } => write!(
+                f,
+                "`{relation}` is a relation this package declares, and this template writes it as \
+                 a top-level key. A relation is declared under a `relations:` block and nowhere \
+                 else, so a person who copies this file starts a document whose `{relation}` edge \
+                 no graph reads and no reciprocal check reports. Move it under `relations:`, and \
+                 write the target as an identifier"
             ),
         }
     }
@@ -429,9 +449,20 @@ fn read_one(named: &str, at: &Path, taxonomy: &Mapping, out: &mut Vec<Refused>) 
 
     let forbidden = forbidden(kinds, stem);
     let discriminators = discriminators(taxonomy);
+    let relations = relations(taxonomy);
 
     for entry in &document.facets {
         let facet = entry.key.value.as_str();
+
+        // The key is in the wrong place, so nothing about its value excuses it
+        // and this arm runs first. A relation name at the top level is not a
+        // facet at all, so every arm below would read it as one.
+        if relations.iter().any(|name| name == facet) {
+            refuse(Reason::RelationAtTopLevel {
+                relation: facet.to_string(),
+            });
+            continue;
+        }
 
         // Presence is the defect here, so a placeholder does not excuse it and
         // this arm runs before the skip below.
@@ -505,6 +536,57 @@ fn permitted(taxonomy: &Mapping, facet: &str) -> Option<Vec<String>> {
             .map(str::to_string)
             .collect(),
     )
+}
+
+/// Every relation name a document of this taxonomy can write, the inverse
+/// halves included.
+///
+/// It reads the resolved taxonomy rather than a bundle source for the reason
+/// [`permitted`] gives: a bundle adds relations to the base, and a reader of one
+/// source answers for one bundle.
+///
+/// **The `inverse` values are half the population and the whole of the defect.**
+/// A reciprocal half is not a key of `relations:` — `design-spec` declares
+/// `applied_in` and `cites_evidence`, and `applies` and `cited_by` reach a
+/// document only as the `inverse` those two name. Two of the four keys the
+/// library shipped at the top level are of that half, so a walk over the keys
+/// alone reports two of the four and reads as a working check.
+///
+/// **It is the second enumeration of this population, and a test is what holds
+/// it to the first.** `headwater_graph::declarations::Declarations::named` is
+/// the reader a real document meets, and it admits the same two halves. This
+/// crate cannot call it, because `headwater-graph` depends on this one and the
+/// reverse is a dependency inversion, so the two are held against each other
+/// rather than merged: `headwater-graph`'s `tests/vocabulary.rs` resolves this
+/// repository and fails on any name one collects and the other does not. It is
+/// `pub` for that test and for no caller.
+pub fn relations(taxonomy: &Mapping) -> Vec<String> {
+    let Some(declared) = taxonomy
+        .get("relations")
+        .and_then(|node| node.value.as_map())
+    else {
+        return Vec::new();
+    };
+    let mut out: Vec<String> = Vec::new();
+    for entry in declared {
+        let name = entry.key.value.as_str().to_string();
+        if !out.contains(&name) {
+            out.push(name);
+        }
+        let Some(inverse) = entry
+            .value
+            .value
+            .as_map()
+            .and_then(|relation| relation.get("inverse"))
+            .and_then(|node| node.value.as_scalar())
+        else {
+            continue;
+        };
+        if !out.contains(&inverse.text) {
+            out.push(inverse.text.clone());
+        }
+    }
+    out
 }
 
 /// Every facet that some shelf reads to decide a document's kind.

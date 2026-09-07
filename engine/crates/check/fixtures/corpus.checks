@@ -1,9 +1,9 @@
-404 seen, 292 classified, 292 checked, 5339 check instances
+415 seen, 303 classified, 303 checked, 5829 check instances
      11 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
-    279 skipped: this document writes no fragment into itself
-    585 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+    290 skipped: this document writes no fragment into itself
+    607 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   a check read .headwater/ids, which the census never walked
   a check read .headwater/ids, which the census never walked
 adoption
@@ -12,30 +12,31 @@ adoption
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The
       baseline held two when the linter retired. The other named a semicolon
       inside a block quotation, which the engine does not report at all, because
-      the parser hands a quoted block to no lexical rule294 documents in the read set, and 4 barriers that no gate carries across a merge
-    292 instances of facet.required.missing
-    292 instances of facet.value.not_permitted
-    292 instances of identifier.pattern.not_met
-    292 instances of shelf.placement_is_primary
-    594 instances of relation.target.unresolved
+      the parser hands a quoted block to no lexical rule305 documents in the read set, and 4 barriers that no gate carries across a merge
+    303 instances of facet.required.missing
+    303 instances of facet.value.not_permitted
+    303 instances of facet.value.blank
+    303 instances of identifier.pattern.not_met
+    303 instances of shelf.placement_is_primary
+    609 instances of relation.target.unresolved
      88 instances of relation.reciprocity.missing
-    368 instances of relation.endpoint.not_permitted
+    375 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
       2 instances of relation.participation.overdue
-    292 instances of relation.declaration.unusable
-    292 instances of identifier.unusable
+    303 instances of relation.declaration.unusable
+    303 instances of identifier.unusable
       1 instances of identifier.claimed_twice
       1 instances of identifier.claim.missing
       1 instances of identifier.claim.stale
-    267 instances of voice.forbidden_construction
-    281 instances of language.controlled.not_met
-    281 instances of language.retired_term.used
-    281 instances of language.source_form.not_met
-    251 instances of section.required.missing
-    292 instances of link.fragment.unresolved
-    292 instances of warrant.promoted
-    292 instances of lifecycle.transition.not_permitted
-    292 instances of lifecycle.state.not_admitted
+    278 instances of voice.forbidden_construction
+    292 instances of language.controlled.not_met
+    292 instances of language.retired_term.used
+    292 instances of language.source_form.not_met
+    262 instances of section.required.missing
+    303 instances of link.fragment.unresolved
+    303 instances of warrant.promoted
+    303 instances of lifecycle.transition.not_permitted
+    303 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
 suppressions
   0 findings hidden by 0 directives
@@ -43,6 +44,8 @@ rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter
   facet.value.not_permitted
+    document scope, one document and its front matter
+  facet.value.blank
     document scope, one document and its front matter
   identifier.pattern.not_met
     document scope, one document and its front matter
@@ -118,4 +121,4 @@ register
       4 permanently advisory
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 0 suppressed
-  every rule this engine carries reaches one obligation
+  facet.value.blank reaches no obligation, so it names none

@@ -603,6 +603,41 @@ fn engine_defined() -> Vec<Unwritten> {
         .collect()
 }
 
+/// What this engine does not emit, for the kinds no declaration named.
+///
+/// A reason is a property of this engine rather than of the reader's corpus,
+/// so it cannot sit behind a declaration of the kind it is the reason for. The
+/// question an adopter asks is "does this emitter exist", and it is asked
+/// before the declaration is written, not after. Before this, four of the five
+/// reasons [`unbuilt`] holds reached a reader only where a taxonomy had
+/// already declared the kind, and no run over this repository's own corpus
+/// ever printed one.
+///
+/// A declared kind is left out here, because the `other =>` arm of [`plan`]
+/// already reports it at its own output path. `coverage_report` is left out
+/// too: it is not declarable, and [`engine_defined`] pushes it.
+///
+/// The iteration is over [`Kind::ALL`] rather than over a set, so the order is
+/// the order that list holds and two plans over one tree hold the same bytes.
+fn undeclared(projections: &Projections) -> Vec<Unwritten> {
+    let declared: Vec<Kind> = projections
+        .declared
+        .iter()
+        .map(|declaration| declaration.kind)
+        .collect();
+    Kind::ALL
+        .into_iter()
+        .filter(|kind| kind.declarable() && !declared.contains(kind))
+        .filter_map(|kind| {
+            unbuilt(kind).map(|reason| Unwritten {
+                at: "no declaration names one".to_string(),
+                kind,
+                reason: reason.to_string(),
+            })
+        })
+        .collect()
+}
+
 /// Build the plan: what every declaration and the engine itself would write.
 ///
 /// The declarations come from the lock and the [`Identity`] from the lock and
@@ -661,6 +696,7 @@ pub fn plan(
         site_nav::emit(surface, census, declaration, identity, &written, &mut plan);
     }
     descriptor::emit(surface, identity, projections, &mut plan);
+    plan.unwritten.extend(undeclared(projections));
     plan.unwritten.extend(engine_defined());
     // Every declaration has had its turn, so the output set is complete and a
     // marked file outside it is a marked file nothing writes.
@@ -804,8 +840,12 @@ fn graph_export(
 /// and never as an empty result.
 ///
 /// This is the only statement of the built/unbuilt split, over all twelve
-/// kinds rather than over the declarable ten. [`engine_defined`] reads the
-/// register's reason from here rather than holding a second copy, and
+/// kinds rather than over the declarable ten. Every reason here reaches the
+/// report of every run: [`engine_defined`] reads the register's reason from
+/// here rather than holding a second copy, [`undeclared`] carries the reason of
+/// a declarable kind no declaration named, and the `other =>` arm of [`plan`]
+/// carries the reason of one a declaration did name. `spec_six_projections.rs`
+/// holds the whole set against one run, and
 /// `engine/crates/generate/tests/spec_six_projections.rs` holds spec 6's
 /// projection-kinds block against it. The `match` is exhaustive, so a
 /// thirteenth variant is `E0004` here before it is anything else.

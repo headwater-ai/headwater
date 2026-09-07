@@ -232,7 +232,7 @@ This paragraph read eighteen for sixteen iterations, and the number is nineteen.
 
 ## What the engine found about itself
 
-Thirty-eight items: HW-OBL-0131 through HW-OBL-0159, and HW-OBL-0161 through HW-OBL-0169. HW-OBL-0167 names a decision and the other thirty-seven name none, because nothing else here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
+Forty-four items: HW-OBL-0131 through HW-OBL-0159, HW-OBL-0161 through HW-OBL-0169, and HW-OBL-0172 through HW-OBL-0177. HW-OBL-0167 and HW-OBL-0177 name a decision and the other forty-two name none, because nothing else here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
 
 This class did not exist before 2026-08-26. Before that date, such a finding was filed as a GitHub issue labeled `self-audit` and left open. The theory was that a defect nobody outside this repository can reach costs nothing to hold. The theory was half right. The label did keep such work out of an iteration's hands, but it never closed anything. Of 24 issues so labeled, three ever closed. The issue board as a whole ran net-positive on all but one of the eleven days that followed. [The value rule](../../.claude/commands/next-run.md#the-value-rule) now routes a self-audit finding here directly. These 21 are the backlog that rule found already sitting on the tracker, migrated in the same change that rewrote it.
 
@@ -274,6 +274,12 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0167](../obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md) — The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it
 - [HW-OBL-0168](../obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md) — A saturated pattern set and a clean corpus are the same zero, and no report separates them
 - [HW-OBL-0169](../obligations/0169-the-coverage-report-lists-one-path-twice-so-the-self-assessment-page-publishes-two-unaccounted-files-where-one-exists.md) — The coverage report lists one path twice, so the self-assessment page publishes two unaccounted files where one exists
+- [HW-OBL-0172](../obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md) — Nine hand-kept constants enumerate an enum and nothing holds one against the variants
+- [HW-OBL-0173](../obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md) — Four inline gates in the workflow decide an exit status and no suite provokes one
+- [HW-OBL-0174](../obligations/0174-publishing-the-base-package-reports-51-references-that-resolve-nowhere-and-exits-0.md) — Publishing the base package reports 51 references that resolve nowhere and exits 0
+- [HW-OBL-0175](../obligations/0175-two-documents-take-one-sequence-on-a-sequence-declaring-shelf-and-no-rule-reads-it.md) — Two documents take one sequence on a sequence-declaring shelf and no rule reads it
+- [HW-OBL-0176](../obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md) — A blessed fixture is read by a sibling case that runs while the write truncates it
+- [HW-OBL-0177](../obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md) — The value rule writes adopter on every self-audit record and most of them wait on a build
 
 ## What the first typing of this corpus found
 

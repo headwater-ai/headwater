@@ -44,7 +44,7 @@ use headwater_check::Run;
 use headwater_generate::Plan;
 use headwater_graph::Graph;
 use headwater_resolve::migration::Step;
-use headwater_resolve::{Adopted, Founding};
+use headwater_resolve::{Adopted, FoundingRecord};
 use std::collections::{BTreeMap, BTreeSet};
 
 pub mod migrate;
@@ -213,23 +213,51 @@ impl Measured {
 /// `headwater_resolve`'s `tests/founded.rs` is where that is a case rather than
 /// a sentence: every overlay this repository selects reaches a declaration that
 /// is there.
-pub fn addressability(founded: &[Founding], sources: &[String], refused: Vec<Break>) -> Outcome {
+///
+/// # Why the quiet half takes two sides, like the other five
+///
+/// It read one side until
+/// [#386](https://github.com/headwater-ai/headwater/issues/386), and the cost of
+/// that was a verdict that depended on nothing the release under test did. A
+/// founding is a property of the application order rather than of a taxonomy:
+/// two overlays that write leaves near each other commute, and the consumer's
+/// declared order decides which of them creates the shared parent. So a
+/// consumer whose `bundles:` list happens to run the reaching overlay first
+/// carries a founding on every resolution, on both sides of every diff, and a
+/// one-sided reading reported it as a break of every release. The same consumer
+/// with the same two bundles listed the other way was told the same release
+/// preserved everything. One legal reordering of the consumer's own list, and
+/// the opposite version verdict.
+///
+/// The comparison the other five dimensions make is the one that answers the
+/// question this dimension is for: **did this release remove a declaration the
+/// overlay was addressing?** A founding the release the lock names already
+/// carried did not. A founding this release introduces did, and it is reported.
+///
+/// The identity is [`headwater_resolve::FoundingRecord::key`], the operation and
+/// the key it makes, and never the source path — the two sides read the same
+/// overlay out of two places, so the path differs on a founding that moved
+/// nothing.
+pub fn addressability(
+    before: &[FoundingRecord],
+    after: &[FoundingRecord],
+    refused: Vec<Break>,
+) -> Outcome {
+    let carried: BTreeSet<(&str, &str)> = before.iter().map(FoundingRecord::key).collect();
     let mut breaks = refused;
-    breaks.extend(founded.iter().map(|founding| Break {
-        at: format!(
-            "{} in {}",
-            founding.at,
-            sources
-                .get(founding.source)
-                .map(String::as_str)
-                .unwrap_or("a source this resolution does not name")
-        ),
-        was: format!(
-            "an address into `{}`, which the taxonomy under it declared",
-            founding.founds
-        ),
-        now: founding.sentence(),
-    }));
+    breaks.extend(
+        after
+            .iter()
+            .filter(|founding| !carried.contains(&founding.key()))
+            .map(|founding| Break {
+                at: format!("{} in {}", founding.at, founding.source),
+                was: format!(
+                    "an address into `{}`, which the taxonomy under it declared",
+                    founding.founds
+                ),
+                now: founding.sentence(),
+            }),
+    );
     Outcome::over(breaks)
 }
 
@@ -309,6 +337,14 @@ pub fn projection(before: &Plan, after: &Plan) -> Outcome {
 /// injected value, in the way the identity of a run is, and a dimension that
 /// compared it would report the location of the artifact as a change the
 /// artifact made.
+///
+/// **The summary word for this dimension is [`dimension_word`] and not
+/// [`Outcome::word`].** A break here carries any of the readings [`Movement`]
+/// enumerates, and `BROKEN, {n} of them` said one number about five different
+/// events: a real failure, a check that declined to decide, a check that
+/// stopped instantiating, an instanceless rule that started reporting, and a
+/// check that started passing.
+/// [#396](https://github.com/headwater-ai/headwater/issues/396).
 pub fn consequence(before: &Run, after: &Run) -> Outcome {
     let instanceless: Vec<&'static str> = headwater_check::RULES
         .iter()
@@ -402,26 +438,136 @@ pub fn instance_validity(before: &Run, after: &Run) -> (Outcome, BTreeSet<String
     (Outcome::over(breaks), moved)
 }
 
-/// The summary word for `instance_validity` alone.
+/// The rules whose instances stopped agreeing, read off an `instance_validity`
+/// outcome.
 ///
-/// A break here is a rule that stopped agreeing between the two runs, and
-/// [`verdict`] writes exactly one reading that means the rule declined to
-/// decide: `skipped: {why}`. A break whose `now` is that reading is a rule
-/// that handed off, not a document that stopped validating, and the two are
-/// counted apart so the printed word never says one document count for two
-/// different things. [#221](https://github.com/headwater-ai/headwater/issues/221).
+/// A caller that wants to know *what kind* of break it is looking at has one
+/// honest source for it, and this is that source. [`key`] is what puts the rule
+/// at the front of `Break::at`, and the reading of that shape stays in this
+/// module: a caller that split the field itself would carry a second copy of a
+/// format only [`key`] decides.
 ///
-/// This does not change which breaks are read, only how many of them are
-/// printed under which word: `Outcome::forces_major` still answers `true` for
-/// a skip-only movement, because whether a skip should force a major version
-/// is a different question than this one, and issue #221 leaves it open.
-fn instance_validity_word(breaks: &[Break]) -> String {
-    let skipped = breaks
+/// Answers an empty set for a preserved dimension and for one that did not run,
+/// which is the same answer as "no rule broke here". A caller that must tell
+/// those apart is asking about the [`Outcome`] and matches it.
+pub fn broken_rules(outcome: &Outcome) -> BTreeSet<String> {
+    let Outcome::Broken(breaks) = outcome else {
+        return BTreeSet::new();
+    };
+    breaks
         .iter()
-        .filter(|entry| entry.now.starts_with("skipped: "))
-        .count();
-    let failed = breaks.len() - skipped;
-    format!("BROKEN, {failed} failed / {skipped} skipped")
+        .filter_map(|entry| entry.at.split(' ').next())
+        .map(str::to_string)
+        .collect()
+}
+
+/// What one break's `now` reading says happened, for the summary word.
+///
+/// **The set is derived from the three writers of a reading, and never from a
+/// list of strings somebody read out of a report.** A reading under
+/// [`instance_validity`] or [`consequence`] is written by exactly three places
+/// and by nothing else: [`verdict`] writes `passed`, `skipped: {why}` and
+/// `failed: {…}`, one per variant of [`headwater_check::instance::Outcome`],
+/// so a fourth verdict is a compile error before it is a mislabelled count;
+/// [`reported`] writes `nothing reported` and `reported: {…}`; and [`compare`]
+/// writes its `absent` argument, which both dimensions pass as `no instance`.
+/// Six readings, and no seventh without a new writer.
+///
+/// [`verdicts`] joins two instances under one key with ` + `, so a reading can
+/// also be a compound of the first three. [`Movement::of`] reads a compound at
+/// its severest part, because a word that called the whole break a skip would
+/// be a claim about the half of it that failed.
+///
+/// The variants are declared least severe first, so the derived [`Ord`] is the
+/// order [`Movement::of`] takes a maximum over.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Movement {
+    /// An instanceless rule that stopped reporting. Only [`consequence`]
+    /// compares those, and this is the improving direction of that comparison.
+    NoLongerReported,
+    /// A check that started passing. An improvement, and it is counted apart
+    /// because a total that folded it into `failed` would state the opposite
+    /// of what happened.
+    NowPassing,
+    /// A check that stopped instantiating: one side has no reading at all.
+    /// The movement is an absence of measurement rather than a measurement of
+    /// a failure, and calling it `failed` is the false statement that
+    /// [#396](https://github.com/headwater-ai/headwater/issues/396) reports.
+    NoLongerMeasured,
+    /// A check that ran and declined to decide.
+    /// [#221](https://github.com/headwater-ai/headwater/issues/221).
+    Skipped,
+    /// A real break: `failed: {…}`, or an instanceless rule that started
+    /// reporting.
+    Failed,
+}
+
+impl Movement {
+    fn of(now: &str) -> Movement {
+        match Movement::of_one(now) {
+            // Every reading a single writer produces whole is recognised
+            // whole, so a ` + ` inside a skip reason or a finding message
+            // never reaches the split below.
+            Movement::Failed => now
+                .split(" + ")
+                .map(Movement::of_one)
+                .max()
+                .unwrap_or(Movement::Failed),
+            single => single,
+        }
+    }
+
+    fn of_one(now: &str) -> Movement {
+        match now {
+            "no instance" => Movement::NoLongerMeasured,
+            "nothing reported" => Movement::NoLongerReported,
+            "passed" => Movement::NowPassing,
+            _ if now.starts_with("skipped: ") => Movement::Skipped,
+            _ => Movement::Failed,
+        }
+    }
+
+    fn word(self) -> &'static str {
+        match self {
+            Movement::NoLongerReported => "no longer reported",
+            Movement::NowPassing => "now passing",
+            Movement::NoLongerMeasured => "no longer measured",
+            Movement::Skipped => "skipped",
+            Movement::Failed => "failed",
+        }
+    }
+}
+
+/// The summary word for a dimension whose breaks are verdict movements.
+///
+/// `instance_validity` and `consequence` both are: both compare the value
+/// space [`Movement`] enumerates, so both carry the same conflation and one
+/// function answers for both. A sibling of the old `instance_validity_word`
+/// would have left the `no instance` half wrong in each of them.
+///
+/// Only the non-zero counts are printed, severest first, so the common
+/// single-cause report stays one count wide and never says `0 skipped` about a
+/// corpus in which nothing was skipped.
+///
+/// This does not change which breaks are read, only which word each one is
+/// counted under. [`Outcome::forces_major`] still answers `true` for a
+/// skip-only, absence-only or improvement-only movement, because whether any
+/// of those should force a major version is a different question, left open by
+/// #221 and untouched here.
+fn dimension_word(breaks: &[Break]) -> String {
+    let mut counts: BTreeMap<Movement, usize> = BTreeMap::new();
+    for entry in breaks {
+        *counts.entry(Movement::of(&entry.now)).or_default() += 1;
+    }
+    let parts: Vec<String> = counts
+        .iter()
+        .rev()
+        .map(|(movement, count)| format!("{count} {}", movement.word()))
+        .collect();
+    match parts.is_empty() {
+        true => "BROKEN".to_string(),
+        false => format!("BROKEN, {}", parts.join(" / ")),
+    }
 }
 
 /// The documents of this corpus that one step of a migration payload names.
@@ -632,6 +778,103 @@ pub struct Report {
     /// neither fact decides a dimension. See the module comment.
     pub base: Base,
     pub measured: Measured,
+    /// The sources the lock records whose bytes on disk no longer hash to what
+    /// it recorded, as [`headwater_lock::Lock::moved`] names them.
+    ///
+    /// The previous side of every dimension is read out of the lock and never
+    /// out of these files, so this decides nothing and is never a refusal. It
+    /// is here because a reader who is told what the previous side was is owed
+    /// where it came from. See [`Caveat::SourcesMoved`].
+    pub moved_sources: Vec<String>,
+}
+
+/// Something true of this comparison that no dimension is, and that this run
+/// could not settle.
+///
+/// # A caveat and never a refusal
+///
+/// Both arms below are states a correct run reaches. The publisher shape every
+/// case of `crates/cli/tests/diff.rs` uses — edit the package source in place,
+/// publish it, diff the artifact against the lock — moves the recorded sources
+/// on every run, so refusing on [`Caveat::SourcesMoved`] would refuse the
+/// ordinary case. A check that reddens on correct input is one its first reader
+/// turns off.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Caveat {
+    /// [`Base::Same`] beside a broken `addressability`.
+    ///
+    /// The five other dimensions read the taxonomy body, and the digest of the
+    /// lock covers that body, so a base that resolved to the same text makes
+    /// them agree by construction. The founding record is the one reading of
+    /// the previous side that sits outside that digest: it is a property of
+    /// which operation created a key during the merge, and two merges can reach
+    /// identical text by different routes.
+    ///
+    /// So the pair says the previous side's `founded:` block and the previous
+    /// side's taxonomy no longer describe one resolution, or the release moved
+    /// a founding without moving a declaration. Nothing this run holds
+    /// separates them, which is why both are printed.
+    FoundingOutsideTheDigest,
+    /// The lock records source files that have since changed on disk.
+    SourcesMoved(Vec<String>),
+}
+
+impl Caveat {
+    /// The line a reader scans for, and never the name of a dimension: the
+    /// harness in `crates/cli/tests/diff.rs` selects a dimension by the prefix
+    /// of a trimmed line.
+    pub fn heading(&self) -> &'static str {
+        match self {
+            Caveat::FoundingOutsideTheDigest => {
+                "the base and the founding record disagree, and this run cannot settle it"
+            }
+            Caveat::SourcesMoved(_) => {
+                "the previous side was read from a lock whose sources have moved"
+            }
+        }
+    }
+
+    /// The body, one line per sentence a reader acts on separately.
+    pub fn lines(&self) -> Vec<String> {
+        match self {
+            Caveat::FoundingOutsideTheDigest => vec![
+                "The base resolved to the same text, byte for byte, and `addressability` still \
+                 reports a break."
+                    .to_string(),
+                "Every other dimension reads the taxonomy body, which the digest of the lock \
+                 covers, so identical text makes those five agree. The founding record is the one \
+                 reading of the previous side that the digest does not cover."
+                    .to_string(),
+                "Two things reach this state and nothing here separates them. Either the \
+                 `founded:` block of the lock no longer describes the taxonomy beside it, which \
+                 `headwater taxonomy resolve` rewrites — run it and diff again — or this release \
+                 moved which operation creates an address without moving a declaration, which is \
+                 the break the line below reports."
+                    .to_string(),
+            ],
+            Caveat::SourcesMoved(paths) => {
+                let mut lines = vec![format!(
+                    "{} source{} the lock records no longer hash to what it recorded, so the \
+                     previous side is the taxonomy the lock carries and not what these files \
+                     resolve to now.",
+                    paths.len(),
+                    match paths.len() {
+                        1 => "",
+                        _ => "s",
+                    }
+                )];
+                // `moved` and not the bare path: a source file named for a
+                // dimension would otherwise read as that dimension's line.
+                lines.extend(paths.iter().map(|path| format!("moved  {path}")));
+                lines.push(
+                    "That is the reading spec 6 asks for, because the lock is the one thing \
+                     downstream takes. It is stated here and gated on nowhere."
+                        .to_string(),
+                );
+                lines
+            }
+        }
+    }
 }
 
 impl Report {
@@ -648,6 +891,22 @@ impl Report {
         }
     }
 
+    /// Everything true of this comparison that no dimension is.
+    ///
+    /// The first arm is derived here rather than by the caller, so that no
+    /// caller can build a report that contradicts itself and stay silent about
+    /// it. It costs one comparison of two values the report already holds.
+    pub fn caveats(&self) -> Vec<Caveat> {
+        let mut out = Vec::new();
+        if self.base == Base::Same && self.measured.addressability.forces_major() {
+            out.push(Caveat::FoundingOutsideTheDigest);
+        }
+        if !self.moved_sources.is_empty() {
+            out.push(Caveat::SourcesMoved(self.moved_sources.clone()));
+        }
+        out
+    }
+
     pub fn render(&self) -> String {
         let mut out = String::new();
         out.push_str(&format!("package  {}\n", self.package));
@@ -657,7 +916,12 @@ impl Report {
         out.push_str("\n\n");
         for (name, outcome) in self.measured.dimensions() {
             let word = match (name, outcome) {
-                ("instance_validity", Outcome::Broken(breaks)) => instance_validity_word(breaks),
+                // The two dimensions that compare a verdict. The other four
+                // compare a value space with no unmeasured reading in it, so
+                // `Outcome::word` is honest for them.
+                ("instance_validity" | "consequence", Outcome::Broken(breaks)) => {
+                    dimension_word(breaks)
+                }
                 _ => outcome.word(),
             };
             out.push_str(&format!("  {name:<18} {word}\n"));
@@ -672,6 +936,14 @@ impl Report {
                 out.push_str(&format!("  {}\n", entry.at));
                 out.push_str(&format!("    was  {}\n", entry.was));
                 out.push_str(&format!("    now  {}\n", entry.now));
+            }
+        }
+        // Between the readings and the verdict, because a caveat is about what
+        // the verdict below rests on and a reader meets it in that order.
+        for caveat in self.caveats() {
+            out.push_str(&format!("\n{}\n", caveat.heading()));
+            for line in caveat.lines() {
+                out.push_str(&format!("  {line}\n"));
             }
         }
         out.push_str(&format!("\n{}\n", self.bump().sentence()));
@@ -851,6 +1123,7 @@ mod tests {
             from: "1.0.0".into(),
             to: "2.0.0".into(),
             base: Base::Unresolved,
+            moved_sources: Vec::new(),
             measured: Measured::against_nothing(Outcome::Preserved, "nothing resolved"),
         };
         assert!(!report.measured.complete());
@@ -858,5 +1131,231 @@ mod tests {
         assert!(report
             .render()
             .contains("decides nothing about the version"));
+        assert!(report.caveats().is_empty(), "{:?}", report.caveats());
+    }
+
+    fn measured(addressability: Outcome) -> Measured {
+        Measured {
+            classification: Outcome::Preserved,
+            instance_validity: Outcome::Preserved,
+            consequence: Outcome::Preserved,
+            projection: Outcome::Preserved,
+            identifier: Outcome::Preserved,
+            addressability,
+        }
+    }
+
+    fn reported(base: Base, addressability: Outcome, moved_sources: Vec<String>) -> Report {
+        Report {
+            package: "acme/fixture".into(),
+            from: "1.0.0".into(),
+            to: "1.0.0".into(),
+            base,
+            moved_sources,
+            measured: measured(addressability),
+        }
+    }
+
+    fn a_break() -> Outcome {
+        Outcome::over(vec![Break {
+            at: "add.kinds.zz_thing.voice".into(),
+            was: "the previous release carried no such founding".into(),
+            now: "it makes `kinds.zz_thing`".into(),
+        }])
+    }
+
+    /// The contradiction the report could not previously see.
+    ///
+    /// A base that resolved to the same text makes the five body dimensions
+    /// agree by construction, so a broken `addressability` beside it says the
+    /// founding record and the taxonomy of the previous side came from two
+    /// resolutions. The verdict below still says major, and the caveat is what
+    /// tells a reader what that verdict rests on.
+    #[test]
+    fn an_identical_base_beside_a_broken_addressability_is_reported_as_unsettled() {
+        let report = reported(Base::Same, a_break(), Vec::new());
+        assert_eq!(report.caveats(), vec![Caveat::FoundingOutsideTheDigest]);
+        let rendered = report.render();
+        assert!(rendered.contains("this run cannot settle it"), "{rendered}");
+        assert!(
+            rendered.contains("`headwater taxonomy resolve` rewrites"),
+            "{rendered}"
+        );
+        // The caveat precedes the verdict it qualifies.
+        let caveat = rendered
+            .find("cannot settle it")
+            .expect("the caveat is there");
+        let verdict = rendered
+            .find("requires a major version")
+            .expect("the verdict is there");
+        assert!(caveat < verdict, "{rendered}");
+    }
+
+    /// The three honest shapes stay quiet. A base that moved explains a
+    /// founding that moved, and a preserved `addressability` contradicts
+    /// nothing whatever the base did.
+    #[test]
+    fn a_report_that_does_not_contradict_itself_states_no_caveat() {
+        for (base, addressability) in [
+            (Base::Moved, a_break()),
+            (Base::Same, Outcome::Preserved),
+            (Base::Moved, Outcome::Preserved),
+        ] {
+            let report = reported(base, addressability, Vec::new());
+            assert!(
+                report.caveats().is_empty(),
+                "{base:?}: {:?}",
+                report.caveats()
+            );
+        }
+    }
+
+    /// An `addressability` that did not run is not a break, so it contradicts
+    /// nothing. `NotMeasured` reads as `Preserved` to a boolean and this is
+    /// what holds the two apart here.
+    #[test]
+    fn an_addressability_that_did_not_run_contradicts_nothing() {
+        let report = reported(
+            Base::Same,
+            Outcome::NotMeasured("no reading".into()),
+            Vec::new(),
+        );
+        assert!(report.caveats().is_empty(), "{:?}", report.caveats());
+    }
+
+    /// The provenance of the previous side, stated and never gated on. It is
+    /// independent of the contradiction, so a report can carry both.
+    #[test]
+    fn a_lock_whose_sources_moved_says_so_beside_any_other_caveat() {
+        let moved = vec!["packages/acme/taxonomy.yml".to_string()];
+        let report = reported(Base::Moved, Outcome::Preserved, moved.clone());
+        assert_eq!(report.caveats(), vec![Caveat::SourcesMoved(moved.clone())]);
+        let rendered = report.render();
+        assert!(rendered.contains("whose sources have moved"), "{rendered}");
+        assert!(
+            rendered.contains("packages/acme/taxonomy.yml"),
+            "{rendered}"
+        );
+        assert!(rendered.contains("1 source the lock records"), "{rendered}");
+
+        let both = reported(Base::Same, a_break(), moved.clone());
+        assert_eq!(
+            both.caveats(),
+            vec![
+                Caveat::FoundingOutsideTheDigest,
+                Caveat::SourcesMoved(moved)
+            ]
+        );
+    }
+
+    /// No caveat line begins with the name of a dimension.
+    ///
+    /// `crates/cli/tests/diff.rs` selects a dimension by the prefix of a
+    /// trimmed line and takes the first match, so a caveat line that opened
+    /// with one would answer for the summary block.
+    #[test]
+    fn no_caveat_line_reads_as_a_dimension_line() {
+        for caveat in [
+            Caveat::FoundingOutsideTheDigest,
+            Caveat::SourcesMoved(vec!["identifier.yml".into()]),
+        ] {
+            let mut lines = vec![caveat.heading().to_string()];
+            lines.extend(caveat.lines());
+            for line in lines {
+                for name in DIMENSIONS {
+                    assert!(
+                        !line.trim_start().starts_with(name),
+                        "`{line}` reads as the `{name}` line"
+                    );
+                }
+            }
+        }
+    }
+
+    /// Every reading a writer of a `now` value can produce, and the word each
+    /// one is counted under.
+    ///
+    /// The list is the derivation stated on [`Movement`] read back: three from
+    /// [`verdict`], one per variant of the check layer's verdict; two from
+    /// [`reported`]; and the `absent` argument both dimensions pass to
+    /// [`compare`]. The `taxonomy diff` suite exercises four of the six today,
+    /// and this case is what stops the other two from being classified by
+    /// nobody until a corpus happens to produce them.
+    #[test]
+    fn every_reading_a_break_can_carry_has_a_word() {
+        for (now, word) in [
+            ("passed", "now passing"),
+            ("skipped: no pattern set for it", "skipped"),
+            ("failed: docs/a.md:1 a message", "failed"),
+            ("nothing reported", "no longer reported"),
+            ("reported: a message", "failed"),
+            ("no instance", "no longer measured"),
+        ] {
+            assert_eq!(Movement::of(now).word(), word, "the reading `{now}`");
+        }
+    }
+
+    /// A key holding two instances reads as a ` + ` join, and the severest
+    /// part decides.
+    ///
+    /// [`verdicts`] writes that join, so it is a reading a break can carry and
+    /// not a hypothetical. A word that read the whole string would fall
+    /// through to `failed` for every one of these, including the two in which
+    /// nothing failed.
+    #[test]
+    fn a_joined_reading_is_read_at_its_severest_part() {
+        for (now, word) in [
+            ("failed: docs/a.md:1 a message + passed", "failed"),
+            ("passed + skipped: a reason", "skipped"),
+            ("passed + passed", "now passing"),
+            ("failed: a + skipped: b", "failed"),
+            // A ` + ` inside a skip reason is not a join, because the whole
+            // string is already a reading a writer produces.
+            ("skipped: a + b are both absent", "skipped"),
+        ] {
+            assert_eq!(Movement::of(now).word(), word, "the reading `{now}`");
+        }
+    }
+
+    /// The word prints only the movements that occurred, severest first.
+    #[test]
+    fn the_summary_word_prints_no_zero_and_orders_by_severity() {
+        let entry = |now: &str| Break {
+            at: format!("rule at {now}"),
+            was: "passed".to_string(),
+            now: now.to_string(),
+        };
+        assert_eq!(
+            dimension_word(&[entry("no instance"), entry("no instance")]),
+            "BROKEN, 2 no longer measured",
+            "a corpus in which nothing was skipped never prints a skip count"
+        );
+        assert_eq!(
+            dimension_word(&[
+                entry("passed"),
+                entry("no instance"),
+                entry("skipped: a reason"),
+                entry("failed: docs/a.md:1 a message"),
+                entry("nothing reported"),
+            ]),
+            "BROKEN, 1 failed / 1 skipped / 1 no longer measured / 1 now passing / 1 no longer \
+             reported"
+        );
+    }
+
+    /// Naming a movement changes no verdict.
+    ///
+    /// `Outcome::forces_major` reads the shape of the outcome and never the
+    /// word, so a dimension broken only by an absence of measurement or by an
+    /// improvement still forces a major version. Whether it should is the
+    /// question #221 left open and this change does not answer.
+    #[test]
+    fn a_word_that_names_no_failure_still_forces_a_major() {
+        let outcome = Outcome::over(vec![Break {
+            at: "rule at docs/a.md".to_string(),
+            was: "passed".to_string(),
+            now: "no instance".to_string(),
+        }]);
+        assert!(outcome.forces_major());
     }
 }

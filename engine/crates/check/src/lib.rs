@@ -140,6 +140,7 @@ pub mod declaration;
 pub mod dependency;
 pub mod duplicate;
 pub mod endpoint;
+pub mod facet_blank;
 pub mod facet_required;
 pub mod facet_value;
 pub mod fill;
@@ -195,8 +196,8 @@ use headwater_graph::{Declarations, Graph};
 
 /// The rules this runner carries, in the order a report lists them.
 ///
-/// Fifteen are generated from the taxonomy, two read no declaration, one is
-/// the coverage guarantee itself, and the last two are about the taxonomy
+/// Twenty-four are generated from the taxonomy, two read no declaration, one
+/// is the coverage guarantee itself, and the last three are about the taxonomy
 /// rather than about the corpus. A rule that is generated has no entry of its
 /// own anywhere: the list is the *templates*, and the instance count is what a
 /// taxonomy decides.
@@ -204,9 +205,10 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 29] = [
+pub const RULES: [&str; 30] = [
     facet_required::RULE,
     facet_value::RULE,
+    facet_blank::RULE,
     identifier::RULE,
     placement::RULE,
     target::RULE,
@@ -361,6 +363,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_scope::<facet_value::Values>(),
             scope::document_version::<facet_value::Values>(),
             scope::document_exports::<facet_value::Values>(),
+        ),
+        (
+            facet_blank::RULE,
+            scope::document_scope::<facet_blank::Blank>(),
+            scope::document_version::<facet_blank::Blank>(),
+            scope::document_exports::<facet_blank::Blank>(),
         ),
         (
             identifier::RULE,
@@ -572,11 +580,14 @@ pub fn run(
     ctx: &Context,
     cache: &mut Cache,
 ) -> Run {
-    // Registration, in full: seventeen checks, each named once. The scope trait each
+    // Registration, in full: twenty-six checks, each named once. The scope trait each
     // one implements decides what it is handed, so this function cannot widen
     // a view by calling the wrong instantiation.
     let required = facet_required::Required::over(declared.shape);
     let values = facet_value::Values::over(declared.shape);
+    // The state between the two rules above: the key is declared, and it
+    // carries no content. See [`facet_blank`].
+    let blank = facet_blank::Blank::over(declared.shape);
     let identifiers =
         identifier::Identifier::over(declared.shape, &declared.config.identifier_facet);
     let placement = placement::Placement::over(declared.taxonomy);
@@ -602,7 +613,7 @@ pub fn run(
     // the build already made rather than the corpus a second time, and the
     // store reaches them through the view, which is what puts it in the key.
     // See [`claim`].
-    let claim_missing = claim::Missing::over(declared.shape, &graph.index);
+    let claim_missing = claim::Missing::over(declared.shape, declared.taxonomy, &graph.index);
     let claim_stale = claim::Stale::over(&declared.config.identifier_facet, &graph.index);
     let voice = voice::Voice::over(declared.shape);
     let language = language::Language::over(declared.shape);
@@ -631,6 +642,7 @@ pub fn run(
     let digests = scope::Digests::of(census);
     let mut instances = scope::over_documents(&required, census, graph, ctx, cache);
     instances.extend(scope::over_documents(&values, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(&blank, census, graph, ctx, cache));
     instances.extend(scope::over_documents(
         &identifiers,
         census,

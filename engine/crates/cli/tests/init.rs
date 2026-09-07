@@ -73,11 +73,21 @@ taxonomy:
 ";
 
 /// The version block of the arm that found no package, which is an interview
-/// stub and four lines of comment.
+/// stub, eight lines of comment and one commented field.
+///
+/// This constant is a copy of a string in the verb, and a copy checked against
+/// nothing but itself is what #641 cost. The last case in this file runs the
+/// route these bytes name, so the bytes have a reader that is not another copy
+/// of them.
 const NO_PACKAGE_VERSION: &str = r"  # INTERVIEW: no package of this name is under `packages/`, and nothing in this
-  # engine fetches one. Copy a package directory into `packages/`, or run
-  # `headwater taxonomy vendor <dir>` on a published artifact. Either way, pin
-  # the version that the package itself declares.
+  # engine fetches one. Two routes reach a lock, and each one needs a different
+  # field below. Copy a package directory into `packages/`, and pin `version` at
+  # the version that package declares. Or run `headwater taxonomy vendor <dir>`
+  # on a published artifact: that verb reads `digest` and refuses until it holds
+  # the digest the publisher printed, and `headwater taxonomy resolve` reads
+  # `version` after it, so the vendor route needs the digest first and the
+  # version as well.
+  # digest: sha256:<the digest the publisher printed>
   version: 0.0.0
 ";
 
@@ -210,19 +220,122 @@ impl Root {
     /// here and names what it found, rather than silently answering with the
     /// wrong line.
     fn declared_version(&self) -> String {
-        let manifest = self.read("packages/headwater-standard/package.yml");
-        let lines: Vec<&str> = manifest
-            .lines()
-            .filter(|line| line.starts_with("version:"))
-            .collect();
-        assert_eq!(
-            lines.len(),
-            1,
-            "the manifest declares one version at the top level, and it declares {}",
-            lines.len()
-        );
-        lines[0].trim_start_matches("version:").trim().to_string()
+        declared_version_at(&self.at.join("packages/headwater-standard/package.yml"))
     }
+
+    /// A scratch directory beside this root, for something that is not part of
+    /// the tree `init` reads.
+    ///
+    /// A published artifact under the root would join the tree that
+    /// `busiest_directory` walks, so it goes outside rather than inside.
+    fn beside(&self, label: &str) -> PathBuf {
+        let at = self.at.with_file_name(format!(
+            "{}-{label}",
+            self.at
+                .file_name()
+                .expect("the scratch root is named")
+                .to_string_lossy()
+        ));
+        let _ = std::fs::remove_dir_all(&at);
+        std::fs::create_dir_all(&at).expect("the scratch directory is made");
+        at
+    }
+
+    fn write(&self, relative: &str, body: &str) {
+        std::fs::write(self.at.join(relative), body).expect("the file writes");
+    }
+
+    /// One run of the built binary over this root, with an optional path
+    /// argument, returning the status and standard error.
+    ///
+    /// The two streams are kept apart, because a verb of this engine writes its
+    /// report to one and its account of a refusal to the other.
+    fn run(&self, verb: &[&str], argument: Option<&Path>) -> (Option<i32>, String) {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_headwater"));
+        command.args(verb);
+        if let Some(path) = argument {
+            command.arg(path);
+        }
+        let output = command
+            .arg("--root")
+            .arg(&self.at)
+            .output()
+            .expect("the binary runs");
+        (
+            output.status.code(),
+            String::from_utf8_lossy(&output.stderr).into_owned(),
+        )
+    }
+}
+
+/// The version a package manifest declares at the top level, read rather than
+/// written.
+///
+/// The assertion on the count is the point of the helper. A manifest that stops
+/// declaring a version at the top level, or that declares two, fails here and
+/// names what it found, rather than silently answering with the wrong line.
+fn declared_version_at(manifest: &Path) -> String {
+    let body = std::fs::read_to_string(manifest)
+        .unwrap_or_else(|error| panic!("{} reads: {error}", manifest.display()));
+    let lines: Vec<&str> = body
+        .lines()
+        .filter(|line| line.starts_with("version:"))
+        .collect();
+    assert_eq!(
+        lines.len(),
+        1,
+        "{} declares one version at the top level, and it declares {}",
+        manifest.display(),
+        lines.len()
+    );
+    lines[0].trim_start_matches("version:").trim().to_string()
+}
+
+/// The version this repository's maintained source of `headwater/standard`
+/// declares.
+fn maintained_version() -> String {
+    declared_version_at(&repository().join("taxonomy-source/headwater-standard/package.yml"))
+}
+
+/// `taxonomy publish --from` over this repository's maintained source, giving
+/// back the digest the report printed.
+///
+/// The digest is read out of the report rather than written here, so a change to
+/// the package moves this case with it. `publish.rs` holds what the verb writes
+/// to disk; this reads the one line the report tells a consumer to pin, and it
+/// names `taxonomy-source/headwater-standard/` for the reason that target
+/// states: it is the maintained source, and `packages/headwater-standard/` is a
+/// vendored artifact that `publish` refuses.
+fn publish_maintained_source_into(out: &Path) -> String {
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .arg("taxonomy")
+        .arg("publish")
+        .arg("--from")
+        .arg(repository().join("taxonomy-source/headwater-standard"))
+        .arg("--out")
+        .arg(out)
+        .arg("--root")
+        .arg(repository())
+        .output()
+        .expect("the binary runs");
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "the artifact publishes:\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let report = String::from_utf8_lossy(&output.stdout).into_owned();
+    let stated: Vec<&str> = report
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("digest "))
+        .collect();
+    assert_eq!(
+        stated.len(),
+        1,
+        "the publish report states one digest, and it states {}:\n{report}",
+        stated.len()
+    );
+    stated[0].to_string()
 }
 
 /// The declaration of a tree with no package under `packages/`.
@@ -298,5 +411,90 @@ fn the_last_line_of_the_overlay_is_the_line_the_tutorial_replaces() {
             .take(3)
             .collect::<Vec<&str>>()
             .join("\n")
+    );
+}
+
+/// The route the declaration names, run rather than read.
+///
+/// # Why this case exists
+///
+/// Every other case in this target asserts that the declaration *says*
+/// something. None of them runs a command it names, so the comment `init`
+/// writes was a claim about this engine sitting in a string literal, checked
+/// only against a copy of itself in this file. [#641] is what that costs: the
+/// comment stated one requirement for two routes that need different fields,
+/// an adopter who did exactly what it said met `nothing pins this artifact`,
+/// and both copies agreed with each other the whole time.
+///
+/// `.claude/tutorial/fixtures.sh` does not cover it either. The tutorial takes
+/// the copy route, so `taxonomy vendor` is outside the population that suite
+/// runs.
+///
+/// So this case reads the instruction out of the file the verb just wrote,
+/// performs it, and runs the command the file names. It publishes a real
+/// artifact from this repository's own maintained source rather than a
+/// synthetic one, for the reason `publish.rs` states beside the same source:
+/// the manifest of a small stand-in does not reach the paths a real one does.
+///
+/// # What it asserts, and in the order an adopter meets it
+///
+/// The declaration names a `digest` field. `taxonomy vendor` accepts the
+/// artifact once that field carries the digest the publisher printed.
+/// `taxonomy resolve` then gets past the version, which is the second field
+/// the vendor route needs and the one the comment used to name alone.
+///
+/// `resolve` still refuses after all of that, and that refusal is by design:
+/// it is the interview asking this corpus for an identifier namespace, which
+/// no engine can answer off a tree. This case asserts the refusal is no longer
+/// the version one.
+///
+/// [#641]: https://github.com/headwater-ai/headwater/issues/641
+#[test]
+fn the_vendor_route_the_declaration_names_reaches_a_resolved_version() {
+    let root = Root::over("vendor-route");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+    root.init();
+
+    // The edit the comment instructs, taken from the file rather than written
+    // here: the commented `digest` line the declaration carries is the only
+    // hint an adopter has that the field exists, so a declaration that stops
+    // carrying it fails here rather than one command later in their tree.
+    let declaration = root.read(".headwater/taxonomy.yml");
+    let commented = declaration
+        .lines()
+        .find(|line| line.trim_start().starts_with("# digest:"))
+        .unwrap_or_else(|| {
+            panic!(
+                "the declaration names the field `taxonomy vendor` reads, and it names none of \
+                 these:\n{declaration}"
+            )
+        });
+    let version = maintained_version();
+    let pinned = declaration
+        .replace(commented, &format!("  digest: {digest}"))
+        .replace("  version: 0.0.0\n", &format!("  version: {version}\n"));
+    assert!(
+        pinned.contains(&format!("  digest: {digest}\n")),
+        "the commented line is replaced by the pin:\n{pinned}"
+    );
+    root.write(".headwater/taxonomy.yml", &pinned);
+
+    let (code, stderr) = root.run(&["taxonomy", "vendor"], Some(&artifact));
+    assert_eq!(
+        code,
+        Some(0),
+        "`headwater taxonomy vendor` accepts the artifact the declaration pins:\n{stderr}"
+    );
+    assert_eq!(
+        declared_version_at(&root.at.join("packages/headwater-standard/package.yml")),
+        version,
+        "the vendored package is the one the declaration pins"
+    );
+
+    let (_, stderr) = root.run(&["taxonomy", "resolve"], None);
+    assert!(
+        !stderr.contains("this takes headwater/standard"),
+        "`headwater taxonomy resolve` is past the version the vendor route also needs:\n{stderr}"
     );
 }

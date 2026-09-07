@@ -56,7 +56,7 @@ This is forced rather than chosen, for the reason the context gives: a package h
 
 **The rendered form is what a later grammar has to preserve.** [HW-OBL-0046](../obligations/0046-the-identifier-scheme-grammar.md) asks for the prefix, the namespace and the local part as separate declared fields. Disjointness does not wait on that. The segments a pattern parses into decide it, and `taxonomy validate` reads them. What the separate fields still buy is a declared name for the prefix, which an RDF projection needs to derive a document IRI. That change reaches the meta-schema and the version of the package that reads it, and it preserves this rendering, so no identifier is rewritten twice.
 
-**The base package is at 2.0.0 and the change earns the major twice.** A consumer that declares no namespace resolves to a refusal until it declares one. An identifier minted under 1.0.0 no longer matches its pattern.
+**The base package is at 2.0.0 and the change earns the major twice.** A consumer that declares no namespace resolves to a refusal until it declares one. An identifier minted under 1.0.0 does not match its pattern.
 
 **The interview gains the one question that no package can answer.** [Spec 7](../spec/07-distribution-and-federation.md#the-interview) deleted "do you want identifiers" because an existing ruling answers it, and nothing replaced it. `headwater init` asks the adopter what the namespace is, and it is the one answer that selects no bundle.
 

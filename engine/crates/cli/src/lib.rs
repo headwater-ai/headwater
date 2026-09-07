@@ -450,8 +450,9 @@ pub enum Verb {
                  job summary or a review comment, and `json` is the finding shape spec 4 \
                  declares, for an adapter nobody here wrote. `sarif` writes its own loss set \
                  into the artifact. `markdown` declares one in the source and not in the \
-                 artifact, because nothing it writes is machine-readable. `text` and `json` \
-                 declare that they drop nothing. ",
+                 artifact, because nothing it writes is machine-readable. `text` declares one \
+                 drop there too, the routing of each skip, and carries the census and the graph \
+                 that no other format holds. `json` declares that it drops nothing. ",
                 a_refusal_is_not_an_artifact!()
             )
         )]

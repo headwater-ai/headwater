@@ -56,6 +56,24 @@ pub const MANIFEST: &str = "package.yml";
 /// any source is loaded.
 pub const REQUIRES_ENGINE: &str = "requires_engine";
 
+/// The manifest key that records the references a carried document writes which
+/// resolve nowhere inside the artifact.
+///
+/// It is a mapping from an artifact-relative member to the artifact-relative
+/// targets that member names and the artifact does not carry. [`references`]
+/// refuses a dangling reference the key does not hold and reports one it does,
+/// and [#619](https://github.com/headwater-ai/headwater/issues/619) is where the
+/// staging was ruled: `headwater/standard` carries 122 such references over 51
+/// distinct pairs, none of them resolvable in any artifact this project has
+/// published, so a rule that refused every one of them would refuse the base
+/// package on the day it landed.
+///
+/// **The key is written in artifact coordinates and it ships in the artifact.**
+/// Every other path a manifest writes is read against the publisher's tree, and
+/// this one is not, because what it describes is the artifact. A consumer who
+/// opens a vendored package reads the same key against the tree they received.
+pub const RECORDED_REFERENCES: &str = "unresolved_references";
+
 /// The consumer declaration: what this repository takes, and what it walks.
 #[derive(Clone, Debug)]
 pub struct Consumer {
@@ -1098,17 +1116,7 @@ fn publish_assembly_at(
     let staged = stage_flattened(directory, &declared, &flattened)?;
     let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
 
-    let written = put(out, &staged)
-        .map_err(|why| refusal(&display(root, out), &why))
-        .and_then(|()| {
-            let record = release::compute(out, &flattened.manifest)
-                .map_err(|error| release::as_error(&display(root, out), &error))?;
-            std::fs::write(out.join(release::RECORD), release::render(&record))
-                .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
-            Ok(record)
-        });
-
-    match written {
+    match deliver(root, out, &staged, &flattened.manifest) {
         Ok(release) => Ok(Flattening {
             release,
             dropped: flattened.dropped,
@@ -1219,23 +1227,13 @@ fn publish_at(
     migrations(root, directory, manifest, source, &widest)?;
 
     let staged = stage(root, directory, manifest)?;
-    // After `found::observe` and before `put`, which is where `migrations` one
-    // line above already returns from without unwinding: nothing has been
-    // written yet, because `put` is what calls `create_dir_all`. The
+    // After `found::observe` and before `deliver`, which is where `migrations`
+    // one line above already returns from without unwinding: nothing has been
+    // written yet, because [`deliver`] is what reaches the disk. The
     // `!out.exists()` assertion in the CLI's publish target holds that.
-    carried(&staged, &declared)?;
+    integrity(&staged, &declared)?;
 
-    let written = put(out, &staged)
-        .map_err(|why| refusal(&display(root, out), &why))
-        .and_then(|()| {
-            let record = release::compute(out, manifest)
-                .map_err(|error| release::as_error(&display(root, out), &error))?;
-            std::fs::write(out.join(release::RECORD), release::render(&record))
-                .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
-            Ok(record)
-        });
-
-    match written {
+    match deliver(root, out, &staged, manifest) {
         Ok(record) => Ok(record),
         Err(errors) => {
             found.unwind(out);
@@ -1264,6 +1262,7 @@ fn publish_at(
 ///
 /// [#271]: https://github.com/headwater-ai/headwater/issues/271
 mod found {
+    use super::OUT_STAGING as STAGING;
     use crate::release::{self, ReleaseError};
     use std::io::ErrorKind;
     use std::path::{Path, PathBuf};
@@ -1344,15 +1343,35 @@ mod found {
     /// `out` already holds a publish this run refuses to repeat, which is the
     /// message this function has always given. It reports [`ReleaseError::Absent`]
     /// or any other error, and `out` holds no complete record — which is what a
-    /// kill during `put`, or during the write of the record itself, leaves. It
-    /// is not only that: a directory a person filled with something unrelated
-    /// carries no record either, and the two are the same fact on disk. So the
-    /// refusal says what the absence is consistent with rather than what it
-    /// proves, and it still only reports. Nothing here deletes anything, and a
+    /// kill used to leave and no longer does: [`super::deliver`] assembles the
+    /// artifact beside `out` and moves it in one step, so a killed run leaves
+    /// `out` as it found it. What remains is a directory a person filled with
+    /// something unrelated, which is what the refusal now says, and a mount
+    /// point at `out`, which cannot be moved onto and is named there too. It
+    /// still only reports. Nothing here deletes anything, and a
     /// later run has to be told to by whoever reads the message. See [#355].
+    ///
+    /// # One name is not a state and is refused here anyway
+    ///
+    /// [`super::deliver`] assembles the artifact at `--out` with
+    /// [`super::OUT_STAGING`] appended, and clears that path before it writes.
+    /// So an `--out` that ends in the suffix is an `--out` a second publish
+    /// would sweep, and this is the one function both publish paths reach before
+    /// either has written anything. `--out` has no grammar to keep the two
+    /// apart, so the reservation is stated rather than derived.
     ///
     /// [#355]: https://github.com/headwater-ai/headwater/issues/355
     pub(super) fn observe(out: &Path) -> Result<Found, String> {
+        if out
+            .file_name()
+            .is_some_and(|name| name.as_encoded_bytes().ends_with(STAGING.as_bytes()))
+        {
+            return Err(format!(
+                "the output path ends in `{STAGING}`, which a publish reserves for the directory \
+                 it assembles an artifact in beside `--out` and clears before it writes. Publish \
+                 into a path that does not end in it"
+            ));
+        }
         match std::fs::read_dir(out) {
             Ok(mut entries) => match entries.next() {
                 Some(_) => Err(held(out)),
@@ -1387,21 +1406,21 @@ mod found {
                       that does not exist yet"
                 .to_string(),
             Err(ReleaseError::Absent(_)) => format!(
-                "the output directory holds files but no {record}. A publish writes {record} \
-                 last, so a run killed while writing this artifact would leave exactly this — \
-                 files with no record — and deleting them and publishing again is safe if that \
-                 is what happened. It is also what a directory holding something unrelated looks \
-                 like, so check what is there before deleting it. Publish into a directory that \
-                 does not exist yet",
+                "the output directory holds files but no {record}. A publish assembles the \
+                 artifact beside this path and moves it here in one step, so a killed run leaves \
+                 this directory as it found it and what is here is something else. The one \
+                 exception is an output path that is a mount point, which cannot be moved onto \
+                 and is written into directly. Check what is there before you delete it. Publish \
+                 into a directory that does not exist yet",
                 record = release::RECORD,
             ),
             Err(error) => format!(
                 "the output directory holds files and its {record} does not read back cleanly: \
-                 {error}. {record} is the last file a publish writes, so a run killed while \
-                 writing it would leave exactly this, and deleting the directory and publishing \
-                 again is safe if that is what happened. Publish into a directory that does not \
-                 exist yet",
+                 {error}. A publish assembles the artifact beside this path and moves it here in \
+                 one step, so a killed run leaves this directory as it found it. Check what is \
+                 there before you delete it. Publish into a directory that does not exist yet",
                 record = release::RECORD,
+                error = error.to_string().trim_end(),
             ),
         }
     }
@@ -1492,11 +1511,22 @@ fn stage_flattened(
         mode: mode.clone(),
     }));
     staged.sort_by(|left, right| left.path.cmp(&right.path));
-    carried(&staged, name)?;
+    integrity(&staged, name)?;
     Ok(staged)
 }
 
-/// Every path the staged manifest declares, held to the staged set.
+/// Referential integrity over the staged artifact: every path the manifest
+/// declares and every path a carried document writes, held to the staged set.
+///
+/// Two readings run here and they answer different questions. [`carried`] reads
+/// the `contents` key scalars, which is what a manifest declares.
+/// [`references`] reads the bodies of the files the artifact carries, which is
+/// what a document points a reader at. The first was
+/// [#582](https://github.com/headwater-ai/headwater/issues/582) and the second
+/// [#619](https://github.com/headwater-ai/headwater/issues/619), and the gap
+/// between them shipped an artifact whose prose named seven files no consumer
+/// received. Both collect rather than stopping at the first offender, and both
+/// are reported out of one refusal.
 ///
 /// [`reachable`] holds a `contents` path to the publisher's tree, and this
 /// holds the same key to the artifact. They are two readings and not one rule
@@ -1546,7 +1576,7 @@ fn stage_flattened(
 /// **Every bad key is reported, not the first one.** [`reachable`] and
 /// [`agrees`] collect for the same stated reason: a second run should not have
 /// to discover the second defect.
-fn carried(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
+fn integrity(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
     let Some(file) = staged.iter().find(|file| file.path == MANIFEST) else {
         return Err(refusal(
             manifest,
@@ -1567,6 +1597,20 @@ fn carried(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
         return Err(refusal(manifest, "the staged manifest is not a mapping"));
     };
 
+    let mut refused = carried(staged, manifest, map).err().unwrap_or_default();
+    refused.extend(references(staged, manifest, map).err().unwrap_or_default());
+    match refused.is_empty() {
+        true => Ok(()),
+        false => Err(refused),
+    }
+}
+
+/// Every path the staged `contents` keys declare, held to the staged set.
+///
+/// Split out of [`integrity`] so the two readings stay two readings: this one
+/// asks what the manifest declares, and [`references`] asks what a carried
+/// document writes.
+fn carried(staged: &[Staged], manifest: &str, map: &Mapping) -> Result<(), Vec<ResolveError>> {
     let mut refused = Vec::new();
     for entry in &contents_of(map) {
         let key = entry.key.value.as_str();
@@ -1577,11 +1621,7 @@ fn carried(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
         let Some(member) = member_path(declared) else {
             continue;
         };
-        let prefix = format!("{member}/");
-        let held = staged
-            .iter()
-            .any(|file| file.path == member || file.path.starts_with(&prefix));
-        if !held {
+        if !held(staged, &member) {
             refused.extend(refusal(
                 manifest,
                 &format!(
@@ -1612,7 +1652,32 @@ fn carried(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
 /// and [`carried`] skips rather than reporting them, so one rule keeps one
 /// message.
 fn member_path(declared: &str) -> Option<String> {
-    let mut parts: Vec<&str> = Vec::new();
+    lands_inside("", declared)
+}
+
+/// Where a path written inside `directory` lands in the artifact, or `None`
+/// where it names the artifact root or climbs out of it.
+///
+/// `directory` is artifact-relative with `/` separators, and empty for a member
+/// at the artifact root. The resolution is lexical, because the artifact carries
+/// no symlink a publish left undereferenced and the question a reference asks is
+/// where the text points.
+///
+/// **`None` is two answers and the callers want the same thing from both.**
+/// [`member_path`] resolves a `contents` scalar against the artifact root, and
+/// the two values it can hand back a `None` for — an empty scalar and a path
+/// above the package — are the two [`reachable`] has already refused with its
+/// own message. [`references`] resolves a link against the directory of the file
+/// that wrote it, and a `None` there is a link that deliberately leaves the
+/// artifact. Neither is this rule's to report.
+fn lands_inside(directory: &str, declared: &str) -> Option<String> {
+    let mut parts: Vec<&str> = match directory.is_empty() {
+        true => Vec::new(),
+        false => directory
+            .split('/')
+            .filter(|part| !part.is_empty())
+            .collect(),
+    };
     for part in declared.split('/') {
         match part {
             "" | "." => continue,
@@ -1626,6 +1691,367 @@ fn member_path(declared: &str) -> Option<String> {
         true => None,
         false => Some(parts.join("/")),
     }
+}
+
+/// Whether the staged set holds an artifact path, as a file or as a directory
+/// above one.
+///
+/// A `contents` key and a prose link both name a directory sometimes, and a
+/// staged set is a list of files, so a directory is held when a file sits under
+/// it. The two readings of [`integrity`] ask this the same way on purpose.
+fn held(staged: &[Staged], at: &str) -> bool {
+    let prefix = format!("{at}/");
+    staged
+        .iter()
+        .any(|file| file.path == at || file.path.starts_with(&prefix))
+}
+
+/// Every reference a carried document writes, held to the staged set.
+///
+/// [`carried`] reads what the manifest declares and this reads what a document
+/// says. They are the same rule over two populations, and until
+/// [#619](https://github.com/headwater-ai/headwater/issues/619) only the first
+/// ran: a change that dropped members from `headwater/standard` left fifteen
+/// links across seven carried files pointing at files no consumer received, and
+/// publish reported nothing. The declared half refused a planted `contents`
+/// scalar with exit 1 on the same tree, so the gap was measured rather than
+/// reasoned.
+///
+/// # What it reads
+///
+/// Every staged member whose bytes are text, and every inline Markdown link on a
+/// line that no fence and no code span covers. A `.yml` member is read as well
+/// as a `.md` one, because a bundle manifest carries prose in its comments and
+/// two of them in `headwater/standard` write a link.
+///
+/// A destination is judged only when it names a path inside the artifact. A
+/// scheme, an empty destination and a bare fragment are passed over, and so is a
+/// link that climbs out of the artifact: `../../spec/07-…` written for a
+/// publisher's own tree is a statement about a directory the artifact never had,
+/// and where it climbs clear of the root it is nothing this publish can decide.
+///
+/// # The recorded population, and why the rule is staged
+///
+/// The absolute bar — refuse every reference that resolves nowhere — was
+/// measured against this repository's own package before it was written, and it
+/// refuses `headwater/standard`: 122 references over 51 distinct pairs and 9
+/// carried files, naming 23 targets under `spec/`, `evaluations/`,
+/// `obligations/` and `decisions/`, **none of which was resolvable in any
+/// artifact this project has ever published**. They are links written for the
+/// publisher's `docs/` layout, and repairing them needs a ruling on what a
+/// doctrine link to a publisher's own specification becomes in a consumer's
+/// tree. That ruling is not this rule's.
+///
+/// So [`RECORDED_REFERENCES`] names the population and this refuses what the
+/// population does not hold — the class a publish *creates*, which is the class
+/// that shipped the fifteen. **The identity is the pair `(member, resolved
+/// target)`**, both artifact-relative, both derived from the source alone, and
+/// neither carrying a version or a digest, so a republish of the same source
+/// records the same pairs. A pair the record holds and the artifact no longer
+/// dangles is not refused either: a repair is not a defect, and the record
+/// shrinking is how the population is meant to end.
+fn references(staged: &[Staged], manifest: &str, map: &Mapping) -> Result<(), Vec<ResolveError>> {
+    let admitted = recorded(map);
+    let mut refused = Vec::new();
+
+    // The record is scoped to the artifact it ships in, and a pair naming a
+    // member this artifact does not carry is refused rather than ignored. A
+    // record that outlives its member is a standing admission: the pair admits
+    // nothing today and admits the first document published at that path
+    // tomorrow, with nobody having decided that. `publish --assembly` is how a
+    // record reaches an artifact it was not written for, because a flattened
+    // package takes a new member layout, and `flatten::manifest` drops the key
+    // for that reason.
+    for (member, target) in &admitted {
+        if !held(staged, member) {
+            refused.extend(refusal(
+                manifest,
+                &format!(
+                    "`{RECORDED_REFERENCES}` records `{member}` against {target}, and the artifact \
+                     does not carry {member}. A record names what one artifact carries, so a pair \
+                     whose member never shipped admits nothing today and admits whatever is \
+                     published at that path later. Delete the pair, or publish the member it names"
+                ),
+            ));
+        }
+    }
+
+    for file in staged {
+        let Ok(text) = std::str::from_utf8(&file.bytes) else {
+            continue;
+        };
+        let directory = match file.path.rfind('/') {
+            Some(at) => &file.path[..at],
+            None => "",
+        };
+        for written in links(text) {
+            let target = destination(&written);
+            if target.is_empty() || target.contains("://") || target.starts_with("mailto:") {
+                continue;
+            }
+            let Some(at) = lands_inside(directory, &target) else {
+                continue;
+            };
+            if held(staged, &at) || admitted.contains(&(file.path.clone(), at.clone())) {
+                continue;
+            }
+            let member = &file.path;
+            refused.extend(refusal(
+                manifest,
+                &format!(
+                    "`{member}` writes the reference {written}, which names {at}, and the artifact \
+                     does not carry it. Every relative reference a published document writes is a \
+                     path a consumer follows, so publishing this would ship a document pointing at \
+                     a member no consumer received. Repoint the reference, carry the target, or \
+                     record the pair under `{RECORDED_REFERENCES}` in the manifest where it \
+                     predates this publish"
+                ),
+            ));
+        }
+    }
+    match refused.is_empty() {
+        true => Ok(()),
+        false => Err(refused),
+    }
+}
+
+/// The `(member, target)` pairs a manifest records as resolving nowhere inside
+/// the artifact.
+///
+/// One reading, called by [`references`] on the staged manifest and by
+/// [`recorded_references`] on a written artifact, so the gate and the report
+/// never disagree about what the key says. A malformed value is skipped rather
+/// than refused: the key admits a reference and admitting nothing is the safe
+/// direction, so a value nothing can read leaves the reference refused.
+fn recorded(map: &Mapping) -> std::collections::BTreeSet<(String, String)> {
+    let mut pairs = std::collections::BTreeSet::new();
+    let Some(entries) = map
+        .get(RECORDED_REFERENCES)
+        .and_then(|node| node.value.as_map())
+    else {
+        return pairs;
+    };
+    for entry in entries {
+        let Some(member) = member_path(entry.key.value.as_str()) else {
+            continue;
+        };
+        let Some(targets) = entry.value.value.as_seq() else {
+            continue;
+        };
+        for target in targets {
+            let Some(scalar) = target.value.as_scalar() else {
+                continue;
+            };
+            let Some(at) = member_path(scalar.text.as_str()) else {
+                continue;
+            };
+            pairs.insert((member.clone(), at));
+        }
+    }
+    pairs
+}
+
+/// The path a link destination names, with the fragment and the query removed
+/// and every percent escape decoded.
+///
+/// A destination is a URL and a path on disk is not, so `a%20b.md` names
+/// `a b.md` and a reader who follows the link opens that file. Reading the
+/// escape as written reports a file that is there as a file that is not, which
+/// is a refused publish over a correct link. `?` opens a query, which no path
+/// carries and no file name here holds.
+///
+/// A malformed escape stays as written, because a destination this cannot read
+/// is one this rule has no business rewriting.
+fn destination(written: &str) -> String {
+    let path = written
+        .split('#')
+        .next()
+        .unwrap_or_default()
+        .split('?')
+        .next()
+        .unwrap_or_default();
+    let bytes = path.as_bytes();
+    let mut out: Vec<u8> = Vec::with_capacity(bytes.len());
+    let mut at = 0;
+    while at < bytes.len() {
+        match bytes[at] {
+            b'%' if at + 2 < bytes.len() => {
+                let pair = std::str::from_utf8(&bytes[at + 1..at + 3])
+                    .ok()
+                    .and_then(|text| u8::from_str_radix(text, 16).ok());
+                match pair {
+                    Some(byte) => {
+                        out.push(byte);
+                        at += 3;
+                    }
+                    None => {
+                        out.push(bytes[at]);
+                        at += 1;
+                    }
+                }
+            }
+            byte => {
+                out.push(byte);
+                at += 1;
+            }
+        }
+    }
+    String::from_utf8(out).unwrap_or_else(|_| path.to_string())
+}
+
+/// The destination of every inline Markdown link in `text` that no code block
+/// and no code span covers.
+///
+/// A code span, a fenced block and an indented block are read past, because
+/// prose about this engine prints a path inside all three, and a rule that
+/// refuses a publish over an example is a rule the first publisher it meets
+/// turns off. A reference-style link and an HTML anchor are not read, and that
+/// is a narrowing this states rather than hides: the population it was measured
+/// against writes neither.
+///
+/// # A fence closes on its own character, and a boolean cannot say that
+///
+/// The first cut toggled one flag on ` ``` ` or on `~~~`, so a `~~~` line inside
+/// a backtick fence closed it, every following line read as prose, and the line
+/// that closed the real fence opened a new one. **Everything after an imbalance
+/// went unread**, which is a check reporting success while not looking — the
+/// failure this whole rule exists to refuse, wearing the other face. A fence
+/// therefore remembers the character that opened it and the length of the run,
+/// and only a run of the same character at that length or longer closes it. A
+/// closing fence carries no information string, so a line with anything else on
+/// it stays content.
+///
+/// **The information string is read at both ends.** CommonMark refuses a
+/// backtick run as an opener when the text after it carries a backtick, and the
+/// first cut of this tested that at the closing end alone. A line like
+/// ` ```a`b ` therefore opened a fence that nothing ever closed, and every line
+/// to the end of the file went unread. A tilde run takes any information string,
+/// so the rule belongs to the backtick.
+///
+/// # An indented block is code here, and the boundary is deliberate
+///
+/// Four spaces after a blank line open an indented code block, and this reads
+/// past one for the same reason it reads past a fence: `CLAUDE.md` and this
+/// repository's specification both print a command that way. The narrowing is
+/// that CommonMark opens no indented block inside a list item, and this does, so
+/// a link written in a list continuation indented four spaces is not read. A
+/// missed reference is the cost, and a refused publish over a printed example is
+/// what it buys.
+fn links(text: &str) -> Vec<String> {
+    let mut found = Vec::new();
+    // The character that opened the fence and the length of its run, where one
+    // is open.
+    let mut fence: Option<(char, usize)> = None;
+    let mut indented = false;
+    let mut previous_blank = true;
+    for line in text.lines() {
+        let opener = line.trim_start();
+        if let Some((character, length)) = fence {
+            let run = opener.chars().take_while(|held| *held == character).count();
+            if run >= length && opener.trim_start_matches(character).trim().is_empty() {
+                fence = None;
+            }
+            continue;
+        }
+        let blank = opener.is_empty();
+        let deep = line.starts_with("    ") || line.starts_with('\t');
+        if !blank {
+            if deep && (indented || previous_blank) {
+                indented = true;
+                previous_blank = false;
+                continue;
+            }
+            indented = false;
+        }
+        previous_blank = blank;
+        for character in ['`', '~'] {
+            let run = opener.chars().take_while(|held| *held == character).count();
+            if run < 3 {
+                continue;
+            }
+            // The same information-string rule the closer already applies, on
+            // the other end. CommonMark refuses a backtick run as an opener when
+            // the text after it carries a backtick, because that text would be
+            // ambiguous with a code span. Reading it as an opener here opens a
+            // fence that nothing ever closes, and **every line to the end of the
+            // file then goes unread** — the invisibility this rule exists to
+            // refuse, reached through the one end that had no test. A tilde run
+            // takes any information string, so the rule is the backtick's alone.
+            if character == '`' && opener.trim_start_matches('`').contains('`') {
+                continue;
+            }
+            fence = Some((character, run));
+            break;
+        }
+        if fence.is_some() {
+            continue;
+        }
+        let mut outside = String::new();
+        let mut spanned = false;
+        for character in line.chars() {
+            match character {
+                '`' => spanned = !spanned,
+                _ if !spanned => outside.push(character),
+                _ => {}
+            }
+        }
+        let characters: Vec<char> = outside.chars().collect();
+        let mut at = 0;
+        while at < characters.len() {
+            if characters[at] != '[' {
+                at += 1;
+                continue;
+            }
+            let Some(close) = (at..characters.len()).find(|index| characters[*index] == ']') else {
+                break;
+            };
+            if characters.get(close + 1) != Some(&'(') {
+                at = close + 1;
+                continue;
+            }
+            let Some(end) = (close + 2..characters.len()).find(|index| characters[*index] == ')')
+            else {
+                break;
+            };
+            let destination: String = characters[close + 2..end].iter().collect();
+            let destination = destination
+                .split_whitespace()
+                .next()
+                .unwrap_or_default()
+                .trim_start_matches('<')
+                .trim_end_matches('>');
+            if !destination.is_empty() {
+                found.push(destination.to_string());
+            }
+            at = end + 1;
+        }
+    }
+    found
+}
+
+/// What a published artifact records under [`RECORDED_REFERENCES`], as
+/// `<member> -> <target>` lines in a stable order.
+///
+/// The report half of [`references`]. A publish refuses a dangling reference the
+/// record does not hold and says nothing about it; this is how a publisher is
+/// told what the record admits, and it reads the manifest the artifact carries
+/// rather than a second copy of the key. An artifact whose manifest does not
+/// read yields nothing, because the publish that wrote it has already been
+/// through [`integrity`] and a refusal is not this function's to raise.
+pub fn recorded_references(artifact: &Path) -> Vec<String> {
+    let Ok(text) = std::fs::read_to_string(artifact.join(MANIFEST)) else {
+        return Vec::new();
+    };
+    let Ok(loaded) = headwater_yaml::load(&text) else {
+        return Vec::new();
+    };
+    let Some(map) = loaded.value.as_map() else {
+        return Vec::new();
+    };
+    recorded(map)
+        .into_iter()
+        .map(|(member, target)| format!("{member} -> {target}"))
+        .collect()
 }
 
 /// Which kind of thing a `contents` key's reader opens.
@@ -1892,7 +2318,9 @@ fn stage(
         return Err(refusal(&name, "`contents.bundles` is not a path"));
     };
     if !leaves(&scalar.text) {
-        // A path that stays inside was read with everything else.
+        // A path that stays inside was read with everything else, and it keeps
+        // the name the manifest wrote, so that name is where the bundles are.
+        staged.retain(|file| !a_bundles_own_corpus(&file.path, &scalar.text));
         return Ok(staged);
     }
 
@@ -1908,6 +2336,10 @@ fn stage(
         &mut staged,
     )
     .map_err(|why| refusal(&name, &why))?;
+    // The bundles walk wrote everything under `BUNDLES`, which is where the
+    // rewrite below points the manifest, so that is the prefix the exception is
+    // read against.
+    staged.retain(|file| !a_bundles_own_corpus(&file.path, BUNDLES));
 
     let Some(at) = staged.iter().position(|file| file.path == MANIFEST) else {
         return Err(refusal(&name, "the package carries no manifest to rewrite"));
@@ -1922,6 +2354,40 @@ fn stage(
     })?;
     staged[at].bytes = rewritten.into_bytes();
     Ok(staged)
+}
+
+/// Whether a staged path is a bundle's own reference corpus, which is the one
+/// exception to publication taking the package directory whole.
+///
+/// **`at` is where the bundles sit inside the artifact**, and it is not always
+/// [`BUNDLES`]: a `contents.bundles` that leaves the package is rewritten to
+/// `bundles` by [`stage`], and one that stays inside keeps the name the
+/// manifest wrote. A bundle root is one segment under that, so what this
+/// answers to is `<at>/<bundle>/fixtures/…` and nothing else. A `fixtures`
+/// directory elsewhere in the package, or deeper inside a bundle, is carried
+/// like any other file, because spec 7 states the exception over one path
+/// rather than over a name. A *file* named `fixtures` at a bundle root is
+/// carried too, because the exception is a directory.
+///
+/// [#518]: https://github.com/headwater-ai/headwater/issues/518
+fn a_bundles_own_corpus(path: &str, at: &str) -> bool {
+    let at = at.trim_start_matches("./").trim_end_matches('/');
+    let inside = match at.is_empty() || at == "." {
+        true => path,
+        false => match path
+            .strip_prefix(at)
+            .and_then(|rest| rest.strip_prefix('/'))
+        {
+            Some(rest) => rest,
+            None => return false,
+        },
+    };
+    let mut segments = inside.split('/');
+    let _bundle = segments.next();
+    matches!(
+        (segments.next(), segments.next()),
+        (Some(FIXTURES), Some(_))
+    )
 }
 
 /// Read a directory tree into the staged set, under a prefix inside the
@@ -1990,6 +2456,269 @@ fn read_tree(
         into.push(Staged { path, bytes, mode });
     }
     Ok(())
+}
+
+/// The suffix a publish appends to `--out` to name the directory it assembles an
+/// artifact in before it moves that artifact into place.
+///
+/// It is the free-path analogue of [`STAGING`], and it needs a guard that
+/// [`STAGING`] does not. A `vendor` target is a directory under `packages/` whose
+/// name a manifest declares, and `~` is 0x7E, above every byte
+/// `names_a_package` admits, so no package can be named into that path. `--out`
+/// has no grammar at all, so the reservation has to be stated: [`found::observe`]
+/// refuses an `--out` whose final component ends in this suffix, and that
+/// refusal is what makes the path below a path this verb owns rather than a path
+/// a publisher might have chosen.
+pub const OUT_STAGING: &str = "~staging";
+
+/// The directory a publish assembles `--out`'s artifact in, or `None` for a
+/// path that has no final component to append to.
+///
+/// A **sibling** of `--out`, and both halves of that matter. The rename at the
+/// end is then a rename inside one directory, so it is on one filesystem by
+/// construction and cannot report `EXDEV` for a reason the caller could have
+/// avoided. And the parents `create_dir_all` makes to reach the staging
+/// directory are exactly the parents `--out` needs, so the swap needs no second
+/// directory pass and [`found::Found::unwind`] still finds the chain it observed
+/// to be absent.
+///
+/// `None` is `--out /` and `--out foo/..`: paths with no final component, where
+/// appending would produce a child rather than a sibling and the rename would be
+/// a directory moved onto its own parent. [`deliver`] writes those the way this
+/// verb always wrote every path, because a new refusal for a path that publishes
+/// today would be a regression bought with nothing.
+fn out_staging(out: &Path) -> Option<PathBuf> {
+    let mut name = out.file_name()?.to_os_string();
+    name.push(OUT_STAGING);
+    Some(out.with_file_name(name))
+}
+
+/// Put the artifact at `--out`, having assembled every byte of it somewhere else
+/// first.
+///
+/// # What this is for
+///
+/// [`put`] writes an artifact one file at a time and [`release::RECORD`] last,
+/// so a publish killed inside it used to leave files at `--out` with no record —
+/// the state [`found::held`]'s second arm reports, and the state
+/// [#485](https://github.com/headwater-ai/headwater/issues/485) asked for a flag
+/// to delete. The flag cannot be written: the predicate that would fire it is
+/// *files at `--out` and no record*, which is byte-for-byte what a directory
+/// holding somebody's unrelated work looks like, so it would be a recursive
+/// delete on a directory about which the run has established nothing. The window
+/// is closed here instead, and then there is nothing to clear.
+///
+/// [`vendor`] already argued this and its doc comment named this verb as the
+/// weaker case. The two now stage the same way.
+///
+/// # The three ways a rename can refuse, all three measured
+///
+/// Onto an **empty** directory it succeeds, and [`found::observe`] has already
+/// established that `--out` is empty or absent, so the ordinary path is the one
+/// that works. Onto a **non-empty** directory it is `ENOTEMPTY`, which is only
+/// reachable when something filled `--out` between the observation and here; the
+/// run refuses, having written nothing into `--out`. Onto a **mount point** it is
+/// `EBUSY`, because the kernel will not move a directory over a mount, and
+/// `EXDEV` is the same shape from the other side. Publishing into a mounted
+/// volume works today and is a thing continuous integration does, so those two
+/// fall back to writing straight into `--out` rather than refusing. That
+/// fallback is the one configuration where a killed publish can still leave
+/// files at `--out`, and it is why [`found::held`] names a mount point rather
+/// than claiming the guarantee without one.
+///
+/// # What removes the staging directory
+///
+/// Every exit path here calls [`clear_staging`], including the successful one:
+/// the rename takes `<out>~staging/`[`ASSEMBLY`] and leaves `<out>~staging`
+/// itself, holding its marker, to be swept. A run killed anywhere leaves the
+/// directory behind, so the next run sweeps it before it writes — a file an
+/// earlier run left there would otherwise be carried into an artifact that
+/// nothing staged.
+///
+/// **That sweep refuses rather than guesses**, and [`clear_staging`] carries the
+/// argument. A publish removes a directory at that path only when the directory
+/// holds the [`MARKER`] a publish writes into it before it writes anything else.
+/// Anything else there is somebody's, and the run refuses with a message naming
+/// the path.
+fn deliver(
+    root: &Path,
+    out: &Path,
+    staged: &[Staged],
+    manifest: &Mapping,
+) -> Result<Release, Vec<ResolveError>> {
+    let named = display(root, out);
+    let Some(staging) = out_staging(out) else {
+        return write_artifact(&named, out, staged, manifest);
+    };
+    clear_staging(&staging).map_err(|why| refusal(&display(root, &staging), &why))?;
+    let assembled = staging.join(ASSEMBLY);
+    if let Err(why) = claim_staging(&staging) {
+        return Err(refusal(&display(root, &staging), &why));
+    }
+    let record = match write_artifact(&named, &assembled, staged, manifest) {
+        Ok(record) => record,
+        Err(errors) => {
+            let _ = clear_staging(&staging);
+            return Err(errors);
+        }
+    };
+    match std::fs::rename(&assembled, out) {
+        Ok(()) => {
+            let _ = clear_staging(&staging);
+            Ok(record)
+        }
+        Err(error) if carries_a_mount(&error) => {
+            let _ = clear_staging(&staging);
+            write_artifact(&named, out, staged, manifest)
+        }
+        Err(error) => {
+            let _ = clear_staging(&staging);
+            Err(refusal(
+                &named,
+                &format!(
+                    "the artifact was assembled beside it and cannot be moved into place: \
+                     {error}. Nothing was written into the output directory. Publish into a \
+                     directory that does not exist yet"
+                ),
+            ))
+        }
+    }
+}
+
+/// The subdirectory of the staging directory that the artifact is assembled in.
+///
+/// The marker is what makes the removal decidable, and the marker must not reach
+/// the artifact, so the two live at different depths rather than side by side.
+/// The rename then moves `<out>~staging/assembly` onto `--out` and leaves the
+/// marker behind at `<out>~staging`, which is the path that is then removed —
+/// still carrying its marker at the instant it is removed, which is the whole
+/// point of writing one. A marker that had to be deleted before the rename would
+/// leave a window in which a killed run's own staging directory is
+/// indistinguishable from a stranger's, and the window is what this change
+/// exists to close.
+///
+/// `<out>~staging/assembly` is a directory inside a directory beside `--out`, so
+/// the rename is still on one filesystem.
+const ASSEMBLY: &str = "assembly";
+
+/// The file a publish writes into the staging directory to say the directory is
+/// its own.
+///
+/// It is never empty, for the reason `.headwater/ids` files are never empty:
+/// content is what a person reading the path gets, and it costs one string.
+const MARKER: &str = ".headwater-publish-staging";
+
+const MARKER_TEXT: &str = "\
+This directory is where `headwater taxonomy publish` assembles an artifact before
+it moves that artifact onto the output path beside it. A publish creates this
+directory, and a publish removes it. A publish that was killed leaves it here,
+and the next publish into the same output path removes it and starts again.
+Nothing else reads it, and it is safe to delete.
+";
+
+/// Make the staging directory and write the marker that says it is this verb's.
+///
+/// The marker is the **first** thing written, before any artifact byte, so a
+/// publish killed at any point after the directory exists leaves a directory
+/// that says whose it is. That is what keeps
+/// [#485](https://github.com/headwater-ai/headwater/issues/485)'s recovery
+/// automatic under a delete that refuses to guess.
+fn claim_staging(staging: &Path) -> Result<(), String> {
+    std::fs::create_dir_all(staging)
+        .map_err(|error| format!("a publish cannot make its staging directory: {error}"))?;
+    std::fs::write(staging.join(MARKER), MARKER_TEXT)
+        .map_err(|error| format!("a publish cannot claim its staging directory: {error}"))
+}
+
+/// Whether a failed rename means the output path is a mount rather than a path
+/// this verb may swap.
+///
+/// `EBUSY` is a rename onto a mount point and `EXDEV` is a rename across a
+/// filesystem boundary. Both were measured on a directory renamed onto an empty
+/// `tmpfs` mount; neither is a defect of the artifact, and both are answered by
+/// writing the artifact where it was asked for.
+fn carries_a_mount(error: &std::io::Error) -> bool {
+    matches!(
+        error.kind(),
+        std::io::ErrorKind::ResourceBusy | std::io::ErrorKind::CrossesDevices
+    )
+}
+
+/// Remove a staging directory, whatever state it is in and whether or not it is
+/// there.
+///
+/// # The removal is decidable, and it refuses rather than guesses
+///
+/// An unconditional `remove_dir_all` here would be the same undecidable delete
+/// that [#485](https://github.com/headwater-ai/headwater/issues/485)'s flag was
+/// refused for, moved one directory over and with the flag that made it
+/// deliberate taken away. `--out` is a path a publisher named, and `<out>~staging`
+/// is a path this verb derived from it — but the verb derives it from **every**
+/// path anybody ever passes to `--out`, on a machine where it owns none of them.
+/// `vendor`'s clear of `packages/~staging` is not the same act: that is one fixed
+/// path inside a directory this tool owns.
+///
+/// So a publish writes [`MARKER`] into the directory before it writes a byte of
+/// artifact, and this removes only a directory carrying it. That turns *a path I
+/// derived* into *a directory this tool created*, which is the distinction the
+/// undecidable delete did not have. A killed run always carries the marker,
+/// because the marker is the first thing written, so recovery after a kill is
+/// untouched.
+///
+/// # What each state does
+///
+/// Nothing there is `Ok`. A directory carrying the marker is removed. A
+/// directory without it, and anything at that path that is not a directory, is
+/// refused with a message naming the path — which is also what answers a
+/// **file** at `<out>~staging`, where a bare `create_dir_all` reported `cannot
+/// create it: File exists` against `--out`, a path that exists and is not the
+/// one that stopped the run.
+///
+/// `symlink_metadata` is what asks, so a link at this path is refused rather
+/// than followed into somebody's tree.
+fn clear_staging(staging: &Path) -> Result<(), String> {
+    let held = match std::fs::symlink_metadata(staging) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => {
+            return Err(format!(
+                "a publish assembles the artifact here before it moves it into place, and this \
+                 path cannot be read: {error}. Move it aside, or publish into a different output path"
+            ));
+        }
+        Ok(held) => held,
+    };
+    if held.is_dir() && staging.join(MARKER).is_file() {
+        return std::fs::remove_dir_all(staging)
+            .map_err(|error| format!("a publish cannot clear its own staging directory: {error}"));
+    }
+    Err(format!(
+        "a publish assembles the artifact here before it moves it into place, and something is \
+         already at this path that no publish wrote. A publish removes only a directory holding \
+         its own `{MARKER}` file, so this one stays. Move it aside, or publish into a different \
+         output path"
+    ))
+}
+
+/// Write the staged set at `at`, then the release record that describes it.
+///
+/// `named` is what a refusal calls the artifact, and it is `--out` whichever
+/// path this is writing: a publisher who typed `--out dist` is owed a message
+/// about `dist`, not about a staging path they never named. The record is
+/// computed at `at` because [`release::compute`] hashes the files it finds
+/// there against paths relative to it, and the staging directory holds the same
+/// bytes at the same relative paths as the artifact it becomes.
+fn write_artifact(
+    named: &str,
+    at: &Path,
+    staged: &[Staged],
+    manifest: &Mapping,
+) -> Result<Release, Vec<ResolveError>> {
+    put(at, staged).map_err(|why| refusal(named, &why))?;
+    let record =
+        release::compute(at, manifest).map_err(|error| release::as_error(named, &error))?;
+    std::fs::write(at.join(release::RECORD), release::render(&record))
+        .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
+    Ok(record)
 }
 
 /// Write the staged set into `out`, creating what it needs.
@@ -2071,6 +2800,19 @@ fn migrations(
 
 /// Where a published package keeps the bundles it ships.
 pub const BUNDLES: &str = "bundles";
+
+/// Where a bundle keeps the corpora its publisher measures the bundle against.
+///
+/// It is the one directory a publish reads and does not carry. The corpora are
+/// prose the publisher controls and no consumer verb opens one, so a consumer
+/// that vendors this repository's own package took 71 of 102 members and 40 per
+/// cent of the bytes in files nothing reads. [`a_bundles_own_corpus`] is the
+/// reader, and spec 7's Publishing section is the ruling, stated in the same
+/// paragraph that rules publication takes the package directory whole.
+///
+/// A publisher keeps its corpora where they are. This names what leaves the
+/// artifact and never what leaves the disk.
+pub const FIXTURES: &str = "fixtures";
 
 /// Where a source package keeps named assembly recipes.
 ///
@@ -2340,13 +3082,17 @@ fn doctrine_at(
 /// that window leaves the old tree complete under the aside name, where [`find`]
 /// still reaches it.
 ///
-/// **[`publish`] holds the weaker of the two guarantees.** It reads everything
-/// before it writes anything and unwinds `--out` on a failure, which answers a
-/// call that returns an error and answers a kill not at all: a kill inside
-/// [`put`] leaves a partial artifact at `--out` that the next run's own
-/// precondition then refuses, and the publisher removes it by hand.
-/// [#355](https://github.com/headwater-ai/headwater/issues/355) holds that.
-/// `vendor` answers both.
+/// **[`publish`] takes the same shape, and [`deliver`] is where.** It used to
+/// hold the weaker guarantee: it read everything before it wrote anything and
+/// unwound `--out` on a failure, which answers a call that returns an error and
+/// answered a kill not at all, so a kill inside [`put`] left a partial artifact
+/// at `--out` for the publisher to remove by hand. It now assembles the artifact
+/// at `<out>~staging` and renames that onto `--out`, which [`found::observe`]
+/// has already established is empty or absent. A publish killed part-way leaves
+/// `--out` as it found it, and the retry needs nothing removed.
+/// [#485](https://github.com/headwater-ai/headwater/issues/485) is where that
+/// was measured, and [`deliver`] carries the one configuration it does not
+/// cover.
 ///
 /// **Copying the [`found`] module was the other repair, and it is mechanically
 /// unavailable rather than merely weaker.** `found` carries two states, absent

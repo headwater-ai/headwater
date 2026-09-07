@@ -279,6 +279,87 @@ fn a_lock_whose_rules_field_is_stale_is_refused_and_names_the_remedy() {
     assert!(message.contains("headwater taxonomy resolve"), "{message}");
 }
 
+/// This repository's own lock, at the current `FORMAT`, as a text to mutate.
+fn corpus_lock_text() -> String {
+    let root = repository_root();
+    let repository = headwater_resolve::repository(&root).expect("this repository resolves");
+    let sources =
+        headwater_resolve::package::sources(&root, &repository.consumer).expect("its sources");
+    headwater_lock::write(
+        &repository.consumer.package,
+        &repository.consumer.version,
+        &sources,
+        &repository.resolution,
+        headwater_lock::authored_at(&root).payload(),
+    )
+    .expect("it validates")
+}
+
+/// A lock whose `format` token is not the one this engine writes is refused
+/// with a message that names neither party as newer, and that names the remedy.
+///
+/// The guard is a string inequality on the declared token, so it establishes a
+/// mismatch and nothing else. `2` is the population an adopter meets: `FORMAT`
+/// moved 2 to 3, so a lock written before that upgrade lands here, and a message
+/// claiming a newer engine wrote it states the reverse of what happened.
+#[test]
+fn an_old_format_lock_is_refused_without_saying_which_engine_is_newer() {
+    let text = corpus_lock_text();
+    let old = text.replacen(
+        &format!("  format: {}\n", headwater_lock::FORMAT),
+        "  format: 2\n",
+        1,
+    );
+    assert_ne!(old, text, "the fixture did not move the `format` field");
+
+    let error = headwater_lock::read(&old).expect_err("an old format is refused");
+    assert!(
+        matches!(
+            &error,
+            headwater_lock::LockError::Format { found } if found == "2"
+        ),
+        "{error:?}"
+    );
+    let message = error.to_string();
+    assert!(
+        !message.to_lowercase().contains("newer"),
+        "the message names a direction the guard never compared: {message}"
+    );
+    assert!(!message.to_lowercase().contains("older"), "{message}");
+    assert!(message.contains("headwater taxonomy resolve"), "{message}");
+    assert!(message.contains('2'), "{message}");
+}
+
+/// A `format` token that is not a number at all refuses the same way.
+///
+/// This is the population the guard cannot order in either direction, so it is
+/// the case that stops a later author from "fixing" the message by comparing
+/// integers: there is no integer here to compare.
+#[test]
+fn a_format_that_is_not_a_number_is_refused_with_the_same_wording() {
+    let text = corpus_lock_text();
+    let odd = text.replacen(
+        &format!("  format: {}\n", headwater_lock::FORMAT),
+        "  format: draft\n",
+        1,
+    );
+    assert_ne!(odd, text, "the fixture did not move the `format` field");
+
+    let error = headwater_lock::read(&odd).expect_err("an unreadable format is refused");
+    assert!(
+        matches!(
+            &error,
+            headwater_lock::LockError::Format { found } if found == "draft"
+        ),
+        "{error:?}"
+    );
+    let message = error.to_string();
+    assert!(!message.to_lowercase().contains("newer"), "{message}");
+    assert!(!message.to_lowercase().contains("older"), "{message}");
+    assert!(message.contains("headwater taxonomy resolve"), "{message}");
+    assert!(message.contains("draft"), "{message}");
+}
+
 /// Every permutation of `count` items, as index lists. Heap's algorithm.
 fn permutations(count: usize) -> Vec<Vec<usize>> {
     let mut current: Vec<usize> = (0..count).collect();
