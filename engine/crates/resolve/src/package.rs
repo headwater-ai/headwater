@@ -2528,14 +2528,18 @@ fn out_staging(out: &Path) -> Option<PathBuf> {
 ///
 /// # What removes the staging directory
 ///
-/// Every exit path here: the rename on success, and [`clear_staging`] on each of
-/// the failures. A run killed between the two leaves it behind, so the next run
-/// clears it before it writes — the same first act [`vendor`] takes on
-/// `packages/~staging`, and for the same reason, which is that a file an earlier
-/// run left there would otherwise be carried into an artifact that nothing
-/// staged. Removing it is a decision this verb is entitled to make and removing
-/// `--out` is not: `--out` is a path a publisher named, and this one is a path
-/// this verb derived and refuses to accept as an `--out`.
+/// Every exit path here calls [`clear_staging`], including the successful one:
+/// the rename takes `<out>~staging/`[`ASSEMBLY`] and leaves `<out>~staging`
+/// itself, holding its marker, to be swept. A run killed anywhere leaves the
+/// directory behind, so the next run sweeps it before it writes — a file an
+/// earlier run left there would otherwise be carried into an artifact that
+/// nothing staged.
+///
+/// **That sweep refuses rather than guesses**, and [`clear_staging`] carries the
+/// argument. A publish removes a directory at that path only when the directory
+/// holds the [`MARKER`] a publish writes into it before it writes anything else.
+/// Anything else there is somebody's, and the run refuses with a message naming
+/// the path.
 fn deliver(
     root: &Path,
     out: &Path,
@@ -2546,22 +2550,29 @@ fn deliver(
     let Some(staging) = out_staging(out) else {
         return write_artifact(&named, out, staged, manifest);
     };
-    clear_staging(&staging);
-    let record = match write_artifact(&named, &staging, staged, manifest) {
+    clear_staging(&staging).map_err(|why| refusal(&display(root, &staging), &why))?;
+    let assembled = staging.join(ASSEMBLY);
+    if let Err(why) = claim_staging(&staging) {
+        return Err(refusal(&display(root, &staging), &why));
+    }
+    let record = match write_artifact(&named, &assembled, staged, manifest) {
         Ok(record) => record,
         Err(errors) => {
-            clear_staging(&staging);
+            let _ = clear_staging(&staging);
             return Err(errors);
         }
     };
-    match std::fs::rename(&staging, out) {
-        Ok(()) => Ok(record),
+    match std::fs::rename(&assembled, out) {
+        Ok(()) => {
+            let _ = clear_staging(&staging);
+            Ok(record)
+        }
         Err(error) if carries_a_mount(&error) => {
-            clear_staging(&staging);
+            let _ = clear_staging(&staging);
             write_artifact(&named, out, staged, manifest)
         }
         Err(error) => {
-            clear_staging(&staging);
+            let _ = clear_staging(&staging);
             Err(refusal(
                 &named,
                 &format!(
@@ -2572,6 +2583,51 @@ fn deliver(
             ))
         }
     }
+}
+
+/// The subdirectory of the staging directory that the artifact is assembled in.
+///
+/// The marker is what makes the removal decidable, and the marker must not reach
+/// the artifact, so the two live at different depths rather than side by side.
+/// The rename then moves `<out>~staging/assembly` onto `--out` and leaves the
+/// marker behind at `<out>~staging`, which is the path that is then removed —
+/// still carrying its marker at the instant it is removed, which is the whole
+/// point of writing one. A marker that had to be deleted before the rename would
+/// leave a window in which a killed run's own staging directory is
+/// indistinguishable from a stranger's, and the window is what this change
+/// exists to close.
+///
+/// `<out>~staging/assembly` is a directory inside a directory beside `--out`, so
+/// the rename is still on one filesystem.
+const ASSEMBLY: &str = "assembly";
+
+/// The file a publish writes into the staging directory to say the directory is
+/// its own.
+///
+/// It is never empty, for the reason `.headwater/ids` files are never empty:
+/// content is what a person reading the path gets, and it costs one string.
+const MARKER: &str = ".headwater-publish-staging";
+
+const MARKER_TEXT: &str = "\
+This directory is where `headwater taxonomy publish` assembles an artifact before
+it moves that artifact onto the output path beside it. A publish creates this
+directory, and a publish removes it. A publish that was killed leaves it here,
+and the next publish into the same output path removes it and starts again.
+Nothing else reads it, and it is safe to delete.
+";
+
+/// Make the staging directory and write the marker that says it is this verb's.
+///
+/// The marker is the **first** thing written, before any artifact byte, so a
+/// publish killed at any point after the directory exists leaves a directory
+/// that says whose it is. That is what keeps
+/// [#485](https://github.com/headwater-ai/headwater/issues/485)'s recovery
+/// automatic under a delete that refuses to guess.
+fn claim_staging(staging: &Path) -> Result<(), String> {
+    std::fs::create_dir_all(staging)
+        .map_err(|error| format!("a publish cannot make its staging directory: {error}"))?;
+    std::fs::write(staging.join(MARKER), MARKER_TEXT)
+        .map_err(|error| format!("a publish cannot claim its staging directory: {error}"))
 }
 
 /// Whether a failed rename means the output path is a mount rather than a path
@@ -2591,13 +2647,56 @@ fn carries_a_mount(error: &std::io::Error) -> bool {
 /// Remove a staging directory, whatever state it is in and whether or not it is
 /// there.
 ///
-/// Every error is dropped, on the same terms as [`found::Found::unwind`]: this
-/// runs on the way into a write and on the way out of a failure that is already
-/// being reported, and a second message about the sweep would displace the one a
-/// reader needs. `remove_dir_all` does not follow a symlink, so a link left at
-/// this path is refused by the kernel rather than followed into somebody's tree.
-fn clear_staging(staging: &Path) {
-    let _ = std::fs::remove_dir_all(staging);
+/// # The removal is decidable, and it refuses rather than guesses
+///
+/// An unconditional `remove_dir_all` here would be the same undecidable delete
+/// that [#485](https://github.com/headwater-ai/headwater/issues/485)'s flag was
+/// refused for, moved one directory over and with the flag that made it
+/// deliberate taken away. `--out` is a path a publisher named, and `<out>~staging`
+/// is a path this verb derived from it — but the verb derives it from **every**
+/// path anybody ever passes to `--out`, on a machine where it owns none of them.
+/// `vendor`'s clear of `packages/~staging` is not the same act: that is one fixed
+/// path inside a directory this tool owns.
+///
+/// So a publish writes [`MARKER`] into the directory before it writes a byte of
+/// artifact, and this removes only a directory carrying it. That turns *a path I
+/// derived* into *a directory this tool created*, which is the distinction the
+/// undecidable delete did not have. A killed run always carries the marker,
+/// because the marker is the first thing written, so recovery after a kill is
+/// untouched.
+///
+/// # What each state does
+///
+/// Nothing there is `Ok`. A directory carrying the marker is removed. A
+/// directory without it, and anything at that path that is not a directory, is
+/// refused with a message naming the path — which is also what answers a
+/// **file** at `<out>~staging`, where a bare `create_dir_all` reported `cannot
+/// create it: File exists` against `--out`, a path that exists and is not the
+/// one that stopped the run.
+///
+/// `symlink_metadata` is what asks, so a link at this path is refused rather
+/// than followed into somebody's tree.
+fn clear_staging(staging: &Path) -> Result<(), String> {
+    let held = match std::fs::symlink_metadata(staging) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => {
+            return Err(format!(
+                "a publish assembles the artifact here before it moves it into place, and this \
+                 path cannot be read: {error}. Move it aside, or publish into a different output path"
+            ));
+        }
+        Ok(held) => held,
+    };
+    if held.is_dir() && staging.join(MARKER).is_file() {
+        return std::fs::remove_dir_all(staging)
+            .map_err(|error| format!("a publish cannot clear its own staging directory: {error}"));
+    }
+    Err(format!(
+        "a publish assembles the artifact here before it moves it into place, and something is \
+         already at this path that no publish wrote. A publish removes only a directory holding \
+         its own `{MARKER}` file, so this one stays. Move it aside, or publish into a different \
+         output path"
+    ))
 }
 
 /// Write the staged set at `at`, then the release record that describes it.

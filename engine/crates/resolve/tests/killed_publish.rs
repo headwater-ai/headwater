@@ -234,6 +234,9 @@ fn a_killed_publish_never_leaves_files_at_out() {
     );
 }
 
+/// The marker file a publish writes into its staging directory as its first act.
+const MARKER: &str = ".headwater-publish-staging";
+
 /// A file an earlier killed run left in the staging directory is not carried
 /// into the artifact.
 ///
@@ -241,16 +244,25 @@ fn a_killed_publish_never_leaves_files_at_out() {
 /// property over `packages/~staging` and found it the same way: a staging path
 /// that is written into rather than made is a staging path that publishes
 /// whatever an earlier run left in it.
+///
+/// The marker is planted with the residue, because that is what a killed run
+/// leaves: a publish writes the marker before it writes an artifact byte, so
+/// every state a kill can produce carries one.
 #[test]
 fn a_file_left_in_the_staging_directory_is_not_published() {
     let scratch = Scratch::new("staging-residue");
     let root = wide_publisher(&scratch);
     let out = scratch.path().join("artifact");
     let staging = scratch.path().join("artifact~staging");
-    std::fs::create_dir_all(staging.join("stale"))
+    std::fs::create_dir_all(staging.join("assembly/stale"))
         .expect("the residue an earlier killed run left is planted");
-    std::fs::write(staging.join("stale/leftover.txt"), "not this run's\n")
-        .expect("the residue is written");
+    std::fs::write(
+        staging.join("assembly/stale/leftover.txt"),
+        "not this run's\n",
+    )
+    .expect("the residue is written");
+    std::fs::write(staging.join(MARKER), "an earlier run claimed this\n")
+        .expect("the marker a killed run leaves is planted");
 
     package::publish(&root, "acme/fixture", &out).expect("the residue does not refuse the publish");
     assert!(
@@ -260,6 +272,76 @@ fn a_file_left_in_the_staging_directory_is_not_published() {
     assert!(
         !staging.exists(),
         "the staging directory is still there after a run that finished"
+    );
+}
+
+/// A directory at the staging path that no publish wrote is refused, and it
+/// survives.
+///
+/// This is the case the removal exists to get right. An unconditional
+/// `remove_dir_all` at a path derived from every `--out` anybody passes is the
+/// same undecidable delete that #485's own flag was refused for, with the flag
+/// that made it deliberate taken away. The marker is what makes the removal
+/// decidable: a publish removes a directory it created, and nothing else.
+#[test]
+fn a_directory_at_the_staging_path_that_no_publish_made_is_refused_and_survives() {
+    let scratch = Scratch::new("staging-not-ours");
+    let root = wide_publisher(&scratch);
+    let out = scratch.path().join("artifact");
+    let staging = scratch.path().join("artifact~staging");
+    std::fs::create_dir_all(&staging).expect("the caller's own directory is made");
+    std::fs::write(staging.join("notes.txt"), "the caller's own file")
+        .expect("their file is written");
+    std::fs::write(staging.join("main.rs"), "fn main() {}").expect("their second file is written");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("artifact~staging"),
+        "the refusal does not name the path that stopped the run: {message}"
+    );
+    assert!(
+        message.contains(MARKER),
+        "the refusal does not say what it looked for: {message}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(staging.join("notes.txt")).expect("their file reads"),
+        "the caller's own file"
+    );
+    assert!(
+        staging.join("main.rs").exists(),
+        "the refused run deleted the caller's directory anyway"
+    );
+    assert!(!out.exists(), "the refused run wrote an artifact anyway");
+}
+
+/// A regular file at the staging path is refused, and the refusal names that
+/// path rather than `--out`.
+///
+/// Before the marker, this reached `create_dir_all` and reported `<out>: cannot
+/// create it: File exists` — a message naming a path that exists and is not the
+/// one that stopped the run.
+#[test]
+fn a_file_at_the_staging_path_is_refused_by_the_path_that_stopped_the_run() {
+    let scratch = Scratch::new("staging-is-a-file");
+    let root = wide_publisher(&scratch);
+    let out = scratch.path().join("artifact");
+    let staging = scratch.path().join("artifact~staging");
+    std::fs::write(&staging, "somebody's file\n").expect("the file at the staging path is planted");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("artifact~staging"),
+        "the refusal does not name the path that stopped the run: {message}"
+    );
+    assert!(
+        !message.contains("cannot create it: File exists"),
+        "the refusal still names --out for a file at the staging path: {message}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&staging).expect("their file reads"),
+        "somebody's file\n"
     );
 }
 
