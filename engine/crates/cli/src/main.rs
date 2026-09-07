@@ -1752,6 +1752,14 @@ fn migrate(
     }
     let from = lock.version.clone();
     let to = record.version.clone();
+    // Before payload selection, because a `from == to` pair that reached the
+    // arms below was answered by a sentence written for a publisher fault:
+    // it accused the publisher of shipping no payload and offered two commands
+    // that make a consumer's tree worse
+    // ([#649](https://github.com/headwater-ai/headwater/issues/649)).
+    if let Err(why) = headwater_compat::migrate::transition(&from, &to) {
+        return refuse(&why);
+    }
 
     let manifest = match headwater_resolve::package::manifest_at(fetched) {
         Ok(manifest) => manifest,

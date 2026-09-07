@@ -51,7 +51,7 @@ The consumer declaration and package sources must be readable for source operati
 | `publish [--package <name>] [--from <dir>] [--assembly <name>] [--out <dir>] [--json]` | Writes a package artifact and release record, or a flattened artifact from the named assembly. `--json` writes the record as one JSON document on standard output. |
 | `vendor <dir> [--expect <digest>]` | Installs a fetched artifact after digest validation. |
 | `diff <dir> [--to <version>] [--now <date>]` | Compares a fetched artifact with the current taxonomy. |
-| `migrate <dir> [--to <version>] [--apply] [--now <date>]` | Reports or applies migration steps. |
+| `migrate <dir> [--to <version>] [--apply] [--now <date>]` | Reports or applies migration steps. It reads the version it migrates from out of the lock header against no pin, and it refuses a transition that is not forward. |
 | `--root <path>` | Selects the repository to load. |
 | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
 | `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
