@@ -61,6 +61,16 @@ pub const LOSS: &[Loss] = &[
         carrier: Carrier::Nowhere,
     },
     Loss {
+        field: "the routing of each skip",
+        reason: "the same drop the text report makes, and for the same reason: a class of skip \
+                 with its count is one line and the documents it fell on are one line each, and a \
+                 summary a person reads cannot hold one line per document",
+        carrier: Carrier::Elsewhere(
+            "the classes and their counts alone, and `--format json` for the documents each class \
+             fell on",
+        ),
+    },
+    Loss {
         field: "the obligation's severity",
         reason: "the same drop SARIF makes, and for the same reason: one column per finding, and \
                  the check's severity is the one a reviewer acts on",

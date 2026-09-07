@@ -49,7 +49,10 @@ use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::change::{Change, Unbound, FORMAT};
-use headwater_check::{Cache, Context, Date, Declared, Register, Run, Severity, Shape};
+use headwater_check::{
+    Cache, Context, Coverage, Date, Declared, Grain, Input, Instance, Register, Run, Severity,
+    Shape,
+};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -478,17 +481,17 @@ fn every_entry_of_every_loss_set_is_accounted_for() {
 /// The counts rather than the verdict. `is_defective` is false over a format
 /// that audited nothing and over one that audited everything, so a suite that
 /// asserted the verdict alone could not tell the two apart. Five of SARIF's
-/// seven entries name a member of the document and two name nowhere. All four of
-/// Markdown's name nowhere in it, because that artifact is prose. `text` and
-/// `json` declare no loss at all.
+/// seven entries name a member of the document and two name nowhere. All five of
+/// Markdown's name nowhere in it, because that artifact is prose, and so does the
+/// one entry `text` declares. `json` declares no loss at all.
 #[test]
 fn the_audited_and_the_unaudited_are_counted_apart() {
     for ran in [fixture_run(), scoped_run()] {
         for (format, entries, held, unaudited) in [
-            (Format::Text, 0, 0, 0),
+            (Format::Text, 1, 0, 1),
             (Format::Json, 0, 0, 0),
             (Format::Sarif, 7, 5, 2),
-            (Format::Markdown, 4, 0, 4),
+            (Format::Markdown, 5, 0, 5),
         ] {
             let artifact = render(&ran, format);
             let audited = headwater_adapter::census(&ran.run, format, &artifact);
@@ -1177,7 +1180,7 @@ fn a_path_the_census_never_walked_is_named_and_not_counted() {
         )],
     );
     assert_eq!(outside.unaccounted, [stray]);
-    let block = parse(&headwater_adapter::json::coverage(&outside).render_pretty());
+    let block = parse(&headwater_adapter::json::coverage(&outside, &[]).render_pretty());
     let named: Vec<String> = member(&block, "unaccounted")
         .expect("the unaccounted paths")
         .as_seq()
@@ -1208,8 +1211,8 @@ fn a_path_the_census_never_walked_is_named_and_not_counted() {
     );
     assert!(clean.unaccounted.is_empty());
     assert_ne!(
-        headwater_adapter::json::coverage(&clean).render_pretty(),
-        headwater_adapter::json::coverage(&outside).render_pretty()
+        headwater_adapter::json::coverage(&clean, &[]).render_pretty(),
+        headwater_adapter::json::coverage(&outside, &[]).render_pretty()
     );
 
     // The run's own block is not the empty one, and it names the store rather
@@ -1270,7 +1273,7 @@ fn a_run_that_skipped_nothing_is_not_a_run_that_reports_no_skips() {
     let ran = fixture_run();
     let nothing = headwater_check::Coverage::of(&ran.census, &[]);
     assert_eq!(nothing.skipped(), 0);
-    let block = parse(&headwater_adapter::json::coverage(&nothing).render_pretty());
+    let block = parse(&headwater_adapter::json::coverage(&nothing, &[]).render_pretty());
     assert_eq!(count(&block, "skipped"), 0);
     assert_eq!(
         member(&block, "skips")
@@ -1280,16 +1283,18 @@ fn a_run_that_skipped_nothing_is_not_a_run_that_reports_no_skips() {
             .len(),
         0
     );
-    let skipping = parse(&headwater_adapter::json::coverage(&ran.run.coverage).render_pretty());
+    let skipping = parse(
+        &headwater_adapter::json::coverage(&ran.run.coverage, &ran.run.instances).render_pretty(),
+    );
     assert_ne!(
-        headwater_adapter::json::coverage(&nothing).render_pretty(),
-        headwater_adapter::json::coverage(&ran.run.coverage).render_pretty(),
+        headwater_adapter::json::coverage(&nothing, &[]).render_pretty(),
+        headwater_adapter::json::coverage(&ran.run.coverage, &ran.run.instances).render_pretty(),
         "a run that skipped nothing and a run that skipped 66 write one block"
     );
     assert!(count(&skipping, "skipped") > 0);
     // And the shape version is what dates the member, so a reader of a document
     // that carries no `skipped` knows which of the two it is holding.
-    assert_eq!(headwater_adapter::json::VERSION, "1.2");
+    assert_eq!(headwater_adapter::json::VERSION, "1.3");
 }
 
 /// A change that named nothing is not a full-corpus run, in any of the four.
@@ -2212,5 +2217,208 @@ fn the_colored_report_is_read_the_way_the_piped_one_is() {
                 "the colored report at {width}, one record dropped"
             );
         }
+    }
+}
+
+/// The reason the three cases below skip under. One string, so the class is the
+/// same class in every run they build and the routing is what differs.
+const ROUTED_SKIP: &str = "this fixture skipped an instance so that its routing could be read";
+
+/// One run of the fixture tree with one more skipped instance, over the
+/// documents named.
+///
+/// A clone of a run rather than a second walk, and a second corpus least of
+/// all. Two corpora that differ by one line differ in the digest of that file,
+/// and every artifact of this engine carries the read set, so a pair of runs
+/// built that way differs whatever the coverage block says. That pair passes
+/// against an engine that carries no routing at all, which is what a
+/// corpus-shaped version of this case did on the tree that filed #235: markdown
+/// was byte-identical and text, JSON and SARIF differed on two lines each, all
+/// of them content digests, with the `coverage` and `findings` values comparing
+/// equal. Cloning one run holds the census, the read set, the findings and every
+/// other skip to the same values rather than to equal ones, so the routing is
+/// the only thing left that can move a byte.
+fn also_skipping(ran: &Ran, grain: Grain, over: &[&str]) -> Run {
+    let mut run = ran.run.clone();
+    run.instances.push(Instance::skipped(
+        "link.fragment.unresolved",
+        grain,
+        over.iter()
+            .map(|path| Input {
+                path: (*path).to_string(),
+                digest: None,
+            })
+            .collect(),
+        ROUTED_SKIP,
+    ));
+    // The runner's own accounting, over the record this case just extended.
+    // Recomputed rather than edited, so the two arms of the routing are decided
+    // by `Coverage::of` here exactly as they are on a real run.
+    run.coverage = Coverage::of(&ran.census, &run.instances);
+    run
+}
+
+/// The one entry of the coverage block for the class [`ROUTED_SKIP`] names.
+///
+/// The whole block is the wrong grain to assert on: this fixture tree already
+/// skips 71 instances under eight classes, so a document named anywhere in it is
+/// named for reasons that have nothing to do with the case at hand.
+fn routed_class(run: &Run) -> String {
+    headwater_adapter::json::coverage(&run.coverage, &run.instances)
+        .render_pretty()
+        .split(ROUTED_SKIP)
+        .nth(1)
+        .expect("the class this case skipped under")
+        .split("\"reason\"")
+        .next()
+        .expect("up to the next class")
+        .to_string()
+}
+
+fn render_run(run: &Run, ran: &Ran, format: Format) -> String {
+    let lock = lock_digest();
+    headwater_adapter::render(run, &ran.census, &ran.graph, &subject(&lock), format)
+}
+
+/// The first two documents of the census, in walk order.
+///
+/// Read off the census rather than written here, for the reason every other
+/// path in this file is: a case that pinned a name stops describing the tree the
+/// day somebody renames a document.
+fn two_documents(ran: &Ran) -> (String, String) {
+    let mut paths = ran.census.rows.iter().map(|row| row.path.clone());
+    (
+        paths.next().expect("a row"),
+        paths.next().expect("a second"),
+    )
+}
+
+/// Two runs that skipped the same count under the same class over different
+/// documents write different artifacts.
+///
+/// The Done-when of [#235](https://github.com/headwater-ai/headwater/issues/235),
+/// and the case the coverage block failed before `1.3`. Both runs skip one
+/// instance of one rule under one reason. Everything else is the same value:
+/// the same census, the same read set, the same findings, the same class counts,
+/// the same instance total. The document each one fell on is the whole
+/// difference, and before `1.3` it reached no format, so the two runs wrote one
+/// artifact in all four.
+#[test]
+fn two_runs_that_skipped_over_different_documents_write_different_artifacts() {
+    let ran = fixture_run();
+    let (here, there) = two_documents(&ran);
+    let over_here = also_skipping(&ran, Grain::Document, &[&here]);
+    let over_there = also_skipping(&ran, Grain::Document, &[&there]);
+
+    // The two runs are the same run in every account that is not the routing.
+    assert_eq!(over_here.coverage.instances, over_there.coverage.instances);
+    assert_eq!(over_here.coverage.skipped(), over_there.coverage.skipped());
+    assert_eq!(over_here.coverage.skips(), over_there.coverage.skips());
+    assert_eq!(over_here.findings.len(), over_there.findings.len());
+    assert_eq!(
+        over_here.read_set.inputs.len(),
+        over_there.read_set.inputs.len()
+    );
+
+    // The content, before the artifacts. A case that asserted only that two
+    // strings differ would pass on a digest, which is exactly how the defect
+    // hid.
+    let block_here = routed_class(&over_here);
+    let block_there = routed_class(&over_there);
+    assert_ne!(block_here, block_there);
+    assert!(
+        block_here.contains(&here) && !block_here.contains(&there),
+        "the coverage block names the document the skip fell on and no other:\n{block_here}"
+    );
+    assert!(
+        block_there.contains(&there) && !block_there.contains(&here),
+        "and the same in the other direction:\n{block_there}"
+    );
+
+    // The two machine-readable formats carry it. The two prose formats declare
+    // the loss instead, which is why they are asserted equal here rather than
+    // left unsaid: a later change that carries the routing into one of them has
+    // to come back and say so.
+    for format in [Format::Json, Format::Sarif] {
+        assert_ne!(
+            render_run(&over_here, &ran, format),
+            render_run(&over_there, &ran, format),
+            "{}",
+            format.name()
+        );
+    }
+    for format in [Format::Text, Format::Markdown] {
+        assert_eq!(
+            render_run(&over_here, &ran, format),
+            render_run(&over_there, &ran, format),
+            "{}",
+            format.name()
+        );
+        assert!(
+            format
+                .loss()
+                .iter()
+                .any(|entry| entry.field.contains("routing")),
+            "{} carries no routing and declares no loss for it",
+            format.name()
+        );
+    }
+}
+
+/// The mirror: two runs that skipped the same count over the *same* document
+/// write one artifact.
+///
+/// So the new member is a function of the routing and not of the order two runs
+/// were taken in, and the case above is reporting a difference rather than
+/// noise.
+#[test]
+fn two_runs_that_skipped_over_one_document_write_one_artifact() {
+    let ran = fixture_run();
+    let (here, _) = two_documents(&ran);
+    let once = also_skipping(&ran, Grain::Document, &[&here]);
+    let again = also_skipping(&ran, Grain::Document, &[&here]);
+    for format in Format::ALL {
+        assert_eq!(
+            render_run(&once, &ran, format),
+            render_run(&again, &ran, format),
+            "{}",
+            format.name()
+        );
+    }
+}
+
+/// A skip routed to no document says so, and is not the same artifact as a skip
+/// routed to one.
+///
+/// The second arm, and the one a document-keyed member alone would leave out. A
+/// corpus-scoped instance is routed to no document at all, so it reaches
+/// `documents` in neither run, and a reader of that member alone cannot tell
+/// "this class fell on no census row" from "this producer does not report where
+/// a skip fell". `unrouted` is what separates them.
+#[test]
+fn a_skip_routed_to_no_document_is_reported_as_routed_to_no_document() {
+    let ran = fixture_run();
+    let (here, _) = two_documents(&ran);
+    let routed = also_skipping(&ran, Grain::Document, &[&here]);
+    let unrouted = also_skipping(&ran, Grain::Corpus, &[&here]);
+
+    let routed_block = routed_class(&routed);
+    let unrouted_block = routed_class(&unrouted);
+
+    assert!(
+        routed_block.contains(&here) && routed_block.contains("\"unrouted\": 0"),
+        "a routed skip names its document and counts no unrouted instance:\n{routed_block}"
+    );
+    assert!(
+        !unrouted_block.contains(&here) && unrouted_block.contains("\"unrouted\": 1"),
+        "and a corpus-scoped one names no document and says so:\n{unrouted_block}"
+    );
+    for format in [Format::Json, Format::Sarif] {
+        assert_ne!(
+            render_run(&routed, &ran, format),
+            render_run(&unrouted, &ran, format),
+            "{}",
+            format.name()
+        );
     }
 }

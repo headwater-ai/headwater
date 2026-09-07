@@ -193,8 +193,9 @@ pub const LOSS: &[Loss] = &[
         field: "coverage",
         reason: "a `kind: \"pass\"` result would count check instances, and the census counts \
                  documents, including the ones no check classified. What is carried is every \
-                 number the text report writes: the counts, the skip classes with their reasons, \
-                 and the paths no census row accounts for",
+                 number the text report writes and one it does not: the counts, the skip classes \
+                 with their reasons, the documents each class was routed to, and the paths no \
+                 census row accounts for",
         carrier: Carrier::Run {
             places: &[Place {
                 at: &["properties", "headwater", "coverage"],
@@ -635,7 +636,10 @@ fn run_properties(run: &Run, subject: &Subject<'_>) -> Json {
         headwater.push(("change", crate::json::change(scoped)));
     }
     headwater.extend([
-        ("coverage", crate::json::coverage(&run.coverage)),
+        (
+            "coverage",
+            crate::json::coverage(&run.coverage, &run.instances),
+        ),
         (
             "escaped",
             Json::object([
