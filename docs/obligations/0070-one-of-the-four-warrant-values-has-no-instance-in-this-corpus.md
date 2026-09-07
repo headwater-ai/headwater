@@ -26,7 +26,7 @@ Every authored document here is `accepted`, because a human merged each one. `re
 
 ## Obligation
 
-Nothing is `transcribed`, because no external system of record feeds this repository. `asserted` no longer stands beside it. `headwater taxonomy audit` reports nine documents under that warrant on 2026-08-15: three probes, four obligation records, [15 — The recorder contract](../spec/15-the-recorder-contract.md) and [HW-DR-0024](../decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md). A figure here is a figure that only a person re-derives, and the verb that produces it is named for that reason. Four engine rules turn on the value, and this corpus exercises three of them.
+Nothing is `transcribed`, because no external system of record feeds this repository. `asserted` has instances of its own. `headwater taxonomy audit` reports nine documents under that warrant on 2026-08-15: three probes, four obligation records, [15 — The recorder contract](../spec/15-the-recorder-contract.md) and [HW-DR-0024](../decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md). A figure here is a figure that only a person re-derives, and the verb that produces it is named for that reason. Four engine rules turn on the value, and this corpus exercises three of them.
 
 ## Discharge
 
