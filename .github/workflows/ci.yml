@@ -750,6 +750,23 @@ jobs:
             exit 0
           fi
           exit "$status"
+      - name: The run census counts a turn once per message and a call by what it is for
+        # `tools/run-census.sh` is the measurement behind HW-PD-0003 as a
+        # tool: one usage record per message id, because a response is
+        # written to the log as several lines that each carry the same record,
+        # and a Bash call grouped by its leading verb, because the cost that
+        # matters was spread over 43 pull requests with no command repeated
+        # enough to look like a loop. This suite holds both against a
+        # transcript written by hand whose right answer is known. It needs
+        # `jq` and skips with a warning without it.
+        run: |
+          status=0
+          sh tools/run-census-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Run census fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
       - name: The build still declares its license and still refuses to rewrite its lock
         # Two declarations that are green the day they land and green forever.
         # `--locked` on a lock that is in sync changes no exit status, so
