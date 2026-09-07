@@ -20,7 +20,7 @@ Every stage of a build-order run reads this once. It is a skill and not a paragr
 - **A red `main` is fixed in the next iteration's branch before that iteration's own work.**
 - **An agent that dies is resumed by its id, never replaced.** A fresh agent throws away a settled design; both agents that died in one run finished their own work on resume. Only pushed commits survive.
 - **An agent can state a write-back and not land it.** Read what it did, never what it said it would do, and check the board after every resume.
-- **Coordination is a claim on the board or a create-only directory, never a coordinator's context** ([HW-PD-0004](../../../docs/process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md)). The veto and the re-verify travel by `SendMessage`; authority stays on the tree.
+- **Coordination is a claim on the board or a create-only file, never a coordinator's context** ([HW-PD-0004](../../../docs/process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md)). The veto and the re-verify travel by `SendMessage`; authority stays on the tree.
 - **Never run a generating verb against a checkout another session is merging into.** Two sessions regenerating a corpus-wide artifact do not conflict, because blobs are compared before a merge strategy is chosen; they merge wrong ([HW-DR-0049](../../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)).
 
 ## The environment

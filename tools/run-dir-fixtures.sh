@@ -149,5 +149,51 @@ same '  and a later heading of the same name is not taken' 0 "$(grep -c 'Not the
 same '  and the decisions reach decisions.md' '- A decision.' "$(grep '^- ' "$third/decisions.md")"
 same '  and the old log is kept whole rather than parsed' 1 "$(grep -c '^|' "$third/log-imported.md")"
 
+printf '\n# claims: two claimants over one artifact\n'
+run=$(sh "$tool" start claims 2>/dev/null)
+first=$(sh "$tool" claim "$run" 41 issue-41 .headwater/export.json docs/decisions/README.md 2>&1); status=$?
+same 'the first claimant takes both artifacts' 0 "$status"
+same '  and says so, one line each' 2 "$(printf '%s\n' "$first" | grep -c '^CLAIMED:')"
+second=$(sh "$tool" claim "$run" 42 issue-42 .headwater/export.json engine/crates/census/fixtures/corpus.census 2>&1); status=$?
+same 'the second claimant exits 0, because a claim orders and never refuses' 0 "$status"
+same '  and takes the artifact nobody held' 1 "$(printf '%s\n' "$second" | grep -c '^CLAIMED: engine')"
+same '  and reports who holds the other' 'HELD: .headwater/export.json by #41' "$(printf '%s\n' "$second" | grep '^HELD:')"
+same '  and ends with WAITS-ON naming the holder' 'WAITS-ON: 41' "$(printf '%s\n' "$second" | grep '^WAITS-ON:')"
+same '  and the wait is recorded on the issue claim' 1 "$(grep -c '^WAITS-ON: 41' "$run/claims/issues/42")"
+empties=0
+for owner in "$run"/claims/artifacts/*; do
+    [ -s "$owner" ] || empties=$((empties + 1))
+done
+same 'no claim is empty' 0 "$empties"
+same '  and the artifact list shows three claims' 3 "$(sh "$tool" claims "$run" | wc -l | tr -d ' ')"
+same '  and a slash in an artifact name is folded, not nested' 1 "$(ls "$run"/claims/artifacts/docs-decisions-README.md 2>/dev/null | wc -l | tr -d ' ')"
+same '  and a leading dot is folded, so the glob that frees it can see it' 1 "$(ls "$run"/claims/artifacts/headwater-export.json 2>/dev/null | wc -l | tr -d ' ')"
+
+again=$(sh "$tool" claim "$run" 41 issue-41 .headwater/export.json 2>&1)
+same 'a holder re-claiming its own artifact is not made to wait on itself' 0 "$(printf '%s\n' "$again" | grep -c '^WAITS-ON')"
+
+printf '\n# release, and the second claimant goes through\n'
+same 'release frees what the issue held and nothing else' 'RELEASED: 2 artifacts held by #41' "$(sh "$tool" release "$run" 41)"
+same '  and the other claim stands' 'engine/crates/census/fixtures/corpus.census #42 issue-42' "$(sh "$tool" claims "$run")"
+third=$(sh "$tool" claim "$run" 42 issue-42 .headwater/export.json 2>&1)
+same '  and the released artifact is taken by the one that waited' 'CLAIMED: .headwater/export.json' "$(printf '%s\n' "$third" | grep '^CLAIMED')"
+
+# This case is the reason the claim is a file and not a directory. On a host
+# whose `mkdir` is uutils coreutils, two racing `mkdir` calls on one path both
+# succeeded in 17 of 20 races while every sequential case above passed. A
+# primitive that stops being atomic is reported here rather than trusted.
+printf '\n# concurrency: two claimants racing for one artifact, ten times\n'
+lost=0
+for round in 1 2 3 4 5 6 7 8 9 10; do
+    race=$(sh "$tool" start "race-$round" 2>/dev/null)
+    sh "$tool" claim "$race" 1 a x >"$race/a.out" 2>&1 &
+    sh "$tool" claim "$race" 2 b x >"$race/b.out" 2>&1 &
+    wait
+    claimed=$(cat "$race/a.out" "$race/b.out" | grep -c '^CLAIMED: x$')
+    waited=$(cat "$race/a.out" "$race/b.out" | grep -c '^WAITS-ON:')
+    [ "$claimed" -eq 1 ] && [ "$waited" -eq 1 ] || lost=$((lost + 1))
+done
+same 'in every race exactly one claimant owns and exactly one waits' 0 "$lost"
+
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]

@@ -2,7 +2,7 @@
 id: HW-PD-0004
 status: current
 status_since: 2026-09-07
-summary: "Workers coordinate through create-only claim directories that every worktree can reach and the parent never relays, while the merge veto and a re-verification stay messages from the parent, because a peer's message carries no owner authority."
+summary: "Workers coordinate through create-only claim files that every worktree can reach and the parent never relays, while the merge veto and a re-verification stay messages from the parent, because a peer's message carries no owner authority."
 last_verified: 2026-09-07
 title: "Coordination is a create-only claim, and authority stays on the tree"
 provenance:
@@ -25,7 +25,7 @@ One session demonstrated the other half of this ruling. It declined to edit `CLA
 
 ## Decision
 
-Coordination moves to a claim directory under the run directory, which lives under `git rev-parse --git-common-dir` so that every worktree reaches it with one command and no socket. A claim is made with `mkdir`, which is atomic and create-only. A claim directory is never empty, because it holds the issue and the branch that made it. The adjudicator declares the footprint of a change, the derived artifacts it will regenerate, and the parent claims each one on the turn it reads that report.
+Coordination moves to a claim file under the run directory. That directory lives under `git rev-parse --git-common-dir`, so every worktree reaches it with one command and no socket. A claim is a file opened create-only, with the `O_EXCL` flag that a `set -C` redirect carries in the shell. It is not made with `mkdir`, although `mkdir` is the textbook primitive. On a host whose coreutils are the uutils rewrite, two racing `mkdir` calls on one path both succeeded in 17 of 20 races. That was measured on 2026-09-07, and a sequential second call was refused. A claim file is never empty, because it holds the issue and the branch that made it. The adjudicator declares the footprint of a change, which is the derived artifacts it will regenerate. The parent claims each one on the turn it reads that report.
 
 A second claimant on an artifact does not fail. It records the claim it waits on, and the integrator merges in footprint order: the widest footprint first, and no branch before every branch it waits on has merged, rebased and regenerated. The integrator never adds rebase work to a branch that is still running, because a finished branch waiting costs nothing and a running branch redoing its derives costs a full pass.
 

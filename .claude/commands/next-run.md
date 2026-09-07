@@ -5,13 +5,13 @@ argument-hint: "[iteration count, default 20] [--parallel N]"
 
 Run `$ARGUMENTS` iterations (default 20) of the Headwater build order. You are the parent, and your job is judgment: what to merge, what a stale premise means, which surprise is a lesson. Every stage of the work is an agent definition under `.claude/agents/`, dispatched by `subagent_type`, and each one carries its own instructions, so you paste nothing into a prompt that a definition already says.
 
-**Width.** Without `--parallel N` the run is sequential: one issue in flight, merged before the next starts. With it, N issues build at once and the merge is still one at a time through the slot below. Width is measured and wider is not better: one run that went from five to eight saw mean concurrency fall and an idle fleet appear ([the evaluation](../../docs/evaluations/the-build-order-as-a-multi-agent-system.md)). Raise it only on the numbers that record names.
+**Width.** Without `--parallel N` the run is sequential: one issue in flight, merged before the next starts. With it, N issues build at once and the merge is still one at a time through the slot below. Wider is not better: a run that went from five to eight saw concurrency fall and an idle fleet appear ([the evaluation](../../docs/evaluations/the-build-order-as-a-multi-agent-system.md)). Raise it only on the numbers that record names.
 
 ## The value rule
 
 This is the canonical statement. Every other file cites it rather than restating it, and so do `.claude/commands/next.md` and `.claude/agents/headwater-product-owner.md`.
 
-**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration and not eligible for the tracker: it is scaffolded as an obligation record under [13 — Open obligations](../../docs/spec/13-open-obligations.md) and left there. `adopter-blocking` means work an outside adopter cannot proceed without, and it sorts above everything else. The rule exists because this command is an issue generator by construction, and the day it took 45 issues and closed 16 is on record in the evaluation.
+**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration and not eligible for the tracker: it is scaffolded as an obligation record under [13 — Open obligations](../../docs/spec/13-open-obligations.md) and left there. `adopter-blocking` means work an outside adopter cannot proceed without, and it sorts above everything else. This command is an issue generator by construction, and the evaluation records the day it took 45 issues and closed 16.
 
 ## The doctrine
 
@@ -38,11 +38,11 @@ Ten lines the parent of a build-order run obeys on every turn. `.claude/commands
 
 1. **Top of the run.** Dispatch `headwater-product-owner` and `hw-queue` in one turn. The queue agent writes the ordered eligible issues into the run directory; read its report and nothing else.
 2. **Fill.** While fewer than N issues are in flight and the queue holds one, dispatch `hw-adjudicate` for the next issue with the template below.
-3. **On an adjudicate report.** `VERDICT: BUILD` dispatches `hw-build` with the same template plus the adjudication note's path. `VERDICT: REFUSE` is ruled by the three kinds in the `hw-run-policy` skill, written into the run's decisions file, and the next issue is taken in the same turn.
+3. **On an adjudicate report.** `VERDICT: BUILD` claims the footprint with `sh tools/run-dir.sh claim <run> <issue> <branch> <artifacts>` and dispatches `hw-build` with the same template, the adjudication note's path, and any `WAITS-ON` the claim printed. `VERDICT: REFUSE` is ruled by the three kinds in the `hw-run-policy` skill, written into the run's decisions file, and the next issue is taken in the same turn.
 4. **On a build report.** Dispatch `hw-verify` with the branch, the pull request number, the adjudication note, and the attacks you chose from the `hw-verification-bar` skill. Choosing the attacks is the judgment you keep; running them is not.
 5. **On a verify report.** `VERDICT: PASS` is your cue to rule. If you merge, append the ruling to the integrator queue and dispatch the next adjudicate in the same turn. `VERDICT: FAIL` is the veto below.
 6. **The integrator slot.** Depth one. When nothing is integrating and the queue holds a ruling, dispatch a fresh `hw-integrate` with the pull request, the ruling and the footprint the adjudicator declared. Never a second one while the first runs, and never one long-lived integrator ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
-7. **Every fifth merge**, dispatch `headwater-product-owner` again, and read the board it reports rather than the one you remember.
+7. **Every fifth merge**, dispatch `headwater-product-owner` again.
 
 ## The veto
 
@@ -50,7 +50,7 @@ A `FAIL` goes back to the `hw-build` agent that wrote the branch, by `SendMessag
 
 ## The dispatch
 
-Ten lines, composed with `Write` into the issue's scratch directory and passed as a path. Nothing else goes in the prompt: the definition carries the procedure, the skills carry the bar and the policy.
+Composed with `Write` into the issue's scratch directory and passed as a path. Nothing else goes in the prompt.
 
     issue:        #<N> <title>
     run:          <run directory>
@@ -58,6 +58,7 @@ Ten lines, composed with `Write` into the issue's scratch directory and passed a
     branch:       <name>            (build, verify, integrate)
     pull request: #<PR>             (verify, integrate)
     footprint:    <artifacts>       (from the adjudication; integrate)
+    waits-on:     #<N> or none      (from the claim; build, integrate)
     ruling:       <your ruling>     (integrate)
     attacks:      <chosen headings from hw-verification-bar>  (verify)
     deadline:     <minutes>
