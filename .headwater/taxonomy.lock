@@ -22,13 +22,13 @@
 
 lock:
   format: 3
-  digest: sha256:b1b06b19b51922b7ef3c71a96daa846fc8c1232742eb1010f246c77db6a583e0
+  digest: sha256:4bdebc7afdf10157914fa4c4c5f080ece0f697aeebfac72657209030d612e8db
   rules: 1
   package: headwater/standard
   version: 4.1.0
   sources:
     - path: packages/headwater-standard/taxonomy.yml
-      digest: sha256:72c8617b3db4a8d3206b95f03c9a5823f891d2df2da16434f6ea0a44c7a6f405
+      digest: sha256:93d852eab46f8d8b8894c768d575721438e941b5ed0fa749ce2a9c6b197fb965
     - path: packages/headwater-standard/bundles/design-spec/bundle.yml
       digest: sha256:39b514b8d5c971d291f2c662500a2c0d384f7446bf5bc0661a120ff4283f001c
     - path: packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
@@ -1013,6 +1013,12 @@ resolved:
       class: cohesion
       prevents: content.inconsistent
       severity: medium
+    OB-LINK-2:
+      statement: "A prose link of a document resolves to a file of the repository"
+      rationale: "A document that moves takes every citation of it with it, and the author who moved it reads nothing about the nine documents that now point at a path with no file. The break is silent in a way an author cannot notice, because each dead citation sits in a document that was not edited"
+      class: cohesion
+      prevents: content.inconsistent
+      severity: medium
     OB-REL-3:
       statement: "A participation expectation is met inside the window the taxonomy declares"
       rationale: "A document that nothing links to inside its window is work that reached nobody, and the corpus cannot tell that from work nobody needed"
@@ -1376,6 +1382,13 @@ resolved:
       mechanism: "check:link.fragment.unresolved"
       discharges:
         - OB-LINK-1
+      trigger: pull_request
+      posture: advisory
+      acts: detective
+    CT-LINK-2:
+      mechanism: "check:link.path.unresolved"
+      discharges:
+        - OB-LINK-2
       trigger: pull_request
       posture: advisory
       acts: detective

@@ -12,7 +12,7 @@
     "classified": 24,
     "checked": 23,
     "generated": 1,
-    "instances": 304,
+    "instances": 305,
     "skipped": 70,
     "skips": [
       {
@@ -216,6 +216,12 @@
       "obligations": [
         "OB-FIX-10"
       ]
+    },
+    {
+      "rule": "link.path.unresolved",
+      "scope": "corpus",
+      "version": 1,
+      "obligations": []
     },
     {
       "rule": "warrant.promoted",
@@ -571,6 +577,62 @@
       "column": 32,
       "message": "`#no-such-section` names no heading of this document",
       "remediation": "point it at a heading of check/spec/07-prose-defects.md, or write the heading it names",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "link.path.unresolved",
+      "severity": "error",
+      "path": "check/spec/07-prose-defects.md",
+      "line": 63,
+      "column": 28,
+      "message": "`19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md`",
+      "remediation": "point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "link.path.unresolved",
+      "severity": "error",
+      "path": "check/spec/07-prose-defects.md",
+      "line": 65,
+      "column": 91,
+      "message": "`19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md`",
+      "remediation": "point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "link.path.unresolved",
+      "severity": "error",
+      "path": "check/spec/07-prose-defects.md",
+      "line": 67,
+      "column": 63,
+      "message": "`../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository",
+      "remediation": "rewrite the destination as a path relative to the document that writes it, or as an absolute address with a scheme",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "link.path.unresolved",
+      "severity": "error",
+      "path": "check/spec/07-prose-defects.md",
+      "line": 69,
+      "column": 67,
+      "message": "`/spec/00-both-halves.md` names no file of this repository: nothing stands at `check/spec/spec/00-both-halves.md`",
+      "remediation": "point it at a file that exists, or restore `check/spec/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "language.controlled.not_met",
+      "severity": "warn",
+      "obligation": "OB-FIX-8",
+      "path": "check/spec/07-prose-defects.md",
+      "line": 69,
+      "column": 115,
+      "message": "`ste_house` holds prose to 25 words a sentence, and this one has 28",
+      "remediation": "split the sentence, or move a clause into its own sentence",
       "fixable": false,
       "escape": "none"
     },
@@ -931,7 +993,7 @@
     },
     {
       "path": "check/spec/00-both-halves.md",
-      "digest": "sha256:d48e647e2eae1f8f70ff05df8faf4fe1b28aacce6d9730ba584d1143e6b5e76f"
+      "digest": "sha256:7ea2f93bc1792e592627bdadd1119ced5473369cf2287a81da0650bcf1537370"
     },
     {
       "path": "check/spec/01-one-half.md",
@@ -959,7 +1021,7 @@
     },
     {
       "path": "check/spec/07-prose-defects.md",
-      "digest": "sha256:382ee8daa0b93c158b4452aec7a7545d6461ada2c15f7cab273c63facefccc1f"
+      "digest": "sha256:bc4f994c828a353fee808bdbdb6ca57c0ddef84528856df9c2cba272523abb24"
     },
     {
       "path": "check/spec/08-contract-met.md",

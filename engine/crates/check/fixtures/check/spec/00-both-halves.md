@@ -18,3 +18,5 @@ It is the passing half for the prose rules too. The voice regime finds nothing, 
 ## Where the pair is written
 
 Both halves are in the front matter, and the link back to [this section](#where-the-pair-is-written) is the fragment that resolves.
+
+The path in [the cited-only fixture](02-cited-only.md) resolves as well, which is the passing half that the path rule needs. `tests/renamed_target.rs` renames that file in a copy of this tree, and this line is what turns red when it does.

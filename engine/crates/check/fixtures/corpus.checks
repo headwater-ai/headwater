@@ -1,4 +1,4 @@
-406 seen, 294 classified, 294 checked, 5669 check instances
+406 seen, 294 classified, 294 checked, 5670 check instances
      11 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
@@ -12,7 +12,7 @@ adoption
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The
       baseline held two when the linter retired. The other named a semicolon
       inside a block quotation, which the engine does not report at all, because
-      the parser hands a quoted block to no lexical rule296 documents in the read set, and 4 barriers that no gate carries across a merge
+      the parser hands a quoted block to no lexical rule296 documents in the read set, and 5 barriers that no gate carries across a merge
     294 instances of facet.required.missing
     294 instances of facet.value.not_permitted
     294 instances of facet.value.blank
@@ -34,6 +34,7 @@ adoption
     283 instances of language.source_form.not_met
     253 instances of section.required.missing
     294 instances of link.fragment.unresolved
+      1 instances of link.path.unresolved
     294 instances of warrant.promoted
     294 instances of lifecycle.transition.not_permitted
     294 instances of lifecycle.state.not_admitted
@@ -85,6 +86,8 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   link.fragment.unresolved
     document scope, one document, its front matter and its body
+  link.path.unresolved
+    corpus scope, every row of the census, and it is a barrier
   warrant.promoted
     document scope, one document and its front matter, and the version of it that stood before the change
   lifecycle.transition.not_permitted
@@ -102,20 +105,20 @@ rules, and for each the scope that binds it
   adoption.task.expired
     taxonomy scope, the resolved taxonomy, and no document
 register
-  34 obligations: 31 verified, 2 gap, 1 unverifiable, 0 with no disposition
+  35 obligations: 32 verified, 2 gap, 1 unverifiable, 0 with no disposition
      14 high, 13 verified
-     15 medium, 13 verified
+     16 medium, 14 verified
       5 low, 5 verified
   OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
   OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
   OB-DR-3 unverifiable, To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
-  31 controls
-     28 posture advisory
+  32 controls
+     29 posture advisory
       3 posture blocking
-     31 acts detective
-     29 name a rule this engine carries
+     32 acts detective
+     30 name a rule this engine carries
       2 name a phase this engine runs
-     12 with no promotion record, so nothing states what would promote them
+     13 with no promotion record, so nothing states what would promote them
      10 with criteria
       3 at a final posture
       4 permanently advisory

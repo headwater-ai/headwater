@@ -1,4 +1,4 @@
-26 seen, 24 classified, 23 checked, 304 check instances
+26 seen, 24 classified, 23 checked, 305 check instances
       1 generated, held to regeneration by `headwater generate --check`
       1 skipped: no `id` facet, which is the key this engine reads an identifier from and which no declaration states
       1 skipped: the `id` facet is a sequence, and an identifier is a word
@@ -9,7 +9,7 @@
      25 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   a check read .headwater/ids, which the census never walked
   a check read .headwater/ids, which the census never walked
-26 documents in the read set, and 4 barriers that no gate carries across a merge
+26 documents in the read set, and 5 barriers that no gate carries across a merge
      23 instances of facet.required.missing
      23 instances of facet.value.not_permitted
      23 instances of facet.value.blank
@@ -30,6 +30,7 @@
      14 instances of language.source_form.not_met
       2 instances of section.required.missing
      24 instances of link.fragment.unresolved
+      1 instances of link.path.unresolved
      24 instances of warrant.promoted
       1 instances of lifecycle.deletion.not_permitted
 suppressions
@@ -87,6 +88,8 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   link.fragment.unresolved
     document scope, one document, its front matter and its body
+  link.path.unresolved
+    corpus scope, every row of the census, and it is a barrier
   warrant.promoted
     document scope, one document and its front matter, and the version of it that stood before the change
   lifecycle.transition.not_permitted
@@ -135,15 +138,16 @@ register
   identifier.claimed_twice reaches no obligation, so it names none
   identifier.claim.missing reaches no obligation, so it names none
   identifier.claim.stale reaches no obligation, so it names none
+  link.path.unresolved reaches no obligation, so it names none
   warrant.promoted reaches no obligation, so it names none
   lifecycle.transition.not_permitted reaches no obligation, so it names none
   lifecycle.state.not_admitted reaches no obligation, so it names none
   lifecycle.deletion.not_permitted reaches no obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
   adoption.task.expired reaches no obligation, so it names none
-49 findings
-     30 ✗ error
-     19 ▲ warn
+54 findings
+     34 ✗ error
+     20 ▲ warn
 
 instances
   facet.required.missing check/evaluations/alpha.md
@@ -704,6 +708,8 @@ instances
     skipped: this document writes no fragment into itself
   link.fragment.unresolved check/spec/18-blank-facets.md
     skipped: this document writes no fragment into itself
+  link.path.unresolved check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md
+    failed
   warrant.promoted check/evaluations/alpha.md
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   warrant.promoted check/evaluations/beta.md
@@ -830,6 +836,21 @@ check/spec/07-prose-defects.md:57:1 ✗ error
 check/spec/07-prose-defects.md:61:32 ✗ error
   link.fragment.unresolved (OB-FIX-10): `#no-such-section` names no heading of this document
   fix: point it at a heading of check/spec/07-prose-defects.md, or write the heading it names
+check/spec/07-prose-defects.md:63:28 ✗ error
+  link.path.unresolved: `19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
+  fix: point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went
+check/spec/07-prose-defects.md:65:91 ✗ error
+  link.path.unresolved: `19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
+  fix: point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went
+check/spec/07-prose-defects.md:67:63 ✗ error
+  link.path.unresolved: `../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository
+  fix: rewrite the destination as a path relative to the document that writes it, or as an absolute address with a scheme
+check/spec/07-prose-defects.md:69:67 ✗ error
+  link.path.unresolved: `/spec/00-both-halves.md` names no file of this repository: nothing stands at `check/spec/spec/00-both-halves.md`
+  fix: point it at a file that exists, or restore `check/spec/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went
+check/spec/07-prose-defects.md:69:115 ▲ warn
+  language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 28
+  fix: split the sentence, or move a clause into its own sentence
 check/spec/08-contract-met.md:2:1 ✗ error
   identifier.claim.missing: `DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it
   fix (mechanical): run `headwater check --fix`, which writes `.headwater/ids/decision_id/DR-FIX-0008` holding `check/spec/08-contract-met.md`

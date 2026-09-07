@@ -25,8 +25,19 @@ graph
   22 nodes, 10 declared edge halves
         8 to a document
         2 unbound
-  0 prose links that did not resolve
+  4 prose links that did not resolve
 
+  check/spec/07-prose-defects.md:63:28
+    link: `19-renamed.md` no `check/spec/19-renamed.md` in the repository
+  check/spec/07-prose-defects.md:65:91
+    link: `19-renamed.md#a-heading` no `check/spec/19-renamed.md` in the
+      repository
+  check/spec/07-prose-defects.md:67:63
+    link: `../../../outside.md` `check/spec/../../../outside.md` climbs above
+      the repository
+  check/spec/07-prose-defects.md:69:67
+    link: `/spec/00-both-halves.md` no `check/spec/spec/00-both-halves.md` in
+      the repository
   check/spec/13-dangling.md:9:7
     edge: `assesses` -> SPEC-FIX-no-such-document resolves to nothing at all
   check/spec/13-dangling.md:10:7
@@ -55,7 +66,7 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  26 seen, 24 classified, 23 checked, 304 check instances
+  26 seen, 24 classified, 23 checked, 305 check instances
         1 generated, held to regeneration by `headwater generate --check`
         1 skipped: no `id` facet, which is the key this engine reads an
           identifier from and which no declaration states
@@ -76,7 +87,7 @@ checks
     AD-1 1 open, 0 closed, holding 1 finding, owner the fixture tree, until
       2027-01-01
       one pair, so that a run carries a migration-pending finding26 documents in
-        the read set, and 4 barriers that no gate carries across a merge
+        the read set, and 5 barriers that no gate carries across a merge
        23 instances of facet.required.missing
        23 instances of facet.value.not_permitted
        23 instances of facet.value.blank
@@ -97,6 +108,7 @@ checks
        14 instances of language.source_form.not_met
         2 instances of section.required.missing
        24 instances of link.fragment.unresolved
+        1 instances of link.path.unresolved
        24 instances of warrant.promoted
         1 instances of lifecycle.deletion.not_permitted
   suppressions
@@ -162,6 +174,8 @@ checks
       document scope, one document, its front matter and its body
     link.fragment.unresolved
       document scope, one document, its front matter and its body
+    link.path.unresolved
+      corpus scope, every row of the census, and it is a barrier
     warrant.promoted
       document scope, one document and its front matter, and the version of it
         that stood before the change
@@ -221,15 +235,16 @@ checks
     identifier.claimed_twice reaches no obligation, so it names none
     identifier.claim.missing reaches no obligation, so it names none
     identifier.claim.stale reaches no obligation, so it names none
+    link.path.unresolved reaches no obligation, so it names none
     warrant.promoted reaches no obligation, so it names none
     lifecycle.transition.not_permitted reaches no obligation, so it names none
     lifecycle.state.not_admitted reaches no obligation, so it names none
     lifecycle.deletion.not_permitted reaches no obligation, so it names none
     coverage.document_unchecked reaches no obligation, so it names none
     adoption.task.expired reaches no obligation, so it names none
-  48 findings
-       29 ✗ error
-       19 ▲ warn
+  53 findings
+       33 ✗ error
+       20 ▲ warn
 
   check/evaluations/epsilon.md:4:1 ▲ warn
     relation.participation.overdue (OB-FIX-6): `evidence-cited`: 219 days since
@@ -343,6 +358,34 @@ checks
       this document
     fix: point it at a heading of check/spec/07-prose-defects.md, or write the
       heading it names
+  check/spec/07-prose-defects.md:63:28 ✗ error
+    link.path.unresolved: `19-renamed.md` names no file of this repository:
+      nothing stands at `check/spec/19-renamed.md`
+    fix: point it at a file that exists, or restore `check/spec/19-renamed.md`.
+      A document that moved keeps its identifier, so `headwater explain` finds
+      where it went
+  check/spec/07-prose-defects.md:65:91 ✗ error
+    link.path.unresolved: `19-renamed.md#a-heading` names no file of this
+      repository: nothing stands at `check/spec/19-renamed.md`
+    fix: point it at a file that exists, or restore `check/spec/19-renamed.md`.
+      A document that moved keeps its identifier, so `headwater explain` finds
+      where it went
+  check/spec/07-prose-defects.md:67:63 ✗ error
+    link.path.unresolved: `../../../outside.md` does not name a path of this
+      repository at all: `check/spec/../../../outside.md` climbs above the
+      repository
+    fix: rewrite the destination as a path relative to the document that writes
+      it, or as an absolute address with a scheme
+  check/spec/07-prose-defects.md:69:67 ✗ error
+    link.path.unresolved: `/spec/00-both-halves.md` names no file of this
+      repository: nothing stands at `check/spec/spec/00-both-halves.md`
+    fix: point it at a file that exists, or restore
+      `check/spec/spec/00-both-halves.md`. A document that moved keeps its
+      identifier, so `headwater explain` finds where it went
+  check/spec/07-prose-defects.md:69:115 ▲ warn
+    language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
+      a sentence, and this one has 28
+    fix: split the sentence, or move a clause into its own sentence
   check/spec/08-contract-met.md:2:1 ✗ error
     identifier.claim.missing: `DR-FIX-0008` is spent by
       check/spec/08-contract-met.md and no file of `.headwater/ids` claims it,
@@ -492,6 +535,7 @@ read set
   barrier identifier.claimed_twice
   barrier identifier.claim.missing
   barrier identifier.claim.stale
+  barrier link.path.unresolved
   barrier lifecycle.deletion.not_permitted
   windowed relation.participation.overdue
   version facet.required.missing 1
@@ -516,6 +560,7 @@ read set
   version language.source_form.not_met 1
   version section.required.missing 1
   version link.fragment.unresolved 2
+  version link.path.unresolved 1
   version warrant.promoted 1
   version lifecycle.transition.not_permitted 2
   version lifecycle.state.not_admitted 1
@@ -532,14 +577,14 @@ read set
   input check/evaluations/eta.md sha256:d1882e10c05b15d1c6aafcc982b2ecbf429ec169a0fcd7ad11f79dbf5b20228a
   input check/evaluations/gamma.md sha256:bb74fe7df19ea383b01be2f8686fb87dbea18757b4134e601e3e718aeee9e09b
   input check/evaluations/zeta.md sha256:78ec68e48f9e8e1f8826c1280bdb523820556b14e2ac375f21cf8c1915240964
-  input check/spec/00-both-halves.md sha256:d48e647e2eae1f8f70ff05df8faf4fe1b28aacce6d9730ba584d1143e6b5e76f
+  input check/spec/00-both-halves.md sha256:7ea2f93bc1792e592627bdadd1119ced5473369cf2287a81da0650bcf1537370
   input check/spec/01-one-half.md sha256:20a913097b2d04bc39e5ff8271b47a21dfaa135f78b5fdda234e38c3a30c7017
   input check/spec/02-cited-only.md sha256:9f4f5fff759b2f04d2956dabbb3cdc0e86bdc8f306159a58ad4f7f80cbad9c82
   input check/spec/03-no-instance.md sha256:bb254e9a27d62cf8ff126895c545a797d9eeadee7e756bd34a7536ce21cba7ad
   input check/spec/04-untyped.md sha256:ef34b3e4254620599be769fb2e28826e330b9a6b8972ed7ef32d2d3baaeddf2b
   input check/spec/05-no-summary.md sha256:e93ab39ba0f3d03cf7593bc046d7c0a5aa0fbf102df0e02e2dbf34c263aa346d
   input check/spec/06-retired.md sha256:d40b65fea5627e9da5693ba6ff1239180b1a3b6a9ab83ed5b414f286d7ded636
-  input check/spec/07-prose-defects.md sha256:382ee8daa0b93c158b4452aec7a7545d6461ada2c15f7cab273c63facefccc1f
+  input check/spec/07-prose-defects.md sha256:bc4f994c828a353fee808bdbdb6ca57c0ddef84528856df9c2cba272523abb24
   input check/spec/08-contract-met.md sha256:1f137d2e39a164a976bcfb76d662b7469171f99bd3ce643c4d3fb2fd247ba34f
   input check/spec/09-contract-missing.md sha256:6bc8ae424b8a20472a5d244ed71613195ad527e11e4739ec7cf5fa88f4315d4a
   input check/spec/10-suppressed.md sha256:2258c21842ba066fc11cadfee7b462909dda6bd93cf7693e9c93fa786382ebba

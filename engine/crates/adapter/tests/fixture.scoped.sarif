@@ -356,6 +356,20 @@
               }
             },
             {
+              "id": "link.path.unresolved",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "warrant.promoted",
               "shortDescription": {
                 "text": "document scope, one document and its front matter, and the version of it that stood before the change"
@@ -599,7 +613,7 @@
             "analysisTarget"
           ],
           "hashes": {
-            "sha-256": "d48e647e2eae1f8f70ff05df8faf4fe1b28aacce6d9730ba584d1143e6b5e76f"
+            "sha-256": "7ea2f93bc1792e592627bdadd1119ced5473369cf2287a81da0650bcf1537370"
           }
         },
         {
@@ -676,7 +690,7 @@
             "analysisTarget"
           ],
           "hashes": {
-            "sha-256": "382ee8daa0b93c158b4452aec7a7545d6461ada2c15f7cab273c63facefccc1f"
+            "sha-256": "bc4f994c828a353fee808bdbdb6ca57c0ddef84528856df9c2cba272523abb24"
           }
         },
         {
@@ -1590,6 +1604,163 @@
           }
         },
         {
+          "ruleId": "link.path.unresolved",
+          "ruleIndex": 22,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md`",
+            "markdown": "`19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md`\n\n**Fix:** point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 63,
+                  "startColumn": 28
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "link.path.unresolved",
+          "ruleIndex": 22,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md`",
+            "markdown": "`19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md`\n\n**Fix:** point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 65,
+                  "startColumn": 91
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "link.path.unresolved",
+          "ruleIndex": 22,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository",
+            "markdown": "`../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository\n\n**Fix:** rewrite the destination as a path relative to the document that writes it, or as an absolute address with a scheme"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 67,
+                  "startColumn": 63
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "rewrite the destination as a path relative to the document that writes it, or as an absolute address with a scheme",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "link.path.unresolved",
+          "ruleIndex": 22,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`/spec/00-both-halves.md` names no file of this repository: nothing stands at `check/spec/spec/00-both-halves.md`",
+            "markdown": "`/spec/00-both-halves.md` names no file of this repository: nothing stands at `check/spec/spec/00-both-halves.md`\n\n**Fix:** point it at a file that exists, or restore `check/spec/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 69,
+                  "startColumn": 67
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "point it at a file that exists, or restore `check/spec/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 17,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 28",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 28\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 69,
+                  "startColumn": 115
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
           "ruleId": "identifier.claim.missing",
           "ruleIndex": 14,
           "level": "error",
@@ -2261,7 +2432,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 28,
+          "ruleIndex": 29,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2290,7 +2461,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 28,
+          "ruleIndex": 29,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2319,7 +2490,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 27,
+          "ruleIndex": 28,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2348,7 +2519,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 27,
+          "ruleIndex": 28,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2377,7 +2548,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 27,
+          "ruleIndex": 28,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2406,7 +2577,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 27,
+          "ruleIndex": 28,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2461,7 +2632,7 @@
             "classified": 24,
             "checked": 24,
             "generated": 1,
-            "instances": 304,
+            "instances": 305,
             "skipped": 48,
             "skips": [
               {

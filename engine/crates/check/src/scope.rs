@@ -559,6 +559,23 @@ pub trait CorpusCheck {
     /// dormant in exactly the run that reads this corpus end to end.
     const NEEDS_CLAIMS: bool = false;
 
+    /// Whether the view carries every prose link the build bound, with what
+    /// each one resolved to.
+    ///
+    /// It joins no cache key and it has no [`Scope`] flag, and that is the one
+    /// thing about it worth stating. The four inputs above are each injected
+    /// into a view from outside the read set — a report the graph made, a
+    /// version out of a change, a clock the caller fixed, a store beside the
+    /// corpus — so a key that did not name them would omit an input. The links
+    /// are not that. They are a *reading of* the documents this instance
+    /// already reads, derived by the build from those same bytes, so the read
+    /// set names them already and a key component here would hash the same
+    /// bytes twice and cold-start every cache of every adopting corpus for a
+    /// fact no verdict depends on. [`crate::link_path`] carries the one case
+    /// where that reasoning does not reach, which is a link whose target is
+    /// not a document of this corpus.
+    const NEEDS_LINKS: bool = false;
+
     fn evaluate(&self, view: &CorpusView<'_>) -> Outcome;
 }
 
@@ -1051,6 +1068,7 @@ pub struct CorpusView<'a> {
     identity: Option<&'a [headwater_graph::index::Reported]>,
     departed: &'a [Departed<'a>],
     claims: Option<&'a crate::claim::Claims>,
+    links: Option<&'a [headwater_graph::links::Link]>,
     reads: Vec<Input>,
 }
 
@@ -1091,10 +1109,39 @@ impl<'a> CorpusView<'a> {
         self.claims
     }
 
+    /// Every prose link the build bound and what each one resolved to, and only
+    /// for a check that declared `NEEDS_LINKS`.
+    ///
+    /// It is the build's own set rather than a second reading of the same
+    /// bodies, on [`CorpusView::identity`]'s terms: what counts as a prose
+    /// link, which ones are somebody else's quotation, and what a destination
+    /// normalizes to are all decisions [`headwater_graph::links`] already made,
+    /// and the report already prints the answer.
+    ///
+    /// `None` is a run whose scope did not admit them, and an empty slice is a
+    /// corpus that writes no prose link at all. See [`crate::link_path`].
+    pub fn links(&self) -> Option<&'a [headwater_graph::links::Link]> {
+        self.links
+    }
+
     /// Every document this view was built over. See the type comment for why
     /// the set is the rows that carry a document rather than every row.
     pub fn reads(&self) -> &[Input] {
         &self.reads
+    }
+
+    /// A view carrying nothing but the links, for the tests of the one rule
+    /// that reads them. It is `cfg(test)` so that no shipped path can build a
+    /// view whose read set does not come from a census.
+    #[cfg(test)]
+    pub(crate) fn only_links(links: Option<&'a [headwater_graph::links::Link]>) -> Self {
+        CorpusView {
+            identity: None,
+            departed: &[],
+            claims: None,
+            links,
+            reads: Vec::new(),
+        }
     }
 }
 
@@ -1498,6 +1545,13 @@ pub fn over_corpus<C: CorpusCheck>(
         departed: &departed,
         claims: match C::NEEDS_CLAIMS {
             true => Some(claims),
+            false => None,
+        },
+        // No input joins the read set with them, and the comment on
+        // `NEEDS_LINKS` is where that is argued: the links are derived from the
+        // documents already listed above rather than injected beside them.
+        links: match C::NEEDS_LINKS {
+            true => Some(&graph.links),
             false => None,
         },
         reads: reads.clone(),

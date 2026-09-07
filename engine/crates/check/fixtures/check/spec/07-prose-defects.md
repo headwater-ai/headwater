@@ -59,3 +59,11 @@ of this regime forbids that.
 ## Links
 
 A fragment that lands nowhere: [the missing section](#no-such-section).
+
+A path that lands nowhere: [the part that moved](19-renamed.md).
+
+A path that carries a fragment, which the path rule reads and the fragment rule does not: [one heading of it](19-renamed.md#a-heading).
+
+A path that will not normalize into a repository path at all: [a destination above the root](../../../outside.md).
+
+An address written from the site root rather than from this file: [an absolute address](/spec/00-both-halves.md). The binder joins the directory of this document in front of the destination, so the leading separator is swallowed and the report names the path that reading produced.

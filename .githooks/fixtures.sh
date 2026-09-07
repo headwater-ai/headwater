@@ -143,6 +143,26 @@ judge() {
     passed=$((passed + 1))
 }
 
+# The other half of `judge`: what the output must *not* hold. A case that reads
+# "this rule did not fire" cannot be written as an exit status once a second
+# rule reads the same tree, because both refusals exit 1 and the status can no
+# longer tell them apart.
+refute() {
+    name=$1 want_absent=$2 got_text=$3
+    flat_absent=$(printf '%s' "$want_absent" | tr -s '[:space:]' ' ')
+    flat_got=$(printf '%s' "$got_text" | tr -s '[:space:]' ' ')
+    case $flat_got in
+        *"$flat_absent"*)
+            printf 'FAIL %s\n  expected output not to hold: %s\n  got:\n%s\n' "$name" "$want_absent" "$got_text"
+            failed=$((failed + 1))
+            ;;
+        *)
+            printf 'ok   %s\n' "$name"
+            passed=$((passed + 1))
+            ;;
+    esac
+}
+
 printf '# the gate, over this corpus\n'
 
 reset
@@ -226,7 +246,13 @@ judge 'deleting a document at a terminal state of a retaining regime is refused'
 # the same engine, and no manifest: the rule reports a skip and the gate exits
 # 0. So the refusal above comes from the producer and from nothing else.
 out=$(cd "$scratch" && ./engine/target/release/headwater check --strict 2>&1); status=$?
-judge 'the same deletion with no change described is not refused' 0 "$status" '' "$out"
+refute 'the same deletion with no change described is not a deletion finding' \
+    'lifecycle.deletion.not_permitted (OB-LIFE-4)' "$out"
+# What the run does refuse is the other thing a deletion does to a corpus. Nine
+# documents cite this one by path, and `link.path.unresolved` reads the tree
+# rather than the manifest, so it fires with no change described at all.
+judge 'and the citations it leaves dead are refused whatever the manifest says' 1 "$status" \
+    'link.path.unresolved (OB-LINK-2)' "$out"
 
 # The same file, moved rather than removed. Git reports a rename as one path
 # with a prior version, the census holds a row where it arrived, and the entry
@@ -234,14 +260,23 @@ judge 'the same deletion with no change described is not refused' 0 "$status" ''
 reset
 git -C "$scratch" mv "$terminal" "docs/obligations/0117-renamed.md" >/dev/null 2>&1
 out=$(gate); status=$?
-judge 'the same document renamed at the same state is not a deletion' 0 "$status" '' "$out"
+refute 'the same document renamed at the same state is not a deletion' \
+    'lifecycle.deletion.not_permitted (OB-LIFE-4)' "$out"
+# A rename is where the path rule earns its place. The document is still here
+# and still stands where it stood, and every prose link that named it by its old
+# path now names nothing.
+judge 'and the rename is what the path rule refuses' 1 "$status" \
+    'link.path.unresolved (OB-LINK-2)' "$out"
 
 # A document that never reached a terminal state. `$draft` opens at `draft`,
 # which reaches `current` and `deprecated`, so nothing about it is retained.
 reset
 git -C "$scratch" rm -q "$draft"
 out=$(gate); status=$?
-judge 'deleting a document that stands at no terminal state is not refused' 0 "$status" '' "$out"
+refute 'deleting a document that stands at no terminal state is not a deletion finding' \
+    'lifecycle.deletion.not_permitted (OB-LIFE-4)' "$out"
+judge 'and its dead citations are refused, as they are for any document' 1 "$status" \
+    'link.path.unresolved (OB-LINK-2)' "$out"
 
 # A file that is no document of this corpus. Its prior version does not parse as
 # one, so nothing is held against a regime.

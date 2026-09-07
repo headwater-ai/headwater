@@ -950,6 +950,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-LINK-2:
+    statement: "A prose link of a document resolves to a file of the repository"
+    rationale: "A document that moves takes every citation of it with it, and the author who moved it reads nothing about the nine documents that now point at a path with no file. The break is silent in a way an author cannot notice, because each dead citation sits in a document that was not edited"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-REL-3:
     statement: "A participation expectation is met inside the window the taxonomy declares"
     rationale: "A document that nothing links to inside its window is work that reached nobody, and the corpus cannot tell that from work nobody needed"
@@ -1313,6 +1319,13 @@ controls:
     mechanism: "check:link.fragment.unresolved"
     discharges:
       - OB-LINK-1
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+  CT-LINK-2:
+    mechanism: "check:link.path.unresolved"
+    discharges:
+      - OB-LINK-2
     trigger: pull_request
     posture: advisory
     acts: detective
