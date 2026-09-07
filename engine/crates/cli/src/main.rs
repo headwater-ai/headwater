@@ -1423,6 +1423,32 @@ fn publish(
         );
     }
 
+    // #619, and beside `dropped` for the same two reasons: on standard error, so
+    // a publisher reads it in both output modes and the `--json` document stays
+    // one document. This half is the report and the refusal is the gate — the
+    // publish only reached here because every reference a carried document
+    // writes either resolves inside the artifact or is one of these. The list is
+    // read out of the manifest the artifact carries rather than out of a second
+    // copy of the key, so what is printed is what shipped.
+    let recorded = headwater_resolve::package::recorded_references(out);
+    if !recorded.is_empty() {
+        eprintln!(
+            "headwater: the artifact records {} references that resolve nowhere inside it, and \
+             this publish carries no other",
+            recorded.len()
+        );
+        eprintln!(
+            "{}",
+            indent(&format!(
+                "`{}` in the manifest names each one as a carried document and a target the \
+                 artifact does not hold, and the manifest ships with the artifact, so a consumer \
+                 reads the same list. A reference this record does not hold is refused rather \
+                 than reported. A pair the artifact stops dangling is a line to delete from it.",
+                headwater_resolve::package::RECORDED_REFERENCES
+            ))
+        );
+    }
+
     if json {
         print!(
             "{}",

@@ -56,6 +56,24 @@ pub const MANIFEST: &str = "package.yml";
 /// any source is loaded.
 pub const REQUIRES_ENGINE: &str = "requires_engine";
 
+/// The manifest key that records the references a carried document writes which
+/// resolve nowhere inside the artifact.
+///
+/// It is a mapping from an artifact-relative member to the artifact-relative
+/// targets that member names and the artifact does not carry. [`references`]
+/// refuses a dangling reference the key does not hold and reports one it does,
+/// and [#619](https://github.com/headwater-ai/headwater/issues/619) is where the
+/// staging was ruled: `headwater/standard` carries 122 such references over 51
+/// distinct pairs, none of them resolvable in any artifact this project has
+/// published, so a rule that refused every one of them would refuse the base
+/// package on the day it landed.
+///
+/// **The key is written in artifact coordinates and it ships in the artifact.**
+/// Every other path a manifest writes is read against the publisher's tree, and
+/// this one is not, because what it describes is the artifact. A consumer who
+/// opens a vendored package reads the same key against the tree they received.
+pub const RECORDED_REFERENCES: &str = "unresolved_references";
+
 /// The consumer declaration: what this repository takes, and what it walks.
 #[derive(Clone, Debug)]
 pub struct Consumer {
@@ -1223,7 +1241,7 @@ fn publish_at(
     // line above already returns from without unwinding: nothing has been
     // written yet, because `put` is what calls `create_dir_all`. The
     // `!out.exists()` assertion in the CLI's publish target holds that.
-    carried(&staged, &declared)?;
+    integrity(&staged, &declared)?;
 
     let written = put(out, &staged)
         .map_err(|why| refusal(&display(root, out), &why))
@@ -1492,11 +1510,22 @@ fn stage_flattened(
         mode: mode.clone(),
     }));
     staged.sort_by(|left, right| left.path.cmp(&right.path));
-    carried(&staged, name)?;
+    integrity(&staged, name)?;
     Ok(staged)
 }
 
-/// Every path the staged manifest declares, held to the staged set.
+/// Referential integrity over the staged artifact: every path the manifest
+/// declares and every path a carried document writes, held to the staged set.
+///
+/// Two readings run here and they answer different questions. [`carried`] reads
+/// the `contents` key scalars, which is what a manifest declares.
+/// [`references`] reads the bodies of the files the artifact carries, which is
+/// what a document points a reader at. The first was
+/// [#582](https://github.com/headwater-ai/headwater/issues/582) and the second
+/// [#619](https://github.com/headwater-ai/headwater/issues/619), and the gap
+/// between them shipped an artifact whose prose named seven files no consumer
+/// received. Both collect rather than stopping at the first offender, and both
+/// are reported out of one refusal.
 ///
 /// [`reachable`] holds a `contents` path to the publisher's tree, and this
 /// holds the same key to the artifact. They are two readings and not one rule
@@ -1546,7 +1575,7 @@ fn stage_flattened(
 /// **Every bad key is reported, not the first one.** [`reachable`] and
 /// [`agrees`] collect for the same stated reason: a second run should not have
 /// to discover the second defect.
-fn carried(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
+fn integrity(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
     let Some(file) = staged.iter().find(|file| file.path == MANIFEST) else {
         return Err(refusal(
             manifest,
@@ -1567,6 +1596,20 @@ fn carried(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
         return Err(refusal(manifest, "the staged manifest is not a mapping"));
     };
 
+    let mut refused = carried(staged, manifest, map).err().unwrap_or_default();
+    refused.extend(references(staged, manifest, map).err().unwrap_or_default());
+    match refused.is_empty() {
+        true => Ok(()),
+        false => Err(refused),
+    }
+}
+
+/// Every path the staged `contents` keys declare, held to the staged set.
+///
+/// Split out of [`integrity`] so the two readings stay two readings: this one
+/// asks what the manifest declares, and [`references`] asks what a carried
+/// document writes.
+fn carried(staged: &[Staged], manifest: &str, map: &Mapping) -> Result<(), Vec<ResolveError>> {
     let mut refused = Vec::new();
     for entry in &contents_of(map) {
         let key = entry.key.value.as_str();
@@ -1577,11 +1620,7 @@ fn carried(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
         let Some(member) = member_path(declared) else {
             continue;
         };
-        let prefix = format!("{member}/");
-        let held = staged
-            .iter()
-            .any(|file| file.path == member || file.path.starts_with(&prefix));
-        if !held {
+        if !held(staged, &member) {
             refused.extend(refusal(
                 manifest,
                 &format!(
@@ -1612,7 +1651,32 @@ fn carried(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
 /// and [`carried`] skips rather than reporting them, so one rule keeps one
 /// message.
 fn member_path(declared: &str) -> Option<String> {
-    let mut parts: Vec<&str> = Vec::new();
+    lands_inside("", declared)
+}
+
+/// Where a path written inside `directory` lands in the artifact, or `None`
+/// where it names the artifact root or climbs out of it.
+///
+/// `directory` is artifact-relative with `/` separators, and empty for a member
+/// at the artifact root. The resolution is lexical, because the artifact carries
+/// no symlink a publish left undereferenced and the question a reference asks is
+/// where the text points.
+///
+/// **`None` is two answers and the callers want the same thing from both.**
+/// [`member_path`] resolves a `contents` scalar against the artifact root, and
+/// the two values it can hand back a `None` for — an empty scalar and a path
+/// above the package — are the two [`reachable`] has already refused with its
+/// own message. [`references`] resolves a link against the directory of the file
+/// that wrote it, and a `None` there is a link that deliberately leaves the
+/// artifact. Neither is this rule's to report.
+fn lands_inside(directory: &str, declared: &str) -> Option<String> {
+    let mut parts: Vec<&str> = match directory.is_empty() {
+        true => Vec::new(),
+        false => directory
+            .split('/')
+            .filter(|part| !part.is_empty())
+            .collect(),
+    };
     for part in declared.split('/') {
         match part {
             "" | "." => continue,
@@ -1626,6 +1690,348 @@ fn member_path(declared: &str) -> Option<String> {
         true => None,
         false => Some(parts.join("/")),
     }
+}
+
+/// Whether the staged set holds an artifact path, as a file or as a directory
+/// above one.
+///
+/// A `contents` key and a prose link both name a directory sometimes, and a
+/// staged set is a list of files, so a directory is held when a file sits under
+/// it. The two readings of [`integrity`] ask this the same way on purpose.
+fn held(staged: &[Staged], at: &str) -> bool {
+    let prefix = format!("{at}/");
+    staged
+        .iter()
+        .any(|file| file.path == at || file.path.starts_with(&prefix))
+}
+
+/// Every reference a carried document writes, held to the staged set.
+///
+/// [`carried`] reads what the manifest declares and this reads what a document
+/// says. They are the same rule over two populations, and until
+/// [#619](https://github.com/headwater-ai/headwater/issues/619) only the first
+/// ran: a change that dropped members from `headwater/standard` left fifteen
+/// links across seven carried files pointing at files no consumer received, and
+/// publish reported nothing. The declared half refused a planted `contents`
+/// scalar with exit 1 on the same tree, so the gap was measured rather than
+/// reasoned.
+///
+/// # What it reads
+///
+/// Every staged member whose bytes are text, and every inline Markdown link on a
+/// line that no fence and no code span covers. A `.yml` member is read as well
+/// as a `.md` one, because a bundle manifest carries prose in its comments and
+/// two of them in `headwater/standard` write a link.
+///
+/// A destination is judged only when it names a path inside the artifact. A
+/// scheme, an empty destination and a bare fragment are passed over, and so is a
+/// link that climbs out of the artifact: `../../spec/07-…` written for a
+/// publisher's own tree is a statement about a directory the artifact never had,
+/// and where it climbs clear of the root it is nothing this publish can decide.
+///
+/// # The recorded population, and why the rule is staged
+///
+/// The absolute bar — refuse every reference that resolves nowhere — was
+/// measured against this repository's own package before it was written, and it
+/// refuses `headwater/standard`: 122 references over 51 distinct pairs and 9
+/// carried files, naming 23 targets under `spec/`, `evaluations/`,
+/// `obligations/` and `decisions/`, **none of which was resolvable in any
+/// artifact this project has ever published**. They are links written for the
+/// publisher's `docs/` layout, and repairing them needs a ruling on what a
+/// doctrine link to a publisher's own specification becomes in a consumer's
+/// tree. That ruling is not this rule's.
+///
+/// So [`RECORDED_REFERENCES`] names the population and this refuses what the
+/// population does not hold — the class a publish *creates*, which is the class
+/// that shipped the fifteen. **The identity is the pair `(member, resolved
+/// target)`**, both artifact-relative, both derived from the source alone, and
+/// neither carrying a version or a digest, so a republish of the same source
+/// records the same pairs. A pair the record holds and the artifact no longer
+/// dangles is not refused either: a repair is not a defect, and the record
+/// shrinking is how the population is meant to end.
+fn references(staged: &[Staged], manifest: &str, map: &Mapping) -> Result<(), Vec<ResolveError>> {
+    let admitted = recorded(map);
+    let mut refused = Vec::new();
+
+    // The record is scoped to the artifact it ships in, and a pair naming a
+    // member this artifact does not carry is refused rather than ignored. A
+    // record that outlives its member is a standing admission: the pair admits
+    // nothing today and admits the first document published at that path
+    // tomorrow, with nobody having decided that. `publish --assembly` is how a
+    // record reaches an artifact it was not written for, because a flattened
+    // package takes a new member layout, and `flatten::manifest` drops the key
+    // for that reason.
+    for (member, target) in &admitted {
+        if !held(staged, member) {
+            refused.extend(refusal(
+                manifest,
+                &format!(
+                    "`{RECORDED_REFERENCES}` records `{member}` against {target}, and the artifact \
+                     does not carry {member}. A record names what one artifact carries, so a pair \
+                     whose member never shipped admits nothing today and admits whatever is \
+                     published at that path later. Delete the pair, or publish the member it names"
+                ),
+            ));
+        }
+    }
+
+    for file in staged {
+        let Ok(text) = std::str::from_utf8(&file.bytes) else {
+            continue;
+        };
+        let directory = match file.path.rfind('/') {
+            Some(at) => &file.path[..at],
+            None => "",
+        };
+        for written in links(text) {
+            let target = destination(&written);
+            if target.is_empty() || target.contains("://") || target.starts_with("mailto:") {
+                continue;
+            }
+            let Some(at) = lands_inside(directory, &target) else {
+                continue;
+            };
+            if held(staged, &at) || admitted.contains(&(file.path.clone(), at.clone())) {
+                continue;
+            }
+            let member = &file.path;
+            refused.extend(refusal(
+                manifest,
+                &format!(
+                    "`{member}` writes the reference {written}, which names {at}, and the artifact \
+                     does not carry it. Every relative reference a published document writes is a \
+                     path a consumer follows, so publishing this would ship a document pointing at \
+                     a member no consumer received. Repoint the reference, carry the target, or \
+                     record the pair under `{RECORDED_REFERENCES}` in the manifest where it \
+                     predates this publish"
+                ),
+            ));
+        }
+    }
+    match refused.is_empty() {
+        true => Ok(()),
+        false => Err(refused),
+    }
+}
+
+/// The `(member, target)` pairs a manifest records as resolving nowhere inside
+/// the artifact.
+///
+/// One reading, called by [`references`] on the staged manifest and by
+/// [`recorded_references`] on a written artifact, so the gate and the report
+/// never disagree about what the key says. A malformed value is skipped rather
+/// than refused: the key admits a reference and admitting nothing is the safe
+/// direction, so a value nothing can read leaves the reference refused.
+fn recorded(map: &Mapping) -> std::collections::BTreeSet<(String, String)> {
+    let mut pairs = std::collections::BTreeSet::new();
+    let Some(entries) = map
+        .get(RECORDED_REFERENCES)
+        .and_then(|node| node.value.as_map())
+    else {
+        return pairs;
+    };
+    for entry in entries {
+        let Some(member) = member_path(entry.key.value.as_str()) else {
+            continue;
+        };
+        let Some(targets) = entry.value.value.as_seq() else {
+            continue;
+        };
+        for target in targets {
+            let Some(scalar) = target.value.as_scalar() else {
+                continue;
+            };
+            let Some(at) = member_path(scalar.text.as_str()) else {
+                continue;
+            };
+            pairs.insert((member.clone(), at));
+        }
+    }
+    pairs
+}
+
+/// The path a link destination names, with the fragment and the query removed
+/// and every percent escape decoded.
+///
+/// A destination is a URL and a path on disk is not, so `a%20b.md` names
+/// `a b.md` and a reader who follows the link opens that file. Reading the
+/// escape as written reports a file that is there as a file that is not, which
+/// is a refused publish over a correct link. `?` opens a query, which no path
+/// carries and no file name here holds.
+///
+/// A malformed escape stays as written, because a destination this cannot read
+/// is one this rule has no business rewriting.
+fn destination(written: &str) -> String {
+    let path = written
+        .split('#')
+        .next()
+        .unwrap_or_default()
+        .split('?')
+        .next()
+        .unwrap_or_default();
+    let bytes = path.as_bytes();
+    let mut out: Vec<u8> = Vec::with_capacity(bytes.len());
+    let mut at = 0;
+    while at < bytes.len() {
+        match bytes[at] {
+            b'%' if at + 2 < bytes.len() => {
+                let pair = std::str::from_utf8(&bytes[at + 1..at + 3])
+                    .ok()
+                    .and_then(|text| u8::from_str_radix(text, 16).ok());
+                match pair {
+                    Some(byte) => {
+                        out.push(byte);
+                        at += 3;
+                    }
+                    None => {
+                        out.push(bytes[at]);
+                        at += 1;
+                    }
+                }
+            }
+            byte => {
+                out.push(byte);
+                at += 1;
+            }
+        }
+    }
+    String::from_utf8(out).unwrap_or_else(|_| path.to_string())
+}
+
+/// The destination of every inline Markdown link in `text` that no code block
+/// and no code span covers.
+///
+/// A code span, a fenced block and an indented block are read past, because
+/// prose about this engine prints a path inside all three, and a rule that
+/// refuses a publish over an example is a rule the first publisher it meets
+/// turns off. A reference-style link and an HTML anchor are not read, and that
+/// is a narrowing this states rather than hides: the population it was measured
+/// against writes neither.
+///
+/// # A fence closes on its own character, and a boolean cannot say that
+///
+/// The first cut toggled one flag on ` ``` ` or on `~~~`, so a `~~~` line inside
+/// a backtick fence closed it, every following line read as prose, and the line
+/// that closed the real fence opened a new one. **Everything after an imbalance
+/// went unread**, which is a check reporting success while not looking — the
+/// failure this whole rule exists to refuse, wearing the other face. A fence
+/// therefore remembers the character that opened it and the length of the run,
+/// and only a run of the same character at that length or longer closes it. A
+/// closing fence carries no information string, so a line with anything else on
+/// it stays content.
+///
+/// # An indented block is code here, and the boundary is deliberate
+///
+/// Four spaces after a blank line open an indented code block, and this reads
+/// past one for the same reason it reads past a fence: `CLAUDE.md` and this
+/// repository's specification both print a command that way. The narrowing is
+/// that CommonMark opens no indented block inside a list item, and this does, so
+/// a link written in a list continuation indented four spaces is not read. A
+/// missed reference is the cost, and a refused publish over a printed example is
+/// what it buys.
+fn links(text: &str) -> Vec<String> {
+    let mut found = Vec::new();
+    // The character that opened the fence and the length of its run, where one
+    // is open.
+    let mut fence: Option<(char, usize)> = None;
+    let mut indented = false;
+    let mut previous_blank = true;
+    for line in text.lines() {
+        let opener = line.trim_start();
+        if let Some((character, length)) = fence {
+            let run = opener.chars().take_while(|held| *held == character).count();
+            if run >= length && opener.trim_start_matches(character).trim().is_empty() {
+                fence = None;
+            }
+            continue;
+        }
+        let blank = opener.is_empty();
+        let deep = line.starts_with("    ") || line.starts_with('\t');
+        if !blank {
+            if deep && (indented || previous_blank) {
+                indented = true;
+                previous_blank = false;
+                continue;
+            }
+            indented = false;
+        }
+        previous_blank = blank;
+        for character in ['`', '~'] {
+            let run = opener.chars().take_while(|held| *held == character).count();
+            if run >= 3 {
+                fence = Some((character, run));
+                break;
+            }
+        }
+        if fence.is_some() {
+            continue;
+        }
+        let mut outside = String::new();
+        let mut spanned = false;
+        for character in line.chars() {
+            match character {
+                '`' => spanned = !spanned,
+                _ if !spanned => outside.push(character),
+                _ => {}
+            }
+        }
+        let characters: Vec<char> = outside.chars().collect();
+        let mut at = 0;
+        while at < characters.len() {
+            if characters[at] != '[' {
+                at += 1;
+                continue;
+            }
+            let Some(close) = (at..characters.len()).find(|index| characters[*index] == ']') else {
+                break;
+            };
+            if characters.get(close + 1) != Some(&'(') {
+                at = close + 1;
+                continue;
+            }
+            let Some(end) = (close + 2..characters.len()).find(|index| characters[*index] == ')')
+            else {
+                break;
+            };
+            let destination: String = characters[close + 2..end].iter().collect();
+            let destination = destination
+                .split_whitespace()
+                .next()
+                .unwrap_or_default()
+                .trim_start_matches('<')
+                .trim_end_matches('>');
+            if !destination.is_empty() {
+                found.push(destination.to_string());
+            }
+            at = end + 1;
+        }
+    }
+    found
+}
+
+/// What a published artifact records under [`RECORDED_REFERENCES`], as
+/// `<member> -> <target>` lines in a stable order.
+///
+/// The report half of [`references`]. A publish refuses a dangling reference the
+/// record does not hold and says nothing about it; this is how a publisher is
+/// told what the record admits, and it reads the manifest the artifact carries
+/// rather than a second copy of the key. An artifact whose manifest does not
+/// read yields nothing, because the publish that wrote it has already been
+/// through [`integrity`] and a refusal is not this function's to raise.
+pub fn recorded_references(artifact: &Path) -> Vec<String> {
+    let Ok(text) = std::fs::read_to_string(artifact.join(MANIFEST)) else {
+        return Vec::new();
+    };
+    let Ok(loaded) = headwater_yaml::load(&text) else {
+        return Vec::new();
+    };
+    let Some(map) = loaded.value.as_map() else {
+        return Vec::new();
+    };
+    recorded(map)
+        .into_iter()
+        .map(|(member, target)| format!("{member} -> {target}"))
+        .collect()
 }
 
 /// Which kind of thing a `contents` key's reader opens.
