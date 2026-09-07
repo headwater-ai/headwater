@@ -1074,7 +1074,10 @@ tasks:
         }];
         let laden = read(&render(&carrying, &carrying.canonical())).expect("the lock reads");
         assert_eq!(laden.founded, carrying.founded);
-        assert_eq!(laden.digest, bare.digest, "the record is not part of a resolution");
+        assert_eq!(
+            laden.digest, bare.digest,
+            "the record is not part of a resolution"
+        );
     }
 
     /// The record sits outside the authored span, where a `parts` split can see
