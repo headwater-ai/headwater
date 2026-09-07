@@ -326,6 +326,25 @@ fn a_destination_binds_under_either_reading_of_its_escapes() {
             link.binding
         );
     }
+
+    // The negative half, and it is what makes the pair above a measurement.
+    // `a%20missing.md` stands under neither reading, so reading a destination
+    // twice must still report it. A fix that removed the false positive and
+    // took a true positive with it would be worse than the defect, and only
+    // this case tells the two apart.
+    let missing = graph
+        .links
+        .iter()
+        .find(|link| {
+            link.source_path == "graph/notes/loose.md" && link.destination == "a%20missing.md"
+        })
+        .expect("`a%20missing.md` reached the binding");
+    assert!(missing.binding.is_broken(), "{:#?}", missing.binding);
+    assert!(
+        format!("{}", missing.binding).contains("graph/notes/a%20missing.md"),
+        "and the report names the destination the author wrote: {:#?}",
+        missing.binding
+    );
 }
 
 /// A generated document that declares an identity is a node at both ends.
