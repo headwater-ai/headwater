@@ -1752,6 +1752,29 @@ fn held(staged: &[Staged], at: &str) -> bool {
 fn references(staged: &[Staged], manifest: &str, map: &Mapping) -> Result<(), Vec<ResolveError>> {
     let admitted = recorded(map);
     let mut refused = Vec::new();
+
+    // The record is scoped to the artifact it ships in, and a pair naming a
+    // member this artifact does not carry is refused rather than ignored. A
+    // record that outlives its member is a standing admission: the pair admits
+    // nothing today and admits the first document published at that path
+    // tomorrow, with nobody having decided that. `publish --assembly` is how a
+    // record reaches an artifact it was not written for, because a flattened
+    // package takes a new member layout, and `flatten::manifest` drops the key
+    // for that reason.
+    for (member, target) in &admitted {
+        if !held(staged, member) {
+            refused.extend(refusal(
+                manifest,
+                &format!(
+                    "`{RECORDED_REFERENCES}` records `{member}` against {target}, and the artifact \
+                     does not carry {member}. A record names what one artifact carries, so a pair \
+                     whose member never shipped admits nothing today and admits whatever is \
+                     published at that path later. Delete the pair, or publish the member it names"
+                ),
+            ));
+        }
+    }
+
     for file in staged {
         let Ok(text) = std::str::from_utf8(&file.bytes) else {
             continue;
@@ -1761,11 +1784,11 @@ fn references(staged: &[Staged], manifest: &str, map: &Mapping) -> Result<(), Ve
             None => "",
         };
         for written in links(text) {
-            let target = written.split('#').next().unwrap_or_default();
+            let target = destination(&written);
             if target.is_empty() || target.contains("://") || target.starts_with("mailto:") {
                 continue;
             }
-            let Some(at) = lands_inside(directory, target) else {
+            let Some(at) = lands_inside(directory, &target) else {
                 continue;
             };
             if held(staged, &at) || admitted.contains(&(file.path.clone(), at.clone())) {
@@ -1827,24 +1850,120 @@ fn recorded(map: &Mapping) -> std::collections::BTreeSet<(String, String)> {
     pairs
 }
 
-/// The destination of every inline Markdown link in `text` that no fenced block
+/// The path a link destination names, with the fragment and the query removed
+/// and every percent escape decoded.
+///
+/// A destination is a URL and a path on disk is not, so `a%20b.md` names
+/// `a b.md` and a reader who follows the link opens that file. Reading the
+/// escape as written reports a file that is there as a file that is not, which
+/// is a refused publish over a correct link. `?` opens a query, which no path
+/// carries and no file name here holds.
+///
+/// A malformed escape stays as written, because a destination this cannot read
+/// is one this rule has no business rewriting.
+fn destination(written: &str) -> String {
+    let path = written
+        .split('#')
+        .next()
+        .unwrap_or_default()
+        .split('?')
+        .next()
+        .unwrap_or_default();
+    let bytes = path.as_bytes();
+    let mut out: Vec<u8> = Vec::with_capacity(bytes.len());
+    let mut at = 0;
+    while at < bytes.len() {
+        match bytes[at] {
+            b'%' if at + 2 < bytes.len() => {
+                let pair = std::str::from_utf8(&bytes[at + 1..at + 3])
+                    .ok()
+                    .and_then(|text| u8::from_str_radix(text, 16).ok());
+                match pair {
+                    Some(byte) => {
+                        out.push(byte);
+                        at += 3;
+                    }
+                    None => {
+                        out.push(bytes[at]);
+                        at += 1;
+                    }
+                }
+            }
+            byte => {
+                out.push(byte);
+                at += 1;
+            }
+        }
+    }
+    String::from_utf8(out).unwrap_or_else(|_| path.to_string())
+}
+
+/// The destination of every inline Markdown link in `text` that no code block
 /// and no code span covers.
 ///
-/// A code span and a fence are read past because prose about this engine prints
-/// a path inside both, and a rule that refuses a publish over an example is a
-/// rule the first publisher it meets turns off. A reference-style link and an
-/// HTML anchor are not read, and that is a narrowing this states rather than
-/// hides: the population it was measured against writes neither.
+/// A code span, a fenced block and an indented block are read past, because
+/// prose about this engine prints a path inside all three, and a rule that
+/// refuses a publish over an example is a rule the first publisher it meets
+/// turns off. A reference-style link and an HTML anchor are not read, and that
+/// is a narrowing this states rather than hides: the population it was measured
+/// against writes neither.
+///
+/// # A fence closes on its own character, and a boolean cannot say that
+///
+/// The first cut toggled one flag on ` ``` ` or on `~~~`, so a `~~~` line inside
+/// a backtick fence closed it, every following line read as prose, and the line
+/// that closed the real fence opened a new one. **Everything after an imbalance
+/// went unread**, which is a check reporting success while not looking — the
+/// failure this whole rule exists to refuse, wearing the other face. A fence
+/// therefore remembers the character that opened it and the length of the run,
+/// and only a run of the same character at that length or longer closes it. A
+/// closing fence carries no information string, so a line with anything else on
+/// it stays content.
+///
+/// # An indented block is code here, and the boundary is deliberate
+///
+/// Four spaces after a blank line open an indented code block, and this reads
+/// past one for the same reason it reads past a fence: `CLAUDE.md` and this
+/// repository's specification both print a command that way. The narrowing is
+/// that CommonMark opens no indented block inside a list item, and this does, so
+/// a link written in a list continuation indented four spaces is not read. A
+/// missed reference is the cost, and a refused publish over a printed example is
+/// what it buys.
 fn links(text: &str) -> Vec<String> {
     let mut found = Vec::new();
-    let mut fenced = false;
+    // The character that opened the fence and the length of its run, where one
+    // is open.
+    let mut fence: Option<(char, usize)> = None;
+    let mut indented = false;
+    let mut previous_blank = true;
     for line in text.lines() {
         let opener = line.trim_start();
-        if opener.starts_with("```") || opener.starts_with("~~~") {
-            fenced = !fenced;
+        if let Some((character, length)) = fence {
+            let run = opener.chars().take_while(|held| *held == character).count();
+            if run >= length && opener.trim_start_matches(character).trim().is_empty() {
+                fence = None;
+            }
             continue;
         }
-        if fenced {
+        let blank = opener.is_empty();
+        let deep = line.starts_with("    ") || line.starts_with('\t');
+        if !blank {
+            if deep && (indented || previous_blank) {
+                indented = true;
+                previous_blank = false;
+                continue;
+            }
+            indented = false;
+        }
+        previous_blank = blank;
+        for character in ['`', '~'] {
+            let run = opener.chars().take_while(|held| *held == character).count();
+            if run >= 3 {
+                fence = Some((character, run));
+                break;
+            }
+        }
+        if fence.is_some() {
             continue;
         }
         let mut outside = String::new();

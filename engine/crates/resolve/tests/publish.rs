@@ -4881,3 +4881,123 @@ fn a_reference_inside_a_code_span_or_a_fence_is_not_read() {
     package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
         .expect("neither an example nor a fenced block is a reference a consumer follows");
 }
+
+/// A reference after an unbalanced fence marker is still read.
+///
+/// The first cut of the reader toggled one boolean on ` ``` ` or on `~~~`. A
+/// `~~~` line inside a backtick fence closed it, and every line after the
+/// imbalance was read with the flag inverted, so the rest of the document went
+/// unseen. **That is the failure this whole rule exists to refuse, wearing the
+/// other face**: a check that reports success because it stopped looking. The
+/// document below plants the sequence and then writes a dangling reference two
+/// blocks later, where a reader that lost track of the fence sees nothing.
+///
+/// Both halves are asserted. The reference inside the backtick fence stays an
+/// example, and the one after the fence closes is refused.
+#[test]
+fn a_reference_after_an_unbalanced_fence_marker_is_still_read() {
+    let scratch = Scratch::new("reference-fence");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\n```\n~~~\n[an example](corpus/inside-the-fence.md)\n~~~\n```\n\nThe worked \
+         example is [in the corpus](corpus/after-the-fence.md).\n",
+    );
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect_err("the reference after the fence closes is a reference");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(
+        message.contains("corpus/after-the-fence.md"),
+        "the reader lost the fence and stopped seeing the document:\n{message}"
+    );
+    assert!(
+        !message.contains("corpus/inside-the-fence.md"),
+        "a line inside the fence was read as a reference:\n{message}"
+    );
+}
+
+/// A recorded pair whose member the artifact does not carry is refused.
+///
+/// A record names what one artifact carries. A pair that outlives its member is
+/// a standing admission: it admits nothing today, and it admits whatever is
+/// published at that path later, with nobody having decided that. The way a
+/// record reaches an artifact it was not written for is `publish --assembly`,
+/// because a flattened package takes a new member layout — `flatten::manifest`
+/// drops the key for that reason, and this is what holds the plain path.
+#[test]
+fn a_recorded_pair_whose_member_the_artifact_lacks_is_refused() {
+    let scratch = Scratch::new("reference-scope");
+    let root = publisher(&scratch, None);
+    let manifest = root.join("packages/acme-fixture/package.yml");
+    let base = std::fs::read_to_string(&manifest).expect("the manifest was just written");
+    std::fs::write(
+        &manifest,
+        format!("{base}unresolved_references:\n  gone.md:\n    - corpus/note.md\n"),
+    )
+    .expect("the record is written");
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect_err("the artifact carries no gone.md for the record to be about");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(
+        message.contains("gone.md"),
+        "the member the record names is not named:\n{message}"
+    );
+    assert!(
+        message.contains("unresolved_references"),
+        "the refusal does not say which key is wrong:\n{message}"
+    );
+}
+
+/// A percent escape is decoded and a query is dropped before the target is
+/// resolved.
+///
+/// A link destination is a URL and a member path is a path on disk, so
+/// `a%20note.md` names `a note.md` and a reader who follows the link opens that
+/// file. Reading the escape as written reports a file that is there as a file
+/// that is not, which is a refused publish over a correct link. The same holds
+/// for a query, which no path carries.
+#[test]
+fn a_percent_escape_is_decoded_and_a_query_is_not_part_of_the_path() {
+    let scratch = Scratch::new("reference-escape");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\nThe example is [in the corpus](corpus/a%20note.md), and the same file [with a \
+         query](corpus/a%20note.md?raw=1).\n",
+    );
+    scratch.write("publisher/packages/acme-fixture/corpus/a note.md", "# A\n");
+    let out = scratch.path().join("artifact");
+
+    package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect("both references name a file the artifact carries");
+}
+
+/// A reference inside an indented code block is an example.
+///
+/// This repository writes a command as four spaces after a blank line, in
+/// `CLAUDE.md` and in its specification, and a publisher who does the same is
+/// printing rather than referring. The boundary is stated where the reader
+/// carries it: CommonMark opens no indented block inside a list item and this
+/// does, so a link in a list continuation indented four spaces is not read.
+/// A missed reference is what that costs, and a publish refused over a printed
+/// example is what it buys.
+#[test]
+fn a_reference_inside_an_indented_block_is_not_read() {
+    let scratch = Scratch::new("reference-indented");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/notes.md",
+        "# Notes\n\nRun it like this:\n\n    open [the corpus](corpus/note.md)\n\nAnd that is \
+         all.\n",
+    );
+    let out = scratch.path().join("artifact");
+
+    package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect("an indented block prints a path rather than referring to one");
+}

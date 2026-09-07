@@ -1648,6 +1648,57 @@ fn recorded_references(manifest: &Path) -> Vec<(String, String)> {
     pairs
 }
 
+/// #619: a flattened package inherits no record of another artifact's
+/// references.
+///
+/// `flatten::manifest` copies every source key it does not replace, and
+/// `unresolved_references` rode through on the first cut. The starter recipe
+/// then shipped four members and a record of 51 pairs naming members like
+/// `bundles/README.md` that its artifact does not hold, and the publish printed
+/// the count of them. **That is a standing admission**: a recipe inherits
+/// permission to dangle a reference it does not contain, and the first
+/// assembly that writes a real one at a recorded path is admitted by it.
+///
+/// A flattened package takes a new member layout — `doctrine` lands at
+/// `doctrine/<recipe>/` and the bundle tree is absorbed — so not one recorded
+/// member of the source is carried, and the key is dropped rather than
+/// filtered. What the recipe's own publish finds is what its own record would
+/// hold, and today that is nothing at all.
+#[test]
+fn the_shipped_starter_recipe_inherits_no_record_of_another_artifacts_references() {
+    let root = Root::scratch("starter-record");
+    let source = repository().join("taxonomy-source/headwater-standard");
+    let artifact = root.path().join("release");
+
+    let (code, _stdout, stderr) = publish_assembly_from(&repository(), &source, &artifact);
+    assert_eq!(code, Some(0), "{stderr}");
+
+    let carried = std::fs::read_to_string(artifact.join("package.yml"))
+        .expect("the flattened manifest reads");
+    assert!(
+        !carried.contains(headwater_resolve::package::RECORDED_REFERENCES),
+        "the flattened manifest inherited a record written for another artifact:\n{carried}"
+    );
+    assert!(
+        recorded_references(&artifact.join("package.yml")).is_empty(),
+        "the flattened artifact records a pair it cannot be about"
+    );
+    assert!(
+        !stderr.contains("resolve nowhere inside it"),
+        "the publish reported a population this artifact does not carry: {stderr}"
+    );
+
+    // The source it was flattened from does record a population, so this case
+    // is about the flattening and not about a record that is empty everywhere.
+    let plain = root.path().join("plain");
+    let (code, message) = publish_real_source_into(&plain);
+    assert_eq!(code, Some(0), "{message}");
+    assert!(
+        !recorded_references(&plain.join("package.yml")).is_empty(),
+        "the source package records nothing, so this case holds nothing"
+    );
+}
+
 /// The destination of every inline Markdown link on a line that is not inside a
 /// fenced block, with a code span removed first and a CommonMark link title
 /// dropped.
