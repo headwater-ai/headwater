@@ -129,15 +129,19 @@ impl Format {
     /// What this format cannot carry, and why.
     ///
     /// Empty for [`Format::Json`], which is the claim that it drops nothing,
-    /// and [`census`] is what holds that claim. Empty for [`Format::Text`] on
-    /// the same claim and for a different reason: a loss is a member of a
-    /// target vocabulary that a run has no value for, and the terminal is the
-    /// engine's own vocabulary rather than a target. That format carries more
-    /// than the other three rather than less, because the census and the graph
-    /// are in it.
+    /// and [`census`] is what holds that claim.
+    ///
+    /// [`Format::Text`] was empty on the same claim and for a different reason:
+    /// a loss is a member of a target vocabulary that a run has no value for,
+    /// and the terminal is the engine's own vocabulary rather than a target.
+    /// That reason still stands for every value but one, and the report still
+    /// carries more than the other three in every other respect, because the
+    /// census and the graph are in it. The one entry it now declares is a value
+    /// the engine computes and JSON writes: see [`text::LOSS`].
     pub fn loss(self) -> &'static [Loss] {
         match self {
-            Format::Text | Format::Json => &[],
+            Format::Json => &[],
+            Format::Text => text::LOSS,
             Format::Sarif => sarif::LOSS,
             Format::Markdown => markdown::LOSS,
         }
