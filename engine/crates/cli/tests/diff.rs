@@ -60,6 +60,65 @@ struct Root {
 
 impl Root {
     fn new(label: &str) -> Root {
+        Root::shaped(label, |_| {})
+    }
+
+    /// A root whose bundle order makes one overlay found the kind another one
+    /// declares, so the resolution carries a founding and every publish out of
+    /// it carries the same founding.
+    ///
+    /// The two bundles commute, which is the whole point: `zz-a` writes a leaf
+    /// under `kinds.zz_thing` and `zz-b` declares that kind, so the declared
+    /// order decides which of them creates the key. The consumer is free to
+    /// list them either way — `headwater_resolve::package::selected` pushes
+    /// bundles in the declared order with no topological pass — so the order
+    /// here is a legal one and not a broken root.
+    ///
+    /// Three things about the pair, each of which cost an earlier attempt.
+    /// `taxonomy publish` publishes the package with every bundle it ships, so
+    /// a synthetic bundle has to resolve under that maximal set as well as
+    /// under this consumer's selection: an address that reads a declaration the
+    /// adopter overlay carries resolves for the consumer and fails the publish.
+    /// A synthetic concrete kind needs a shelf, or `coverage` refuses the
+    /// resolution. And reaching into a key an existing bundle or the adopter
+    /// overlay already writes is refused as a collision rather than recorded as
+    /// a founding, so the kind name is one nothing else names.
+    fn founding(label: &str) -> Root {
+        Root::shaped(label, |at| {
+            for (name, body) in [
+                (
+                    "zz-a",
+                    "# SPDX-License-Identifier: Apache-2.0\n\nbundle: zz-a\nextends: \
+                     headwater/standard@4.1.0\nrequires: []\n\nadd:\n  kinds.zz_thing.voice: \
+                     declarative\n",
+                ),
+                (
+                    "zz-b",
+                    "# SPDX-License-Identifier: Apache-2.0\n\nbundle: zz-b\nextends: \
+                     headwater/standard@4.1.0\nrequires: []\n\nadd:\n  kinds.zz_thing:\n    is_a: \
+                     governed_document\n    purpose: behavior\n    lifecycle: standard\n  \
+                     shelves.zz_things:\n    title: Zz Things\n    path: docs/zz/**\n    \
+                     homogeneous: true\n    kind: zz_thing\n",
+                ),
+            ] {
+                let directory = at.join("docs/taxonomies").join(name);
+                std::fs::create_dir_all(&directory).expect("the bundle directory is made");
+                std::fs::write(directory.join("bundle.yml"), body).expect("the bundle writes");
+            }
+
+            let declaration = at.join(".headwater/taxonomy.yml");
+            let text = std::fs::read_to_string(&declaration).expect("the declaration reads");
+            let from = "  bundles: [design-spec";
+            assert!(text.contains(from), "the declaration lists its bundles");
+            std::fs::write(
+                &declaration,
+                text.replacen(from, "  bundles: [zz-a, zz-b, design-spec", 1),
+            )
+            .expect("the declaration writes");
+        })
+    }
+
+    fn shaped(label: &str, prepare: impl FnOnce(&Path)) -> Root {
         let at =
             std::env::temp_dir().join(format!("headwater-cli-diff-{}-{label}", std::process::id()));
         let _ = std::fs::remove_dir_all(&at);
@@ -93,6 +152,7 @@ impl Root {
                 .expect("the declaration copies");
         }
 
+        prepare(&at);
         pin(&at, "1.0.0");
 
         let root = Root { at };
@@ -257,6 +317,64 @@ fn a_version_bump_alone_moves_no_dimension() {
             "`{dimension}` moved on a change no document can see: {ran:?}"
         );
     }
+    assert!(
+        ran.out.contains("nothing here requires a major version"),
+        "{ran:?}"
+    );
+}
+
+/// The same silent direction, on a root whose bundle order founds a key.
+///
+/// `addressability` was the one dimension of six that read a single side, so it
+/// reported the candidate's whole founding record as a break whether or not the
+/// release under test introduced any of it. A consumer whose bundle order
+/// happens to found a key was then told that every release of the package
+/// requires a major version, on every diff, until they reordered a list they
+/// were free to write either way. Only the version string moves here, so the
+/// answer is the same one the other five give: preserved.
+///
+/// The `operations that make what they address: 1` assertion is what keeps this
+/// case about something. A root that stopped founding anything would pass this
+/// on a dimension that never had an entry to carry.
+#[test]
+fn a_founding_the_previous_release_already_carried_is_not_a_break() {
+    let root = Root::founding("founding-carried");
+    let validated = root.run(&["taxonomy", "validate"]);
+    assert_eq!(validated.code, Some(0), "{validated:?}");
+    assert!(
+        validated
+            .out
+            .contains("operations that make what they address: 1"),
+        "the bundle order founds a key, or this case is about nothing: {validated:?}"
+    );
+
+    let first = root.publish("1.0.0");
+    root.edit("version: 1.1.0", &[]);
+    let second = root.publish("1.1.0");
+    assert_eq!(
+        std::fs::read_to_string(first.join("taxonomy.yml"))
+            .expect("the first reads")
+            .replacen("version: 1.0.0", "version: 1.1.0", 1),
+        std::fs::read_to_string(second.join("taxonomy.yml")).expect("the second reads"),
+        "nothing but the version moved between the two artifacts"
+    );
+
+    let ran = root.run(&[
+        "taxonomy",
+        "diff",
+        second.to_str().expect("utf-8"),
+        "--to",
+        "1.1.0",
+        "--now",
+        "2026-08-01",
+    ]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert_eq!(
+        ran.dimension("addressability"),
+        "preserved",
+        "a founding the release the lock names already carried is not a break this \
+         release introduced: {ran:?}"
+    );
     assert!(
         ran.out.contains("nothing here requires a major version"),
         "{ran:?}"
