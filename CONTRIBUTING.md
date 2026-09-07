@@ -32,6 +32,10 @@ The identifier is the whole header. Do not add a copyright line naming yourself 
 
 Do not report a vulnerability through an issue or a pull request. [`SECURITY.md`](SECURITY.md) states the process.
 
+## Building and testing
+
+[`DEVELOPING.md`](DEVELOPING.md) is the loop: the toolchain floor, which test suite to name, how a recorded fixture is re-recorded, what every gate in CI runs and how to run it yourself, and the two build failures that cost a newcomer an afternoon. Read it before your first build. The gate list on that page is derived from the workflow by a fixture suite rather than kept by hand, so it cannot quietly fall behind what CI runs.
+
 ## Authoring conventions
 
 [`CLAUDE.md`](CLAUDE.md) records the conventions that specification prose follows, and how they are enforced. Two of them catch every newcomer once. Markdown source is not hard-wrapped, so a paragraph is one long line. Spelling is American.

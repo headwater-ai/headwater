@@ -783,6 +783,24 @@ jobs:
         # one another. `--locked` on those recipes belongs to
         # `tools/build-declaration-fixtures.sh` and is not read twice here.
         run: sh tools/engine-readme-fixtures.sh
+      - name: The contributor loop still lists what this job runs
+        # `DEVELOPING.md` is the contributor loop, and one section of it is a
+        # copy of this file: the list of what CI runs. A hand-kept list of that
+        # kind goes stale with no exit status moving, and the measurement is on
+        # record — the best hand-written one this repository produced named 8
+        # script invocations on 2026-09-06, on a day this workflow ran 15.
+        #
+        # This step derives the population from every `run:` value of this file
+        # — scripts that are executed, cargo commands, and engine verbs — and
+        # compares it against the page in both directions, so a gate added here
+        # without a line on the page fails the day it lands, and a gate the page
+        # names that no job runs fails too. It is the second `run:` walk under
+        # `tools/`; the header of the script says why it is not shared with
+        # `tools/build-declaration-fixtures.sh`.
+        #
+        # This step is therefore a member of its own population, and the page
+        # names it. It builds nothing, runs no container and opens no socket.
+        run: sh tools/developing-fixtures.sh
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every
