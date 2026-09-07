@@ -114,6 +114,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh .githooks/fixtures.sh
     sh .claude/hooks/fixtures.sh
     sh .claude/skills/fixtures.sh
+    sh .claude/agents/fixtures.sh
     sh .claude/tutorial/fixtures.sh
     sh tools/assemble-site.sh --check
     sh tools/build-declaration-fixtures.sh
@@ -178,6 +179,8 @@ The `adoption` block of `.headwater/taxonomy.lock` holds `(document, rule)` pair
 ### The on-ramp, and the suite that holds it
 
 `docs/tutorials/your-first-governed-corpus.md` takes a reader from an empty directory to a passing strict run, and it states after every step what the reader should now see. Each of those is a claim about this engine copied into prose, so `sh .claude/tutorial/fixtures.sh` is the verb that produces them: it reads the commands out of the document, runs them against a scratch repository under the temporary directory, and diffs each result against the block the document prints. It blocks in CI, and it writes nothing inside this checkout. Edit an output block only by running the command and taking what it printed.
+
+`sh .claude/agents/fixtures.sh` holds the build-order agents under `.claude/agents/hw-*.md`, the two commands that dispatch them and the doctrine both carry: every `subagent_type` a command names is a definition, every skill an agent invokes exists, every ruling cited under `.claude/` is on the graph and not superseded, the two agents that must not write carry neither `Edit` nor `Write`, each check of the verification bar is stated once, `CLAUDE.md`, `.claude/commands/next-run.md` and `.claude/run/doctrine.md` hold the byte ceilings the suite declares, and the doctrine block in the command is byte-identical to the file. [HW-PD-0001](docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md) is why each of those files holds what it holds.
 
 `sh .claude/skills/fixtures.sh` holds every claim the skill and agent files make about the engine. It is a blocking CI step, half of its cases are derived from the files rather than listed, and it writes only into a scratch copy of the corpus. `headwater sweep` is the one mechanism among the skills that no engine performs: `headwater sweep plan` writes the briefing, a model reads the documents, and `headwater sweep report` says what the engine could confirm about what came back. Nothing gates on it, and no crate of this engine opens a socket.
 

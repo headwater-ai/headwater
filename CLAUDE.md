@@ -4,7 +4,7 @@ This file holds only what every agent in this repository must obey, because ever
 
 ## Work in a worktree
 
-Call `EnterWorktree` at the start of every session in this repository, before reading or editing a file, unless the user has already put the session in a worktree another way. A session editing the checkout that Claude Code itself is running from can collide with another session doing the same, and a worktree keeps a change isolated until it is ready to commit. After `EnterWorktree`, run `git config --get core.hooksPath` and expect `.githooks`: the tool rewrites that key to an absolute path in the shared config, and a worktree with an absolute path silently runs the main checkout's hook body instead of its own.
+Call `EnterWorktree` at the start of every session in this repository, before reading or editing a file, unless the user has already put the session in a worktree another way. Two sessions editing the checkout the harness runs from collide, and a worktree keeps a change isolated until it is ready to commit. After `EnterWorktree`, run `git config --get core.hooksPath` and expect `.githooks`: the tool rewrites that key to an absolute path in the shared config, and a worktree with an absolute path silently runs the main checkout's hook body instead of its own.
 
 ## The name is Headwater
 
@@ -14,9 +14,9 @@ Write it as `headwater` in lower case only when it is an identifier: the CLI ver
 
 ## No arbitrary line breaks in Markdown
 
-Do not hard-wrap Markdown source. Write each paragraph, list item, and blockquote paragraph as one logical line. Never insert a line break for line-length reasons, and remove such breaks when you edit a file that has them.
+Do not hard-wrap Markdown source. Write each paragraph, list item, and blockquote paragraph as one logical line. Never break a line for length, and remove such breaks when you edit a file that has them.
 
-Line breaks are structural only: blank lines between blocks, one line per list item or table row, fenced/indented code kept verbatim. A deliberate hard break inside a paragraph (rare) uses a trailing backslash, not two spaces.
+Line breaks are structural only: blank lines between blocks, one line per list item or table row, fenced/indented code kept verbatim. A deliberate hard break (rare) is a trailing backslash.
 
 ## American spelling
 
@@ -50,7 +50,7 @@ One harness hook you will meet: `.claude/hooks/write.sh` refuses a raw `Write` o
 
 **Writing governed prose.** Invoke the `ste-editor` skill before you rewrite a document under `docs/spec/`, `docs/decisions/`, `docs/evaluations/`, `docs/obligations/`, `docs/interfaces/`, `docs/requirements/`, `docs/acceptance-criteria/`, `docs/tutorials/` or `docs/process/decisions/`, and run `headwater check` on the result. The skill carries the rules that no check reads.
 
-## The seven skills, and when each one loads
+## The skills, and when each one loads
 
 Nothing makes a skill load. A harness reads a description and a model picks, which [spec 5](docs/spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) states as a measurement rather than a property. This table is the one mechanism stronger than a description, and it costs context on every session.
 
@@ -64,7 +64,7 @@ Nothing makes a skill load. A harness reads a description and a model picks, whi
 | `repo-cleanup` | you retire a worktree, a local branch or a remote branch that a merged change left behind |
 | `headwater-sweep` | you are asked to read a slice of the corpus for what no check can see |
 
-The first two are ordered: orientation finds the document, and authoring writes one. `headwater explain` answers from the graph the engine already built, so open a specification part only after it has named the right one.
+`hw-verification-bar` and `hw-run-policy` load only from the build-order agents under `.claude/agents/` that name them. The first two above are ordered: orientation finds the document, and authoring writes one. `headwater explain` answers from the graph the engine already built, so open a specification part only after it has named the right one.
 
 `.claude/agents/headwater-maintainer.md` reports what a change touched, what is now stale, and what the corpus is owed; it proposes and never accepts. `.claude/agents/headwater-product-owner.md` reads the whole board, owns its structure and never its scope, and `/product-owner` runs it standalone. **The value rule both serve:** work must name a reader who is not this repository. `.claude/commands/next-run.md` states it once, and every other file cites it rather than restating it.
 
