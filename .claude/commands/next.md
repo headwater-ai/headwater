@@ -1,24 +1,22 @@
 ---
-description: Work one iteration of the Headwater build order yourself, then stop
-argument-hint: "[issue number or milestone, optional]"
+description: Work one iteration of the Headwater build order in this session, over the same agents the run uses, then stop
+argument-hint: "[issue number, optional]"
 ---
 
-Work one iteration of the Headwater build order (org project "Headwater build order", `headwater-ai/headwater`) **yourself**, then stop. `$ARGUMENTS`, if given, names the issue or milestone to work.
+Work one iteration of the Headwater build order (org project "Headwater build order", `headwater-ai/headwater`), then stop. `$ARGUMENTS`, if given, names the issue; without it, dispatch `hw-queue` and take the top of what it writes.
 
-**The procedure is part 1 of `.claude/commands/next-run.md`** — read it there rather than from memory. It holds the canonical statement of how to read the board, pick an issue, check its premise, do the work, write back, and report. That file is the single definition; this one exists because a single iteration is often worth running by hand, and it states only what differs.
+**The value rule binds here too.** `.claude/commands/next-run.md` states it once, under *The value rule*, and this file does not restate it. Before you start, name the reader who is not this repository.
 
-**The value rule binds here too.** `.claude/commands/next-run.md` states it once, under *The value rule*, and this file does not restate it. Before you start, name the reader who is not this repository. An issue labeled `self-audit` is not eligible for an iteration, and one labeled `adopter-blocking` sorts above everything else.
+## What is the same
 
-## What differs when you run one iteration yourself
+The stages are the same five agent definitions the run uses, dispatched by `subagent_type` and in the same order: `hw-adjudicate`, then `hw-build`, then `hw-verify`, and `hw-integrate` once the merge is ruled. Each carries its own procedure, its own write boundary and its own fixed report block, and the `hw-run-policy` and `hw-verification-bar` skills carry the rest. Use the dispatch template from `.claude/commands/next-run.md` and pass paths, never pasted prose.
 
-**You are the doer and there is no parent to adjudicate for you.** The procedure already branches on this: its stale-premise check tells the solo case to say what changed and ask rather than guess, because here the second reader is a person rather than a verifier.
+## What differs
 
-The same holds for a case the procedure does not name: **if the issue's "Done when" does not parse into a checkable bar, say what changed and ask rather than pick an interpretation yourself.**
+**Width is one and the parent is this session.** There is no run directory unless you make one; the scratch directory under `$CLAUDE_JOB_DIR/tmp/issue-<N>/` is enough for one iteration's notes.
 
-**Verify your own work before you claim it.** Nobody is going to break the corpus by hand on your behalf. At minimum: run the suite, run all five gates, and make the thing you built fail before you believe it works. If you added a rule, break the corpus and watch it fire with a message that names the offender. If you fixed something, revert the fix and confirm a named test goes red — a fix no test holds is a fix nobody can keep.
+**The merge is the human's unless they said otherwise.** Report the verifier's verdict and your ruling, and dispatch `hw-integrate` only when the person in the session says merge. A run has a standing licence to merge; a single iteration by hand does not.
 
-**Report the four lines**, and take the fourth seriously: *what you learned that is written down nowhere yet*. An empty answer usually means the write-back was rushed.
+**A refusal stops here.** When `hw-adjudicate` returns `VERDICT: REFUSE`, say what changed and ask, because the second reader is a person rather than a run that can redirect.
 
-## Before you start
-
-Read `~/.claude/headwater-build-order-ledger.md` if it exists. It carries the lessons, open findings and traps from every prior iteration, and it will save you an hour you would otherwise spend rediscovering one of them.
+**Report the four lines** the build agent returns, and take the fourth seriously: *what you learned that is written down nowhere yet*.

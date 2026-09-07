@@ -1064,6 +1064,19 @@ jobs:
         # It writes only into a scratch copy of the corpus under the temporary
         # directory, so it may run after the step above with nothing between.
         run: sh .claude/skills/fixtures.sh
+      - name: The build-order agents resolve, cite what exists, and hold their ceilings
+        # `.claude/commands/next-run.md` dispatches five agent definitions by
+        # `subagent_type`, each names the skills it invokes, and all of them
+        # cite rulings by identifier. A name that stops resolving fails
+        # silently: an unknown `subagent_type` falls back to a general agent
+        # with none of the definition's instructions. The suite also holds the
+        # byte ceilings on `CLAUDE.md`, the command and the doctrine, because
+        # the parent's context is the unit of cost, and it holds the doctrine
+        # block in the command byte-identical to `.claude/run/doctrine.md`.
+        #
+        # It blocks, it needs no engine, and it writes only under the
+        # temporary directory.
+        run: sh .claude/agents/fixtures.sh
       - name: The tutorial says what a reader will see, and this sees it
         # `docs/tutorials/your-first-governed-corpus.md` states, after every one
         # of its sixteen steps, what the reader should now see. Each of those is
