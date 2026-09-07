@@ -152,6 +152,7 @@ pub mod identity;
 pub mod instance;
 pub mod language;
 pub mod lifecycle_state;
+pub mod link_path;
 pub mod paint;
 pub mod participation;
 pub mod patch;
@@ -196,7 +197,7 @@ use headwater_graph::{Declarations, Graph};
 
 /// The rules this runner carries, in the order a report lists them.
 ///
-/// Twenty-four are generated from the taxonomy, two read no declaration, one
+/// Twenty-four are generated from the taxonomy, three read no declaration, one
 /// is the coverage guarantee itself, and the last three are about the taxonomy
 /// rather than about the corpus. A rule that is generated has no entry of its
 /// own anywhere: the list is the *templates*, and the instance count is what a
@@ -205,7 +206,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 30] = [
+pub const RULES: [&str; 31] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -228,6 +229,7 @@ pub const RULES: [&str; 30] = [
     source_form::RULE,
     sections::RULE,
     fragment::RULE,
+    link_path::RULE,
     promotion::RULE,
     transition::RULE,
     lifecycle_state::RULE,
@@ -485,6 +487,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_exports::<fragment::Fragments>(),
         ),
         (
+            link_path::RULE,
+            scope::corpus_scope::<link_path::Paths>(),
+            scope::corpus_version::<link_path::Paths>(),
+            scope::corpus_exports::<link_path::Paths>(),
+        ),
+        (
             promotion::RULE,
             scope::document_scope::<promotion::Promoted>(),
             scope::document_version::<promotion::Promoted>(),
@@ -621,6 +629,12 @@ pub fn run(
     let source_form = source_form::SourceForm::over(declared.shape);
     let sections = sections::Sections::over(declared.shape);
     let fragments = fragment::Fragments;
+    // The path half of the same question, and it reads nothing of its own
+    // either: the set of links that resolved to nothing is what the build
+    // already produced and the report already prints. Corpus-scoped, because a
+    // link is dead when no file stands at its path and that is not a fact about
+    // the file that wrote it. See [`link_path`].
+    let link_paths = link_path::Paths;
     // The one rule that declares `NEEDS_PRIOR`, and it carries no declaration:
     // the transition it reads is spec 3's act rather than a member of any
     // taxonomy. See [`promotion`].
@@ -734,6 +748,14 @@ pub fn run(
     ));
     instances.extend(scope::over_documents(&sections, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&fragments, census, graph, ctx, cache));
+    instances.extend(scope::over_corpus(
+        &link_paths,
+        census,
+        graph,
+        claims,
+        ctx,
+        cache,
+    ));
     instances.extend(scope::over_documents(&promoted, census, graph, ctx, cache));
     instances.extend(scope::over_documents(
         &transitions,

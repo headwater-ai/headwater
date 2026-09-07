@@ -208,7 +208,7 @@ census
 ```
 
 ```
-  1 seen, 0 classified, 0 checked, 4 check instances
+  1 seen, 0 classified, 0 checked, 5 check instances
 ```
 
 ```
@@ -295,7 +295,7 @@ census
 ```
 
 ```
-  1 seen, 1 classified, 1 checked, 17 check instances
+  1 seen, 1 classified, 1 checked, 18 check instances
 ```
 
 **Check.** `headwater check 2>/dev/null | grep 'check instances'` prints the second block above.
@@ -382,9 +382,9 @@ Trimmed to the head of the register and to its last line. The same run printed b
 
 ```
   register
-    31 obligations: 31 verified, 0 gap, 0 unverifiable, 0 with no disposition
+    32 obligations: 32 verified, 0 gap, 0 unverifiable, 0 with no disposition
        13 high, 13 verified
-       13 medium, 13 verified
+       14 medium, 14 verified
         5 low, 5 verified
 ```
 
@@ -392,7 +392,7 @@ Trimmed to the head of the register and to its last line. The same run printed b
     facet.value.blank reaches no obligation, so it names none
 ```
 
-**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `31 obligations:` line of the register block above, and nothing else.
+**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `32 obligations:` line of the register block above, and nothing else.
 
 **One of those readings is about the package and one is about your run.** The thirty-one obligations and their severities come from `headwater/standard`. They read the same on your first day and on your thousandth. The last line is derived from the run in front of you. It names every rule that fired at you with no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.
 

@@ -23,6 +23,18 @@
 //! by resolving: it resolves to a *document*, and the identifier of that
 //! document is what a later check compares against the declared edges.
 //!
+//! # A destination is read twice, and one file may wear two spellings
+//!
+//! `%20` is how CommonMark writes a space inside a path, so a corpus holding
+//! `Design Notes.md` cites it as `Design%20Notes.md`, and a binder that read
+//! only the bytes the author typed would call that file missing. A binder that
+//! decoded first would have the same defect facing the other way, because a
+//! file named `a%20file.md` on a disk is legal and nothing decodes it. So a
+//! destination is bound when *either* reading finds a file, and it is broken
+//! only when neither does. `link.path.unresolved` is an error that stops a
+//! commit, and a rule that stops a commit refuses only where no plausible
+//! reading of the path exists.
+//!
 //! # The fragment is kept and not resolved
 //!
 //! Whether `#q4--relation-storage` names a heading of the target is a Document
@@ -164,28 +176,108 @@ fn binding_of(source_path: &str, destination: &str, index: &Index, base: &Path) 
         .rsplit_once('/')
         .map(|(head, _)| head)
         .unwrap_or("");
-    let joined = if directory.is_empty() {
-        destination.to_string()
-    } else {
-        format!("{directory}/{destination}")
+    let join = |destination: &str| match directory.is_empty() {
+        true => destination.to_string(),
+        false => format!("{directory}/{destination}"),
     };
 
-    let path = match normalize(&joined) {
-        Ok(path) => path,
-        Err(why) => return Binding::Unnormalizable { why },
-    };
+    // The destination as the author wrote it, first and unchanged.
+    let written = normalize(&join(destination));
+    if let Ok(path) = &written {
+        if let Some(binding) = standing_at(path, index, base) {
+            return binding;
+        }
+    }
+    // And the destination read as an escaped one, second. `%20` is how
+    // CommonMark spells a space inside a path, so a corpus holding `Design
+    // Notes.md` writes `Design%20Notes.md` and means one file under two
+    // spellings. Decoding instead of this would be the same defect facing the
+    // other way, because a file named `a%20file.md` on a disk is legal and
+    // nothing decodes it. So a destination is bound when either reading finds
+    // a file, and it is broken only when neither does.
+    if let Some(decoded) = percent_decoded(destination) {
+        if let Ok(path) = normalize(&join(&decoded)) {
+            if let Some(binding) = standing_at(&path, index, base) {
+                return binding;
+            }
+        }
+    }
+    match written {
+        // The reading the author wrote is the one the report names, because
+        // that is the string they will look for in their own document.
+        Ok(path) => Binding::Missing { path },
+        Err(why) => Binding::Unnormalizable { why },
+    }
+}
 
-    if let Some(entry) = index.by_path(&path) {
-        return Binding::Corpus {
-            path,
+/// What stands at one repository path, or nothing where no file does.
+fn standing_at(path: &str, index: &Index, base: &Path) -> Option<Binding> {
+    if let Some(entry) = index.by_path(path) {
+        return Some(Binding::Corpus {
+            path: path.to_string(),
             class: entry.class,
             id: entry.id.clone(),
-        };
+        });
     }
-    if base.join(&path).exists() {
-        return Binding::Repository { path };
+    if base.join(path).exists() {
+        return Some(Binding::Repository {
+            path: path.to_string(),
+        });
     }
-    Binding::Missing { path }
+    None
+}
+
+/// A destination with every `%XX` escape turned back into the byte it spells,
+/// or nothing where the destination carries no escape and nothing where the
+/// bytes are not text.
+///
+/// Written here rather than taken off a registry. This is the one place in the
+/// engine that reads an escape, the rule is two hexadecimal digits, and a
+/// dependency added for it reaches every corpus that vendors this engine.
+fn percent_decoded(destination: &str) -> Option<String> {
+    if !destination.contains('%') {
+        return None;
+    }
+    let raw = destination.as_bytes();
+    let mut bytes = Vec::with_capacity(raw.len());
+    let mut at = 0;
+    while at < raw.len() {
+        match (raw[at], raw.get(at + 1), raw.get(at + 2)) {
+            (b'%', Some(high), Some(low)) => match (digit(*high), digit(*low)) {
+                (Some(high), Some(low)) => {
+                    bytes.push((high << 4) | low);
+                    at += 3;
+                }
+                // A `%` that two hexadecimal digits do not follow is a literal
+                // one, which is what a filesystem calls it too.
+                _ => {
+                    bytes.push(b'%');
+                    at += 1;
+                }
+            },
+            _ => {
+                bytes.push(raw[at]);
+                at += 1;
+            }
+        }
+    }
+    // Bytes that are not text name no file this engine can open, and a
+    // destination that decoded to itself is one reading rather than two.
+    let decoded = String::from_utf8(bytes).ok()?;
+    match decoded == destination {
+        true => None,
+        false => Some(decoded),
+    }
+}
+
+/// One hexadecimal digit, in either case.
+fn digit(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
 }
 
 /// Split a destination into its path and its fragment.
@@ -226,6 +318,31 @@ mod tests {
             ("09-decisions.md", Some("q4--relation-storage".to_string()))
         );
         assert_eq!(split_fragment("#scope"), ("", Some("scope".to_string())));
+    }
+
+    /// The escape is read back, and a destination that writes none is one
+    /// reading rather than two.
+    #[test]
+    fn an_escape_is_read_back_into_the_byte_it_spells() {
+        assert_eq!(
+            percent_decoded("Design%20Notes.md"),
+            Some("Design Notes.md".to_string())
+        );
+        assert_eq!(percent_decoded("a%2Fb.md"), Some("a/b.md".to_string()));
+        // Either case of hexadecimal, and a character outside ASCII written as
+        // the bytes of its encoding.
+        assert_eq!(
+            percent_decoded("caf%C3%A9.md"),
+            Some("caf\u{e9}.md".to_string())
+        );
+        assert_eq!(percent_decoded("plain.md"), None);
+        // A `%` that two hexadecimal digits do not follow is a literal one, so
+        // these two destinations are one reading each.
+        assert_eq!(percent_decoded("100%25.md"), Some("100%.md".to_string()));
+        assert_eq!(percent_decoded("50%off.md"), None);
+        assert_eq!(percent_decoded("ends-with-%"), None);
+        // Bytes that are not text name no file this engine can open.
+        assert_eq!(percent_decoded("%FF%FE.md"), None);
     }
 
     #[test]

@@ -26,7 +26,7 @@ release:
   package: headwater/standard
   version: 4.1.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163
+  digest: sha256:ad9e7b1c1d1be7a7c90b139597679f0e93c356c5fbdac3f7ebd07e2b2e55816f
   members:
     - path: assemblies/starter/assembly.yml
       digest: sha256:2a1671162a92e6ba15eb98ea8d0eeb24fe9393aec47403b738c6ca943d3a30f4
@@ -89,4 +89,4 @@ release:
     - path: package.yml
       digest: sha256:108945124b059bd94b6bd8580a29265a74c25889bcb9f067715d0af990b90acf
     - path: taxonomy.yml
-      digest: sha256:72c8617b3db4a8d3206b95f03c9a5823f891d2df2da16434f6ea0a44c7a6f405
+      digest: sha256:93d852eab46f8d8b8894c768d575721438e941b5ed0fa749ce2a9c6b197fb965

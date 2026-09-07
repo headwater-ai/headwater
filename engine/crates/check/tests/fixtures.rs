@@ -1502,6 +1502,13 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Document,
             Grain::Document,
             Grain::Document,
+            // The path half of the link question, and the one Document-origin
+            // neighbour whose grain is not the document. A fragment into the
+            // document that wrote it is decided by that document's own bytes.
+            // Whether a file stands at the path a link names is decided by the
+            // corpus, so the citing document is the wrong unit and the wrong
+            // cache key.
+            Grain::Corpus,
             // The two rules that declare the prior version. Both are document
             // grained like every rule above them, and what separates them is
             // the input rather than the unit: a change names documents.
