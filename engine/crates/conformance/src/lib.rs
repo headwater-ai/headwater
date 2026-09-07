@@ -63,8 +63,10 @@ use std::path::Path;
 pub mod json;
 pub mod render;
 
-/// The format of the rule set file. A reader that meets a later one says so
-/// rather than guessing, on the terms the lock and the release record take.
+/// The format of the rule set file. A reader that meets any other token refuses
+/// rather than guessing, on the terms the lock and the release record take. It
+/// compares and never orders, so it says nothing about which of the two came
+/// first.
 pub const FORMAT: u32 = 1;
 
 /// The manifest key under `contents` that points at the rule set.
@@ -157,6 +159,14 @@ pub enum SetError {
     Undeclared(String),
     Unreadable(String),
     Malformed(String),
+    /// The declared `format` token is not the one this engine reads. [`read`]
+    /// compares the raw token to [`FORMAT`] for inequality and never orders the
+    /// two, so this variant carries a mismatch and no direction: a rule set at
+    /// an earlier format, one at a later format, and a token that is not a
+    /// number at all all arrive here. No engine need have published any of
+    /// them, because a hand-edited `format` field lands here too. The message
+    /// therefore says which token was found and which one this engine wants,
+    /// and names no publisher.
     Format {
         found: String,
     },
@@ -194,7 +204,7 @@ impl std::fmt::Display for SetError {
             SetError::Format { found } => write!(
                 f,
                 "the conformance rule set declares format `{found}` and this engine reads \
-                 {FORMAT}. A newer engine published it"
+                 {FORMAT}. Take an engine whose `requires_engine` range the package allows"
             ),
             SetError::NoReading { rule, package } => write!(
                 f,
