@@ -38,6 +38,12 @@ hw_root=${HEADWATER_HOOK_ROOT:-${CLAUDE_PROJECT_DIR:-$PWD}}
 # is a hook reading a change through an engine that predates it. That defect is
 # quieter than the cost this removes, so the rule is the file system's answer
 # rather than a ranking of the two profiles.
+#
+# An exact tie goes to `release`, because `-nt` is false on equality and
+# `release` is assigned first. Nothing rests on that: two builds a second apart
+# carry different times on any file system this runs on, and a tie means the two
+# binaries are equally current. It is stated because a reader who has to know
+# which one ran should not have to derive it from an operator.
 hw_engine() {
     _release="$hw_root/engine/target/release/headwater"
     _dev="$hw_root/engine/target/dev-release/headwater"

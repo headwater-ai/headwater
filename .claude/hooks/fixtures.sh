@@ -200,6 +200,15 @@ touch -t 202601010002 "$engine_root/engine/target/dev-release/headwater"
 engine_case 'both built and dev-release is the newer, so dev-release answers' \
     "$engine_root/engine/target/dev-release/headwater"
 
+# An exact tie, which the two cases above are shaped to avoid and which this one
+# is shaped to provoke. Nothing rests on the answer, because two binaries with
+# one mtime are equally current, but the function returns one of them and a
+# reader should not have to derive which from the `-nt` operator.
+touch -t 202601010003 "$engine_root/engine/target/release/headwater"
+touch -t 202601010003 "$engine_root/engine/target/dev-release/headwater"
+engine_case 'two binaries of the same age, and release answers' \
+    "$engine_root/engine/target/release/headwater"
+
 # A file that exists and that nobody may execute is not an engine, at either
 # path. The gate and all three positions test for execution rather than for
 # presence, and this states it for the profile that has never carried a case.

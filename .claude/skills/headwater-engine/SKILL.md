@@ -22,7 +22,7 @@ Build from the repository root with `--manifest-path`, or from `engine/` with ne
 
 **This is the invocation for the binary itself, and not the default loop.** A session that is writing or checking a change stays on `cargo check` and `cargo test` — see the fifth mistake below.
 
-**A hook or the commit gate is not a reason to build `--release`.** Both read `engine/target/release/headwater` and `engine/target/dev-release/headwater`, and they run whichever is newer, so a session that wants a checked commit in its own worktree builds the cheap profile:
+**A hook or the commit gate is not a reason to build `--release`.** Both accept the binary either profile writes, `release` or `dev-release`, and they run whichever of the two is newer, so a session that wants a checked commit in its own worktree builds the cheap one:
 
     cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked
 

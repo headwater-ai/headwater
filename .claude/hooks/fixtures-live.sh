@@ -53,7 +53,29 @@
 set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
-engine="$root/engine/target/release/headwater"
+
+# The engine this suite stages into each scratch clone. Either profile builds
+# one and the newer answers, which is the rule `.claude/hooks/lib.sh` and
+# `.githooks/pre-commit` each state for themselves.
+#
+# This suite read the `release` path alone, which was a hole rather than a
+# preference. The build order tells an iteration agent to build
+# `--profile dev-release` and not `--release`, so a machine that followed it
+# built no `release` binary, this suite skipped every case, and it reported
+# `0 passed, 0 failed` at exit 0. That silence is what `docs/spec/16` cites as
+# the live confirmation behind its support table.
+#
+# The rule is written out here rather than sourced from `lib.sh`. Sourcing it
+# needs `HEADWATER_HOOK_ROOT` set, and every harness this suite drives is a
+# child process that would inherit it and read this repository in place of the
+# scratch clone it was handed. That inversion passes the cases that assert
+# silence and fails only the ones that assert a refusal.
+release_engine="$root/engine/target/release/headwater"
+dev_release_engine="$root/engine/target/dev-release/headwater"
+engine=$release_engine
+if [ -x "$dev_release_engine" ] && { [ ! -x "$engine" ] || [ "$dev_release_engine" -nt "$engine" ]; }; then
+    engine=$dev_release_engine
+fi
 branch=$(git -C "$root" rev-parse --abbrev-ref HEAD)
 
 passed=0
