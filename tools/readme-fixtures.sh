@@ -12,9 +12,17 @@
 # gate at all.
 #
 # This suite closes TWO of those eight — the dead link and the dead fragment —
-# and it holds four further claims the page makes about itself. It closes none
+# and it holds five further claims the page makes about itself. It closes none
 # of the other six. The section below says so with the measurement, rather than
 # leaving a reader to assume from a passing step that the page is covered.
+#
+# The fifth of those claims is the newest and it is a different KIND of claim.
+# Groups 1 to 5 read the page and judge what it says. Group 6 takes a command
+# the page tells a newcomer to run, runs it against the engine, and reads what
+# that newcomer would see. The defect it closes was a command that always exited
+# 1 and printed the same refusal whether the reader's digest matched or not, and
+# no gate here or anywhere else in this repository saw it, because every gate
+# read the page and none of them ran it.
 #
 # Run it from anywhere:
 #     sh tools/readme-fixtures.sh
@@ -88,11 +96,25 @@
 #
 # # WHAT IT NEEDS, AND WHAT IT WRITES
 #
-# `git` and `awk`. It builds no engine and runs none. Case group 4 asks the
-# configured remote whether the tag resolves, which is one `ls-remote` and the
-# only network this suite performs; every scratch arm stubs that with a local
-# bare repository instead. Every scratch file is made under `mktemp -d`, the
-# directory goes on an interrupt, and nothing inside this checkout is written.
+# `git`, `awk`, and a built engine. It builds none itself: it takes the newer of
+# `engine/target/release/headwater` and `engine/target/dev-release/headwater`,
+# which is the rule `.githooks/pre-commit` and `.claude/hooks/lib.sh` both
+# implement, and it goes RED when neither is there. The CI step that runs this
+# suite sits in the job that builds the release binary, so one is present where
+# it runs. A skip would re-create the defect group 6 closes: a check that cannot
+# run is not a check that passes.
+#
+# Case group 4 asks the configured remote whether the tag resolves, which is one
+# `ls-remote` and the only network this suite performs; every scratch arm stubs
+# that with a local bare repository instead. Group 6 runs the engine, which
+# opens no socket at all.
+#
+# Every scratch file is made under `mktemp -d`, the directory goes on an
+# interrupt, and nothing inside this checkout is written. Group 6 matters most
+# here, because the arm it runs SUCCEEDS and a successful `taxonomy vendor`
+# installs a package over the directory it was handed. So it copies the pin and
+# the package into the scratch tree and runs there, with the working directory
+# set to the copy rather than an extra `--root` on a command line the page owns.
 
 set -u
 
@@ -491,8 +513,145 @@ milestone_judge() {
     ' "$1"
 }
 
+# vendor_invocations_of FILE — every `headwater taxonomy vendor …` invocation
+# the page carries, one per line, read out of the page rather than written here.
+# An inline code span carries it today and the paste block could carry it
+# tomorrow, so both are read and a page that moves the command into the fence is
+# still judged. An empty result is red at the call site: a judge whose
+# population went empty is a judge that reports green for the wrong reason.
+vendor_invocations_of() {
+    awk '
+        function spans(s,   i, run, open, rest, j, body) {
+            while ((i = index(s, "`")) > 0) {
+                s = substr(s, i)
+                run = 0
+                while (substr(s, run + 1, 1) == "`") run++
+                open = substr(s, 1, run)
+                rest = substr(s, run + 1)
+                j = index(rest, open)
+                if (j == 0) return
+                body = substr(rest, 1, j - 1)
+                if (body ~ /^headwater taxonomy vendor([ \t]|$)/) print body
+                s = substr(rest, j + run)
+            }
+        }
+        /^[ \t]*```/ { fence = 1 - fence; next }
+        fence {
+            line = $0
+            sub(/^[ \t]+/, "", line)
+            if (line ~ /^headwater taxonomy vendor([ \t]|$)/) print line
+            next
+        }
+        { spans($0) }
+    ' "$1"
+}
+
+# vendor_operand_of INVOCATION — the directory operand, or the empty string when
+# the invocation names none. `vendor <dir> [--expect <digest>]` is the grammar
+# `docs/interfaces/headwater-taxonomy.md` publishes, so the operand is the first
+# word after the verb that is neither an option nor the value of one. `--expect`
+# and `--root` are the two options here that take a value.
+vendor_operand_of() {
+    printf '%s\n' "$1" | awk '
+        {
+            for (i = 4; i <= NF; i++) {
+                if ($i == "--expect" || $i == "--root") { i++; continue }
+                if ($i ~ /^-/) continue
+                print $i
+                exit
+            }
+        }
+    '
+}
+
+# release_digest_of FILE — the `release.digest` field of a release record. That
+# is the one value the GitHub release page states, and it is the value the page
+# tells a reader to paste.
+release_digest_of() {
+    awk '
+        /^release:/ { block = 1; next }
+        /^[^ \t#]/ { block = 0 }
+        block && $1 == "digest:" { print $2; exit }
+    ' "$1"
+}
+
+# vendor_corpus DIR OPERAND — the part of a checkout the page's command reads:
+# the pin, and the directory the invocation names. The matching arm WRITES, and
+# it vendors the package over itself, so every run below happens over a copy
+# under `mktemp -d` and never over this checkout. What is copied is derived from
+# the operand the page states, so a page that names a different directory is
+# judged against that directory.
+vendor_corpus() {
+    mkdir -p "$1/.headwater" "$1/$(dirname "$2")" || return 1
+    cp "$root/.headwater/taxonomy.yml" "$1/.headwater/" || return 1
+    cp -R "$root/$2" "$1/$(dirname "$2")/" || return 1
+}
+
+# vendor_arm CORPUS INVOCATION DIGEST OUT — runs the page's own invocation with
+# the value after `--expect` replaced, writes both streams to OUT and prints the
+# exit status. The working directory is CORPUS, which is what `cd headwater` on
+# the page leaves a reader in, so nothing is added to the command line: the
+# argument list is the page's, minus the name of the binary. `set -f` is there
+# because the arguments come from a file and are split on spaces.
+vendor_arm() {
+    va_args=${2#headwater }
+    va_args=$(printf '%s' "$va_args" | sed "s|--expect [^ ]*|--expect $3|")
+    ( set -f; cd "$1" || exit 127; exec "$engine" $va_args ) >"$4" 2>&1
+    echo $?
+}
+
+# vendor_judge CORPUS INVOCATION DIGEST — `ok`, or the sentence that says how
+# the page's command fails the reader who runs it. Two properties, reported
+# TOGETHER and never one instead of the other, because they are independent and
+# the page broke both: the exit status has to answer the digest, and the two
+# reports have to differ.
+#
+# The second is the half a pair of exit statuses cannot see, and it is the half
+# that made this defect quiet. A command that refuses on its grammar before it
+# reads `--expect` refuses a correct digest and a mistyped one in the same bytes,
+# so the reader is told nothing about the digest they were sent to check. An
+# earlier cut of this judge returned on the exit status first and never reached
+# the comparison, which reported the page's own defect as an ordinary refusal.
+vendor_judge() {
+    vj_match=$(vendor_arm "$1" "$2" "$3" "$scratch/vendor.match")
+    vj_wrong=$(vendor_arm "$1" "$2" "$bad_digest" "$scratch/vendor.mismatch")
+    vj_status=
+    if [ "$vj_match" != 0 ]; then
+        vj_status="the digest the release states is refused"
+    elif [ "$vj_wrong" = 0 ]; then
+        vj_status="a wrong digest is accepted"
+    fi
+    vj_bytes=
+    if cmp -s "$scratch/vendor.match" "$scratch/vendor.mismatch"; then
+        vj_bytes="the two reports are byte-identical"
+    fi
+    if [ -n "$vj_status" ] && [ -n "$vj_bytes" ]; then
+        echo "$vj_status; $vj_bytes"
+    elif [ -n "$vj_status" ]; then
+        echo "$vj_status"
+    elif [ -n "$vj_bytes" ]; then
+        echo "$vj_bytes"
+    else
+        echo ok
+    fi
+}
+
 slug=$(repo_slug "$(git -C "$root" remote get-url origin 2>/dev/null)")
 marker='The tag is not cut yet'
+
+# The engine, as the newer of the two profiles that write one, which is the rule
+# `.githooks/pre-commit` and `.claude/hooks/lib.sh` both implement. A session
+# builds whichever profile it likes and the newer binary answers. No engine at
+# all is RED below and never skipped, because an arm that passes quietly when
+# the binary is missing re-creates the defect group 6 exists to close.
+engine=
+if [ -x "$root/engine/target/release/headwater" ]; then
+    engine="$root/engine/target/release/headwater"
+fi
+if [ -x "$root/engine/target/dev-release/headwater" ] &&
+    { [ -z "$engine" ] || [ "$root/engine/target/dev-release/headwater" -nt "$engine" ]; }; then
+    engine="$root/engine/target/dev-release/headwater"
+fi
 
 echo "every relative link on the first screen"
 
@@ -779,6 +938,122 @@ got=$(milestone_judge "$scratch/status.md" | tr '\n' '|')
 same "the milestone judge names a count and a range, and leaves the names alone" \
     "1: a count of milestones, and nothing in this tree can check one|3: a range of milestones, and nothing in this tree can check one|" \
     "$got"
+
+echo "the command the page tells a newcomer to run"
+
+# The first group here that RUNS a command out of the page. Every group above
+# reads the page and judges what it says; this one takes the invocation the page
+# states, hands it to the engine, and reads what a reader would see.
+#
+# The contract it holds is published, not invented here:
+# `docs/interfaces/headwater-taxonomy.md` states the grammar as
+# `vendor <dir> [--expect <digest>]` and states that `vendor` returns 0 when its
+# operation succeeds and 1 on refusal. A page that omits the operand contradicts
+# a table this repository publishes, and the reader meets the contradiction as a
+# refusal that never looks at the digest they were told to paste.
+#
+# `import` is the other command that takes `--expect`, and it does NOT carry
+# this defect. It takes no directory operand at all: it reads a declared import
+# block out of `.headwater/taxonomy.yml`, and its unpinned paths return
+# `Refusal::Unpinned` and `Refusal::NoChannel` from
+# `engine/crates/import/src/lib.rs:420-435`, which are refusals about the
+# declaration rather than a missing operand and differ from a digest mismatch.
+# The page names `import` nowhere, so no case below reads it.
+
+# 6a. The population, read out of the page. Delete the invocation and every case
+#     below it would otherwise judge nothing and pass.
+vendor_cmds=$(vendor_invocations_of "$readme")
+vendor_count=$(printf '%s' "$vendor_cmds" | grep -c . || true)
+more_than "the page states a \`taxonomy vendor\` invocation" 0 "$vendor_count"
+
+# 6b. An engine, or red. This suite ran none until this group, and the CI step
+#     that runs it sits in the job that builds one.
+if [ -n "$engine" ]; then
+    pass "  and an engine is built to run it against"
+else
+    fail "  and an engine is built to run it against" \
+        "neither \`engine/target/release/headwater\` nor \`engine/target/dev-release/headwater\` is executable, so the arms below are undecided rather than passing. Build one with \`cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked\`"
+fi
+
+vendor_cmd=$(printf '%s\n' "$vendor_cmds" | head -1)
+operand=$(vendor_operand_of "$vendor_cmd")
+good_digest=$(release_digest_of "$root/packages/headwater-standard/release.yml")
+bad_digest="${good_digest%%:*}:$(printf '%064d' 0)"
+
+# 6c. The grammar the interface contract publishes. This is the syntactic half,
+#     and 6f is the half that runs.
+if [ -n "$operand" ]; then
+    pass "  and it names a directory operand ($operand)"
+else
+    fail "  and it names a directory operand" \
+        "\`$vendor_cmd\` names none, and \`docs/interfaces/headwater-taxonomy.md\` states the grammar as \`vendor <dir> [--expect <digest>]\`"
+fi
+
+# 6d. A reader who has run the four lines of the paste block has the directory
+#     the page then names, or the command is unrunnable for a second reason.
+if [ -n "$operand" ] && [ -d "$root/$operand" ]; then
+    pass "  and that directory is in the checkout the paste block produced"
+else
+    fail "  and that directory is in the checkout the paste block produced" \
+        "no directory \`$operand\` at the root of this repository"
+fi
+
+# 6e. The digest the reader pastes has somewhere to go.
+case " $vendor_cmd " in
+    *" --expect "*) pass "  and it passes the stated digest through \`--expect\`" ;;
+    *) fail "  and it passes the stated digest through \`--expect\`" \
+        "\`$vendor_cmd\` carries no \`--expect\`, so the digest the paragraph above it tells the reader to paste is not checked" ;;
+esac
+
+# 6f. The three properties that fail together, run over a scratch copy of the
+#     checkout. The digest is read from the release record rather than written
+#     here, so a republished package moves this case with it.
+if [ -n "$engine" ] && [ -n "$operand" ] && [ -d "$root/$operand" ] && [ -n "$good_digest" ]; then
+    if [ "$good_digest" = "$bad_digest" ]; then
+        fail "  the stated digest is accepted, a wrong one is refused, and the two reports differ" \
+            "the corrupted digest equals the stated one, so the comparison below would prove nothing"
+    else
+        vendor_corpus "$scratch/vendor-real" "$operand" || exit 1
+        verdict=$(vendor_judge "$scratch/vendor-real" "$vendor_cmd" "$good_digest")
+        if [ "$verdict" = ok ]; then
+            pass "  the stated digest is accepted, a wrong one is refused, and the two reports differ"
+        else
+            fail "  the stated digest is accepted, a wrong one is refused, and the two reports differ" \
+                "$verdict — the arm carrying the stated digest printed: $(head -1 "$scratch/vendor.match")"
+        fi
+    fi
+else
+    fail "  the stated digest is accepted, a wrong one is refused, and the two reports differ" \
+        "the arms did not run: engine \`${engine:-none}\`, operand \`${operand:-none}\`, digest \`${good_digest:-none}\`"
+fi
+
+# 6g-6h. The judge, provoked, in the two shapes it refuses. A gate that refuses
+#        everything is as useless as one that refuses nothing, and each red arm
+#        carries its own sentence so the verdict says which way the page went
+#        wrong. 6g is the state this page was in: no operand, so the engine
+#        refuses on the grammar before it reads `--expect`, and a reader with a
+#        correct digest and a reader with a mistyped one see the same bytes.
+#
+#        Both arms name their own invocation, so neither reads the page and
+#        both stay green while 6f is red. That is deliberate: a page that breaks
+#        6f must still leave a working judge behind, or the failure above cannot
+#        be told from a judge that stopped working.
+mkdir -p "$scratch/vendor-arms"
+if [ -n "$engine" ] && [ -n "$good_digest" ]; then
+    vendor_corpus "$scratch/vendor-arms/corpus" packages/headwater-standard || exit 1
+    same "  an invocation with no directory refuses both digests in the same words" \
+        "the digest the release states is refused; the two reports are byte-identical" \
+        "$(vendor_judge "$scratch/vendor-arms/corpus" "headwater taxonomy vendor --expect <digest>" "$good_digest")"
+    same "  an invocation with a directory and no \`--expect\` checks no digest at all" \
+        "a wrong digest is accepted; the two reports are byte-identical" \
+        "$(vendor_judge "$scratch/vendor-arms/corpus" "headwater taxonomy vendor packages/headwater-standard" "$good_digest")"
+    same "  an invocation naming a directory that is not there never reaches the digest" \
+        "the digest the release states is refused; the two reports are byte-identical" \
+        "$(vendor_judge "$scratch/vendor-arms/corpus" "headwater taxonomy vendor packages/not-a-package --expect <digest>" "$good_digest")"
+else
+    fail "  the judge is provoked in both shapes it refuses" \
+        "the arms did not run: engine \`${engine:-none}\`, digest \`${good_digest:-none}\`"
+fi
 
 echo
 echo "$passed passed, $failed failed"
