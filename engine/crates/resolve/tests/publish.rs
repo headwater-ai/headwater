@@ -3155,8 +3155,14 @@ fn clearing_a_killed_run_removes_both_paths_and_the_same_run_publishes() {
         matches!(cleared, package::Cleared::KilledDirectWrite { .. }),
         "the flag did not name what it removed"
     );
-    assert!(!out.exists(), "the killed run's files are still at the output path");
-    assert!(!staging.exists(), "the killed run's staging directory is still beside it");
+    assert!(
+        !out.exists(),
+        "the killed run's files are still at the output path"
+    );
+    assert!(
+        !staging.exists(),
+        "the killed run's staging directory is still beside it"
+    );
 
     package::publish(&root, "acme/fixture", &out).expect("the same run publishes");
     assert!(
@@ -3269,7 +3275,8 @@ fn clearing_a_killed_run_is_quiet_where_the_output_path_is_absent() {
     let root = publisher(&scratch, None);
     let out = scratch.path().join("artifact");
 
-    let cleared = package::clear_killed(&root, &out).expect("the clear reads a path that is not there");
+    let cleared =
+        package::clear_killed(&root, &out).expect("the clear reads a path that is not there");
     assert!(
         matches!(cleared, package::Cleared::Nothing),
         "the flag claims to have removed a path that was never there"

@@ -2983,10 +2983,7 @@ fn direct_names(staging: &Path, out: &Path) -> bool {
     if recorded == out {
         return true;
     }
-    match (
-        std::fs::canonicalize(recorded),
-        std::fs::canonicalize(out),
-    ) {
+    match (std::fs::canonicalize(recorded), std::fs::canonicalize(out)) {
         (Ok(recorded), Ok(out)) => recorded == out,
         _ => false,
     }
