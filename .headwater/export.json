@@ -2599,7 +2599,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How to validate, resolve, audit, publish, vendor, compare and migrate taxonomy packages.",
-          "last_verified": "2026-09-05",
+          "last_verified": "2026-09-07",
           "title": "headwater taxonomy",
           "relations": {
             "governs": [
