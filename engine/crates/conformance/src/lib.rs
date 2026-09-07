@@ -85,6 +85,14 @@ pub const READINGS: [&str; 4] = [
     "projections.current",
 ];
 
+/// The readings of [`READINGS`] that compare the digest a consumer pins against
+/// the release record of the installed package.
+///
+/// One name today. It is a list rather than a name because the header states
+/// what checked the pin, and a second reading that read the pin would have to be
+/// named there too. [`pin_check`] is the only caller.
+pub const CHECKS_THE_PIN: [&str; 1] = ["pin.current"];
+
 /// How a rule is decided.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DecidedBy {
@@ -588,6 +596,11 @@ pub struct Report {
     pub package: String,
     pub version: String,
     pub digest: Option<String>,
+    /// Whether the digest above was compared against the installed release
+    /// record on this run, and by what. The header prints it beside the digest,
+    /// because a digest printed alone reads as a number this engine stands
+    /// behind.
+    pub pin: PinCheck,
     pub now: Date,
     pub readings: Vec<Reading>,
     pub levels: Vec<LevelState>,
@@ -657,6 +670,66 @@ impl Identity {
     }
 }
 
+/// Whether the pinned digest was checked on this run, and by what.
+///
+/// **A level is a named subset of the rules below it, and this moves none of
+/// that.** It is not a rule, not a reading and not a rung: it carries no
+/// verdict, it is absent from every level, and no exit status reads it. It
+/// states what the run did, so that the digest the header prints beside it is
+/// not read as a number this engine stood behind.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PinCheck {
+    /// A tree-decided rule of the active set reads the pin. Its own verdict is
+    /// a rule line of the report, and it is the answer.
+    By(String),
+    /// No rule of the active set reads the pin. Nothing here decides anything;
+    /// it is what the installed package says about itself, so that a reader of
+    /// the header can see that the two numbers were never compared.
+    Unchecked(Installed),
+}
+
+/// What the installed package declares about itself where no rule read it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Installed {
+    /// The release record reads, and this is the digest it declares.
+    Declares(String),
+    /// The package directory carries no release record, so no published
+    /// artifact stands behind it at all.
+    NoRecord,
+    /// No package of that name is on disk.
+    Absent,
+    /// A release record is there and does not read.
+    Unreadable(String),
+}
+
+/// Decide [`PinCheck`] for one run.
+///
+/// The first branch reads the rule set alone and touches no disk: a rule that
+/// this engine decides against a tree, whose name is one of
+/// [`CHECKS_THE_PIN`], is a reading of the pin, and the report already carries
+/// its verdict. An attestation-decided rule of the same name is not, because
+/// [`reading`] is never called for one.
+///
+/// The second branch is reached only where the set declares no such rule. It
+/// reads the installed release record and reports it, and it reaches no
+/// comparison and no verdict.
+pub fn pin_check(set: &RuleSet, root: &Path, consumer: &Consumer) -> PinCheck {
+    let reads_it = set.rules.iter().find(|rule| {
+        rule.decided_by == DecidedBy::Tree && CHECKS_THE_PIN.contains(&rule.name.as_str())
+    });
+    if let Some(rule) = reads_it {
+        return PinCheck::By(rule.name.clone());
+    }
+    let Some((directory, _)) = headwater_resolve::package::located(root, &consumer.package) else {
+        return PinCheck::Unchecked(Installed::Absent);
+    };
+    PinCheck::Unchecked(match release::at(&directory) {
+        Ok(record) => Installed::Declares(record.digest),
+        Err(ReleaseError::Absent(_)) => Installed::NoRecord,
+        Err(other) => Installed::Unreadable(other.to_string()),
+    })
+}
+
 /// Evaluate a repository against a rule set.
 pub fn evaluate(
     set: &RuleSet,
@@ -680,6 +753,7 @@ pub fn evaluate(
         &Identity::of(subject.consumer),
         &taken,
         subject.now,
+        pin_check(set, subject.root, subject.consumer),
     )
 }
 
@@ -694,12 +768,17 @@ pub fn evaluate(
 /// A waiver that names a rule the set does not declare ends the run, and the
 /// error names each one. A deviation that no report can list is one that nobody
 /// reviews away.
+///
+/// `pin` arrives already decided, by [`pin_check`], for the same reason: it is
+/// the one member of a report that reads a tree, and a caller that hands it in
+/// keeps this function free of one.
 pub fn assemble(
     set: &RuleSet,
     waivers: &[Waiver],
     identity: &Identity,
     taken: &[(String, Verdict)],
     now: Date,
+    pin: PinCheck,
 ) -> Result<Report, Vec<String>> {
     let orphans: Vec<String> = waivers
         .iter()
@@ -790,6 +869,7 @@ pub fn assemble(
         package: identity.package.clone(),
         version: identity.version.clone(),
         digest: identity.digest.clone(),
+        pin,
         now,
         readings,
         levels,

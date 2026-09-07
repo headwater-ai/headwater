@@ -26,8 +26,8 @@
 
 use headwater_check::context::Date;
 use headwater_conformance::{
-    assemble, read, render::WIDTH, Cover, DecidedBy, Identity, LevelState, Reading, Reason, Report,
-    Rule, Verdict, Waiver,
+    assemble, read, render::WIDTH, Cover, DecidedBy, Identity, Installed, LevelState, PinCheck,
+    Reading, Reason, Report, Rule, Verdict, Waiver,
 };
 use std::path::{Path, PathBuf};
 
@@ -44,6 +44,15 @@ fn fixtures_dir() -> PathBuf {
 
 fn at(text: &str) -> Date {
     Date::parse(text).expect("a date")
+}
+
+/// The pin statement for a report this file builds in memory.
+///
+/// Every report below pins no digest, so `render` prints no pin line at all and
+/// this value reaches nothing any case here asserts. The one case that does
+/// assert the line builds its own value rather than calling this.
+fn no_pin() -> PinCheck {
+    PinCheck::Unchecked(Installed::NoRecord)
 }
 
 /// The recorded expectation, compared whole.
@@ -133,6 +142,7 @@ fn subject() -> Report {
         package: "headwater/standard".to_string(),
         version: "3.2.0".to_string(),
         digest: None,
+        pin: no_pin(),
         now: at("2026-08-12"),
         readings: vec![
             // The case the issue names: 1019 characters of remediation, read
@@ -351,6 +361,7 @@ fn one_gap(remediation: &str) -> Report {
         package: "acme/taxonomy".to_string(),
         version: "1.0.0".to_string(),
         digest: None,
+        pin: no_pin(),
         now: at("2026-08-12"),
         readings: vec![Reading {
             rule: rule(
@@ -506,7 +517,7 @@ conformance:
         digest: None,
     };
     let taken = vec![("lock.current".to_string(), Verdict::Met)];
-    let rendered = assemble(&set, &[], &identity, &taken, at("2026-08-12"))
+    let rendered = assemble(&set, &[], &identity, &taken, at("2026-08-12"), no_pin())
         .expect("it assembles")
         .render();
 
