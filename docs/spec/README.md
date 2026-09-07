@@ -17,6 +17,6 @@
 - [Open obligations](13-open-obligations.md) — The work that the closed decisions left behind, which is unmeasured claims, items that wait on an adopter, and unblocked design work.
 - [HW-REG-open-questions](09-open-questions.md)
 - [The check layer](12-check-layer.md) — What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
-- [The recorder contract](15-the-recorder-contract.md) — Everything an external recorder writes into a transcript, the closed key sets that refuse a file, and the one member of the run identity this engine compares. (asserted, and no human has accepted it)
+- [The recorder contract](15-the-recorder-contract.md) — Everything an external recorder writes into a transcript, the closed key sets that refuse a file, the one member of the run identity this engine compares, and the period a result stays citable. (asserted, and no human has accepted it)
 - [Harness support](16-harness-support.md) — The ten capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.
 - [Glossary](glossary.md) — One line for every named concept in the specification, with a link to the section that defines it.
