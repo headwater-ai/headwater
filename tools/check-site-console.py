@@ -12,7 +12,7 @@ for as long as the defect stood. A page can be well-formed, well-linked and
 correctly titled and still be broken for the person reading it.
 
 So this reader is the browser. It serves the assembled directory on a loopback
-port, loads each page with headless Chrome, and fails on any console message.
+port and loads each page with headless Chrome.
 
 WHAT THIS ASSERTS PER PAGE, AND WHY IT IS THREE THINGS AND NOT ONE
 
@@ -33,18 +33,44 @@ issue is about:
      of every page it serves, and that script writes two attributes onto the
      root element. Their absence from the dumped DOM means the pipeline broke
      somewhere between the socket and the parser, whatever the console says.
-  3. Zero console messages, and — on a page that loads the theme's
-     `js/base.js` — `keyCodes` defined by the time the probe runs. That is the
-     positive marker for #532 specifically: the binding is hoisted, so it
-     exists and holds `undefined` on a page where evaluation aborted, and the
-     probe reads which of the two happened.
+  3. The page recorded no uncaught error, and — on a page that loads the
+     theme's `js/base.js` — `keyCodes` was defined by the time the probe ran.
+     That is the positive marker for #532 specifically: the binding is hoisted,
+     so it exists and holds `undefined` on a page where evaluation aborted, and
+     the probe reads which of the two happened.
 
-The injected script is the only byte this tool adds to a page, it is added at
-serve time and never on disk, and it reads two globals without touching one.
+The two injected scripts are the only bytes this tool adds to a page, they are
+added at serve time and never on disk, and they read two globals without
+touching one.
+
+WHAT THE GATE FAILS ON, AND WHAT IT ONLY REPORTS
+
+The fatal arm is what the *page* recorded: an `error` event or an
+`unhandledrejection`, captured by a listener this tool installs in `<head>`
+ahead of every script the page loads. That is a property of the document that
+produced it, it is the same list on every run, and it is exactly the population
+#532 is about.
+
+Chrome's stderr is the second arm and it is advisory. It is read, printed and
+counted on every run, and `--strict-console` makes it fatal. It is not fatal by
+default because a record on it carries no attribution to the page whose load
+was being captured: the MkDocs search worker logs `All search scripts loaded,
+building Lunr index...` once per session from `search/worker.js`, and whichever
+of the 311 concurrent loads happened to be capturing wore the failure. Three
+runs reddened three different pages, one each, over a corpus that had not
+moved.
+
+**State plainly what stopped being fatal.** A bare `console.error(...)` or
+`console.warn(...)` from page script no longer reddens a run on its own; it is
+printed under `reported, not fatal` and counted. An uncaught exception still
+does, by the first arm, and so does an unhandled promise rejection — which the
+old stderr arm never separated out at all. `--strict-console` restores the old
+severity for a run that wants it.
 
 WHAT DOES NOT COUNT, AND WHY EACH ONE IS NAMED RATHER THAN FILTERED
 
-Two kinds of record reach this stderr and are not findings. A record whose
+These apply to the advisory arm, and they decide what is printed as a record
+rather than what fails. A record whose
 `source:` is a `chrome://` page came from the browser's own interface — its
 omnibox announces a slow network on whichever page happened to be loading — so
 it is not about the corpus under any reading, and it is scoped out rather than
@@ -63,6 +89,7 @@ on the way out.
 USAGE
 
     python3 tools/check-site-console.py [ROOT] [--chrome PATH] [--jobs N]
+                                       [--strict-console] [--no-allowances]
 
 ROOT defaults to `.headwater/site-deploy`, which `tools/assemble-site.sh`
 writes. `HEADWATER_CHROME` names a browser if `--chrome` does not.
@@ -79,9 +106,12 @@ EXIT STATUS
        annotation rather than a silent green step.
 """
 
+import base64
+import binascii
 import functools
 import http.server
 import io
+import json
 import os
 import re
 import shutil
@@ -140,6 +170,79 @@ ALLOWANCES = (
     ),
 )
 
+# THE FATAL ARM, AND WHY IT IS THE PAGE AND NOT THE BROWSER'S LOG
+#
+# This goes into `<head>`, before any script the page loads, and it records
+# every uncaught error and unhandled rejection the *document* produces, writing
+# the list back onto the root element as it goes. It is written on every error
+# rather than once at the end, because the second of #532's two exceptions
+# arrives from a `DOMContentLoaded` handler, which is after any script that
+# sits in the body has run.
+#
+# It replaces Chrome's stderr as the thing this gate fails on, and the reason
+# is measured rather than stylistic. A record on that stderr carries no
+# attribution to the page whose load was being captured: the MkDocs search
+# worker logs `All search scripts loaded, building Lunr index...` once, from
+# `search/worker.js`, and whichever of the 311 concurrent loads happened to be
+# capturing at that moment wore it. Three runs, three different pages, one
+# failure each — a verdict that moves while the corpus stands still. A required
+# check that fails at random is read as noise within a day, which is the same
+# family of defect as the one this whole tool exists to catch.
+#
+# An `error` event is a property of the document that produced it. It cannot be
+# attributed to another page, it cannot arrive from a worker's `console.log`,
+# and it is exactly the population #532 is about.
+HEAD_PROBE = b"""<script>
+(function () {
+    var seen = [];
+    function record(entry) {
+        seen.push(entry);
+        try {
+            document.documentElement.setAttribute(
+                'data-headwater-errors',
+                btoa(unescape(encodeURIComponent(JSON.stringify(seen)))));
+        } catch (ignored) {
+            document.documentElement.setAttribute(
+                'data-headwater-errors-broken', String(seen.length));
+        }
+    }
+    // Capture phase, and one listener for both shapes. A resource that fails
+    // to load fires `error` at its own element and that event does not bubble,
+    // so a bubble-phase listener never sees it, and a `<script>` that never
+    // arrived produces no exception either. The symptom is then a bare marker
+    // failure with an empty console, which is what one full-corpus run showed
+    // before this line said `true`.
+    window.addEventListener('error', function (event) {
+        var target = event.target;
+        if (target && target !== window && target.tagName) {
+            record({
+                kind: 'resource',
+                message: 'a subresource failed to load: <' +
+                    String(target.tagName).toLowerCase() + '>',
+                source: String(target.src || target.href || ''),
+                line: 0
+            });
+            return;
+        }
+        record({
+            kind: 'uncaught',
+            message: String(event.message || (event.error && event.error.message) || event.type),
+            source: String(event.filename || ''),
+            line: event.lineno || 0
+        });
+    }, true);
+    window.addEventListener('unhandledrejection', function (event) {
+        record({
+            kind: 'unhandled-rejection',
+            message: String((event.reason && event.reason.message) || event.reason),
+            source: '',
+            line: 0
+        });
+    });
+}());
+</script>
+"""
+
 PROBE = b"""<script>
 (function () {
     var root = document.documentElement;
@@ -150,6 +253,8 @@ PROBE = b"""<script>
 }());
 </script>
 """
+
+ERRORS_ATTRIBUTE = re.compile(r'data-headwater-errors="([A-Za-z0-9+/=]*)"')
 
 # A page that names this loads the theme script #532 is about, and only such a
 # page owes the `keyCodes` marker. The hand-built half of the site loads no
@@ -167,11 +272,36 @@ class Report(Exception):
 
 
 def inject(body):
-    """Put the probe immediately before the last `</body>` of a served page."""
+    """Put the error listener first and the marker probe last.
+
+    The listener has to precede every script the page loads, or an exception
+    thrown before it installs would go unrecorded. The marker probe has to
+    follow them, because what it reads is what they defined.
+    """
+    lowered = body.lower()
+    head = lowered.find(b"<head>")
+    if head != -1:
+        cut = head + len(b"<head>")
+        body = body[:cut] + HEAD_PROBE + body[cut:]
+    else:
+        body = HEAD_PROBE + body
     marker = body.lower().rfind(b"</body>")
     if marker == -1:
         return body + PROBE
     return body[:marker] + PROBE + body[marker:]
+
+
+def page_errors(dom):
+    """The uncaught errors the page itself recorded, from the dumped DOM."""
+    found = ERRORS_ATTRIBUTE.search(dom)
+    if not found or not found.group(1):
+        return []
+    try:
+        raw = base64.b64decode(found.group(1)).decode("utf-8", "replace")
+        entries = json.loads(raw)
+    except (ValueError, binascii.Error):
+        return [{"kind": "unreadable", "message": found.group(1)[:120], "source": "", "line": 0}]
+    return entries if isinstance(entries, list) else []
 
 
 class ProbeHandler(http.server.SimpleHTTPRequestHandler):
@@ -210,6 +340,15 @@ class ProbeHandler(http.server.SimpleHTTPRequestHandler):
 class Server(http.server.ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
+
+    # Not the default of 5. Eight browsers loading a page apiece open on the
+    # order of eighty connections at once, and a listen backlog of five drops
+    # the rest. A dropped `js/base.js` leaves `keyCodes` undefined with an
+    # empty console, which reads exactly like the defect #532 reported and is
+    # in fact this server refusing a connection. Measured: one full-corpus run
+    # in six failed that way, on a page picked by the same coin flip the search
+    # worker was flipping.
+    request_queue_size = 256
 
 
 def serve(root):
@@ -277,14 +416,15 @@ def classify(record, allowances):
     return "finding", None
 
 
-def check_page(root, page, base, browser, profiles, timeout, allowances):
-    """Return (relative-path, [finding, ...], loads_base_js, [reason, ...], noise)."""
+def check_page(root, page, base, browser, profiles, timeout, allowances, strict_console):
+    """Return (path, findings, loads_base, allowed, noise, reported)."""
     relative = page.relative_to(root).as_posix()
     source = page.read_bytes()
     loads_base = BASE_JS in source
     findings = []
     allowed = []
     noise = 0
+    reported = []
     url = base + url_for(root, page)
 
     try:
@@ -295,7 +435,7 @@ def check_page(root, page, base, browser, profiles, timeout, allowances):
         status, served = error.code, 0
     except OSError as error:
         findings.append("the server did not answer for it: %s" % error)
-        return relative, findings, loads_base, allowed, noise
+        return relative, findings, loads_base, allowed, noise, reported
 
     if status != 200:
         findings.append("the server answered %d for it, not 200" % status)
@@ -306,7 +446,7 @@ def check_page(root, page, base, browser, profiles, timeout, allowances):
         result = load(browser, url, profile_dir(profiles), timeout)
     except subprocess.TimeoutExpired:
         findings.append("the browser did not finish in %ds" % timeout)
-        return relative, findings, loads_base, allowed, noise
+        return relative, findings, loads_base, allowed, noise, reported
 
     dom = result.stdout.decode("utf-8", "replace")
     log = result.stderr.decode("utf-8", "replace")
@@ -322,6 +462,12 @@ def check_page(root, page, base, browser, profiles, timeout, allowances):
             "`js/base.js` did not run to the end: `keyCodes` was still undefined"
         )
 
+    for entry in page_errors(dom):
+        findings.append(
+            "the page threw and nothing caught it: %s (%s:%s)"
+            % (entry.get("message"), entry.get("source") or "inline", entry.get("line"))
+        )
+
     for line in log.splitlines():
         if not CONSOLE_LINE.search(line):
             continue
@@ -331,10 +477,12 @@ def check_page(root, page, base, browser, profiles, timeout, allowances):
             noise += 1
         elif verdict == "allowed":
             allowed.append(reason)
-        else:
+        elif strict_console:
             findings.append("the console said: " + record)
+        else:
+            reported.append("the console said: " + record)
 
-    return relative, findings, loads_base, allowed, noise
+    return relative, findings, loads_base, allowed, noise, reported
 
 
 def parse(argv):
@@ -343,6 +491,7 @@ def parse(argv):
     jobs = min(8, (os.cpu_count() or 2))
     timeout = 90
     allowances = True
+    strict_console = False
     rest = list(argv)
     while rest:
         item = rest.pop(0)
@@ -354,19 +503,21 @@ def parse(argv):
             timeout = int(rest.pop(0)) if rest else timeout
         elif item == "--no-allowances":
             allowances = False
+        elif item == "--strict-console":
+            strict_console = True
         elif item.startswith("--"):
             raise Report(
                 [
                     "unknown argument `%s`." % item,
                     "usage: check-site-console.py [ROOT] [--chrome PATH] "
-                    "[--jobs N] [--timeout S] [--no-allowances]",
+                    "[--jobs N] [--timeout S] [--no-allowances] [--strict-console]",
                 ]
             )
         elif root is None:
             root = Path(item)
         else:
             raise Report(["more than one root named: `%s` and `%s`." % (root, item)])
-    return (root or DEFAULT_ROOT), browser, max(1, jobs), timeout, allowances
+    return (root or DEFAULT_ROOT), browser, max(1, jobs), timeout, allowances, strict_console
 
 
 def resolve_browser(named):
@@ -413,7 +564,7 @@ def collect(root):
 
 
 def run(argv):
-    root, named, jobs, timeout, allowances = parse(argv)
+    root, named, jobs, timeout, allowances, strict_console = parse(argv)
     browser = resolve_browser(named)
     pages = collect(root)
 
@@ -429,6 +580,7 @@ def run(argv):
             profiles=profiles,
             timeout=timeout,
             allowances=allowances,
+            strict_console=strict_console,
         )
         try:
             with ThreadPoolExecutor(max_workers=jobs) as pool:
@@ -439,15 +591,21 @@ def run(argv):
     finally:
         shutil.rmtree(profiles, ignore_errors=True)
 
-    failed = [(name, findings) for name, findings, _, _, _ in results if findings]
-    with_base = sum(1 for _, _, loads, _, _ in results if loads)
-    allowed = [reason for _, _, _, reasons, _ in results for reason in reasons]
-    allowed_pages = sum(1 for _, _, _, reasons, _ in results if reasons)
-    noise = sum(count for _, _, _, _, count in results)
+    failed = [(name, f) for name, f, _, _, _, _ in results if f]
+    with_base = sum(1 for _, _, loads, _, _, _ in results if loads)
+    allowed = [r for _, _, _, rs, _, _ in results for r in rs]
+    allowed_pages = sum(1 for _, _, _, rs, _, _ in results if rs)
+    noise = sum(c for _, _, _, _, c, _ in results)
+    reported = [(name, r) for name, _, _, _, _, rs in results for r in rs]
 
     for name, findings in failed:
         for finding in findings:
             print("%s: %s" % (name, finding))
+        print("")
+
+    for name, record in reported:
+        print("reported, not fatal — %s: %s" % (name, record))
+    if reported:
         print("")
 
     print(
@@ -462,6 +620,14 @@ def run(argv):
     print(
         "%d of those pages load the theme's `js/base.js` and were held to "
         "`keyCodes` being defined" % with_base
+    )
+    print(
+        "%d console record%s reported and not fatal%s"
+        % (
+            len(reported),
+            "" if len(reported) == 1 else "s",
+            "" if strict_console else " (`--strict-console` makes them fatal)",
+        )
     )
     if allowances:
         print(

@@ -158,8 +158,13 @@ echo "#532 itself, over the real served bytes"
 copy="$scratch/site"
 rm -rf "$copy"
 mkdir -p "$copy/spec/09-decisions" "$copy/tutorials/t"
-cp -R "$deploy/js" "$copy/js"
-cp -R "$deploy/css" "$copy/css" 2>/dev/null
+# Every directory the real pages *load* from, not merely link to. The checker
+# reports a subresource that fails to arrive, so a copy missing `search/` fails
+# these cases for a reason that is about this suite and not about the corpus.
+# That is how the omission was found.
+for asset in js css search img; do
+    [ -d "$deploy/$asset" ] && cp -R "$deploy/$asset" "$copy/$asset"
+done
 victim="$deploy/spec/09-decisions/index.html"
 clean_page="$deploy/tutorials/your-first-governed-corpus/index.html"
 if [ ! -f "$victim" ] || [ ! -f "$clean_page" ]; then
@@ -241,16 +246,73 @@ report "  and the run prints why" 0 "$status" "allowed because highlight.js" "$s
 # 9. THE CASE THAT SHOWS THE LIST IS NOT A FILTER NOBODY READS. The same bytes,
 #    with the list off, fail. An allowance that could not be lifted would be
 #    indistinguishable from a checker that never saw the record.
-status=$(run "$allowed" --no-allowances)
-report "\`--no-allowances\` fails on the same page" 1 "$status" \
+status=$(run "$allowed" --no-allowances --strict-console)
+report "\`--no-allowances --strict-console\` fails on the same page" 1 "$status" \
     "Could not find the language" "$scratch/out"
 report "  and says no allowance was applied" 1 "$status" "no allowance was applied" "$scratch/out"
 
 # 10. An unrelated warning is not absorbed by that entry.
 rm -rf "$allowed"
 page "$allowed" other.html '<script>console.warn("WARN: something else entirely");</script>'
-status=$(run "$allowed")
+status=$(run "$allowed" --strict-console)
 report "an unrelated warning is not allowed" 1 "$status" "something else entirely" "$scratch/out"
+status=$(run "$allowed")
+report "  and without \`--strict-console\` it is reported, not fatal" 0 "$status" \
+    "reported, not fatal" "$scratch/out"
+
+echo "the flake this gate had, and the arm that replaced it"
+
+# 11. THE RECORD THAT REDDENED THREE OTHER PULL REQUESTS. The MkDocs search
+#     worker logs `All search scripts loaded, building Lunr index...` once per
+#     session, and whichever of 311 concurrent loads was capturing wore it.
+#     A page that logs the same string must not fail the gate, because nothing
+#     about it says the *page* is broken.
+worker="$scratch/worker"
+rm -rf "$worker"
+page "$worker" quiet.html '<script>console.log("All search scripts loaded, building Lunr index...");</script>'
+status=$(run "$worker")
+report "a worker-shaped log does not fail the gate" 0 "$status" \
+    "0 pages with a finding" "$scratch/out"
+report "  and it is printed rather than swallowed" 0 "$status" \
+    "reported, not fatal" "$scratch/out"
+
+# 12. AND THE GATE STILL FAILS ON WHAT IT IS FOR, ON THE SAME PAGE. A quieter
+#     gate is where a real defect hides, so the throw and the log are put in
+#     one page together: the log is reported and the throw is fatal.
+rm -rf "$worker"
+page "$worker" both.html '<script>console.log("All search scripts loaded, building Lunr index...");</script><script>window.absent.field = 1;</script>'
+status=$(run "$worker")
+report "a page that logs and also throws still fails" 1 "$status" \
+    "the page threw and nothing caught it" "$scratch/out"
+
+# 13. An error thrown from a `DOMContentLoaded` handler is after the marker
+#     probe has already run. That is #532's *second* exception, and a listener
+#     that serialized once at the end would miss it.
+rm -rf "$worker"
+page "$worker" late.html '<script>document.addEventListener("DOMContentLoaded", function () { window.absent.later = 1; });</script>'
+status=$(run "$worker")
+report "an error from a DOMContentLoaded handler is caught" 1 "$status" \
+    "the page threw and nothing caught it" "$scratch/out"
+
+# 14. An unhandled promise rejection, which the stderr arm never separated out.
+rm -rf "$worker"
+page "$worker" reject.html '<script>Promise.reject(new Error("nobody caught this"));</script>'
+status=$(run "$worker")
+report "an unhandled rejection is caught" 1 "$status" "nobody caught this" "$scratch/out"
+
+# 15. A SUBRESOURCE THAT NEVER ARRIVES. A `<script>` that fails to load throws
+#     nothing and logs nothing this tool can attribute, and it leaves the page
+#     exactly as `js/base.js` failing to load would: the marker undefined and
+#     the console empty. One full-corpus run in six failed that way before the
+#     listener ran in the capture phase and the server's listen backlog rose
+#     off Python's default of five.
+missing="$scratch/missing"
+rm -rf "$missing"
+page "$missing" gone.html '<script src="no-such-script.js"></script>'
+status=$(run "$missing")
+report "a subresource that fails to load is named" 1 "$status" \
+    "a subresource failed to load" "$scratch/out"
+report "  and the report says which one" 1 "$status" "no-such-script.js" "$scratch/out"
 
 echo "the assumptions this tool states rather than reporting zero over"
 
