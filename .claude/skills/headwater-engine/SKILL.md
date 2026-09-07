@@ -22,6 +22,12 @@ Build from the repository root with `--manifest-path`, or from `engine/` with ne
 
 **This is the invocation for the binary itself, and not the default loop.** A session that is writing or checking a change stays on `cargo check` and `cargo test` — see the fifth mistake below.
 
+**A hook or the commit gate is not a reason to build `--release`.** Both accept the binary either profile writes, `release` or `dev-release`, and they run whichever of the two is newer, so a session that wants a checked commit in its own worktree builds the cheap one:
+
+    cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked
+
+The shipped profile pays a single threaded `lto = true` link that costs minutes for a binary each hook position runs for a fifth of a second. [DEVELOPING.md](../../../DEVELOPING.md) carries the measurement and the reason the newer binary answers rather than the shipped one.
+
 ## The toolchain floor
 
 Rust 1.90 or later, declared by `[workspace.package]` in `engine/Cargo.toml`. Check the toolchain first when a clean checkout will not build; [DEVELOPING.md](../../../DEVELOPING.md) says which of the two refusal messages names the crate that raised the floor and which one names nothing and reads like a corrupt tree.

@@ -23,7 +23,11 @@ One report, in four parts, and every claim in it names the artifact it came from
     headwater explain <path>                    # what a document is, and what it declares
     headwater route "<the change in a sentence>" # what governs the work
 
-**The engine you run has to be the one this tree builds.** Use `engine/target/release/headwater` under the root you are reviewing, and build it there with `cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked` when it is not present. A binary from somewhere else carries its own meta-schema, so it reports findings this tree does not have and misses the ones it does. One review of a taxonomy change ran a two-day-old binary from a scratch directory and reported five errors on a document that has none.
+**The engine you run has to be the one this tree builds.** Run the binary built under the root you are reviewing, and build it there when it is not present. Either profile serves a review, and the cheap one costs a fraction of the link:
+
+    cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked
+
+The binary that writes lands beside the `release` one rather than over it, and every hook and the commit gate run whichever of the two is newer. A binary from somewhere else carries its own meta-schema, so it reports findings this tree does not have and misses the ones it does. One review of a taxonomy change ran a two-day-old binary from a scratch directory and reported five errors on a document that has none.
 
 `headwater check` reads `.headwater/taxonomy.lock` and never the taxonomy sources. If the change touched `packages/`, `docs/taxonomies/` or `.headwater/overlay.yml`, run `headwater taxonomy resolve` first or your findings came from a taxonomy nobody committed.
 

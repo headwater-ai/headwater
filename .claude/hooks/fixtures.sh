@@ -19,8 +19,18 @@ set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 hooks="$root/.claude/hooks"
-engine="$root/engine/target/release/headwater"
 export HEADWATER_HOOK_ROOT="$root"
+
+# The engine this suite runs and stages into its scratch roots, resolved the way
+# `hw_engine` resolves it: either profile counts and the newer answers. `lib.sh`
+# states that rule and the cases below hold it, so this reads it from there
+# rather than writing a second copy that could disagree with the one under test.
+#
+# It named the `release` path alone, which mattered once this repository started
+# telling a session to build `--profile dev-release`. A worktree with only that
+# binary skipped every case here and exited 0.
+. "$hooks/lib.sh"
+engine=$(hw_engine) || engine="$root/engine/target/release/headwater"
 
 passed=0
 failed=0
@@ -126,6 +136,99 @@ expect 'an input with no prompt in it is silent rather than an error' \
 expect 'an input that will not parse is silent rather than an error' \
     intent.sh 0 '' \
     'not json at all'
+
+printf '\n# lib.sh hw_engine: two profiles build an engine, and the newer one answers\n'
+# Every position above and below reaches the engine through this one function,
+# and both profiles produce the same binary, so no hook's output can say which
+# of the two answered. These cases read the function instead. It is the only
+# block here that sources `lib.sh` rather than driving a hook, and the exception
+# is the point: the whole of the rule is which path comes back, and nothing
+# downstream can observe it.
+#
+# The binaries are empty and executable. `hw_engine` runs none of them, it tests
+# for a file anyone may execute, and a case that copied a real engine in would
+# spend a second of I/O to assert a path.
+engine_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-hwengine-XXXXXX")
+mkdir -p "$engine_root/engine/target/release" "$engine_root/engine/target/dev-release"
+
+# The function's answer for the tree as it now stands, or `(none)`. It runs in a
+# subshell so that sourcing `lib.sh` cannot leak `hw_root` into the cases after
+# this block, all of which run against the real root.
+engine_pick() {
+    (
+        HEADWATER_HOOK_ROOT="$engine_root"
+        export HEADWATER_HOOK_ROOT
+        . "$hooks/lib.sh"
+        hw_engine || printf '(none)'
+    )
+}
+
+engine_case() {
+    got=$(engine_pick)
+    if [ "$got" = "$2" ]; then
+        printf 'ok   %s\n' "$1"
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n  expected %s\n  got      %s\n' "$1" "$2" "$got"
+        failed=$((failed + 1))
+    fi
+}
+
+engine_case 'neither profile built, and the function reports none' '(none)'
+
+: > "$engine_root/engine/target/release/headwater"
+chmod u+x "$engine_root/engine/target/release/headwater"
+engine_case 'a release binary alone is the engine' \
+    "$engine_root/engine/target/release/headwater"
+
+# The case this change exists for. A tree that built only the cheap profile used
+# to report no engine at all, so every hook went silent and the commit gate
+# passed the commit through unchecked.
+rm -f "$engine_root/engine/target/release/headwater"
+: > "$engine_root/engine/target/dev-release/headwater"
+chmod u+x "$engine_root/engine/target/dev-release/headwater"
+engine_case 'a dev-release binary alone is the engine' \
+    "$engine_root/engine/target/dev-release/headwater"
+
+# Both built, and the file system decides. A rule that ranked the two profiles
+# by name would hand a hook the older binary in one of these two, and the hook
+# would then read a change through an engine that predates it.
+#
+# The two timestamps are stated rather than taken from the order these lines
+# run in. Two files written one statement apart can carry one mtime on a file
+# system that keeps whole seconds, and the case that wants the second file to be
+# the newer one would then report the first. That is a case whose verdict is a
+# property of the runner's disk.
+: > "$engine_root/engine/target/release/headwater"
+chmod u+x "$engine_root/engine/target/release/headwater"
+touch -t 202601010000 "$engine_root/engine/target/dev-release/headwater"
+touch -t 202601010001 "$engine_root/engine/target/release/headwater"
+engine_case 'both built and release is the newer, so release answers' \
+    "$engine_root/engine/target/release/headwater"
+
+touch -t 202601010002 "$engine_root/engine/target/dev-release/headwater"
+engine_case 'both built and dev-release is the newer, so dev-release answers' \
+    "$engine_root/engine/target/dev-release/headwater"
+
+# An exact tie, which the two cases above are shaped to avoid and which this one
+# is shaped to provoke. Nothing rests on the answer, because two binaries with
+# one mtime are equally current, but the function returns one of them and a
+# reader should not have to derive which from the `-nt` operator.
+touch -t 202601010003 "$engine_root/engine/target/release/headwater"
+touch -t 202601010003 "$engine_root/engine/target/dev-release/headwater"
+engine_case 'two binaries of the same age, and release answers' \
+    "$engine_root/engine/target/release/headwater"
+
+# A file that exists and that nobody may execute is not an engine, at either
+# path. The gate and all three positions test for execution rather than for
+# presence, and this states it for the profile that has never carried a case.
+chmod a-x "$engine_root/engine/target/dev-release/headwater"
+engine_case 'a dev-release binary nobody may execute falls back to release' \
+    "$engine_root/engine/target/release/headwater"
+chmod a-x "$engine_root/engine/target/release/headwater"
+engine_case 'neither binary executable, and the function reports none' '(none)'
+
+rm -rf "$engine_root"
 
 printf '\n# write.sh, on PreToolUse: backfill\n'
 expect 'a new document under the corpus root is refused, and the refusal names the verb' \
@@ -546,13 +649,22 @@ if [ -x "$engine" ]; then
     # rather than running a gate it could not stop twice, over the same tree the
     # two cases above refuse. The engine moves rather than the tree, so the
     # control for this case is every case above it.
+    #
+    # Both profiles move, because `hw_engine` accepts either one. A version of
+    # this case that hid the `release` binary alone passed on a tree that had
+    # never built the other and reported nothing on a tree that had, which is a
+    # case whose verdict is a property of the runner's machine.
     moved="$root/engine/target/release/headwater.moved-by-fixtures"
-    trap 'rm -f "$planted"; [ -e "$moved" ] && mv "$moved" "$engine"' EXIT INT TERM
+    dev_engine="$root/engine/target/dev-release/headwater"
+    dev_moved="$root/engine/target/dev-release/headwater.moved-by-fixtures"
+    trap 'rm -f "$planted"; [ -e "$moved" ] && mv "$moved" "$engine"; [ -e "$dev_moved" ] && mv "$dev_moved" "$dev_engine"' EXIT INT TERM
     mv "$engine" "$moved"
-    expect 'a stop with no engine to read the guard ends the turn' \
+    [ -e "$dev_engine" ] && mv "$dev_engine" "$dev_moved"
+    expect 'a stop with no engine of either profile to read the guard ends the turn' \
         review.sh 0 '' \
         '{"hook_event_name":"Stop","stop_hook_active":false}'
     mv "$moved" "$engine"
+    [ -e "$dev_moved" ] && mv "$dev_moved" "$dev_engine"
 
     rm -f "$planted"
     trap - EXIT INT TERM

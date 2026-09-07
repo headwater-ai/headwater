@@ -24,9 +24,35 @@
 hw_root=${HEADWATER_HOOK_ROOT:-${CLAUDE_PROJECT_DIR:-$PWD}}
 
 # The built engine, or empty when there is none.
+#
+# Two profiles build one. `release` is what CI builds and what a release
+# artifact ships. `dev-release` is the same optimization level without the
+# `lto = true` and `codegen-units = 1` link, and that link is single threaded:
+# measured on an eight core host, a one crate relink costs 153 seconds of CPU
+# under `release` and 25 under `dev-release`. This function read the first path
+# and no other, so every worktree that wanted a hook or the commit gate bought
+# the expensive link for a binary each position runs for a fifth of a second.
+#
+# Both count, and the newer one answers. A rule that preferred `release` by name
+# would let a stale one shadow a `dev-release` binary built minutes later, which
+# is a hook reading a change through an engine that predates it. That defect is
+# quieter than the cost this removes, so the rule is the file system's answer
+# rather than a ranking of the two profiles.
+#
+# An exact tie goes to `release`, because `-nt` is false on equality and
+# `release` is assigned first. Nothing rests on that: two builds a second apart
+# carry different times on any file system this runs on, and a tie means the two
+# binaries are equally current. It is stated because a reader who has to know
+# which one ran should not have to derive it from an operator.
 hw_engine() {
-    engine="$hw_root/engine/target/release/headwater"
-    [ -x "$engine" ] || return 1
+    _release="$hw_root/engine/target/release/headwater"
+    _dev="$hw_root/engine/target/dev-release/headwater"
+    engine=
+    [ -x "$_release" ] && engine=$_release
+    if [ -x "$_dev" ] && { [ -z "$engine" ] || [ "$_dev" -nt "$engine" ]; }; then
+        engine=$_dev
+    fi
+    [ -n "$engine" ] || return 1
     printf '%s' "$engine"
 }
 

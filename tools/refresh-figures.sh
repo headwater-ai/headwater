@@ -149,10 +149,19 @@ esac
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 
-HW="$ROOT/engine/target/release/headwater"
+# Either profile builds the engine these figures are measured with, and the
+# newer answers. `.githooks/pre-commit` runs this script, so a root that reads
+# one path and no other refuses every commit on a checkout built the other way
+# rather than merely declining to measure.
+HW_RELEASE="$ROOT/engine/target/release/headwater"
+HW_DEV_RELEASE="$ROOT/engine/target/dev-release/headwater"
+HW="$HW_RELEASE"
+if [ -x "$HW_DEV_RELEASE" ] && { [ ! -x "$HW" ] || [ "$HW_DEV_RELEASE" -nt "$HW" ]; }; then
+  HW="$HW_DEV_RELEASE"
+fi
 if [ ! -x "$HW" ]; then
-  echo "refresh-figures.sh: no engine at $HW" >&2
-  echo "  build it: cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
+  echo "refresh-figures.sh: no engine of either profile under $ROOT/engine/target" >&2
+  echo "  build it: cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
   exit 2
 fi
 
