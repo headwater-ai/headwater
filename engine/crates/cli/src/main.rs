@@ -1954,10 +1954,21 @@ fn migrate(
              {{version: {from}, digest: {digest}}} and `adoption.to` becomes {to} \
              (HW-DR-0046). The open task set, if any, is carried through unchanged"
         ),
+        // The remedy names hand authorship, and it named `taxonomy vendor`
+        // until #516 was adjudicated. That verb pins nothing: `--expect`
+        // verifies the artifact against a digest the caller supplied, installs
+        // it, exits 0 and leaves the declaration byte-identical, and the
+        // identical next `vendor` refuses with "nothing pins this artifact".
+        // So the sentence sent an adopter with no pin to a verb that refuses
+        // them and sends them back here. The pin is authored (spec 7), and
+        // `apply_with_no_pinned_digest_writes_no_migration_state` performs
+        // every clause of what stands here now.
         None => println!(
             "  `.headwater/taxonomy.yml` pins no digest, so this run cannot write a verifiable \
-             `adoption.from` (HW-DR-0046). `taxonomy vendor` pins one; every other file below is \
-             still written on `--apply`"
+             `adoption.from` (HW-DR-0046). The pin is authored: take the digest the publisher \
+             states and write it as `taxonomy.digest` in `.headwater/taxonomy.yml` by hand, and \
+             a later run of this verb records the migration. Every other file below is still \
+             written on `--apply`"
         ),
     }
 

@@ -379,6 +379,43 @@ jobs:
             printf '%s\n' "$missing" >&2
             exit 1
           fi
+      - name: Every rendered page carries its own canonical URL
+        # This blocks, and it is a step of its own for the same reason the step
+        # above is: this file runs one step per defect, and the two defects are
+        # independent. The pointer to the corpus descriptor dies when
+        # `theme.custom_dir` is dropped. The canonical URL dies when `site_url`
+        # is dropped from `mkdocs.yml`, and `mkdocs build --strict` exits 0 with
+        # no warning while every one of the 302 pages loses the element.
+        # HW-DR-0048 recorded that absence and #556 closed it.
+        #
+        # It is a tool rather than two more lines of `grep` because the
+        # assertion a `grep` can make is the weaker half. A page whose canonical
+        # names some other page carries the string `rel="canonical"` and passes
+        # a presence test, and a wrong canonical is worse than none: it hands a
+        # crawler a confident wrong answer. So the tool compares each page's
+        # canonical against the URL that page is served at, which is what
+        # catches a wrong origin, a dropped trailing slash and a typo in
+        # `site_url`. That is a parser and a URL join rather than a pattern, and
+        # a tool can be held by a fixtures suite where an inline `grep` cannot.
+        #
+        # It reads the generated half and never the assembled root. None of the
+        # eight hand-built pages carries a canonical URL, so the presence
+        # assertion over the assembled root would be red on correct input from
+        # its first run.
+        #
+        # The population is walked from the built directory, `404.html` is
+        # exempt for the structural reason the tool's header states, and an
+        # empty population exits 2 rather than passing. The step below provokes
+        # each of those.
+        run: python3 tools/check-site-canonical.py .headwater/site-build
+      - name: The canonical URL checker refuses what it claims to refuse
+        # Spec 12 refuses a check that ships with no failing fixture, and
+        # `tools/site-fragments-fixtures.sh` is the shape this follows. Two of
+        # its cases run over a scratch copy of the real build: one deletes a
+        # page's canonical element, the other points it at another URL, and the
+        # second is the one a presence grep would pass. It writes only under a
+        # temporary directory.
+        run: sh tools/site-canonical-fixtures.sh
       - name: The crawler files are what the committed pages say
         # `tools/refresh-crawler-files.sh` derives `site/llms.txt`,
         # `site/robots.txt` and `site/sitemap.xml` from the `<title>`, the
