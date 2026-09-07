@@ -2,7 +2,7 @@
 
 # Evaluations
 
-19 documents on this shelf, in the reading order this corpus derives.
+20 documents on this shelf, in the reading order this corpus derives.
 
 - [Adjacent work and tooling](adjacent-work.md) — Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.
 - [The capability-bundle address inventory](capability-bundle-address-inventory.md) — The cross-bundle address inventory HW-DR-0044 asks for, and what it shows decision-record actually reaches inside design-spec. (asserted, and no human has accepted it)
@@ -18,6 +18,7 @@
 - [Choosing the schema format — a cognitive-dimensions walkthrough](schema-format-walkthrough.md) — The Q2 evidence, a cognitive-dimensions walkthrough over five authoring scenarios, which chose YAML and found five defects in spec 2.
 - [The Headwater checks in SHACL — a worked example](shacl-worked-example.md) — The Headwater checks written out in SHACL, and the whole-graph line where the constraint language stops.
 - [Specifying the engine](specifying-the-engine.md) — `docs/spec/` is a design-spec series and nothing types the engine as a thing under test, and three traditions each supply one part of what would.
+- [The build order as a multi-agent system](the-build-order-as-a-multi-agent-system.md) — What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, the architecture that follows, what was rejected, and the numbers the next run is held against. (asserted, and no human has accepted it)
 - [The measurement layer — the Q8 and Q20 evaluation](the-measurement-layer.md) — The Q8 and Q20 evidence, which is what a probe costs, when it runs, and whether the promised instruments can produce their measurements.
 - [The serving boundary — what is advertised, what is withheld, what is written back](the-serving-boundary.md) — The Q14, Q17 and Q7 evidence, which is what a corpus advertises, what it withholds, and what a tool may write back.
 - [Theoretical foundations](theoretical-foundations.md) — Where the research literature confirms, sharpens, or contradicts the design, and what changed in the specification as a result.

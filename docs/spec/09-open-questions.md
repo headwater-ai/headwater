@@ -10,7 +10,7 @@ relations:
 
 # Decision records
 
-59 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+65 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -247,3 +247,27 @@ relations:
 ## A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to
 
 [HW-DR-0059](../decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md) — A filter that keeps the tool calls of a harness session log and drops every block the model wrote is an outside observation, because the type tag it reads is the harness's and not the model's. The condition is the channel the log arrives by, and a file the session can open is not one. (asserted, and no human has accepted it)
+
+## Orchestration prose has one owner per sentence
+
+[HW-DR-0060](../decisions/0060-orchestration-prose-has-one-owner-per-sentence.md) — Every sentence of orchestration prose has exactly one home, decided by who must obey it and whether it changes per dispatch, so the command holds only what the parent decides and each agent loads only what it must obey. (asserted, and no human has accepted it)
+
+## Adjudication is a separate stage, and refusal is licensed
+
+[HW-DR-0061](../decisions/0061-adjudication-is-a-separate-stage-and-refusal-is-licensed.md) — Adjudication runs as its own stage before construction and its prompt licenses refusal, because a run that separated them returned a refusal or a correction from six of eight slots, and that costs one parent turn per issue which is paid. (asserted, and no human has accepted it)
+
+## A dispatch pays when it retires more parent turns than it costs
+
+[HW-DR-0062](../decisions/0062-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) — The unit of orchestration cost is one parent turn at full context, so a dispatch is worth making only when it retires more parent turns than the one it spends, which the integrator passes and a fresh agent per poll fails. (asserted, and no human has accepted it)
+
+## Coordination is a create-only claim, and authority stays on the tree
+
+[HW-DR-0063](../decisions/0063-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md) — Workers coordinate through create-only claim directories that every worktree can reach and the parent never relays, while the merge veto and a re-verification stay messages from the parent, because a peer's message carries no owner authority. (asserted, and no human has accepted it)
+
+## The ledger is split, its tabular parts are JSONL, and its totals are derived
+
+[HW-DR-0064](../decisions/0064-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md) — The run ledger is one directory of small files rather than one markdown file, its per-iteration log and its findings are JSONL read by the line, every total is derived and never stored, and a database is deferred until a cross-run question asks for one. (asserted, and no human has accepted it)
+
+## The entrypoint keeps its name and becomes a resumable run
+
+[HW-DR-0065](../decisions/0065-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md) — The build order keeps the name next-run and gains a run directory it writes as it goes, so that a compaction, a crash or a second invocation resumes from a doctrine block of ten lines and a log read by the line, with each stage's model declared in its own frontmatter. (asserted, and no human has accepted it)

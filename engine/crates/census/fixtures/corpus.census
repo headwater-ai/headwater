@@ -122,6 +122,18 @@ docs/decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-
   typed: decision
 docs/decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md
   typed: decision
+docs/decisions/0060-orchestration-prose-has-one-owner-per-sentence.md
+  typed: decision
+docs/decisions/0061-adjudication-is-a-separate-stage-and-refusal-is-licensed.md
+  typed: decision
+docs/decisions/0062-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md
+  typed: decision
+docs/decisions/0063-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md
+  typed: decision
+docs/decisions/0064-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md
+  typed: decision
+docs/decisions/0065-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -155,6 +167,8 @@ docs/evaluations/schema-format-walkthrough.md
 docs/evaluations/shacl-worked-example.md
   typed: evaluation
 docs/evaluations/specifying-the-engine.md
+  typed: evaluation
+docs/evaluations/the-build-order-as-a-multi-agent-system.md
   typed: evaluation
 docs/evaluations/the-measurement-layer.md
   typed: evaluation
