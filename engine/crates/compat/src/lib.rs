@@ -337,6 +337,14 @@ pub fn projection(before: &Plan, after: &Plan) -> Outcome {
 /// injected value, in the way the identity of a run is, and a dimension that
 /// compared it would report the location of the artifact as a change the
 /// artifact made.
+///
+/// **The summary word for this dimension is [`dimension_word`] and not
+/// [`Outcome::word`].** A break here carries any of the readings [`Movement`]
+/// enumerates, and `BROKEN, {n} of them` said one number about five different
+/// events: a real failure, a check that declined to decide, a check that
+/// stopped instantiating, an instanceless rule that started reporting, and a
+/// check that started passing.
+/// [#396](https://github.com/headwater-ai/headwater/issues/396).
 pub fn consequence(before: &Run, after: &Run) -> Outcome {
     let instanceless: Vec<&'static str> = headwater_check::RULES
         .iter()
@@ -453,26 +461,113 @@ pub fn broken_rules(outcome: &Outcome) -> BTreeSet<String> {
         .collect()
 }
 
-/// The summary word for `instance_validity` alone.
+/// What one break's `now` reading says happened, for the summary word.
 ///
-/// A break here is a rule that stopped agreeing between the two runs, and
-/// [`verdict`] writes exactly one reading that means the rule declined to
-/// decide: `skipped: {why}`. A break whose `now` is that reading is a rule
-/// that handed off, not a document that stopped validating, and the two are
-/// counted apart so the printed word never says one document count for two
-/// different things. [#221](https://github.com/headwater-ai/headwater/issues/221).
+/// **The set is derived from the three writers of a reading, and never from a
+/// list of strings somebody read out of a report.** A reading under
+/// [`instance_validity`] or [`consequence`] is written by exactly three places
+/// and by nothing else: [`verdict`] writes `passed`, `skipped: {why}` and
+/// `failed: {…}`, one per variant of [`headwater_check::instance::Outcome`],
+/// so a fourth verdict is a compile error before it is a mislabelled count;
+/// [`reported`] writes `nothing reported` and `reported: {…}`; and [`compare`]
+/// writes its `absent` argument, which both dimensions pass as `no instance`.
+/// Six readings, and no seventh without a new writer.
 ///
-/// This does not change which breaks are read, only how many of them are
-/// printed under which word: `Outcome::forces_major` still answers `true` for
-/// a skip-only movement, because whether a skip should force a major version
-/// is a different question than this one, and issue #221 leaves it open.
-fn instance_validity_word(breaks: &[Break]) -> String {
-    let skipped = breaks
+/// [`verdicts`] joins two instances under one key with ` + `, so a reading can
+/// also be a compound of the first three. [`Movement::of`] reads a compound at
+/// its severest part, because a word that called the whole break a skip would
+/// be a claim about the half of it that failed.
+///
+/// The variants are declared least severe first, so the derived [`Ord`] is the
+/// order [`Movement::of`] takes a maximum over.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Movement {
+    /// An instanceless rule that stopped reporting. Only [`consequence`]
+    /// compares those, and this is the improving direction of that comparison.
+    NoLongerReported,
+    /// A check that started passing. An improvement, and it is counted apart
+    /// because a total that folded it into `failed` would state the opposite
+    /// of what happened.
+    NowPassing,
+    /// A check that stopped instantiating: one side has no reading at all.
+    /// The movement is an absence of measurement rather than a measurement of
+    /// a failure, and calling it `failed` is the false statement that
+    /// [#396](https://github.com/headwater-ai/headwater/issues/396) reports.
+    NoLongerMeasured,
+    /// A check that ran and declined to decide.
+    /// [#221](https://github.com/headwater-ai/headwater/issues/221).
+    Skipped,
+    /// A real break: `failed: {…}`, or an instanceless rule that started
+    /// reporting.
+    Failed,
+}
+
+impl Movement {
+    fn of(now: &str) -> Movement {
+        match Movement::of_one(now) {
+            // Every reading a single writer produces whole is recognised
+            // whole, so a ` + ` inside a skip reason or a finding message
+            // never reaches the split below.
+            Movement::Failed => now
+                .split(" + ")
+                .map(Movement::of_one)
+                .max()
+                .unwrap_or(Movement::Failed),
+            single => single,
+        }
+    }
+
+    fn of_one(now: &str) -> Movement {
+        match now {
+            "no instance" => Movement::NoLongerMeasured,
+            "nothing reported" => Movement::NoLongerReported,
+            "passed" => Movement::NowPassing,
+            _ if now.starts_with("skipped: ") => Movement::Skipped,
+            _ => Movement::Failed,
+        }
+    }
+
+    fn word(self) -> &'static str {
+        match self {
+            Movement::NoLongerReported => "no longer reported",
+            Movement::NowPassing => "now passing",
+            Movement::NoLongerMeasured => "no longer measured",
+            Movement::Skipped => "skipped",
+            Movement::Failed => "failed",
+        }
+    }
+}
+
+/// The summary word for a dimension whose breaks are verdict movements.
+///
+/// `instance_validity` and `consequence` both are: both compare the value
+/// space [`Movement`] enumerates, so both carry the same conflation and one
+/// function answers for both. A sibling of the old `instance_validity_word`
+/// would have left the `no instance` half wrong in each of them.
+///
+/// Only the non-zero counts are printed, severest first, so the common
+/// single-cause report stays one count wide and never says `0 skipped` about a
+/// corpus in which nothing was skipped.
+///
+/// This does not change which breaks are read, only which word each one is
+/// counted under. [`Outcome::forces_major`] still answers `true` for a
+/// skip-only, absence-only or improvement-only movement, because whether any
+/// of those should force a major version is a different question, left open by
+/// #221 and untouched here.
+fn dimension_word(breaks: &[Break]) -> String {
+    let mut counts: BTreeMap<Movement, usize> = BTreeMap::new();
+    for entry in breaks {
+        *counts.entry(Movement::of(&entry.now)).or_default() += 1;
+    }
+    let parts: Vec<String> = counts
         .iter()
-        .filter(|entry| entry.now.starts_with("skipped: "))
-        .count();
-    let failed = breaks.len() - skipped;
-    format!("BROKEN, {failed} failed / {skipped} skipped")
+        .rev()
+        .map(|(movement, count)| format!("{count} {}", movement.word()))
+        .collect();
+    match parts.is_empty() {
+        true => "BROKEN".to_string(),
+        false => format!("BROKEN, {}", parts.join(" / ")),
+    }
 }
 
 /// The documents of this corpus that one step of a migration payload names.
@@ -821,7 +916,12 @@ impl Report {
         out.push_str("\n\n");
         for (name, outcome) in self.measured.dimensions() {
             let word = match (name, outcome) {
-                ("instance_validity", Outcome::Broken(breaks)) => instance_validity_word(breaks),
+                // The two dimensions that compare a verdict. The other four
+                // compare a value space with no unmeasured reading in it, so
+                // `Outcome::word` is honest for them.
+                ("instance_validity" | "consequence", Outcome::Broken(breaks)) => {
+                    dimension_word(breaks)
+                }
                 _ => outcome.word(),
             };
             out.push_str(&format!("  {name:<18} {word}\n"));
@@ -1170,5 +1270,92 @@ mod tests {
                 }
             }
         }
+    }
+
+    /// Every reading a writer of a `now` value can produce, and the word each
+    /// one is counted under.
+    ///
+    /// The list is the derivation stated on [`Movement`] read back: three from
+    /// [`verdict`], one per variant of the check layer's verdict; two from
+    /// [`reported`]; and the `absent` argument both dimensions pass to
+    /// [`compare`]. The `taxonomy diff` suite exercises four of the six today,
+    /// and this case is what stops the other two from being classified by
+    /// nobody until a corpus happens to produce them.
+    #[test]
+    fn every_reading_a_break_can_carry_has_a_word() {
+        for (now, word) in [
+            ("passed", "now passing"),
+            ("skipped: no pattern set for it", "skipped"),
+            ("failed: docs/a.md:1 a message", "failed"),
+            ("nothing reported", "no longer reported"),
+            ("reported: a message", "failed"),
+            ("no instance", "no longer measured"),
+        ] {
+            assert_eq!(Movement::of(now).word(), word, "the reading `{now}`");
+        }
+    }
+
+    /// A key holding two instances reads as a ` + ` join, and the severest
+    /// part decides.
+    ///
+    /// [`verdicts`] writes that join, so it is a reading a break can carry and
+    /// not a hypothetical. A word that read the whole string would fall
+    /// through to `failed` for every one of these, including the two in which
+    /// nothing failed.
+    #[test]
+    fn a_joined_reading_is_read_at_its_severest_part() {
+        for (now, word) in [
+            ("failed: docs/a.md:1 a message + passed", "failed"),
+            ("passed + skipped: a reason", "skipped"),
+            ("passed + passed", "now passing"),
+            ("failed: a + skipped: b", "failed"),
+            // A ` + ` inside a skip reason is not a join, because the whole
+            // string is already a reading a writer produces.
+            ("skipped: a + b are both absent", "skipped"),
+        ] {
+            assert_eq!(Movement::of(now).word(), word, "the reading `{now}`");
+        }
+    }
+
+    /// The word prints only the movements that occurred, severest first.
+    #[test]
+    fn the_summary_word_prints_no_zero_and_orders_by_severity() {
+        let entry = |now: &str| Break {
+            at: format!("rule at {now}"),
+            was: "passed".to_string(),
+            now: now.to_string(),
+        };
+        assert_eq!(
+            dimension_word(&[entry("no instance"), entry("no instance")]),
+            "BROKEN, 2 no longer measured",
+            "a corpus in which nothing was skipped never prints a skip count"
+        );
+        assert_eq!(
+            dimension_word(&[
+                entry("passed"),
+                entry("no instance"),
+                entry("skipped: a reason"),
+                entry("failed: docs/a.md:1 a message"),
+                entry("nothing reported"),
+            ]),
+            "BROKEN, 1 failed / 1 skipped / 1 no longer measured / 1 now passing / 1 no longer \
+             reported"
+        );
+    }
+
+    /// Naming a movement changes no verdict.
+    ///
+    /// `Outcome::forces_major` reads the shape of the outcome and never the
+    /// word, so a dimension broken only by an absence of measurement or by an
+    /// improvement still forces a major version. Whether it should is the
+    /// question #221 left open and this change does not answer.
+    #[test]
+    fn a_word_that_names_no_failure_still_forces_a_major() {
+        let outcome = Outcome::over(vec![Break {
+            at: "rule at docs/a.md".to_string(),
+            was: "passed".to_string(),
+            now: "no instance".to_string(),
+        }]);
+        assert!(outcome.forces_major());
     }
 }
