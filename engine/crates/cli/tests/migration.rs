@@ -1245,6 +1245,16 @@ fn an_apply_leaves_an_adoption_block_that_infer_can_add_to() {
     // the resolve that puts it in the lock.
     root.takes("2.0.0");
 
+    // Every reader of the block, and not `infer` alone. `taxonomy resolve`
+    // carried it through above, which is what `takes` asserts, and the check
+    // layer reads it as the adoption inventory. An empty sequence is zero
+    // tasks holding zero pairs, which is what the block says.
+    let checked = root.run(&["check", "--now", "2026-08-01"]);
+    assert!(
+        checked.out.contains("0 pairs open"),
+        "the check layer reads the block as an empty inventory: {checked:?}"
+    );
+
     let inferred = root.run(&[
         "infer",
         "--owner",
@@ -1268,6 +1278,90 @@ fn an_apply_leaves_an_adoption_block_that_infer_can_add_to() {
     assert!(
         lock.contains("rule: facet.required.missing"),
         "and the rule they are held under is the one the upgrade broke: {lock}"
+    );
+}
+
+/// A lock already carrying a `tasks`-less block is repaired rather than left.
+///
+/// The state an adopter is in who ran `--apply` under an engine that wrote no
+/// `tasks` key: the block is there, it holds `from`, `to` and whatever else a
+/// person put beside them, and `infer --write` refuses it. The next `--apply`
+/// adds the empty sequence, and every other entry of the block survives —
+/// including a key this engine knows nothing about, which is what [`migrated`]
+/// carries entries through for.
+///
+/// A block with a standing task list is a different case and is untouched by
+/// this: `apply_carries_a_standing_task_list_through` is that one.
+#[test]
+fn an_apply_repairs_a_block_that_declares_no_tasks() {
+    let root = Root::new("repairs-a-tasks-less-block");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(Some(&payload()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let lock = root.at.join(".headwater/taxonomy.lock");
+    let before = std::fs::read_to_string(&lock).expect("the lock reads");
+    assert!(
+        !before.contains("\nadoption:\n"),
+        "the fixture declares none to start with"
+    );
+    std::fs::write(
+        &lock,
+        before.replacen(
+            "\n# The resolved taxonomy",
+            "\nadoption:\n  note: a key this engine does not read\n\n# The resolved taxonomy",
+            1,
+        ),
+    )
+    .expect("the lock writes");
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    let after = std::fs::read_to_string(&lock).expect("the lock reads");
+    assert!(
+        after.contains("  tasks: []\n"),
+        "the run added the empty sequence the next verb adds to: {after}"
+    );
+    assert!(
+        after.contains("  note: \"a key this engine does not read\"\n"),
+        "and it carried the key it does not read through: {after}"
+    );
+}
+
+/// A standing task list is carried through and never rewritten.
+///
+/// The other side of the case above, and the one the guard exists for. A block
+/// that already declares `tasks` gets `from` and `to` replaced and its list
+/// left exactly as it was loaded.
+#[test]
+fn apply_carries_a_standing_task_list_through() {
+    let root = Root::new("carries-a-standing-list");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(Some(&payload()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let lock = root.at.join(".headwater/taxonomy.lock");
+    let before = std::fs::read_to_string(&lock).expect("the lock reads");
+    let standing = "\nadoption:\n  tasks:\n    - id: AD-1\n      owner: a person\n      until: \
+                    2027-01-01\n      pairs: []\n\n# The resolved taxonomy";
+    std::fs::write(
+        &lock,
+        before.replacen("\n# The resolved taxonomy", standing, 1),
+    )
+    .expect("the lock writes");
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    let after = std::fs::read_to_string(&lock).expect("the lock reads");
+    assert!(
+        after.contains(
+            "  tasks:\n    - id: AD-1\n      owner: \"a person\"\n      until: 2027-01-01\n"
+        ),
+        "the standing task is exactly what it was: {after}"
+    );
+    assert!(
+        !after.contains("tasks: []"),
+        "and nothing wrote an empty list over it: {after}"
     );
 }
 
