@@ -630,6 +630,145 @@ same "  a doctrine edited in the artifact, a template only it holds, and a schem
     "alpha/bundle.yml: authored in the source and absent from the artifact|alpha/doctrine.md: the source and the vendored copy differ|alpha/templates/two.md: carried by the artifact and absent from the source|" \
     "$(carried_judge "$scratch/src" "$scratch/vend" "$scratch/parts" | tr '\n' '|')"
 
+# ---------------------------------------------------------------------------
+# 4. The `procedure` purpose, held as an exclusive or.
+#
+# The admission section records that no entry of this library serves the
+# `procedure` purpose, and that which tradition should supply one is an open
+# ruling. That sentence is a claim about the bundle sources, and nothing read
+# it. `taxonomy resolve --check` and `headwater check --strict` both exit 0
+# over this page either way, and this repository excludes `docs/taxonomies/**`
+# from its own corpus, so no rule of the engine opens it at all.
+#
+# The failure this guards is the quiet one. A later entry admits a procedure
+# kind, the ruling closes, and the paragraph goes on telling an adopter to
+# write their own overlay because the library has nothing. Nobody rereads a
+# gap notice on the day the gap closes.
+#
+# So the judge is an exclusive or over two populations it reads rather than
+# lists: either a source declares the purpose, or the section records that none
+# does. Never both, and never neither. Deleting the paragraph reddens this, and
+# so does adding the purpose without touching the paragraph.
+
+# procedure_declared FILE... — `yes` when any named source declares the
+# `procedure` purpose or a kind that serves it, `no` otherwise. Comments are
+# stripped first, because every argument for and against this purpose in this
+# repository is written in a comment inside one of these same files, and a
+# judge that read those would answer the opposite of the truth.
+#
+# Three shapes count, because the base package and a bundle write the same
+# declaration differently. A `purposes:` block with a `procedure:` member is
+# how the base declares one. A `purposes.procedure:` operation is how a bundle
+# adds one. A `purpose: procedure` member is a kind that serves it, in block
+# style or inside a flow mapping.
+procedure_declared() {
+    for pdc_f in "$@"; do
+        [ -f "$pdc_f" ] || continue
+        if awk '
+            { sub(/#.*$/, "") }
+            /^purposes:[ \t]*$/                          { inp = 1; next }
+            /^[^ \t]/                                    { inp = 0 }
+            inp && /^[ \t]+procedure[ \t]*:/             { found = 1 }
+            /^[ \t]*purposes\.procedure[ \t]*:/          { found = 1 }
+            /purpose[ \t]*:[ \t]*procedure([ \t,}]|$)/   { found = 1 }
+            END { exit !found }
+        ' "$pdc_f"; then
+            echo yes
+            return
+        fi
+    done
+    echo no
+}
+
+# procedure_judge BASE BUNDLES-ROOT INDEX — one line per refusal, nothing when
+# the two agree.
+procedure_judge() {
+    pj_sources="$1"
+    for pj_b in "$2"/*/; do
+        [ -f "$pj_b/bundle.yml" ] || continue
+        pj_sources="$pj_sources $pj_b/bundle.yml"
+    done
+    # shellcheck disable=SC2086
+    pj_declared=$(procedure_declared $pj_sources)
+    if section_of "$3" "Admission, and what is admitted" \
+        | grep -q '`procedure`'; then
+        pj_recorded=yes
+    else
+        pj_recorded=no
+    fi
+    if [ "$pj_declared" = yes ] && [ "$pj_recorded" = yes ]; then
+        echo "a source declares \`procedure\` and the index still records the gap"
+    fi
+    if [ "$pj_declared" = no ] && [ "$pj_recorded" = no ]; then
+        echo "no source declares \`procedure\` and the index does not say so"
+    fi
+}
+
+# 4a. This library, now. The paragraph stands and no source declares it.
+same "the \`procedure\` gap and the index agree" \
+    "" "$(procedure_judge "$root/taxonomy-source/headwater-standard/taxonomy.yml" \
+            "$lib" "$index" | tr '\n' '|')"
+
+# 4b. The vendored copy of the page is judged against the vendored sources, so
+#     the artifact a consumer receives cannot record a different gap.
+same "the vendored copy records the same gap as the vendored sources" \
+    "" "$(procedure_judge "$root/packages/headwater-standard/taxonomy.yml" \
+            "$root/packages/headwater-standard/bundles" "$vendored" | tr '\n' '|')"
+
+# 4c. Both refusals, provoked over scratch files. A judge whose failure nobody
+#     has seen holds nothing, and each half of an exclusive or fails for its
+#     own reason.
+mkdir -p "$scratch/pd/beta"
+printf 'purposes:\n  rationale:\n    intent: why\n' >"$scratch/pd/base.yml"
+printf 'bundle: beta\nadd:\n  kinds.note:\n    purpose: rationale\n' \
+    >"$scratch/pd/beta/bundle.yml"
+printf '## Admission, and what is admitted\n\nNothing here names the missing purpose.\n' \
+    >"$scratch/pd/index.md"
+same "  a library with no procedure purpose and an index that does not say so" \
+    "no source declares \`procedure\` and the index does not say so|" \
+    "$(procedure_judge "$scratch/pd/base.yml" "$scratch/pd/beta/.." \
+        "$scratch/pd/index.md" | tr '\n' '|')"
+
+printf '## Admission, and what is admitted\n\nNo entry serves the `procedure` purpose.\n' \
+    >"$scratch/pd/index.md"
+same "  the same library once the index records the gap" \
+    "" "$(procedure_judge "$scratch/pd/base.yml" "$scratch/pd/beta/.." \
+        "$scratch/pd/index.md" | tr '\n' '|')"
+
+printf 'bundle: beta\nadd:\n  purposes.procedure:\n    intent: the steps\n' \
+    >"$scratch/pd/beta/bundle.yml"
+same "  a bundle that adds the purpose, under an index that still records the gap" \
+    "a source declares \`procedure\` and the index still records the gap|" \
+    "$(procedure_judge "$scratch/pd/base.yml" "$scratch/pd/beta/.." \
+        "$scratch/pd/index.md" | tr '\n' '|')"
+
+printf 'bundle: beta\nadd:\n  kinds.playbook: {purpose: procedure, lifecycle: standard}\n' \
+    >"$scratch/pd/beta/bundle.yml"
+same "  a kind serving the purpose in flow style is found the same way" \
+    "a source declares \`procedure\` and the index still records the gap|" \
+    "$(procedure_judge "$scratch/pd/base.yml" "$scratch/pd/beta/.." \
+        "$scratch/pd/index.md" | tr '\n' '|')"
+
+printf 'purposes:\n  procedure:\n    intent: the steps\n' >"$scratch/pd/base.yml"
+printf 'bundle: beta\nadd:\n  kinds.note:\n    purpose: rationale\n' \
+    >"$scratch/pd/beta/bundle.yml"
+same "  the base declaring it in a nested block is found the same way" \
+    "a source declares \`procedure\` and the index still records the gap|" \
+    "$(procedure_judge "$scratch/pd/base.yml" "$scratch/pd/beta/.." \
+        "$scratch/pd/index.md" | tr '\n' '|')"
+
+# 4d. A comment naming the purpose is not a declaration. Every paragraph of
+#     argument about this purpose in this repository sits in a comment, so a
+#     judge that counted one would report the gap closed on the day somebody
+#     wrote down why it is open.
+printf 'purposes:\n  rationale:\n    intent: why\n' >"$scratch/pd/base.yml"
+printf '# purposes.procedure: the ruling this entry waits on\n# kinds.playbook: {purpose: procedure}\nbundle: beta\nadd:\n  kinds.note:\n    purpose: rationale\n' \
+    >"$scratch/pd/beta/bundle.yml"
+same "  a comment naming the purpose declares nothing" \
+    "" \
+    "$(procedure_judge "$scratch/pd/base.yml" "$scratch/pd/beta/.." \
+        "$scratch/pd/index.md" | tr '\n' '|')"
+
 echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]
