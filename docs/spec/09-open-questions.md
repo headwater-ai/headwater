@@ -10,7 +10,7 @@ relations:
 
 # Decision records
 
-55 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+56 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -231,3 +231,7 @@ relations:
 ## A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile
 
 [HW-DR-0056](../decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md) — No kind in the base package or in any bundle binds a language regime. A package that set the default value would change nothing, so the doctrine page of the starter kit carries the promise. (asserted, and no human has accepted it)
+
+## A blank facet value is a rule of its own and it reads every string facet
+
+[HW-DR-0058](../decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md) — A declared facet that carries no content is a state that neither the required-facet rule nor the enum rule reaches. A new rule reports it, over every facet a taxonomy types as a string, at error severity. (asserted, and no human has accepted it)

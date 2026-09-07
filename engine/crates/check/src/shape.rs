@@ -236,6 +236,14 @@ pub struct Facet {
     /// names, and a participation expectation says `since: state_entered`
     /// rather than `since: status_since`.
     pub role: Option<String>,
+    /// `type`, the scalar type the declaration gives the value, and nothing for
+    /// a facet that declares none.
+    ///
+    /// Read as written, on the same terms as [`FacetValue::role`]. The
+    /// meta-schema owns the set of type names, so a name this engine has no
+    /// rule for decides nothing rather than something invented, and the one
+    /// reader is [`crate::facet_blank`].
+    pub value_type: Option<String>,
     /// Whether every document declares it, whatever its kind.
     pub required: bool,
     /// The values the facet admits, and empty for a facet that declares no set.
@@ -724,6 +732,7 @@ fn read_facet(name: &str, value: &Value, span: Span) -> Result<Facet, Declaratio
     Ok(Facet {
         name: name.to_string(),
         role: scalar(map, "role"),
+        value_type: scalar(map, "type"),
         required: headwater_yaml::core_schema::flag(map, "required").unwrap_or(false),
         values: read_values(map),
         stale_after_days: scalar(map, "stale_after_days")
