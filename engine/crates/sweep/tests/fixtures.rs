@@ -152,10 +152,9 @@ fn returned_with(documents: &[&str], proposal: &str) -> String {
         .collect::<String>();
     format!(
         "taxonomy: {LOCK}\nslice: corpus\nfindings:\n  - class: undeclared_conflict\n    \
-         documents:\n{listed}    evidence:\n      - path: {}\n        quote: An operator may \
-         disable the cache for one run.\n    message: One document gives an operator a setting \
-         the other says does not exist.\n    proposal:\n{proposal}",
-        FIRST
+         documents:\n{listed}    evidence:\n      - path: {FIRST}\n        quote: An operator \
+         may disable the cache for one run.\n    message: One document gives an operator a \
+         setting the other says does not exist.\n    proposal:\n{proposal}"
     )
 }
 
