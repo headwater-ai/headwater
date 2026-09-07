@@ -304,7 +304,8 @@ def main():
                 ('the copy route', 'Copy a package directory into `packages/`'),
                 ('the vendor route', '`headwater taxonomy vendor <dir>`'),
                 ('where the version comes from',
-                 'the version that the package itself declares')]:
+                 'the version that package declares'),
+                ('the field the vendor route needs first', '# digest:')]:
             assert_true('step 4: what init wrote names ' + claim, token in declaration)
 
         # Step 5. The tutorial names the line to change rather than a command,
