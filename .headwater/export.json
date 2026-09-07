@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 376,
-      "carried": 376,
+      "in the graph": 387,
+      "carried": 387,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 598,
-      "carried": 598,
+      "in the graph": 609,
+      "carried": 609,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -7197,6 +7197,173 @@
         }
       },
       {
+        "path": "docs/obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0172",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0172",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Nine constants named ALL type the variant list of an enum by hand, the array length is part of the type, and no assertion compares either against the exhaustive match beside it.",
+          "last_verified": "2026-09-07",
+          "title": "Nine hand-kept constants enumerate an enum and nothing holds one against the variants",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "engine/crates/adapter/src/lib.rs",
+              "engine/crates/generate/src/lib.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0173",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0173",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Four named steps of ci.yml carry a shell decision procedure that ends in exit 1, no fixture suite drives any of them over a scratch input, and no shell of this repository is parsed or linted at all.",
+          "last_verified": "2026-09-07",
+          "title": "Four inline gates in the workflow decide an exit status and no suite provokes one",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              ".github/workflows/ci.yml",
+              "HW-OBL-0145"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0174-publishing-the-base-package-reports-51-references-that-resolve-nowhere-and-exits-0.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0174",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0174",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Publishing headwater/standard 4.1.0 prints that the artifact records 51 references resolving nowhere inside it, exits 0, ships the list in the manifest, and taxonomy vendor installs it without a word.",
+          "last_verified": "2026-09-07",
+          "title": "Publishing the base package reports 51 references that resolve nowhere and exits 0",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "taxonomy-source/headwater-standard/package.yml"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0175-two-documents-take-one-sequence-on-a-sequence-declaring-shelf-and-no-rule-reads-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0175",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0175",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Two design specs declaring sequence 16, whose file names both open with 16-, give check --strict exit 0 and the same finding count as the tree without them.",
+          "last_verified": "2026-09-07",
+          "title": "Two documents take one sequence on a sequence-declaring shelf and no rule reads it",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0106",
+              "HW-SPEC-taxonomy-model"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0176",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0176",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "Under HEADWATER_BLESS one case truncates crates/conformance/fixtures/wrapped.report while a sibling thread of the same binary reads it, which can panic the run and cannot corrupt the artifact.",
+          "last_verified": "2026-09-07",
+          "title": "A blessed fixture is read by a sibling case that runs while the write truncates it",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "engine/crates/conformance/tests/render.rs",
+              "HW-OBL-0133"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0177",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0177",
+          "status": "current",
+          "status_since": "2026-09-07",
+          "summary": "The value rule prescribes waiting_on=adopter on every self-audit record, HW-DR-0030 defines that value as waiting on an outside corpus, and almost none of those records does.",
+          "last_verified": "2026-09-07",
+          "title": "The value rule writes adopter on every self-audit record and most of them wait on a build",
+          "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0030",
+              ".claude/commands/next-run.md"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
@@ -8171,6 +8338,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": ".claude/commands/next-run.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": ".claude/hooks/intent.sh",
         "resolver": "source-tree"
       },
@@ -8216,6 +8388,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": ".github/workflows/ci.yml",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": ".headwater/overlay.yml",
         "resolver": "source-tree"
       },
@@ -8243,6 +8420,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/README.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/adapter/src/lib.rs",
         "resolver": "source-tree"
       },
       {
@@ -8353,6 +8535,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/conformance/src/render.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/conformance/tests/render.rs",
         "resolver": "source-tree"
       },
       {
@@ -8513,6 +8700,11 @@
       {
         "anchor_kind": "code_path",
         "id": "site/tutorial/index.html",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "taxonomy-source/headwater-standard/package.yml",
         "resolver": "source-tree"
       },
       {
@@ -13547,6 +13739,127 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/check/src/facet_blank.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/adapter/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/generate/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/ci.yml",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0145",
+          "path": "docs/obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/obligations/0174-publishing-the-base-package-reports-51-references-that-resolve-nowhere-and-exits-0.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "taxonomy-source/headwater-standard/package.yml",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0175-two-documents-take-one-sequence-on-a-sequence-declaring-shelf-and-no-rule-reads-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0106",
+          "path": "docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/obligations/0175-two-documents-take-one-sequence-on-a-sequence-declaring-shelf-and-no-rule-reads-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-taxonomy-model",
+          "path": "docs/spec/02-taxonomy-model.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/conformance/tests/render.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0133",
+          "path": "docs/obligations/0133-two-test-helpers-key-a-scratch-directory-on-the-pid-alone-and-the-race-springs-on-the-next-case-added.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0030",
+          "path": "docs/decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/commands/next-run.md",
           "resolver": "source-tree"
         }
       },

@@ -1,10 +1,11 @@
-296 nodes, 598 declared edge halves
-    458 to a document
-    140 to an anchor
+302 nodes, 609 declared edge halves
+    463 to a document
+    146 to an anchor
 0 prose links that did not resolve
 
 anchors
       1 code_path `.claude/agents/headwater-maintainer.md` via source-tree
+      1 code_path `.claude/commands/next-run.md` via source-tree
       2 code_path `.claude/hooks/intent.sh` via source-tree
       2 code_path `.claude/hooks/lib.sh` via source-tree
       2 code_path `.claude/hooks/review.sh` via source-tree
@@ -14,6 +15,7 @@ anchors
       2 code_path `.claude/skills/headwater-authoring/SKILL.md` via source-tree
       1 code_path `.claude/skills/headwater-sweep/SKILL.md` via source-tree
       1 code_path `.claude/skills/headwater-taxonomy/SKILL.md` via source-tree
+      1 code_path `.github/workflows/ci.yml` via source-tree
       2 code_path `.headwater/overlay.yml` via source-tree
       1 code_path `.headwater/taxonomy.yml` via source-tree
       2 code_path `docs/taxonomies/decision-record/bundle.yml` via source-tree
@@ -21,6 +23,7 @@ anchors
       1 code_path `engine/Cargo.lock` via source-tree
       1 code_path `engine/Cargo.toml` via source-tree
       1 code_path `engine/README.md` via source-tree
+      1 code_path `engine/crates/adapter/src/lib.rs` via source-tree
       1 code_path `engine/crates/audit/src/lib.rs` via source-tree
       1 code_path `engine/crates/audit/src/reading.rs` via source-tree
       1 code_path `engine/crates/census/src/walk.rs` via source-tree
@@ -43,9 +46,10 @@ anchors
       1 code_path `engine/crates/conformance/src/json.rs` via source-tree
       1 code_path `engine/crates/conformance/src/lib.rs` via source-tree
       1 code_path `engine/crates/conformance/src/render.rs` via source-tree
+      1 code_path `engine/crates/conformance/tests/render.rs` via source-tree
       1 code_path `engine/crates/doc/src/sentences.rs` via source-tree
       1 code_path `engine/crates/generate/src/export.rs` via source-tree
-      1 code_path `engine/crates/generate/src/lib.rs` via source-tree
+      2 code_path `engine/crates/generate/src/lib.rs` via source-tree
       1 code_path `engine/crates/graph/src/anchors.rs` via source-tree
       1 code_path `engine/crates/import/src/lib.rs` via source-tree
       2 code_path `engine/crates/meta/meta-schema.yml` via source-tree
@@ -75,6 +79,7 @@ anchors
       1 code_path `site/ns/index.html` via source-tree
       1 code_path `site/proof/index.html` via source-tree
       1 code_path `site/tutorial/index.html` via source-tree
+      1 code_path `taxonomy-source/headwater-standard/package.yml` via source-tree
       1 code_path `tools/assemble-site.sh` via source-tree
       1 code_path `tools/cloudflare-build.sh` via source-tree
       1 code_path `tools/language-spike/build.sh` via source-tree
