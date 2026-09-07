@@ -1433,7 +1433,22 @@ mod found {
     /// See `observe`'s own doc comment for why [`release::at`] is what draws
     /// that one line, and not a finer one.
     fn held(out: &Path) -> String {
-        match release::at(out) {
+        let complete = release::at(out);
+        if complete.is_err() && super::killed_direct_write(out) {
+            return format!(
+                "the output directory holds files but no {record}, and the directory beside it \
+                 ending in `{staging}` holds both the `{marker}` file a publish writes to claim \
+                 it and the `{direct}` file a publish writes when it cannot move an artifact onto \
+                 this path and writes into it one file at a time. Only a publish killed during \
+                 that write leaves those two together, so the files here are that publish's and \
+                 not somebody else's. Delete both paths and publish again",
+                record = release::RECORD,
+                staging = STAGING,
+                marker = super::MARKER,
+                direct = super::DIRECT,
+            );
+        }
+        match complete {
             Ok(_) => "the output directory holds files already, and a published \
                       artifact is every file under its root. Publish into a directory \
                       that does not exist yet"
@@ -2573,6 +2588,23 @@ fn out_staging(out: &Path) -> Option<PathBuf> {
 /// holds the [`MARKER`] a publish writes into it before it writes anything else.
 /// Anything else there is somebody's, and the run refuses with a message naming
 /// the path.
+///
+/// # The one clear that does not come first
+///
+/// The mount branch used to clear the staging directory as its first act, so
+/// that a failed direct write left one directory behind rather than two. That
+/// put the only removal of the marker one line *before* the only write that is
+/// not atomic, and a kill in between left files at `--out` with nothing on disk
+/// saying whose they were — the undecidable state
+/// [#485](https://github.com/headwater-ai/headwater/issues/485)'s flag was
+/// refused for, in the one configuration that still reaches it.
+///
+/// So that branch clears afterwards instead, on the success path and the
+/// failure path alike, and it writes [`DIRECT`] beside the marker first.
+/// Nothing is traded for it: a direct write that fails for any other reason
+/// still leaves no staging directory, because the clear runs before the error
+/// is returned rather than after it. What the pair of files buys over the
+/// marker alone is in [`DIRECT`], and [`found::held`] is what reads them.
 fn deliver(
     root: &Path,
     out: &Path,
@@ -2602,8 +2634,17 @@ fn deliver(
             Ok((record, Delivery::Renamed))
         }
         Err(error) if carries_a_mount(&error) => {
+            // The staging directory and its marker outlive the write below,
+            // because that write is the one that is not atomic and a kill
+            // inside it is the one state nothing else on disk explains. See
+            // `claim_direct`.
+            if let Err(why) = claim_direct(&staging, out) {
+                let _ = clear_staging(&staging);
+                return Err(refusal(&display(root, &staging), &why));
+            }
+            let written = write_artifact(&named, out, staged, manifest);
             let _ = clear_staging(&staging);
-            let record = write_artifact(&named, out, staged, manifest)?;
+            let record = written?;
             Ok((
                 record,
                 Delivery::Direct(Direct::Mount {
@@ -2653,8 +2694,10 @@ pub enum Delivery {
     /// or complete.
     Renamed,
     /// The artifact was written file by file straight into `--out`. A run killed
-    /// during the write leaves files there with no release record, which is the
-    /// state [`found::held`] reports to the next run.
+    /// during the write leaves files there with no release record, and leaves
+    /// [`MARKER`] and [`DIRECT`] together beside them, which is what lets
+    /// [`found::held`] tell the next run that those files are a killed
+    /// publish's rather than that it cannot tell.
     Direct(Direct),
 }
 
@@ -2759,6 +2802,59 @@ fn claim_staging(staging: &Path) -> Result<(), String> {
         .map_err(|error| format!("a publish cannot claim its staging directory: {error}"))
 }
 
+/// The file a publish writes beside [`MARKER`] when it gives up on the rename
+/// and writes the artifact straight into `--out`.
+///
+/// [`MARKER`] alone cannot say this. A staging directory carrying only the
+/// marker is what **every** killed publish leaves, including one killed on the
+/// rename path, where `--out` was never touched — and a person who then fills
+/// `--out` themselves produces *files at `--out`, no record, marker beside it*,
+/// which is byte-for-byte the state a killed direct write leaves. Keeping the
+/// marker alive across the direct write is therefore necessary and not
+/// sufficient, and this file is the rest.
+const DIRECT: &str = ".headwater-publish-direct";
+
+const DIRECT_TEXT: &str = "\
+A publish could not move the artifact it assembled here onto the output path,
+because that path is a mount point or is on another filesystem. It is writing
+the artifact into the output path one file at a time instead, and that write
+cannot be undone by one step. While this file is here, the files at the output
+path are that publish's and nothing else's.
+A publish removes this whole directory when the write returns, whether the write
+worked or not, so this file outliving the run means the run was killed.
+";
+
+/// Say, in the staging directory, that the direct write into `out` has started.
+///
+/// # Why the note is written rather than the marker being enough
+///
+/// See [`DIRECT`]. What this buys is that the pair *marker plus note* is
+/// produced by exactly one history: a run that reached the mount branch of
+/// [`deliver`] and never left it. Every other way out of that branch removes
+/// the directory — the success path and the failure path both call
+/// [`clear_staging`] before they return — and every earlier staging directory
+/// was swept by the [`clear_staging`] at the top of [`deliver`] before this one
+/// was claimed. So [`found::held`] can name the residue at `--out` as this
+/// tool's rather than reporting that it cannot tell.
+fn claim_direct(staging: &Path, out: &Path) -> Result<(), String> {
+    let text = format!("{DIRECT_TEXT}\nThe output path is: {}\n", out.display());
+    std::fs::write(staging.join(DIRECT), text).map_err(|error| {
+        format!("a publish cannot say that it is writing straight into the output path: {error}")
+    })
+}
+
+/// Whether the staging directory beside `out` says a publish was killed while
+/// it was writing straight into `out`.
+///
+/// Both files are asked for. See [`DIRECT`] for why the marker on its own
+/// answers a different question.
+fn killed_direct_write(out: &Path) -> bool {
+    let Some(staging) = out_staging(out) else {
+        return false;
+    };
+    staging.join(MARKER).is_file() && staging.join(DIRECT).is_file()
+}
+
 /// Whether a failed rename means the output path is a mount rather than a path
 /// this verb may swap.
 ///
@@ -2794,11 +2890,29 @@ fn carries_a_mount(error: &std::io::Error) -> bool {
 /// because the marker is the first thing written, so recovery after a kill is
 /// untouched.
 ///
+/// # The one directory without a marker that is still removed
+///
+/// [`claim_staging`] makes the directory and writes the marker with two
+/// syscalls, so a publish killed between them leaves an **empty** directory
+/// carrying no marker — and every later publish into the same `--out` was then
+/// refused by the arm below, permanently, over a directory this verb made
+/// itself. The kill sweep in `tests/killed_publish.rs` reproduced it on about
+/// one run in three.
+///
+/// An empty directory is therefore removed too, with `remove_dir` rather than
+/// `remove_dir_all`. That is the whole of the argument: `remove_dir` refuses a
+/// directory that holds anything, so this arm cannot destroy content whoever
+/// made the directory, and the decidable-delete rule above is about a recursive
+/// delete. What is lost where the directory was somebody's is a name beside a
+/// path they asked a publish to write, and the alternative is a `--out` that no
+/// publish can ever reach again.
+///
 /// # What each state does
 ///
-/// Nothing there is `Ok`. A directory carrying the marker is removed. A
-/// directory without it, and anything at that path that is not a directory, is
-/// refused with a message naming the path — which is also what answers a
+/// Nothing there is `Ok`. A directory carrying the marker is removed. An empty
+/// directory is removed, for the reason above. A directory holding something
+/// else, and anything at that path that is not a directory, is refused with a
+/// message naming the path — which is also what answers a
 /// **file** at `<out>~staging`, where a bare `create_dir_all` reported `cannot
 /// create it: File exists` against `--out`, a path that exists and is not the
 /// one that stopped the run.
@@ -2819,6 +2933,19 @@ fn clear_staging(staging: &Path) -> Result<(), String> {
     if held.is_dir() && staging.join(MARKER).is_file() {
         return std::fs::remove_dir_all(staging)
             .map_err(|error| format!("a publish cannot clear its own staging directory: {error}"));
+    }
+    if held.is_dir() {
+        // A publish killed between the two syscalls of `claim_staging`. See the
+        // doc comment: `remove_dir` refuses a directory holding anything, so
+        // this arm cannot destroy content, and a non-empty unmarked directory
+        // falls through to the refusal below.
+        if let Ok(mut entries) = std::fs::read_dir(staging) {
+            if entries.next().is_none() {
+                return std::fs::remove_dir(staging).map_err(|error| {
+                    format!("a publish cannot clear an empty staging directory: {error}")
+                });
+            }
+        }
     }
     Err(format!(
         "a publish assembles the artifact here before it moves it into place, and something is \
