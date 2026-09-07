@@ -43,6 +43,10 @@ findings before
   check/spec/15-unusable-entries.md relation.declaration.unusable an entry of `assesses` declares no `to`, so it names no target
   check/spec/16-no-identifier.md identifier.unusable a typed `design_spec` that declares no identifier, so no edge can name it, and every entry of its `relations:` block is lost with it, because an edge is identified by its source
   check/spec/17-identifier-not-a-word.md identifier.unusable the identifier is not a scalar, and an identifier is a word
+  check/spec/18-blank-facets.md facet.value.blank `summary` is declared with no value
+  check/spec/18-blank-facets.md facet.value.blank `title` is declared as empty text
+  check/spec/18-blank-facets.md facet.value.blank `oracle` is declared as a sequence, and its declaration says `string`
+  check/spec/18-blank-facets.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 32
   engine/crates/check/fixtures/check.taxonomy.yml control.mechanism.unimplemented control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18
   engine/crates/check/fixtures/check.taxonomy.yml control.mechanism.unimplemented control CT-FIX-17 names the mechanism phase:no.such.phase, which this engine does not implement, so nothing discharges OB-FIX-20
   engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance
@@ -81,6 +85,10 @@ findings after
   check/spec/15-unusable-entries.md relation.declaration.unusable an entry of `assesses` declares no `to`, so it names no target
   check/spec/16-no-identifier.md identifier.unusable a typed `design_spec` that declares no identifier, so no edge can name it, and every entry of its `relations:` block is lost with it, because an edge is identified by its source
   check/spec/17-identifier-not-a-word.md identifier.unusable the identifier is not a scalar, and an identifier is a word
+  check/spec/18-blank-facets.md facet.value.blank `summary` is declared with no value
+  check/spec/18-blank-facets.md facet.value.blank `title` is declared as empty text
+  check/spec/18-blank-facets.md facet.value.blank `oracle` is declared as a sequence, and its declaration says `string`
+  check/spec/18-blank-facets.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 32
   engine/crates/check/fixtures/check.taxonomy.yml control.mechanism.unimplemented control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18
   engine/crates/check/fixtures/check.taxonomy.yml control.mechanism.unimplemented control CT-FIX-17 names the mechanism phase:no.such.phase, which this engine does not implement, so nothing discharges OB-FIX-20
   engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance

@@ -683,6 +683,103 @@ pub struct Report {
     /// neither fact decides a dimension. See the module comment.
     pub base: Base,
     pub measured: Measured,
+    /// The sources the lock records whose bytes on disk no longer hash to what
+    /// it recorded, as [`headwater_lock::Lock::moved`] names them.
+    ///
+    /// The previous side of every dimension is read out of the lock and never
+    /// out of these files, so this decides nothing and is never a refusal. It
+    /// is here because a reader who is told what the previous side was is owed
+    /// where it came from. See [`Caveat::SourcesMoved`].
+    pub moved_sources: Vec<String>,
+}
+
+/// Something true of this comparison that no dimension is, and that this run
+/// could not settle.
+///
+/// # A caveat and never a refusal
+///
+/// Both arms below are states a correct run reaches. The publisher shape every
+/// case of `crates/cli/tests/diff.rs` uses — edit the package source in place,
+/// publish it, diff the artifact against the lock — moves the recorded sources
+/// on every run, so refusing on [`Caveat::SourcesMoved`] would refuse the
+/// ordinary case. A check that reddens on correct input is one its first reader
+/// turns off.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Caveat {
+    /// [`Base::Same`] beside a broken `addressability`.
+    ///
+    /// The five other dimensions read the taxonomy body, and the digest of the
+    /// lock covers that body, so a base that resolved to the same text makes
+    /// them agree by construction. The founding record is the one reading of
+    /// the previous side that sits outside that digest: it is a property of
+    /// which operation created a key during the merge, and two merges can reach
+    /// identical text by different routes.
+    ///
+    /// So the pair says the previous side's `founded:` block and the previous
+    /// side's taxonomy no longer describe one resolution, or the release moved
+    /// a founding without moving a declaration. Nothing this run holds
+    /// separates them, which is why both are printed.
+    FoundingOutsideTheDigest,
+    /// The lock records source files that have since changed on disk.
+    SourcesMoved(Vec<String>),
+}
+
+impl Caveat {
+    /// The line a reader scans for, and never the name of a dimension: the
+    /// harness in `crates/cli/tests/diff.rs` selects a dimension by the prefix
+    /// of a trimmed line.
+    pub fn heading(&self) -> &'static str {
+        match self {
+            Caveat::FoundingOutsideTheDigest => {
+                "the base and the founding record disagree, and this run cannot settle it"
+            }
+            Caveat::SourcesMoved(_) => {
+                "the previous side was read from a lock whose sources have moved"
+            }
+        }
+    }
+
+    /// The body, one line per sentence a reader acts on separately.
+    pub fn lines(&self) -> Vec<String> {
+        match self {
+            Caveat::FoundingOutsideTheDigest => vec![
+                "The base resolved to the same text, byte for byte, and `addressability` still \
+                 reports a break."
+                    .to_string(),
+                "Every other dimension reads the taxonomy body, which the digest of the lock \
+                 covers, so identical text makes those five agree. The founding record is the one \
+                 reading of the previous side that the digest does not cover."
+                    .to_string(),
+                "Two things reach this state and nothing here separates them. Either the \
+                 `founded:` block of the lock no longer describes the taxonomy beside it, which \
+                 `headwater taxonomy resolve` rewrites — run it and diff again — or this release \
+                 moved which operation creates an address without moving a declaration, which is \
+                 the break the line below reports."
+                    .to_string(),
+            ],
+            Caveat::SourcesMoved(paths) => {
+                let mut lines = vec![format!(
+                    "{} source{} the lock records no longer hash to what it recorded, so the \
+                     previous side is the taxonomy the lock carries and not what these files \
+                     resolve to now.",
+                    paths.len(),
+                    match paths.len() {
+                        1 => "",
+                        _ => "s",
+                    }
+                )];
+                // `moved` and not the bare path: a source file named for a
+                // dimension would otherwise read as that dimension's line.
+                lines.extend(paths.iter().map(|path| format!("moved  {path}")));
+                lines.push(
+                    "That is the reading spec 6 asks for, because the lock is the one thing \
+                     downstream takes. It is stated here and gated on nowhere."
+                        .to_string(),
+                );
+                lines
+            }
+        }
+    }
 }
 
 impl Report {
@@ -697,6 +794,22 @@ impl Report {
             (false, true) => Bump::NoMajor,
             (false, false) => Bump::Undecided,
         }
+    }
+
+    /// Everything true of this comparison that no dimension is.
+    ///
+    /// The first arm is derived here rather than by the caller, so that no
+    /// caller can build a report that contradicts itself and stay silent about
+    /// it. It costs one comparison of two values the report already holds.
+    pub fn caveats(&self) -> Vec<Caveat> {
+        let mut out = Vec::new();
+        if self.base == Base::Same && self.measured.addressability.forces_major() {
+            out.push(Caveat::FoundingOutsideTheDigest);
+        }
+        if !self.moved_sources.is_empty() {
+            out.push(Caveat::SourcesMoved(self.moved_sources.clone()));
+        }
+        out
     }
 
     pub fn render(&self) -> String {
@@ -723,6 +836,14 @@ impl Report {
                 out.push_str(&format!("  {}\n", entry.at));
                 out.push_str(&format!("    was  {}\n", entry.was));
                 out.push_str(&format!("    now  {}\n", entry.now));
+            }
+        }
+        // Between the readings and the verdict, because a caveat is about what
+        // the verdict below rests on and a reader meets it in that order.
+        for caveat in self.caveats() {
+            out.push_str(&format!("\n{}\n", caveat.heading()));
+            for line in caveat.lines() {
+                out.push_str(&format!("  {line}\n"));
             }
         }
         out.push_str(&format!("\n{}\n", self.bump().sentence()));
@@ -902,6 +1023,7 @@ mod tests {
             from: "1.0.0".into(),
             to: "2.0.0".into(),
             base: Base::Unresolved,
+            moved_sources: Vec::new(),
             measured: Measured::against_nothing(Outcome::Preserved, "nothing resolved"),
         };
         assert!(!report.measured.complete());
@@ -909,5 +1031,144 @@ mod tests {
         assert!(report
             .render()
             .contains("decides nothing about the version"));
+        assert!(report.caveats().is_empty(), "{:?}", report.caveats());
+    }
+
+    fn measured(addressability: Outcome) -> Measured {
+        Measured {
+            classification: Outcome::Preserved,
+            instance_validity: Outcome::Preserved,
+            consequence: Outcome::Preserved,
+            projection: Outcome::Preserved,
+            identifier: Outcome::Preserved,
+            addressability,
+        }
+    }
+
+    fn reported(base: Base, addressability: Outcome, moved_sources: Vec<String>) -> Report {
+        Report {
+            package: "acme/fixture".into(),
+            from: "1.0.0".into(),
+            to: "1.0.0".into(),
+            base,
+            moved_sources,
+            measured: measured(addressability),
+        }
+    }
+
+    fn a_break() -> Outcome {
+        Outcome::over(vec![Break {
+            at: "add.kinds.zz_thing.voice".into(),
+            was: "the previous release carried no such founding".into(),
+            now: "it makes `kinds.zz_thing`".into(),
+        }])
+    }
+
+    /// The contradiction the report could not previously see.
+    ///
+    /// A base that resolved to the same text makes the five body dimensions
+    /// agree by construction, so a broken `addressability` beside it says the
+    /// founding record and the taxonomy of the previous side came from two
+    /// resolutions. The verdict below still says major, and the caveat is what
+    /// tells a reader what that verdict rests on.
+    #[test]
+    fn an_identical_base_beside_a_broken_addressability_is_reported_as_unsettled() {
+        let report = reported(Base::Same, a_break(), Vec::new());
+        assert_eq!(report.caveats(), vec![Caveat::FoundingOutsideTheDigest]);
+        let rendered = report.render();
+        assert!(rendered.contains("this run cannot settle it"), "{rendered}");
+        assert!(
+            rendered.contains("`headwater taxonomy resolve` rewrites"),
+            "{rendered}"
+        );
+        // The caveat precedes the verdict it qualifies.
+        let caveat = rendered
+            .find("cannot settle it")
+            .expect("the caveat is there");
+        let verdict = rendered
+            .find("requires a major version")
+            .expect("the verdict is there");
+        assert!(caveat < verdict, "{rendered}");
+    }
+
+    /// The three honest shapes stay quiet. A base that moved explains a
+    /// founding that moved, and a preserved `addressability` contradicts
+    /// nothing whatever the base did.
+    #[test]
+    fn a_report_that_does_not_contradict_itself_states_no_caveat() {
+        for (base, addressability) in [
+            (Base::Moved, a_break()),
+            (Base::Same, Outcome::Preserved),
+            (Base::Moved, Outcome::Preserved),
+        ] {
+            let report = reported(base, addressability, Vec::new());
+            assert!(
+                report.caveats().is_empty(),
+                "{base:?}: {:?}",
+                report.caveats()
+            );
+        }
+    }
+
+    /// An `addressability` that did not run is not a break, so it contradicts
+    /// nothing. `NotMeasured` reads as `Preserved` to a boolean and this is
+    /// what holds the two apart here.
+    #[test]
+    fn an_addressability_that_did_not_run_contradicts_nothing() {
+        let report = reported(
+            Base::Same,
+            Outcome::NotMeasured("no reading".into()),
+            Vec::new(),
+        );
+        assert!(report.caveats().is_empty(), "{:?}", report.caveats());
+    }
+
+    /// The provenance of the previous side, stated and never gated on. It is
+    /// independent of the contradiction, so a report can carry both.
+    #[test]
+    fn a_lock_whose_sources_moved_says_so_beside_any_other_caveat() {
+        let moved = vec!["packages/acme/taxonomy.yml".to_string()];
+        let report = reported(Base::Moved, Outcome::Preserved, moved.clone());
+        assert_eq!(report.caveats(), vec![Caveat::SourcesMoved(moved.clone())]);
+        let rendered = report.render();
+        assert!(rendered.contains("whose sources have moved"), "{rendered}");
+        assert!(
+            rendered.contains("packages/acme/taxonomy.yml"),
+            "{rendered}"
+        );
+        assert!(rendered.contains("1 source the lock records"), "{rendered}");
+
+        let both = reported(Base::Same, a_break(), moved.clone());
+        assert_eq!(
+            both.caveats(),
+            vec![
+                Caveat::FoundingOutsideTheDigest,
+                Caveat::SourcesMoved(moved)
+            ]
+        );
+    }
+
+    /// No caveat line begins with the name of a dimension.
+    ///
+    /// `crates/cli/tests/diff.rs` selects a dimension by the prefix of a
+    /// trimmed line and takes the first match, so a caveat line that opened
+    /// with one would answer for the summary block.
+    #[test]
+    fn no_caveat_line_reads_as_a_dimension_line() {
+        for caveat in [
+            Caveat::FoundingOutsideTheDigest,
+            Caveat::SourcesMoved(vec!["identifier.yml".into()]),
+        ] {
+            let mut lines = vec![caveat.heading().to_string()];
+            lines.extend(caveat.lines());
+            for line in lines {
+                for name in DIMENSIONS {
+                    assert!(
+                        !line.trim_start().starts_with(name),
+                        "`{line}` reads as the `{name}` line"
+                    );
+                }
+            }
+        }
     }
 }
