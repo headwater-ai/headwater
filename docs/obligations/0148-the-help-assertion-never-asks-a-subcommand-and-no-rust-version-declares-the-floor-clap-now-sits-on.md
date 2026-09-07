@@ -29,6 +29,10 @@ The second gap is closed, and the margin this document called zero was already s
 
 `[workspace.package]` in `engine/Cargo.toml` now declares `rust-version = "1.90"`, and each of the 23 crates under `engine/crates/` declares `rust-version.workspace = true`. `engine/clippy.toml` states the same number as its `msrv`. `tools/engine-readme-fixtures.sh` compares the highest `rust-version` across `cargo metadata --locked` against the image tag those two commands pin. CI runs that suite, and it needs no container and no build.
 
+The `last_verified` field of this document was not evidence about the margin the paragraph above called zero. That field moves when the register is regenerated, not when a person or a check confirms the claim. It read 2026-08-26 on the day the margin was spent, which is the same date as the commit that spent it. So this entry looked freshly verified on the day it became wrong.
+
+No check reads this document for the floor it states. `tools/engine-readme-fixtures.sh` enumerates floor statements by four shapes. It reads an image tag, a sentence that names a Rust version, an `msrv` key, and a `rust-version` key. The prose here matches none of the four, so the entry that predicted this failure sits outside that population. Widening the shapes to reach it would catch every correct historical mention of a version. That is why the population stops where it does.
+
 ## Discharge
 
 Closing the first gap means deriving the help test's cases from `headwater_verbs::VERBS`, not writing them by hand. A hand-written list beside `VERBS` is the same defect issues #257 and #309 both named. The new case must ask every verb for `--help` and `-h`, not the bare binary alone. It must assert exit 0 and empty standard error for each verb. The case should be watched failing first, so a broken per-verb help path names the verb that broke it.
