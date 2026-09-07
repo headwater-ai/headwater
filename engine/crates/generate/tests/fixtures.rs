@@ -1253,6 +1253,18 @@ fn the_schema_export_carries_constraints_and_accounts_for_every_instance() {
 /// external consumer. None exists, so five of the seven targets parse and emit
 /// nothing, and the message says which and why. An empty artifact would be a
 /// worse answer than a refusal.
+///
+/// The first two assertions below are substrings, so they hold that the refusal
+/// happens and names its emitter, and hold nothing about the wording.
+/// `docs/spec/02-taxonomy-model.md` quotes that wording verbatim, and
+/// `tests/spec_two_emitters.rs` is what compares the two byte for byte. Reword
+/// the message and this case stays green; that one reddens.
+///
+/// The third assertion is the one that fires on a change to this engine rather
+/// than to the document. The refusal names the emitters that ship, and a third
+/// emitter marked built and left out of that sentence makes the sentence false
+/// in the engine and in spec 2 at once — which is the state a comparison
+/// between the two cannot see, because both sides are wrong in the same words.
 #[test]
 fn an_unbuilt_emitter_refuses_and_says_what_it_waits_on() {
     let (built, root) = fixture_tree();
@@ -1274,6 +1286,17 @@ fn an_unbuilt_emitter_refuses_and_says_what_it_waits_on() {
                     "{} refused without naming what it waits on",
                     emitter.name()
                 );
+                for shipped in Emitter::ALL.into_iter().filter(|one| one.is_built()) {
+                    assert!(
+                        reason.contains(&format!("`{}`", shipped.name())),
+                        "the refusal for {} says which emitters ship and does not name {}, which \
+                         this engine builds. The sentence is quoted in \
+                         docs/spec/02-taxonomy-model.md, so a list that goes stale takes that \
+                         document with it:\n{reason}",
+                        emitter.name(),
+                        shipped.name()
+                    );
+                }
             }
         }
     }
