@@ -4631,3 +4631,44 @@ fn contents_doctrine_may_not_name_a_path_outside_the_package() {
         "the publish that was refused wrote an artifact anyway"
     );
 }
+
+/// The format guard on a release record is a string inequality on the raw
+/// token. It establishes what the record says, and never who wrote it or when.
+/// An earlier token reaches the same arm as a later one, and a hand edit reaches
+/// it with no engine anywhere near the file, so the message may name no party.
+/// The token that mutates here is **lower** than the one this engine writes,
+/// which is the case a message about a newer publisher gets exactly backwards.
+#[test]
+fn an_earlier_format_record_is_refused_without_naming_a_publisher() {
+    let scratch = Scratch::new("format");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    package::publish(&root, "acme/fixture", &out).expect("it publishes");
+
+    let path = out.join(release::RECORD);
+    let text = std::fs::read_to_string(&path).expect("the record is there");
+    let earlier = text.replace("format: 1", "format: 0");
+    assert_ne!(earlier, text, "the mutation substituted nothing:\n{text}");
+
+    let refused = release::read(&earlier).expect_err("format 0 is not the format this engine reads");
+    let message = refused.to_string();
+    assert!(matches!(refused, ReleaseError::Format { .. }), "{message}");
+
+    let lowered = message.to_lowercase();
+    assert!(
+        !lowered.contains("newer") && !lowered.contains("older"),
+        "the message names a direction the guard never compared: {message}"
+    );
+    assert!(
+        !lowered.contains("published it") && !lowered.contains("wrote it"),
+        "the message names a writer the guard never read: {message}"
+    );
+    assert!(
+        message.contains("`0`"),
+        "the message drops the token it found: {message}"
+    );
+    assert!(
+        message.contains("headwater taxonomy publish"),
+        "the message names no remedy: {message}"
+    );
+}
