@@ -1951,6 +1951,39 @@ fn the_members_a_carrier_names_are_the_members_the_artifact_writes() {
 /// in the text report.
 const READ_SET: &str = "read set";
 
+/// One line with its escape sequences removed.
+fn uncolored(line: &str) -> String {
+    let mut out = String::new();
+    let mut rest = line;
+    while let Some(at) = rest.find('\u{1b}') {
+        out.push_str(&rest[..at]);
+        rest = match rest[at..].find('m') {
+            Some(end) => &rest[at + end + 1..],
+            None => "",
+        };
+    }
+    out.push_str(rest);
+    out
+}
+
+/// The text report as a person at a terminal reads it: colored.
+///
+/// `headwater check` picks `Ansi` for that format on a terminal and hands those
+/// bytes to the census, so this is the rendering the audit meets on a real
+/// desk. No other caller of this suite renders it.
+fn painted(ran: &Ran, width: usize) -> String {
+    let lock = lock_digest();
+    headwater_adapter::render_at(
+        &ran.run,
+        &ran.census,
+        &ran.graph,
+        &subject(&lock),
+        Format::Text,
+        width,
+        headwater_check::paint::ColorMode::Ansi,
+    )
+}
+
 /// Every span of an artifact that carries one finding, as a half-open range of
 /// line numbers.
 ///
@@ -1999,13 +2032,17 @@ fn spans(format: Format, lines: &[&str]) -> Vec<(usize, usize)> {
         // Every block of the region between the tally and the read set, each one
         // opening on a line indented exactly two.
         Format::Text => {
-            let tally = lines
+            // Uncolored copies, because the two headings this cut is bounded by
+            // are painted under `Ansi` and the cut has to land in the same place
+            // under both renderings.
+            let bare: Vec<String> = lines.iter().map(|line| uncolored(line)).collect();
+            let tally = bare
                 .iter()
                 .position(|line| line.trim_end().ends_with(" findings"))
                 .expect("the findings tally");
-            let end = lines
+            let end = bare
                 .iter()
-                .position(|line| *line == READ_SET)
+                .position(|line| line.trim() == READ_SET)
                 .expect("the read-set heading");
             let opens: Vec<usize> = (tally + 1..end)
                 .filter(|line| lines[*line].starts_with("  ") && !lines[*line].starts_with("   "))
@@ -2112,6 +2149,57 @@ fn an_artifact_emptied_of_its_records_carries_no_finding() {
             assert_eq!(after.carried, 0, "{}: {:?}", format.name(), after.carried);
             assert_eq!(after.unaccounted.len(), after.findings, "{}", format.name());
             assert!(after.is_defective(), "{}", format.name());
+        }
+    }
+}
+
+/// **The colored report is read the way the piped one is.**
+///
+/// The case that was missing, and the reason a regression reached a reviewer.
+/// `headwater check` renders `Ansi` for the text report when stdout is a
+/// terminal and censuses those bytes, and every automated eye on this
+/// repository — CI, `cargo test`, the commit gate and the `Stop` hook — captures
+/// stdout and therefore gets `Plain`. So a reader keyed on anything color
+/// removes is green everywhere a machine looks and red everywhere a person
+/// does. `paint::severity_word` writes a glyph under `Plain` and none under
+/// `Ansi`, and keying the block cut on that glyph exited 1 on a real terminal
+/// with all 68 findings of this repository reported as dropped.
+///
+/// Both renderings of one run, at three widths, because a fold moves the
+/// severity word off the line the location opens.
+#[test]
+fn the_colored_report_is_read_the_way_the_piped_one_is() {
+    for ran in [fixture_run(), scoped_run()] {
+        let (rule, path) = a_repeated_pair(&ran);
+        for width in [80, 100, 120] {
+            let artifact = painted(&ran, width);
+            assert!(artifact.contains('\u{1b}'), "the report is colored");
+            let full = headwater_adapter::census(&ran.run, Format::Text, &artifact);
+            assert!(
+                !full.is_defective(),
+                "the colored report at {width}: {:?}",
+                full.unaccounted
+            );
+            assert_eq!((full.carried, full.findings), (full.findings, full.carried));
+            assert!(full.findings > 0);
+
+            // And it still fails for the right reason, so this is not a case
+            // that passes by reading nothing.
+            let lines: Vec<&str> = artifact.lines().collect();
+            let cut = spans(Format::Text, &lines)
+                .into_iter()
+                .find(|(from, to)| {
+                    let text = uncolored(&lines[*from..*to].join("\n"));
+                    text.contains(rule) && text.contains(path.as_str())
+                })
+                .expect("a record naming the repeated pair");
+            let after =
+                headwater_adapter::census(&ran.run, Format::Text, &without(&artifact, &[cut]));
+            assert_eq!(
+                (after.carried, after.unaccounted.len()),
+                (after.findings - 1, 1),
+                "the colored report at {width}, one record dropped"
+            );
         }
     }
 }

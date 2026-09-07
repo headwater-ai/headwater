@@ -658,12 +658,15 @@ fn scalar(value: &Spanned<Value>, path: &[&str]) -> Option<String> {
     Some(headwater_yaml::core_schema::as_str(found).to_string())
 }
 
-/// The three severity glyphs, from the one function that prints them.
+/// The three severity words, from the type that names them.
 ///
-/// Read off `headwater_check::paint` rather than written here, so a fourth
-/// severity reaches this reader with the report.
-fn glyphs() -> [&'static str; 3] {
-    [Severity::Error, Severity::Warn, Severity::Info].map(headwater_check::paint::glyph)
+/// The word and never the glyph. `headwater_check::paint::severity_word` writes
+/// a glyph beside the word under `Plain` and the colored word alone under
+/// `Ansi`, so a reader keyed on the glyph reads a piped report and refuses the
+/// one a person sees in a terminal. The word survives both, and [`plain`] is
+/// what uncovers it under the second.
+fn severity_words() -> [String; 3] {
+    [Severity::Error, Severity::Warn, Severity::Info].map(|severity| severity.to_string())
 }
 
 /// Every record one artifact writes, cut at the grain its format writes them.
@@ -737,8 +740,17 @@ fn rows(artifact: &str) -> Vec<Record> {
 /// the next, and `headwater_check::fill` never breaks inside a word, so the
 /// location arrives whole however the block was laid out.
 ///
-/// A severity glyph is what tells a finding block from the census, graph and
-/// read-set blocks, each of which opens on a path for a reason of its own.
+/// A block is a finding block when it names a severity **and** a rule of this
+/// engine. That is what tells one from the census, graph, coverage and read-set
+/// blocks, each of which opens on a path or a number for a reason of its own,
+/// and it is what keeps the `N findings` tally out of the record list.
+///
+/// Both halves survive color, which is the property this discriminator is
+/// chosen for. The glyph does not: `severity_word` writes one under `Plain` and
+/// none under `Ansi`, and `headwater check` renders `Ansi` for a person at a
+/// terminal and censuses those bytes. A rule name is written unpainted by
+/// `Finding::render` and the severity word is inside the escapes that [`plain`]
+/// removes, so this reader gives one answer for both renderings.
 fn blocks(artifact: &str) -> Vec<Record> {
     let mut found: Vec<Record> = Vec::new();
     for line in artifact.lines() {
@@ -756,7 +768,19 @@ fn blocks(artifact: &str) -> Vec<Record> {
             }
         }
     }
-    found.retain(|record| glyphs().iter().any(|glyph| record.rule.contains(glyph)));
+    let words = severity_words();
+    found.retain(|record| {
+        let named = |word: &String| {
+            record
+                .rule
+                .split(|char: char| !char.is_ascii_alphanumeric())
+                .any(|token| token == word.as_str())
+        };
+        words.iter().any(named)
+            && headwater_check::RULES
+                .iter()
+                .any(|rule| record.rule.contains(rule))
+    });
     found
 }
 
