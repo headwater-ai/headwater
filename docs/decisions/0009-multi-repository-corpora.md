@@ -53,6 +53,6 @@ Backstage is this shape in production. Its catalog re-derives entities from desc
 
 ### What this fixed for Q17
 
-The harvest ruling constrained [Q17](0017-governed-access-and-the-solution-layer.md) in three ways, and Q17 has since closed on them.
+The harvest ruling constrains [Q17](0017-governed-access-and-the-solution-layer.md) in three ways, and Q17 is closed on them.
 
 The export is the serving artifact, so a filter acts at export and never at graph build. Checks therefore stay privileged and total, which Q17 required and could not point at. The projection census is the mechanism for Q17's tombstone rule. A redaction is a loss with a reason, and the census already reports that shape. And a harvesting tier holds bytes that a publishing corpus gave it. A filter applied when the tier *reads* is a filter applied after the bytes crossed the boundary. Filtering belongs to the publishing corpus's export step. That third constraint changed Q17's answer rather than confirming it, because Q17 had placed the boundary at the tier.

@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 375,
-      "carried": 375,
+      "in the graph": 376,
+      "carried": 376,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1607,6 +1607,19 @@
             "activity": "measure+draft",
             "evidence_basis": "evidenced"
           }
+        }
+      },
+      {
+        "path": "docs/decisions/0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md",
+        "kind": "decision",
+        "id": "HW-DR-0057",
+        "facets": {
+          "id": "HW-DR-0057",
+          "status": "draft",
+          "status_since": "2026-09-07",
+          "summary": "The claim store covers an identifier where the file name does not determine it: a shelf that declares a layout, or a scheme that reconciles",
+          "last_verified": "2026-09-07",
+          "title": "A shelf layout is the second half of what the identifier claim store covers"
         }
       },
       {

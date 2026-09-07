@@ -664,7 +664,7 @@
     {
       "rule": "identifier.claim.missing",
       "scope": "corpus",
-      "version": 1,
+      "version": 2,
       "obligations": []
     },
     {

@@ -36,7 +36,7 @@ The repository was private on 2026-08-30, when this record was written. Two reco
 
 ## Consequences
 
-**The posture and date leave the escalation list.** A run that meets this question reads this record and cites it. The date is no longer a ruling that the corpus owes.
+**The posture and date leave the escalation list.** A run that meets this question reads this record and cites it. The date is not a ruling that the corpus owes.
 
 **Work that waits on an outside adopter still waits.** A readable repository is a precondition of an adopter and not an adopter. The records on the obligations shelf that wait for a corpus somebody else keeps are unmoved by this record.
 

@@ -358,6 +358,14 @@ fn render_plan(plan: &Plan) -> String {
         )),
         None => out.push_str("no identifier\n"),
     }
+    // What the identifier claim store is owed, which is a member of the plan
+    // rather than a reading a caller makes. It is printed for every case so
+    // that a change to `headwater_check::claim::takes_a_claim` moves a recorded
+    // transcript rather than passing silently.
+    out.push_str(&match headwater_scaffold::claim::claimed(plan) {
+        Some(claim) => format!("claim {claim}\n"),
+        None => "no claim\n".to_string(),
+    });
     for field in &plan.fields {
         let origin = match field.origin.is_scaffolded() {
             true => "scaffolded",

@@ -42,6 +42,18 @@ pub struct Shelf {
     /// a declared display name from a key that happens to read well.
     pub title: Option<String>,
     pub pattern: Pattern,
+    /// `layout`, the template a file name on this shelf is written from, where
+    /// the shelf declares one. `None` is the shelf that declares none, and it
+    /// names each file from the slug alone.
+    ///
+    /// It arrives here because a check reads it:
+    /// [`headwater_check::claim::takes_a_claim`] decides which identifiers the
+    /// claim store covers from this member, and `headwater_scaffold` reads the
+    /// same member to write a file name. Two readings of one declaration would
+    /// be the drift
+    /// [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+    /// rules against, so this is the reader and there is no other.
+    pub layout: Option<String>,
     pub body: ShelfBody,
     /// The span of the shelf's name, which is what a finding about the
     /// *declaration* points at.
@@ -144,6 +156,19 @@ impl Taxonomy {
     }
 }
 
+impl Shelf {
+    /// Whether this shelf carries documents of a kind.
+    ///
+    /// A homogeneous shelf names one kind and a heterogeneous shelf names
+    /// several, and every caller that asks the question wants both answers.
+    pub fn carries(&self, kind: &str) -> bool {
+        match &self.body {
+            ShelfBody::Homogeneous { kind: named } => named == kind,
+            ShelfBody::Heterogeneous { kinds, .. } => kinds.iter().any(|named| named == kind),
+        }
+    }
+}
+
 fn is_abstract(value: &Value) -> bool {
     value
         .as_map()
@@ -202,6 +227,7 @@ fn read_shelf(name: &str, value: &Value, span: Span) -> Result<Shelf, Declaratio
         name: name.to_string(),
         title: scalar(map, "title"),
         pattern: Pattern::new(&path),
+        layout: scalar(map, "layout"),
         body,
         span,
     })

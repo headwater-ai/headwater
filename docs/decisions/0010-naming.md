@@ -22,7 +22,7 @@ The name was a working name through the design phase, and the namespace that eve
 
 ## Decision
 
-The name is **Headwater**. It is no longer a working name, and the design phase does not reopen it.
+The name is **Headwater**. It is the settled name of the system rather than a working name, and the design phase does not reopen it.
 
 The casing has two forms, and they do not mix. In prose, the name of the system is *Headwater*, capitalized. As an identifier, it is `headwater` in lower case. It names the CLI verb that people type dozens of times a day, and the package name. It also names the `.headwater/` directory, the `headwater:` annotation prefix, and the `https://w3id.org/headwater/` namespace.
 
