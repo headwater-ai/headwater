@@ -312,18 +312,27 @@ fi
 
 # Every relative link on the page resolves to a file that exists. Read per
 # occurrence and not per line: this repository forbids hard-wrapped Markdown,
-# so a paragraph is one long line carrying several links.
-dead=""
-seen=0
-for target in $(grep -o ']([^)]*)' "$page" | sed 's/^](//; s/)$//'); do
-    case "$target" in
-        http://* | https://* | mailto:* | '#'*) continue ;;
-    esac
-    seen=$((seen + 1))
-    file=${target%%#*}
-    [ -n "$file" ] || continue
-    [ -e "$root/$file" ] || dead="$dead $target"
-done
+# so a paragraph is one long line carrying several links. Inline code spans
+# are stripped first, because a link printed as an example inside one — the
+# page names `[a](p "t")` as a shape the README suite once misread — is not a
+# link, and reading it as one reddens a required step on correct Markdown.
+# `dead_links` sets `dead` to the dead targets and `seen` to the count it
+# read. It sets them rather than printing, because a command substitution
+# runs in a subshell and a count set there never reaches the caller.
+dead_links() {
+    dead=""
+    seen=0
+    for target in $(sed 's/`[^`]*`//g' "$1" | grep -o ']([^)]*)' | sed 's/^](//; s/)$//'); do
+        case "$target" in
+            http://* | https://* | mailto:* | '#'*) continue ;;
+        esac
+        seen=$((seen + 1))
+        file=${target%%#*}
+        [ -n "$file" ] || continue
+        [ -e "$root/$file" ] || dead="$dead $target"
+    done
+}
+dead_links "$page"
 same "every relative link on the page resolves to a file that exists" "" "$dead"
 if [ "$seen" -ge 4 ]; then
     pass "  over every relative link on the page ($seen read)"
@@ -331,6 +340,17 @@ else
     fail "  over every relative link on the page" \
         "$seen links read — too few to have parsed the page"
 fi
+
+# The two refusal arms of the link case. A bare dead link is reported, so the
+# judge can say no; the same link inside a code span is not, so it does not say
+# no to an example. Removing the code-span strip above turns the second red.
+link_page="$scratch/links.md"
+printf 'See [x](nope-%s.md) here.\n' "$$" > "$link_page"
+dead_links "$link_page"
+same "  a bare dead link is reported" " nope-$$.md" "$dead"
+printf 'The shape `[x](nope-%s.md)` is an example.\n' "$$" > "$link_page"
+dead_links "$link_page"
+same "  a dead link inside a code span is not" "" "$dead"
 
 # ---------------------------------------------------------------------------
 # The refusal arms. Every case above is a comparison that passes on a green
