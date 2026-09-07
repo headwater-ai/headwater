@@ -290,6 +290,64 @@ fn a_published_package_carries_its_bundles_and_no_path_that_leaves_it() {
     assert_eq!(sources.len(), 2, "the taxonomy and the bundle it selects");
 }
 
+/// #518: the exception is a directory, and a *file* named `fixtures` at a
+/// bundle root is carried.
+///
+/// This is the boundary a compiling regression breaks in silence. The matcher
+/// asks for a segment after `fixtures`, and widening it to accept none —
+/// `(Some(FIXTURES), Some(_))` written as `(Some(FIXTURES), _)` — compiles,
+/// passes every other case in this workspace, and drops a member. A publisher
+/// who writes a file rather than a directory has written no reference corpus,
+/// and a publish that eats it loses a file the manifest may name.
+///
+/// The bundle is named `fixtures` as well, because the exception is read one
+/// segment under the bundles directory and a bundle root that carries the name
+/// is where an off-by-one lands.
+#[test]
+fn a_file_named_fixtures_at_a_bundle_root_is_carried() {
+    let scratch = Scratch::new("fixtures-file");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+
+    scratch.write(
+        "publisher/library/fixtures/bundle.yml",
+        &BUNDLE
+            .replace("bundle: extra", "bundle: fixtures")
+            .replace("purposes.procedure", "purposes.narrative"),
+    );
+    scratch.write(
+        "publisher/library/fixtures/fixtures",
+        "a file, and so not a reference corpus\n",
+    );
+    scratch.write(
+        "publisher/library/fixtures/fixtures.md",
+        "# a name the directory is a prefix of\n",
+    );
+    // The bundle whose own root carries the name still loses its corpus, and
+    // that corpus is planted in the other bundle of this tree because a file
+    // and a directory cannot share one path.
+    scratch.write(
+        "publisher/library/extra/fixtures/README.md",
+        "# left behind\n",
+    );
+
+    let record = package::publish(&root, "acme/fixture", &out).expect("it publishes");
+    let paths: Vec<&str> = record.members.iter().map(|m| m.path.as_str()).collect();
+
+    assert!(
+        out.join("bundles/fixtures/fixtures").is_file(),
+        "a file named `fixtures` at a bundle root was dropped as though it were the directory"
+    );
+    assert!(paths.contains(&"bundles/fixtures/fixtures"));
+    assert!(out.join("bundles/fixtures/fixtures.md").is_file());
+    assert!(paths.contains(&"bundles/fixtures/fixtures.md"));
+    assert!(paths.contains(&"bundles/fixtures/bundle.yml"));
+    assert!(
+        !out.join("bundles/extra/fixtures").exists(),
+        "a bundle root named `fixtures` moved where the exception is read"
+    );
+}
+
 /// One byte changed in one file is refused, and the message names the file.
 #[test]
 fn a_changed_byte_is_refused_and_the_file_is_named() {
