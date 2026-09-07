@@ -1387,8 +1387,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 26);
-    assert_eq!(run.coverage.classified(), 24);
+    assert_eq!(run.coverage.seen(), 27);
+    assert_eq!(run.coverage.classified(), 25);
 
     // A file this engine wrote is the third state, and it is accounted for
     // without being judged. `check/spec/12-generated.md` sits on a heterogeneous
@@ -1493,7 +1493,7 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // root, so nothing smaller than the corpus holds either question.
             Grain::Corpus,
             Grain::Corpus,
-            // The six Document-origin rules, which read the body rather than
+            // The five Document-origin rules, which read the body rather than
             // the front matter. The grain is the same and the view is not:
             // each one declares `NEEDS_BODY`.
             Grain::Document,
@@ -1501,13 +1501,15 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Document,
             Grain::Document,
             Grain::Document,
-            Grain::Document,
-            // The path half of the link question, and the one Document-origin
-            // neighbour whose grain is not the document. A fragment into the
-            // document that wrote it is decided by that document's own bytes.
-            // Whether a file stands at the path a link names is decided by the
-            // corpus, so the citing document is the wrong unit and the wrong
-            // cache key.
+            // The two halves of the link question, and both are the corpus. A
+            // fragment names a heading of the document it points at, which is
+            // another document as often as it is the citing one, and whether a
+            // file stands at the path a link names is decided by the corpus
+            // too. Either verdict rests on bytes the citing document does not
+            // hold, so the citing document is the wrong unit and the wrong
+            // cache key. `fragment` was document grained for two editions and
+            // read only the near half; this is the widening that moved it.
+            Grain::Corpus,
             Grain::Corpus,
             // The two rules that declare the prior version. Both are document
             // grained like every rule above them, and what separates them is
@@ -1540,6 +1542,10 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .filter(|served| served.scope.needs_body())
         .map(|served| served.rule)
         .collect();
+    // `fragment::RULE` was the sixth of these until its third edition. It reads
+    // the bodies of every document of the corpus now rather than one, and a
+    // corpus-scoped view takes them through `NEEDS_ANCHORS` instead, so it is
+    // absent here by construction and not by omission.
     assert_eq!(
         bodies,
         [
@@ -1548,7 +1554,6 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             retired::RULE,
             source_form::RULE,
             sections::RULE,
-            fragment::RULE
         ]
     );
 
@@ -1716,7 +1721,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
         &mut Cache::disabled(),
     );
 
-    assert_eq!(declared.len(), 24, "one instance per typed document");
+    assert_eq!(declared.len(), 25, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()

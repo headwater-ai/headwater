@@ -6,12 +6,12 @@ clock
   2026-08-12
 
 census
-  26 files under the corpus root
-       24 typed
+  27 files under the corpus root
+       25 typed
         1 generated
         1 untyped
         2 typed decision_record
-       14 typed design_spec
+       15 typed design_spec
         7 typed evaluation
         1 typed note
 
@@ -22,7 +22,7 @@ census
       than this census
 
 graph
-  22 nodes, 10 declared edge halves
+  23 nodes, 10 declared edge halves
         8 to a document
         2 unbound
   4 prose links that did not resolve
@@ -66,19 +66,18 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  26 seen, 24 classified, 23 checked, 306 check instances
+  27 seen, 25 classified, 24 checked, 295 check instances
         1 generated, held to regeneration by `headwater generate --check`
         1 skipped: no `id` facet, which is the key this engine reads an
           identifier from and which no declaration states
         1 skipped: the `id` facet is a sequence, and an identifier is a word
-       17 skipped: the shelf is heterogeneous, so the discriminator is the gap
+       18 skipped: the shelf is heterogeneous, so the discriminator is the gap
          metadata fills, and kind resolution already read it
         2 skipped: `guarded` forbids hedging, and this engine has no pattern set
           for it
         2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this
           engine has no rules for it
-       22 skipped: this document writes no fragment into itself
-       25 skipped: change-scoped-only: the prior version is available only in
+       26 skipped: change-scoped-only: the prior version is available only in
          change-scoped evaluation, and this run carries no change
         1 skipped: the document at the target end, `FIX-REG-open-questions`,
           declares no value for the state facet, so there is no state to read
@@ -89,31 +88,31 @@ checks
     1 pairs open, 0 closed, holding 1 finding, in 1 task
     AD-1 1 open, 0 closed, holding 1 finding, owner the fixture tree, until
       2027-01-01
-      one pair, so that a run carries a migration-pending finding26 documents in
-        the read set, and 5 barriers that no gate carries across a merge
-       23 instances of facet.required.missing
-       23 instances of facet.value.not_permitted
-       23 instances of facet.value.blank
-       23 instances of identifier.pattern.not_met
-       24 instances of shelf.placement_is_primary
+      one pair, so that a run carries a migration-pending finding27 documents in
+        the read set, and 6 barriers that no gate carries across a merge
+       24 instances of facet.required.missing
+       24 instances of facet.value.not_permitted
+       24 instances of facet.value.blank
+       24 instances of identifier.pattern.not_met
+       25 instances of shelf.placement_is_primary
        10 instances of relation.target.unresolved
         4 instances of relation.reciprocity.missing
         7 instances of relation.endpoint.not_permitted
         1 instances of lifecycle.dependency.on_terminal
         7 instances of relation.participation.overdue
-       23 instances of relation.declaration.unusable
-       23 instances of identifier.unusable
+       24 instances of relation.declaration.unusable
+       24 instances of identifier.unusable
         1 instances of identifier.claimed_twice
         1 instances of identifier.claim.missing
         1 instances of identifier.claim.stale
-       16 instances of voice.forbidden_construction
-       16 instances of language.controlled.not_met
-       14 instances of language.retired_term.used
-       14 instances of language.source_form.not_met
+       17 instances of voice.forbidden_construction
+       17 instances of language.controlled.not_met
+       15 instances of language.retired_term.used
+       15 instances of language.source_form.not_met
         2 instances of section.required.missing
-       24 instances of link.fragment.unresolved
+        1 instances of link.fragment.unresolved
         1 instances of link.path.unresolved
-       24 instances of warrant.promoted
+       25 instances of warrant.promoted
         1 instances of lifecycle.deletion.not_permitted
   suppressions
     2 findings hidden by 2 directives
@@ -177,7 +176,7 @@ checks
     section.required.missing
       document scope, one document, its front matter and its body
     link.fragment.unresolved
-      document scope, one document, its front matter and its body
+      corpus scope, every row of the census, and it is a barrier
     link.path.unresolved
       corpus scope, every row of the census, and it is a barrier
     warrant.promoted
@@ -285,7 +284,7 @@ checks
       a sentence, and this one has 34
     fix: split the sentence, or move a clause into its own sentence
   check/spec/03-no-instance.md ▲ warn
-    coverage.document_unchecked: this document is classified and all 3 of its
+    coverage.document_unchecked: this document is classified and all 2 of its
       check instances were skipped
     fix: check that the shelf pattern claims the right files, and that the kind
       declares something a check reads
@@ -539,6 +538,7 @@ read set
   barrier identifier.claimed_twice
   barrier identifier.claim.missing
   barrier identifier.claim.stale
+  barrier link.fragment.unresolved
   barrier link.path.unresolved
   barrier lifecycle.deletion.not_permitted
   windowed relation.participation.overdue
@@ -563,7 +563,7 @@ read set
   version language.retired_term.used 1
   version language.source_form.not_met 1
   version section.required.missing 1
-  version link.fragment.unresolved 2
+  version link.fragment.unresolved 3
   version link.path.unresolved 1
   version warrant.promoted 1
   version lifecycle.transition.not_permitted 2
@@ -581,7 +581,7 @@ read set
   input check/evaluations/eta.md sha256:d1882e10c05b15d1c6aafcc982b2ecbf429ec169a0fcd7ad11f79dbf5b20228a
   input check/evaluations/gamma.md sha256:bb74fe7df19ea383b01be2f8686fb87dbea18757b4134e601e3e718aeee9e09b
   input check/evaluations/zeta.md sha256:78ec68e48f9e8e1f8826c1280bdb523820556b14e2ac375f21cf8c1915240964
-  input check/spec/00-both-halves.md sha256:7ea2f93bc1792e592627bdadd1119ced5473369cf2287a81da0650bcf1537370
+  input check/spec/00-both-halves.md sha256:cb031d365aac5c22f6ea1f23faf48da297c1d6eaab7b9dad2e552ae36c28e62d
   input check/spec/01-one-half.md sha256:20a913097b2d04bc39e5ff8271b47a21dfaa135f78b5fdda234e38c3a30c7017
   input check/spec/02-cited-only.md sha256:9f4f5fff759b2f04d2956dabbb3cdc0e86bdc8f306159a58ad4f7f80cbad9c82
   input check/spec/03-no-instance.md sha256:bb254e9a27d62cf8ff126895c545a797d9eeadee7e756bd34a7536ce21cba7ad
@@ -599,3 +599,4 @@ read set
   input check/spec/16-no-identifier.md sha256:2f42a485abe65d5e2c22de86c8bfecb7bbfc1e06e64ef2f6c64c914fc7792b85
   input check/spec/17-identifier-not-a-word.md sha256:9d82bc120f67b7b5a999433bbae8502e18587777cf94bcc8254491ebe9c73981
   input check/spec/18-blank-facets.md sha256:ab8d0eb139f3733cde3ca712a0f637ff8fe82f70fc93a55f87b27273fad00d57
+  input check/spec/20-fragment-target.md sha256:fb666df2800fa7bc1213d78c4e42a46448d98cdc8b40043495c1b4cc706cc9a5

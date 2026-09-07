@@ -1,30 +1,53 @@
 // SPDX-License-Identifier: Apache-2.0
-//! A Document-origin check: a fragment this document writes into itself.
+//! A check at corpus grain: a prose link's fragment names a heading of the
+//! document it points at, whether that is the citing document or another one.
 //!
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
 //! lists prose-link resolution among the Document-origin examples, and
-//! [`headwater_graph::links`] left this half deliberately undone: "whether
+//! [`headwater_graph::links`] left the far half deliberately undone: "whether
 //! `#q4--relation-storage` names a heading of the target is a Document check
 //! ... a graph build that started checking headings would be the check layer
 //! with no scope declaration."
 //!
-//! # One half of that sentence is reachable at this grain, and one is not
+//! # Both halves are here now, and neither of them is a Document check
 //!
-//! A fragment with no path names a heading of **this** document, and this
-//! document is what a `Document` scope carries. So that half is here, whole.
+//! A fragment with no path names a heading of the document that wrote it, and
+//! that half did sit at `Document` grain for two editions.
 //!
-//! A fragment on a path names a heading of **another** document, and no scope
-//! this engine has carries one. `Document` carries one document. `Edge` carries
-//! a relation instance, and a prose link is not a relation
-//! ([Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage)).
-//! `Neighbourhood` carries the documents one *relation* away, and it carries
-//! their identity rather than their body. The grain that would reach it is one
-//! document and the documents its prose links reach, and inventing a fifth
-//! grain is not this issue's work.
+//! A fragment on a path names a heading of **another** document, and no
+//! document-grained view carries one.
+//! [HW-OBL-0077](../../../../docs/obligations/0077-a-fragment-on-a-path-needs-a-grain-that-no-scope-supplies.md)
+//! recorded that gap, and it read as a missing fifth grain. It is not. Handing
+//! a document-scoped rule the target documents as a declared input is unsound
+//! for a reason the code states rather than argues: `Instance::paths()` is the
+//! read set, and [`crate::coverage`] routes an instance to every path in
+//! `paths()`. They are one list by construction. So every target document the
+//! read set must name — and soundness demands it, or a renamed heading in the
+//! target leaves a cached pass standing — is thereby counted as *checked by
+//! this rule*, which is the miscount [`crate::coverage`] exists to name.
 //!
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md) carries
-//! the rest, with the number: 1519 links of this corpus carry a fragment on a
-//! path, against 277 that carry one alone.
+//! `Corpus` is the grain, and [`crate::link_path`] already argues it word for
+//! word for the same reference class: the defect is a relation between two
+//! files, a rename touches no byte of the citing document, so a
+//! document-scoped key would not move and a cached pass would outlive the
+//! rename that made it false. One instance, whose findings each name the
+//! citing document and the line the author wrote.
+//!
+//! # What this widening costs [`crate::coverage`], measured on this corpus
+//!
+//! A corpus-scoped instance routes to no document, so the 312 document-routed
+//! instances this rule made become one. A classified document whose only
+//! routed check was this one would become a `coverage.document_unchecked`
+//! finding. That cannot happen here: `facet.required.missing` reports one
+//! instance against every classified document and skips none of them, so every
+//! classified document is already routed by an evaluated document-scoped rule
+//! that is not this one.
+//!
+//! **That is a fact about this corpus and not a property of the engine.** A
+//! thin shelf in an adopting corpus, whose kind requires no facet, could lose
+//! its only routed check to this move.
+//! [HW-OBL-0071](../../../../docs/obligations/0071-a-corpus-scoped-check-makes-the-coverage-rule-unreachable.md)
+//! is the record of that shape, and this change makes it one instance larger.
 //!
 //! # Why the anchors are computed rather than read
 //!
@@ -35,21 +58,48 @@
 //! and it is stated in one function so that an adopter reading a wrong verdict
 //! finds one place to look.
 //!
-//! # Every instance says what it read
+//! # The one instance says what it read
 //!
-//! A document that writes no fragment into itself **skips with that reason**
-//! rather than passing. A pass would count the document as checked by a rule
-//! that had nothing to check, and `coverage.document_unchecked` would then be
-//! unable to fire anywhere: this rule generates over every kind, so a vacuous
-//! pass here would route every classified document to a check before anything
-//! was read.
+//! A run whose scope admitted no links, and a run that reached no document
+//! body, each **skip with that reason** rather than passing. A pass would
+//! report a corpus this rule never read as clean, which is
+//! [`crate::link_path`]'s `NO_LINKS` and [`crate::duplicate`]'s `NO_REPORT` at
+//! the same grain.
+//!
+//! The population itself is stated by the graph report, which counts the
+//! fragment-bearing links by arm beside the bindings it already prints. It is
+//! there rather than here because a passing outcome carries no sentence, and a
+//! reader who wants to know how much of the corpus this rule reads should not
+//! have to break it to find out.
+//!
+//! # What is not this rule
+//!
+//! `Binding::Missing` and `Binding::Unnormalizable` are a path that resolved to
+//! nothing, and they belong to [`crate::link_path`]. `Binding::Repository` and
+//! `Binding::External` name a body this engine never read, so this rule has
+//! nothing to compare a fragment against and says nothing.
+//!
+//! `Binding::Corpus` on a file the census walked but parsed no document out of
+//! — an untyped or an excluded file — is the one case inside this rule's
+//! bindings that it passes over. No anchor list exists for such a path, so a
+//! finding there would be a guess. See [`Anchors::of`].
 
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
-use crate::scope::{DocumentCheck, DocumentView};
+use crate::scope::{CorpusCheck, CorpusView};
+use headwater_graph::links::{Binding, Link};
 use std::collections::{HashMap, HashSet};
 
 pub const RULE: &str = "link.fragment.unresolved";
+
+/// A run whose scope did not admit the links has nothing to read, and it says
+/// so rather than passing. [`crate::link_path::NO_LINKS`] verbatim, at the same
+/// grain and for the same reason.
+const NO_LINKS: &str = "the view carries no bound prose links for this corpus";
+
+/// A run that reached no document body cannot derive an anchor, so it has no
+/// second half to compare a fragment against.
+const NO_ANCHORS: &str = "the view carries no document headings for this corpus";
 
 /// The check. It reads no declaration, and the module comment says why: the
 /// taxonomy language has no member that turns prose-link resolution on or off,
@@ -57,55 +107,137 @@ pub const RULE: &str = "link.fragment.unresolved";
 /// makes it a property of a corpus rather than of a kind.
 pub struct Fragments;
 
-impl DocumentCheck for Fragments {
+impl CorpusCheck for Fragments {
     const RULE: &'static str = self::RULE;
-    /// The second edition. The first numbered a repeated heading by counting
-    /// every earlier anchor that began with its slug and a hyphen, which is
-    /// not what a renderer does, so a verdict the first edition cached is a
-    /// verdict about a different rule.
-    const VERSION: u32 = 2;
-    const NEEDS_BODY: bool = true;
+    /// The third edition, and this one widened what the rule reads rather than
+    /// changing an answer. A warm cache holding an edition-2 verdict holds a
+    /// verdict about same-document fragments alone, and it would serve that
+    /// forever over a corpus whose cross-document fragments were never
+    /// examined. The second edition renumbered a repeated heading; the first
+    /// counted every earlier anchor that began with its slug and a hyphen,
+    /// which is not what a renderer does.
+    const VERSION: u32 = 3;
+    const NEEDS_LINKS: bool = true;
+    const NEEDS_ANCHORS: bool = true;
 
-    fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
-        let Some(body) = view.body() else {
-            return Outcome::Passed;
+    fn evaluate(&self, view: &CorpusView<'_>) -> Outcome {
+        let Some(links) = view.links() else {
+            return Outcome::Skipped(NO_LINKS.to_string());
+        };
+        let Some(anchors) = view.anchors() else {
+            return Outcome::Skipped(NO_ANCHORS.to_string());
         };
         // A quoted link belongs to another author, and an image is a reference
-        // to an asset. Both are the graph build's rules, held to here so that
-        // one corpus has one answer about what a prose link is.
-        let fragments: Vec<&headwater_doc::Link> = body
-            .links
-            .iter()
-            .filter(|link| !link.quoted && !link.image)
-            .filter(|link| link.destination.starts_with('#') && link.destination.len() > 1)
-            .collect();
-        if fragments.is_empty() {
-            return Outcome::Skipped("this document writes no fragment into itself".to_string());
-        }
+        // to an asset. Both were dropped by the graph build, which is the one
+        // reader of this corpus's prose links, so this rule inherits that
+        // answer rather than writing a second one.
+        Outcome::failed(links.iter().filter_map(|link| finding(link, anchors)).collect())
+    }
+}
 
-        let anchors = anchors(body);
-        let findings = fragments
-            .iter()
-            .filter(|link| !anchors.contains(&link.destination[1..].to_lowercase()))
-            .map(|link| Finding {
-                rule: self::RULE,
-                severity: Severity::Error,
-                obligation: None,
-                path: view.path().to_string(),
-                line: link.span.start.line,
-                column: link.span.start.col,
-                message: format!("`{}` names no heading of this document", link.destination),
-                remediation: format!(
-                    "point it at a heading of {}, or write the heading it names",
-                    view.path()
-                ),
-                // The heading an author meant is a guess among the headings
-                // this document has, and spec 12 admits a fix only where one
-                // outcome is derivable without judgment.
-                patch: None,
-            })
-            .collect();
-        Outcome::failed(findings)
+/// One finding per fragment that names no heading of the document it points at,
+/// and nothing for every other link.
+fn finding(link: &Link, anchors: &Anchors) -> Option<Finding> {
+    let fragment = link.fragment.as_deref().filter(|it| !it.is_empty())?;
+    // The two arms this rule reads. Every other binding is somebody else's, and
+    // the module comment enumerates which.
+    let target = match &link.binding {
+        Binding::SameDocument => link.source_path.as_str(),
+        Binding::Corpus { path, .. } => path.as_str(),
+        Binding::Missing { .. }
+        | Binding::Unnormalizable { .. }
+        | Binding::Repository { .. }
+        | Binding::External => return None,
+    };
+    // A corpus path the census walked and parsed no document out of. There is
+    // no heading list, so there is no verdict, and a finding would be a guess.
+    if anchors.resolves(target, fragment)? {
+        return None;
+    }
+    let (message, remediation) = match &link.binding {
+        Binding::SameDocument => (
+            format!("`{}` names no heading of this document", link.destination),
+            format!("point it at a heading of {target}, or write the heading it names"),
+        ),
+        _ => (
+            format!(
+                "`{}` names no heading of `{target}`",
+                link.destination
+            ),
+            format!(
+                "point it at a heading that `{target}` has, or write the heading it names there"
+            ),
+        ),
+    };
+    Some(Finding {
+        rule: self::RULE,
+        severity: Severity::Error,
+        obligation: None,
+        // The citing document and the line the author wrote, on
+        // [`crate::link_path`]'s terms: the instance is one, and an author
+        // still reads the defect where they made it.
+        path: link.source_path.clone(),
+        line: link.span.start.line,
+        column: link.span.start.col,
+        message,
+        remediation,
+        // The heading an author meant is a guess among the headings the target
+        // has, and spec 12 admits a fix only where one outcome is derivable
+        // without judgment.
+        patch: None,
+    })
+}
+
+/// Every anchor of every document of this corpus, by path.
+///
+/// # Why this is built beside the read set rather than injected into it
+///
+/// A corpus-scoped instance's read set is already every census row that carries
+/// a document, so the bytes these anchors derive from are named in the key
+/// before this index exists. A second key component would hash the same bytes
+/// twice. The declaration is still made — [`CorpusCheck::NEEDS_ANCHORS`] —
+/// because a rule that reads an input it never declared is the thing the scope
+/// declarations exist to stop, and a reader of the trait should be able to see
+/// every input this rule takes without reading its body.
+pub struct Anchors {
+    /// In the census's own order, which is path order, so a lookup is a binary
+    /// search rather than a scan of the corpus per link.
+    by_path: Vec<(String, Vec<String>)>,
+}
+
+impl Anchors {
+    /// Derived from the rows that carry a document, which is exactly the read
+    /// set of a corpus-scoped instance.
+    ///
+    /// A row that carries none contributed nothing and could not have: there is
+    /// no parsed body, so there is no heading, so a link into that path has no
+    /// answer here rather than a false one.
+    pub fn of(census: &headwater_census::census::Census) -> Anchors {
+        Anchors {
+            by_path: census
+                .rows
+                .iter()
+                .filter_map(|row| {
+                    let document = row.document.as_ref()?;
+                    Some((row.path.clone(), anchors(&document.body)))
+                })
+                .collect(),
+        }
+    }
+
+    /// Whether `fragment` names a heading of `path`.
+    ///
+    /// `None` where this corpus holds no heading list for `path` at all, which
+    /// is a path outside the corpus or a file the census parsed no document
+    /// out of. That is the absence of a verdict rather than a passing one, and
+    /// the caller reports nothing on it.
+    fn resolves(&self, path: &str, fragment: &str) -> Option<bool> {
+        let at = self
+            .by_path
+            .binary_search_by(|(known, _)| known.as_str().cmp(path))
+            .ok()?;
+        let wanted = fragment.to_lowercase();
+        Some(self.by_path[at].1.iter().any(|anchor| *anchor == wanted))
     }
 }
 

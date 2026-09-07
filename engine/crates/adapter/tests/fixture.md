@@ -1,16 +1,15 @@
 ## `headwater check`
 
-53 findings, 33 of them errors across 23 of 26 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
+53 findings, 33 of them errors across 24 of 27 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
 
-**Coverage.** This run saw 26 files and classified 24 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 306 check instances, and 71 of them reached no verdict.
+**Coverage.** This run saw 27 files and classified 25 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 295 check instances, and 51 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
-- 17 — the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+- 18 — the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 - 2 — `guarded` forbids hedging, and this engine has no pattern set for it
 - 2 — `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
-- 22 — this document writes no fragment into itself
-- 25 — change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+- 26 — change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 - 1 — the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there
 
 2 readings of a path the census never walked, so the coverage above is computed over a set that does not hold them:
@@ -26,7 +25,7 @@
 | error | `check/evaluations/gamma.md:9` | `relation.reciprocity.missing` | `EVAL-FIX-gamma` declares `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends, so check/spec/00-both-halves.md owes `cites_evidence` |
 | error | `check/spec/01-one-half.md:9` | `relation.reciprocity.missing` | `SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by` |
 | warn | `check/spec/01-one-half.md:18` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 34 |
-| warn | `check/spec/03-no-instance.md` | `coverage.document_unchecked` | this document is classified and all 3 of its check instances were skipped |
+| warn | `check/spec/03-no-instance.md` | `coverage.document_unchecked` | this document is classified and all 2 of its check instances were skipped |
 | error | `check/spec/05-no-summary.md` | `facet.required.missing` | `design_spec` requires the facet `summary`, and it is not declared |
 | warn | `check/spec/05-no-summary.md:12` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 31 |
 | error | `check/spec/06-retired.md:4` | `facet.value.not_permitted` | `status` admits draft, current, superseded, and this document declares `retired` |
@@ -84,4 +83,4 @@
 
 </details>
 
-26 documents in the read set, and 5 barriers that no gate carries across a merge. 27 obligations, 22 verified.
+27 documents in the read set, and 6 barriers that no gate carries across a merge. 27 obligations, 22 verified.
