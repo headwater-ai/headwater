@@ -2150,14 +2150,23 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
         .and_then(|sources| headwater_resolve::resolve(&sources));
     // The third element is the judgment task an `add` collision owes a
     // consumer, empty where no refusal is one. See `headwater_resolve::error`.
+    // The founding record of the release the lock names, which is the previous
+    // side of the quiet half. The lock is moved into `Bound::of` further down,
+    // so the record is taken here. An older lock carries none and reads back as
+    // an empty list, which reports every founding the candidate records — the
+    // reading every lock had before `headwater_lock::Lock::founded` existed.
+    let carried = lock.founded.clone();
     let (resolution, addressability, tasks) = match candidate {
         Ok(resolution) => {
             // The quiet half. The candidate resolved, and it may have resolved
             // because an overlay `add` created the declaration the new base
-            // removed. See `headwater_compat::addressability`.
+            // removed. A founding the previous release already carried is a
+            // property of the consumer's bundle order rather than of anything
+            // this release did, so only the ones this release introduces are
+            // breaks. See `headwater_compat::addressability`.
             let outcome = headwater_compat::addressability(
-                &resolution.founded,
-                &resolution.sources,
+                &carried,
+                &resolution.founding_records(),
                 Vec::new(),
             );
             (Some(resolution), outcome, String::new())
