@@ -151,6 +151,11 @@ pub enum Reason {
     /// exists but the parser cannot see it, which is indistinguishable from
     /// its own perspective and must not be indistinguishable from a refusal.
     NoFrontMatterForKnownKind { kind: String },
+    /// A relation the taxonomy declares is written as a top-level key.
+    /// [HW-DR-0004](../../../../docs/decisions/0004-relation-storage.md) puts a
+    /// relation under a `relations:` block and nowhere else, so a top-level key
+    /// of that name is an edge no reader of the graph can see.
+    RelationAtTopLevel { relation: String },
 }
 
 branches![
@@ -162,6 +167,7 @@ branches![
     DiscriminatorDisagrees,
     ForbiddenFacetPresent,
     NoFrontMatterForKnownKind,
+    RelationAtTopLevel,
 ];
 
 impl std::fmt::Display for Reason {
@@ -237,6 +243,14 @@ impl std::fmt::Display for Reason {
                  with no checkable block is indistinguishable from one this reader never saw, so a \
                  file named for a real kind is held to it even here: add the block, or rename the \
                  file so it no longer claims a kind"
+            ),
+            Reason::RelationAtTopLevel { relation } => write!(
+                f,
+                "`{relation}` is a relation this package declares, and this template writes it as \
+                 a top-level key. A relation is declared under a `relations:` block and nowhere \
+                 else, so a person who copies this file starts a document whose `{relation}` edge \
+                 no graph reads and no reciprocal check reports. Move it under `relations:`, and \
+                 write the target as an identifier"
             ),
         }
     }
