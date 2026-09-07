@@ -864,6 +864,70 @@ add:
     kind: acceptance_criterion
     layout: "{seq:04d}-{slug}.md"
 
+  # --- the development process ---------------------------------------------
+  # Two subjects shared the decisions shelf until this block. A ruling about
+  # the product, such as "the engine reaches no network at check time", and a
+  # ruling about how this repository is built, such as where a sentence of
+  # orchestration prose lives, were minted under one scheme and filed on one
+  # shelf. A reader of the register could not tell them apart, and neither
+  # could `headwater explain` or the site. The build order, its agents, its
+  # cost ledger and the rulings that shape them are true of this repository and
+  # of no adopter, which is the test this file states for what belongs in it.
+  #
+  # **A shelf and not a repository.** A separate repository for the process
+  # would consume this package through publish, pin, vendor and resolve, so
+  # every change to the harness contract would become two pull requests with a
+  # release cut between them, and the five CI suites that run the hooks, the
+  # skills and the tutorial against the engine built from this tree would pin
+  # a commit instead. A shelf separates the two subjects in the census, the
+  # site and every check, and a later move out is one directory move of one
+  # shelf rather than a triage of the whole register.
+  #
+  # **The same shape as `decision`, under its own scheme.** The kind mirrors
+  # the base `decision` kind clause for clause, so a record here answers to the
+  # same section contract, the same voice regime and the same house language
+  # as a product ruling. What differs is the identifier, `HW-PD-` rather than
+  # `HW-DR-`, so the literal segment says which register a citation names. The
+  # scheme reconciles, the shelf declares a layout, and
+  # [HW-DR-0057](../docs/decisions/0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md)
+  # is why the claim store then covers it: `.headwater/ids/process_decision_id/`
+  # is written on the first mint.
+  #
+  # **The path leaves room beside it.** `docs/process/decisions/**` rather than
+  # `docs/process/**`, so that an evaluation of the process can take
+  # `docs/process/evaluations/**` later without two shelves claiming one path.
+  # Today the one evaluation of the build order stays on the evaluations shelf,
+  # because a homogeneous shelf holds one kind and nothing here declares a
+  # second.
+  #
+  # **When this block should stop being an overlay.** The day the process has
+  # a reader who is not this repository, the shape for it is a library entry
+  # under `docs/taxonomies/`, and the value rule in
+  # `.claude/commands/next-run.md` is what decides that day. Until then it is
+  # this repository alone, which is what an overlay is for.
+
+  identifier_schemes.process_decision_id:
+    pattern: "{namespace}-PD-{seq:04d}"
+    namespace: HW
+    allocation: reconcile-first
+
+  kinds.process_decision:
+    is_a: governed_document
+    purpose: rationale
+    voice: declarative
+    lifecycle: standard
+    language: ste_house
+    identifier: {scheme: process_decision_id}
+    sections:
+      require: [Context, Decision, Consequences]
+
+  shelves.process_decisions:
+    title: Process decisions
+    path: docs/process/decisions/**
+    homogeneous: true
+    kind: process_decision
+    layout: "{seq:04d}-{slug}.md"
+
 # --- projections ------------------------------------------------------------
 # `projections` is a list in the base, so an `add` cannot reach it, and this is
 # the one operation in this file that is not an `add`. Spec 13 records that
@@ -908,7 +972,7 @@ add_to:
     # writing of the missing probes. A shelf index reads what is on the shelf,
     # which is the whole of what this declaration claims.
     - kind: shelf_index
-      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, probes, reviews, tutorials]
+      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, probes, reviews, tutorials, process_decisions]
       output: "{shelf}/README.md"
 
     # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: all

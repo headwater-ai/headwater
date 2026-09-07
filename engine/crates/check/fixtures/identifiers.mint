@@ -1,4 +1,4 @@
-13 schemes
+14 schemes
 
 decision_id
   pattern    {namespace}-DR-{seq:04d}
@@ -59,6 +59,16 @@ probe_id
   admits     true
   sequence   -
   refuses    false
+
+process_decision_id
+  pattern    {namespace}-PD-{seq:04d}
+  namespace  HW
+  render     HW-PD-0000
+  needs      seq:4
+  mint       HW-PD-0042
+  admits     true
+  sequence   42
+  refuses    true
 
 register_id
   pattern    {namespace}-REG-{slug}

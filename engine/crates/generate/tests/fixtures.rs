@@ -665,17 +665,19 @@ fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() 
          document, then the redirect map, the verb index, the graph export, the \
          site navigation and the descriptor, in that order"
     );
-    // One declared shelf that holds no document, one declared projection whose
-    // source this corpus does not hold, and the register. Nothing is passed
-    // over: a projection that produced no file states a reason. The other four
-    // are the declarable kinds this engine does not emit and this corpus does
-    // not declare — `relation_view`, `agent_rules`, `template` and
-    // `transcription` — which a run states whether or not a declaration named
-    // them, because the reason is a property of this engine rather than of the
-    // corpus.
+    // Two declared shelves that hold no document (`specifications`, and
+    // `process_decisions` until the first record lands on it, which moves this
+    // literal back to 7 and adds `docs/process/decisions/README.md` to the
+    // list above), one declared projection whose source this corpus does not
+    // hold, and the register. Nothing is passed over: a projection that
+    // produced no file states a reason. The other four are the declarable
+    // kinds this engine does not emit and this corpus does not declare —
+    // `relation_view`, `agent_rules`, `template` and `transcription` — which a
+    // run states whether or not a declaration named them, because the reason
+    // is a property of this engine rather than of the corpus.
     assert_eq!(
         plan.unwritten.len(),
-        7,
+        8,
         "a projection produced neither a file nor a reason"
     );
     // The empty arm, and where it is stated. `docs/probe-runs/` holds no file,

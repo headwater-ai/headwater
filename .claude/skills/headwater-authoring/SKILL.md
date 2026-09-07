@@ -15,7 +15,7 @@ Run the verb:
 
     headwater new <kind> --title "<the title>"
 
-It writes the file, prints the origin of every value, and prints the relations the document may declare and this run did not. The concrete kinds are `acceptance_criterion`, `decision`, `decision_register`, `design_spec`, `evaluation`, `interface_contract`, `obligation_record`, `obligation_register`, `probe`, `probe_result`, `probe_transcript`, `requirement`, `review_prompt`, `review_record`, `specification` and `tutorial`.
+It writes the file, prints the origin of every value, and prints the relations the document may declare and this run did not. The concrete kinds are `acceptance_criterion`, `decision`, `decision_register`, `design_spec`, `evaluation`, `interface_contract`, `obligation_record`, `obligation_register`, `probe`, `probe_result`, `probe_transcript`, `process_decision`, `requirement`, `review_prompt`, `review_record`, `specification` and `tutorial`.
 
 A `Write` of a new document under `docs/` is refused by the `PreToolUse` hook, which names this verb. An `Edit` of a document that already exists passes, and that is the repair path: scaffold first, then edit the file the verb wrote.
 
