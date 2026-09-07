@@ -19,8 +19,18 @@ set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 hooks="$root/.claude/hooks"
-engine="$root/engine/target/release/headwater"
 export HEADWATER_HOOK_ROOT="$root"
+
+# The engine this suite runs and stages into its scratch roots, resolved the way
+# `hw_engine` resolves it: either profile counts and the newer answers. `lib.sh`
+# states that rule and the cases below hold it, so this reads it from there
+# rather than writing a second copy that could disagree with the one under test.
+#
+# It named the `release` path alone, which mattered once this repository started
+# telling a session to build `--profile dev-release`. A worktree with only that
+# binary skipped every case here and exited 0.
+. "$hooks/lib.sh"
+engine=$(hw_engine) || engine="$root/engine/target/release/headwater"
 
 passed=0
 failed=0

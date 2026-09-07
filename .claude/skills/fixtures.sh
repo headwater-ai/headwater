@@ -30,7 +30,16 @@ set -u
 root=$(cd "$(dirname "$0")/../.." && pwd)
 skills="$root/.claude/skills"
 agents="$root/.claude/agents"
-engine="$root/engine/target/release/headwater"
+
+# Either profile builds the engine whose behavior the skills are checked
+# against, and the newer answers. A worktree with only the cheap binary skipped
+# every case that calls one, and said so in a line nothing reads.
+release_engine="$root/engine/target/release/headwater"
+dev_release_engine="$root/engine/target/dev-release/headwater"
+engine=$release_engine
+if [ -x "$dev_release_engine" ] && { [ ! -x "$engine" ] || [ "$dev_release_engine" -nt "$engine" ]; }; then
+    engine=$dev_release_engine
+fi
 
 passed=0
 failed=0

@@ -23,7 +23,7 @@ One report, in four parts, and every claim in it names the artifact it came from
     headwater explain <path>                    # what a document is, and what it declares
     headwater route "<the change in a sentence>" # what governs the work
 
-**The engine you run has to be the one this tree builds.** Use `engine/target/release/headwater` under the root you are reviewing, and build it there when it is not present. Either profile serves a review, and the cheap one costs a fraction of the link:
+**The engine you run has to be the one this tree builds.** Run the binary built under the root you are reviewing, and build it there when it is not present. Either profile serves a review, and the cheap one costs a fraction of the link:
 
     cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked
 

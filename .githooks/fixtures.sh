@@ -29,11 +29,27 @@
 set -u
 
 root=$(cd "$(dirname "$0")/.." && pwd)
-engine="$root/engine/target/release/headwater"
+
+# Either profile builds the engine this suite stages into its scratch
+# repository, and the newer answers. That is the rule the gate beside this file
+# states for itself, and it is written out here rather than sourced from
+# `.claude/hooks/lib.sh`: this suite drives a git hook, which is the half of
+# this repository that answers to no harness, and reaching into `.claude/` for
+# it would make the git side depend on the harness side.
+#
+# It named the `release` path alone, which mattered once this repository started
+# telling a session to build `--profile dev-release`. A worktree with only that
+# binary ran nothing here and said the engine was missing.
+release_engine="$root/engine/target/release/headwater"
+dev_release_engine="$root/engine/target/dev-release/headwater"
+engine=$release_engine
+if [ -x "$dev_release_engine" ] && { [ ! -x "$engine" ] || [ "$dev_release_engine" -nt "$engine" ]; }; then
+    engine=$dev_release_engine
+fi
 
 if [ ! -x "$engine" ]; then
-    echo "no built engine, so nothing here can run."
-    echo "  cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked"
+    echo "no built engine of either profile, so nothing here can run."
+    echo "  cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked"
     exit 1
 fi
 
