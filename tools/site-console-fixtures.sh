@@ -158,8 +158,13 @@ echo "#532 itself, over the real served bytes"
 copy="$scratch/site"
 rm -rf "$copy"
 mkdir -p "$copy/spec/09-decisions" "$copy/tutorials/t"
-cp -R "$deploy/js" "$copy/js"
-cp -R "$deploy/css" "$copy/css" 2>/dev/null
+# Every directory the real pages *load* from, not merely link to. The checker
+# reports a subresource that fails to arrive, so a copy missing `search/` fails
+# these cases for a reason that is about this suite and not about the corpus.
+# That is how the omission was found.
+for asset in js css search img; do
+    [ -d "$deploy/$asset" ] && cp -R "$deploy/$asset" "$copy/$asset"
+done
 victim="$deploy/spec/09-decisions/index.html"
 clean_page="$deploy/tutorials/your-first-governed-corpus/index.html"
 if [ ! -f "$victim" ] || [ ! -f "$clean_page" ]; then
@@ -294,6 +299,20 @@ rm -rf "$worker"
 page "$worker" reject.html '<script>Promise.reject(new Error("nobody caught this"));</script>'
 status=$(run "$worker")
 report "an unhandled rejection is caught" 1 "$status" "nobody caught this" "$scratch/out"
+
+# 15. A SUBRESOURCE THAT NEVER ARRIVES. A `<script>` that fails to load throws
+#     nothing and logs nothing this tool can attribute, and it leaves the page
+#     exactly as `js/base.js` failing to load would: the marker undefined and
+#     the console empty. One full-corpus run in six failed that way before the
+#     listener ran in the capture phase and the server's listen backlog rose
+#     off Python's default of five.
+missing="$scratch/missing"
+rm -rf "$missing"
+page "$missing" gone.html '<script src="no-such-script.js"></script>'
+status=$(run "$missing")
+report "a subresource that fails to load is named" 1 "$status" \
+    "a subresource failed to load" "$scratch/out"
+report "  and the report says which one" 1 "$status" "no-such-script.js" "$scratch/out"
 
 echo "the assumptions this tool states rather than reporting zero over"
 

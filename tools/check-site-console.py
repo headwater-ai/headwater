@@ -206,14 +206,31 @@ HEAD_PROBE = b"""<script>
                 'data-headwater-errors-broken', String(seen.length));
         }
     }
+    // Capture phase, and one listener for both shapes. A resource that fails
+    // to load fires `error` at its own element and that event does not bubble,
+    // so a bubble-phase listener never sees it, and a `<script>` that never
+    // arrived produces no exception either. The symptom is then a bare marker
+    // failure with an empty console, which is what one full-corpus run showed
+    // before this line said `true`.
     window.addEventListener('error', function (event) {
+        var target = event.target;
+        if (target && target !== window && target.tagName) {
+            record({
+                kind: 'resource',
+                message: 'a subresource failed to load: <' +
+                    String(target.tagName).toLowerCase() + '>',
+                source: String(target.src || target.href || ''),
+                line: 0
+            });
+            return;
+        }
         record({
             kind: 'uncaught',
             message: String(event.message || (event.error && event.error.message) || event.type),
             source: String(event.filename || ''),
             line: event.lineno || 0
         });
-    });
+    }, true);
     window.addEventListener('unhandledrejection', function (event) {
         record({
             kind: 'unhandled-rejection',
@@ -323,6 +340,15 @@ class ProbeHandler(http.server.SimpleHTTPRequestHandler):
 class Server(http.server.ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
+
+    # Not the default of 5. Eight browsers loading a page apiece open on the
+    # order of eighty connections at once, and a listen backlog of five drops
+    # the rest. A dropped `js/base.js` leaves `keyCodes` undefined with an
+    # empty console, which reads exactly like the defect #532 reported and is
+    # in fact this server refusing a connection. Measured: one full-corpus run
+    # in six failed that way, on a page picked by the same coin flip the search
+    # worker was flipping.
+    request_queue_size = 256
 
 
 def serve(root):
