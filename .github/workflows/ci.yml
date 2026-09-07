@@ -379,6 +379,43 @@ jobs:
             printf '%s\n' "$missing" >&2
             exit 1
           fi
+      - name: Every rendered page carries its own canonical URL
+        # This blocks, and it is a step of its own for the same reason the step
+        # above is: this file runs one step per defect, and the two defects are
+        # independent. The pointer to the corpus descriptor dies when
+        # `theme.custom_dir` is dropped. The canonical URL dies when `site_url`
+        # is dropped from `mkdocs.yml`, and `mkdocs build --strict` exits 0 with
+        # no warning while every one of the 302 pages loses the element.
+        # HW-DR-0048 recorded that absence and #556 closed it.
+        #
+        # It is a tool rather than two more lines of `grep` because the
+        # assertion a `grep` can make is the weaker half. A page whose canonical
+        # names some other page carries the string `rel="canonical"` and passes
+        # a presence test, and a wrong canonical is worse than none: it hands a
+        # crawler a confident wrong answer. So the tool compares each page's
+        # canonical against the URL that page is served at, which is what
+        # catches a wrong origin, a dropped trailing slash and a typo in
+        # `site_url`. That is a parser and a URL join rather than a pattern, and
+        # a tool can be held by a fixtures suite where an inline `grep` cannot.
+        #
+        # It reads the generated half and never the assembled root. None of the
+        # eight hand-built pages carries a canonical URL, so the presence
+        # assertion over the assembled root would be red on correct input from
+        # its first run.
+        #
+        # The population is walked from the built directory, `404.html` is
+        # exempt for the structural reason the tool's header states, and an
+        # empty population exits 2 rather than passing. The step below provokes
+        # each of those.
+        run: python3 tools/check-site-canonical.py .headwater/site-build
+      - name: The canonical URL checker refuses what it claims to refuse
+        # Spec 12 refuses a check that ships with no failing fixture, and
+        # `tools/site-fragments-fixtures.sh` is the shape this follows. Two of
+        # its cases run over a scratch copy of the real build: one deletes a
+        # page's canonical element, the other points it at another URL, and the
+        # second is the one a presence grep would pass. It writes only under a
+        # temporary directory.
+        run: sh tools/site-canonical-fixtures.sh
       - name: The crawler files are what the committed pages say
         # `tools/refresh-crawler-files.sh` derives `site/llms.txt`,
         # `site/robots.txt` and `site/sitemap.xml` from the `<title>`, the
@@ -746,6 +783,24 @@ jobs:
         # one another. `--locked` on those recipes belongs to
         # `tools/build-declaration-fixtures.sh` and is not read twice here.
         run: sh tools/engine-readme-fixtures.sh
+      - name: The contributor loop still lists what this job runs
+        # `DEVELOPING.md` is the contributor loop, and one section of it is a
+        # copy of this file: the list of what CI runs. A hand-kept list of that
+        # kind goes stale with no exit status moving, and the measurement is on
+        # record — the best hand-written one this repository produced named 8
+        # script invocations on 2026-09-06, on a day this workflow ran 15.
+        #
+        # This step derives the population from every `run:` value of this file
+        # — scripts that are executed, cargo commands, and engine verbs — and
+        # compares it against the page in both directions, so a gate added here
+        # without a line on the page fails the day it lands, and a gate the page
+        # names that no job runs fails too. It is the second `run:` walk under
+        # `tools/`; the header of the script says why it is not shared with
+        # `tools/build-declaration-fixtures.sh`.
+        #
+        # This step is therefore a member of its own population, and the page
+        # names it. It builds nothing, runs no container and opens no socket.
+        run: sh tools/developing-fixtures.sh
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every
