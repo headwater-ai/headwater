@@ -98,11 +98,19 @@ fn the_pathological_tree_walks_to_the_recorded_census() {
 /// This repository, typed by the taxonomy that types it.
 ///
 /// M1 exists to put the real corpus in front of the code. The recorded file
-/// holds the totals and every row that is not a typed document: a corpus adds a
-/// typed document most weeks, and a recorded file that changes on every commit
-/// is a file nobody reads. The totals still account for every file, so the
-/// failure this census exists to catch — a shrinking denominator — still shows
-/// up in the diff.
+/// holds every row and no total, which is a deliberate reversal of what it
+/// held before. It used to hold the totals and only the rows that were not
+/// typed documents, on the argument that a file which changes on every commit
+/// is a file nobody reads. That argument was about a reader. This one is about
+/// a merge, and it wins because the earlier form is not merely noisy but
+/// wrong: a total is a fold over the rows, two branches that each add one
+/// document both rewrite the same total to the same value, and the merge takes
+/// it without a conflict for a tree that holds one more file than the number
+/// says. [`Census::render_rows`] carries the argument in full.
+///
+/// A shrinking denominator, which is the failure this census exists to catch,
+/// is still what the diff shows. It shows it better: a deleted row names the
+/// file that vanished, where a total that fell by one named nothing.
 #[test]
 fn this_repository_takes_the_recorded_census() {
     let root = repository_root();
@@ -115,7 +123,87 @@ fn this_repository_takes_the_recorded_census() {
     );
     compare(
         &fixtures_dir().join("corpus.census"),
-        &taken.render(Detail::Exceptions),
+        &taken.render_rows(Detail::EveryRow),
+    );
+}
+
+/// The recorded rows are in path order, and the order is what makes them merge.
+///
+/// Two branches that each add a document insert one record each. They merge
+/// cleanly when the two records sit apart, and they raise an ordinary conflict
+/// when they sit within a few lines of each other. Both outcomes are safe. An
+/// unordered walk gives up the first and keeps none of the safety, because two
+/// records could then land in one place for no reason a reader could predict.
+///
+/// So the ordering is not a presentation choice that a later change may take
+/// back. It is the property the recorded form rests on, and this is the test
+/// that says so.
+#[test]
+fn the_census_rows_are_in_path_order() {
+    let root = repository_root();
+    let taken = census::take(&corpus_of(&root), &resolved_taxonomy(&root));
+
+    let paths: Vec<&str> = taken.rows.iter().map(|row| row.path.as_str()).collect();
+    let mut sorted = paths.clone();
+    sorted.sort_unstable();
+    assert_eq!(
+        paths, sorted,
+        "the census rows are not in path order, so the recorded form no longer merges"
+    );
+}
+
+/// Every generated document is declared unmergeable, and a list is why this runs.
+///
+/// A generated document opens with a count of the shelf below it, which is a
+/// fold, and [HW-DR-0049](../../../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
+/// rules that a fold answers to a check on the merged state rather than to a
+/// merge. `.gitattributes` names each one, and it names them one at a time
+/// rather than by a pattern, because `docs/*/README.md` reaches two files that
+/// nobody generates and somebody edits by hand.
+///
+/// A list goes stale, and this is the guard on it. A new shelf brings a new
+/// index, `headwater generate` writes it, and nothing else would notice that
+/// the new file merges the way the old ones must not. The census already knows
+/// which files are generated, so the list is checked against the corpus rather
+/// than against somebody's memory of it.
+#[test]
+fn the_generated_documents_are_declared_unmergeable() {
+    let root = repository_root();
+    let taken = census::take(&corpus_of(&root), &resolved_taxonomy(&root));
+
+    let attributes =
+        std::fs::read_to_string(root.join(".gitattributes")).expect("the attributes file");
+    let declared: Vec<&str> = attributes
+        .lines()
+        .filter(|line| line.contains("merge=headwater-regenerate"))
+        .filter_map(|line| line.split_whitespace().next())
+        .collect();
+    assert!(
+        declared.len() > 5,
+        "only {} paths declare the driver, so this proves nothing",
+        declared.len()
+    );
+
+    let generated: Vec<&str> = taken
+        .rows
+        .iter()
+        .filter(|row| row.outcome.class() == "generated")
+        .map(|row| row.path.as_str())
+        .collect();
+    assert!(
+        !generated.is_empty(),
+        "the census reports no generated document, so this proves nothing"
+    );
+
+    let missing: Vec<&str> = generated
+        .iter()
+        .filter(|path| !declared.contains(*path))
+        .copied()
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "these generated documents merge like ordinary files, and each one opens \
+         with a count that two branches would both move: {missing:#?}"
     );
 }
 

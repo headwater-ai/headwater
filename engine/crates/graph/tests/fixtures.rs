@@ -130,9 +130,35 @@ fn this_repository_builds_to_the_recorded_graph() {
         "only {} edge halves, which is fewer than this repository declares",
         graph.edges.len()
     );
-    compare(
-        &fixtures_dir().join("corpus.graph"),
-        &graph.render(Detail::Exceptions),
+    compare(&fixtures_dir().join("corpus.graph"), &graph.render_rows());
+}
+
+/// The recorded citations are ordered, and the order is what makes them merge.
+///
+/// [`Graph::render_rows`] sorts on the anchor and then on the document that
+/// cites it. Two branches that each cite one code path insert one line each,
+/// and two lines at two positions merge. An unordered rendering gives that up
+/// for nothing: the lines would move under an edit somewhere else in the
+/// corpus, and a diff of this file would stop meaning what it says.
+#[test]
+fn the_recorded_citations_are_ordered() {
+    let recorded =
+        std::fs::read_to_string(fixtures_dir().join("corpus.graph")).expect("the recorded graph");
+    let anchors: Vec<&str> = recorded
+        .lines()
+        .take_while(|line| !line.is_empty())
+        .filter(|line| line.starts_with("  ") && !line.starts_with("    "))
+        .collect();
+    assert!(
+        anchors.len() > 20,
+        "only {} anchor citations, so this proves nothing",
+        anchors.len()
+    );
+    let mut sorted = anchors.clone();
+    sorted.sort_unstable();
+    assert_eq!(
+        anchors, sorted,
+        "the recorded citations are out of order, so the recorded form no longer merges"
     );
 }
 

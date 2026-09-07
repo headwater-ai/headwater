@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 389,
-      "carried": 389,
+      "in the graph": 393,
+      "carried": 393,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 609,
-      "carried": 609,
+      "in the graph": 613,
+      "carried": 613,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1415,6 +1415,35 @@
             "governs": [
               "tools/sitemap.py",
               "tools/refresh-crawler-files.sh"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "kind": "decision",
+        "id": "HW-DR-0049",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0049",
+          "status": "draft",
+          "status_since": "2026-09-06",
+          "summary": "A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict.",
+          "last_verified": "2026-09-06",
+          "title": "A corpus-wide fold is derived and never stored",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-EVAL-what-a-check-can-know",
+              "engine/crates/census/src/census.rs",
+              "engine/crates/graph/src/lib.rs",
+              ".githooks/merge-regenerate"
             ]
           }
         }
@@ -8431,6 +8460,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": ".githooks/merge-regenerate",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": ".github/workflows/ci.yml",
         "resolver": "source-tree"
       },
@@ -8478,6 +8512,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/audit/src/reading.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/census/src/census.rs",
         "resolver": "source-tree"
       },
       {
@@ -8603,6 +8642,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/graph/src/anchors.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/graph/src/lib.rs",
         "resolver": "source-tree"
       },
       {
@@ -9965,6 +10009,50 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "tools/refresh-crawler-files.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-EVAL-what-a-check-can-know",
+          "path": "docs/evaluations/what-a-check-can-know.md",
+          "kind": "evaluation"
+        }
+      },
+      {
+        "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/census/src/census.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/graph/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".githooks/merge-regenerate",
           "resolver": "source-tree"
         }
       },

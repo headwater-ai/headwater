@@ -81,6 +81,24 @@ if [ -z "${HEADWATER_ALLOW_SITE_DELETE:-}" ]; then
     fi
 fi
 
+# The merge driver for a derived artifact needs one command per clone, because
+# git will not take a driver from a repository: it is an executable, and a clone
+# that ran one it had not been asked about would be running code it never read.
+# So the attribute in `.gitattributes` selects the file and this config supplies
+# the driver, and a clone with the first and not the second falls back to an
+# ordinary merge. That failure is silent by construction — the merge succeeds,
+# and what it leaves is a count true of neither branch — so this reports it.
+#
+# It reports and does not block. A clone that has not run the command is behind
+# on a setup step, which is not a defect in the commit in front of it, and the
+# same reasoning is why the missing engine above exits 0.
+if [ -z "$(git config merge.headwater-regenerate.driver 2>/dev/null)" ]; then
+    echo "headwater: this clone has no merge driver for a derived artifact, so a"
+    echo "  merge of one would be reconciled rather than refused. Set it once:"
+    echo "        git config merge.headwater-regenerate.name \"regenerate a derived artifact\""
+    echo "        git config merge.headwater-regenerate.driver \".githooks/merge-regenerate %O %A %B %P\""
+fi
+
 engine="$root/engine/target/release/headwater"
 if [ ! -x "$engine" ]; then
     echo "headwater: no built engine, so this commit is not checked for prose."

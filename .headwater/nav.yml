@@ -52,6 +52,7 @@ nav:
       - "Migrating from-version carries a semver and a release digest, kept as separate fields": "decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md"
       - "The served sitemap is derived from the served directory": "decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md"
       - "How the two halves of the site share one host": "decisions/0047-how-the-two-halves-of-the-site-share-one-host.md"
+      - "A corpus-wide fold is derived and never stored": "decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md"
       - "Q51 — What licenses a term into the public glossary, and what licenses a sixteenth": "decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md"
       - "A document is proposed at the state it will hold, and the merge activates it": "decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md"
       - "A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance": "decisions/0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md"

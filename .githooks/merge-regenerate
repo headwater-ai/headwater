@@ -1,0 +1,89 @@
+#!/bin/sh
+# A merge driver for a derived artifact, which is a file that no branch wrote by
+# hand and that no merge may reconcile.
+#
+# Install once per clone, beside the hook path the pre-commit gate needs:
+#     git config merge.headwater-regenerate.name "regenerate a derived artifact"
+#     git config merge.headwater-regenerate.driver ".githooks/merge-regenerate %O %A %B %P"
+#
+# `.gitattributes` names the files this covers and says why each one is on the
+# list. Both halves are needed: the attribute selects the file, and the config
+# above supplies the driver, which git deliberately does not read from a
+# repository because a driver is an executable a clone would otherwise run
+# without being asked.
+#
+# # Why this refuses rather than merges
+#
+# Every file this driver covers holds a fold: a count over the whole corpus, or
+# a digest over the whole canonical text. A fold does not survive a merge. Two
+# branches that each add one document both rewrite the same total to the same
+# value, and a three-way merge reads one change written twice rather than two
+# changes. It takes that value with no conflict, and the result is a number that
+# was true on neither branch and is true of nothing.
+#
+# A record that decomposes into one line per entity has no such problem, and
+# where decomposing is affordable this repository decomposes instead of coming
+# here: `engine/crates/census/fixtures/corpus.census` holds one record per file
+# and no total for exactly this reason. This driver is for the folds where that
+# is not affordable, and `corpus.checks` is the case that names the cost — one
+# record per check instance would be a five-thousand-line file that moves on
+# every commit.
+#
+# # Why it does not regenerate, given the name
+#
+# The obvious driver runs the generator and writes the answer. It cannot, and
+# the reason is worth stating rather than discovering. A merge driver runs
+# *during* the merge, one path at a time, over a working tree in which the other
+# paths have not all been merged yet. A whole-corpus artifact regenerated at that
+# moment describes a tree that never existed and will not exist when the merge
+# finishes. It would be wrong in a new way and, unlike the silent merge above, it
+# would look authoritative.
+#
+# So this leaves our version in place, marks the path conflicted by exiting
+# non-zero, and names the one command that resolves it. Git writes no conflict
+# markers for a custom driver, so the file stays readable and the resolution is
+# to run the command and stage the result. That is one deterministic step, and
+# it never produces a file that no tree agrees with.
+
+ours="$2"
+path="$4"
+
+case "$path" in
+  .headwater/corpus.json|.headwater/export.json|.headwater/nav.yml|docs/*)
+    remedy="headwater generate    (CI holds it with: headwater generate --check)"
+    ;;
+  .headwater/taxonomy.lock)
+    remedy="headwater taxonomy resolve --write    (CI holds it with: headwater taxonomy resolve --check)"
+    ;;
+  engine/crates/*/fixtures/*)
+    crate=$(printf '%s' "$path" | sed -n 's|engine/crates/\([^/]*\)/fixtures/.*|\1|p')
+    remedy="HEADWATER_BLESS=1 cargo test -p headwater-$crate --test fixtures --manifest-path engine/Cargo.toml"
+    ;;
+  *)
+    remedy="regenerate this artifact from its source and stage the result"
+    ;;
+esac
+
+# The message goes to standard error, because standard output during a merge is
+# git's. A driver that printed nothing would leave a conflict whose cause is
+# invisible: the file has no markers in it, so there is nothing in the working
+# tree for a reader to find.
+cat >&2 <<EOF
+
+  $path is a derived artifact, and this merge did not reconcile it.
+
+  It holds a fold over the whole corpus. Both sides moved the same number, so
+  a merge of the two would have produced a value true of neither tree. Our
+  version is left in place and the path is marked conflicted.
+
+  Finish the merge, then regenerate and stage it:
+
+      $remedy
+      git add $path
+
+EOF
+
+# Our version stands, unmodified. Exit non-zero so that git records a conflict
+# rather than accepting it.
+test -f "$ours" && exit 1
+exit 1

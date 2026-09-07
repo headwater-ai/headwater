@@ -638,5 +638,94 @@ printf '%s\n' "$out" | grep -qE '^[[:space:]]+error[[:space:]]*$' && alone=yes
 judge 'and no line of the refusal is a bare severity word' 0 0 'no' "$alone"
 
 reset
+
+# --- the merge driver for a derived artifact ---------------------------------
+#
+# Four cases, and the third is the one worth having. It records a limitation
+# rather than a behavior, and it is the limitation that the design of the census
+# record rests on: no attribute in this file reaches two branches that write the
+# same value, because git compares blobs before it selects a merge strategy, and
+# two identical blobs need no merge at all. A reader who assumes otherwise will
+# put a fold back into a recorded fixture and believe an attribute covers it.
+#
+# These run in their own repository. The corpus scratch above has one commit and
+# no branch to merge, and giving it one would make every case above read a tree
+# that a merge had touched.
+
+merges=$(mktemp -d) || exit 1
+trap 'rm -rf "$scratch" "$merges"' EXIT HUP INT TERM
+
+# One repository, two branches, and an edit on each. `same` decides whether the
+# two branches write the same value or different ones.
+build_merge_repo() {
+    attribute=$1
+    same=$2
+    rm -rf "$merges/repo"
+    mkdir -p "$merges/repo/engine/crates/check/fixtures" "$merges/repo/.githooks"
+    cp "$root/.githooks/merge-regenerate" "$merges/repo/.githooks/"
+    chmod +x "$merges/repo/.githooks/merge-regenerate"
+    (
+        cd "$merges/repo" || exit 1
+        git init -q .
+        git config user.name fixtures
+        git config user.email fixtures@invalid
+        git config merge.headwater-regenerate.name "regenerate a derived artifact"
+        git config merge.headwater-regenerate.driver ".githooks/merge-regenerate %O %A %B %P"
+        [ -n "$attribute" ] && printf '%s\n' "$attribute" > .gitattributes
+        printf '386 seen\nrule.one\n' > engine/crates/check/fixtures/corpus.checks
+        git add -A
+        git commit -qm base --no-verify
+        git branch other
+        sed -i '1s/386/387/' engine/crates/check/fixtures/corpus.checks
+        git commit -qam "this branch adds a document" --no-verify
+        git checkout -q other
+        if [ "$same" = same ]; then
+            sed -i '1s/386/387/' engine/crates/check/fixtures/corpus.checks
+        else
+            sed -i '1s/386/999/' engine/crates/check/fixtures/corpus.checks
+        fi
+        git commit -qam "the other branch adds a different document" --no-verify
+        git checkout -q -
+    ) >/dev/null 2>&1
+}
+
+# Merge, and report the exit status and everything the merge printed.
+attempt_merge() {
+    (cd "$merges/repo" && git merge other -m merged 2>&1)
+}
+
+covered='engine/crates/check/fixtures/corpus.checks merge=headwater-regenerate'
+
+build_merge_repo "$covered" different
+out=$(attempt_merge); status=$?
+judge 'a covered artifact whose two sides differ is refused' 1 "$status" \
+    'is a derived artifact, and this merge did not reconcile it' "$out"
+judge 'and the refusal names the command that regenerates it' 1 "$status" \
+    'HEADWATER_BLESS=1 cargo test -p headwater-check' "$out"
+# A driver owns the content of the file it refuses, so git writes no markers.
+# A generated artifact with conflict markers in it is not readable by the tool
+# that reads it, which is why this matters enough to assert.
+markers=$(grep -c '<<<<<<<' "$merges/repo/engine/crates/check/fixtures/corpus.checks" 2>/dev/null || echo 0)
+judge 'and it leaves no conflict marker in the artifact' 0 0 '0' "$markers"
+
+build_merge_repo "$covered" same
+out=$(attempt_merge); status=$?
+judge 'two sides that write the same value merge, which no attribute prevents' 0 "$status" \
+    '' "$out"
+value=$(head -1 "$merges/repo/engine/crates/check/fixtures/corpus.checks")
+judge 'and the merged value is the one both sides wrote, true of neither tree' 0 0 \
+    '387 seen' "$value"
+
+build_merge_repo '' different
+out=$(attempt_merge); status=$?
+judge 'an artifact no attribute covers still merges by the ordinary rules' 1 "$status" \
+    'CONFLICT' "$out"
+
+# And the gate reports a clone that has the attribute and not the driver.
+unset_driver=$(cd "$scratch" && git config --unset merge.headwater-regenerate.driver 2>/dev/null; sh .githooks/pre-commit 2>&1)
+judge 'the gate reports a clone with no merge driver configured' 0 0 \
+    'this clone has no merge driver for a derived artifact' "$unset_driver"
+
+reset
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]

@@ -379,3 +379,252 @@ fn a_publish_that_succeeds_leaves_no_staging_directory() {
     );
     assert_eq!(at_out(&out), AtOut::Artifact);
 }
+
+// ---------------------------------------------------------------------------
+// How the artifact reached `--out`, and whether the run says so. #664.
+// ---------------------------------------------------------------------------
+
+/// Write a line past `libtest`'s output capture, onto the real standard error.
+///
+/// `eprintln!` goes through `std::io::_eprint`, which `libtest` redirects into a
+/// per-case buffer that a passing case throws away. A reason nobody reads is the
+/// silent skip this run has been cataloguing, so the two lines below that say a
+/// case did not run write to the file descriptor instead, where a person and a
+/// continuous-integration log both see them whatever `--nocapture` says.
+fn say(line: &str) {
+    use std::io::Write;
+    let _ = writeln!(std::io::stderr().lock(), "{line}");
+}
+
+/// Whether the kernel says `at` is a mount point.
+///
+/// Read out of `/proc/self/mountinfo` rather than probed with a rename, because
+/// the probe worth running is the one the publish itself runs and a second one
+/// beside it would move the directory under test. Field 4 of a `mountinfo` line
+/// is the mount point; the paths here are made by this file and carry no space,
+/// so the octal escaping that format uses never applies.
+fn is_a_mount_point(at: &Path) -> bool {
+    let Ok(table) = std::fs::read_to_string("/proc/self/mountinfo") else {
+        return false;
+    };
+    let wanted = at.to_string_lossy().to_string();
+    table
+        .lines()
+        .filter_map(|line| line.split_whitespace().nth(4))
+        .any(|point| point == wanted)
+}
+
+/// Publish into `out` and assert everything the weaker path must say.
+///
+/// One body, two routes to a mount point, so the assertions cannot drift apart
+/// between the case that runs here and the case that runs inside a namespace.
+fn a_direct_delivery_is_reported(root: &Path, out: &Path) {
+    let done = package::publish_delivered(root, "acme/fixture", out).expect("it publishes");
+
+    // The artifact still arrives. The fallback is a weaker guarantee and not a
+    // failure, and a case that let the publish fail would be measuring the
+    // wrong thing.
+    assert_eq!(
+        at_out(out),
+        AtOut::Artifact,
+        "the artifact did not reach the mount point at all"
+    );
+
+    match &done.delivery {
+        package::Delivery::Direct(package::Direct::Mount { error }) => assert!(
+            !error.is_empty(),
+            "the fallback quotes no kernel error, so the report cannot name one"
+        ),
+        other => panic!("a rename onto a mount point was reported as {other:?}"),
+    }
+    assert_eq!(done.delivery.wire(), "direct");
+    let shortfall = done
+        .delivery
+        .shortfall()
+        .expect("a direct delivery tells the publisher what it did not get");
+    assert!(
+        shortfall.contains("mount point"),
+        "the sentence a publisher reads does not name the reason: {shortfall}"
+    );
+
+    let document = release::document(&done.release, out, &done.delivery).render_pretty();
+    assert!(
+        document.contains("\"delivery\": \"direct\""),
+        "the JSON document does not carry the fallback: {document}"
+    );
+}
+
+/// The value a publish onto an ordinary path reports, and the shape of the
+/// document that carries it.
+///
+/// **This case is not evidence on its own, and it must not be read as any.** A
+/// `document` with `"delivery": "renamed"` written into it as a constant passes
+/// it, and so does an engine that can never produce `direct` at all. It is the
+/// always-running half of a pair whose other half is
+/// [`a_publish_into_a_mount_point_says_it_was_not_atomic`], and only that half
+/// can fail for the reason the pair exists.
+#[test]
+fn a_publish_onto_an_ordinary_path_is_delivered_by_a_rename() {
+    let scratch = Scratch::new("delivery-renamed");
+    let root = wide_publisher(&scratch);
+    let out = scratch.path().join("artifact");
+
+    let done = package::publish_delivered(&root, "acme/fixture", &out).expect("it publishes");
+    assert_eq!(done.delivery, package::Delivery::Renamed);
+    assert_eq!(done.delivery.wire(), "renamed");
+    assert!(
+        done.delivery.shortfall().is_none(),
+        "an atomic publish printed a shortfall, so every publish prints one and nobody reads it"
+    );
+
+    let document = release::document(&done.release, &out, &done.delivery).render_pretty();
+    assert!(
+        document.contains("\"delivery\": \"renamed\""),
+        "the JSON document does not say how the artifact arrived: {document}"
+    );
+    assert!(
+        document.contains("\"version\": \"1.1\""),
+        "the document shape did not move with the member added to it: {document}"
+    );
+}
+
+/// The name of the child case, run inside whatever made the mount point.
+const MOUNT_CHILD: &str = "publishes_into_a_mount_point";
+
+/// A publish whose `--out` is a real mount point reports that it was not atomic.
+///
+/// # Why this is the decisive case
+///
+/// `rename(2)` onto a mount point is refused with `EBUSY`, so the staging
+/// directory cannot be moved into place and the artifact is written file by
+/// file instead. Before [#664] the run exited 0 with the whole artifact and said
+/// nothing about it on standard output, on standard error or in the JSON
+/// document — a continuous-integration publisher writing into a mounted volume
+/// was in the one configuration without the atomicity guarantee, and the only
+/// way to find out was to be killed part-way and read the *next* run's refusal.
+///
+/// # What it does not reach, and how it says so
+///
+/// It needs a real mount point, which needs either a pre-made one or a user
+/// namespace. Two routes are tried and each is named in the log:
+///
+/// 1. `HEADWATER_MOUNT_POINT` naming an empty directory somebody already mounted
+///    — the route for a runner with `sudo` and no user namespaces.
+/// 2. `bwrap --dev-bind / / --tmpfs <out>`, which needs `bubblewrap` installed
+///    and unprivileged user namespaces permitted. `bwrap` is not setuid, so this
+///    is not a privilege; Ubuntu's `kernel.apparmor_restrict_unprivileged_userns`
+///    refuses a bare `unshare -Umr` and permits `bwrap` through its own profile.
+///
+/// **Where neither route works this case does not skip quietly.** It writes the
+/// reason onto the real standard error, past `libtest`'s capture, so the log of
+/// a green run says in as many words that the end-to-end wiring between the
+/// classifier and the document went unmeasured on that host. Set
+/// `HEADWATER_MOUNT_REQUIRED=1` to turn that into a failure on a host that is
+/// supposed to be able to do it.
+///
+/// [#664]: https://github.com/headwater-ai/headwater/issues/664
+#[test]
+fn a_publish_into_a_mount_point_says_it_was_not_atomic() {
+    let scratch = Scratch::new("delivery-direct");
+    let root = wide_publisher(&scratch);
+    let mut refused = Vec::new();
+
+    // Route 1: a mount point somebody else made, used in this process.
+    match std::env::var("HEADWATER_MOUNT_POINT") {
+        Ok(named) => {
+            let out = PathBuf::from(named);
+            match is_a_mount_point(&out) {
+                true => {
+                    a_direct_delivery_is_reported(&root, &out);
+                    say("headwater-resolve: the mount-point case ran, at HEADWATER_MOUNT_POINT");
+                    return;
+                }
+                false => refused.push(format!(
+                    "HEADWATER_MOUNT_POINT names `{}`, and the kernel does not call it a mount \
+                     point",
+                    out.display()
+                )),
+            }
+        }
+        Err(_) => refused.push(
+            "HEADWATER_MOUNT_POINT is unset, so no mount point was handed to this run".to_string(),
+        ),
+    }
+
+    // Route 2: make one, in a user namespace, and run the child case inside it.
+    let out = scratch.path().join("artifact");
+    let result = scratch.path().join("delivery.result");
+    std::fs::create_dir_all(&out).expect("the mount point is made");
+    let exe = std::env::current_exe().expect("this test binary has a path");
+    let ran = std::process::Command::new("bwrap")
+        .args(["--dev-bind", "/", "/", "--tmpfs"])
+        .arg(&out)
+        .arg("--")
+        .arg(&exe)
+        .args(["--exact", MOUNT_CHILD, "--ignored"])
+        .env("HEADWATER_MOUNT_ROOT", &root)
+        .env("HEADWATER_MOUNT_OUT", &out)
+        .env("HEADWATER_MOUNT_RESULT", &result)
+        .output();
+
+    match ran {
+        Err(why) => refused.push(format!("`bwrap` did not start: {why}")),
+        Ok(done) => match std::fs::read_to_string(&result).unwrap_or_default().trim() {
+            // The child confirmed the mount before it asserted anything, so its
+            // status is a verdict about the publish and never about the sandbox.
+            "mounted" => {
+                assert!(
+                    done.status.success(),
+                    "the publish into a mount point did not report itself:\n{}\n{}",
+                    String::from_utf8_lossy(&done.stdout),
+                    String::from_utf8_lossy(&done.stderr)
+                );
+                say("headwater-resolve: the mount-point case ran, inside `bwrap --tmpfs`");
+                return;
+            }
+            "not-a-mount" => refused
+                .push("`bwrap` ran and its `--tmpfs` did not become a mount point".to_string()),
+            _ => refused.push(format!(
+                "`bwrap` reached no verdict ({}): {}",
+                done.status,
+                String::from_utf8_lossy(&done.stderr).trim()
+            )),
+        },
+    }
+
+    let reason = refused.join("; ");
+    say(&format!(
+        "headwater-resolve: THE MOUNT-POINT CASE DID NOT RUN on this host, so nothing here \
+         measured that a publish into a mount point reports `delivery: direct`. Only the \
+         classifier and the ordinary path were covered, and neither can fail for that reason. \
+         Why: {reason}"
+    ));
+    assert!(
+        std::env::var("HEADWATER_MOUNT_REQUIRED").is_err(),
+        "HEADWATER_MOUNT_REQUIRED is set, so this host is supposed to reach a mount point: {reason}"
+    );
+}
+
+/// The half of the mount-point case that runs inside the namespace.
+///
+/// It is `#[ignore]`d, so an ordinary run never reaches it and the parent names
+/// it. It states in the result file whether the mount point is real **before**
+/// it asserts anything, so the parent can tell a sandbox that did not work from
+/// a publish that did not report itself. Those two are the same exit status
+/// otherwise, and reading one for the other is how a check that cannot run comes
+/// to read as a check that passes.
+#[test]
+#[ignore = "the child half of the mount-point case; the parent runs it inside a namespace"]
+fn publishes_into_a_mount_point() {
+    let root = PathBuf::from(std::env::var("HEADWATER_MOUNT_ROOT").expect("the parent sets it"));
+    let out = PathBuf::from(std::env::var("HEADWATER_MOUNT_OUT").expect("the parent sets it"));
+    let result =
+        PathBuf::from(std::env::var("HEADWATER_MOUNT_RESULT").expect("the parent sets it"));
+
+    if !is_a_mount_point(&out) {
+        std::fs::write(&result, "not-a-mount").expect("the verdict is written");
+        return;
+    }
+    std::fs::write(&result, "mounted").expect("the verdict is written");
+    a_direct_delivery_is_reported(&root, &out);
+}

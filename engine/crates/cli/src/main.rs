@@ -1317,6 +1317,16 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
 /// standard error, which is [HW-DR-0043]'s rule for every `--json` this binary
 /// takes.
 ///
+/// **`delivery` says how the artifact reached `--out`, on every publish.** A
+/// publish into a mount point cannot rename onto it, falls back to writing the
+/// artifact file by file, and until [#664] said so on none of this verb's three
+/// surfaces — so a continuous-integration publisher writing into a mounted
+/// volume had the one configuration with no atomicity guarantee and no way to
+/// learn it. The member is `renamed` or `direct` and is never absent, and the
+/// prose reason for a `direct` is on standard error in both output modes.
+///
+/// [#664]: https://github.com/headwater-ai/headwater/issues/664
+///
 /// [#271]: https://github.com/headwater-ai/headwater/issues/271
 /// [#353]: https://github.com/headwater-ai/headwater/issues/353
 /// [HW-DR-0043]: ../../../../docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md
@@ -1339,17 +1349,18 @@ fn publish(
         );
     }
 
-    // Both halves of the pair come from the run that produced them. A plain
-    // publish drops no `contents` key, so its half is empty by construction
-    // rather than by a second reading of anything.
+    // Every part comes from the run that produced it. A plain publish drops no
+    // `contents` key, so that half is empty by construction rather than by a
+    // second reading of anything, and `delivery` is a fact only the function
+    // that reached the disk can know. The `_delivered` spellings are the ones
+    // that carry it: their plain siblings answer the narrower question and drop
+    // it, which is why nothing that reports to a person calls those.
     let published = match from {
         Some(directory) => match assembly {
             Some(name) => {
                 headwater_resolve::package::publish_assembly_from(root, directory, name, out)
-                    .map(|done| (done.release, done.dropped))
             }
-            None => headwater_resolve::package::publish_from(root, directory, out)
-                .map(|release| (release, Vec::new())),
+            None => headwater_resolve::package::publish_from_delivered(root, directory, out),
         },
         None => {
             let name = match package {
@@ -1374,16 +1385,18 @@ fn publish(
             match assembly {
                 Some(assembly) => {
                     headwater_resolve::package::publish_assembly(root, &name, assembly, out)
-                        .map(|done| (done.release, done.dropped))
                 }
-                None => headwater_resolve::package::publish(root, &name, out)
-                    .map(|release| (release, Vec::new())),
+                None => headwater_resolve::package::publish_delivered(root, &name, out),
             }
         }
     };
 
-    let (record, dropped) = match published {
-        Ok(pair) => pair,
+    let headwater_resolve::package::Published {
+        release: record,
+        dropped,
+        delivery,
+    } = match published {
+        Ok(done) => done,
         Err(errors) => {
             eprintln!("headwater: {}", err("nothing was published"));
             eprint!("{}", indent(&err(&render_errors(&errors))));
@@ -1446,10 +1459,36 @@ fn publish(
         );
     }
 
+    // #664, and on standard error beside the two notices above it for the same
+    // reason: a publisher reads it in both output modes, and the `--json`
+    // document on standard output stays one document. It is printed only where
+    // the artifact did not arrive by a rename, and the machine-readable half is
+    // not conditional at all — `delivery` is a member of every document this
+    // verb writes, because a member that appears only on the weaker path cannot
+    // be told apart from an engine too old to know the path exists.
+    if let Some(shortfall) = delivery.shortfall() {
+        eprintln!(
+            "headwater: the artifact was written straight into the output directory, so this \
+             publish was not atomic"
+        );
+        eprintln!(
+            "{}",
+            indent(&format!(
+                "{shortfall}. Every other publish assembles the artifact beside the output \
+                 directory and moves it into place with one step, so a run that is killed leaves \
+                 that directory either untouched or complete. This one wrote file by file, so a \
+                 run killed part-way leaves files there with no release record, and the next \
+                 publish refuses until somebody clears them. `publish --json` says the same thing \
+                 as `\"delivery\": \"direct\"`. Publish into a directory on an ordinary \
+                 filesystem to get the guarantee back."
+            ))
+        );
+    }
+
     if json {
         print!(
             "{}",
-            headwater_resolve::release::document(&record, out).render_pretty()
+            headwater_resolve::release::document(&record, out, &delivery).render_pretty()
         );
         return ExitCode::SUCCESS;
     }
@@ -5671,9 +5710,19 @@ corpus:
 # A relation names its target by identifier. A corpus whose documents carry none
 # has no edges, and no check about an edge can say anything about it.
 #
+# `add` states a value the package leaves unstated, and `override` replaces one
+# the package already states, so the operation follows the package rather than
+# the taste of the writer. `{package}` declares `decision_id` with no namespace
+# and gives `decision` that scheme, so the namespace below is an `add` on a leaf
+# the package leaves empty, and the kind below is an `override` because `add`
+# over a value the package already states is refused. Replace ACME with the
+# prefix this corpus uses.
+#
 #   add:
 #     identifier_schemes.doc_id: {{pattern: \"{{namespace}}-DOC-{{slug}}\", namespace: ACME, allocation: minted-once}}
-#     kinds.<kind>.identifier: {{scheme: doc_id}}
+#     identifier_schemes.decision_id.namespace: ACME
+#   override:
+#     kinds.decision.identifier: {{scheme: doc_id}}
 #
 # INTERVIEW 3 --- what does this corpus already write?
 #

@@ -135,9 +135,19 @@ const OVERLAY: &str = r#"# The adopter overlay, written by `headwater init`. It 
 # A relation names its target by identifier. A corpus whose documents carry none
 # has no edges, and no check about an edge can say anything about it.
 #
+# `add` states a value the package leaves unstated, and `override` replaces one
+# the package already states, so the operation follows the package rather than
+# the taste of the writer. `headwater/standard` declares `decision_id` with no namespace
+# and gives `decision` that scheme, so the namespace below is an `add` on a leaf
+# the package leaves empty, and the kind below is an `override` because `add`
+# over a value the package already states is refused. Replace ACME with the
+# prefix this corpus uses.
+#
 #   add:
 #     identifier_schemes.doc_id: {pattern: "{namespace}-DOC-{slug}", namespace: ACME, allocation: minted-once}
-#     kinds.<kind>.identifier: {scheme: doc_id}
+#     identifier_schemes.decision_id.namespace: ACME
+#   override:
+#     kinds.decision.identifier: {scheme: doc_id}
 #
 # INTERVIEW 3 --- what does this corpus already write?
 #
@@ -451,7 +461,23 @@ fn the_last_line_of_the_overlay_is_the_line_the_tutorial_replaces() {
 /// [#641]: https://github.com/headwater-ai/headwater/issues/641
 #[test]
 fn the_vendor_route_the_declaration_names_reaches_a_resolved_version() {
-    let root = Root::over("vendor-route");
+    let root = a_root_the_vendor_route_reached("vendor-route");
+
+    let (_, stderr) = root.run(&["taxonomy", "resolve"], None);
+    assert!(
+        !stderr.contains("this takes headwater/standard"),
+        "`headwater taxonomy resolve` is past the version the vendor route also needs:\n{stderr}"
+    );
+}
+
+/// A root that `init` wrote and that the vendor route the declaration names has
+/// carried as far as a package on disk at the pinned version.
+///
+/// This is the setup of the two cases below it, extracted rather than typed
+/// twice. Every edit in it is read out of a file the verb wrote, so a verb that
+/// stops writing one of those lines fails here.
+fn a_root_the_vendor_route_reached(label: &str) -> Root {
+    let root = Root::over(label);
     let artifact = root.beside("artifact");
     let digest = publish_maintained_source_into(&artifact);
     root.init();
@@ -491,10 +517,99 @@ fn the_vendor_route_the_declaration_names_reaches_a_resolved_version() {
         version,
         "the vendored package is the one the declaration pins"
     );
+    root
+}
 
-    let (_, stderr) = root.run(&["taxonomy", "resolve"], None);
+/// The example the overlay prints under `INTERVIEW 2`, lifted out of the file
+/// `init` wrote and given back with the comment prefix and the common indent
+/// removed.
+///
+/// # Why it is read rather than typed
+///
+/// The case below runs these lines. A case that retyped them would pass forever
+/// whatever the template said, which is the defect `OVERLAY` above has on its
+/// own: a string literal held against a copy of itself. Reading them here makes
+/// the template the thing under test.
+///
+/// The example lines are the ones this block indents past its prose: a comment
+/// line of the block carries one space after the `#`, and an example line
+/// carries three or more. The panic is the second half of the mechanism —
+/// a template that stopped printing an example would otherwise hand back an
+/// empty patch, and the case would then be asserting something else.
+fn the_interview_2_example(overlay: &str) -> String {
+    let block: Vec<&str> = overlay
+        .lines()
+        .skip_while(|line| !line.starts_with("# INTERVIEW 2"))
+        .skip(1)
+        .take_while(|line| !line.starts_with("# INTERVIEW"))
+        .collect();
+    let example: Vec<&str> = block
+        .iter()
+        .filter_map(|line| line.strip_prefix('#'))
+        .filter(|rest| rest.starts_with("   "))
+        .collect();
     assert!(
-        !stderr.contains("this takes headwater/standard"),
-        "`headwater taxonomy resolve` is past the version the vendor route also needs:\n{stderr}"
+        !example.is_empty(),
+        "the overlay prints an example under `INTERVIEW 2`, and it prints none of these:\n{overlay}"
+    );
+    let indent = example
+        .iter()
+        .map(|line| line.len() - line.trim_start().len())
+        .min()
+        .expect("the example is not empty");
+    example
+        .iter()
+        .map(|line| format!("{}\n", &line[indent..]))
+        .collect()
+}
+
+/// The example the overlay hands an adopter resolves.
+///
+/// # The defect this case exists for
+///
+/// [#659]. `INTERVIEW 2` asks the corpus what identifies a document, and the
+/// example under it was the only answer an adopter reading that file ever saw.
+/// It answered nothing twice over: it declared a scheme of its own and never
+/// the namespace that `headwater/standard` leaves to the corpus, so `resolve`
+/// refused with `carries no namespace after resolution`; and it stated
+/// `kinds.<kind>.identifier` under `add` over a kind the package already gives
+/// an identifier, which `resolve` refuses on its own terms. Neither refusal
+/// moves the other, so the example had to be repaired in both places at once.
+///
+/// The case that precedes this one is [#641]'s, and it stops one refusal short:
+/// it asserts `resolve` is past the version and lets the namespace refusal
+/// stand, because that refusal is by design. This case is the continuation. It
+/// performs the overlay's own instruction and asserts `resolve` writes a lock.
+///
+/// # Why it extracts rather than retypes
+///
+/// See `the_interview_2_example`. Reverting the template to the example this
+/// case was written against fails here with the refusal above, which is the
+/// discriminator a retyped copy would not have.
+///
+/// [#641]: https://github.com/headwater-ai/headwater/issues/641
+/// [#659]: https://github.com/headwater-ai/headwater/issues/659
+#[test]
+fn the_overlay_example_the_interview_prints_reaches_a_lock() {
+    let root = a_root_the_vendor_route_reached("interview-example");
+
+    let overlay = root.read(".headwater/overlay.yml");
+    assert!(
+        overlay.trim_end_matches('\n').ends_with("add: {}"),
+        "the overlay ends with the line the example replaces:\n{overlay}"
+    );
+    let patched = format!(
+        "{}{}",
+        overlay.trim_end_matches('\n').trim_end_matches("add: {}"),
+        the_interview_2_example(&overlay)
+    );
+    root.write(".headwater/overlay.yml", &patched);
+
+    let (code, stderr) = root.run(&["taxonomy", "resolve"], None);
+    assert_eq!(
+        code,
+        Some(0),
+        "the example `INTERVIEW 2` prints resolves:\n{stderr}\nthe overlay it was run \
+         against:\n{patched}"
     );
 }

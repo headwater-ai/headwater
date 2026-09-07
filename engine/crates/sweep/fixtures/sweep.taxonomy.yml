@@ -83,21 +83,52 @@ relations:
     to:   [governed_document]
     reciprocal: symmetric
 
+  # The one relation of this fixture that a proposal can reach in both
+  # directions, and the reason it says `required`.
+  #
+  # `reciprocal: required` makes a pair complete only when a document at each
+  # end declared it, so front matter that carries one half alone is what
+  # `relation.reciprocity.missing` reports as an error. A sweep prints front
+  # matter for a person to paste, so the printed instruction has to carry both
+  # halves or the paste turns a passing corpus into a refused commit. Both ends
+  # admit `governed_document`, so a proposal reaches it under `supersedes` and
+  # under `superseded_by` alike, and the owed name differs between the two.
+  # `tests/fixtures.rs` pastes what the report prints and runs this check layer
+  # over the result.
   supersedes:
     family: decision
     from: [governed_document]
     to:   [governed_document]
+    inverse: superseded_by
+    reciprocal: required
 
   # An asymmetric relation with an inverse name, and the only relation here
   # whose two ends differ. Its `from` end admits `note`, which no document of
   # this corpus is, so a proposal that puts a decision record there is refused.
   # Written under `annotated_by` the two ends swap, and the refusal has to name
   # the other end. That pair is what holds the direction the intake reads.
+  #
+  # It says `required` as well, so the reciprocity check instantiates over two
+  # relations here rather than one. No document of this corpus can sit at its
+  # `from` end, so no proposal under either of its names survives the endpoint
+  # test and no case below pastes one. `supersedes` is what carries the round
+  # trip in both directions.
   annotates:
     family: decision
     from: [note]
     to:   [decision_record]
     inverse: annotated_by
+    reciprocal: required
+
+  # A relation that declares no reciprocity at all, which is the third answer
+  # the printer has to give. `conflicts_with` above is symmetric and this one is
+  # absent, and both must render one block and one path. Without a relation of
+  # each shape, a printer that appended a second block to every proposal would
+  # pass every case that pastes one.
+  records:
+    family: decision
+    from: [governed_document]
+    to:   [governed_document]
 
 obligations:
   OB-SWP-1:

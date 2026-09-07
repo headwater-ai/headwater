@@ -1027,6 +1027,21 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
 /// [#271]: https://github.com/headwater-ai/headwater/issues/271
 /// [#355]: https://github.com/headwater-ai/headwater/issues/355
 pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<ResolveError>> {
+    publish_delivered(root, name, out).map(|done| done.release)
+}
+
+/// [`publish`], and it hands back how the artifact reached `--out` as well as
+/// the record.
+///
+/// A caller that reports a publish to a person or to a script uses this one.
+/// [`publish`] answers the narrower question — what was published — and drops
+/// [`Published::delivery`] on the floor, which is safe only because nothing it
+/// returns is a claim about atomicity.
+pub fn publish_delivered(
+    root: &Path,
+    name: &str,
+    out: &Path,
+) -> Result<Published, Vec<ResolveError>> {
     let (directory, manifest) = find(root, name)?;
     publish_at(root, &directory, &manifest, out)
 }
@@ -1062,6 +1077,16 @@ pub fn publish_from(
     directory: &Path,
     out: &Path,
 ) -> Result<Release, Vec<ResolveError>> {
+    publish_from_delivered(root, directory, out).map(|done| done.release)
+}
+
+/// [`publish_from`], and it hands back how the artifact reached `--out` as well
+/// as the record. [`publish_delivered`] carries the argument for the pair.
+pub fn publish_from_delivered(
+    root: &Path,
+    directory: &Path,
+    out: &Path,
+) -> Result<Published, Vec<ResolveError>> {
     let manifest = manifest_at(directory)?;
     publish_at(root, directory, &manifest, out)
 }
@@ -1073,7 +1098,7 @@ pub fn publish_assembly(
     name: &str,
     assembly: &str,
     out: &Path,
-) -> Result<Flattening, Vec<ResolveError>> {
+) -> Result<Published, Vec<ResolveError>> {
     let (directory, manifest) = find(root, name)?;
     publish_assembly_at(root, &directory, &manifest, assembly, out)
 }
@@ -1085,7 +1110,7 @@ pub fn publish_assembly_from(
     directory: &Path,
     assembly: &str,
     out: &Path,
-) -> Result<Flattening, Vec<ResolveError>> {
+) -> Result<Published, Vec<ResolveError>> {
     let manifest = manifest_at(directory)?;
     publish_assembly_at(root, directory, &manifest, assembly, out)
 }
@@ -1103,7 +1128,7 @@ fn publish_assembly_at(
     manifest: &Mapping,
     assembly: &str,
     out: &Path,
-) -> Result<Flattening, Vec<ResolveError>> {
+) -> Result<Published, Vec<ResolveError>> {
     let declared = manifest_name(root, directory);
     let contents = contents_of(manifest);
     reachable(root, &declared, directory, &contents)?;
@@ -1117,9 +1142,10 @@ fn publish_assembly_at(
     let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
 
     match deliver(root, out, &staged, &flattened.manifest) {
-        Ok(release) => Ok(Flattening {
+        Ok((release, delivery)) => Ok(Published {
             release,
             dropped: flattened.dropped,
+            delivery,
         }),
         Err(errors) => {
             found.unwind(out);
@@ -1128,9 +1154,9 @@ fn publish_assembly_at(
     }
 }
 
-/// What a flattening publish produced.
+/// What a publish produced.
 ///
-/// The release record, and the `contents` keys the flattened manifest does not
+/// The release record, how that record reached `--out`, and the `contents` keys the flattened manifest does not
 /// declare although the source did. The second half travels out of the run that
 /// decided it rather than being re-derived by whoever reports it: two functions
 /// answering one question separately is the defect
@@ -1138,9 +1164,12 @@ fn publish_assembly_at(
 /// a reporter that drifted from [`crate::flatten::DROPPED`] would tell a
 /// publisher the artifact carries something it does not. `dropped` is empty for
 /// every source that declares none of those keys.
-pub struct Flattening {
+pub struct Published {
     pub release: Release,
     pub dropped: Vec<String>,
+    /// How the artifact reached `--out`. Empty of judgment: the reporter decides
+    /// what to say about it, and [`deliver`] is the only thing that can know it.
+    pub delivery: Delivery,
 }
 
 /// The publish sequence shared by [`publish`] and [`publish_from`], once each
@@ -1151,7 +1180,7 @@ fn publish_at(
     directory: &Path,
     manifest: &Mapping,
     out: &Path,
-) -> Result<Release, Vec<ResolveError>> {
+) -> Result<Published, Vec<ResolveError>> {
     let declared = manifest_name(root, directory);
 
     // A directory that already carries a release record was written by
@@ -1234,7 +1263,11 @@ fn publish_at(
     integrity(&staged, &declared)?;
 
     match deliver(root, out, &staged, manifest) {
-        Ok(record) => Ok(record),
+        Ok((release, delivery)) => Ok(Published {
+            release,
+            dropped: Vec::new(),
+            delivery,
+        }),
         Err(errors) => {
             found.unwind(out);
             Err(errors)
@@ -2545,10 +2578,11 @@ fn deliver(
     out: &Path,
     staged: &[Staged],
     manifest: &Mapping,
-) -> Result<Release, Vec<ResolveError>> {
+) -> Result<(Release, Delivery), Vec<ResolveError>> {
     let named = display(root, out);
     let Some(staging) = out_staging(out) else {
-        return write_artifact(&named, out, staged, manifest);
+        let record = write_artifact(&named, out, staged, manifest)?;
+        return Ok((record, Delivery::Direct(Direct::NoSibling)));
     };
     clear_staging(&staging).map_err(|why| refusal(&display(root, &staging), &why))?;
     let assembled = staging.join(ASSEMBLY);
@@ -2565,11 +2599,17 @@ fn deliver(
     match std::fs::rename(&assembled, out) {
         Ok(()) => {
             let _ = clear_staging(&staging);
-            Ok(record)
+            Ok((record, Delivery::Renamed))
         }
         Err(error) if carries_a_mount(&error) => {
             let _ = clear_staging(&staging);
-            write_artifact(&named, out, staged, manifest)
+            let record = write_artifact(&named, out, staged, manifest)?;
+            Ok((
+                record,
+                Delivery::Direct(Direct::Mount {
+                    error: error.to_string(),
+                }),
+            ))
         }
         Err(error) => {
             let _ = clear_staging(&staging);
@@ -2582,6 +2622,95 @@ fn deliver(
                 ),
             ))
         }
+    }
+}
+
+/// How the artifact reached `--out`, decided by [`deliver`] and reported by
+/// whoever ran the publish.
+///
+/// # Why this travels beside the record rather than inside it
+///
+/// [`release::Release`] is what [`release::render`] writes into `release.yml`
+/// and what [`release::at`] reads back, so a field added there would enter the
+/// published artifact and move the digest a consumer pins. This is a fact about
+/// the *act* of publishing on one machine, not about the artifact, so it leaves
+/// [`deliver`] as the second half of a pair and never as a member of the record.
+///
+/// # Why both values are reported and not only the weaker one
+///
+/// A signal that appears only when the weaker path is taken cannot be told
+/// apart from an engine too old to know the difference, which is the same
+/// absence-read-as-satisfaction defect one level up.
+/// [`release::document`] therefore writes `delivery` on every publish, with
+/// `renamed` for the atomic path and `direct` for both fallbacks.
+/// [#664](https://github.com/headwater-ai/headwater/issues/664) is the issue,
+/// where a publish into a mount point wrote the whole artifact by the weaker
+/// route and said so nowhere on any of its three surfaces.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Delivery {
+    /// The artifact was assembled beside `--out` and moved into place by one
+    /// `rename(2)`. A run killed at any moment leaves `--out` either untouched
+    /// or complete.
+    Renamed,
+    /// The artifact was written file by file straight into `--out`. A run killed
+    /// during the write leaves files there with no release record, which is the
+    /// state [`found::held`] reports to the next run.
+    Direct(Direct),
+}
+
+/// Why a publish wrote straight into `--out`.
+///
+/// **There are two of these arms and not one.** The mount point is the one
+/// [#664](https://github.com/headwater-ai/headwater/issues/664) names; the
+/// missing sibling is the one it does not, and a fix that wired only the first
+/// would leave a second silent fallback behind.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Direct {
+    /// `--out` has no final path component, so no `<out>~staging` sibling can be
+    /// formed to assemble in. `--out /` and `--out foo/..` are the shapes.
+    ///
+    /// Presently unreachable through the command line — `found::observe` refuses
+    /// `foo/..` because the directory it resolves to is not empty, and `/`
+    /// refuses on permissions — which is why it is wired rather than left: it is
+    /// unreachable by accident and not by argument.
+    NoSibling,
+    /// The rename onto `--out` was refused, and the refusal was one
+    /// [`carries_a_mount`] classifies: `--out` is a mount point, or it is on
+    /// another filesystem. The error is carried so the report can quote the
+    /// kernel rather than paraphrase it.
+    Mount { error: String },
+}
+
+impl Delivery {
+    /// The value `delivery` takes in the JSON document.
+    ///
+    /// Two values and never three: a consumer asks whether the publish it just
+    /// ran carried the atomicity guarantee, and both reasons for not carrying it
+    /// answer that question the same way. The reason is prose on standard error,
+    /// where a person reads it.
+    pub fn wire(&self) -> &'static str {
+        match self {
+            Delivery::Renamed => "renamed",
+            Delivery::Direct(_) => "direct",
+        }
+    }
+
+    /// What a publisher is told, where the artifact did not arrive by a rename.
+    ///
+    /// `None` for the atomic path, because a line printed by every publish is a
+    /// line nobody reads on the publish that loses something.
+    pub fn shortfall(&self) -> Option<String> {
+        let reason = match self {
+            Delivery::Renamed => return None,
+            Delivery::Direct(Direct::NoSibling) => "the output path has no final component, so \
+                 the artifact could not be assembled at a sibling path beside it"
+                .to_string(),
+            Delivery::Direct(Direct::Mount { error }) => format!(
+                "the output path is a mount point or lies on another filesystem, so the \
+                 assembled artifact could not be moved into it: {error}"
+            ),
+        };
+        Some(reason)
     }
 }
 
@@ -3896,6 +4025,69 @@ pub(crate) fn refusal_at(source: &str, message: &str) -> ResolveError {
 #[cfg(test)]
 mod tests {
     use super::names_a_package;
+    use super::{carries_a_mount, Delivery, Direct};
+
+    /// Which rename failures say the output path is a mount, and which say the
+    /// publish is broken.
+    ///
+    /// This holds the classifier and **not** the wiring between it and what a
+    /// publisher is told. Nothing here would notice
+    /// [`super::deliver`] discarding the answer, which is the defect
+    /// [#664](https://github.com/headwater-ai/headwater/issues/664) is about, so
+    /// this case is not a substitute for the mount-point case in
+    /// `tests/killed_publish.rs`. It runs everywhere and that one does not,
+    /// which is the whole of what it is for.
+    #[test]
+    fn two_rename_failures_fall_back_and_every_other_kind_refuses() {
+        use std::io::ErrorKind;
+
+        for kind in [ErrorKind::ResourceBusy, ErrorKind::CrossesDevices] {
+            assert!(
+                carries_a_mount(&std::io::Error::from(kind)),
+                "{kind:?} is a mount point or another filesystem, and the artifact is written \
+                 where it was asked for"
+            );
+        }
+        for kind in [
+            ErrorKind::PermissionDenied,
+            ErrorKind::NotFound,
+            ErrorKind::AlreadyExists,
+            ErrorKind::InvalidInput,
+            ErrorKind::Other,
+        ] {
+            assert!(
+                !carries_a_mount(&std::io::Error::from(kind)),
+                "{kind:?} is a broken publish and it is refused rather than written around"
+            );
+        }
+    }
+
+    /// Every delivery reports itself, and only the weaker ones explain.
+    ///
+    /// Two `direct` arms and not one: the mount point is the arm
+    /// [#664](https://github.com/headwater-ai/headwater/issues/664) names, and
+    /// the missing sibling is the one it does not.
+    #[test]
+    fn every_delivery_has_a_wire_value_and_only_a_direct_one_explains() {
+        assert_eq!(Delivery::Renamed.wire(), "renamed");
+        assert_eq!(Delivery::Renamed.shortfall(), None);
+        for direct in [
+            Direct::NoSibling,
+            Direct::Mount {
+                error: "Device or resource busy (os error 16)".to_string(),
+            },
+        ] {
+            let delivery = Delivery::Direct(direct.clone());
+            assert_eq!(delivery.wire(), "direct", "{direct:?}");
+            let shortfall = delivery
+                .shortfall()
+                .unwrap_or_else(|| panic!("{direct:?} explains nothing to a publisher"));
+            assert!(
+                !shortfall.is_empty() && shortfall.ends_with(|last: char| last != '.'),
+                "the shortfall is a clause the caller finishes, not a sentence: {shortfall}"
+            );
+        }
+    }
 
     /// Every package name declared anywhere in this tree.
     ///

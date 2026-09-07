@@ -570,8 +570,9 @@ fn a_legal_proposal_still_carries() {
         .filter(|verified| verified.proposal.is_some())
         .count();
     assert_eq!(
-        carried, 1,
-        "the recorded return file no longer carries its one proposal"
+        carried, 2,
+        "the recorded return file no longer carries both of its proposals: one under a symmetric \
+         relation and one under a relation that requires both ends"
     );
     assert!(
         !refusals(&recorded)
@@ -608,6 +609,293 @@ fn a_paraphrase_is_not_a_quotation() {
         headwater_sweep::intake::locate(source, "The cache is keyed on the lock's digest."),
         None
     );
+}
+
+// --- the round trip: what a person gets after pasting what the report printed
+
+/// Every front-matter block the report told a reader to write, in order.
+///
+/// The report prints a block as four lines: one that names a document and ends
+/// in a colon, then `relations:`, then the relation name, then one list entry.
+/// This reads them back out of the rendered text rather than out of the
+/// [`headwater_sweep::intake::Proposal`], because what a person applies is the
+/// text. A block whose relation name or path the printer got wrong is a block
+/// that lands in the wrong file or declares the wrong edge, and reading the
+/// struct instead would agree with the printer about both.
+fn blocks_of(rendered: &str) -> Vec<Block> {
+    const MARKER: &str = "in the front matter of ";
+    let lines: Vec<&str> = rendered.lines().collect();
+    let mut found = Vec::new();
+    for (index, line) in lines.iter().enumerate() {
+        let Some(rest) = line.split_once(MARKER) else {
+            continue;
+        };
+        let path = rest.1.strip_suffix(':').unwrap_or_else(|| {
+            panic!("the line naming a document does not end in a colon: {line}")
+        });
+        let read = |offset: usize| -> &str {
+            lines
+                .get(index + offset)
+                .unwrap_or_else(|| panic!("the block after {path} is cut short"))
+                .trim()
+        };
+        assert_eq!(read(1), "relations:", "the block under {path} is not one");
+        found.push(Block {
+            path: path.to_string(),
+            relation: read(2)
+                .strip_suffix(':')
+                .expect("the relation name ends in a colon")
+                .to_string(),
+            id: read(3)
+                .strip_prefix("- ")
+                .expect("the entry is a list item")
+                .to_string(),
+        });
+    }
+    found
+}
+
+/// One block, as a reader would paste it.
+#[derive(Debug)]
+struct Block {
+    path: String,
+    relation: String,
+    id: String,
+}
+
+/// A copy of the fixture corpus, under a directory named for the case.
+///
+/// Named for the case rather than for the process, because `cargo` runs the
+/// cases of one target as threads of one process and a directory keyed on the
+/// pid alone is shared between them.
+fn scratch(case: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("headwater-sweep-{case}"));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("corpus")).expect("the scratch corpus");
+    for entry in std::fs::read_dir(fixtures_dir().join("corpus")).expect("the fixture corpus") {
+        let entry = entry.expect("a corpus entry");
+        std::fs::copy(entry.path(), dir.join("corpus").join(entry.file_name()))
+            .expect("a document copies into the scratch corpus");
+    }
+    dir
+}
+
+/// Paste one block into the front matter of the document it names.
+///
+/// The report indents a block for display, so a reader dedents it. Where the
+/// document already carries a `relations:` key the entry joins that mapping,
+/// and where it carries none the whole key is written before the closing
+/// fence. Both are what a person does by hand, and neither is a splicer this
+/// engine ships.
+fn paste(dir: &Path, block: &Block) {
+    let file = dir.join(&block.path);
+    let source =
+        std::fs::read_to_string(&file).unwrap_or_else(|e| panic!("{}: {e}", file.display()));
+    let mut lines: Vec<String> = source.lines().map(str::to_string).collect();
+    let entry = vec![
+        format!("  {}:", block.relation),
+        format!("    - {}", block.id),
+    ];
+    let close = lines
+        .iter()
+        .skip(1)
+        .position(|line| line == "---")
+        .expect("the front matter closes")
+        + 1;
+    let at = match lines[..close].iter().position(|line| line == "relations:") {
+        Some(index) => index + 1,
+        None => {
+            lines.insert(close, "relations:".to_string());
+            close + 1
+        }
+    };
+    for (offset, written) in entry.into_iter().enumerate() {
+        lines.insert(at + offset, written);
+    }
+    std::fs::write(&file, lines.join("\n") + "\n").expect("the pasted document writes");
+}
+
+/// Every `relation.reciprocity.missing` this check layer reports over a tree.
+///
+/// The whole layer runs and the findings are filtered by rule, because the
+/// question is what a reader's own gate says after the paste and their gate
+/// runs every rule. Other findings are the fixture corpus being a fixture and
+/// are not this case's subject.
+fn reciprocity_over(dir: &Path) -> Vec<String> {
+    let root = taxonomy_map();
+    let corpus = Corpus::new(dir, "corpus");
+    let taxonomy = Taxonomy::read(&root).expect("the taxonomy reads");
+    let taken = census::take(&corpus, &taxonomy);
+    let relations = Declarations::read(&root).expect("the declarations read");
+    let config = Config::default();
+    let graph = Graph::build(
+        &taken,
+        &relations,
+        &Resolvers::over(&corpus),
+        &corpus,
+        &config,
+    );
+    let register = Register::read(&root).expect("the register reads");
+    let shape = Shape::read(&root).expect("the shape reads");
+    let run = headwater_check::run(
+        &taken,
+        &graph,
+        &Declared {
+            lock: LOCK,
+            taxonomy: &taxonomy,
+            shape: &shape,
+            relations: &relations,
+            config: &config,
+            register: &register,
+            adoption: None,
+            source: "engine/crates/sweep/fixtures/sweep.taxonomy.yml",
+        },
+        &claims_over(&graph.index),
+        &Context::at(Date::parse(PINNED).expect("the pinned date")),
+        &mut Cache::disabled(),
+    );
+    run.findings
+        .iter()
+        .filter(|finding| finding.rule == "relation.reciprocity.missing")
+        .map(|finding| format!("{}: {}", finding.path, finding.message))
+        .collect()
+}
+
+/// Render a report for one proposal, and return the blocks it printed.
+fn blocks_for(relation: &str, from: &str, to: &str) -> Vec<Block> {
+    let source = returned_with(&[FIRST, SECOND], &proposal(relation, from, to));
+    let report = report_of(&source);
+    assert_eq!(
+        report.verified.len(),
+        1,
+        "the finding did not carry: {:?}",
+        refusals(&report)
+    );
+    blocks_of(&report.render(ColorMode::Plain))
+}
+
+/// The case this whole section exists for, in the direction the relation
+/// declares.
+///
+/// A reader pastes what the report printed and runs their own commit gate. The
+/// assertion is the pair: the first block alone leaves an error, and every
+/// block the report printed leaves none. The first half is what makes the
+/// second one evidence — a run that reported zero because the rule never
+/// instantiated would report zero for both.
+#[test]
+fn every_block_the_report_prints_for_a_required_relation_leaves_a_passing_corpus() {
+    let blocks = blocks_for("supersedes", "DR-SWP-0001", "DR-SWP-0002");
+    assert_eq!(
+        blocks.len(),
+        2,
+        "a relation that requires both ends printed {} block(s): {blocks:?}",
+        blocks.len()
+    );
+
+    let half = scratch("required-half");
+    paste(&half, &blocks[0]);
+    let owed = reciprocity_over(&half);
+    assert_eq!(
+        owed.len(),
+        1,
+        "the first block alone left no reciprocity finding, so this case proves nothing: {owed:?}"
+    );
+
+    let both = scratch("required-both");
+    for block in &blocks {
+        paste(&both, block);
+    }
+    let after = reciprocity_over(&both);
+    assert!(
+        after.is_empty(),
+        "pasting what the report printed leaves a corpus the gate refuses: {after:?}"
+    );
+}
+
+/// The same relation reached under its inverse name.
+///
+/// `superseded_by` is a name no `relations:` map declares, so the intake
+/// resolves it through the inverse and the proposal's `from` sits at the
+/// relation's `to` end. The owed name is then the declared one rather than the
+/// inverse one, and a printer that reads `relation.inverse` in both directions
+/// prints `superseded_by` twice. Five of the seventeen names this repository's
+/// own taxonomy resolves are reachable only this way.
+#[test]
+fn the_same_holds_for_a_proposal_written_under_the_inverse_name() {
+    let blocks = blocks_for("superseded_by", "DR-SWP-0001", "DR-SWP-0002");
+    assert_eq!(blocks.len(), 2, "the inverse direction printed {blocks:?}");
+    assert_eq!(
+        blocks[0].relation, "superseded_by",
+        "the printed half is not the name the finding wrote: {blocks:?}"
+    );
+    assert_eq!(
+        blocks[1].relation, "supersedes",
+        "the owed half is not the declared name: {blocks:?}"
+    );
+
+    let half = scratch("inverse-half");
+    paste(&half, &blocks[0]);
+    assert_eq!(
+        reciprocity_over(&half).len(),
+        1,
+        "the first block alone left no reciprocity finding, so this case proves nothing"
+    );
+
+    let both = scratch("inverse-both");
+    for block in &blocks {
+        paste(&both, block);
+    }
+    let after = reciprocity_over(&both);
+    assert!(
+        after.is_empty(),
+        "pasting what the report printed leaves a corpus the gate refuses: {after:?}"
+    );
+}
+
+/// The two relations that owe nothing, which is what stops the second block
+/// from being unconditional.
+///
+/// `conflicts_with` is symmetric and `records` declares no reciprocity. A
+/// second block under either one would tell a person to declare an edge their
+/// taxonomy never asked for, and the assertion is the count and the absence of
+/// the second path rather than the text of the first.
+#[test]
+fn a_relation_that_requires_one_end_prints_one_block_and_one_path() {
+    for relation in ["conflicts_with", "records"] {
+        let source = returned_with(
+            &[FIRST, SECOND],
+            &proposal(relation, "DR-SWP-0001", "DR-SWP-0002"),
+        );
+        let report = report_of(&source);
+        assert_eq!(
+            report.verified.len(),
+            1,
+            "`{relation}` did not carry: {:?}",
+            refusals(&report)
+        );
+        let blocks = blocks_of(&report.render(ColorMode::Plain));
+        assert_eq!(
+            blocks.len(),
+            1,
+            "`{relation}` requires one end and printed {blocks:?}"
+        );
+        assert_eq!(blocks[0].path, FIRST);
+        assert!(
+            report.verified[0]
+                .proposal
+                .as_ref()
+                .expect("the proposal carried")
+                .owed
+                .is_none(),
+            "`{relation}` requires one end and the intake recorded a second half"
+        );
+        let rendered = report.render(ColorMode::Plain);
+        assert!(
+            !rendered.contains(&format!("in the front matter of {SECOND}:")),
+            "the report tells a person to write in the far document, and `{relation}` owes it \
+             nothing:\n{rendered}"
+        );
+    }
 }
 
 // --- what a control cannot say about a sweep --------------------------------

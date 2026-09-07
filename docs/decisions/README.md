@@ -2,7 +2,7 @@
 
 # Decision records
 
-58 documents on this shelf, in the reading order this corpus derives.
+59 documents on this shelf, in the reading order this corpus derives.
 
 - [Q1 — Implementation language](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [Q2 — Schema format](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -53,6 +53,7 @@
 - [Migrating from-version carries a semver and a release digest, kept as separate fields](0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md) — `adoption.from` is a pair, a semver and the release digest that was pinned when the migration began, and never a hash of the two.
 - [The served sitemap is derived from the served directory](0048-the-served-sitemap-is-derived-from-the-served-directory.md) — The sitemap a reader gets is derived from the directory that is served, by one walk that both halves call. Nobody types a page list, and the assembled directory is the only place the union exists. (asserted, and no human has accepted it)
 - [How the two halves of the site share one host](0047-how-the-two-halves-of-the-site-share-one-host.md) — One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time. (asserted, and no human has accepted it)
+- [A corpus-wide fold is derived and never stored](0049-a-corpus-wide-fold-is-derived-and-never-stored.md) — A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict. (asserted, and no human has accepted it)
 - [Q51 — What licenses a term into the public glossary, and what licenses a sixteenth](0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md) — A term reaches the public glossary because it recurs in the visitor-facing pages of the site, and for no other reason. The tutorial and the glossary itself are not sources, and the specification glossary answers to a different reader. (asserted, and no human has accepted it)
 - [A document is proposed at the state it will hold, and the merge activates it](0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md) — An author writes the state a document will hold once it lands, and the merge activates it. The state facet answers to the merge, the way HW-DR-0034 made the warrant facet answer to it.
 - [A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance](0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md) — A manifest says what a package carries, a recipe says what a composer selected, and a flattened manifest records where it came from. Three enforcement points already hold the split, and this record names it as a rule rather than as specification prose. (asserted, and no human has accepted it)
