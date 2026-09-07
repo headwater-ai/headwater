@@ -58,6 +58,7 @@ nav:
       - "The upper bound of a reconcile-first allocator is the corpus and a claim store": "decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md"
       - "A hook reads a wire format through the engine and not through an interpreter": "decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md"
       - "A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile": "decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md"
+      - "A shelf layout is the second half of what the identifier claim store covers": "decisions/0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md"
       - "A blank facet value is a rule of its own and it reads every string facet": "decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
@@ -277,6 +278,12 @@ nav:
       - "A saturated pattern set and a clean corpus are the same zero, and no report separates them": "obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md"
       - "The blank facet value rule reaches no obligation so the report names none": "obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md"
       - "No rule reads a document facet value against the type its declaration states": "obligations/0171-no-rule-reads-a-document-facet-value-against-the-type-its-declaration-states.md"
+      - "Nine hand-kept constants enumerate an enum and nothing holds one against the variants": "obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md"
+      - "Four inline gates in the workflow decide an exit status and no suite provokes one": "obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md"
+      - "Publishing the base package reports 51 references that resolve nowhere and exits 0": "obligations/0174-publishing-the-base-package-reports-51-references-that-resolve-nowhere-and-exits-0.md"
+      - "Two documents take one sequence on a sequence-declaring shelf and no rule reads it": "obligations/0175-two-documents-take-one-sequence-on-a-sequence-declaring-shelf-and-no-rule-reads-it.md"
+      - "A blessed fixture is read by a sibling case that runs while the write truncates it": "obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md"
+      - "The value rule writes adopter on every self-audit record and most of them wait on a build": "obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md"
   - "Probes":
       - "Probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"

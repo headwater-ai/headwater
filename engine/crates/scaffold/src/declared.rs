@@ -9,7 +9,6 @@
 //!
 //! | member | what it decides | why the typed reader drops it |
 //! |---|---|---|
-//! | `shelves.<name>.layout` | the file name | no check reads a placement it did not already find |
 //! | `identifier_schemes.<name>.allocation` | how a number is issued | [`headwater_check::shape::IdentifierScheme`] states it keeps the two members that decide a *shape* |
 //! | `relations.<name>.created_by` | who pays for an edge | [Q4](../../../../docs/decisions/0004-relation-storage.md) puts it on the relation type, and `taxonomy audit` is the reader it names |
 //!
@@ -22,6 +21,12 @@
 //! [`headwater_check::shape::LifecycleRegime`] carries the whole machine now,
 //! because two rules read it, and the scaffolder reads the opening state
 //! through that rather than through a walk of its own.
+//!
+//! `shelves.<name>.layout` was the fifth and it left the same way.
+//! `identifier.claim.missing` reads it through
+//! [`headwater_check::claim::takes_a_claim`], so
+//! [`headwater_census::shelves::Shelf`] carries it and the scaffolder takes the
+//! file-name template off the shelf it already holds.
 
 use headwater_yaml::Mapping;
 
@@ -40,13 +45,6 @@ fn member<'a>(root: &'a Mapping, block: &str, entry: &str, name: &str) -> Option
             .text
             .as_str(),
     )
-}
-
-/// `shelves.<shelf>.layout`: the template a file name on this shelf is written
-/// from. A shelf that declares none names its files after nothing, and the
-/// caller falls back to the slug.
-pub fn layout<'a>(root: &'a Mapping, shelf: &str) -> Option<&'a str> {
-    member(root, "shelves", shelf, "layout")
 }
 
 /// `identifier_schemes.<scheme>.allocation`: `minted-once` or

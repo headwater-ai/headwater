@@ -563,18 +563,29 @@ fn the_remediation_of_pin_current_names_every_step_of_the_route_in_order() {
 // lock.current
 // ---------------------------------------------------------------------------
 
-/// The failing arm, and it is the one that matters. The lock records the digest
-/// of every source it was written from, so a source whose bytes moved is a lock
-/// that no run can reproduce.
+/// The failing arm, and it is the one that matters. A root that does not
+/// resolve cannot say what its sources resolve to, so the rule says that rather
+/// than reporting a met.
+///
+/// **This case moved with the fix for
+/// [#648](https://github.com/headwater-ai/headwater/issues/648), and the
+/// sentence it used to assert is the whole reason.** The scratch root holds
+/// none of the sources the lock names, and the reading that hashed source files
+/// alone called every one of them moved. The reading now runs the comparison
+/// `taxonomy resolve --check` decides with, and that one fails on a root with no
+/// consumer declaration before a source is hashed — which is what the verb does
+/// over this same root. The moved-source sentence is reached from a root that
+/// resolves, and `engine/crates/cli/tests/conformance_lock.rs` is where a root
+/// that resolves is built and perturbed.
 #[test]
-fn a_source_that_moved_since_the_lock_was_written_is_a_gap() {
-    let root = scratch("lock-moved");
+fn a_root_that_does_not_resolve_is_a_gap_and_not_a_met() {
+    let root = scratch("lock-unresolvable");
     let lock = headwater_lock::at(&repository_root()).expect("this repository's lock reads");
-    // The lock names sources relative to a root, and this scratch root holds
-    // none of them, so every source reads as moved.
     let detail = gap(&lock_current(&root, &lock));
-    assert!(detail.contains("moved since the lock was written"));
-    assert!(detail.contains(".headwater/overlay.yml"));
+    assert!(
+        detail.contains("the sources do not resolve"),
+        "a root with no declaration says so rather than naming a moved source: {detail}"
+    );
     let _ = std::fs::remove_dir_all(&root);
 
     // The met arm, over the tree the lock was actually written from.

@@ -30,7 +30,7 @@ The promotion rate against the asserted count is the instrument.
 
 ## Discharge
 
-Half of the instrument now runs. `taxonomy audit` reports the warrant of every classified document over the closed set, and it names the `asserted` count as the denominator a rate divides by. This record states no figure for that count. Run the verb and read the warrant section. A number copied into prose is a claim that no run re-derives. What changed is that the population is no longer empty. Every document in it was written on or after 2026-08-14. The measurement of this record before that date was 0, which was true of the corpus it measured.
+Half of the instrument now runs. `taxonomy audit` reports the warrant of every classified document over the closed set, and it names the `asserted` count as the denominator a rate divides by. This record states no figure for that count. Run the verb and read the warrant section. A number copied into prose is a claim that no run re-derives. The population is not empty. Every document in it was written on or after 2026-08-14. The measurement of this record before that date was 0, which was true of the corpus it measured.
 
 The numerator now runs, and it runs in another verb. A promotion is a lifecycle transition, from the `asserted` warrant to `accepted`. `warrant.promoted` declares the `needs_prior` input that [spec 12](../spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version) designs, and `headwater check --change` is where a caller supplies one. The count is change-scoped for that reason, so it cannot live in `taxonomy audit`, which reads one working tree.
 

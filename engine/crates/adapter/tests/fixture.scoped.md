@@ -13,7 +13,7 @@
 - `check/spec/00-both-halves.markdown`
 - `engine/crates/check/src/change.rs`
 
-**Coverage.** This run saw 26 files and classified 24 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 305 check instances, and 48 of them reached no verdict.
+**Coverage.** This run saw 26 files and classified 24 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 306 check instances, and 49 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
@@ -22,6 +22,7 @@
 - 2 — `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
 - 22 — this document writes no fragment into itself
 - 3 — the prior version at `a prior version that no tree holds` did not open: no prior version stands at this name
+- 1 — the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there
 
 4 readings of a path the census never walked, so the coverage above is computed over a set that does not hold them:
 

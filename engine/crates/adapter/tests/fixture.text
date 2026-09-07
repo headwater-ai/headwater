@@ -66,7 +66,7 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  26 seen, 24 classified, 23 checked, 305 check instances
+  26 seen, 24 classified, 23 checked, 306 check instances
         1 generated, held to regeneration by `headwater generate --check`
         1 skipped: no `id` facet, which is the key this engine reads an
           identifier from and which no declaration states
@@ -80,6 +80,9 @@ checks
        22 skipped: this document writes no fragment into itself
        25 skipped: change-scoped-only: the prior version is available only in
          change-scoped evaluation, and this run carries no change
+        1 skipped: the document at the target end, `FIX-REG-open-questions`,
+          declares no value for the state facet, so there is no state to read
+          there
     a check read .headwater/ids, which the census never walked
     a check read .headwater/ids, which the census never walked
   adoption
@@ -96,6 +99,7 @@ checks
        10 instances of relation.target.unresolved
         4 instances of relation.reciprocity.missing
         7 instances of relation.endpoint.not_permitted
+        1 instances of lifecycle.dependency.on_terminal
         7 instances of relation.participation.overdue
        23 instances of relation.declaration.unusable
        23 instances of identifier.unusable
@@ -552,7 +556,7 @@ read set
   version relation.declaration.unusable 1
   version identifier.unusable 1
   version identifier.claimed_twice 1
-  version identifier.claim.missing 1
+  version identifier.claim.missing 2
   version identifier.claim.stale 1
   version voice.forbidden_construction 2
   version language.controlled.not_met 1

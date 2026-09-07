@@ -1,6 +1,6 @@
 # The evidence-and-obligation taxonomy
 
-One kind, `evaluation`, and the two reader intents that this repository and the [design-spec entry](../design-spec/doctrine.md) called `evidence` and `obligation`. This entry exists because [HW-DR-0044](../../decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md) found that `decision-record` required all of `design-spec` for these two addresses and nothing else it declared, and it is the library's third entry rather than a rewrite of its first.
+One kind, `evaluation`, and the two reader intents that this repository and the [design-spec entry](../design-spec/doctrine.md) called `evidence` and `obligation`. This entry exists because [HW-DR-0044](../../decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md) found that `decision-record` required all of `design-spec` for these two addresses and nothing else it declared, and it is a bundle of its own rather than a rewrite of `design-spec`. The [library index](../README.md#admission-and-what-is-admitted) lists it as a bundle that admission does not carry. It models no tradition and it ships no worked corpus of its own.
 
 ## What the finding was, and what this entry is not
 

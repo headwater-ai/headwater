@@ -64,7 +64,6 @@ use headwater_check::context::Date;
 use headwater_check::Shape;
 use headwater_graph::declarations::{Declarations, Direction, Relation};
 use headwater_graph::Graph;
-use headwater_yaml::Mapping;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub mod reading;
@@ -548,7 +547,6 @@ pub fn take(
     taxonomy: &Taxonomy,
     shape: &Shape,
     relations: &Declarations,
-    resolved: &Mapping,
     adoption: Series,
 ) -> Audit {
     let classified: Vec<&Row> = census
@@ -587,7 +585,7 @@ pub fn take(
         facets: facets(&classified, shape),
         dependences: dependences(&classified, shape),
         shelves: shelves(&classified, taxonomy),
-        layouts: layouts(&classified, graph, taxonomy, shape, resolved),
+        layouts: layouts(&classified, graph, taxonomy, shape),
         dwell: dwell(&classified, shape, now),
         freshness,
         warrants,
@@ -1179,13 +1177,12 @@ fn layouts(
     graph: &Graph,
     taxonomy: &Taxonomy,
     shape: &Shape,
-    resolved: &Mapping,
 ) -> Vec<LayoutReading> {
     taxonomy
         .shelves
         .iter()
         .filter_map(|shelf| {
-            let layout = headwater_scaffold::declared::layout(resolved, &shelf.name)?;
+            let layout = shelf.layout.as_deref()?;
             let mut identified = 0;
             let mut measured = 0;
             let mut renders = 0;

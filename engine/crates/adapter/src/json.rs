@@ -28,8 +28,9 @@
 
 use crate::{reported, Reported, Subject};
 use headwater_check::register::Bound;
-use headwater_check::{Coverage, Run, Scoped};
+use headwater_check::{Coverage, Instance, Outcome, Run, Scoped};
 use headwater_yaml::json::Json;
+use std::collections::HashSet;
 
 /// The version of this document's own shape.
 ///
@@ -50,10 +51,22 @@ use headwater_yaml::json::Json;
 /// ones that did not, and a consumer that read the four counts alone read
 /// `3498 instances` off a run where 585 of them decided nothing.
 ///
+/// `1.3` added the routing of each skip: every entry of `coverage.skips` now
+/// carries `documents`, the census rows that class of skip was routed to with
+/// the rules that skipped over each, and `unrouted`, the instances of that class
+/// that were routed to no document at all. The bump separates the same pair the
+/// two above separate. A `1.3` document that writes `"documents": []` and
+/// `"unrouted": 4` says every instance of that class fell outside the census
+/// rows, and the same class in a `1.2` document says only that this producer had
+/// no member for where a skip fell. Before `1.3` two runs of one corpus that
+/// skipped the same number of instances under one class over **different**
+/// documents wrote one artifact, because the only member that moved was a
+/// content digest of the read set.
+///
 /// Two of the shapes here have a second reader: [`change`] and [`coverage`] are
 /// what the SARIF property bag carries, so this constant versions them for that
 /// artifact too and [`crate::sarif`] writes it there.
-pub const VERSION: &str = "1.2";
+pub const VERSION: &str = "1.3";
 
 /// One run as JSON.
 pub fn render(run: &Run, subject: &Subject<'_>) -> String {
@@ -109,12 +122,15 @@ pub fn change(scoped: &Scoped) -> Json {
 /// skips. [`VERSION`] is what separates those two, and the value separates
 /// nothing on its own.
 ///
-/// The one value of [`Coverage`] that no member here carries is which document
-/// each skipped instance fell on. No format of this engine carries it and no
-/// flag of `headwater check` prints it, so it is not a loss of this target
-/// against another: `Detail::EveryInstance` is the one renderer that holds it and
-/// nothing wires it to a surface.
-pub fn coverage(coverage: &Coverage) -> Json {
+/// Which document each skipped instance fell on is a member here since `1.3`,
+/// inside the `skips` entry for its class. It was the one value of [`Coverage`]
+/// that reached no format at all, which put a limit on what this block can
+/// distinguish: two runs of one corpus that skipped the same number of instances
+/// under one class, over different documents, wrote the same coverage block and
+/// differed only in a content digest of the read set. A digest moves on any edit
+/// and says nothing about what went unmeasured, so the one difference a consumer
+/// could see was the one that misled them.
+pub fn coverage(coverage: &Coverage, instances: &[Instance]) -> Json {
     Json::object([
         ("seen", number(coverage.seen())),
         ("classified", number(coverage.classified())),
@@ -126,21 +142,7 @@ pub fn coverage(coverage: &Coverage) -> Json {
         // `Coverage::skips` for the two ways a count read off the documents is
         // not that number.
         ("skipped", number(coverage.skipped())),
-        (
-            "skips",
-            Json::Array(
-                coverage
-                    .skips()
-                    .iter()
-                    .map(|(reason, instances)| {
-                        Json::object([
-                            ("reason", Json::string(reason.clone())),
-                            ("instances", number(*instances)),
-                        ])
-                    })
-                    .collect(),
-            ),
-        ),
+        ("skips", skips(coverage, instances)),
         // The paths, and not the count of them, for the reason `change` names
         // its unmatched paths: a check that read outside the census read
         // outside the set every guarantee here is computed over, and the reader
@@ -156,6 +158,131 @@ pub fn coverage(coverage: &Coverage) -> Json {
             ),
         ),
     ])
+}
+
+/// Each class of skip, with the instances it covers and where they fell.
+///
+/// Two arms, and the second is the one a document-keyed member would leave out.
+///
+/// `documents` is the routing, read off [`Coverage::documents`] in census order.
+/// One entry per census row that class of skip was routed to, with the rules
+/// that skipped over that row and a count named `routings`.
+///
+/// `unrouted` is the other arm. A corpus-scoped instance is routed to no
+/// document at all — `lifecycle.deletion.not_permitted` is the live one — and an
+/// instance that read only paths the census never walked is routed to none
+/// either. Neither reaches `documents`, so a reader of that member alone cannot
+/// tell "this class fell on no document" from "this producer does not report
+/// where a skip fell". This member is what separates them, and it is written on
+/// every run including a zero for the same reason every other member here is.
+///
+/// # The three numbers, and the relation that actually holds between them
+///
+/// `instances` and `unrouted` count **instances**, once each whatever they were
+/// routed to. `routings` counts **routings**. So the arithmetic a reader reaches
+/// for is wrong, and it is wrong in one direction only:
+///
+/// > the routings of a class, summed, plus its `unrouted`, is **at least** its
+/// > `instances`, and larger by one for every extra endpoint a routed instance
+/// > was routed to.
+///
+/// A document-scoped instance is routed to one census row and contributes one
+/// routing. An edge-scoped one is routed to both of its endpoints and
+/// contributes two, so a class holding a single edge-scoped skip reports
+/// `instances: 1`, one or two rows summing to `routings: 2`, and `unrouted: 0`.
+/// Equality holds exactly where no routed instance of the class is edge-scoped,
+/// which is most classes and is not a property of the shape.
+///
+/// What does partition the instances is the *presence* of a row rather than the
+/// count on it: every instance of the class was routed to at least one census
+/// row, and then it appears under `documents`, or it was routed to none, and
+/// then it is counted in `unrouted`. Never both, and never neither.
+fn skips(coverage: &Coverage, instances: &[Instance]) -> Json {
+    let walked: HashSet<&str> = coverage
+        .documents
+        .iter()
+        .map(|document| document.path.as_str())
+        .collect();
+    // One pass over the instance record rather than one per class, and over the
+    // record rather than over the documents: the documents hold the routing,
+    // and this is the count of what the routing never reached.
+    let mut unrouted: Vec<usize> = vec![0; coverage.skips().len()];
+    for instance in instances {
+        let Outcome::Skipped(reason) = &instance.outcome else {
+            continue;
+        };
+        if instance.grain.routes() && instance.paths().iter().any(|path| walked.contains(path)) {
+            continue;
+        }
+        if let Some(at) = coverage
+            .skips()
+            .iter()
+            .position(|(known, _)| known == reason)
+        {
+            unrouted[at] += 1;
+        }
+    }
+    Json::Array(
+        coverage
+            .skips()
+            .iter()
+            .zip(unrouted)
+            .map(|((reason, instances), unrouted)| {
+                Json::object([
+                    ("reason", Json::string(reason.clone())),
+                    ("instances", number(*instances)),
+                    ("documents", routed(coverage, reason)),
+                    ("unrouted", number(unrouted)),
+                ])
+            })
+            .collect(),
+    )
+}
+
+/// The census rows one class of skip was routed to, in census order.
+///
+/// A row that class never fell on writes no entry, so the member is the routing
+/// and not a second copy of the census. The rules are in the order they first
+/// skipped over the row and each is named once, because a rule that skipped four
+/// instances over one document is one fact for a reader and four lines for
+/// nobody.
+///
+/// The count on each row is named `routings` and not `instances`, and the word
+/// is the whole of what tells a reader the two are different populations. An
+/// edge-scoped instance is routed to both of its endpoints, so it is one
+/// instance and two routings, and a member called `instances` sitting under a
+/// sibling `instances` that counts instances would report the same word for two
+/// numbers that do not add up together.
+fn routed(coverage: &Coverage, reason: &str) -> Json {
+    Json::Array(
+        coverage
+            .documents
+            .iter()
+            .filter_map(|document| {
+                let mut rules: Vec<&'static str> = Vec::new();
+                let mut routings = 0;
+                for (rule, fell) in &document.skipped {
+                    if fell != reason {
+                        continue;
+                    }
+                    routings += 1;
+                    if !rules.contains(rule) {
+                        rules.push(rule);
+                    }
+                }
+                (routings > 0).then(|| {
+                    Json::object([
+                        ("path", Json::string(document.path.clone())),
+                        (
+                            "rules",
+                            Json::Array(rules.into_iter().map(Json::string).collect()),
+                        ),
+                        ("routings", number(routings)),
+                    ])
+                })
+            })
+            .collect(),
+    )
 }
 
 fn document(run: &Run, subject: &Subject<'_>) -> Json {
@@ -179,7 +306,7 @@ fn document(run: &Run, subject: &Subject<'_>) -> Json {
         members.push(("change", change(scoped)));
     }
     members.extend([
-        ("coverage", coverage(&run.coverage)),
+        ("coverage", coverage(&run.coverage, &run.instances)),
         ("rules", Json::Array(run.served.iter().map(rule).collect())),
         (
             "findings",

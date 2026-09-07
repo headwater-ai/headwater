@@ -1131,9 +1131,6 @@ fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
         &loaded.taxonomy,
         &loaded.shape,
         &loaded.relations,
-        // The resolved taxonomy, for the one member of a shelf that no typed
-        // reader carries. See `headwater_scaffold::declared`.
-        &loaded.bound.taxonomy,
         headwater_audit::Series {
             reading,
             recorded,
@@ -5601,11 +5598,32 @@ taxonomy:
         // artifact. So it named a dead end in the file they then edit and commit.
         // It names both routes now, and says where the number comes from either
         // way.
+        //
+        // **The two routes do not need the same field, and saying "either way"
+        // held that they did.**
+        // [#641](https://github.com/headwater-ai/headwater/issues/641) is the
+        // adopter who ran the command this comment names and met `nothing pins
+        // this artifact`. The copy route needs the version alone. The vendor
+        // route needs the digest before `vendor` will accept the artifact, and
+        // the version as well before `resolve` will accept the package, so it
+        // needs two fields in that order. The commented `digest` line below is
+        // the only place an adopter learns the key exists, and it is left
+        // commented because the value is theirs to write.
+        //
+        // `--expect <digest>` is deliberately not named here. It exits 0 and
+        // writes nothing into this file, so an adopter who took it would commit
+        // a declaration that pins nothing and meet the same refusal on the next
+        // clone.
         None => declaration_text.push_str(
             "  # INTERVIEW: no package of this name is under `packages/`, and nothing in this\n\
-             \x20 # engine fetches one. Copy a package directory into `packages/`, or run\n\
-             \x20 # `headwater taxonomy vendor <dir>` on a published artifact. Either way, pin\n\
-             \x20 # the version that the package itself declares.\n\
+             \x20 # engine fetches one. Two routes reach a lock, and each one needs a different\n\
+             \x20 # field below. Copy a package directory into `packages/`, and pin `version` at\n\
+             \x20 # the version that package declares. Or run `headwater taxonomy vendor <dir>`\n\
+             \x20 # on a published artifact: that verb reads `digest` and refuses until it holds\n\
+             \x20 # the digest the publisher printed, and `headwater taxonomy resolve` reads\n\
+             \x20 # `version` after it, so the vendor route needs the digest first and the\n\
+             \x20 # version as well.\n\
+             \x20 # digest: sha256:<the digest the publisher printed>\n\
              \x20 version: 0.0.0\n",
         ),
     }
@@ -5697,10 +5715,19 @@ add: {{}}
         // paragraph repairing. So the copy is named, because it is what an
         // adopter can do, and `vendor` keeps its own sense with the artifact
         // beside it.
+        //
+        // The routes need different fields, which is the same correction the
+        // written comment carries and for the same reason. See the arm above,
+        // and [#641](https://github.com/headwater-ai/headwater/issues/641).
         None => println!(
-            "  package {package} is not under `packages/`, and nothing here fetches one. Copy a \
-             package directory into `packages/` to resolve against it, or run `headwater taxonomy \
-             vendor <dir>` on a published artifact to reach `pin.current` too"
+            "  package {package} is not under `packages/`, and nothing here fetches one. Two \
+             routes reach a lock, and each one needs a different field of \
+             `.headwater/taxonomy.yml`. Copy a package directory into `packages/`, and pin \
+             `taxonomy.version` at the version that package declares. Or run `headwater taxonomy \
+             vendor <dir>` on a published artifact: that verb reads `taxonomy.digest` and refuses \
+             until it holds the digest the publisher printed, and `headwater taxonomy resolve` \
+             reads `taxonomy.version` after it, so the vendor route needs the digest first and \
+             the version as well"
         ),
     }
     println!("\nwhat it cannot read off a tree, and asked instead");

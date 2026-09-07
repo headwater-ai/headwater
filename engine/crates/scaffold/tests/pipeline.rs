@@ -236,6 +236,35 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
         "three documents and two spliced far halves: {touched:?}"
     );
 
+    // The decisive assertion of
+    // [#584](https://github.com/headwater-ai/headwater/issues/584), and it is
+    // about the shelf rather than the scheme. `design_spec` mints under
+    // `spec_id`, which allocates `minted-once`, onto `spec_series`, which
+    // declares `{sequence:02d}-{slug}.md`. While the store covered the
+    // `reconcile-first` schemes alone, `claim::write` returned `None` here and
+    // no file was written at all, so two branches minting one `SPEC-FIX-…` at
+    // two sequences wrote two paths and git merged both without a word.
+    let claim = root.join(".headwater/ids/spec_id/SPEC-FIX-a-scaffolded-fourth-part");
+    assert_eq!(
+        std::fs::read_to_string(&claim).unwrap_or_else(|why| panic!(
+            "{}: {why}. A mint onto a layout-declaring shelf claims its identifier.",
+            claim.display()
+        )),
+        "corpus/spec/04-a-scaffolded-fourth-part.md\n",
+        "the claim names the document that minted the identifier"
+    );
+
+    // And the other half of the predicate, unmoved. `decision_record` mints
+    // under a `reconcile-first` scheme onto `decisions`, which declares no
+    // layout, so a predicate that read the shelf alone would have taken this
+    // claim away.
+    let reconciled = root.join(".headwater/ids/decision_id/DR-FIX-0008");
+    assert!(
+        reconciled.exists(),
+        "{}: a reconcile-first mint claims its identifier whatever its shelf declares",
+        reconciled.display()
+    );
+
     let run = check_over(root);
     let report = run.render(
         headwater_check::Detail::EveryInstance,

@@ -36,145 +36,17 @@
 //! gate holds current, and it would go stale in silence. A base package that
 //! stops classifying this document fails these cases loudly instead.
 
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::path::PathBuf;
 
 mod common;
-use common::pin;
+use common::{Ran, Root};
 
-fn repository() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../..")
-        .canonicalize()
-        .expect("the repository root resolves")
-}
-
-/// A repository root that removes itself.
+/// The two edits only this target makes to a root.
 ///
-/// `label` names the test and not the case. Cargo runs the cases of one target
-/// as threads of one process, so a directory keyed on the process identifier
-/// alone is a directory one case removes while another is reading it.
-struct Root {
-    at: PathBuf,
-}
-
+/// [`Root`] itself is in `common`, because `conformance_lock.rs` runs over the
+/// same one. These two are about publishing a second version of the package,
+/// which is a question this target asks and that one does not.
 impl Root {
-    fn new(label: &str) -> Root {
-        Root::shaped(label, |_| {})
-    }
-
-    /// A root whose bundle order makes one overlay found the kind another one
-    /// declares, so the resolution carries a founding and every publish out of
-    /// it carries the same founding.
-    ///
-    /// The two bundles commute, which is the whole point: `zz-a` writes a leaf
-    /// under `kinds.zz_thing` and `zz-b` declares that kind, so the declared
-    /// order decides which of them creates the key. The consumer is free to
-    /// list them either way — `headwater_resolve::package::selected` pushes
-    /// bundles in the declared order with no topological pass — so the order
-    /// here is a legal one and not a broken root.
-    ///
-    /// Three things about the pair, each of which cost an earlier attempt.
-    /// `taxonomy publish` publishes the package with every bundle it ships, so
-    /// a synthetic bundle has to resolve under that maximal set as well as
-    /// under this consumer's selection: an address that reads a declaration the
-    /// adopter overlay carries resolves for the consumer and fails the publish.
-    /// A synthetic concrete kind needs a shelf, or `coverage` refuses the
-    /// resolution. And reaching into a key an existing bundle or the adopter
-    /// overlay already writes is refused as a collision rather than recorded as
-    /// a founding, so the kind name is one nothing else names.
-    fn founding(label: &str) -> Root {
-        Root::shaped(label, |at| {
-            for (name, body) in [
-                (
-                    "zz-a",
-                    "# SPDX-License-Identifier: Apache-2.0\n\nbundle: zz-a\nextends: \
-                     headwater/standard@4.1.0\nrequires: []\n\nadd:\n  kinds.zz_thing.voice: \
-                     declarative\n",
-                ),
-                (
-                    "zz-b",
-                    "# SPDX-License-Identifier: Apache-2.0\n\nbundle: zz-b\nextends: \
-                     headwater/standard@4.1.0\nrequires: []\n\nadd:\n  kinds.zz_thing:\n    is_a: \
-                     governed_document\n    purpose: behavior\n    lifecycle: standard\n  \
-                     shelves.zz_things:\n    title: Zz Things\n    path: docs/zz/**\n    \
-                     homogeneous: true\n    kind: zz_thing\n",
-                ),
-            ] {
-                let directory = at.join("docs/taxonomies").join(name);
-                std::fs::create_dir_all(&directory).expect("the bundle directory is made");
-                std::fs::write(directory.join("bundle.yml"), body).expect("the bundle writes");
-            }
-
-            let declaration = at.join(".headwater/taxonomy.yml");
-            let text = std::fs::read_to_string(&declaration).expect("the declaration reads");
-            let from = "  bundles: [design-spec";
-            assert!(text.contains(from), "the declaration lists its bundles");
-            std::fs::write(
-                &declaration,
-                text.replacen(from, "  bundles: [zz-a, zz-b, design-spec", 1),
-            )
-            .expect("the declaration writes");
-        })
-    }
-
-    fn shaped(label: &str, prepare: impl FnOnce(&Path)) -> Root {
-        let at =
-            std::env::temp_dir().join(format!("headwater-cli-diff-{}-{label}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&at);
-        std::fs::create_dir_all(&at).expect("the root is made");
-
-        let repository = repository();
-        // `packages/headwater-standard/` is a vendored artifact since #366
-        // (it carries a `release.yml`, and `taxonomy publish` now refuses to
-        // publish a directory in that state — the guard this fixture would
-        // otherwise trip, since every case here calls `taxonomy publish` by
-        // name with no `--from`). The maintained source is
-        // `taxonomy-source/headwater-standard/`, copied here to the path the
-        // by-name lookup expects.
-        copy(
-            &repository.join("taxonomy-source/headwater-standard"),
-            &at.join("packages/headwater-standard"),
-        );
-        copy(
-            &repository.join("docs/taxonomies"),
-            &at.join("docs/taxonomies"),
-        );
-        copy(
-            &repository.join("engine/crates/cli/fixtures/change/docs"),
-            &at.join("docs"),
-        );
-        for name in ["taxonomy.yml", "overlay.yml"] {
-            let to = at.join(".headwater").join(name);
-            std::fs::create_dir_all(to.parent().expect("it has a parent"))
-                .expect("the declaration directory is there");
-            std::fs::copy(repository.join(".headwater").join(name), to)
-                .expect("the declaration copies");
-        }
-
-        prepare(&at);
-        pin(&at, "1.0.0");
-
-        let root = Root { at };
-        let resolved = root.run(&["taxonomy", "resolve"]);
-        assert_eq!(resolved.code, Some(0), "the fixture resolves: {resolved:?}");
-        root
-    }
-
-    fn run(&self, arguments: &[&str]) -> Ran {
-        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
-            .args(arguments)
-            .arg("--root")
-            .arg(&self.at)
-            .output()
-            .expect("the binary runs");
-        Ran {
-            code: output.status.code(),
-            out: String::from_utf8_lossy(&output.stdout).into_owned(),
-            err: String::from_utf8_lossy(&output.stderr).into_owned(),
-        }
-    }
-
     /// Publish the package as it stands, into a directory named for the release.
     fn publish(&self, name: &str) -> PathBuf {
         let out = self.at.join("released").join(name);
@@ -216,19 +88,6 @@ impl Root {
     }
 }
 
-impl Drop for Root {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.at);
-    }
-}
-
-#[derive(Debug)]
-struct Ran {
-    code: Option<i32>,
-    out: String,
-    err: String,
-}
-
 impl Ran {
     /// The word one dimension reported, out of the summary block.
     fn dimension(&self, name: &str) -> String {
@@ -256,20 +115,6 @@ impl Ran {
             "the lock of this case is honest, so nothing here contradicts itself: {self:?}"
         );
         self
-    }
-}
-
-fn copy(from: &Path, to: &Path) {
-    std::fs::create_dir_all(to).expect("the directory is there");
-    for entry in std::fs::read_dir(from).expect("the fixture directory reads") {
-        let entry = entry.expect("the entry reads");
-        let target = to.join(entry.file_name());
-        match entry.file_type().expect("the file type reads").is_dir() {
-            true => copy(&entry.path(), &target),
-            false => {
-                std::fs::copy(entry.path(), &target).expect("the fixture copies");
-            }
-        }
     }
 }
 
