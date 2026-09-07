@@ -86,6 +86,9 @@ operations
   add.relations.verified_by (.headwater/overlay.yml)
   add.shelves.requirements (.headwater/overlay.yml)
   add.shelves.acceptance_criteria (.headwater/overlay.yml)
+  add.identifier_schemes.process_decision_id (.headwater/overlay.yml)
+  add.kinds.process_decision (.headwater/overlay.yml)
+  add.shelves.process_decisions (.headwater/overlay.yml)
   add_to.projections (.headwater/overlay.yml)
 
 declarations, by member count
@@ -96,10 +99,10 @@ declarations, by member count
   facets: 14 members
   regimes: 3 members
   anchors: 1 member
-  kinds: 17 members
+  kinds: 18 members
   relations: 12 members
-  shelves: 13 members
-  identifier_schemes: 13 members
+  shelves: 14 members
+  identifier_schemes: 14 members
   core: 1 member
   projections: 7 items
   obligations: 35 members

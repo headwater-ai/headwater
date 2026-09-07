@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:4bdebc7afdf10157914fa4c4c5f080ece0f697aeebfac72657209030d612e8db
+  digest: sha256:92bb2fdeed65fe5d02270d9e3d685eafe380063c9820a0175dcbef9cacba5a83
   rules: 1
   package: headwater/standard
   version: 4.1.0
@@ -36,7 +36,7 @@ lock:
     - path: packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:a1d0295f3af618bb371291f264a5f3d85925aabdd171ccea64629ee42a0e1c24
     - path: .headwater/overlay.yml
-      digest: sha256:3aa6da345972785569b5b588aa499a331fe4174dafe36a17d7e741559d71f96e
+      digest: sha256:b21734a33e83602b3d8068275adf6d2acba19ad55b4f0a9cfa00b5c19361a10e
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -510,6 +510,19 @@ resolved:
           - "Run identity"
           - Events
       voice: narrative
+    process_decision:
+      identifier:
+        scheme: process_decision_id
+      is_a: governed_document
+      language: ste_house
+      lifecycle: standard
+      purpose: rationale
+      sections:
+        require:
+          - Context
+          - Decision
+          - Consequences
+      voice: declarative
     requirement:
       facets:
         require:
@@ -751,6 +764,12 @@ resolved:
       kind: probe
       path: "docs/probes/**"
       title: Probes
+    process_decisions:
+      homogeneous: true
+      kind: process_decision
+      layout: "{seq:04d}-{slug}.md"
+      path: "docs/process/decisions/**"
+      title: "Process decisions"
     requirements:
       homogeneous: true
       kind: requirement
@@ -805,6 +824,10 @@ resolved:
       allocation: minted-once
       namespace: HW
       pattern: "{namespace}-PROBE-{slug}"
+    process_decision_id:
+      allocation: reconcile-first
+      namespace: HW
+      pattern: "{namespace}-PD-{seq:04d}"
     register_id:
       allocation: minted-once
       namespace: HW
@@ -858,6 +881,7 @@ resolved:
         - probes
         - reviews
         - tutorials
+        - process_decisions
       output: "{shelf}/README.md"
     - kind: shelf_sections
       for:
