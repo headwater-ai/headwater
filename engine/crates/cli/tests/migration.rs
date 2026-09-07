@@ -161,6 +161,64 @@ fn register_payload(target: &str) -> String {
     )
 }
 
+/// The candidate whose only break is a facet that became required.
+///
+/// The base gains an `audience` facet that nothing requires, and the
+/// decision-record bundle adds it to `kinds.decision.facets.require`. That is
+/// the class [#427](https://github.com/headwater-ai/headwater/issues/427)
+/// names: the facet exists and is optional in the base, a bundle kind starts
+/// requiring it, and every document of that kind stops validating. The three
+/// documents of this fixture are decisions, so all three move.
+///
+/// No step of the migration vocabulary reaches this. `Subject` names a facet
+/// value, a kind and an overlay address, and a facet that became required has
+/// no old value for a `facet_value` step to move. Spec 7 (*The migration
+/// payload*) states that absence and names what an adopter does instead, which
+/// is what [`an_apply_leaves_an_adoption_block_that_infer_can_add_to`]
+/// measures.
+const FACET: [(&[&str], &[&str]); 1] = [(
+    &[
+        "  title:",
+        "    role: name",
+        "    type: string",
+        "    required: false",
+        "    volatility: stable",
+    ],
+    &[
+        "  title:",
+        "    role: name",
+        "    type: string",
+        "    required: false",
+        "    volatility: stable",
+        "  audience:",
+        "    type: string",
+        "    required: false",
+        "    volatility: stable",
+    ],
+)];
+
+/// The one edit that makes `audience` required of every decision.
+const REQUIRES_AUDIENCE: [(&str, &str); 1] = [(
+    "  kinds.decision.facets:\n    require: [title]",
+    "  kinds.decision.facets:\n    require: [title, audience]",
+)];
+
+/// A payload that covers the transition and migrates nothing.
+///
+/// The one step this vocabulary can express over a facet nobody carried is a
+/// re-statement: `to: []` reads as "nothing replaces the old value". Every
+/// document of the corpus lies outside it, which `taxonomy diff` reports. The
+/// payload is here so that `taxonomy migrate --apply` runs at all — an
+/// artifact with no payload for the transition is refused, and the case below
+/// is about the lock that a run which reaches the end leaves behind.
+fn inert_payload() -> String {
+    "# SPDX-License-Identifier: Apache-2.0\n\nmigration:\n  format: 1\n  from: \">=1 <2\"\n  to: \
+     \">=2 <3\"\n\nsteps:\n  - subject: facet_value\n    facet: audience\n    from: audience\n    \
+     to: []\n    task: >-\n      Say who each decision is written for.\n    because: >-\n      A \
+     reader could not tell which decisions were written for them.\n"
+        .to_string()
+}
+
 /// The candidate that renames a kind the adopter's overlay addresses.
 ///
 /// The three `CANDIDATE` edits, and two more that rename the `specification`
@@ -376,6 +434,36 @@ impl Root {
 
     fn read(&self, path: &str) -> String {
         std::fs::read_to_string(self.at.join(path)).expect("the document reads")
+    }
+
+    /// Move the consumer declaration onto `version` and re-resolve.
+    ///
+    /// `taxonomy migrate` writes documents, the overlay and the lock's
+    /// migration state, and it moves no pin. So an adopter takes the new
+    /// version themselves and resolves, and every verb after that reads a lock
+    /// built from the taxonomy they now take.
+    fn takes(&self, version: &str) {
+        let at = self.at.join(".headwater/taxonomy.yml");
+        let text = std::fs::read_to_string(&at).expect("the consumer declaration reads");
+        assert!(
+            text.contains("\n  version: 1.0.0\n"),
+            "the declaration pins 1.0.0 to start with:\n{text}"
+        );
+        std::fs::write(
+            &at,
+            text.replacen(
+                "\n  version: 1.0.0\n",
+                &format!("\n  version: {version}\n"),
+                1,
+            ),
+        )
+        .expect("the consumer declaration writes");
+        let resolved = self.run(&["taxonomy", "resolve"]);
+        assert_eq!(
+            resolved.code,
+            Some(0),
+            "the corpus resolves against the version it now takes: {resolved:?}"
+        );
     }
 
     /// Add one `add` entry to the copied overlay, under the `add:` block it
@@ -1114,6 +1202,227 @@ fn apply_with_no_pinned_digest_writes_no_migration_state() {
         std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads"),
         before,
         "and the lock is byte for byte what it was"
+    );
+}
+
+/// The lock `--apply` leaves is one `headwater infer --write` can add to.
+///
+/// Spec 7 makes `taxonomy migrate` the first verb of an upgrade and `infer` the
+/// verb that records what the upgrade broke as debt. Between them stands
+/// [`merged`](../src/main.rs), which refuses an adoption block that declares no
+/// `tasks` key, because a payload written over an authored block would discard
+/// an owner, an expiry and every pair. The block `--apply` writes is generated
+/// rather than authored, and it declared `from` and `to` and nothing else, so
+/// the second verb refused the first verb's own output on every adopter's first
+/// migration, whatever the change class.
+///
+/// The class here is the one that has no other route: a facet that became
+/// required, which no step of the migration vocabulary reaches. `infer` derives
+/// the pair set from the corpus, `check` then reports it as migration-pending,
+/// and that path is the whole of what an adopter gets for this class.
+#[test]
+fn an_apply_leaves_an_adoption_block_that_infer_can_add_to() {
+    let root = Root::new("apply-then-infer");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate_of(&FACET, Some(&inert_payload()));
+    root.in_bundle("decision-record", &REQUIRES_AUDIENCE);
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    let written = root.read(".headwater/taxonomy.lock");
+    assert!(
+        written.contains("adoption:") && written.contains("  to: 2.0.0\n"),
+        "the run wrote the migration state: {written}"
+    );
+    assert!(
+        written.contains("  tasks: []\n"),
+        "and it wrote the empty standing list the next verb adds to: {written}"
+    );
+
+    // The corpus now takes 2.0.0. `taxonomy migrate` moves no pin, so the two
+    // lines a real adopter runs after it are here: the version they take, and
+    // the resolve that puts it in the lock.
+    root.takes("2.0.0");
+
+    // Every reader of the block, and not `infer` alone. `taxonomy resolve`
+    // carried it through above, which is what `takes` asserts, and the check
+    // layer reads it as the adoption inventory. An empty sequence is zero
+    // tasks holding zero pairs, which is what the block says.
+    let checked = root.run(&["check", "--now", "2026-08-01"]);
+    assert!(
+        checked.out.contains("0 pairs open"),
+        "the check layer reads the block as an empty inventory: {checked:?}"
+    );
+
+    let inferred = root.run(&[
+        "infer",
+        "--owner",
+        "tester",
+        "--until",
+        "2026-12-06",
+        "--now",
+        "2026-08-01",
+        "--write",
+    ]);
+    assert_eq!(
+        inferred.code,
+        Some(0),
+        "the verb spec 7 names next can add to the block --apply left: {inferred:?}"
+    );
+    let lock = root.read(".headwater/taxonomy.lock");
+    assert!(
+        lock.contains("owner: tester"),
+        "the pairs this run derived are in the lock: {lock}"
+    );
+    assert!(
+        lock.contains("rule: facet.required.missing"),
+        "and the rule they are held under is the one the upgrade broke: {lock}"
+    );
+}
+
+/// A lock already carrying a `tasks`-less block is repaired rather than left.
+///
+/// The state an adopter is in who ran `--apply` under an engine that wrote no
+/// `tasks` key: the block is there, it holds `from`, `to` and whatever else a
+/// person put beside them, and `infer --write` refuses it. The next `--apply`
+/// adds the empty sequence, and every other entry of the block survives —
+/// including a key this engine knows nothing about, which is what [`migrated`]
+/// carries entries through for.
+///
+/// A block with a standing task list is a different case and is untouched by
+/// this: `apply_carries_a_standing_task_list_through` is that one.
+#[test]
+fn an_apply_repairs_a_block_that_declares_no_tasks() {
+    let root = Root::new("repairs-a-tasks-less-block");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(Some(&payload()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let lock = root.at.join(".headwater/taxonomy.lock");
+    let before = std::fs::read_to_string(&lock).expect("the lock reads");
+    assert!(
+        !before.contains("\nadoption:\n"),
+        "the fixture declares none to start with"
+    );
+    std::fs::write(
+        &lock,
+        before.replacen(
+            "\n# The resolved taxonomy",
+            "\nadoption:\n  note: a key this engine does not read\n\n# The resolved taxonomy",
+            1,
+        ),
+    )
+    .expect("the lock writes");
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    let after = std::fs::read_to_string(&lock).expect("the lock reads");
+    assert!(
+        after.contains("  tasks: []\n"),
+        "the run added the empty sequence the next verb adds to: {after}"
+    );
+    assert!(
+        after.contains("  note: \"a key this engine does not read\"\n"),
+        "and it carried the key it does not read through: {after}"
+    );
+}
+
+/// A standing task list is carried through and never rewritten.
+///
+/// The other side of the case above, and the one the guard exists for. A block
+/// that already declares `tasks` gets `from` and `to` replaced and its list
+/// left exactly as it was loaded.
+#[test]
+fn apply_carries_a_standing_task_list_through() {
+    let root = Root::new("carries-a-standing-list");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(Some(&payload()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let lock = root.at.join(".headwater/taxonomy.lock");
+    let before = std::fs::read_to_string(&lock).expect("the lock reads");
+    let standing = "\nadoption:\n  tasks:\n    - id: AD-1\n      owner: a person\n      until: \
+                    2027-01-01\n      pairs: []\n\n# The resolved taxonomy";
+    std::fs::write(
+        &lock,
+        before.replacen("\n# The resolved taxonomy", standing, 1),
+    )
+    .expect("the lock writes");
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    let after = std::fs::read_to_string(&lock).expect("the lock reads");
+    assert!(
+        after.contains(
+            "  tasks:\n    - id: AD-1\n      owner: \"a person\"\n      until: 2027-01-01\n"
+        ),
+        "the standing task is exactly what it was: {after}"
+    );
+    assert!(
+        !after.contains("tasks: []"),
+        "and nothing wrote an empty list over it: {after}"
+    );
+}
+
+/// The closing sentence of a diff names a route the adopter can take.
+///
+/// "Spec 2 makes a major version ship one" is true of every break a step can
+/// express, and it is an instruction to write a file the format cannot hold
+/// where the break is a facet that became required. So the sentence forks on
+/// what broke: a break every rule of which is `facet.required.missing` names
+/// `infer --write`, and every other break keeps the sentence spec 2 states.
+#[test]
+fn a_break_no_step_reaches_names_infer_rather_than_a_payload() {
+    let root = Root::new("no-step-reaches-it");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate_of(&FACET, None);
+    root.in_bundle("decision-record", &REQUIRES_AUDIENCE);
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let ran = root.diff("2.0.0");
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        ran.out.contains(
+            "the artifact ships no migration payload for 1.0.0 to 2.0.0, and 3 \
+                          documents stopped validating. No step can express this break"
+        ),
+        "the sentence names what cannot be written: {ran:?}"
+    );
+    assert!(
+        ran.out.contains(
+            "`headwater infer --owner <name> --write` records the breakage as adoption \
+                      debt, and `headwater check` then reports it as migration-pending"
+        ),
+        "and it names the route that is reachable: {ran:?}"
+    );
+    assert!(
+        !ran.out.contains("Spec 2 makes a major version ship one"),
+        "and it does not also ask for the file it just said cannot be written: {ran:?}"
+    );
+}
+
+/// And the sentence a break a step *can* express still gets.
+///
+/// The paired half of the case above. `CANDIDATE` moves three lifecycle values,
+/// which is exactly what a `facet_value` step is for, so an artifact that
+/// shipped no payload for it is a publisher who owes one.
+#[test]
+fn a_break_a_step_reaches_still_asks_for_a_payload() {
+    let root = Root::new("a-step-reaches-it");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(None);
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let ran = root.diff("2.0.0");
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        ran.out.contains("Spec 2 makes a major version ship one"),
+        "a break the vocabulary reaches is a payload the publisher owes: {ran:?}"
+    );
+    assert!(
+        !ran.out.contains("No step can express this break"),
+        "and the other sentence is not printed beside it: {ran:?}"
     );
 }
 
