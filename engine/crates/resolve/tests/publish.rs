@@ -2988,9 +2988,11 @@ fn out_of(scratch: &Scratch) -> PathBuf {
 /// carries a record, and [#485] closed the second half of that pair rather than
 /// sharpening the reading: a publish assembles the artifact beside `--out` and
 /// moves it there in one step, so this is the caller's file and the refusal now
-/// says so. It still deletes nothing. [#355] is the case that draws the line
-/// this test sits beside: a directory that does carry a record gets the original
-/// message back, unconditionally.
+/// says so. It still deletes nothing, and `--clear-killed` still deletes nothing
+/// here either — the case below this one is the same directory with the flag
+/// held against it. [#355] is the case that draws the line this test sits
+/// beside: a directory that does carry a record gets the original message back,
+/// unconditionally.
 ///
 /// [#355]: https://github.com/headwater-ai/headwater/issues/355
 /// [#485]: https://github.com/headwater-ai/headwater/issues/485

@@ -1042,6 +1042,19 @@ pub enum TaxonomyWord {
                     found it, so a second run meets the same precondition the first one did"
         )]
         out: Option<PathBuf>,
+        #[arg(
+            long,
+            help = "remove what a publish killed part-way left at `--out`, and publish in the \
+                    same run. It removes one state and nothing else: files at `--out` with no \
+                    release record, beside a `<out>~staging` directory holding both the files a \
+                    publish writes there to say it could not move the artifact into place and is \
+                    writing into `--out` one file at a time. Only a killed publish leaves those \
+                    two together, and the second one names the output path it was writing. A \
+                    directory holding anything else, and an `--out` that carries a release \
+                    record, are left exactly as they are and the publish refuses as it does \
+                    without this flag"
+        )]
+        clear_killed: bool,
         #[arg(long, help = JSON_ALONE)]
         json: bool,
     },

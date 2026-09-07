@@ -165,10 +165,12 @@ fn spawn_child(root: &Path, out: &Path) -> std::process::Child {
 ///
 /// This is [#485](https://github.com/headwater-ai/headwater/issues/485)'s
 /// question, asked of a process rather than of a planted directory. The issue
-/// asked for a flag that deletes the leftovers; the measurement that refused the
-/// flag is that *files at `--out` with no record* is byte-for-byte what a
-/// directory holding somebody's unrelated work looks like. So the window is
-/// closed instead, and this is what says it is closed.
+/// asked for a flag that deletes the leftovers on the predicate *files at
+/// `--out` with no record*, which is byte-for-byte what a directory holding
+/// somebody's unrelated work looks like. So the window is closed on this path
+/// instead, and this is what says it is closed. The flag that shipped fires on
+/// a narrower predicate and covers the one path this case cannot: see
+/// `package::clear_killed`.
 ///
 /// The sweep alternates the state `--out` starts in, because a publish observes
 /// two of them and the undo has a branch for each. `<out>~staging` is
@@ -280,9 +282,10 @@ fn a_file_left_in_the_staging_directory_is_not_published() {
 ///
 /// This is the case the removal exists to get right. An unconditional
 /// `remove_dir_all` at a path derived from every `--out` anybody passes is the
-/// same undecidable delete that #485's own flag was refused for, with the flag
-/// that made it deliberate taken away. The marker is what makes the removal
-/// decidable: a publish removes a directory it created, and nothing else.
+/// same undecidable delete that #485 first asked for, with even the flag that
+/// would have made it deliberate taken away. The marker is what makes the
+/// removal decidable: a publish removes a directory it created, and nothing
+/// else, which is the rule `--clear-killed` keeps as well.
 #[test]
 fn a_directory_at_the_staging_path_that_no_publish_made_is_refused_and_survives() {
     let scratch = Scratch::new("staging-not-ours");
@@ -717,8 +720,10 @@ fn calibrate(root: &Path, out: &Path) -> Duration {
 /// left files at `--out` and nothing anywhere on disk saying whose. That is
 /// byte-for-byte what a directory holding somebody's unrelated work looks like,
 /// which is the undecidable state
-/// [#485](https://github.com/headwater-ai/headwater/issues/485)'s flag was
-/// refused for.
+/// [#485](https://github.com/headwater-ai/headwater/issues/485)'s first
+/// predicate could not tell apart from residue. The pair of files this case
+/// asserts is what `--clear-killed` fires on, so this case is also what says
+/// that flag has something decidable to read.
 ///
 /// # What it would print if the property were absent
 ///
@@ -877,8 +882,10 @@ fn a_failed_direct_write(root: &Path, out: &Path) {
 /// are different outcomes and asserting them separately says nothing about the
 /// property, which is one predicate over both: **is the next run ever left
 /// unable to say whose the files are?** That is the state
-/// [#485](https://github.com/headwater-ai/headwater/issues/485) was refused
-/// over, and before this change the fallback path answered it differently from
+/// [#485](https://github.com/headwater-ai/headwater/issues/485)'s first
+/// predicate could not decide, and what `--clear-killed` needs decided before
+/// it removes anything. Before this change the fallback path answered it
+/// differently from
 /// the atomic path on the same host, in the same run, over the same package.
 ///
 /// # What it would print if the property were absent

@@ -339,6 +339,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 from,
                 assembly,
                 out,
+                clear_killed,
                 json,
             }) => {
                 publish(
@@ -347,6 +348,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                     from.as_deref(),
                     assembly.as_deref(),
                     out.as_deref(),
+                    clear_killed,
                     json,
                 )
             }
@@ -1336,6 +1338,7 @@ fn publish(
     from: Option<&Path>,
     assembly: Option<&str>,
     out: Option<&Path>,
+    clear_killed: bool,
     json: bool,
 ) -> ExitCode {
     let Some(out) = out else {
@@ -1347,6 +1350,31 @@ fn publish(
              a directory under `packages/` by the name its manifest declares, and the second \
              reads a directory the caller names directly. Pass one or the other",
         );
+    }
+
+    // Before the publish and never inside it. `clear_killed` removes one state
+    // and reports `Nothing` for every other, so a run that asked for it over a
+    // directory nothing wrote reaches the same precondition, and the same
+    // refusal, that a run without the flag reaches. What it removed is said on
+    // standard error, so a `--json` run's document on standard output stays one
+    // document, and it is said because a delete a person did not see is a
+    // delete they cannot check.
+    if clear_killed {
+        match headwater_resolve::package::clear_killed(root, out) {
+            Ok(headwater_resolve::package::Cleared::Nothing) => {}
+            Ok(headwater_resolve::package::Cleared::KilledDirectWrite { out, staging }) => {
+                eprintln!(
+                    "headwater: removed what a killed publish left at {} and its own directory at {}",
+                    out.display(),
+                    staging.display()
+                );
+            }
+            Err(errors) => {
+                eprintln!("headwater: {}", err("nothing was published"));
+                eprint!("{}", indent(&err(&render_errors(&errors))));
+                return ExitCode::FAILURE;
+            }
+        }
     }
 
     // Every part comes from the run that produced it. A plain publish drops no

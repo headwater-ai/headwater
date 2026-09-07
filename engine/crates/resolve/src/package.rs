@@ -1115,6 +1115,103 @@ pub fn publish_assembly_from(
     publish_assembly_at(root, directory, &manifest, assembly, out)
 }
 
+/// What [`clear_killed`] removed.
+///
+/// The paths travel out of the function that decided them rather than being
+/// re-derived by whoever reports the run: `<out>~staging` is a path this crate
+/// derives from `--out`, and a reporter that derived it a second time would be
+/// the two-functions-answering-one-question defect
+/// [#581](https://github.com/headwater-ai/headwater/issues/581) exists for.
+#[derive(Debug)]
+pub enum Cleared {
+    /// Nothing beside `--out` says a publish was killed writing into it, so
+    /// nothing was removed. This is every state but one, including an `--out`
+    /// that is not there.
+    Nothing,
+    /// The residue of a publish killed inside a direct write, and the two paths
+    /// that are now gone.
+    KilledDirectWrite { out: PathBuf, staging: PathBuf },
+}
+
+/// Remove the residue of a publish killed while it wrote straight into `out`,
+/// and remove nothing else.
+///
+/// # What fires it, and what the issue asked for instead
+///
+/// [#485](https://github.com/headwater-ai/headwater/issues/485) asked for a
+/// flag that clears `--out` when it holds files and no [`release::RECORD`].
+/// That predicate cannot be built: it is byte-for-byte satisfied by a directory
+/// holding somebody's unrelated work, so firing on it is the undecidable
+/// recursive delete [#355](https://github.com/headwater-ai/headwater/issues/355)
+/// was closed over, moved behind a flag. `--clear-killed` is named for the
+/// state it clears rather than for its force, and a complete artifact at `out`
+/// is not that state: republishing over one is
+/// [#486](https://github.com/headwater-ai/headwater/issues/486)'s question and
+/// this function refuses to swallow it.
+///
+/// Four things must all hold, and any one of them missing removes nothing:
+///
+/// 1. `out` has a sibling path to derive, which [`out_staging`] answers.
+/// 2. That sibling holds both [`MARKER`] and [`DIRECT`], which
+///    [`killed_direct_write`] answers. [`DIRECT`]'s doc comment carries why the
+///    marker on its own is a different question.
+/// 3. [`DIRECT`] names *this* `out`, which [`direct_names`] answers.
+/// 4. `out` carries no release record that reads back, so nothing complete is
+///    being removed.
+///
+/// Only one history produces all four: a run that reached the mount branch of
+/// [`deliver`], wrote both files, and was killed inside the one write this verb
+/// cannot undo. [`claim_direct`] carries that argument in full.
+///
+/// # Why `out` goes first
+///
+/// This function makes two removals and a kill can land between them. Removing
+/// `out` first leaves, at that instant, an empty or absent `out` beside a
+/// staging directory carrying its marker — which the [`clear_staging`] at the
+/// top of [`deliver`] sweeps on the next run. The other order leaves files at
+/// `out` and nothing on disk saying whose they are, which is the undecidable
+/// state this whole mechanism exists to keep off the disk. So the order is not
+/// a preference.
+///
+/// # Why this is its own verb rather than a flag threaded through the publish
+///
+/// The recovery is one act with one predicate, and a caller reads *clear the
+/// killed run, then publish* rather than a boolean carried through six entry
+/// points and two phases into the one line that reads it. It also keeps the
+/// predicate testable on its own, which is what the case table beside
+/// `an_output_directory_that_holds_a_file_is_refused_and_the_file_survives`
+/// holds. Nothing about a publish changes when the caller does not ask for it.
+///
+/// `root` names the corpus only so that a refusal reports the path the way
+/// every other refusal in this module reports one.
+pub fn clear_killed(root: &Path, out: &Path) -> Result<Cleared, Vec<ResolveError>> {
+    let named = display(root, out);
+    let Some(staging) = out_staging(out) else {
+        return Ok(Cleared::Nothing);
+    };
+    if !killed_direct_write(out) || !direct_names(&staging, out) || release::at(out).is_ok() {
+        return Ok(Cleared::Nothing);
+    }
+    std::fs::remove_dir_all(out).map_err(|error| {
+        refusal(
+            &named,
+            &format!(
+                "a publish was killed writing into this path and it cannot be removed: {error}"
+            ),
+        )
+    })?;
+    std::fs::remove_dir_all(&staging).map_err(|error| {
+        refusal(
+            &display(root, &staging),
+            &format!("the killed publish's own directory cannot be removed: {error}"),
+        )
+    })?;
+    Ok(Cleared::KilledDirectWrite {
+        out: out.to_path_buf(),
+        staging,
+    })
+}
+
 /// The publish sequence for an assembly after its source directory and manifest
 /// are known.
 ///
@@ -1441,7 +1538,8 @@ mod found {
                  it and the `{direct}` file a publish writes when it cannot move an artifact onto \
                  this path and writes into it one file at a time. Only a publish killed during \
                  that write leaves those two together, so the files here are that publish's and \
-                 not somebody else's. Delete both paths and publish again",
+                 not somebody else's. Publish again with `--clear-killed`, which removes both \
+                 paths and publishes in the same run, or remove them by hand",
                 record = release::RECORD,
                 staging = STAGING,
                 marker = super::MARKER,
@@ -2550,11 +2648,14 @@ fn out_staging(out: &Path) -> Option<PathBuf> {
 /// so a publish killed inside it used to leave files at `--out` with no record —
 /// the state [`found::held`]'s second arm reports, and the state
 /// [#485](https://github.com/headwater-ai/headwater/issues/485) asked for a flag
-/// to delete. The flag cannot be written: the predicate that would fire it is
-/// *files at `--out` and no record*, which is byte-for-byte what a directory
-/// holding somebody's unrelated work looks like, so it would be a recursive
-/// delete on a directory about which the run has established nothing. The window
-/// is closed here instead, and then there is nothing to clear.
+/// to delete. The flag that issue asked for cannot be written: the predicate
+/// that would fire it is *files at `--out` and no record*, which is
+/// byte-for-byte what a directory holding somebody's unrelated work looks like,
+/// so it would be a recursive delete on a directory about which the run has
+/// established nothing. The window is closed here instead, and then on this path
+/// there is nothing to clear. The one path where a kill still leaves files is
+/// the mount fallback below, and there the residue says whose it is, which is
+/// what [`clear_killed`] fires on.
 ///
 /// [`vendor`] already argued this and its doc comment named this verb as the
 /// weaker case. The two now stage the same way.
@@ -2595,9 +2696,11 @@ fn out_staging(out: &Path) -> Option<PathBuf> {
 /// that a failed direct write left one directory behind rather than two. That
 /// put the only removal of the marker one line *before* the only write that is
 /// not atomic, and a kill in between left files at `--out` with nothing on disk
-/// saying whose they were — the undecidable state
-/// [#485](https://github.com/headwater-ai/headwater/issues/485)'s flag was
-/// refused for, in the one configuration that still reaches it.
+/// saying whose they were — the undecidable state the flag
+/// [#485](https://github.com/headwater-ai/headwater/issues/485) first asked for
+/// was refused for, in the one configuration that still reaches it. Keeping the
+/// pair alive across that write is what [`clear_killed`] reads, and it is why
+/// that flag is decidable where the first one was not.
 ///
 /// So that branch clears afterwards instead, on the success path and the
 /// failure path alike, and it writes [`DIRECT`] beside the marker first.
@@ -2837,10 +2940,56 @@ worked or not, so this file outliving the run means the run was killed.
 /// was claimed. So [`found::held`] can name the residue at `--out` as this
 /// tool's rather than reporting that it cannot tell.
 fn claim_direct(staging: &Path, out: &Path) -> Result<(), String> {
-    let text = format!("{DIRECT_TEXT}\nThe output path is: {}\n", out.display());
+    let text = format!("{DIRECT_TEXT}\n{DIRECT_NAMES}{}\n", out.display());
     std::fs::write(staging.join(DIRECT), text).map_err(|error| {
         format!("a publish cannot say that it is writing straight into the output path: {error}")
     })
+}
+
+/// The line of [`DIRECT`] that carries the output path, up to the path itself.
+///
+/// One literal, because [`claim_direct`] writes it and [`direct_names`] reads
+/// it back, and two functions spelling one format string separately is how a
+/// writer and a reader of the same file come to disagree.
+const DIRECT_NAMES: &str = "The output path is: ";
+
+/// Whether the [`DIRECT`] file in `staging` names `out` as the path the killed
+/// publish was writing into.
+///
+/// [`killed_direct_write`] answers *a publish was killed writing straight into
+/// some path*. This is what turns that into *into this one*. The pair of files
+/// sits at a path this verb derived from `--out`, and reading the path back out
+/// of the note is one comparison that makes the residue decidable rather than
+/// nearly decidable.
+///
+/// Two paths that are spelled differently and lead to the same directory are
+/// the same path here — `--out dist` and `--out ./dist` are one output
+/// directory, and a recovery that refused the second after the first wrote the
+/// note would be a flag that works only for whoever typed the same characters
+/// twice. Canonicalizing is what asks, and it is asked only after the literal
+/// comparison fails, so a note naming a path that no longer exists still
+/// matches itself.
+fn direct_names(staging: &Path, out: &Path) -> bool {
+    let Ok(text) = std::fs::read_to_string(staging.join(DIRECT)) else {
+        return false;
+    };
+    let Some(recorded) = text
+        .lines()
+        .find_map(|line| line.strip_prefix(DIRECT_NAMES))
+    else {
+        return false;
+    };
+    let recorded = Path::new(recorded);
+    if recorded == out {
+        return true;
+    }
+    match (
+        std::fs::canonicalize(recorded),
+        std::fs::canonicalize(out),
+    ) {
+        (Ok(recorded), Ok(out)) => recorded == out,
+        _ => false,
+    }
 }
 
 /// Whether the staging directory beside `out` says a publish was killed while
@@ -2875,9 +3024,10 @@ fn carries_a_mount(error: &std::io::Error) -> bool {
 /// # The removal is decidable, and it refuses rather than guesses
 ///
 /// An unconditional `remove_dir_all` here would be the same undecidable delete
-/// that [#485](https://github.com/headwater-ai/headwater/issues/485)'s flag was
-/// refused for, moved one directory over and with the flag that made it
-/// deliberate taken away. `--out` is a path a publisher named, and `<out>~staging`
+/// that [#485](https://github.com/headwater-ai/headwater/issues/485) first asked
+/// for and that [`clear_killed`] refuses to be, moved one directory over and
+/// with even the flag that would have made it deliberate taken away. `--out` is
+/// a path a publisher named, and `<out>~staging`
 /// is a path this verb derived from it — but the verb derives it from **every**
 /// path anybody ever passes to `--out`, on a machine where it owns none of them.
 /// `vendor`'s clear of `packages/~staging` is not the same act: that is one fixed
