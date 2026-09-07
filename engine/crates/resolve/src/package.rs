@@ -1116,17 +1116,7 @@ fn publish_assembly_at(
     let staged = stage_flattened(directory, &declared, &flattened)?;
     let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
 
-    let written = put(out, &staged)
-        .map_err(|why| refusal(&display(root, out), &why))
-        .and_then(|()| {
-            let record = release::compute(out, &flattened.manifest)
-                .map_err(|error| release::as_error(&display(root, out), &error))?;
-            std::fs::write(out.join(release::RECORD), release::render(&record))
-                .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
-            Ok(record)
-        });
-
-    match written {
+    match deliver(root, out, &staged, &flattened.manifest) {
         Ok(release) => Ok(Flattening {
             release,
             dropped: flattened.dropped,
@@ -1237,23 +1227,13 @@ fn publish_at(
     migrations(root, directory, manifest, source, &widest)?;
 
     let staged = stage(root, directory, manifest)?;
-    // After `found::observe` and before `put`, which is where `migrations` one
-    // line above already returns from without unwinding: nothing has been
-    // written yet, because `put` is what calls `create_dir_all`. The
+    // After `found::observe` and before `deliver`, which is where `migrations`
+    // one line above already returns from without unwinding: nothing has been
+    // written yet, because [`deliver`] is what reaches the disk. The
     // `!out.exists()` assertion in the CLI's publish target holds that.
     integrity(&staged, &declared)?;
 
-    let written = put(out, &staged)
-        .map_err(|why| refusal(&display(root, out), &why))
-        .and_then(|()| {
-            let record = release::compute(out, manifest)
-                .map_err(|error| release::as_error(&display(root, out), &error))?;
-            std::fs::write(out.join(release::RECORD), release::render(&record))
-                .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
-            Ok(record)
-        });
-
-    match written {
+    match deliver(root, out, &staged, manifest) {
         Ok(record) => Ok(record),
         Err(errors) => {
             found.unwind(out);
@@ -1282,6 +1262,7 @@ fn publish_at(
 ///
 /// [#271]: https://github.com/headwater-ai/headwater/issues/271
 mod found {
+    use super::OUT_STAGING as STAGING;
     use crate::release::{self, ReleaseError};
     use std::io::ErrorKind;
     use std::path::{Path, PathBuf};
@@ -1362,15 +1343,35 @@ mod found {
     /// `out` already holds a publish this run refuses to repeat, which is the
     /// message this function has always given. It reports [`ReleaseError::Absent`]
     /// or any other error, and `out` holds no complete record — which is what a
-    /// kill during `put`, or during the write of the record itself, leaves. It
-    /// is not only that: a directory a person filled with something unrelated
-    /// carries no record either, and the two are the same fact on disk. So the
-    /// refusal says what the absence is consistent with rather than what it
-    /// proves, and it still only reports. Nothing here deletes anything, and a
+    /// kill used to leave and no longer does: [`super::deliver`] assembles the
+    /// artifact beside `out` and moves it in one step, so a killed run leaves
+    /// `out` as it found it. What remains is a directory a person filled with
+    /// something unrelated, which is what the refusal now says, and a mount
+    /// point at `out`, which cannot be moved onto and is named there too. It
+    /// still only reports. Nothing here deletes anything, and a
     /// later run has to be told to by whoever reads the message. See [#355].
+    ///
+    /// # One name is not a state and is refused here anyway
+    ///
+    /// [`super::deliver`] assembles the artifact at `--out` with
+    /// [`super::OUT_STAGING`] appended, and clears that path before it writes.
+    /// So an `--out` that ends in the suffix is an `--out` a second publish
+    /// would sweep, and this is the one function both publish paths reach before
+    /// either has written anything. `--out` has no grammar to keep the two
+    /// apart, so the reservation is stated rather than derived.
     ///
     /// [#355]: https://github.com/headwater-ai/headwater/issues/355
     pub(super) fn observe(out: &Path) -> Result<Found, String> {
+        if out
+            .file_name()
+            .is_some_and(|name| name.as_encoded_bytes().ends_with(STAGING.as_bytes()))
+        {
+            return Err(format!(
+                "the output path ends in `{STAGING}`, which a publish reserves for the directory \
+                 it assembles an artifact in beside `--out` and clears before it writes. Publish \
+                 into a path that does not end in it"
+            ));
+        }
         match std::fs::read_dir(out) {
             Ok(mut entries) => match entries.next() {
                 Some(_) => Err(held(out)),
@@ -1405,21 +1406,21 @@ mod found {
                       that does not exist yet"
                 .to_string(),
             Err(ReleaseError::Absent(_)) => format!(
-                "the output directory holds files but no {record}. A publish writes {record} \
-                 last, so a run killed while writing this artifact would leave exactly this — \
-                 files with no record — and deleting them and publishing again is safe if that \
-                 is what happened. It is also what a directory holding something unrelated looks \
-                 like, so check what is there before deleting it. Publish into a directory that \
-                 does not exist yet",
+                "the output directory holds files but no {record}. A publish assembles the \
+                 artifact beside this path and moves it here in one step, so a killed run leaves \
+                 this directory as it found it and what is here is something else. The one \
+                 exception is an output path that is a mount point, which cannot be moved onto \
+                 and is written into directly. Check what is there before you delete it. Publish \
+                 into a directory that does not exist yet",
                 record = release::RECORD,
             ),
             Err(error) => format!(
                 "the output directory holds files and its {record} does not read back cleanly: \
-                 {error}. {record} is the last file a publish writes, so a run killed while \
-                 writing it would leave exactly this, and deleting the directory and publishing \
-                 again is safe if that is what happened. Publish into a directory that does not \
-                 exist yet",
+                 {error}. A publish assembles the artifact beside this path and moves it here in \
+                 one step, so a killed run leaves this directory as it found it. Check what is \
+                 there before you delete it. Publish into a directory that does not exist yet",
                 record = release::RECORD,
+                error = error.to_string().trim_end(),
             ),
         }
     }
@@ -2457,6 +2458,170 @@ fn read_tree(
     Ok(())
 }
 
+/// The suffix a publish appends to `--out` to name the directory it assembles an
+/// artifact in before it moves that artifact into place.
+///
+/// It is the free-path analogue of [`STAGING`], and it needs a guard that
+/// [`STAGING`] does not. A `vendor` target is a directory under `packages/` whose
+/// name a manifest declares, and `~` is 0x7E, above every byte
+/// `names_a_package` admits, so no package can be named into that path. `--out`
+/// has no grammar at all, so the reservation has to be stated: [`found::observe`]
+/// refuses an `--out` whose final component ends in this suffix, and that
+/// refusal is what makes the path below a path this verb owns rather than a path
+/// a publisher might have chosen.
+pub const OUT_STAGING: &str = "~staging";
+
+/// The directory a publish assembles `--out`'s artifact in, or `None` for a
+/// path that has no final component to append to.
+///
+/// A **sibling** of `--out`, and both halves of that matter. The rename at the
+/// end is then a rename inside one directory, so it is on one filesystem by
+/// construction and cannot report `EXDEV` for a reason the caller could have
+/// avoided. And the parents `create_dir_all` makes to reach the staging
+/// directory are exactly the parents `--out` needs, so the swap needs no second
+/// directory pass and [`found::Found::unwind`] still finds the chain it observed
+/// to be absent.
+///
+/// `None` is `--out /` and `--out foo/..`: paths with no final component, where
+/// appending would produce a child rather than a sibling and the rename would be
+/// a directory moved onto its own parent. [`deliver`] writes those the way this
+/// verb always wrote every path, because a new refusal for a path that publishes
+/// today would be a regression bought with nothing.
+fn out_staging(out: &Path) -> Option<PathBuf> {
+    let mut name = out.file_name()?.to_os_string();
+    name.push(OUT_STAGING);
+    Some(out.with_file_name(name))
+}
+
+/// Put the artifact at `--out`, having assembled every byte of it somewhere else
+/// first.
+///
+/// # What this is for
+///
+/// [`put`] writes an artifact one file at a time and [`release::RECORD`] last,
+/// so a publish killed inside it used to leave files at `--out` with no record —
+/// the state [`found::held`]'s second arm reports, and the state
+/// [#485](https://github.com/headwater-ai/headwater/issues/485) asked for a flag
+/// to delete. The flag cannot be written: the predicate that would fire it is
+/// *files at `--out` and no record*, which is byte-for-byte what a directory
+/// holding somebody's unrelated work looks like, so it would be a recursive
+/// delete on a directory about which the run has established nothing. The window
+/// is closed here instead, and then there is nothing to clear.
+///
+/// [`vendor`] already argued this and its doc comment named this verb as the
+/// weaker case. The two now stage the same way.
+///
+/// # The three ways a rename can refuse, all three measured
+///
+/// Onto an **empty** directory it succeeds, and [`found::observe`] has already
+/// established that `--out` is empty or absent, so the ordinary path is the one
+/// that works. Onto a **non-empty** directory it is `ENOTEMPTY`, which is only
+/// reachable when something filled `--out` between the observation and here; the
+/// run refuses, having written nothing into `--out`. Onto a **mount point** it is
+/// `EBUSY`, because the kernel will not move a directory over a mount, and
+/// `EXDEV` is the same shape from the other side. Publishing into a mounted
+/// volume works today and is a thing continuous integration does, so those two
+/// fall back to writing straight into `--out` rather than refusing. That
+/// fallback is the one configuration where a killed publish can still leave
+/// files at `--out`, and it is why [`found::held`] names a mount point rather
+/// than claiming the guarantee without one.
+///
+/// # What removes the staging directory
+///
+/// Every exit path here: the rename on success, and [`clear_staging`] on each of
+/// the failures. A run killed between the two leaves it behind, so the next run
+/// clears it before it writes — the same first act [`vendor`] takes on
+/// `packages/~staging`, and for the same reason, which is that a file an earlier
+/// run left there would otherwise be carried into an artifact that nothing
+/// staged. Removing it is a decision this verb is entitled to make and removing
+/// `--out` is not: `--out` is a path a publisher named, and this one is a path
+/// this verb derived and refuses to accept as an `--out`.
+fn deliver(
+    root: &Path,
+    out: &Path,
+    staged: &[Staged],
+    manifest: &Mapping,
+) -> Result<Release, Vec<ResolveError>> {
+    let named = display(root, out);
+    let Some(staging) = out_staging(out) else {
+        return write_artifact(&named, out, staged, manifest);
+    };
+    clear_staging(&staging);
+    let record = match write_artifact(&named, &staging, staged, manifest) {
+        Ok(record) => record,
+        Err(errors) => {
+            clear_staging(&staging);
+            return Err(errors);
+        }
+    };
+    match std::fs::rename(&staging, out) {
+        Ok(()) => Ok(record),
+        Err(error) if carries_a_mount(&error) => {
+            clear_staging(&staging);
+            write_artifact(&named, out, staged, manifest)
+        }
+        Err(error) => {
+            clear_staging(&staging);
+            Err(refusal(
+                &named,
+                &format!(
+                    "the artifact was assembled beside it and cannot be moved into place: \
+                     {error}. Nothing was written into the output directory. Publish into a \
+                     directory that does not exist yet"
+                ),
+            ))
+        }
+    }
+}
+
+/// Whether a failed rename means the output path is a mount rather than a path
+/// this verb may swap.
+///
+/// `EBUSY` is a rename onto a mount point and `EXDEV` is a rename across a
+/// filesystem boundary. Both were measured on a directory renamed onto an empty
+/// `tmpfs` mount; neither is a defect of the artifact, and both are answered by
+/// writing the artifact where it was asked for.
+fn carries_a_mount(error: &std::io::Error) -> bool {
+    matches!(
+        error.kind(),
+        std::io::ErrorKind::ResourceBusy | std::io::ErrorKind::CrossesDevices
+    )
+}
+
+/// Remove a staging directory, whatever state it is in and whether or not it is
+/// there.
+///
+/// Every error is dropped, on the same terms as [`found::Found::unwind`]: this
+/// runs on the way into a write and on the way out of a failure that is already
+/// being reported, and a second message about the sweep would displace the one a
+/// reader needs. `remove_dir_all` does not follow a symlink, so a link left at
+/// this path is refused by the kernel rather than followed into somebody's tree.
+fn clear_staging(staging: &Path) {
+    let _ = std::fs::remove_dir_all(staging);
+}
+
+/// Write the staged set at `at`, then the release record that describes it.
+///
+/// `named` is what a refusal calls the artifact, and it is `--out` whichever
+/// path this is writing: a publisher who typed `--out dist` is owed a message
+/// about `dist`, not about a staging path they never named. The record is
+/// computed at `at` because [`release::compute`] hashes the files it finds
+/// there against paths relative to it, and the staging directory holds the same
+/// bytes at the same relative paths as the artifact it becomes.
+fn write_artifact(
+    named: &str,
+    at: &Path,
+    staged: &[Staged],
+    manifest: &Mapping,
+) -> Result<Release, Vec<ResolveError>> {
+    put(at, staged).map_err(|why| refusal(named, &why))?;
+    let record =
+        release::compute(at, manifest).map_err(|error| release::as_error(named, &error))?;
+    std::fs::write(at.join(release::RECORD), release::render(&record))
+        .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
+    Ok(record)
+}
+
 /// Write the staged set into `out`, creating what it needs.
 fn put(out: &Path, staged: &[Staged]) -> Result<(), String> {
     std::fs::create_dir_all(out).map_err(|error| format!("cannot create it: {error}"))?;
@@ -2818,13 +2983,17 @@ fn doctrine_at(
 /// that window leaves the old tree complete under the aside name, where [`find`]
 /// still reaches it.
 ///
-/// **[`publish`] holds the weaker of the two guarantees.** It reads everything
-/// before it writes anything and unwinds `--out` on a failure, which answers a
-/// call that returns an error and answers a kill not at all: a kill inside
-/// [`put`] leaves a partial artifact at `--out` that the next run's own
-/// precondition then refuses, and the publisher removes it by hand.
-/// [#355](https://github.com/headwater-ai/headwater/issues/355) holds that.
-/// `vendor` answers both.
+/// **[`publish`] takes the same shape, and [`deliver`] is where.** It used to
+/// hold the weaker guarantee: it read everything before it wrote anything and
+/// unwound `--out` on a failure, which answers a call that returns an error and
+/// answered a kill not at all, so a kill inside [`put`] left a partial artifact
+/// at `--out` for the publisher to remove by hand. It now assembles the artifact
+/// at `<out>~staging` and renames that onto `--out`, which [`found::observe`]
+/// has already established is empty or absent. A publish killed part-way leaves
+/// `--out` as it found it, and the retry needs nothing removed.
+/// [#485](https://github.com/headwater-ai/headwater/issues/485) is where that
+/// was measured, and [`deliver`] carries the one configuration it does not
+/// cover.
 ///
 /// **Copying the [`found`] module was the other repair, and it is mechanically
 /// unavailable rather than merely weaker.** `found` carries two states, absent
