@@ -677,7 +677,8 @@ relations:
 === .headwater/corpus.json (corpus_descriptor) ===
 {
   "headwater:generated": "corpus_descriptor. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
-  "descriptor_version": "1.0",
+  "descriptor_version": "1.1",
+  "emitter_set": 1,
   "corpora": [
     {
       "root": "generate",

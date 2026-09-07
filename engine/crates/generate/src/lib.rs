@@ -97,6 +97,7 @@ use headwater_yaml::value::{Mapping, Value};
 use std::path::Path;
 
 pub mod descriptor;
+pub mod emitters;
 pub mod export;
 pub mod identity;
 mod probe_result;
@@ -934,6 +935,40 @@ impl Verdict {
     }
 }
 
+/// `--check` only: the committed artifacts were written by an emitter set that
+/// is not this build's.
+///
+/// The premise of the whole comparison is that both sides were produced by the
+/// same emitters. [`crate::emitters`] carries why that premise needs a witness
+/// and why nothing derives one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Producer {
+    /// The emitter set the committed descriptor records.
+    pub recorded: u32,
+    /// The [`crate::emitters::EMITTER_SET`] this build carries.
+    pub current: u32,
+}
+
+impl Producer {
+    /// The one sentence a run with a producer difference ends with.
+    ///
+    /// It names no remedy, and that is the point. A projection that differs
+    /// because the corpus moved and one that differs because an emitter moved
+    /// are the same diff, so a run in this state cannot say which command
+    /// helps. Naming one anyway is how the two engines flip-flop.
+    pub fn line(&self) -> String {
+        format!(
+            "the committed {} records emitter set {}, and this engine writes emitter set {}. \
+             A projection that differs below can be a corpus that moved or an emitter that \
+             moved, and this run cannot tell which. Settle which engine this repository \
+             regenerates with before you act on anything above",
+            descriptor::PATH,
+            self.recorded,
+            self.current,
+        )
+    }
+}
+
 /// One line of the report.
 #[derive(Clone, Debug)]
 pub struct Wrote {
@@ -953,16 +988,74 @@ pub struct Report {
     pub orphaned: Vec<Orphaned>,
     /// Whether this run wrote anything, or only compared.
     pub checked: bool,
+    /// `--check` only: the committed artifacts name an emitter set that is not
+    /// this build's. `None` where they agree, and `None` where the committed
+    /// descriptor records none at all, because an absent member is a descriptor
+    /// an earlier engine wrote rather than a disagreement.
+    pub producer: Option<Producer>,
 }
 
 impl Report {
     pub fn has_errors(&self) -> bool {
-        self.wrote.iter().any(|wrote| wrote.verdict.is_error()) || !self.orphaned.is_empty()
+        self.producer.is_some()
+            || self.wrote.iter().any(|wrote| wrote.verdict.is_error())
+            || !self.orphaned.is_empty()
+    }
+
+    /// The one sentence a failing run ends with, or `None` where it did not
+    /// fail.
+    ///
+    /// The choice lives here rather than in the caller because it is a fact
+    /// about the run and not about the terminal it is printed to, and because
+    /// there is one bar the caller cannot be trusted with: a producer
+    /// difference must not carry the instruction to regenerate. A caller that
+    /// composed the sentence itself would be a second place that decision
+    /// could go wrong, and the fixture that holds the bar could only reach one
+    /// of them.
+    pub fn remedy(&self) -> Option<String> {
+        if let Some(producer) = &self.producer {
+            return Some(producer.line());
+        }
+        if !self.has_errors() {
+            return None;
+        }
+        // A projection that drifted and a marked file this run did not write
+        // are two failures with two remedies, and printing the first remedy
+        // for the second tells a reader to run the verb that cannot help.
+        let drifted = self.wrote.iter().any(|wrote| wrote.verdict.is_error());
+        Some(
+            match (self.checked, drifted) {
+                (true, true) => {
+                    "a projection is not what this corpus and this lock produce. Run \
+                     `headwater generate` and commit the result"
+                }
+                (true, false) => {
+                    "a marked file is committed that this run does not write. Running this \
+                     verb again writes it no more, and the line under it above says why"
+                }
+                (false, _) => "a projection did not write",
+            }
+            .to_string(),
+        )
     }
 
     /// The report, which states what it did not do as well as what it did.
     pub fn render(&self) -> String {
         let mut out = String::new();
+        // First, because it is what decides whether anything below can be read
+        // as drift at all.
+        if let Some(producer) = &self.producer {
+            out.push_str("producer identity\n");
+            out.push_str(&format!(
+                "  committed {}: emitter set {}\n",
+                descriptor::PATH,
+                producer.recorded
+            ));
+            out.push_str(&format!(
+                "  this engine: emitter set {}\n\n",
+                producer.current
+            ));
+        }
         match self.checked {
             true => out.push_str("projections, held to regeneration\n"),
             false => out.push_str("projections\n"),
@@ -1013,10 +1106,26 @@ pub fn check(root: &Path, plan: &Plan) -> Report {
 }
 
 fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
+    // Before any artifact's bytes are compared, and only under `--check`: a
+    // write stamps the current emitter set, so the writing path can never
+    // produce a tree it would then refuse to trust.
+    let producer = match checking {
+        false => None,
+        true => committed_emitter_set(root).and_then(|recorded| {
+            match recorded == emitters::EMITTER_SET {
+                true => None,
+                false => Some(Producer {
+                    recorded,
+                    current: emitters::EMITTER_SET,
+                }),
+            }
+        }),
+    };
     let mut report = Report {
         checked: checking,
         unwritten: plan.unwritten.clone(),
         orphaned: plan.orphaned.clone(),
+        producer,
         ..Report::default()
     };
     for output in &plan.outputs {
@@ -1042,6 +1151,23 @@ fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
         });
     }
     report
+}
+
+/// The emitter set the committed corpus descriptor records, where it records
+/// one.
+///
+/// `None` covers every way the number is not there to read, and a caller that
+/// distinguished them would be acting on the shape of a file it did not write:
+/// no descriptor is committed, the file will not parse, the member is absent
+/// because an earlier engine wrote it, or the member is not a number. All four
+/// are "this file states no producer", which is a fact about an older or a
+/// hand-written descriptor and not a disagreement with this one. The bytes of
+/// such a descriptor are then compared like any other projection, and the
+/// ordinary stale verdict with its ordinary remedy is what a reader gets.
+fn committed_emitter_set(root: &Path) -> Option<u32> {
+    let text = std::fs::read_to_string(root.join(descriptor::PATH)).ok()?;
+    let found = headwater_yaml::json::field(&text, &[descriptor::EMITTER_SET_MEMBER.to_string()])?;
+    found.parse::<u32>().ok()
 }
 
 fn put(path: &Path, bytes: &str, ok: Verdict) -> Verdict {
