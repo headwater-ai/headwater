@@ -348,8 +348,21 @@ fn claiming(shape: &Shape, taxonomy: &Taxonomy) -> Vec<(String, String)> {
 
 impl CorpusCheck for Missing<'_> {
     const RULE: &'static str = self::MISSING;
-    /// The first edition of this rule.
-    const VERSION: u32 = 1;
+    /// The second edition. Edition 1 read the `reconcile-first` schemes alone.
+    /// Edition 2 reads [`takes_a_claim`], which adds every scheme on a shelf
+    /// that declares a `layout`.
+    ///
+    /// **A widened read set with an unbumped edition is invisible to a warm
+    /// cache.** [`crate::scope`] states that this number keys a corpus-scoped
+    /// entry, and the key carries no digest of the binary. `.headwater/cache/`
+    /// is not committed, so an adopter who upgrades the engine over an
+    /// unchanged corpus keeps every entry edition 1 wrote. Measured on a clone
+    /// with the two new scheme directories removed: the old engine warms the
+    /// cache and reports 0 `identifier.claim.missing`, the new engine reads
+    /// that cache and reports 0, and the same new engine with `--no-cache`
+    /// reports 16 and fails a strict run. Every test of this workspace starts
+    /// cold, so none of them can report that difference.
+    const VERSION: u32 = 2;
     /// The duplicate guard reads the build's own report, on
     /// [`crate::duplicate`]'s terms, rather than comparing identifiers a second
     /// time.

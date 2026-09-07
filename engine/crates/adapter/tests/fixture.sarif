@@ -225,7 +225,7 @@
               "properties": {
                 "headwater": {
                   "scope": "corpus",
-                  "version": 1,
+                  "version": 2,
                   "obligations": [],
                   "exportable_as": []
                 }
