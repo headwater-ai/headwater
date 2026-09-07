@@ -33,9 +33,9 @@ The grouped command validates taxonomy sources, resolves the lock, measures sche
 
 `vendor` reads a fetched artifact into the package area after digest validation. `diff` compares a fetched artifact with the current taxonomy. `migrate` reports migration steps and writes them only with `--apply`.
 
-`diff` reads the lock and it re-resolves no source. It states two caveats where they hold, and it gates on neither. The first caveat is a base that resolved to the same text beside a broken `addressability`. One lock cannot honestly produce that pair, because the digest of a lock covers the taxonomy body and it does not cover the founding record. The second caveat names the source files the lock records that have since changed on disk.
+`diff` reads the lock and it re-resolves no source. It states two caveats where they hold, and it gates on neither. The first caveat is a base that resolved to the same text beside a broken `addressability`. A lock that lost its founding record produces that pair. So does a release that moves a declaration between two bundles whose operations commute, and that lock is current. The run separates neither, so the caveat states both readings and refuses nothing. The second caveat names the source files the lock records that have since changed on disk.
 
-`diff` does not apply the test that `resolve --check` applies. That test refuses the publisher who edits a package source in place, which is the correct run this word is written for. It also passes a lock that a person resolved after the candidate was installed, where `diff` reports the wrong answer.
+`diff` does not apply the test that `resolve --check` applies. That test refuses the publisher who edits a package source in place, which is the correct run this verb is written for. It also passes a lock that a person resolved after the candidate was installed, where `diff` reports the wrong answer.
 
 ## Preconditions
 
