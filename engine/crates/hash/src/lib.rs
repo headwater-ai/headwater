@@ -80,10 +80,17 @@ pub fn hex(bytes: &[u8]) -> String {
     }
     padded.extend_from_slice(&((bytes.len() as u64) * 8).to_be_bytes());
 
-    for chunk in padded.chunks_exact(64) {
+    // `as_chunks` rather than `chunks_exact`: the chunk size is a constant here,
+    // so the compiler carries the length in the type and no bounds check reaches
+    // the inner loop. It is stable from 1.88 and the workspace floor is 1.90, so
+    // clippy's `chunks_exact_to_as_chunks` fires on the older form and `-D
+    // warnings` in continuous integration turns that into a build failure.
+    let (blocks, _) = padded.as_chunks::<64>();
+    for chunk in blocks {
         let mut w = [0u32; 64];
-        for (index, word) in chunk.chunks_exact(4).enumerate() {
-            w[index] = u32::from_be_bytes([word[0], word[1], word[2], word[3]]);
+        let (words, _) = chunk.as_chunks::<4>();
+        for (index, word) in words.iter().enumerate() {
+            w[index] = u32::from_be_bytes(*word);
         }
         for index in 16..64 {
             let s0 = w[index - 15].rotate_right(7)
