@@ -150,6 +150,32 @@ pub const LOCK: &str = ".headwater/taxonomy.lock";
 /// lock that carries the block reports the lock as stale, because that
 /// comparison is over whole files. That is a red build with `taxonomy resolve`
 /// as its remedy, and not a lock nobody can read.
+///
+/// # Why the digest does not cover the block either, measured
+///
+/// [#648](https://github.com/headwater-ai/headwater/issues/648) asked for the
+/// opposite of the paragraph above: bring `founded:` inside the digest [`read`]
+/// verifies, so that a lock whose block was deleted by hand is refused rather
+/// than reported current. **That remedy deletes the report it was asked to
+/// correct, and this was measured rather than argued.**
+///
+/// [`read`] refuses a digest that does not verify before any conformance rule
+/// is evaluated. So `headwater conformance` over such a lock exits 1 with the
+/// hand-edit sentence and prints **no `lock.current` line at all**: a quiet
+/// wrong answer becomes a loud one with no report. It also accuses the adopter
+/// of a hand edit for a file the paragraph above describes an older engine
+/// writing on its own, since a resolve under an engine that does not know the
+/// block writes a lock without one.
+///
+/// The reading that answers the question instead is
+/// `headwater_conformance::lock_current`, which compares the committed bytes
+/// against a freshly written lock — the comparison `taxonomy resolve --check`
+/// decides with — and so covers this block, the header and the `sources` list
+/// without moving a digest and without a second answer to one question.
+///
+/// `a_founding_record_round_trips_and_a_lock_without_one_reads_back_empty`
+/// below is what holds this direction: a digest that covered the block fails
+/// it, at the `laden.digest == bare.digest` assertion that names the reason.
 pub const FORMAT: u32 = 3;
 
 /// One lock, read or about to be written.
@@ -1054,6 +1080,14 @@ tasks:
     /// `taxonomy diff` had for every lock before the field existed. And the
     /// block moves no digest, because the digest is over the taxonomy text and
     /// an older reader takes the keys it names and ignores every other one.
+    ///
+    /// **The last of the three is also the ruling on
+    /// [#648](https://github.com/headwater-ai/headwater/issues/648), and this
+    /// is where a change that reopened it would first go red.** Bringing
+    /// `founded:` inside the digest makes [`read`] refuse a lock whose block a
+    /// hand or an older engine removed, which ends a `headwater conformance`
+    /// run before `lock.current` prints anything. [`FORMAT`] carries the
+    /// measurement.
     #[test]
     fn a_founding_record_round_trips_and_a_lock_without_one_reads_back_empty() {
         let (sources, resolution) = resolved(VALID);
