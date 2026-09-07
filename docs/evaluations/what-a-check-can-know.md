@@ -191,6 +191,30 @@ The question sweep supplies the exposure measurement. Across the 29 merge commit
 
 The rate is not evidence that the failure is common. It is evidence that the window is the normal case rather than an edge case, which is what Q21 claims and could not show.
 
+### The shapes a record takes
+
+**A merge reconciles lines, so the shape of a record decides whether a merge of it is sound.** The rule has one clause. A line that depends on no other line survives a merge. A line that is a function of other lines does not.
+
+**The append-only stores are the first shape, and `.gitattributes` already carries the argument.** Each line of `.headwater/capture-cost.jsonl` holds one reading, and a reading depends on no other reading. Two branches that each add one reading may keep both, which is what `merge=union` does.
+
+**A total is the second shape, and a merge of one is unsound.** The recorded census of this repository opened with the count of files under the corpus root. Two branches that each add one document both rewrite 386 to 387. A three-way merge reads that as one change written twice rather than as two changes. It takes 387 for a tree that holds 388, and it reports no conflict. Neither branch is wrong. The merge is.
+
+**No attribute prevents this, and the measurement is short.** Four settings were run over the same pair of branches: `-merge`, `merge=binary`, `-diff -merge`, and a custom merge driver. All four merged clean and left 387. A driver is never called, because git compares blobs before it selects a merge strategy, and two identical blobs need no merge at all. The same four settings do raise a conflict when the two branches write different values. So the whole family of attribute mechanisms covers the case that git already reports. None of them covers the case that git reports as clean.
+
+**Decomposition is therefore the only structural repair.** A record of one line per entity puts two different lines in front of a merge. No blob on either side is identical, so the result is correct rather than loud. The census now holds one record per file and no count. The graph record now holds one line per citation rather than a count for each anchor. Both assert every number that they stated before, because a count is a function of the records that it counts.
+
+**Where decomposition costs more than it returns, the record leaves the merge and answers to a check on the merged state.** One record per check instance would be a file of five thousand lines that moves on every commit. The remedy for that shape is the rule that Hoare stated for `bors`. This evaluation records it above: test the merged state, and never the branch alone.
+
+| Shape | In this repository | What a merge does | The treatment |
+|---|---|---|---|
+| A line that depends on nothing | `capture-cost.jsonl`, `adoption.jsonl` | Keeps both sides | `merge=union` |
+| One record for each entity, in a fixed order | `corpus.census`, `corpus.graph` | Correct, or an ordinary conflict | Record it, and derive each count |
+| A fold over those records | The census count, the count for each anchor | Silently wrong | Do not record it, derive it |
+| A fold over everything | `corpus.checks`, a lock digest | Silently wrong | Check the merged state |
+| A dense sequence of identifiers | `HW-OBL-0159` | Two claims on one identifier | The corpus-grain rule reports it |
+
+**The last row is the one shape that this engine already covers.** `identity.duplicate` reads both claimants at corpus grain, and it reports an error. Its module states the reason that a document-grain instance cannot hold it. A cache key over one document survives every edit to the other claimant. That edit is the one that settles the question.
+
 ## What stays open
 
 **Q5's real measurement has not been made, and the run that makes it is now specified.** This evaluation measured three ASD-STE100 structural rules as proxies. It did not measure `future_intent`, `change_narration` or `phased_rollout`, which are the categories that the declarative voice regime actually forbids, because no implementation of them exists. The run has three steps. Implement the three categories. Evaluate them over `docs/spec/`, which declares the declarative regime for every kind that it contains. Then adjudicate a fixed random sample of at least 50 findings per category, under the two labels above. Until that run exists, the claim that declarative voice is "mechanically detectable at useful precision" ([spec 8](../spec/08-design-departures.md)) is unmeasured, and it is published as unmeasured.

@@ -10,7 +10,7 @@ relations:
 
 # Decision records
 
-58 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+59 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -207,6 +207,10 @@ relations:
 ## How the two halves of the site share one host
 
 [HW-DR-0047](../decisions/0047-how-the-two-halves-of-the-site-share-one-host.md) — One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time. (asserted, and no human has accepted it)
+
+## A corpus-wide fold is derived and never stored
+
+[HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) — A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict. (asserted, and no human has accepted it)
 
 ## Q51 — What licenses a term into the public glossary, and what licenses a sixteenth
 

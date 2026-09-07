@@ -618,6 +618,39 @@ impl Census {
             }
         }
 
+        let rows = self.render_rows(detail);
+        if !rows.is_empty() {
+            out.push('\n');
+            out.push_str(&rows);
+        }
+        out
+    }
+
+    /// The rows alone, in path order, with no total above them.
+    ///
+    /// # Why a second rendering exists, and what it is for
+    ///
+    /// [`Census::render`] opens with totals, and every one of them is a fold
+    /// over the rows below it. A fold does not survive a merge. Two branches
+    /// that each add one document both rewrite `386` to `387`. The merge reads
+    /// that as one change written twice rather than as two changes, takes it
+    /// with no conflict, and produces a file that says 387 for a tree that
+    /// holds 388. Neither branch is wrong, the merge is, and no reader of
+    /// either branch could have seen it coming.
+    ///
+    /// A row depends on no other row. Two branches that add two documents
+    /// insert two records at two positions, and the merge of them is the
+    /// correct census of the merged tree. So a recorded fixture over a corpus
+    /// that more than one person edits holds this rendering, and it derives a
+    /// total when somebody reads a report rather than storing one beside the
+    /// rows. Nothing is asserted less. A total is a function of these rows, so
+    /// rows compared exactly are totals compared exactly.
+    ///
+    /// The same argument is why the two append-only stores are declared
+    /// `merge=union`, and it is stated in full under *The shapes a record
+    /// takes* in
+    /// [what a check can know](../../../../docs/evaluations/what-a-check-can-know.md).
+    pub fn render_rows(&self, detail: Detail) -> String {
         let rows: Vec<&Row> = match detail {
             Detail::EveryRow => self.rows.iter().collect(),
             Detail::Exceptions => self
@@ -626,16 +659,14 @@ impl Census {
                 .filter(|row| !matches!(row.outcome, Outcome::Typed { .. }))
                 .collect(),
         };
-        if !rows.is_empty() {
-            out.push('\n');
-            for row in rows {
-                out.push_str(&format!(
-                    "{}\n  {}: {}\n",
-                    row.path,
-                    row.outcome.class(),
-                    row.outcome.detail()
-                ));
-            }
+        let mut out = String::new();
+        for row in rows {
+            out.push_str(&format!(
+                "{}\n  {}: {}\n",
+                row.path,
+                row.outcome.class(),
+                row.outcome.detail()
+            ));
         }
         out
     }
