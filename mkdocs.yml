@@ -86,15 +86,15 @@ theme:
   #
   # It removes two elements as well, and that is the trap. `base.html` emits
   # `#hljs-light` and `#hljs-dark` only under this flag, and the theme's
-  # `js/darkmode.js` dereferences both with no null guard.
-  #
-  # THIS COMMIT IS RED ON `tools/check-site-console.py`, ON PURPOSE. Measured
-  # here: 325 pages with a finding, out of 333 served pages, every one of them
-  # `Uncaught TypeError: Cannot set properties of null (setting 'disabled')` at
-  # `js/darkmode.js:7`. `mkdocs build --strict` exits 0 over it,
-  # `tools/assemble-site.sh` exits 0 over it, and `tools/check-site-fragments.py`
-  # exits 0 over it. The next commit on this branch is the guard, and this
-  # paragraph is replaced when it lands.
+  # `js/darkmode.js` dereferences both with no null guard. So this setting and
+  # `color_mode: auto` below are safe together only because
+  # `mkdocs-overrides/js/darkmode.js` shadows the theme's copy. Measured over
+  # the assembled directory with the theme's own file in place: 325 pages with
+  # a finding, out of 333 served pages, every one of them `Uncaught TypeError:
+  # Cannot set properties of null (setting 'disabled')` at `js/darkmode.js:7`.
+  # `mkdocs build --strict`, `tools/assemble-site.sh` and
+  # `tools/check-site-fragments.py` each exit 0 over that same tree, and
+  # `tools/check-site-console.py` is the only reader that sees it.
   #
   # Fenced code is no longer highlighted anywhere on the generated half. That is
   # the cost, it is paid on purpose, and `tools/check-site-console.py` had one

@@ -184,6 +184,29 @@ report "the page #532 named now loads clean" 0 "$status" "0 pages with a finding
 report "  and both real pages were held to the \`keyCodes\` marker" 0 "$status" \
     "2 of those pages load the theme's" "$scratch/out"
 
+# 3b. THE SECOND SHADOWED FILE, AND THE SAME PROOF FOR IT.
+#     `mkdocs.yml` sets `highlightjs: false` and `color_mode: auto`. The theme
+#     emits `#hljs-light` and `#hljs-dark` only under the first, and its own
+#     `js/darkmode.js` dereferences both with no null guard under the second,
+#     so `mkdocs-overrides/js/darkmode.js` shadows it. Put the theme's line
+#     back over the real served bytes and every page that loads the file
+#     throws — 325 of them on the full corpus, both of them here.
+#
+#     The line below is the theme's line 7 verbatim rather than a copy of its
+#     whole file, because what is being provoked is the missing guard and not
+#     the color switching around it.
+guarded=$(cat "$copy/js/darkmode.js")
+printf "document.getElementById('hljs-light').disabled = true;\n" >"$copy/js/darkmode.js"
+status=$(run "$copy")
+report "the theme's unguarded \`darkmode.js\` throws on every page" 1 "$status" \
+    "Cannot set properties of null" "$scratch/out"
+report "  and it is both pages, not one" 1 "$status" \
+    "2 pages with a finding, out of 2 served pages" "$scratch/out"
+printf '%s\n' "$guarded" >"$copy/js/darkmode.js"
+status=$(run "$copy")
+report "  and the shadowed file is what holds them up" 0 "$status" \
+    "0 pages with a finding" "$scratch/out"
+
 # 4. THE REGRESSION. Take the shim out of that page's `<head>` and nothing else,
 #    and the two exceptions #532 reported come back verbatim. This is what says
 #    the fix in `mkdocs-overrides/` is what is holding the page up, rather than
