@@ -1829,3 +1829,139 @@ fn a_site_nav_opens_each_group_with_that_shelf_s_generated_index() {
         }
     }
 }
+
+/// A committed descriptor whose emitter set is not this engine's stops the
+/// `--check` verdict from naming a remedy, and the report names both numbers.
+///
+/// # What this is evidence of, and what it would be evidence of without care
+///
+/// [The contract](../../../../docs/interfaces/headwater-generate.md) says that
+/// `--check` reads the producer identity before it compares any projection's
+/// bytes, and that on a difference it withholds the instruction to regenerate.
+/// Ask what this run prints if the guard is absent: it prints a stale list and
+/// the regenerate line, in **both** states. So an assertion on a non-zero exit,
+/// or on a projection reported as stale, passes whether the guard ran or not
+/// ([#211](https://github.com/headwater-ai/headwater/issues/211) names that
+/// defect). The two decisive assertions here are the *absence* of the remedy
+/// this command cannot honestly give, and the presence of both numbers.
+///
+/// The tree is written by this engine first, so every artifact in it is exactly
+/// what this engine produces. The only thing that moves afterwards is the
+/// recorded emitter set. That makes the corpus and the emitters the only two
+/// candidate causes of the difference, which is the situation the guard is for.
+#[test]
+fn a_committed_descriptor_from_another_emitter_set_withholds_the_remedy() {
+    let (built, root) = fixture_tree();
+    let surface = built.surface();
+    let projections = Projections::read(&root).expect("the projections read");
+    let plan = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+
+    let tree = empty_tree("producer-identity");
+    let written = write(&tree, &plan);
+    assert!(
+        !written.has_errors(),
+        "the tree did not write clean: {}",
+        written.render()
+    );
+
+    // Clause 4 of the issue: what this engine writes, this engine trusts. A
+    // round trip in one engine reports no producer difference and exits zero.
+    let round_trip = check(&tree, &plan);
+    assert_eq!(round_trip.producer, None, "{}", round_trip.render());
+    assert!(
+        !round_trip.has_errors(),
+        "a round trip in one engine failed: {}",
+        round_trip.render()
+    );
+    assert_eq!(round_trip.remedy(), None);
+
+    // Now the only difference in the tree is which emitters wrote it.
+    let current = headwater_generate::emitters::EMITTER_SET;
+    let stale = current + 1;
+    let at = tree.join(descriptor::PATH);
+    let committed = std::fs::read_to_string(&at).expect("the written descriptor");
+    let moved = committed.replacen(
+        &format!("\"emitter_set\": {current}"),
+        &format!("\"emitter_set\": {stale}"),
+        1,
+    );
+    assert_ne!(moved, committed, "the descriptor records no emitter set");
+    std::fs::write(&at, &moved).expect("the moved descriptor");
+
+    let report = check(&tree, &plan);
+    assert_eq!(
+        report.producer,
+        Some(headwater_generate::Producer {
+            recorded: stale,
+            current,
+        }),
+        "{}",
+        report.render()
+    );
+
+    let remedy = report.remedy().expect("a failing run states why");
+    assert!(
+        remedy.contains(&stale.to_string()) && remedy.contains(&current.to_string()),
+        "the sentence does not name both numbers: {remedy}"
+    );
+    assert!(
+        !remedy.contains("headwater generate"),
+        "the run told a reader to regenerate over a producer difference: {remedy}"
+    );
+    assert!(
+        report.render().contains(&stale.to_string()),
+        "the report does not state the recorded emitter set: {}",
+        report.render()
+    );
+    assert!(report.has_errors(), "a producer difference passed the run");
+}
+
+/// A committed descriptor that records no emitter set is one an earlier engine
+/// wrote, and absence is not disagreement.
+///
+/// The distinction matters at exactly one moment: the first run of an engine
+/// that carries the member over a repository whose descriptor predates it. If
+/// absence read as a difference, every adopter would meet the guard on upgrade
+/// with no second number to compare and no way to clear it. The contract says
+/// the run behaves as it always did, and this holds it to that.
+#[test]
+fn a_descriptor_that_records_no_emitter_set_is_not_a_producer_difference() {
+    let (built, root) = fixture_tree();
+    let surface = built.surface();
+    let projections = Projections::read(&root).expect("the projections read");
+    let plan = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+
+    let tree = empty_tree("producer-identity-absent");
+    write(&tree, &plan);
+    let at = tree.join(descriptor::PATH);
+    let committed = std::fs::read_to_string(&at).expect("the written descriptor");
+    let older: String = committed
+        .lines()
+        .filter(|line| !line.contains("\"emitter_set\""))
+        .map(|line| format!("{line}\n"))
+        .collect();
+    assert_ne!(older, committed, "the descriptor records no emitter set");
+    std::fs::write(&at, &older).expect("the older descriptor");
+
+    let report = check(&tree, &plan);
+    assert_eq!(report.producer, None, "{}", report.render());
+    let remedy = report.remedy().expect("the descriptor itself is now stale");
+    assert!(
+        remedy.contains("headwater generate"),
+        "an ordinary stale projection lost its remedy: {remedy}"
+    );
+}

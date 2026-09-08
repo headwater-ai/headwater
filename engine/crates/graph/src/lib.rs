@@ -273,6 +273,32 @@ impl Graph {
         ]
     }
 
+    /// The fragment-bearing links, by which document a fragment names a heading
+    /// of.
+    ///
+    /// This is the denominator of `link.fragment.unresolved`. The two arms are
+    /// counted apart because the rule read only the first one until its third
+    /// edition, and a reader comparing an old report with a new one should see
+    /// which half moved.
+    pub fn fragment_counts(&self) -> Vec<(&'static str, usize)> {
+        let mut same = 0;
+        let mut across = 0;
+        for link in &self.links {
+            if link.fragment.as_deref().unwrap_or_default().is_empty() {
+                continue;
+            }
+            match &link.binding {
+                links::Binding::SameDocument => same += 1,
+                links::Binding::Corpus { .. } => across += 1,
+                _ => {}
+            }
+        }
+        vec![
+            ("carrying a fragment into this document", same),
+            ("carrying a fragment into another corpus document", across),
+        ]
+    }
+
     /// The graph as text.
     ///
     /// The totals come first and they account for every declared edge half,
@@ -319,6 +345,15 @@ impl Graph {
             }
             if self.skipped.images > 0 {
                 let _ = writeln!(out, "  {:5} skipped, an image", self.skipped.images);
+            }
+            // The population `link.fragment.unresolved` reads, printed rather
+            // than inferred. That rule passes silently over a corpus whose
+            // fragments all resolve, so a reader who wants to know how much of
+            // this corpus it examined would otherwise have to break one.
+            for (class, count) in self.fragment_counts() {
+                if count > 0 {
+                    let _ = writeln!(out, "  {count:5} {class}");
+                }
             }
         } else {
             let broken = self

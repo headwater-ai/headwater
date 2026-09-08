@@ -59,7 +59,11 @@ This table settles three things.
 
 **Document checks are the ones that no graph standard can reach**, because the body is not in the graph. That is the finding from the [SHACL instance-data evaluation](../evaluations/shacl-worked-example.md#does-this-help-with-the-actual-documents). Not by coincidence, they are also the checks that need source positions.
 
-One example in that row asks for more than the row supplies. Prose-link resolution is three questions, and the row states one scope for all three. Whether a fragment names a heading of the document that wrote it is a fact about that one body, so `link.fragment.unresolved` is a Document check. Whether the path names a file that exists is a fact about the corpus. A rename touches no byte of the document that cited it. So `link.path.unresolved` is corpus-scoped. Whether a fragment on a resolving path names a heading of the target waits for a grain that this list does not hold ([13 — Open obligations](13-open-obligations.md#design-work-that-nothing-blocks)).
+One example in that row asks for more than the row supplies. Prose-link resolution is two questions, and the row states one scope for both. Neither question is a fact about the body that wrote the link. **Both rules are corpus-scoped, and the row is wrong about both.**
+
+Whether the path names a file that exists is a fact about the corpus. A rename touches no byte of the document that cited it, so `link.path.unresolved` is corpus-scoped. Whether the fragment names a heading is a fact about the document the link points at. That document is another one as often as it is the citer, so `link.fragment.unresolved` is corpus-scoped too. It read the near half alone for two editions, at Document grain. A renamed heading then broke every citation from outside the file in silence.
+
+The near half could not stay where it was. A document-scoped rule that read the target documents must name them in its read set. Without that, a rename in a target leaves a cached pass standing. The read set is also what routes a rule to a document for the coverage account. So each target named there would count as a document this rule checked. One grain answers both halves and miscounts neither.
 
 **An origin is not a scope.** The origin says which part of the taxonomy a rule comes from, and the scope says what one instance of it covers. `identifier.claimed_twice` is Graph-origin, because the identifier index reports the collision, and it is corpus-scoped, because nothing smaller holds both claimants.
 

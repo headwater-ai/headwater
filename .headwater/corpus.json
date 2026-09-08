@@ -1,6 +1,7 @@
 {
   "headwater:generated": "corpus_descriptor. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
-  "descriptor_version": "1.0",
+  "descriptor_version": "1.1",
+  "emitter_set": 1,
   "corpora": [
     {
       "root": "docs",
@@ -12,8 +13,8 @@
       ],
       "taxonomy": {
         "package": "headwater/standard",
-        "version": "4.1.0",
-        "lock": "sha256:92bb2fdeed65fe5d02270d9e3d685eafe380063c9820a0175dcbef9cacba5a83"
+        "version": "4.2.0",
+        "lock": "sha256:de4da2c26f7744de974e46575a21d8fcdbeee813ba5dd4f23b71993e99527650"
       },
       "entry_points": [
         {

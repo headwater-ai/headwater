@@ -342,12 +342,12 @@
             {
               "id": "link.fragment.unresolved",
               "shortDescription": {
-                "text": "document scope, one document, its front matter and its body"
+                "text": "corpus scope, every row of the census, and it is a barrier"
               },
               "properties": {
                 "headwater": {
-                  "scope": "document",
-                  "version": 2,
+                  "scope": "corpus",
+                  "version": 3,
                   "obligations": [
                     "OB-FIX-10"
                   ],
@@ -591,7 +591,7 @@
             "analysisTarget"
           ],
           "hashes": {
-            "sha-256": "7ea2f93bc1792e592627bdadd1119ced5473369cf2287a81da0650bcf1537370"
+            "sha-256": "cb031d365aac5c22f6ea1f23faf48da297c1d6eaab7b9dad2e552ae36c28e62d"
           }
         },
         {
@@ -779,6 +779,17 @@
           ],
           "hashes": {
             "sha-256": "ab8d0eb139f3733cde3ca712a0f637ff8fe82f70fc93a55f87b27273fad00d57"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/20-fragment-target.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "fb666df2800fa7bc1213d78c4e42a46448d98cdc8b40043495c1b4cc706cc9a5"
           }
         }
       ],
@@ -1030,8 +1041,8 @@
           "level": "warning",
           "kind": "fail",
           "message": {
-            "text": "this document is classified and all 3 of its check instances were skipped",
-            "markdown": "this document is classified and all 3 of its check instances were skipped\n\n**Fix:** check that the shelf pattern claims the right files, and that the kind declares something a check reads"
+            "text": "this document is classified and all 2 of its check instances were skipped",
+            "markdown": "this document is classified and all 2 of its check instances were skipped\n\n**Fix:** check that the shelf pattern claims the right files, and that the kind declares something a check reads"
           },
           "locations": [
             {
@@ -2620,12 +2631,12 @@
           },
           "clock": "2026-08-12",
           "coverage": {
-            "seen": 26,
-            "classified": 24,
-            "checked": 23,
+            "seen": 27,
+            "classified": 25,
+            "checked": 24,
             "generated": 1,
-            "instances": 306,
-            "skipped": 71,
+            "instances": 295,
+            "skipped": 51,
             "skips": [
               {
                 "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
@@ -2657,7 +2668,7 @@
               },
               {
                 "reason": "the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it",
-                "instances": 17,
+                "instances": 18,
                 "documents": [
                   {
                     "path": "check/spec/00-both-halves.md",
@@ -2773,6 +2784,13 @@
                   },
                   {
                     "path": "check/spec/18-blank-facets.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/20-fragment-target.md",
                     "rules": [
                       "shelf.placement_is_primary"
                     ],
@@ -2824,169 +2842,8 @@
                 "unrouted": 0
               },
               {
-                "reason": "this document writes no fragment into itself",
-                "instances": 22,
-                "documents": [
-                  {
-                    "path": "check/evaluations/alpha.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/evaluations/beta.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/evaluations/delta.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/evaluations/epsilon.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/evaluations/eta.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/evaluations/gamma.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/evaluations/zeta.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/01-one-half.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/02-cited-only.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/03-no-instance.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/05-no-summary.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/06-retired.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/08-contract-met.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/09-contract-missing.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/10-suppressed.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/11-identifier-mismatch.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/13-dangling.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/14-relations-not-a-mapping.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/15-unusable-entries.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/16-no-identifier.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/17-identifier-not-a-word.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  },
-                  {
-                    "path": "check/spec/18-blank-facets.md",
-                    "rules": [
-                      "link.fragment.unresolved"
-                    ],
-                    "routings": 1
-                  }
-                ],
-                "unrouted": 0
-              },
-              {
                 "reason": "change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change",
-                "instances": 25,
+                "instances": 26,
                 "documents": [
                   {
                     "path": "check/evaluations/alpha.md",
@@ -3155,6 +3012,13 @@
                       "warrant.promoted"
                     ],
                     "routings": 1
+                  },
+                  {
+                    "path": "check/spec/20-fragment-target.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
                   }
                 ],
                 "unrouted": 1
@@ -3192,7 +3056,7 @@
             "suppressed": 2
           },
           "read_set": {
-            "inputs": 26,
+            "inputs": 27,
             "unhashed": 0
           },
           "loss_set": [

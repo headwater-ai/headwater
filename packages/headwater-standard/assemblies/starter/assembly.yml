@@ -29,7 +29,7 @@ package: headwater/starter
 # from. 0.1.0 matches the first installable release of this engine.
 version: 0.1.0
 from:
-  package: headwater/standard@4.1.0
+  package: headwater/standard@4.2.0
   # This is the selection `.headwater/taxonomy.yml` of this repository already
   # runs on its own corpus. HW-OBL-0018 records that the bundle set is a guess
   # that no adopter has revised, and `doctrine/starter.md` says so to the

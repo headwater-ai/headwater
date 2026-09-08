@@ -576,6 +576,21 @@ pub trait CorpusCheck {
     /// not a document of this corpus.
     const NEEDS_LINKS: bool = false;
 
+    /// Whether the view carries the heading anchors of every document of this
+    /// corpus, by path.
+    ///
+    /// It joins no cache key, and the argument is [`CorpusCheck::NEEDS_LINKS`]'s
+    /// exactly: the anchors are a *reading of* the documents this instance
+    /// already reads, derived from the same bytes the read set names, so a key
+    /// component here would hash those bytes twice and cold-start every cache
+    /// of every adopting corpus for a fact no verdict depends on.
+    ///
+    /// It is declared rather than taken silently, because a rule that reads an
+    /// input it never named is what these declarations exist to stop, and a
+    /// reader of this trait should see every input a rule takes without reading
+    /// its body. See [`crate::fragment`].
+    const NEEDS_ANCHORS: bool = false;
+
     fn evaluate(&self, view: &CorpusView<'_>) -> Outcome;
 }
 
@@ -1069,6 +1084,7 @@ pub struct CorpusView<'a> {
     departed: &'a [Departed<'a>],
     claims: Option<&'a crate::claim::Claims>,
     links: Option<&'a [headwater_graph::links::Link]>,
+    anchors: Option<&'a crate::fragment::Anchors>,
     reads: Vec<Input>,
 }
 
@@ -1124,6 +1140,16 @@ impl<'a> CorpusView<'a> {
         self.links
     }
 
+    /// The heading anchors of every document of this corpus, and only for a
+    /// check that declared `NEEDS_ANCHORS`.
+    ///
+    /// `None` is a run whose scope did not admit them. A corpus that writes no
+    /// heading at all is an index that answers `false` for every fragment,
+    /// which is a different thing and a real verdict.
+    pub fn anchors(&self) -> Option<&'a crate::fragment::Anchors> {
+        self.anchors
+    }
+
     /// Every document this view was built over. See the type comment for why
     /// the set is the rows that carry a document rather than every row.
     pub fn reads(&self) -> &[Input] {
@@ -1140,6 +1166,24 @@ impl<'a> CorpusView<'a> {
             departed: &[],
             claims: None,
             links,
+            anchors: None,
+            reads: Vec::new(),
+        }
+    }
+
+    /// A view carrying the links and the anchors, for the tests of the rule
+    /// that reads both. `cfg(test)` on [`CorpusView::only_links`]'s terms.
+    #[cfg(test)]
+    pub(crate) fn only_links_and_anchors(
+        links: Option<&'a [headwater_graph::links::Link]>,
+        anchors: Option<&'a crate::fragment::Anchors>,
+    ) -> Self {
+        CorpusView {
+            identity: None,
+            departed: &[],
+            claims: None,
+            links,
+            anchors,
             reads: Vec::new(),
         }
     }
@@ -1537,6 +1581,14 @@ pub fn over_corpus<C: CorpusCheck>(
         let digest = claims.digest();
         reads.push(Input::new(crate::claim::STORE, Some(digest.as_str())));
     }
+    // Built here and only where the trait asked for it, so a rule that did not
+    // declare the input pays nothing and receives nothing. It derives from the
+    // rows already in `reads` above, which is why no input joins the read set
+    // with it. See `NEEDS_ANCHORS`.
+    let anchors = match C::NEEDS_ANCHORS {
+        true => Some(crate::fragment::Anchors::of(census)),
+        false => None,
+    };
     let view = CorpusView {
         identity: match C::NEEDS_PHASE_A {
             true => Some(&graph.index.defects),
@@ -1554,6 +1606,7 @@ pub fn over_corpus<C: CorpusCheck>(
             true => Some(&graph.links),
             false => None,
         },
+        anchors: anchors.as_ref(),
         reads: reads.clone(),
     };
     // No clock. `CorpusCheck` declares none, so `clock_for` would have nothing

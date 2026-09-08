@@ -39,6 +39,8 @@ Coverage counts routing, and routing is the generation step: a template, a decla
 
 The second option is refused. An instance that counted only for the documents its findings name makes coverage a function of the verdict. A rule that finds nothing then covers nothing, and a corpus with a defect reports higher coverage than a clean one.
 
+**The record is one instance larger, and the newest one is the first that took documents away from the account.** `link.fragment.unresolved` moved from `Document` to `Corpus` when it widened to read a fragment on a resolving path ([HW-OBL-0077](0077-a-fragment-on-a-path-needs-a-grain-that-no-scope-supplies.md)). Its 312 document-routed instances became 1. Nothing became unchecked here, because `facet.required.missing` reports one instance against every classified document of this corpus and skips none. **That is a fact about this corpus.** A shelf in an adopting corpus whose kind requires no facet could lose its only routed check to a move of this shape. No instrument would say so before the coverage finding appeared.
+
 One cost stands. A rule that instantiates over every typed document reaches the unreachable end by a shorter route. Such a rule routes every document to a check before anything is read. The generated Shape checks instantiate per kind for that reason, so a kind that forbids what a rule reads gets no instance.
 
 **What happens next is the closure of this record, which is why it reads `build`.** The question is answered, `Grain::routes` carries the answer, spec 12 states it and one test holds it. Nothing further is owed by the engine or by the specification. What remains is the state movement of this record to `discharged`, and that is the owner's to take rather than an agent's.

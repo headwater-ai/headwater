@@ -817,8 +817,19 @@ jobs:
         # remote it cannot read is reported red rather than skipped, because
         # the exclusive or is then undecided and an undecided invariant is not
         # a passing one. Every scratch arm stubs that remote with a local bare
-        # repository instead. It builds no engine and writes only under a
-        # temporary directory.
+        # repository instead.
+        #
+        # It also RUNS one command out of the page, which is the one thing no
+        # gate here did until then: the page told a newcomer to run a
+        # `taxonomy vendor` invocation that always exited 1 and printed the same
+        # refusal whether their digest matched or not, and every gate read the
+        # page rather than running it. That group needs a built engine and takes
+        # the newer of the two profiles. It builds none itself, which is why it
+        # sits in this job and after the build step above; a run with no engine
+        # is reported red rather than skipped, for the same reason the
+        # unreadable remote is. It writes only under a temporary directory, and
+        # the arm that succeeds installs a package over a copy of this checkout
+        # made there rather than over the checkout.
         run: sh tools/readme-fixtures.sh
       - name: The library index accounts for every bundle, and the vendored copy has not drifted
         # Two properties of `docs/taxonomies/README.md`, and NOT its prose.

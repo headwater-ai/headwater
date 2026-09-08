@@ -175,7 +175,7 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0074](../obligations/0074-a-check-version-is-raised-by-hand-and-nothing-catches-a-stale.md) — A check version is raised by hand, and nothing catches a stale one
 - [HW-OBL-0075](../obligations/0075-a-participation-expectation-needs-depth-one-and-edge.md) — A participation expectation needs depth one, and `Edge` does not reach it
 - [HW-OBL-0076](../obligations/0076-a-generated-check-reads-its-severity-from-the-taxonomy.md) — A generated check reads its severity from the taxonomy
-- [HW-OBL-0077](../obligations/0077-a-fragment-on-a-path-needs-a-grain-that-no-scope-supplies.md) — A fragment on a path needs a grain that no scope supplies
+- [HW-OBL-0077](../obligations/0077-a-fragment-on-a-path-needs-a-grain-that-no-scope-supplies.md) — A fragment on a path needs a grain that no scope supplies (**discharged**: the grain was `Corpus`, which this engine already had)
 - [HW-OBL-0078](../obligations/0078-two-positions-that-the-meta-schema-marks-a-gap-are-a-closed.md) — Two positions that the meta-schema marks a gap are a closed set in the engine
 - [HW-OBL-0079](../obligations/0079-a-correctness-root-that-is-a-type-has-no-failing-fixture.md) — A correctness root that is a type has no failing fixture
 - [HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) — `--changed-only` is the content-addressed cache under another name
@@ -379,7 +379,7 @@ The three trades are priced now, and one of them cost a paragraph in a second fi
 
 **The conversion has run for the decisions, and two of the things it predicted did not happen.** [#124](https://github.com/headwater-ai/headwater/issues/124) said that every `Qn` citation becomes a link to a document, and that `link.fragment.unresolved` reports each one that falls. Neither held, and each one failed for its own reason.
 
-The rule does not read those citations at all. It selects a link whose destination begins with `#`. So it reads a bare fragment that a document writes into itself, and never a fragment on a path. That is the same gap that this file already records against the rule, counted there at 1595 links against 208. A citation of the form `09-decisions.md#q4--relation-storage` is one of the 1595, and no rule in this engine reads it.
+The rule did not read those citations at all. It selected a link whose destination begins with `#`. So it read a bare fragment that a document writes into itself, and never a fragment on a path. **That gap is closed.** `link.fragment.unresolved` is corpus-scoped at version 3 and reads both arms, so a citation of the form `09-decisions.md#q4--relation-storage` is now a link this engine resolves. [HW-OBL-0077](../obligations/0077-a-fragment-on-a-path-needs-a-grain-that-no-scope-supplies.md) is the record. The counts it carried are struck rather than restated. Each was true on the day it was taken and false a week later.
 
 And no citation fell. The conversion kept every cited heading in place, so the 233 citations into the register and the 136 into the tombstone all still resolve. What a reader loses is not a link. A `Qn` citation still lands on an index rather than on the document. Only an author who edits the citation moves it. #124 predicted a repair forced by a check. What it got was a repair that nothing forces, which is the weaker position of the two.
 
