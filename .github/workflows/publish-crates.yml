@@ -47,6 +47,20 @@
 # guards a different version of on the release side. Thirty seconds is a
 # margin measured nowhere yet; `sh tools/build-declaration-fixtures.sh`-style
 # evidence for a shorter one is future work, not a claim this comment makes.
+#
+# # WHY A FAILED PUBLISH RETRIES INSTEAD OF EXITING
+#
+# crates.io throttles a new crate name, not a new version of one already
+# claimed: five in a burst, then one every ten minutes, read from the
+# `PublishNew` limiter this registry runs. Twenty-three crates share one
+# workspace and most of them are new names, so the closure below runs into
+# that limiter as a matter of course, not as a failure of this workflow. A
+# 429 names the exact GMT timestamp crates.io will accept the next one at;
+# the loop reads that timestamp back out of `cargo publish`'s own error and
+# sleeps to it, so one dispatch carries the whole closure to completion
+# without a person watching for each ten-minute window to reopen. A failure
+# that is not a 429 still stops the run: that is a crate this workflow
+# cannot fix by waiting.
 name: Publish crates
 
 on:
@@ -88,6 +102,38 @@ jobs:
                  headwater-conformance headwater-cli"
           version=$(cargo metadata --no-deps --format-version 1 |
                      python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(p["version"] for p in d["packages"] if p["name"]=="headwater-cli"))')
+          # A 429 from `cargo publish` names the exact moment the PublishNew
+          # limiter refills, e.g. "Please try again after Tue, 08 Sep 2026
+          # 20:48:04 GMT". This waits to that moment, plus a five-second
+          # margin, and tries the same crate again. Anything that is not a
+          # 429 — a bad description, a yanked dependency, a token crates.io
+          # has revoked — is not a wait, so the loop lets that exit the job.
+          publish_with_retry() {
+              crate="$1"
+              while true; do
+                  set +e
+                  output=$(cargo publish -p "$crate" --locked 2>&1)
+                  rc=$?
+                  set -e
+                  echo "$output"
+                  if [ "$rc" -eq 0 ]; then
+                      return 0
+                  fi
+                  retry_at=$(echo "$output" | grep -oE 'try again after [A-Za-z]{3}, [0-9]{2} [A-Za-z]{3} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT' | sed 's/^try again after //')
+                  if [ -z "$retry_at" ]; then
+                      echo "::error::cargo publish failed for $crate for a reason this loop cannot wait out"
+                      return 1
+                  fi
+                  retry_epoch=$(date -u -d "$retry_at" +%s)
+                  now_epoch=$(date -u +%s)
+                  wait=$((retry_epoch - now_epoch + 5))
+                  if [ "$wait" -lt 5 ]; then
+                      wait=5
+                  fi
+                  echo "crates.io's new-crate limit holds $crate until $retry_at; sleeping ${wait}s"
+                  sleep "$wait"
+              done
+          }
           for crate in $order; do
               status=$(curl -sS -H 'User-Agent: headwater-publish-workflow (https://github.com/headwater-ai/headwater)' \
                   -o /dev/null -w '%{http_code}' \
@@ -97,6 +143,6 @@ jobs:
                   continue
               fi
               echo "publishing $crate $version"
-              cargo publish -p "$crate" --locked
+              publish_with_retry "$crate"
               sleep 30
           done
