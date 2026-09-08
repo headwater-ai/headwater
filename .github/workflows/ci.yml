@@ -168,8 +168,33 @@ jobs:
         # carries no Python. The two variables below turn a skip into a failure,
         # so neither gate can go quiet by losing a dependency.
         run: python3 -m pip install --user --break-system-packages jsonschema PyYAML
+      - name: The mount point the killed-publish suite needs
+        # `engine/crates/resolve/tests/killed_publish.rs` measures what a
+        # classifier reads back from a real mount point, because that is the
+        # shape `--out` takes on `deliver`'s mount branch and the case
+        # `clear_killed` (#485, PR #705) exists for. `bubblewrap` is route 2
+        # of the two the suite tries, in a user namespace. Measured on
+        # `ubuntu-latest` (2026-09-08): installing it is not enough on its
+        # own, because GitHub's image refuses the uid map a user namespace
+        # needs regardless — `bwrap: setting up uid map: Permission denied` —
+        # so this step stays, for whichever runner it does hold on, and the
+        # step below carries the route that holds on both.
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap
+      - name: A real mount point, route 1 of the same suite
+        # Route 1 is "a mount point somebody else made," named by
+        # `HEADWATER_MOUNT_POINT` — the suite's own comment calls it the route
+        # for a runner with `sudo` and no user namespaces, which is exactly
+        # what the step above measured `ubuntu-latest` to be. `sudo mount`
+        # needs no user namespace at all, so this holds independent of the
+        # AppArmor restriction that route 2 hits. `uid=$(id -u)` gives the
+        # unprivileged test process, not root, ownership of the tmpfs, since
+        # `cargo test` never runs as root here.
+        run: |
+          mkdir -p "$RUNNER_TEMP/mount-point"
+          sudo mount -t tmpfs -o "size=64m,uid=$(id -u),gid=$(id -g),mode=0755" tmpfs "$RUNNER_TEMP/mount-point"
+          echo "HEADWATER_MOUNT_POINT=$RUNNER_TEMP/mount-point" >> "$GITHUB_ENV"
       - name: Test
-        run: cargo test --locked
+        run: cargo test --locked --workspace --exclude headwater-resolve
         working-directory: engine
         env:
           HEADWATER_STOCK_VALIDATOR: required
@@ -181,6 +206,39 @@ jobs:
           # clause 8 of #321 states through it. A runner that lost `bash`
           # fails here rather than reporting a script nothing read.
           HEADWATER_SHELL_ORACLE: required
+      - name: Test, headwater-resolve
+        # Split from the step above and run single-threaded. Measured on
+        # `ubuntu-latest` (2026-09-08): `HEADWATER_MOUNT_POINT` is one real
+        # directory, and `killed_publish.rs`'s mount-point cases write into it
+        # by its path rather than by a private namespace, so libtest's default
+        # thread-per-test parallelism ran several of them against that one
+        # directory at once and they collided — a file one case wrote gone by
+        # the time another case looked for it, a kill sweep that never landed
+        # a kill because a sibling thread's process crowded the same window.
+        # Serializing the crate, rather than the one file, is the fix that
+        # needs no change to the suite itself; `headwater-resolve`'s other
+        # five integration-test files are fast enough that losing their
+        # parallelism costs single-digit seconds.
+        run: cargo test --locked -p headwater-resolve -- --test-threads=1
+        working-directory: engine
+        env:
+          HEADWATER_STOCK_VALIDATOR: required
+          HEADWATER_SARIF_VALIDATOR: required
+          HEADWATER_SHA256_ORACLE: required
+          HEADWATER_JSON_ORACLE: required
+          HEADWATER_SHELL_ORACLE: required
+          # A mount point is handed to this run by one of the two steps
+          # above, so the mount-point cases in
+          # `engine/crates/resolve/tests/killed_publish.rs` are expected to
+          # reach it. This turns "DID NOT RUN" into a failure instead of a
+          # quiet skip that goes green regardless.
+          HEADWATER_MOUNT_REQUIRED: 1
+      - name: Unmount the mount point above
+        # The self-hosted runner's disk persists between jobs; a mount this
+        # job made is this job's to remove, win or lose, so `always()` rather
+        # than the default (this step only on a green job).
+        if: always()
+        run: sudo umount "$RUNNER_TEMP/mount-point" 2>/dev/null || true
 
   headwater:
     name: headwater check (advisory)

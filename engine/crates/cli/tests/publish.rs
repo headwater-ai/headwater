@@ -1902,3 +1902,117 @@ fn relative_files(root: &Path) -> Vec<String> {
     walk(root, root, &mut into);
     into
 }
+
+// ---------------------------------------------------------------------------
+// `--clear-killed`. #485.
+// ---------------------------------------------------------------------------
+
+/// `taxonomy publish --clear-killed`, as a person types it, over a root the
+/// caller names.
+fn publish_clearing_killed(root: &Path, out: &Path) -> (Option<i32>, String) {
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["taxonomy", "publish", "--package", "headwater/standard"])
+        .arg("--clear-killed")
+        .arg("--out")
+        .arg(out)
+        .arg("--root")
+        .arg(root)
+        .output()
+        .expect("the binary runs");
+    (
+        output.status.code(),
+        String::from_utf8_lossy(&output.stderr).into_owned(),
+    )
+}
+
+/// **The decisive case.** The flag over a non-empty `--out` with no staging
+/// directory beside it exits 1 with the refusal a run without the flag gives,
+/// and the file that was there is still there byte for byte.
+///
+/// The exit status is asserted as 1 and not merely as non-zero, because clap
+/// exits 2 on an argument it does not know: a case that took non-zero for a
+/// refusal would pass against a binary that never grew the flag at all. That is
+/// the shape this whole target exists for.
+#[test]
+fn the_flag_over_an_unrelated_directory_refuses_and_every_file_survives() {
+    let root = Root::copied("clear-killed-unrelated");
+    let out = root.path().join("artifact");
+    std::fs::create_dir_all(&out).expect("the caller's directory is made");
+    std::fs::write(out.join("theirs.txt"), "the caller's own file").expect("their file is written");
+
+    let (status, message) = publish_clearing_killed(root.path(), &out);
+    assert_eq!(status, Some(1), "the flag did not refuse: {message}");
+    assert!(
+        message.contains("nothing was published"),
+        "the refusal is not the publish's own: {message}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(out.join("theirs.txt")).expect("their file reads"),
+        "the caller's own file"
+    );
+    assert_eq!(
+        relative_files(&out),
+        vec!["theirs.txt".to_string()],
+        "the flag wrote or removed something under the caller's directory"
+    );
+}
+
+/// The flag over the residue of a killed direct write clears both paths and
+/// publishes the real artifact in the same run, exit 0.
+///
+/// It publishes this repository's own maintained source with `--from`, which is
+/// the one invocation in this target that reaches exit 0, so the case measures
+/// the whole run rather than a clear followed by a refusal for another reason.
+#[test]
+fn the_flag_over_a_killed_runs_residue_clears_it_and_publishes() {
+    let root = Root::scratch("clear-killed-residue");
+    let out = root.path().join("artifact");
+    let mut name = out.file_name().expect("it has a name").to_os_string();
+    name.push("~staging");
+    let staging = out.with_file_name(name);
+    std::fs::create_dir_all(&staging).expect("the staging directory is made");
+    std::fs::write(
+        staging.join(".headwater-publish-staging"),
+        "an earlier run claimed this directory\n",
+    )
+    .expect("the marker is written");
+    std::fs::write(
+        staging.join(".headwater-publish-direct"),
+        format!("an earlier run\nThe output path is: {}\n", out.display()),
+    )
+    .expect("the note is written");
+    std::fs::create_dir_all(&out).expect("the output directory is made");
+    std::fs::write(out.join("taxonomy.yml"), "half of an artifact\n")
+        .expect("the residue is written");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .arg("taxonomy")
+        .arg("publish")
+        .arg("--clear-killed")
+        .arg("--from")
+        .arg(repository().join("taxonomy-source/headwater-standard"))
+        .arg("--out")
+        .arg(&out)
+        .arg("--root")
+        .arg(repository())
+        .output()
+        .expect("the binary runs");
+    let message = String::from_utf8_lossy(&output.stderr).into_owned();
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "the clear and the publish did not land in one run: {message}"
+    );
+    assert!(
+        !staging.exists(),
+        "the killed run's staging directory outlived the clear: {message}"
+    );
+    assert!(
+        headwater_resolve::release::at(&out).is_ok(),
+        "the publish after the clear left no record: {message}"
+    );
+    assert!(
+        message.contains("~staging"),
+        "the run does not say what it removed: {message}"
+    );
+}
