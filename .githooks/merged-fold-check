@@ -1,0 +1,140 @@
+#!/bin/sh
+# The gate on a merged tree, which is the half of the derived-artifact mechanism
+# that a merge driver cannot be.
+#
+# `.gitattributes` declares 21 paths `merge=headwater-regenerate`, and
+# `.githooks/merge-regenerate` refuses a merge of any of them. A merge driver is
+# a *content* merge: git compares the two blobs first, and where both branches
+# wrote one byte string it resolves the path at the tree level and consults no
+# driver at all. That is the case the declaration was written for — two branches
+# that each add a document both rewrite the same total to the same value — so
+# the driver reaches every case except the one that motivated it. #717 is that
+# hole, and `a_driver_is_not_called_when_both_branches_wrote_one_byte_string` in
+# `engine/crates/census/tests/merge_driver.rs` measured it.
+#
+# [HW-DR-0049](../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
+# already states the cure rather than the driver: a fold "answers to a check on
+# the merged state", and the refusal by driver "is a fallback and never the
+# rule, because ... it reaches only the form git already reports". This script is
+# the check on the merged state. It runs the three producers that write the
+# declared paths, each with `--check`, over the tree the merge produced. CI runs
+# the same three against `refs/pull/N/merge`; until this file the local path ran
+# none of them.
+#
+# # What calls it
+#
+# `.githooks/commit-msg`, and only that, whenever a merge is in progress. That
+# file carries the measurement of what git runs on each path into a merge commit
+# and why `pre-merge-commit`, which is the hook this looks like, is not the one.
+#
+# # What it does not reach
+#
+# `git merge --no-verify` skips the hook, by git's design. So does
+# `git merge --squash`, which makes no commit. A fast-forward makes no commit
+# either, and it also lands no new fold: the tree is one branch's, and that
+# branch's own gate already held it. `git rebase` runs no `commit-msg` hook for a
+# replayed commit, and the gate that replay skips is the same one
+# `git commit --no-verify` skips.
+#
+# The server-side merge button runs nothing from this repository. What covers
+# that is the pull-request run over `refs/pull/N/merge`, which `.gitattributes`
+# already says, and which is conclusive only while the branch is current with
+# `main`.
+#
+# # Why it fails open with no engine
+#
+# The same reason `.githooks/pre-commit` does, and with the same cost: a clone
+# with no built engine cannot run a producer, and a gate that refused there
+# would be a repository nobody can merge in. It prints a line and exits 0. A
+# fixture that asserts only "the merge failed" cannot tell that refusal from a
+# crash, so `.githooks/fixtures.sh` asserts on what each producer said.
+
+set -u
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -n "$root" ] || exit 0
+
+# Either profile builds an engine this gate can run, and the newer of the two
+# answers. This is the rule `.githooks/pre-commit` and `.claude/hooks/lib.sh`
+# both state, written out a third time rather than sourced: a git hook that
+# reached into `.claude/` would make the git side of this repository depend on
+# the harness side, and `.githooks/fixtures.sh` holds the three copies against
+# each other.
+release="$root/engine/target/release/headwater"
+dev_release="$root/engine/target/dev-release/headwater"
+engine=
+[ -x "$release" ] && engine=$release
+if [ -x "$dev_release" ] && { [ -z "$engine" ] || [ "$dev_release" -nt "$engine" ]; }; then
+    engine=$dev_release
+fi
+if [ -z "$engine" ]; then
+    echo "headwater: no built engine, so this merge is not checked against the"
+    echo "  derived artifacts it may have reconciled silently. Build it once:"
+    echo "        cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked"
+    exit 0
+fi
+
+failed=
+report=
+
+run_producer() {
+    label=$1
+    shift
+    if out=$("$@" 2>&1); then
+        return 0
+    fi
+    failed="${failed}${label}
+"
+    report="${report}  ${label}
+$(printf '%s\n' "$out" | sed 's/^/    /')
+"
+    return 1
+}
+
+# `headwater generate` writes `.headwater/corpus.json`, `.headwater/export.json`,
+# `.headwater/nav.yml`, the eleven shelf indexes and `docs/spec/09-open-questions.md`.
+run_producer "headwater generate --check" "$engine" generate --check --root "$root"
+
+# `headwater taxonomy resolve` writes `.headwater/taxonomy.lock`.
+run_producer "headwater taxonomy resolve --check" "$engine" taxonomy resolve --check --root "$root"
+
+# `tools/refresh-figures.sh` writes the measured figures on the three pages
+# under `site/`. It runs `python3` under `set -eu`, so a host without one would
+# make this refuse a merge while reporting stale figures, which is a refusal
+# whose message is false. The guard turns a lying refusal into a printed line,
+# which is the same trade `.githooks/pre-commit` makes for the same script.
+if command -v python3 >/dev/null 2>&1; then
+    run_producer "sh tools/refresh-figures.sh --check" sh "$root/tools/refresh-figures.sh" --check
+else
+    echo "headwater: no python3, so the figures on the hand-built pages are not"
+    echo "  checked against this merged tree."
+fi
+
+# The two recorded fixtures `.gitattributes` also declares,
+# `engine/crates/check/fixtures/corpus.checks` and
+# `engine/crates/lock/fixtures/corpus.lock`, are not checked here. Their
+# producer is a cargo test run, which costs minutes rather than the seconds this
+# gate is allowed, and CI runs the whole suite against `refs/pull/N/merge`. That
+# is the one declared family this hook leaves to CI, and it is stated rather
+# than left to be discovered.
+
+[ -z "$failed" ] && exit 0
+
+echo "headwater: this merge produces a tree that a derived artifact in it does"
+echo "  not describe. Each of these files holds a fold over the whole corpus, so"
+echo "  two branches that each added a document both wrote the same new total and"
+echo "  git took one change written twice. The merged value is true of neither"
+echo "  branch. \`.gitattributes\` names the files and HW-DR-0049 rules why they"
+echo "  answer to a check on the merged state rather than to a merge."
+echo
+printf '%s' "$report"
+echo "  The merge is still in progress and the merged content is already in your"
+echo "  working tree, so regenerate there and complete it. This gate runs again"
+echo "  on that commit and passes when the artifacts describe the tree:"
+echo "        headwater generate"
+echo "        headwater taxonomy resolve --write"
+echo "        sh tools/refresh-figures.sh"
+echo "        git add -A"
+echo "        git commit"
+echo "  Or abandon it: git merge --abort"
+exit 1
