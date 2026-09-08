@@ -44,6 +44,29 @@
 # markers for a custom driver, so the file stays readable and the resolution is
 # to run the command and stage the result. That is one deterministic step, and
 # it never produces a file that no tree agrees with.
+#
+# # What this reaches, and what it does not
+#
+# **It reaches two branches that moved a fold to different values, and never two
+# branches that moved it to the same value.** A merge driver is a content merge,
+# so git compares the two blobs first and resolves a path with one blob at the
+# tree level, consulting nothing. Two branches that each add a document of one
+# kind measure the same figures and write one identical page, so the case this
+# driver was written for is the case it is not called for.
+#
+# That is not a defect in this file and no wider driver would cure it. What cures
+# it is a check on the merged state, which is what
+# [HW-DR-0049](../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
+# asks for and what this refusal is the fallback to: `.githooks/commit-msg` runs
+# `.githooks/merged-fold-check` whenever a merge is in progress, and that runs the
+# producers of these paths against the tree the merge produced.
+# `.gitattributes` says which of the declared paths two branches can write alike,
+# measured. `engine/crates/census/tests/merge_driver.rs` holds both halves in one
+# case table.
+#
+# Neither half reaches the merge button on the forge, which runs nothing from
+# this repository. The pull-request run over `refs/pull/N/merge` is what covers
+# that, and only while the branch is current with `main`.
 
 ours="$2"
 path="$4"

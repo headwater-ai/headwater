@@ -73,6 +73,55 @@
 # covers that is the pull-request run, which builds `refs/pull/N/merge` and holds
 # each of these artifacts with `--check`, and that run is only conclusive while
 # the branch is current with `main`.
+#
+# # What a driver does not reach, and what does
+#
+# **A merge driver is a content merge, so git calls one only when it has two
+# contents.** Two branches that wrote one identical byte string give it one blob,
+# which it takes at the tree level with no driver consulted — and that is the
+# case this whole block was written for, because two branches that each add a
+# document both rewrite the same total to the same value. So the driver covers
+# the branches that moved a fold to *different* values and never the branches
+# that moved it to the *same* value.
+#
+# `.githooks/commit-msg` is the other half, and it is the half HW-DR-0049 asks
+# for: a fold "answers to a check on the merged state", and refusal by driver "is
+# a fallback and never the rule". Whenever a merge is in progress it runs
+# `.githooks/merged-fold-check`, which runs `headwater generate --check`,
+# `headwater taxonomy resolve --check` and `sh tools/refresh-figures.sh --check`
+# over the tree the merge produced. Those are the three CI already runs against
+# `refs/pull/N/merge`. It needs no `git config` beyond the `core.hooksPath` every
+# hook here needs, and the hook file says why that position and not
+# `pre-merge-commit`.
+#
+# # Which of these paths two branches can actually write alike
+#
+# Measured rather than assumed, over all 21, twice: three trees from one corpus,
+# a baseline and two arms that each add one document of the same kind, every
+# producer run in each, and the bytes compared. Once with a `decision` and once
+# with a `process_decision`, and a control arm that added nothing moved nothing.
+#
+# - **Two arms wrote one byte string**, so no driver is called: `site/index.html`
+#   and `site/proof/index.html`. Both times. They carry figures and nothing that
+#   names a document, so two documents of one kind are one page.
+# - **The two arms differed**, so the driver is called and refuses:
+#   `.headwater/export.json`, `.headwater/nav.yml`, the shelf index of the kind
+#   that moved, and `docs/spec/09-open-questions.md` for a decision. Each carries
+#   an entry per document, which is what tells the two arms apart.
+# - **Neither arm moved it**, so there is no merge of it to reach:
+#   `.headwater/corpus.json`, `.headwater/taxonomy.lock`,
+#   `site/how-it-works/index.html`, and every shelf index of a kind neither arm
+#   added.
+# - **Not measured by that experiment**:
+#   `engine/crates/check/fixtures/corpus.checks` and
+#   `engine/crates/lock/fixtures/corpus.lock`. Their producer is a cargo test run
+#   rather than a verb, so `merged-fold-check` does not run it either and says so
+#   where it stops. CI runs the whole suite against `refs/pull/N/merge`, which is
+#   what holds those two.
+#
+# The set that escapes is a function of the kind, not a fixed list: any path
+# whose content depends on the corpus only through an aggregate can be written
+# alike by two branches, and any path that names the document cannot.
 
 .headwater/corpus.json merge=headwater-regenerate
 .headwater/export.json merge=headwater-regenerate
@@ -123,8 +172,13 @@ docs/tutorials/README.md merge=headwater-regenerate
 # Two branches adding documents of *different* kinds move different figures, so
 # the two pages differ, the driver is called and it refuses. Two branches adding
 # documents of the *same* kind write one identical page, git takes it at the
-# tree level, and no driver runs. #717 owns the second half for every path in
-# this file.
+# tree level, and no driver runs. `.githooks/commit-msg` is what reaches the
+# second half, for every path in this file rather than only for these; #717
+# built it and the header above says what it reaches.
+#
+# These are the only two paths in this file measured to escape the driver, and
+# `site/how-it-works/index.html` is here for the differing-bytes case alone: it
+# carries no figure that a document added to any shelf moves.
 #
 # Listed rather than matched, and the list is enumerated rather than remembered.
 # `site/*` would reach `site/tutorial/index.html`, whose 43 verbatim blocks are
