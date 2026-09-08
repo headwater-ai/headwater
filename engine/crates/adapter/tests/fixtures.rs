@@ -1179,8 +1179,8 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
 
     let text_report = render(&ran, Format::Text);
     let markdown = render(&ran, Format::Markdown);
-    assert!(text_report.contains("295 check instances"));
-    assert!(markdown.contains("It created 295 check instances, and 51 of them reached no verdict."));
+    assert!(text_report.contains("307 check instances"));
+    assert!(markdown.contains("It created 307 check instances, and 53 of them reached no verdict."));
     // The report is laid out at a width, so a long reason arrives over more
     // than one line. The class is a run of words either way.
     let flat = flowed(&text_report);

@@ -144,8 +144,8 @@ register
   lifecycle.deletion.not_permitted reaches no obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
   adoption.task.expired reaches no obligation, so it names none
-54 findings
-     34 ✗ error
+57 findings
+     37 ✗ error
      20 ▲ warn
 
 instances
@@ -634,7 +634,7 @@ instances
   language.controlled.not_met check/spec/20-fragment-target.md
     passed
   language.controlled.not_met check/spec/21-summary-facet-prose.md
-    passed
+    failed
   language.retired_term.used check/spec/00-both-halves.md
     passed
   language.retired_term.used check/spec/01-one-half.md
@@ -666,7 +666,7 @@ instances
   language.retired_term.used check/spec/20-fragment-target.md
     passed
   language.retired_term.used check/spec/21-summary-facet-prose.md
-    passed
+    failed
   language.source_form.not_met check/spec/00-both-halves.md
     passed
   language.source_form.not_met check/spec/01-one-half.md
@@ -906,6 +906,15 @@ check/spec/18-blank-facets.md:8:9 ✗ error
 check/spec/18-blank-facets.md:15:26 ▲ warn
   language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 32
   fix: split the sentence, or move a clause into its own sentence
+check/spec/21-summary-facet-prose.md:7:10 ✗ error
+  language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction, and the `summary` facet writes `doesn't`
+  fix: write `does not`, by hand: no patch of this engine edits front matter
+check/spec/21-summary-facet-prose.md:7:10 ✗ error
+  language.controlled.not_met (OB-FIX-8): `ste_house` declares the tag `en-US`, and the `summary` facet writes `organisation`
+  fix: write `organization`, by hand: no patch of this engine edits front matter
+check/spec/21-summary-facet-prose.md:7:10 ✗ error
+  language.retired_term.used (OB-FIX-22): `ste_house` retires `reference system`, and the `summary` facet writes it: the corpus renamed it
+  fix: write `taxonomy`, by hand: no patch of this engine edits front matter
 engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
   control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18
   fix: name a rule this engine carries, or a phase of it, or a mechanism outside it under a prefix this engine does not read

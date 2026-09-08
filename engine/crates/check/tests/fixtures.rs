@@ -469,7 +469,10 @@ fn a_lexical_rule_reads_the_facet_in_the_scent_role_and_no_other() {
             "{finding:#?}"
         );
         assert_eq!(finding.line, summary, "{finding:#?}");
-        assert_ne!(finding.line, title, "a label in the `name` role is not prose");
+        assert_ne!(
+            finding.line, title,
+            "a label in the `name` role is not prose"
+        );
         assert!(finding.patch.is_none(), "{finding:#?}");
         assert!(finding.message.contains("summary"), "{finding:#?}");
     }

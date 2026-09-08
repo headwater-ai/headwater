@@ -853,6 +853,24 @@ mod tests {
         assert!(monday.is_some());
     }
 
+    /// Two editions of one rule are two keys.
+    ///
+    /// The property a widened population rests on. `language.controlled.not_met`
+    /// went to edition two when it started to read the facet in the `scent`
+    /// role, and every other input of the key stayed equal: the corpus did not
+    /// move, the lock did not move, and the documents did not move. A version
+    /// that did not divide the key would serve edition one's verdict over every
+    /// document the rule already read, and the widening would report nothing
+    /// while every test of it passed on a cold run.
+    #[test]
+    fn two_editions_of_one_rule_are_two_keys() {
+        let scope = Scope::document(true, false, false, false);
+        let one = cache().plain_key("r", 1, scope, "a.md", &inputs(Some("sha256:one")), None);
+        let two = cache().plain_key("r", 2, scope, "a.md", &inputs(Some("sha256:one")), None);
+        assert!(one.is_some());
+        assert_ne!(one, two);
+    }
+
     /// Two prior versions of one document are two keys.
     ///
     /// The sharpest form of the question this whole module answers: can two

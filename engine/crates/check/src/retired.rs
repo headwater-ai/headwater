@@ -54,6 +54,10 @@ pub const RULE: &str = "language.retired_term.used";
 /// The check, generated from the language regimes and the kinds that bind them.
 pub struct Retired {
     bound: Vec<Bound>,
+    /// The facet in the `scent` role, resolved once from the shape. A retired
+    /// term is retired wherever this document's author wrote it, and
+    /// [`crate::frontmatter`] states why the population is a role.
+    scent: Option<String>,
 }
 
 struct Bound {
@@ -101,7 +105,10 @@ impl Retired {
                     .collect(),
             });
         }
-        Retired { bound }
+        Retired {
+            bound,
+            scent: crate::frontmatter::scent_facet(shape),
+        }
     }
 
     fn bound_to(&self, kind: &str) -> Option<&Bound> {
@@ -111,10 +118,12 @@ impl Retired {
 
 impl DocumentCheck for Retired {
     const RULE: &'static str = self::RULE;
-    /// The first edition of this rule. The list is data, so a taxonomy that
-    /// retires one more term does not raise this: the resolved taxonomy is
-    /// already part of what the cache keys on.
-    const VERSION: u32 = 1;
+    /// Edition two widens the population to the facet in the `scent` role. The
+    /// list itself is data, so a taxonomy that retires one more term does not
+    /// raise this: the resolved taxonomy is already part of what the cache keys
+    /// on. The population is not data, and a warm cache would serve edition
+    /// one's verdict over every document this rule already read.
+    const VERSION: u32 = 2;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, kind: &str) -> bool {
@@ -125,12 +134,39 @@ impl DocumentCheck for Retired {
         let Some(bound) = self.bound_to(view.kind()) else {
             return Outcome::Passed;
         };
-        let Some(body) = view.body() else {
-            return Outcome::Passed;
-        };
+        let body = view.body();
+        let scent = self
+            .scent
+            .as_deref()
+            .and_then(|facet| crate::frontmatter::Scent::of(view, facet));
 
         let mut findings = Vec::new();
-        for sentence in body.sentences() {
+        let prose = body
+            .into_iter()
+            .flat_map(|body| body.sentences().into_iter().map(move |s| (s, Some(body))))
+            .chain(
+                scent
+                    .iter()
+                    .flat_map(|scent| scent.sentences.iter().cloned().map(|s| (s, None))),
+            );
+        for (sentence, in_body) in prose {
+            // Where the finding points, and what it calls the text it read.
+            // Front matter anchors at the start of the value the author wrote,
+            // for the reason `crate::frontmatter` states.
+            let (line, column, subject) = match (in_body, &scent) {
+                (Some(_), _) => (
+                    sentence.span.start.line,
+                    sentence.span.start.col,
+                    "this sentence".to_string(),
+                ),
+                (None, Some(scent)) => (
+                    scent.span.start.line,
+                    scent.span.start.col,
+                    format!("the `{}` facet", scent.facet),
+                ),
+                // Unreachable: a sentence outside the body comes from the scent.
+                (None, None) => (0, 0, "this sentence".to_string()),
+            };
             let text = sentence.authored.to_lowercase();
             for term in &bound.terms {
                 if !crate::voice::contains_word(&text, &term.term) {
@@ -149,8 +185,12 @@ impl DocumentCheck for Retired {
                         .and_then(|at| sentence.authored.get(at..at + term.term.len()))
                         .map(str::to_string),
                 };
-                let patch = match (&written, &term.replacement) {
-                    (Some(written), Some(replacement)) => crate::patch::substitution(
+                // A sentence of front matter reaches no patch shape at all. The
+                // one this rule places replaces a byte range of a body, and
+                // HW-OBL-0103 records that nothing of this engine edits a
+                // mapping.
+                let patch = match (&written, &term.replacement, in_body) {
+                    (Some(written), Some(replacement), Some(body)) => crate::patch::substitution(
                         view.path(),
                         body,
                         &sentence,
@@ -167,15 +207,18 @@ impl DocumentCheck for Retired {
                     },
                     obligation: None,
                     path: view.path().to_string(),
-                    line: sentence.span.start.line,
-                    column: sentence.span.start.col,
+                    line,
+                    column,
                     message: format!(
-                        "`{}` retires `{}`, and this sentence writes it: {}",
+                        "`{}` retires `{}`, and {subject} writes it: {}",
                         bound.regime, term.term, term.reason
                     ),
-                    remediation: match &term.replacement {
-                        Some(replacement) => format!("write `{replacement}`"),
-                        None => format!("rewrite the sentence without `{}`", term.term),
+                    remediation: match (&term.replacement, in_body) {
+                        (Some(replacement), Some(_)) => format!("write `{replacement}`"),
+                        (Some(replacement), None) => format!(
+                            "write `{replacement}`, by hand: no patch of this engine edits front matter"
+                        ),
+                        (None, _) => format!("rewrite the sentence without `{}`", term.term),
                     },
                     // Spec 2 decides this, and it is the one place in the engine
                     // where a taxonomy entry rather than a rule says whether the

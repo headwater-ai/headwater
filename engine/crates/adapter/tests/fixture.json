@@ -8,12 +8,12 @@
   },
   "clock": "2026-08-12",
   "coverage": {
-    "seen": 27,
-    "classified": 25,
-    "checked": 24,
+    "seen": 28,
+    "classified": 26,
+    "checked": 25,
     "generated": 1,
-    "instances": 295,
-    "skipped": 51,
+    "instances": 307,
+    "skipped": 53,
     "skips": [
       {
         "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
@@ -45,7 +45,7 @@
       },
       {
         "reason": "the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it",
-        "instances": 18,
+        "instances": 19,
         "documents": [
           {
             "path": "check/spec/00-both-halves.md",
@@ -172,6 +172,13 @@
               "shelf.placement_is_primary"
             ],
             "routings": 1
+          },
+          {
+            "path": "check/spec/21-summary-facet-prose.md",
+            "rules": [
+              "shelf.placement_is_primary"
+            ],
+            "routings": 1
           }
         ],
         "unrouted": 0
@@ -220,7 +227,7 @@
       },
       {
         "reason": "change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change",
-        "instances": 26,
+        "instances": 27,
         "documents": [
           {
             "path": "check/evaluations/alpha.md",
@@ -396,6 +403,13 @@
               "warrant.promoted"
             ],
             "routings": 1
+          },
+          {
+            "path": "check/spec/21-summary-facet-prose.md",
+            "rules": [
+              "warrant.promoted"
+            ],
+            "routings": 1
           }
         ],
         "unrouted": 1
@@ -558,7 +572,7 @@
     {
       "rule": "language.controlled.not_met",
       "scope": "document",
-      "version": 1,
+      "version": 2,
       "obligations": [
         "OB-FIX-8"
       ]
@@ -566,7 +580,7 @@
     {
       "rule": "language.retired_term.used",
       "scope": "document",
-      "version": 1,
+      "version": 2,
       "obligations": [
         "OB-FIX-22"
       ]
@@ -1264,6 +1278,42 @@
       "escape": "none"
     },
     {
+      "rule": "language.controlled.not_met",
+      "severity": "error",
+      "obligation": "OB-FIX-8",
+      "path": "check/spec/21-summary-facet-prose.md",
+      "line": 7,
+      "column": 10,
+      "message": "`ste_house` admits no contraction, and the `summary` facet writes `doesn't`",
+      "remediation": "write `does not`, by hand: no patch of this engine edits front matter",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "language.controlled.not_met",
+      "severity": "error",
+      "obligation": "OB-FIX-8",
+      "path": "check/spec/21-summary-facet-prose.md",
+      "line": 7,
+      "column": 10,
+      "message": "`ste_house` declares the tag `en-US`, and the `summary` facet writes `organisation`",
+      "remediation": "write `organization`, by hand: no patch of this engine edits front matter",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "language.retired_term.used",
+      "severity": "error",
+      "obligation": "OB-FIX-22",
+      "path": "check/spec/21-summary-facet-prose.md",
+      "line": 7,
+      "column": 10,
+      "message": "`ste_house` retires `reference system`, and the `summary` facet writes it: the corpus renamed it",
+      "remediation": "write `taxonomy`, by hand: no patch of this engine edits front matter",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
       "rule": "control.mechanism.unimplemented",
       "severity": "warn",
       "obligation": "OB-FIX-12",
@@ -1444,6 +1494,10 @@
     {
       "path": "check/spec/20-fragment-target.md",
       "digest": "sha256:fb666df2800fa7bc1213d78c4e42a46448d98cdc8b40043495c1b4cc706cc9a5"
+    },
+    {
+      "path": "check/spec/21-summary-facet-prose.md",
+      "digest": "sha256:16254913bd0c34a373fdb76b1a6acd730f6bd03bdd1ad47b2d964a496aaf6695"
     }
   ]
 }
