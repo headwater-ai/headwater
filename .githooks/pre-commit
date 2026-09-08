@@ -308,7 +308,23 @@ if [ "$status" -eq 0 ]; then
         echo "headwater: HEADWATER_SKIP_FIGURE_CHECK is set, so the figures on the"
         echo "  hand-built pages are not checked. CI checks them with no such hatch."
     elif command -v python3 >/dev/null 2>&1; then
-        if ! figures=$(sh "$root/tools/refresh-figures.sh" --check 2>&1); then
+        figures=$(sh "$root/tools/refresh-figures.sh" --check 2>&1) && figures_status=0 || figures_status=$?
+        # Exit 3 is the script saying it cannot tell, because the engine it
+        # would measure with is older than the engine sources in this tree.
+        # This branch exists because the one below is the wrong sentence for
+        # that state and its instruction is what does the damage: measuring
+        # again with the same behind binary writes its wrong figures onto
+        # pages the corpus agrees with. HW-DR-0039 rules the three outcomes.
+        if [ "$figures_status" -eq 3 ]; then
+            echo "headwater: the figures on the hand-built pages under \`site/\` were not"
+            echo "  checked, because the engine that would measure them is older than the"
+            echo "  engine sources in this tree. Nothing here says the pages are wrong."
+            printf '%s\n' "$figures" | sed 's/^/    /'
+            echo "  Build the engine, then commit again. Or skip this one clause for one"
+            echo "  commit:"
+            echo "        HEADWATER_SKIP_FIGURE_CHECK=1 git commit ..."
+            exit 1
+        elif [ "$figures_status" -ne 0 ]; then
             echo "headwater: a figure on a hand-built page under \`site/\` disagrees with"
             echo "  a fresh run of this engine. Every such figure is written by"
             echo "  \`tools/refresh-figures.sh\` from a run, and none of them by hand."
