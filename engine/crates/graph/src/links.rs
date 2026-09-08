@@ -35,6 +35,24 @@
 //! commit, and a rule that stops a commit refuses only where no plausible
 //! reading of the path exists.
 //!
+//! # A query string is not part of a filename, and a leading `/` is the corpus root
+//!
+//! A destination is `path`, then `?query`, then `#fragment`, in that order and
+//! in every reader. So a query string comes off before the path is bound, and a
+//! file whose name really does hold a `?` is spelled `%3F` — which the reading
+//! above already binds, because that is what a percent escape is for.
+//!
+//! A destination that opens with `/` is written from the root of a site, and
+//! this engine reads that root as the root of the corpus. It used to join the
+//! citing document's directory in front of it and then let the empty first
+//! segment fall away, which doubled that directory and reported a path nobody
+//! had written. That is the judgment this module already states above: a rule
+//! that stops a commit refuses only where no plausible reading of the path
+//! exists, the corpus root is a plausible reading of `/`, and a doubled prefix
+//! is a reading no author meant. Where nothing stands at the root either, the
+//! report names the destination as the author wrote it, separator and all,
+//! rather than the root-relative path this reading produced.
+//!
 //! # The fragment is kept and not resolved
 //!
 //! Whether `#q4--relation-storage` names a heading of the target is a Document
@@ -171,14 +189,22 @@ fn binding_of(source_path: &str, destination: &str, index: &Index, base: &Path) 
     }
 
     // Relative to the directory of the document that wrote it, which is how a
-    // reader's browser resolves it and therefore what the author meant.
+    // reader's browser resolves it and therefore what the author meant — and
+    // relative to the root of the corpus where the author opened it with a
+    // separator, which is how the same browser resolves that one. The join is
+    // read off the destination rather than decided once, because a percent
+    // escape can spell either separator and the second reading has to get the
+    // same treatment as the first.
     let directory = source_path
         .rsplit_once('/')
         .map(|(head, _)| head)
         .unwrap_or("");
-    let join = |destination: &str| match directory.is_empty() {
-        true => destination.to_string(),
-        false => format!("{directory}/{destination}"),
+    let join = |destination: &str| match destination.starts_with('/') {
+        true => destination.trim_start_matches('/').to_string(),
+        false => match directory.is_empty() {
+            true => destination.to_string(),
+            false => format!("{directory}/{destination}"),
+        },
     };
 
     // The destination as the author wrote it, first and unchanged.
@@ -204,8 +230,17 @@ fn binding_of(source_path: &str, destination: &str, index: &Index, base: &Path) 
     }
     match written {
         // The reading the author wrote is the one the report names, because
-        // that is the string they will look for in their own document.
-        Ok(path) => Binding::Missing { path },
+        // that is the string they will look for in their own document. A
+        // site-absolute destination keeps its separator for that reason: the
+        // corpus root is this engine's reading of `/`, and a report that
+        // printed the reading would send the author looking for a string that
+        // their document does not hold.
+        Ok(path) => Binding::Missing {
+            path: match destination.starts_with('/') {
+                true => destination.to_string(),
+                false => path,
+            },
+        },
         Err(why) => Binding::Unnormalizable { why },
     }
 }
@@ -280,12 +315,22 @@ fn digit(byte: u8) -> Option<u8> {
     }
 }
 
-/// Split a destination into its path and its fragment.
+/// Split a destination into its path, its query string and its fragment.
+///
+/// The order is the one every reader uses: the path first, then `?query`, then
+/// `#fragment`. A `#` before a `?` therefore makes the `?` part of the
+/// fragment rather than the start of a query, which is why the fragment comes
+/// off first and the query is looked for in what is left.
 fn split_fragment(destination: &str) -> (&str, Option<String>) {
-    match destination.split_once('#') {
-        Some((path, fragment)) => (path, Some(fragment.to_string())),
+    let (before, fragment) = match destination.split_once('#') {
+        Some((before, fragment)) => (before, Some(fragment.to_string())),
         None => (destination, None),
-    }
+    };
+    let path = match before.split_once('?') {
+        Some((path, _query)) => path,
+        None => before,
+    };
+    (path, fragment)
 }
 
 /// Whether the destination leaves the repository.
@@ -318,6 +363,29 @@ mod tests {
             ("09-decisions.md", Some("q4--relation-storage".to_string()))
         );
         assert_eq!(split_fragment("#scope"), ("", Some("scope".to_string())));
+    }
+
+    /// A query string is not part of the path, and the order decides which of
+    /// `?` and `#` opens what.
+    #[test]
+    fn a_query_string_comes_off_the_path_in_reading_order() {
+        assert_eq!(
+            split_fragment("09-decisions.md?v=2"),
+            ("09-decisions.md", None)
+        );
+        assert_eq!(
+            split_fragment("09-decisions.md?v=2#q4"),
+            ("09-decisions.md", Some("q4".to_string()))
+        );
+        // A `#` before a `?` makes the `?` part of the fragment, because the
+        // fragment is last and runs to the end of the destination.
+        assert_eq!(
+            split_fragment("09-decisions.md#q4?v=2"),
+            ("09-decisions.md", Some("q4?v=2".to_string()))
+        );
+        // A destination that is a query string and nothing else names this
+        // document, which is what an empty path already means.
+        assert_eq!(split_fragment("?v=2"), ("", None));
     }
 
     /// The escape is read back, and a destination that writes none is one

@@ -52,6 +52,14 @@ case "$path" in
   .headwater/corpus.json|.headwater/export.json|.headwater/nav.yml|docs/*)
     remedy="headwater generate    (CI holds it with: headwater generate --check)"
     ;;
+  site/*)
+    # The pages are hand-built and only their figures are written, so the
+    # remedy rewrites the numbers and leaves every other byte of the page
+    # alone. Without this arm these paths fall to `*` below, whose line says
+    # "regenerate this artifact from its source" and names no command, which
+    # for a file git leaves with no conflict marker in it is nothing at all.
+    remedy="sh tools/refresh-figures.sh    (CI holds it with: sh tools/refresh-figures.sh --check)"
+    ;;
   .headwater/taxonomy.lock)
     remedy="headwater taxonomy resolve --write    (CI holds it with: headwater taxonomy resolve --check)"
     ;;

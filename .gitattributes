@@ -33,6 +33,16 @@
 # one change written twice, takes it with no conflict, and leaves a number that
 # was true on neither branch and is true of nothing.
 #
+# **The driver below does not reach that case, and #717 owns it.** Measured
+# rather than argued, in `engine/crates/census/tests/merge_driver.rs`: a merge
+# driver is a content merge, git compares blob identifiers first, and two
+# branches that wrote one byte string give it one blob, which it takes at the
+# tree level with no driver consulted. So what the driver reaches is two
+# branches that moved a fold to *different* values, which is the common case
+# whenever they add documents of different kinds, and what covers the rest is a
+# check on the merged state: CI runs each producer with `--check` against
+# `refs/pull/N/merge`, which is the union.
+#
 # A record that decomposes into one line per entity escapes this, and where the
 # decomposition is affordable this repository takes it rather than listing the
 # file here. `engine/crates/census/fixtures/corpus.census` holds one record per
@@ -94,3 +104,44 @@ docs/reviews/README.md merge=headwater-regenerate
 docs/spec/09-open-questions.md merge=headwater-regenerate
 docs/spec/README.md merge=headwater-regenerate
 docs/tutorials/README.md merge=headwater-regenerate
+
+# The hand-built pages that carry a measured figure. `tools/refresh-figures.sh`
+# substitutes 34 measured keys into every element marked `data-figure` on every
+# page under `site/`, 107 occurrences across these three, and
+# `.githooks/pre-commit` refuses a commit that leaves one stale. So every branch
+# that adds a document rewrites all three of these files.
+#
+# The reason they are here is not the reason above, and the difference is worth
+# stating because these pages look like the case that escapes. They are already
+# decomposed: one element per figure, 57 of them on the landing page, so two
+# branches that move *different* figures merge correctly and nothing in this
+# block would be needed. What survives the decomposition is two branches that
+# move the *same* figure to the *same* new value. Both add a document, both
+# write `census.seen">426`, and the union is 427.
+#
+# Half of that case is reached from here and half is not, per the note above.
+# Two branches adding documents of *different* kinds move different figures, so
+# the two pages differ, the driver is called and it refuses. Two branches adding
+# documents of the *same* kind write one identical page, git takes it at the
+# tree level, and no driver runs. #717 owns the second half for every path in
+# this file.
+#
+# Listed rather than matched, and the list is enumerated rather than remembered.
+# `site/*` would reach `site/tutorial/index.html`, whose 43 verbatim blocks are
+# copied out of the tutorial document rather than measured, and the four pages
+# under `site/changelog/`, `site/compare/`, `site/glossary/` and `site/ns/`,
+# which carry no figure at all. Refusing a merge of a page somebody edits by
+# hand is the worse of the two failures, so
+# `every_page_carrying_a_figure_is_declared_unmergeable` in the census crate
+# reads every page under `site/` and holds the ones carrying a figure against
+# this block, in both directions.
+#
+# One cost, which is intended rather than a regression:
+# `tools/refresh-site-tokens.sh` also writes into these three pages, copying one
+# identical block into every page under `site/`. Two branches that both
+# refreshed the tokens wrote the same bytes and used to merge, and now they stop
+# and ask. The remedy the driver names rewrites the figures and leaves the token
+# block untouched, so the resolution is one command either way.
+site/how-it-works/index.html merge=headwater-regenerate
+site/index.html merge=headwater-regenerate
+site/proof/index.html merge=headwater-regenerate

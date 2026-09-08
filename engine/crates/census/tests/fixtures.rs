@@ -207,6 +207,129 @@ fn the_generated_documents_are_declared_unmergeable() {
     );
 }
 
+/// Every page the figure refresh writes is declared unmergeable, enumerated.
+///
+/// The test above holds the documents `headwater generate` writes. This holds
+/// the other producer of a fold in this repository. `tools/refresh-figures.sh`
+/// substitutes a measured number into every element carrying `data-figure` on
+/// every page under `site/`, so a page that carries one holds a fold in its
+/// markup exactly the way a generated index holds one in its opening line.
+///
+/// Decomposition does not save these pages, and that is worth stating because
+/// they look decomposed. There is one element per figure and 57 of them on the
+/// landing page, so two branches that move *different* figures do merge
+/// correctly. The case that survives is two branches that move the *same*
+/// figure to the *same* new value: both add a document, both write
+/// `census.seen">426`, git reads one change written twice, takes 426 with no
+/// conflict, and the union is 427.
+///
+/// The set is enumerated from the pages rather than taken from a list, because
+/// every hand-held account of it has been short. The contended set was
+/// published as five artifacts and measured seven; the driver set was answered
+/// as seventeen the day after a tenth shelf index made it eighteen; the count
+/// of pages here was written as four and measured three.
+/// [#676](https://github.com/headwater-ai/headwater/issues/676) owns the
+/// general question of what enumerates the derived artifacts, and this is the
+/// local instance of it.
+#[test]
+fn every_page_carrying_a_figure_is_declared_unmergeable() {
+    let root = repository_root();
+
+    // The producer's own two literals. This test enumerates the same way
+    // `tools/refresh-figures.sh` does, and a copy of a rule goes stale in
+    // silence, so the copy is held against the original rather than trusted.
+    let producer =
+        std::fs::read_to_string(root.join("tools/refresh-figures.sh")).expect("the figure refresh");
+    for literal in ["site/**/*.html", "data-figure="] {
+        assert!(
+            producer.contains(literal),
+            "tools/refresh-figures.sh no longer says {literal}, so this test \
+             enumerates a set the producer has stopped writing"
+        );
+    }
+
+    let mut pages = Vec::new();
+    collect_html(&root.join("site"), &root, &mut pages);
+    pages.sort();
+    assert!(
+        pages.len() > 5,
+        "only {} pages under site/, so this proves nothing",
+        pages.len()
+    );
+
+    let written: Vec<&String> = pages
+        .iter()
+        .filter(|page| {
+            std::fs::read_to_string(root.join(page))
+                .expect("a page")
+                .contains("data-figure=")
+        })
+        .collect();
+    assert!(
+        !written.is_empty(),
+        "no page under site/ carries a figure, so this proves nothing. Either \
+         the refresh writes nothing or the marker was renamed"
+    );
+
+    let attributes =
+        std::fs::read_to_string(root.join(".gitattributes")).expect("the attributes file");
+    let declared: Vec<&str> = attributes
+        .lines()
+        .filter(|line| line.contains("merge=headwater-regenerate"))
+        .filter_map(|line| line.split_whitespace().next())
+        .collect();
+    assert!(
+        declared.len() > 5,
+        "only {} paths declare the driver, so this proves nothing",
+        declared.len()
+    );
+
+    let missing: Vec<&&String> = written
+        .iter()
+        .filter(|page| !declared.contains(&page.as_str()))
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "these pages carry a figure the refresh rewrites and merge like \
+         ordinary files, so two branches that move one figure to one value \
+         merge to a number true of neither: {missing:#?}"
+    );
+
+    // The other direction. A page that stops carrying a figure and keeps the
+    // attribute refuses a merge of a file somebody now edits by hand, which
+    // `.gitattributes` names as the worse of the two failures.
+    let stale: Vec<&&str> = declared
+        .iter()
+        .filter(|path| path.starts_with("site/"))
+        .filter(|path| !written.iter().any(|page| page.as_str() == **path))
+        .collect();
+    assert!(
+        stale.is_empty(),
+        "these pages are declared unmergeable and carry no figure, so the \
+         declaration now refuses a merge of hand-written text: {stale:#?}"
+    );
+}
+
+/// Every `.html` file under a directory, as a path relative to the root.
+fn collect_html(dir: &Path, root: &Path, found: &mut Vec<String>) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.filter_map(Result::ok) {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_html(&path, root, found);
+        } else if path.extension().is_some_and(|it| it == "html") {
+            found.push(
+                path.strip_prefix(root)
+                    .expect("a path under the root")
+                    .to_string_lossy()
+                    .into_owned(),
+            );
+        }
+    }
+}
+
 /// The census and the parser's exception list are two accounts of one corpus.
 ///
 /// [#44](https://github.com/headwater-ai/headwater/issues/44) says they must not
