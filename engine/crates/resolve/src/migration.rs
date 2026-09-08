@@ -919,8 +919,14 @@ mod tests {
     use super::*;
 
     fn payload(steps: &str) -> Result<Payload, Vec<PayloadError>> {
+        payload_over(">=1 <2", ">=2 <3", steps)
+    }
+
+    /// The same payload over two ranges the case states, because the ranges a
+    /// publisher writes are not always the disjoint pair `payload` hardcodes.
+    fn payload_over(from: &str, to: &str, steps: &str) -> Result<Payload, Vec<PayloadError>> {
         read(
-            &format!("migration:\n  from: \">=1 <2\"\n  to: \">=2 <3\"\nsteps:\n{steps}"),
+            &format!("migration:\n  from: \"{from}\"\n  to: \"{to}\"\nsteps:\n{steps}"),
             "migrations/1-to-2.yml",
         )
     }
@@ -1141,6 +1147,37 @@ mod tests {
         assert!(built.covers("1.4.0", "2.0.0").expect("both read"));
         assert!(!built.covers("2.0.0", "3.0.0").expect("both read"));
         assert!(!built.covers("0.9.0", "2.0.0").expect("both read"));
+    }
+
+    /// Two ranges that overlap do not order the move between them.
+    ///
+    /// A publisher may write a `from` and a `to` that share versions, which
+    /// nothing refuses and nothing should: the ranges say which versions the
+    /// steps were written against, not which direction the move runs in. So
+    /// the two range readings alone hold for a move from a version to itself
+    /// and for a move down, and the predicate has to relate its two arguments
+    /// rather than read each one against its own range.
+    #[test]
+    fn a_payload_covers_no_move_that_is_not_forward() {
+        let built = payload_over(
+            ">=1 <3",
+            ">=2 <3",
+            "  - subject: facet_value\n    facet: status\n    from: draft\n    to: [outline]\n    \
+             because: why\n",
+        )
+        .expect("it reads");
+        assert!(
+            built.covers("1.4.0", "2.0.0").expect("both read"),
+            "the move the payload is for"
+        );
+        assert!(
+            !built.covers("2.5.0", "2.5.0").expect("both read"),
+            "a version does not migrate to itself"
+        );
+        assert!(
+            !built.covers("2.5.0", "2.1.0").expect("both read"),
+            "a payload runs forward only"
+        );
     }
 
     /// One scope over one tree, for the cases that are not about the two ends.
