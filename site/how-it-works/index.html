@@ -234,7 +234,7 @@
   </div>
 </header>
 
-<section>
+<section id="taxonomy">
   <div class="bar pad split">
     <div>
       <h2 class="step"><span class="n">1 ·</span>Declare the taxonomy</h2>
@@ -258,7 +258,7 @@ add:
   </div>
 </section>
 
-<section class="tint">
+<section class="tint" id="graph">
   <div class="bar pad split">
     <div>
       <h2 class="step"><span class="n">2 ·</span>Authors declare the graph</h2>
@@ -277,20 +277,17 @@ add:
   </div>
 </section>
 
-<section>
+<section id="checks">
   <div class="bar pad split">
     <div>
       <h2 class="step"><span class="n">3 ·</span>Every rule constrains that graph</h2>
-      <p style="max-width: 34rem;">A check is a pure function from a scoped view of the graph to a set of findings. It reads no file, it opens no socket, and it reads no clock. A finding names the rule, the location, the repair — and the <strong>obligation</strong> it discharges, in parentheses. An obligation is a claim the system makes about itself, with the rule that verifies it named beside it.</p>
-      <p style="max-width: 34rem;">A run has two phases, and the order answers a failure mode. Phase A classifies every file and builds the graph. Phase B runs the checks over what Phase A produced. The census is fixed first, so a document that fails to parse is counted and reported rather than dropped behind a clean result.</p>
-      <p class="quiet">A rule is an <em>error</em> when the repair takes no judgment, and <em>advisory</em> when the repair is a rewrite. Mechanical repairs are one command: <code>headwater check --fix</code>. A plausible automatic fix for a defect that needs judgment would be worse than none, because it would be applied unread.</p>
+      <p style="max-width: 34rem;">A check is a pure function from a scoped view of the graph to a set of findings: it reads no file, opens no socket, and reads no clock. Each finding names the rule that fired, the location, the repair, and — in parentheses — the <strong>obligation</strong> it discharges.</p>
+      <p style="max-width: 34rem;">An obligation is a claim the system makes about itself, with the rule that verifies it named beside it. A run reaches that claim in two phases, in an order that fixes a failure mode: phase A classifies every file and builds the graph, and phase B runs the checks over what phase A produced. The census is fixed first, so a document that fails to parse is counted and reported rather than dropped behind a clean result.</p>
+      <p class="quiet">A rule is an <em>error</em> when its repair takes no judgment, and <em>advisory</em> when the repair is a rewrite. <code>headwater check --fix</code> applies every mechanical repair in one command, and it never touches an advisory finding — a plausible automatic fix for a defect that needs judgment would be worse than none, because it would be applied unread.</p>
     </div>
     <div>
       <pre class="block wrapped"><span class="key">docs/decisions/0002-deliver-at-least-once.md:9:7 error</span>
-relation.reciprocity.missing (OB-REL-1): `ACME-DR-0002`
-declares `supersedes: ACME-DR-0001`, and `supersedes`
-requires both ends, so 0001-store-attempts-in-postgres.md
-owes `superseded_by`
+relation.reciprocity.missing (OB-REL-1): `ACME-DR-0002` declares `supersedes: ACME-DR-0001`, and `supersedes` requires both ends, so 0001-store-attempts-in-postgres.md owes `superseded_by`
 fix (mechanical): add `superseded_by: ACME-DR-0002`</pre>
       <!-- The register figures below are written by
            tools/refresh-figures.sh from the `register` block of
@@ -305,7 +302,7 @@ fix (mechanical): add `superseded_by: ACME-DR-0002`</pre>
   </div>
 </section>
 
-<section class="tint">
+<section class="tint" id="projections">
   <div class="bar pad split">
     <div>
       <h2 class="step"><span class="n">4 ·</span>Everything derived is a projection</h2>
@@ -325,7 +322,7 @@ fix (mechanical): add `superseded_by: ACME-DR-0002`</pre>
   </div>
 </section>
 
-<section>
+<section id="boundary">
   <div class="bar pad">
     <h2 class="label">Where the reasoning stops</h2>
     <p style="max-width: 44rem;">The assertions here are about documents. This document exists, it is of this kind, it governs that code path, it supersedes that other document. They are not about the claims inside the prose.</p>
