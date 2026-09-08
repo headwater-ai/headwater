@@ -302,19 +302,17 @@ census
 
 The corpus did not grow. The count of checks that ran went from 4 to 17, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and seventeen questions become answerable about it.
 
-### Step 10 — Say what does not belong in the repository, and commit
-
-One directory under `.headwater/` is not yours to keep. Write the ignore file first.
+### Step 10 — Commit the first governed corpus
 
 ```
-printf '.headwater/cache/\n' > .gitignore
 git add -A
 git commit -m "A first governed corpus"
 ```
 
-**Check.** `git log --oneline` prints one line that ends in `A first governed corpus`, and `git ls-files .headwater` prints five files and no cache:
+**Check.** `git log --oneline` prints one line that ends in `A first governed corpus`. `git ls-files .headwater` prints six files: the five you have already met, and the `.gitignore` that `headwater check` writes inside `.headwater/cache/`.
 
 ```
+.headwater/cache/.gitignore
 .headwater/capture-cost.jsonl
 .headwater/ids/decision_id/ACME-DR-0001
 .headwater/overlay.yml
@@ -323,8 +321,6 @@ git commit -m "A first governed corpus"
 ```
 
 **The file under `ids/` is the claim on the identifier that `headwater new` minted.** `decision_id` allocates reconcile-first, so the verb reads the tree for the highest value already spent. A tree tells it nothing about the branch somebody else holds. The claim file says the number is taken, and it holds the path of the document that took it. Two branches that mint one number add one path with two different contents, so the merge refuses and names both documents. Commit it with the document, and never write over one.
-
-**The lock is committed and the cache is not, and the difference is the point.** A reviewer reads the lock, because it is the taxonomy a verdict came from. A verdict you cannot trace to a schema is one nobody can argue with. The cache holds no fact of its own. Every entry is recomputable from the tree it was written over, and a run that finds none is slower and never different. Headwater's own repository draws that line in its `.gitignore`, in those words. The run that checks this page reads that same file.
 
 `.headwater/capture-cost.jsonl` is the one that takes a decision rather than a rule. It holds one reading per document that `headwater new` wrote, and it names no person and no agent. Headwater's own repository commits it, so that `headwater capture` can trend it. Keep it or ignore it, and know that you chose.
 

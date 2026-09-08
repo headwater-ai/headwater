@@ -226,6 +226,12 @@ impl Cache {
     /// A cache that cannot be written is a run with no cache next time, which
     /// is slower and never wrong. Reporting it would put a message about a
     /// disk in the middle of a report about a corpus.
+    ///
+    /// Every write leaves the directory carrying its own `.gitignore`, so a
+    /// fresh corpus never shows the cache as untracked and never needs a line
+    /// for it in a `.gitignore` of its own. The pattern excludes everything
+    /// the directory holds except that one file, which is the file a
+    /// reviewer would otherwise have to write by hand.
     pub fn write(&self, root: &Path) {
         let Some(_) = &self.lock else {
             return;
@@ -235,6 +241,7 @@ impl Cache {
             if std::fs::create_dir_all(parent).is_err() {
                 return;
             }
+            let _ = std::fs::write(parent.join(".gitignore"), "*\n!.gitignore\n");
         }
         let mut text = String::from(FORMAT);
         text.push('\n');
@@ -687,6 +694,24 @@ mod tests {
         ] {
             assert!(decode("r", record).is_none(), "{record} read as an outcome");
         }
+    }
+
+    /// The directory `write` creates carries its own `.gitignore`, so a fresh
+    /// corpus never needs one written by hand for the cache to stay out of
+    /// the repository. The pattern excludes the cache file and keeps the
+    /// ignore file itself, which is the one a reviewer would otherwise write.
+    #[test]
+    fn write_leaves_a_gitignore_that_excludes_the_cache_and_keeps_itself() {
+        let root = std::env::temp_dir().join(format!(
+            "headwater-write-leaves-a-gitignore-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        Cache::at(&root, "sha256:lock").write(&root);
+        let ignore = std::fs::read_to_string(root.join(".headwater/cache/.gitignore"))
+            .expect("write created the ignore file");
+        assert_eq!(ignore, "*\n!.gitignore\n");
+        assert!(Cache::path(&root).is_file(), "no cache file was written");
     }
 
     /// A file from another engine is an empty cache and never a refusal.
