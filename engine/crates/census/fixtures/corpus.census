@@ -566,6 +566,8 @@ docs/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-a
   typed: obligation_record
 docs/obligations/0178-the-every-instance-report-detail-reaches-four-test-files-and-no-caller-outside-them.md
   typed: obligation_record
+docs/obligations/0179-the-commit-gate-checks-prose-with-a-binary-it-never-compares-against-the-engine-sources.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probes/README.md

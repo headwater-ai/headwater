@@ -31,6 +31,8 @@ anchors
     cited by HW-SPEC-ai-integration
   code_path `.githooks/merge-regenerate` via source-tree
     cited by HW-DR-0049
+  code_path `.githooks/pre-commit` via source-tree
+    cited by HW-OBL-0179
   code_path `.github/workflows/ci.yml` via source-tree
     cited by HW-OBL-0173
   code_path `.headwater/overlay.yml` via source-tree
