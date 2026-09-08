@@ -172,15 +172,27 @@ jobs:
         # `engine/crates/resolve/tests/killed_publish.rs` measures what a
         # classifier reads back from a real mount point, because that is the
         # shape `--out` takes on `deliver`'s mount branch and the case
-        # `clear_killed` (#485, PR #705) exists for. Absent `bubblewrap`, each
-        # mount-point case tries `bwrap` regardless, fails to start, and prints
-        # "DID NOT RUN" on real stderr rather than failing — a green run that
-        # never exercised the wiring it names. `bwrap` is not setuid, so this
-        # is a package install rather than a privilege grant: Ubuntu's
-        # `kernel.apparmor_restrict_unprivileged_userns` refuses a bare
-        # `unshare -Umr` and permits `bwrap` through its own profile, on both
-        # the self-hosted runner and `ubuntu-latest`.
+        # `clear_killed` (#485, PR #705) exists for. `bubblewrap` is route 2
+        # of the two the suite tries, in a user namespace. Measured on
+        # `ubuntu-latest` (2026-09-08): installing it is not enough on its
+        # own, because GitHub's image refuses the uid map a user namespace
+        # needs regardless — `bwrap: setting up uid map: Permission denied` —
+        # so this step stays, for whichever runner it does hold on, and the
+        # step below carries the route that holds on both.
         run: sudo apt-get update && sudo apt-get install -y bubblewrap
+      - name: A real mount point, route 1 of the same suite
+        # Route 1 is "a mount point somebody else made," named by
+        # `HEADWATER_MOUNT_POINT` — the suite's own comment calls it the route
+        # for a runner with `sudo` and no user namespaces, which is exactly
+        # what the step above measured `ubuntu-latest` to be. `sudo mount`
+        # needs no user namespace at all, so this holds independent of the
+        # AppArmor restriction that route 2 hits. `uid=$(id -u)` gives the
+        # unprivileged test process, not root, ownership of the tmpfs, since
+        # `cargo test` never runs as root here.
+        run: |
+          mkdir -p "$RUNNER_TEMP/mount-point"
+          sudo mount -t tmpfs -o "size=64m,uid=$(id -u),gid=$(id -g),mode=0755" tmpfs "$RUNNER_TEMP/mount-point"
+          echo "HEADWATER_MOUNT_POINT=$RUNNER_TEMP/mount-point" >> "$GITHUB_ENV"
       - name: Test
         run: cargo test --locked
         working-directory: engine
@@ -194,11 +206,18 @@ jobs:
           # clause 8 of #321 states through it. A runner that lost `bash`
           # fails here rather than reporting a script nothing read.
           HEADWATER_SHELL_ORACLE: required
-          # `bubblewrap` is installed above, so the mount-point cases in
+          # A mount point is handed to this run by one of the two steps
+          # above, so the mount-point cases in
           # `engine/crates/resolve/tests/killed_publish.rs` are expected to
-          # reach a real mount point on this host. This turns "DID NOT RUN"
-          # into a failure instead of a quiet skip that goes green regardless.
+          # reach it. This turns "DID NOT RUN" into a failure instead of a
+          # quiet skip that goes green regardless.
           HEADWATER_MOUNT_REQUIRED: 1
+      - name: Unmount the mount point above
+        # The self-hosted runner's disk persists between jobs; a mount this
+        # job made is this job's to remove, win or lose, so `always()` rather
+        # than the default (this step only on a green job).
+        if: always()
+        run: sudo umount "$RUNNER_TEMP/mount-point" 2>/dev/null || true
 
   headwater:
     name: headwater check (advisory)
