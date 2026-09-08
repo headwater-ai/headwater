@@ -1,0 +1,144 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The one thing `ci.yml` does not do: hand somebody the binary.
+#
+# `ci.yml` builds a release-profile `headwater` on every run and throws it away.
+# So the engine was built for a stranger dozens of times a week and no stranger
+# could ever get one: the only install route was a clone and a source build, and
+# the single release this repository has cut carries an empty asset list.
+#
+# # WHY THIS IS A SEPARATE FILE
+#
+# `ci.yml` triggers on `push: branches: [main]` and on `pull_request`. Neither
+# fires for a tag, so a tag pushed today runs nothing at all — the gap was never
+# a missing upload step, it was a missing run. Adding a tag trigger to `ci.yml`
+# would run every corpus gate, MkDocs and each fixture suite again on a commit
+# that already passed all of them on `main`, for the sake of one upload.
+#
+# # WHAT NOTHING HERE EVER EXERCISES, AND WHAT ANSWERS THAT
+#
+# This file runs zero times on a pull request, by construction. A typo in the
+# trigger, a missing `contents: write` and an asset name that no reader is ever
+# told to ask for are all invisible until a tag is cut, and a tag is cut once.
+#
+# Two things answer that rather than hoping. Group 7 of
+# `tools/readme-fixtures.sh` runs on every push: it reads the asset name out of
+# this file and the asset name out of `README.md` and requires them to be the
+# same string, and it reads the tag pattern below against the tag the first
+# screen pins. And `workflow_dispatch` below takes a tag by hand, so a tag that
+# is already cut can be given an asset without cutting another one.
+#
+# # THE RUNNER IS PINNED HERE AND NOT READ FROM A VARIABLE
+#
+# `ci.yml` takes its runner from the `CI_RUNNER` repository variable, which is
+# right for a verdict about a commit: moving between the self-hosted runner and
+# a hosted image costs no commit there. It is wrong here. The image decides the
+# glibc floor of bytes handed to strangers, `README.md` states that floor as a
+# fact about the download, and a variable that anybody can change with no commit
+# and no review must not be what moves it. So the image is written here, where
+# changing it is a diff next to the sentence on the first screen that it makes
+# true or false.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The tag to build and attach the asset to
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  asset:
+    name: A binary attached to the tag
+    runs-on: ubuntu-24.04
+    # The workflow-level default above is `contents: read`, which builds
+    # everything and then fails at the upload with a read-only token. The
+    # override is per job rather than per workflow so that a job added here
+    # later has to ask for it.
+    permissions:
+      contents: write
+    steps:
+      - name: The tag this run is about
+        # One value for both entry points: the ref for a tag push, the input for
+        # a hand run. Every step below reads this and never `github.ref_name`,
+        # so the two paths cannot diverge.
+        id: tag
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          case "$tag" in
+              v*) ;;
+              *) echo "::error::\`$tag\` is not a tag of the form this workflow releases" && exit 1 ;;
+          esac
+          echo "tag=$tag" >>"$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+      - name: The toolchain this build needs
+        run: |
+          rustup update --no-self-update stable
+          rustup default stable
+      - name: Build the engine
+        # `--locked` for the reason `tools/build-declaration-fixtures.sh` states
+        # and holds: a copy of the release build that a stranger is handed must
+        # resolve the committed lock rather than whatever resolves today.
+        run: cargo build --release -p headwater-cli --locked
+        working-directory: engine
+      - name: The binary prints the version the tag names
+        # A checkout of the wrong ref, or a tag cut before the version bump it
+        # was meant to carry, produces a binary that is not what its name says.
+        # This is the only step that can catch that, because nothing downstream
+        # reads the binary again.
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          printed=$(./engine/target/release/headwater --version | awk '{print $NF}')
+          case "${TAG#v}" in
+              "$printed"*) echo "$TAG carries $printed" ;;
+              *) echo "::error::the tag names ${TAG#v} and the binary prints $printed" && exit 1 ;;
+          esac
+      - name: The archive and the checksum beside it
+        # Both names are spelled out in full rather than the second being built
+        # from the first. `tools/readme-fixtures.sh` compares the names in this
+        # file with the names on the first screen, and a name assembled by shell
+        # concatenation is a name no judge can read — which is the whole defect
+        # this workflow is guarded against.
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          asset="headwater-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
+          checksum="headwater-${TAG}-x86_64-unknown-linux-gnu.tar.gz.sha256"
+          stage=$(mktemp -d)
+          cp engine/target/release/headwater "$stage/headwater"
+          cp LICENSE "$stage/LICENSE"
+          tar -czf "$asset" -C "$stage" headwater LICENSE
+          sha256sum "$asset" >"$checksum"
+          cat "$checksum"
+          echo "asset=$asset" >>"$GITHUB_ENV"
+          echo "checksum=$checksum" >>"$GITHUB_ENV"
+      - name: Attach both to the release
+        # A pushed tag has no release object until somebody makes one, and
+        # `gh release upload` refuses a tag that has none. So the release is
+        # created when it is absent and left alone when it is there, which is
+        # what a hand run against `v0.1.0` needs.
+        #
+        # `--clobber` so that a hand run against a tag that already carries an
+        # asset replaces it rather than failing, which is what makes the
+        # `workflow_dispatch` entry point above worth having.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 ||
+              gh release create "$TAG" --title "$TAG" --generate-notes
+          gh release upload "$TAG" "$asset" "$checksum" --clobber
+      - name: What the release now carries
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: gh release view "$TAG" --json assets --jq '.assets[].name'

@@ -24,6 +24,18 @@
 # no gate here or anywhere else in this repository saw it, because every gate
 # read the page and none of them ran it.
 #
+# Group 7 is a third kind again: it reads the page against ANOTHER FILE. The
+# page offers a stranger a download by name, and `.github/workflows/release.yml`
+# uploads a file by name, and until this group existed nothing compared the two
+# strings. Nothing could, either — that workflow triggers on a tag, a pull
+# request pushes no tag, so the whole file is unexercised until somebody cuts a
+# release and the person who finds the mismatch is the stranger who follows the
+# page to a 404. Group 7 runs on every push because it reads two files rather
+# than a release, and it holds four couplings: the archive name, the checksum
+# name, the tag pattern against the tag the fence pins, and the
+# `contents: write` the upload needs. What it cannot hold is that the run
+# succeeded, which only a cut tag shows.
+#
 # Run it from anywhere:
 #     sh tools/readme-fixtures.sh
 #
