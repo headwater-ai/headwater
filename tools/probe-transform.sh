@@ -124,6 +124,14 @@ fi
 # and the key is dropped before anything is written. `argument` is the path
 # where the input names one, because that is the form the contract's own
 # fixture writes, and the compact input otherwise.
+#
+# The mapping is **total over what the filter admits**, and the third arm is a
+# `halt_error` rather than a fall-through. That is what gives the allowlist a
+# consequence a test can see: weaken it to a denylist and a `redacted_thinking`
+# block, or any tag a later harness adds, reaches the mapping and stops the run
+# with the tag named. A fall-through `else` made the allowlist unobservable,
+# because an unadmitted block was silently rewritten as a result and dropped a
+# second time downstream, and the suite passed 21 of 21 against a denylist.
 step_filter_blocks_and_map_call() {
     jq -c '
         def blocks: (.message.content // []) | if type == "array" then .[] else empty end;
@@ -136,13 +144,15 @@ step_filter_blocks_and_map_call() {
               { kind: "call", id: (.id // ""), tool: (.name // ""),
                 path: path_of(.input // {}),
                 argument: (path_of(.input // {}) // ((.input // {}) | tojson)) }
-          else
+          elif .type == "tool_result" then
               { kind: "result", id: (.tool_use_id // "") }
+          else
+              ("probe-transform: a block tagged `\(.type)` reached the mapping. The filter above is an allowlist and this tag is not on it." | halt_error(5))
           end
     ' < "$scratch/log.jsonl"
 }
 
-step_filter_blocks_and_map_call > "$scratch/blocks.jsonl"
+step_filter_blocks_and_map_call > "$scratch/blocks.jsonl" || exit $?
 
 # step_derive_result.
 #
@@ -174,13 +184,35 @@ step_derive_cites() {
 
 # step_derive_findings: every rule that reported over the artifact. It asks the
 # engine, because the set of rules is the taxonomy's and never this script's.
+# `headwater check` takes **no positional path**. It reports over the whole
+# corpus, so the run is one run and the artifact is selected out of
+# `.findings[]` by its `path`. Measured 2026-09-08: the first draft of this
+# function passed the path positionally, which exits 1 with `unexpected
+# argument`, and it sent stderr to `/dev/null` and let the empty pipe become
+# the answer. That returned `findings: []` for every artifact, permanently.
+#
+# An empty `findings` list is a claim that no rule reported over the artifact.
+# So a failure here refuses rather than writes one, on the same reasoning as
+# the observation guard above: a derivation that could not run is not a
+# derivation that found nothing.
 step_derive_findings() {
     file=$1
     engine=$root/engine/target/dev-release/headwater
     [ -x "$engine" ] || engine=$root/engine/target/release/headwater
-    [ -x "$engine" ] || return 0
-    "$engine" check --root "$root" --format json "$file" 2>/dev/null |
-        jq -r '.. | objects | .rule? // empty' 2>/dev/null | sort -u
+    [ -x "$engine" ] || {
+        echo "probe-transform: no engine, so \`findings\` on $file cannot be derived." >&2
+        echo "probe-transform: refusing to write an empty list, which claims that no rule reported." >&2
+        exit 5
+    }
+    if [ ! -f "$scratch/check.json" ]; then
+        "$engine" check --root "$root" --format json > "$scratch/check.json" 2>"$scratch/check.err" || {
+            echo "probe-transform: \`headwater check --format json\` failed:" >&2
+            tail -3 "$scratch/check.err" >&2
+            exit 5
+        }
+    fi
+    jq -r --arg path "$file" '.findings[] | select(.path == $path) | .rule' \
+        < "$scratch/check.json" | sort -u
 }
 
 # step_derive_produced: one entry per artifact the driver was told the session
@@ -193,7 +225,12 @@ step_derive_produced() {
         return
     fi
     printf '\n'
-    printf '%s' "$produced_paths" | while IFS= read -r file; do
+    # Read from a redirect and not from a pipe. A `… | while` body runs in a
+    # subshell, so the `exit 5` a refused derivation raises would end that
+    # subshell and leave this script writing the rest of an event it had
+    # already refused.
+    printf '%s' "$produced_paths" > "$scratch/produced.txt"
+    while IFS= read -r file; do
         [ -n "$file" ] || continue
         printf '    - path: %s\n' "$file"
         printf '      result: %s\n' "$(step_derive_result "$file")"
@@ -206,7 +243,9 @@ step_derive_produced() {
                 printf '        - %s\n' "$id"
             done
         fi
-        findings=$(step_derive_findings "$file")
+        # A command substitution is a subshell, so the refusal has to be read
+        # off the status rather than left to `exit` inside it.
+        findings=$(step_derive_findings "$file") || exit $?
         if [ -z "$findings" ]; then
             printf '      findings: []\n'
         else
@@ -215,7 +254,7 @@ step_derive_produced() {
                 printf '        - %s\n' "$rule"
             done
         fi
-    done
+    done < "$scratch/produced.txt"
 }
 
 # The event. `calls` is always written, because the guard above already
@@ -229,11 +268,19 @@ if [ -z "$calls" ]; then
 else
     printf '  calls:\n'
     printf '%s\n' "$calls" | while IFS= read -r call; do
-        tool=$(printf '%s' "$call" | jq -r '.tool')
-        argument=$(printf '%s' "$call" | jq -r '.argument')
+        # `jq -c` on a string value is that string in JSON, on one line, with
+        # every control byte escaped, and a YAML double-quoted scalar accepts
+        # JSON's escapes. `printf … | jq -R .` is not that: it reads its input
+        # by lines and emits one JSON string per line, so a `file_path` or a
+        # command carrying a newline put raw model-written bytes at column 0 of
+        # the event and broke the block. The `tojson` arm of the mapping was
+        # already safe and the path arm was not, which is the shape of the
+        # defect: one of two branches encoded, the other formatted.
+        tool=$(printf '%s' "$call" | jq -c '.tool')
+        argument=$(printf '%s' "$call" | jq -c '.argument')
         file=$(printf '%s' "$call" | jq -r '.path // ""')
-        printf '    - tool: %s\n' "$(printf '%s' "$tool" | jq -R .)"
-        printf '      argument: %s\n' "$(printf '%s' "$argument" | jq -R .)"
+        printf '    - tool: %s\n' "$tool"
+        printf '      argument: %s\n' "$argument"
         if [ -n "$file" ]; then
             printf '      result: %s\n' "$(step_derive_result "$file")"
         else

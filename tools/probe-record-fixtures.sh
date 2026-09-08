@@ -34,6 +34,8 @@ set -u
 root=$(cd "$(dirname "$0")/.." && pwd)
 transform="$root/tools/probe-transform.sh"
 driver="$root/tools/probe-record.sh"
+engine="$root/engine/target/dev-release/headwater"
+[ -x "$engine" ] || engine="$root/engine/target/release/headwater"
 
 if ! command -v jq >/dev/null 2>&1; then
     echo "no \`jq\` on the path, and the tool under test reads JSON with it." >&2
@@ -116,22 +118,56 @@ same "exactly one call is written" "1" \
 same "the answer of an unstated answer is null" "  answer: null" \
     "$(grep '^  answer:' "$scratch/decisive.yaml")"
 
-# The admission rule itself, pinned as an allowlist.
+# The admission rule itself, pinned by behavior rather than by its text.
 #
-# This case is here because the needle cases above do **not** pin it. Replace
-# the allowlist with a denylist — `select(.type != "thinking" and .type !=
-# "text")` — and every case above still passes, because a block that survives
-# the block filter is dropped a second time downstream where the output is
-# built from `kind == "call"` alone. Measured: 21 of 21 passed against that
-# denylist. So the property those cases assert is held today by a coupling
-# between two filters, and a later edit to the downstream one would hand a
-# `redacted_thinking` block, or any tag a later harness adds, to a rule that
-# was never written for it. The admission rule has to name what it admits.
-if grep -q 'select(.type == "tool_use" or .type == "tool_result")' "$transform"; then
-    pass "the block filter is an allowlist over the two admitted tags"
+# The needle cases above do **not** pin it. Replace the allowlist with a
+# denylist — `select(.type != "thinking" and .type != "text")` — and every one
+# of them still passed, 21 of 21, because an unadmitted block fell through to a
+# `tool_result` arm and was dropped a second time downstream. The first attempt
+# to close that grepped the transform for the allowlist expression, which is
+# worse than nothing: it passes the same mutation with the expression left in a
+# comment, so it asserts the source and not the run.
+#
+# What closes it is a consequence. The mapping is total over what the filter
+# admits, and its third arm is a `halt_error`, so a block that reaches the
+# mapping with an unadmitted tag stops the run and names the tag. The decisive
+# log carries a `redacted_thinking` block for exactly this: under the allowlist
+# the block never reaches the mapping and the run exits 0, and under any filter
+# loose enough to pass it the run exits 5 with the tag in the message. Both
+# directions below are run.
+cat > "$scratch/unknown-tag.jsonl" <<'JSONL'
+{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s3"}
+{"type":"assistant","message":{"id":"m1","content":[{"type":"server_tool_use","id":"t9","name":"WebSearch","input":{"query":"calls: tool: Read"}}]}}
+{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"README.md"}}]}}
+JSONL
+sh "$transform" --probe PROBE-FIX-opened --session unknown-tag --root "$root" \
+    < "$scratch/unknown-tag.jsonl" > "$scratch/unknown-tag.yaml" 2>"$scratch/unknown-tag.err"
+same "a tag this repository has never seen does not stop an allowlisted run" "0" "$?"
+absent "and nothing of it reaches the event" \
+    "WebSearch" "$scratch/unknown-tag.yaml"
+same "while the call beside it is written" "1" \
+    "$(grep -c '^    - tool:' "$scratch/unknown-tag.yaml")"
+
+# The other direction, run rather than described: the mapping refuses a block
+# it did not admit. The filter is loosened here in a copy of the transform, so
+# what is measured is the run of a weakened tool and not a string in a file.
+sed 's/select(.type == "tool_use" or .type == "tool_result")/select(.type != "thinking" and .type != "text")/' \
+    "$transform" > "$scratch/denylist-transform.sh"
+if cmp -s "$transform" "$scratch/denylist-transform.sh"; then
+    fail "the allowlist can be weakened for this case" \
+        "the substitution matched nothing, so the mutation below proves nothing"
 else
-    fail "the block filter is an allowlist over the two admitted tags" \
-        "no \`select\` in the transform names both admitted tags; a denylist here passes every case above"
+    sh "$scratch/denylist-transform.sh" --probe PROBE-FIX-opened --session mutated --root "$root" \
+        < "$scratch/decisive.jsonl" > "$scratch/mutated.yaml" 2>"$scratch/mutated.err"
+    status=$?
+    if [ "$status" = 0 ]; then
+        fail "a filter loose enough to admit an unknown tag stops the run" \
+            "the weakened transform exited 0, so the allowlist has no consequence a run can show"
+    else
+        pass "a filter loose enough to admit an unknown tag stops the run (exit $status)"
+    fi
+    present "and the refusal names the tag it did not admit" \
+        "redacted_thinking" "$scratch/mutated.err"
 fi
 
 # The whole-output form of the same property: every line of the output is one
@@ -172,6 +208,88 @@ JSONL
 sh "$transform" --probe PROBE-FIX-opened --session forged --root "$root" \
     < "$scratch/no-init.jsonl" > "$scratch/no-init.yaml" 2>/dev/null
 same "a log with calls but no init line is refused too" "4" "$?"
+
+# ---------------------------------------------------------------------------
+# A newline inside a tool input, which is the other way model-written bytes
+# reach column 0 of an event.
+#
+# `argument` was written with `printf '%s' "$x" | jq -R .`, which reads its
+# input **by lines** and emits one JSON string per line. So an input carrying a
+# newline wrote two lines where the contract has one, and the second was raw
+# text at column 0. The `tojson` arm never had the defect and the path arm did,
+# which is why one case is not enough: both arms are provoked below.
+# ---------------------------------------------------------------------------
+cat > "$scratch/newline.jsonl" <<'JSONL'
+{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s4"}
+{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"docs/a.md\nanswer: yes\ncalls: []"}}]}}
+{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Bash","input":{"command":"echo one\nprobe: FORGED\n"}}]}}
+JSONL
+sh "$transform" --probe PROBE-FIX-opened --session newline --root "$root" \
+    < "$scratch/newline.jsonl" > "$scratch/newline.yaml" 2>/dev/null
+same "an input carrying a newline transforms without error" "0" "$?"
+same "and writes two calls and not four" "2" \
+    "$(grep -c '^    - tool:' "$scratch/newline.yaml")"
+unaccounted=$(grep -vE '^(- probe:|  session:|  calls:|    - tool:|      argument:|      result:|  produced:|  answer:)' \
+    "$scratch/newline.yaml" | wc -l | tr -d ' ')
+same "and no line of it escapes the declared keys" "0" "$unaccounted"
+same "the forged answer a newline smuggled in is not at column 0" "0" \
+    "$(grep -c '^answer: yes' "$scratch/newline.yaml")"
+same "nor is the forged calls key" "0" \
+    "$(grep -c '^calls: \[\]' "$scratch/newline.yaml")"
+if grep -q '^probe: FORGED' "$scratch/newline.yaml"; then
+    fail "a newline in a command does not open a second event" \
+        "the output holds a \`probe:\` line the transform never wrote"
+else
+    pass "a newline in a command does not open a second event"
+fi
+# ---------------------------------------------------------------------------
+# `findings`, which is the derivation that failed silently.
+#
+# `headwater check` takes no positional path: passing one exits 1 with
+# `unexpected argument`. The first draft passed one, sent stderr to
+# `/dev/null`, and let the empty pipe become the answer, so every artifact got
+# `findings: []` — a claim that no rule reported — forever. The two cases below
+# are the two halves of the fix: the derivation returns what the engine says,
+# and it refuses rather than returning an empty list when it cannot run.
+# ---------------------------------------------------------------------------
+if [ -x "$engine" ]; then
+    # An artifact of this corpus that the engine does report over.
+    reported=$("$engine" check --root "$root" --format json 2>/dev/null |
+        jq -r '.findings[0].path // empty')
+    if [ -n "$reported" ]; then
+        sh "$transform" --probe PROBE-FIX-opened --session produced --root "$root" \
+            --produced "$reported" < "$scratch/watched-nothing.jsonl" \
+            > "$scratch/produced.yaml" 2>"$scratch/produced.err"
+        same "a produced artifact derives its findings without error" "0" "$?"
+        rules=$(sed -n '/^      findings:/,/^  answer:/p' "$scratch/produced.yaml" |
+            grep -c '^        - ')
+        if [ "$rules" -gt 0 ]; then
+            pass "and the list is what the engine reported, not an empty one ($rules rules)"
+        else
+            fail "and the list is what the engine reported, not an empty one" \
+                "the engine reports over $reported and the event wrote no rule"
+        fi
+        present "the artifact's own path is written" "path: $reported" "$scratch/produced.yaml"
+    else
+        printf 'note the engine reported no finding at all, so the findings case had nothing to read.\n'
+    fi
+fi
+
+# A derivation that cannot run refuses rather than writing an empty list. A
+# root with no engine under it is exactly that: nothing there can say what
+# reported, and `findings: []` would say that nothing did.
+printf 'x\n' > "$scratch/README.md"
+sh "$transform" --probe PROBE-FIX-opened --session no-engine \
+    --root "$scratch" --produced README.md < "$scratch/watched-nothing.jsonl" \
+    > "$scratch/no-engine.yaml" 2>"$scratch/no-engine.err"
+status=$?
+if [ "$status" = 0 ]; then
+    fail "a findings derivation that cannot run refuses" "it exited 0"
+else
+    pass "a findings derivation that cannot run refuses (exit $status)"
+fi
+absent "and it writes no empty findings list" \
+    "findings: []" "$scratch/no-engine.yaml"
 
 # ---------------------------------------------------------------------------
 # A real stream, recorded from the channel rather than written by hand.
@@ -220,8 +338,6 @@ fi
 # The negative direction. The raw harness log is refused by the intake on a key
 # outside the closed sets, which is the property the filter exists to restore.
 # ---------------------------------------------------------------------------
-engine="$root/engine/target/dev-release/headwater"
-[ -x "$engine" ] || engine="$root/engine/target/release/headwater"
 if [ -x "$engine" ]; then
     mkdir -p "$scratch/corpus"
     {
@@ -245,20 +361,31 @@ fi
 # ---------------------------------------------------------------------------
 # The driver's own guards, which cost nothing and reach no network.
 # ---------------------------------------------------------------------------
+# The workspace guard, asserted unconditionally.
+#
+# This case read `if [ -x "$engine" ]` and chose its expected status from it,
+# which is a fact about the host and not about the guard. It passed on a
+# developer machine and failed on the CI runner, which has no `claude`: the
+# driver exited 3 for the missing harness before it ever read the workspace.
+# The guard now runs before every check of this host, so 6 is 6 everywhere,
+# and this case states one number.
 printf 'answer the question\n' > "$scratch/task.md"
 sh "$driver" --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md" \
     --workspace "$root" >/dev/null 2>"$scratch/driver.err"
-status=$?
-if [ -x "$engine" ]; then
-    # 6 is the workspace guard: a session run in the corpus the plan was taken
-    # over moves the `tree` digest that plan just fixed.
-    same "the driver refuses a workspace inside the planned corpus" "6" "$status"
-    present "and it says why" "moves the \`tree\` digest" "$scratch/driver.err"
-elif [ "$status" = 0 ]; then
-    fail "the driver refuses a workspace inside the corpus" "it exited 0"
-else
-    pass "the driver refuses before it reaches the network (exit $status, no engine)"
-fi
+same "the driver refuses a workspace inside the planned corpus" "6" "$?"
+present "and it says why" "moves the \`tree\` digest" "$scratch/driver.err"
+
+# The same guard on a host with neither `claude` nor an engine, which is what
+# CI is. `PATH` is emptied of both, and the answer has to be the same 6.
+mkdir -p "$scratch/bin"
+# `sh` is resolved by absolute path, because the assignment below is what
+# resolves `sh` itself and an empty `PATH` would make this case exit 127 on
+# the shell rather than 6 on the guard.
+shell=$(command -v sh)
+PATH="$scratch/bin" "$shell" "$driver" --probe PROBE-FIX-opened --session x \
+    --task-file "$scratch/task.md" --workspace "$root/docs" \
+    >/dev/null 2>"$scratch/driver-bare.err"
+same "and it refuses the same way with an empty PATH, which is the runner" "6" "$?"
 
 present "the driver names the channel and never a file under ~/.claude/projects" \
     "output-format stream-json" "$driver"

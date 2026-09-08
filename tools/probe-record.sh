@@ -88,9 +88,46 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-root=$(cd "$(dirname "$0")/.." && pwd)
+# `cd` and `pwd` are builtins and `dirname` is not. Resolving the root with a
+# parameter expansion means every refusal below reaches its own message on a
+# host with nothing on `PATH` at all, which is the state a guard is worth
+# having in.
+case $0 in
+    */*) invoked_from=${0%/*} ;;
+    *) invoked_from=. ;;
+esac
+root=$(cd "$invoked_from/.." && pwd)
 engine=$root/engine/target/dev-release/headwater
 [ -x "$engine" ] || engine=$root/engine/target/release/headwater
+
+# The arguments and the workspace guard are checked **before anything about
+# this host**, because they are the two refusals that are the same everywhere.
+# The order was the other way round and it cost a red CI run: on a runner with
+# no `claude` on the path the script exited 3 for the missing harness before it
+# ever read the workspace, and the case asserting the guard chose its expected
+# status from `[ -x "$engine" ]` — a fact about the host, and the wrong one.
+# A guard that only fires where the tools happen to be installed is a guard
+# that is absent on the machine most likely to need it.
+if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ]; then
+    [ -n "$probe" ] && [ -n "$session" ] && [ -n "$task_file" ] && [ -n "$workspace" ] || {
+        echo "usage: probe-record.sh --probe <id> --session <name> --task-file <f> --workspace <dir> [--model <m>]" >&2
+        exit 2
+    }
+    [ -f "$task_file" ] || { echo "probe-record: no task file at $task_file" >&2; exit 2; }
+    here=$(cd "$workspace" 2>/dev/null && pwd) || {
+        echo "probe-record: no workspace directory at $workspace" >&2
+        exit 2
+    }
+    # A session that runs in the corpus the plan was taken over moves the tree
+    # digest that plan just fixed.
+    case "$here" in
+        "$root"|"$root"/*)
+            echo "probe-record: the workspace is inside the corpus the plan was taken over." >&2
+            echo "probe-record: a session that writes there moves the \`tree\` digest of the identity. Use a copy." >&2
+            exit 6
+            ;;
+    esac
+fi
 
 command -v jq >/dev/null 2>&1 || {
     echo "probe-record: \`jq\` is not on the path." >&2
@@ -164,29 +201,10 @@ if [ "$identity_only" = 1 ]; then
     exit 0
 fi
 
-[ -n "$probe" ] && [ -n "$session" ] && [ -n "$task_file" ] && [ -n "$workspace" ] || {
-    echo "usage: probe-record.sh --probe <id> --session <name> --task-file <f> --workspace <dir> [--model <m>]" >&2
-    exit 2
-}
-[ -f "$task_file" ] || { echo "probe-record: no task file at $task_file" >&2; exit 2; }
 command -v claude >/dev/null 2>&1 || {
     echo "probe-record: the \`claude\` harness is not on the path, and it is the channel." >&2
     exit 3
 }
-
-# The workspace guard. A session that runs in the corpus the plan was taken
-# against can move the tree digest the plan just fixed.
-here=$(cd "$workspace" 2>/dev/null && pwd) || {
-    echo "probe-record: no workspace directory at $workspace" >&2
-    exit 2
-}
-case "$here" in
-    "$root"|"$root"/*)
-        echo "probe-record: the workspace is inside the corpus the plan was taken over." >&2
-        echo "probe-record: a session that writes there moves the \`tree\` digest above. Use a copy." >&2
-        exit 6
-        ;;
-esac
 
 raw=${raw:-$(mktemp)}
 
