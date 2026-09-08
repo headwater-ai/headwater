@@ -303,6 +303,22 @@ jobs:
         # untracked file into a scratch repository, and every step below writes
         # a report into the workspace that would ride along.
         run: sh .githooks/fixtures.sh
+      - name: A verb that promises to sense a terminal does sense one
+        # `docs/interfaces/` states on seventeen pages that the default senses
+        # whether each stream is a terminal and colors only there. Nothing else
+        # in this workflow can observe it. HW-DR-0045 refuses a
+        # `--color=always` flag, so every run below reaches this job through a
+        # pipe, where the painter is the identity — a renderer wired to
+        # `ColorMode::Plain` forever is green everywhere but here.
+        #
+        # It blocks, for the reason the step above blocks: a published contract
+        # that nothing holds is one nobody finds out is false.
+        #
+        # It attaches a real pseudo-terminal with util-linux `script`, which
+        # this runner has. A host without one prints a skip and exits 0, so read
+        # the step's output rather than its status when the question is whether
+        # the cases ran.
+        run: sh tools/color-fixtures.sh
       - name: The committed lock is what the sources resolve to
         # This one blocks, and it is the only step here that does. It is not a
         # finding about the corpus: a stale lock means the verdict below was

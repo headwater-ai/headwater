@@ -42,6 +42,7 @@
 //! compiler does not hold complete; the exhaustive `match` in `unbuilt` is
 //! what forces a thirteenth variant into that file.
 
+use headwater_check::paint::ColorMode;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
@@ -293,7 +294,7 @@ fn report_over(projections: &Projections, name: &str) -> String {
         &Runs::default(),
         headwater_verbs::VERBS,
     );
-    check(&tree, &plan).render()
+    check(&tree, &plan).render(ColorMode::Plain)
 }
 
 /// Every kind [`unbuilt`] holds a reason for, with the reason it holds.

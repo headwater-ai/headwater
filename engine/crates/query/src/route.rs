@@ -41,6 +41,7 @@
 //! it, and the ranking would move on every paragraph anybody edited.
 
 use crate::{terms, Document, Pointer, Surface};
+use headwater_check::paint::{dim, paint, ColorMode, Role};
 use headwater_graph::declarations::Governs;
 use headwater_graph::Target;
 
@@ -619,13 +620,36 @@ impl Route {
     /// A silent route prints why it is silent. Spec 5 makes silence a result,
     /// and a caller that could not tell "no purpose answers this" from "the
     /// corpus declares none" would debug the wrong file.
-    pub fn render(&self) -> String {
+    ///
+    /// `mode` is [`ColorMode::Plain`] for every machine reader — the JSON
+    /// document and the MCP tool both carry this text — and the terminal state
+    /// of standard output for the one human caller. `docs/interfaces/headwater-route.md`
+    /// states that the default senses the stream and colors only there, and
+    /// `tools/color-fixtures.sh` attaches a real terminal to hold it.
+    pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
-        let _ = writeln!(out, "route {:?}", self.task);
-        let _ = writeln!(out, "  terms {}", self.terms.join(" "));
+        let _ = writeln!(
+            out,
+            "{}",
+            paint(Role::Heading, &format!("route {:?}", self.task), mode)
+        );
+        // The terms and the distinctive terms are the task read back, which
+        // HW-DR-0045's table calls already-stated text and gives dim weight.
+        let _ = writeln!(
+            out,
+            "{}",
+            dim(&format!("  terms {}", self.terms.join(" ")), mode)
+        );
         if !self.distinctive.is_empty() {
-            let _ = writeln!(out, "  distinctive {}", self.distinctive.join(" "));
+            let _ = writeln!(
+                out,
+                "{}",
+                dim(
+                    &format!("  distinctive {}", self.distinctive.join(" ")),
+                    mode
+                )
+            );
         }
         for anchor in &self.anchors {
             let _ = writeln!(out, "  names the anchor {anchor}");
@@ -642,10 +666,22 @@ impl Route {
             let _ = writeln!(out, "  {}", silence.name());
             return out;
         }
+        // Filled first and painted after, in that order and not the other one.
+        // `headwater_check::fill::filled` measures a line in characters, and an
+        // SGR sequence is characters that occupy no column: a path painted
+        // before the fold would push the fold six characters early and leave
+        // the reset code counted as a word. So the pointer is composed plain,
+        // folded, and the path — which the fold never splits, because it holds
+        // no space — is painted in place afterwards.
         for pointer in &self.pointers {
-            out.push_str(&headwater_check::fill::filled(
+            let folded = headwater_check::fill::filled(
                 &format!("  {}\n", pointer.render()),
                 headwater_check::fill::WIDTH,
+            );
+            out.push_str(&folded.replacen(
+                &pointer.path,
+                &paint(Role::Path, &pointer.path, mode),
+                1,
             ));
         }
         // Printed only where the budget removed something, so a route that cut
@@ -658,8 +694,173 @@ impl Route {
                 1 => "pointer",
                 _ => "pointers",
             };
-            let _ = writeln!(out, "  the budget withheld {} more {more}", self.withheld);
+            let _ = writeln!(
+                out,
+                "{}",
+                dim(
+                    &format!("  the budget withheld {} more {more}", self.withheld),
+                    mode
+                )
+            );
         }
         out
+    }
+}
+
+/// What the route report paints, and the one property that holds over all of it.
+///
+/// A table of `(what, the escape the palette gives it)`, in the shape
+/// `headwater_check::paint::tests` and `engine/crates/cli/tests/width.rs`
+/// already set. These are necessary and not sufficient: a call site that hands
+/// `ColorMode::Plain` to a renderer forever passes every one of them, which is
+/// what `tools/color-fixtures.sh` attaches a real terminal to catch.
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Pointer;
+
+    /// The text with every SGR sequence removed.
+    ///
+    /// Written here rather than taken from the painter, because the property
+    /// below is that color adds escape sequences and changes nothing else, and
+    /// a stripper that shared code with the painter could not state it.
+    fn stripped(text: &str) -> String {
+        let mut out = String::new();
+        let mut chars = text.chars();
+        while let Some(c) = chars.next() {
+            if c != '\u{1b}' {
+                out.push(c);
+                continue;
+            }
+            for c in chars.by_ref() {
+                if c == 'm' {
+                    break;
+                }
+            }
+        }
+        out
+    }
+
+    /// A route with one of everything the report can print: a task, terms,
+    /// distinctive terms, an anchor, a matched purpose, a pointer and a
+    /// withheld count. A route missing any of them would leave a painted line
+    /// unreached, and an unreached line is where a mode goes unthreaded.
+    fn route() -> Route {
+        Route {
+            task: "add rate limiting".to_string(),
+            terms: vec!["add".to_string(), "rate".to_string()],
+            separating: vec!["rate".to_string()],
+            distinctive: vec!["rate".to_string()],
+            anchors: vec!["HW-DR-0045".to_string()],
+            matched: vec![Matched {
+                purpose: "behavior".to_string(),
+                score: 7,
+            }],
+            pointers: vec![Pointer {
+                path: "docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md"
+                    .to_string(),
+                id: Some("HW-DR-0045".to_string()),
+                kind: "decision".to_string(),
+                name: None,
+                purpose: Some("rationale".to_string()),
+                summary: Some("what colors, and where the banner goes".to_string()),
+                unwarranted: false,
+            }],
+            withheld: 3,
+            silence: None,
+        }
+    }
+
+    #[test]
+    fn each_line_reaches_the_role_the_palette_gives_it() {
+        struct Case {
+            what: &'static str,
+            opens_with: &'static str,
+        }
+        let cases = [
+            Case {
+                what: "the task line is a heading, bold in the default color",
+                opens_with: "\u{1b}[1mroute \"add rate limiting\"",
+            },
+            Case {
+                what: "the terms are already-stated text, dim",
+                opens_with: "\u{1b}[2m  terms add rate",
+            },
+            Case {
+                what: "the distinctive terms are the same",
+                opens_with: "\u{1b}[2m  distinctive rate",
+            },
+            Case {
+                what: "a pointer path is a path, cyan",
+                opens_with: "\u{1b}[36mdocs/decisions/0045-",
+            },
+            Case {
+                what: "the withheld count is a count, dim",
+                opens_with: "\u{1b}[2m  the budget withheld 3 more pointers",
+            },
+        ];
+        let painted = route().render(ColorMode::Ansi);
+        for case in cases {
+            assert!(
+                painted.contains(case.opens_with),
+                "{}: no `{}` in\n{painted}",
+                case.what,
+                case.opens_with.escape_debug()
+            );
+        }
+    }
+
+    /// The property no table can state: color adds escape sequences and moves
+    /// no other byte. A painter that dropped a word, or that painted before the
+    /// fold and so moved a line break, fails here and nowhere else.
+    #[test]
+    fn color_adds_escape_sequences_and_changes_nothing_else() {
+        let route = route();
+        assert_eq!(
+            stripped(&route.render(ColorMode::Ansi)),
+            route.render(ColorMode::Plain)
+        );
+    }
+
+    /// `Plain` writes not one escape byte, which is what every recorded fixture
+    /// and both machine readers of this text depend on.
+    #[test]
+    fn plain_writes_no_escape_byte() {
+        assert!(!route().render(ColorMode::Plain).contains('\u{1b}'));
+    }
+
+    /// A pointer long enough to fold, painted. The fold runs first and the
+    /// paint second, so the line break falls where an unpainted run puts it.
+    #[test]
+    fn a_folded_pointer_breaks_where_an_unpainted_one_does() {
+        let mut route = route();
+        route.pointers[0].summary = Some(
+            "a summary long enough that the fill has to break it, twice over, so that a paint \
+             that ran before the fold would be visible as a line break in a different place"
+                .to_string(),
+        );
+        assert_eq!(
+            stripped(&route.render(ColorMode::Ansi)),
+            route.render(ColorMode::Plain)
+        );
+    }
+
+    /// A silent route returns early, above the pointer loop, and its own lines
+    /// are painted too.
+    #[test]
+    fn a_silent_route_is_painted_as_well() {
+        let mut route = route();
+        route.pointers.clear();
+        route.silence = Some(Silence::NoPurposeMatched);
+        let painted = route.render(ColorMode::Ansi);
+        assert!(
+            painted.contains("\u{1b}[1mroute \"add rate limiting\""),
+            "{painted}"
+        );
+        assert_eq!(
+            stripped(&painted),
+            route.render(ColorMode::Plain),
+            "a silent route paints nothing but escapes either"
+        );
     }
 }

@@ -41,6 +41,7 @@
 use headwater_census::census::{self, Census, Outcome};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::paint::ColorMode;
 use headwater_check::Shape;
 use headwater_generate::{check, plan, write, Identity, Projections, Runs, Transcript, Verdict};
 use headwater_graph::anchors::Resolvers;
@@ -350,7 +351,7 @@ fn a_result_goes_stale_when_its_transcript_changes() {
         verdict_over_the_result(&held),
         &Verdict::Unchanged,
         "the pair did not agree the run after it was written:\n{}",
-        held.render()
+        held.render(ColorMode::Plain)
     );
 
     // Direction 2: an ordinary edit elsewhere leaves it alone. The note is on a
@@ -371,7 +372,7 @@ fn a_result_goes_stale_when_its_transcript_changes() {
         verdict_over_the_result(&still),
         &Verdict::Unchanged,
         "an unrelated edit failed the gate:\n{}",
-        still.render()
+        still.render(ColorMode::Plain)
     );
 
     // Direction 3: one event of the transcript moves, and the committed result
@@ -387,7 +388,7 @@ fn a_result_goes_stale_when_its_transcript_changes() {
         verdict_over_the_result(&drifted),
         &Verdict::Differs,
         "the gate did not report the result as stale:\n{}",
-        drifted.render()
+        drifted.render(ColorMode::Plain)
     );
     assert!(drifted.has_errors());
 }
@@ -594,14 +595,14 @@ fn a_refused_plan_grades_nothing(scratch: &str, probe: &str) {
     assert!(
         held.has_errors(),
         "a refused plan left the gate green:\n{}",
-        held.render()
+        held.render(ColorMode::Plain)
     );
     write(&at, &refused);
     let after = check(&at, &plan_over(&at));
     assert!(
         after.has_errors(),
         "running the printed remedy made the gate green over a refused plan:\n{}",
-        after.render()
+        after.render(ColorMode::Plain)
     );
 }
 

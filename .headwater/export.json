@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 406,
-      "carried": 406,
+      "in the graph": 408,
+      "carried": 408,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 617,
-      "carried": 617,
+      "in the graph": 618,
+      "carried": 618,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -7513,6 +7513,33 @@
         }
       },
       {
+        "path": "docs/obligations/0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-type-forbids-from-being-wrong.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0180",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0180",
+          "status": "current",
+          "status_since": "2026-09-08",
+          "summary": "A caller that passes the plain color mode forever is a defect that no type and no piped test can report.",
+          "last_verified": "2026-09-08",
+          "title": "A renderer's color mode is wired at a call site that no type forbids from being wrong",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "engine/crates/check/src/paint.rs"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/obligations/0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md",
         "kind": "obligation_record",
         "id": "HW-OBL-0181",
@@ -8782,6 +8809,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/check/src/lifecycle_state.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/check/src/paint.rs",
         "resolver": "source-tree"
       },
       {
@@ -14275,6 +14307,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": ".githooks/pre-commit",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-type-forbids-from-being-wrong.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/paint.rs",
           "resolver": "source-tree"
         }
       },

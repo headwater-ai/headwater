@@ -16,6 +16,7 @@
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::paint::ColorMode;
 use headwater_check::Shape;
 use headwater_generate::{check, plan, write, Identity, Kind, Plan, Projections, Runs};
 use headwater_graph::anchors::Resolvers;
@@ -294,12 +295,12 @@ fn a_verb_added_to_the_dispatch_table_makes_the_committed_index_stale() {
     assert!(
         stale.has_errors(),
         "a verb the committed index does not carry has to fail the gate:\n{}",
-        stale.render()
+        stale.render(ColorMode::Plain)
     );
     assert!(
-        stale.render().contains(OUTPUT),
+        stale.render(ColorMode::Plain).contains(OUTPUT),
         "the gate has to name the file:\n{}",
-        stale.render()
+        stale.render(ColorMode::Plain)
     );
 }
 
@@ -331,7 +332,7 @@ fn a_contract_removed_from_the_corpus_makes_the_committed_index_stale() {
     assert!(
         stale.has_errors(),
         "the committed index describes a document that is gone:\n{}",
-        stale.render()
+        stale.render(ColorMode::Plain)
     );
 }
 

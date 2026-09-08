@@ -3131,7 +3131,7 @@ fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode
     // reads into an agent's context.
     match json {
         true => print!("{}", headwater_query::json::route(&route)),
-        false => print!("{}", route.render()),
+        false => print!("{}", route.render(headwater_cli::paint::stdout_color())),
     }
     ExitCode::SUCCESS
 }
@@ -4329,7 +4329,7 @@ fn generate(root: &Path, check_only: bool) -> ExitCode {
         true => headwater_generate::check(root, &plan),
         false => headwater_generate::write(root, &plan),
     };
-    print!("{}", report.render());
+    print!("{}", report.render(headwater_cli::paint::stdout_color()));
     // Which sentence a failing run ends with is a fact about the run, and
     // `Report::remedy` owns it. A producer difference in particular must not
     // carry the instruction to regenerate, and one owner is what keeps that
@@ -4394,7 +4394,7 @@ fn export(
             true => headwater_generate::check(root, &plan),
             false => headwater_generate::write(root, &plan),
         };
-        print!("{}", report.render());
+        print!("{}", report.render(headwater_cli::paint::stdout_color()));
         // A declared export was written by an emitter set too, so the same
         // producer difference reaches here. It has to be said before the drift
         // sentence, which asserts what this run cannot know in that state.

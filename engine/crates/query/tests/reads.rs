@@ -31,6 +31,16 @@ use headwater_query::{Budget, Resolved, Surface};
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
+/// The mode every route rendered here takes.
+///
+/// A recorded fixture is bytes on disk and a failure message is read out of a
+/// captured stream, so both are the piped case, where `paint` is the identity.
+/// The color a terminal sees is asserted by `tools/color-fixtures.sh`, which
+/// attaches a real one; nothing in this file could, and a recorded fixture that
+/// held escape sequences would be re-blessed against whatever terminal last ran
+/// the suite.
+const PLAIN: ColorMode = ColorMode::Plain;
+
 /// The task descriptions the recorded file answers, in the order it holds them.
 ///
 /// Each one is here for a property rather than for coverage. In order: a
@@ -157,7 +167,7 @@ fn reads(surface: &Surface<'_>) -> String {
     use std::fmt::Write;
     let mut out = String::new();
     for task in TASKS {
-        out.push_str(&surface.route(task, Budget::default()).render());
+        out.push_str(&surface.route(task, Budget::default()).render(PLAIN));
         out.push('\n');
     }
 
@@ -222,8 +232,8 @@ fn two_reads_of_one_corpus_are_byte_identical() {
     let (first, second) = (first.surface(), second.surface());
     for task in TASKS {
         assert_eq!(
-            first.route(task, Budget::default()).render(),
-            second.route(task, Budget::default()).render(),
+            first.route(task, Budget::default()).render(PLAIN),
+            second.route(task, Budget::default()).render(PLAIN),
             "{task}"
         );
     }
@@ -280,14 +290,14 @@ fn a_route_ranks_no_more_than_its_budget_and_never_cuts_an_anchor() {
             assert!(
                 ranked <= pointers,
                 "{task} ranked {ranked} pointers under a budget of {pointers}\n{}",
-                route.render()
+                route.render(PLAIN)
             );
             for pointer in &anchored {
                 assert!(
                     route.pointers.contains(pointer),
                     "{task} dropped the anchored {} under a budget of {pointers}\n{}",
                     pointer.path,
-                    route.render()
+                    route.render(PLAIN)
                 );
             }
         }
@@ -366,19 +376,19 @@ fn an_edit_to_a_governed_crate_routes_to_the_contract_and_names_its_verb() {
         route.anchors,
         vec!["engine/crates/check/src/lib.rs".to_string()],
         "{}",
-        route.render()
+        route.render(PLAIN)
     );
     let contract = route
         .pointers
         .iter()
         .find(|pointer| pointer.path == "docs/interfaces/headwater-check.md")
-        .unwrap_or_else(|| panic!("{}", route.render()));
+        .unwrap_or_else(|| panic!("{}", route.render(PLAIN)));
     assert_eq!(contract.kind, "interface_contract");
     assert_eq!(contract.name.as_deref(), Some("headwater check"));
     assert!(
-        route.render().contains("(headwater check)"),
+        route.render(PLAIN).contains("(headwater check)"),
         "{}",
-        route.render()
+        route.render(PLAIN)
     );
 }
 
@@ -397,15 +407,15 @@ fn a_task_in_this_corpus_reaches_a_document_of_it() {
         "why does the engine read the lock rather than the taxonomy sources",
         Budget::default(),
     );
-    assert!(route.silence.is_none(), "{}", route.render());
-    assert!(!route.pointers.is_empty(), "{}", route.render());
+    assert!(route.silence.is_none(), "{}", route.render(PLAIN));
+    assert!(!route.pointers.is_empty(), "{}", route.render(PLAIN));
     assert!(
         route
             .pointers
             .iter()
             .all(|pointer| pointer.path.starts_with("docs/")),
         "{}",
-        route.render()
+        route.render(PLAIN)
     );
 }
 
@@ -435,12 +445,12 @@ fn precedence_offers_the_nucleus_and_the_successor_first() {
     let nucleus = offered
         .iter()
         .position(|path| *path == "query/specs/api-design.md")
-        .unwrap_or_else(|| panic!("{}", route.render()));
+        .unwrap_or_else(|| panic!("{}", route.render(PLAIN)));
     let satellite = offered
         .iter()
         .position(|path| *path == "query/specs/api-errors.md")
-        .unwrap_or_else(|| panic!("{}", route.render()));
-    assert!(nucleus < satellite, "{}", route.render());
+        .unwrap_or_else(|| panic!("{}", route.render(PLAIN)));
+    assert!(nucleus < satellite, "{}", route.render(PLAIN));
 
     let route = surface.route("why is throttling applied at the edge", Budget::default());
     let offered: Vec<&str> = route
@@ -452,7 +462,7 @@ fn precedence_offers_the_nucleus_and_the_successor_first() {
         offered.first(),
         Some(&"query/decisions/edge-throttling.md"),
         "{}",
-        route.render()
+        route.render(PLAIN)
     );
 }
 
@@ -475,7 +485,7 @@ fn a_task_that_names_an_anchor_is_answered_by_the_documents_that_govern_it() {
         route.pointers.first().map(|pointer| pointer.path.as_str()),
         Some("query/decisions/edge-throttling.md"),
         "{}",
-        route.render()
+        route.render(PLAIN)
     );
 }
 
@@ -513,7 +523,7 @@ fn a_route_carries_every_governing_document_whatever_the_budget() {
             route.pointers.contains(pointer),
             "the budget dropped {}, which governs {path}\n{}",
             pointer.path,
-            route.render()
+            route.render(PLAIN)
         );
     }
 }
@@ -531,7 +541,7 @@ fn a_document_that_governs_two_named_anchors_is_offered_once() {
     let surface = built.surface();
     let task = "engine/crates/cli/src/main.rs engine/crates/check/src/lib.rs";
     let route = surface.route(task, Budget::default());
-    assert_eq!(route.anchors.len(), 2, "{}", route.render());
+    assert_eq!(route.anchors.len(), 2, "{}", route.render(PLAIN));
     let mut paths: Vec<&str> = route
         .pointers
         .iter()
@@ -544,7 +554,7 @@ fn a_document_that_governs_two_named_anchors_is_offered_once() {
         paths.len(),
         offered,
         "a pointer is offered twice\n{}",
-        route.render()
+        route.render(PLAIN)
     );
 }
 
@@ -563,15 +573,15 @@ fn a_route_says_how_many_ranked_pointers_the_budget_withheld() {
     let whole = surface.route(task, Budget { pointers: 512 });
     // Loose, and first on purpose: if this fires, the corpus stopped having
     // more answers to this task than the budget below allows.
-    assert!(whole.pointers.len() > 3, "{}", whole.render());
-    assert_eq!(whole.withheld, 0, "{}", whole.render());
+    assert!(whole.pointers.len() > 3, "{}", whole.render(PLAIN));
+    assert_eq!(whole.withheld, 0, "{}", whole.render(PLAIN));
 
     let cut = surface.route(task, Budget { pointers: 3 });
     assert_eq!(
         cut.pointers.len() + cut.withheld,
         whole.pointers.len(),
         "the withheld count does not account for what a wider budget offers\n{}",
-        cut.render()
+        cut.render(PLAIN)
     );
 }
 
@@ -587,13 +597,13 @@ fn the_withheld_line_is_rendered_and_is_not_shaped_like_a_pointer() {
     let surface = built.surface();
     let task = "why does the engine read the lock rather than the taxonomy sources";
     let route = surface.route(task, Budget { pointers: 3 });
-    assert!(route.withheld > 0, "{}", route.render());
+    assert!(route.withheld > 0, "{}", route.render(PLAIN));
     let line = route
-        .render()
+        .render(PLAIN)
         .lines()
         .find(|line| line.contains("withheld"))
         .map(str::to_string)
-        .unwrap_or_else(|| panic!("no withheld line\n{}", route.render()));
+        .unwrap_or_else(|| panic!("no withheld line\n{}", route.render(PLAIN)));
     assert!(
         line.contains(&route.withheld.to_string()),
         "the line does not carry the count: {line}"
@@ -614,7 +624,11 @@ fn a_route_within_its_budget_renders_no_withheld_line() {
         Budget { pointers: 512 },
     );
     assert_eq!(route.withheld, 0);
-    assert!(!route.render().contains("withheld"), "{}", route.render());
+    assert!(
+        !route.render(PLAIN).contains("withheld"),
+        "{}",
+        route.render(PLAIN)
+    );
 }
 
 /// A pointer to an unaccepted document says so, and one to an accepted document
