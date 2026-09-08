@@ -2153,9 +2153,10 @@ fn the_shipped_maintenance_loop_runs_as_written_over_a_source_that_changed() {
     )
     .expect("the overlay copies");
 
-    let manifest =
-        std::fs::read_to_string(repository().join("taxonomy-source/headwater-standard/package.yml"))
-            .expect("the shipped manifest reads");
+    let manifest = std::fs::read_to_string(
+        repository().join("taxonomy-source/headwater-standard/package.yml"),
+    )
+    .expect("the shipped manifest reads");
     let steps = maintenance_loop(&manifest);
 
     // ---- The state a maintainer is in before they edit anything. ---------
