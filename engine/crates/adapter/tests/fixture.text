@@ -25,7 +25,7 @@ graph
   24 nodes, 10 declared edge halves
         8 to a document
         2 unbound
-  4 prose links that did not resolve
+  5 prose links that did not resolve
 
   check/spec/07-prose-defects.md:63:28
     link: `19-renamed.md` no `check/spec/19-renamed.md` in the repository
@@ -35,9 +35,11 @@ graph
   check/spec/07-prose-defects.md:67:63
     link: `../../../outside.md` `check/spec/../../../outside.md` climbs above
       the repository
-  check/spec/07-prose-defects.md:69:67
-    link: `/spec/00-both-halves.md` no `check/spec/spec/00-both-halves.md` in
-      the repository
+  check/spec/07-prose-defects.md:69:46
+    link: `19-renamed.md?v=2` no `check/spec/19-renamed.md` in the repository
+  check/spec/07-prose-defects.md:71:90
+    link: `/spec/00-both-halves.md` no `/spec/00-both-halves.md` in the
+      repository
   check/spec/13-dangling.md:9:7
     edge: `assesses` -> SPEC-FIX-no-such-document resolves to nothing at all
   check/spec/13-dangling.md:10:7
@@ -246,8 +248,8 @@ checks
     coverage.document_unchecked reaches no obligation, so it names none
     adoption.task.expired reaches no obligation, so it names none
   56 findings
-       36 ✗ error
-       20 ▲ warn
+       37 ✗ error
+       19 ▲ warn
 
   check/evaluations/epsilon.md:4:1 ▲ warn
     relation.participation.overdue (OB-FIX-6): `evidence-cited`: 219 days since
@@ -379,16 +381,18 @@ checks
       repository
     fix: rewrite the destination as a path relative to the document that writes
       it, or as an absolute address with a scheme
-  check/spec/07-prose-defects.md:69:67 ✗ error
+  check/spec/07-prose-defects.md:69:46 ✗ error
+    link.path.unresolved: `19-renamed.md?v=2` names no file of this repository:
+      nothing stands at `check/spec/19-renamed.md`
+    fix: point it at a file that exists, or restore `check/spec/19-renamed.md`.
+      A document that moved keeps its identifier, so `headwater explain` finds
+      where it went
+  check/spec/07-prose-defects.md:71:90 ✗ error
     link.path.unresolved: `/spec/00-both-halves.md` names no file of this
-      repository: nothing stands at `check/spec/spec/00-both-halves.md`
-    fix: point it at a file that exists, or restore
-      `check/spec/spec/00-both-halves.md`. A document that moved keeps its
-      identifier, so `headwater explain` finds where it went
-  check/spec/07-prose-defects.md:69:115 ▲ warn
-    language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
-      a sentence, and this one has 28
-    fix: split the sentence, or move a clause into its own sentence
+      repository: nothing stands at `/spec/00-both-halves.md`
+    fix: point it at a file that exists, or restore `/spec/00-both-halves.md`. A
+      document that moved keeps its identifier, so `headwater explain` finds
+      where it went
   check/spec/08-contract-met.md:2:1 ✗ error
     identifier.claim.missing: `DR-FIX-0008` is spent by
       check/spec/08-contract-met.md and no file of `.headwater/ids` claims it,
@@ -594,14 +598,14 @@ read set
   input check/evaluations/eta.md sha256:d1882e10c05b15d1c6aafcc982b2ecbf429ec169a0fcd7ad11f79dbf5b20228a
   input check/evaluations/gamma.md sha256:bb74fe7df19ea383b01be2f8686fb87dbea18757b4134e601e3e718aeee9e09b
   input check/evaluations/zeta.md sha256:78ec68e48f9e8e1f8826c1280bdb523820556b14e2ac375f21cf8c1915240964
-  input check/spec/00-both-halves.md sha256:cb031d365aac5c22f6ea1f23faf48da297c1d6eaab7b9dad2e552ae36c28e62d
+  input check/spec/00-both-halves.md sha256:765e2163c2bbe8f9455a21519223192112ec14cae419e5cad3324a5c40638632
   input check/spec/01-one-half.md sha256:20a913097b2d04bc39e5ff8271b47a21dfaa135f78b5fdda234e38c3a30c7017
   input check/spec/02-cited-only.md sha256:9f4f5fff759b2f04d2956dabbb3cdc0e86bdc8f306159a58ad4f7f80cbad9c82
   input check/spec/03-no-instance.md sha256:bb254e9a27d62cf8ff126895c545a797d9eeadee7e756bd34a7536ce21cba7ad
   input check/spec/04-untyped.md sha256:ef34b3e4254620599be769fb2e28826e330b9a6b8972ed7ef32d2d3baaeddf2b
   input check/spec/05-no-summary.md sha256:e93ab39ba0f3d03cf7593bc046d7c0a5aa0fbf102df0e02e2dbf34c263aa346d
   input check/spec/06-retired.md sha256:d40b65fea5627e9da5693ba6ff1239180b1a3b6a9ab83ed5b414f286d7ded636
-  input check/spec/07-prose-defects.md sha256:bc4f994c828a353fee808bdbdb6ca57c0ddef84528856df9c2cba272523abb24
+  input check/spec/07-prose-defects.md sha256:6ca81f740c17f231ecc6c7268544dca0bd1bfd77b4498dccc67bc914ddb09024
   input check/spec/08-contract-met.md sha256:1f137d2e39a164a976bcfb76d662b7469171f99bd3ce643c4d3fb2fd247ba34f
   input check/spec/09-contract-missing.md sha256:6bc8ae424b8a20472a5d244ed71613195ad527e11e4739ec7cf5fa88f4315d4a
   input check/spec/10-suppressed.md sha256:2258c21842ba066fc11cadfee7b462909dda6bd93cf7693e9c93fa786382ebba
