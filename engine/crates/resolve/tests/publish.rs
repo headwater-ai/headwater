@@ -12,6 +12,7 @@
 
 use headwater_resolve::package;
 use headwater_resolve::release::{self, ReleaseError};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 /// A tree that removes itself, named for the case that made it.
@@ -4810,6 +4811,183 @@ fn a_vendored_package_carries_its_doctrine_into_the_consumers_tree() {
         METHOD,
         "the prose reached the consumer as different bytes"
     );
+}
+
+/// Every file in a tree, keyed by its path relative to `root` and valued by its
+/// bytes, with one top-level directory left out.
+///
+/// The omitted name is `packages`, and it is omitted rather than compared
+/// because the whole point of a `vendor` is that `packages/` changes. What has
+/// to hold still is everything else, and a map of path to bytes is what says so
+/// without naming a single path in advance.
+fn tree_outside(root: &Path, without: &str) -> BTreeMap<String, Vec<u8>> {
+    fn walk(at: &Path, prefix: &str, into: &mut BTreeMap<String, Vec<u8>>) {
+        let mut entries: Vec<PathBuf> = std::fs::read_dir(at)
+            .expect("the tree reads")
+            .filter_map(|entry| entry.ok())
+            .map(|entry| entry.path())
+            .collect();
+        entries.sort();
+        for path in entries {
+            let name = path
+                .file_name()
+                .expect("a directory entry has a name")
+                .to_string_lossy()
+                .into_owned();
+            let relative = if prefix.is_empty() {
+                name
+            } else {
+                format!("{prefix}/{name}")
+            };
+            if path.is_dir() {
+                walk(&path, &relative, into);
+            } else {
+                into.insert(relative, std::fs::read(&path).expect("the file reads"));
+            }
+        }
+    }
+
+    let mut into = BTreeMap::new();
+    let mut entries: Vec<PathBuf> = std::fs::read_dir(root)
+        .expect("the tree reads")
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+        .collect();
+    entries.sort();
+    for path in entries {
+        let name = path
+            .file_name()
+            .expect("a directory entry has a name")
+            .to_string_lossy()
+            .into_owned();
+        if name == without {
+            continue;
+        }
+        if path.is_dir() {
+            walk(&path, &name, &mut into);
+        } else {
+            into.insert(name, std::fs::read(&path).expect("the file reads"));
+        }
+    }
+    into
+}
+
+/// `packages/<name>/<doctrine>` is the only destination a publisher's prose
+/// reaches, and `vendor` writes nowhere else in the consumer's tree.
+///
+/// This is [#381](https://github.com/headwater-ai/headwater/issues/381), and it
+/// is the case that
+/// [`a_vendored_package_carries_its_doctrine_into_the_consumers_tree`] cannot
+/// be. That one pins that the prose *arrives* at one path. It passes unchanged
+/// on the day somebody adds a second destination — a copy into the adopter's
+/// corpus root, say — because a second copy takes nothing away from the first.
+/// So the assertion here is the complement: **enumerate the consumer tree
+/// outside `packages/` before the run and after it, and hold the two maps
+/// equal**. Nothing here names the path a defect would write to, which is what
+/// makes it hold against a destination nobody has thought of yet.
+///
+/// The consumer is given a `docs/` with a document in it and a `README.md`,
+/// because the corpus root the fixture pins is `docs` and the census objection
+/// is about a file landing there: doctrine is instruction to a person, and no
+/// kind in the base package or in any bundle binds it
+/// ([HW-DR-0056](../../../../docs/decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md)),
+/// so a copy into a corpus root is one untyped file per copied file. An empty
+/// `docs/` would let a copy land in a directory nothing was watching.
+#[test]
+fn a_vendor_writes_under_packages_and_nowhere_else_in_the_consumers_tree() {
+    let scratch = Scratch::new("doctrine-one-destination");
+    let root = publisher_with_doctrine(&scratch, "doctrine/");
+    let out = scratch.path().join("artifact");
+
+    let record = package::publish(&root, "acme/fixture", &out).expect("it publishes");
+
+    consumer(&scratch, &record.digest);
+    let consumer_root = scratch.path().join("consumer");
+    scratch.write(
+        "consumer/docs/0001-a-decision.md",
+        "# A decision\n\nThe adopter's own corpus, which a vendor must not add to.\n",
+    );
+    scratch.write("consumer/README.md", "# The adopter\n");
+
+    let before = tree_outside(&consumer_root, package::PACKAGES);
+    assert!(
+        before.contains_key("docs/0001-a-decision.md"),
+        "the fixture gave the consumer no corpus, so the comparison below watches nothing"
+    );
+
+    package::vendor(&consumer_root, &out, &record.digest).expect("it vendors");
+
+    let after = tree_outside(&consumer_root, package::PACKAGES);
+    assert!(
+        consumer_root
+            .join(package::PACKAGES)
+            .join("acme-fixture/doctrine/method.md")
+            .is_file(),
+        "the vendor installed no doctrine, so the comparison below is vacuous"
+    );
+
+    let added: Vec<&String> = after
+        .keys()
+        .filter(|key| !before.contains_key(*key))
+        .collect();
+    let removed: Vec<&String> = before
+        .keys()
+        .filter(|key| !after.contains_key(*key))
+        .collect();
+    let changed: Vec<&String> = before
+        .iter()
+        .filter(|(key, bytes)| after.get(*key).is_some_and(|now| now != *bytes))
+        .map(|(key, _)| key)
+        .collect();
+    assert_eq!(
+        (added, removed, changed),
+        (Vec::new(), Vec::new(), Vec::new()),
+        "`vendor` wrote outside `{}/` in the consumer's tree",
+        package::PACKAGES
+    );
+}
+
+/// The interface contract states which verb writes a package directory, and it
+/// names the three directories `vendor` writes.
+///
+/// The Files table of `docs/interfaces/headwater-taxonomy.md` said for one row
+/// that package directories are *read* by `vendor` and written by `publish` or
+/// `migrate --apply`. That is the sentence an adopter reads before asking the
+/// question [#381](https://github.com/headwater-ai/headwater/issues/381) asks,
+/// and it was false: `vendor` is the writer of `packages/<flattened>`,
+/// `packages/~staging/<name>` and `packages/<flattened>~aside`.
+///
+/// The three names are composed here from the engine's own constants rather
+/// than typed as prose, so a rename in `package.rs` fails this case and moves
+/// the sentence with it. Only the shapes are bound. What the row says *around*
+/// them is prose, and holding that would be a second copy of the sentence.
+#[test]
+fn the_interface_contract_names_the_directories_vendor_writes() {
+    let contract = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../docs/interfaces/headwater-taxonomy.md");
+    let text = std::fs::read_to_string(&contract)
+        .unwrap_or_else(|error| panic!("{} does not read: {error}", contract.display()));
+
+    let row = text
+        .lines()
+        .find(|line| line.starts_with("| Package and artifact directories |"))
+        .unwrap_or_else(|| {
+            panic!(
+                "no Files row for package directories in {}",
+                contract.display()
+            )
+        });
+
+    for shape in [
+        format!("`{}/<name>`", package::PACKAGES),
+        format!("`{}/{}/<name>`", package::PACKAGES, package::STAGING),
+        format!("`{}/<name>{}`", package::PACKAGES, package::ASIDE),
+    ] {
+        assert!(
+            row.contains(&shape),
+            "the Files row does not name {shape}, which `vendor` writes:\n{row}"
+        );
+    }
 }
 
 /// An artifact whose manifest names doctrine the artifact does not carry is

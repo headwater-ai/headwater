@@ -73,7 +73,7 @@ The command reads the system date when a subcommand has `--now` and no date is s
 | `.headwater/taxonomy.yml`, package sources and overlay | Read by validation and resolution. |
 | `.headwater/taxonomy.lock` | Written by `resolve` without `--check`. Read by `diff`, which also re-hashes the source files it records. |
 | `.headwater/adoption.jsonl` | Read by `audit`, and appended to by `audit --record`. |
-| Package and artifact directories | Read by `vendor`, `diff` and `migrate`, and written by `publish` or `migrate --apply`. |
+| Package and artifact directories | `publish` and `migrate --apply` write a package directory, and `diff` and `migrate` read one. `vendor` reads the artifact it installs, and it writes `packages/<name>`, `packages/~staging/<name>` and `packages/<name>~aside`. It writes no other path in the consumer tree. |
 
 ## See also
 
