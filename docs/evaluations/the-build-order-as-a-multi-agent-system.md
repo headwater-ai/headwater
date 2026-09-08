@@ -3,7 +3,7 @@ id: HW-EVAL-the-build-order-as-a-multi-agent-system
 status: current
 status_since: 2026-09-07
 summary: "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, the architecture that follows, what was rejected, and the numbers the next run is held against."
-last_verified: 2026-09-07
+last_verified: 2026-09-08
 title: "The build order as a multi-agent system"
 provenance:
   warrant: asserted
@@ -115,21 +115,31 @@ The stages are adjudication, construction, verification and integration, and int
 
 ## The numbers the next run is held against
 
-| Measure | Baseline by hand | Baseline by the tool | Target |
-|---|---|---|---|
-| Parent turns per issue | not measured as such | 19.6, as 880 turns over 45 pull requests | 4 |
-| Share of the window with no agent in flight | 20.9% | 0%, largest window 0 min | near zero |
-| Mean in-flight concurrency at width 5 | 4.00 | 9.54 over the whole run | at or above 4.00 |
-| Largest gap after a compaction | 82.8 min | 22.3 min after, 87.6 min before | under the dispatch cost |
-| Parent `gh` calls | 92 | 88 by leading verb | 0 |
-| `cargo build` in the parent | 26 calls, 67 min | 8 by leading verb, 15 mentioned | 0 |
-| First-to-last completion spread per batch | 9.3 h total | not taken | not applicable, no batches |
+| Measure | Baseline by hand | Baseline by the tool | Target | New shape, by the tool |
+|---|---|---|---|---|
+| Parent turns per issue | not measured as such | 19.6, as 880 turns over 45 pull requests | 4 | 24.5, as 98 turns over 4 pull requests |
+| Share of the window with no agent in flight | 20.9% | 0%, largest window 0 min | near zero | 0.3%, largest window 0.4 min |
+| Mean in-flight concurrency at width 5 | 4.00 | 9.54 over the whole run | at or above 4.00 | 3.91 over the whole run |
+| Largest gap after a compaction | 82.8 min | 22.3 min after, 87.6 min before | under the dispatch cost | no compaction ran |
+| Parent `gh` calls | 92 | 88 by leading verb | 0 | 2 by leading verb |
+| `cargo build` in the parent | 26 calls, 67 min | 8 by leading verb, 15 mentioned | 0 | 0 |
+| First-to-last completion spread per batch | 9.3 h total | not taken | not applicable, no batches | 5 min over five adjudications, 1.95 h over five constructions |
 
 `tools/run-census.sh` takes these from a session log and the agent transcripts beside it. The run that follows this design writes its numbers into this table.
 
 The figures in the table were taken by hand, part-way through the run, and the tool was written after them. Over the whole transcript of that run the tool reports 880 turns and 227.3 million cache reads. Mentions of `gh pr view` cost 66 calls, 66 turns and 18.1 million cache reads, which is 8.0% of the run. Mentions of `gh pr list` cost 24 calls, 24 turns and 6.7 million, which is 2.9%. The tool counts a call once per turn and a turn once per message, and it reads a verb past a leading `cd` or `set -e`, because that run wrote nearly every command in that shape. The next run is compared with numbers the same tool takes, and not with the hand count.
 
 The fleet section of the same tool reads the agent transcripts that the harness writes beside the session file. Over the whole run it does not reproduce the hand count. It finds 165 agents at depth one over a span of 20 hours. No window had nothing in flight, and 9.54 agents were in flight on average. The hand count found 20.9% idle and a mean between 3.03 and 4.00. The tool counts an agent as in flight from its first line to its last turn, so every minute inside a blocking wait counts. The hand count was taken over a part of the run, by a method this evaluation does not record. The tool's reading stands, because the next run's reading is taken the same way. The largest gap before a compaction was 87.6 minutes from the parent's last turn. The largest gap after one was 22.3 minutes to its next dispatch. The parent took 5.5 turns per agent over 161 agents of one type, and 19.6 turns per pull request over 45.
+
+## What the first run of the new shape measured
+
+Session `8e38c6e8` ran the ledger's RUN 20260907-2208 under the five-agent shape, for two hours and thirty-six minutes, and merged four pull requests. The parent context grew from 55k to 269k tokens over 98 turns, with no compaction. It made two `gh` calls and no `cargo build` call, against 88 and 8 for the baseline run. Idle share fell to 0.3%, with a largest gap of 0.4 minutes, against 20.9% before.
+
+Mean concurrency read 3.91 over the whole span, just under the 4.00 target. The reading understates the busy middle of the run. Five construction agents started within eight minutes of each other and finished across a span of 117 minutes, from 28 to 145. That spread thins the fleet after minute 110, once the rest of the run's work had already finished. Over minutes 20 to 100, the tool reads a mean of 4.9 agents in flight and a peak of 6. The whole-span figure is the one this table tracks, and it sits close to the target. The busy-core figure says the design sustains more parallel work than the whole-span number alone would suggest. A staggered batch of long, uneven construction runs narrows the gap between the two figures.
+
+Refusal held on one issue across three rounds. Adjudication refused issue #648 outright, on the ground that two already-merged pull requests had answered its Done-when clause. Verification failed issue #485 twice, on two distinct construction defects. The doctrine's two-fail stop condition held the branch rather than dispatch a third round. A second-opinion agent, dispatched outside the normal construction path, reproduced the second defect for real. It proposed the fix that the third construction round then applied and verification confirmed. A fourth round did not run, for a different reason. The only regression test for that fix does not run in the continuous-integration job. A merge on a green check would repeat the pattern this evaluation names for the corpus tree in general, at line 78. The run left the pull request open for the owner's ruling instead.
+
+One risk surfaced outside the measured numbers. A construction agent for issue #603 proposed a force push, against the standing rule that forbids one. The parent allowed it, after checking by hand that the branch and `main` were both intact. The rule held on the parent's judgment this round, and not on a check inside the construction agent's own prompt. The construction agent's prompt needs that rule stated, before the next occurrence depends on the same judgment again.
 
 ## What this evaluation cannot show
 
