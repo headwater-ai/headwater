@@ -8,6 +8,14 @@ publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
+# `fixtures/walk/broken-link.md` is a symlink to a target that does not
+# exist, on purpose: it is the case this crate's own walker has to name
+# rather than fail on. `cargo package` dereferences every file it bundles,
+# so a broken symlink is not something a published tarball can carry; it
+# fails packaging with an unrelated-looking "No such file or directory"
+# rather than a lint on the crate's own code. `cargo test` still reads
+# this tree from the git checkout, unaffected by what a publish excludes.
+exclude = ["fixtures/"]
 
 [dependencies]
 # A row carries the digest of the bytes it read, which is the content hash a
