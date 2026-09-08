@@ -14,11 +14,15 @@
 # This suite closes TWO of those eight — the dead link and the dead fragment —
 # it holds one further claim about those same links, that above `## License` the
 # only path into the specification shelf is the generated index, and it holds
-# five more claims the page makes about itself. It closes none of the other six.
+# six more claims the page makes about itself. It closes none of the other six.
 # The section below says so with the measurement, rather than leaving a reader
 # to assume from a passing step that the page is covered.
 #
-# The fifth of those five is a different KIND of claim.
+# Two of those six are a different KIND of claim from the rest. That count is
+# the sentence in this header that goes stale: it read five on the day group 7
+# landed and stayed five, because no case reads it and a group added on one
+# branch does not conflict with the number written on another. Count the `echo`
+# lines below rather than trusting it.
 # Groups 1 to 5 read the page and judge what it says. Group 6 takes a command
 # the page tells a newcomer to run, runs it against the engine, and reads what
 # that newcomer would see. The defect it closes was a command that always exited
