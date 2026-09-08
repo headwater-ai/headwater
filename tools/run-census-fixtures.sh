@@ -74,6 +74,24 @@ same '  and the loop as a loop' 'until 1 1 64000 50.4%' "$(mrow 'until')"
 same 'no call is grouped under cd or set' 0 "$(printf '%s\n' "$out" | awk '$1 == "cd" || $1 == "set"' | wc -l | tr -d ' ')"
 same 'a session with no agent transcripts beside it has no fleet' 'no agent transcripts beside the session file, so no fleet' "$(printf '%s\n' "$out" | tail -1)"
 
+# A heredoc body is data a command writes, not a command it runs. Turn h1
+# appends a ledger entry that quotes `for`, `cargo test` and a `gh pr view`
+# call inside its body; none of those are mentions the parent made. Turn h2
+# runs a real `gh pr view`, so the table still counts what is actually run.
+cat > "$scratch/heredoc.jsonl" <<'EOF'
+{"type":"assistant","message":{"id":"h1","usage":{"cache_read_input_tokens":1000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"cat >> file.md << 'EOF2'\nfor this cargo test gh pr view is quoted, not run\nEOF2"}}]}}
+{"type":"assistant","message":{"id":"h2","usage":{"cache_read_input_tokens":1000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"gh pr view 9"}}]}}
+EOF
+
+hout=$(sh "$tool" "$scratch/heredoc.jsonl" 2>&1); status=$?
+hrow() { printf '%s\n' "$hout" | awk -v g="$1" '/^Bash, by what/ { exit } $1 == g && ($2 == "" || $2 !~ /^[a-z]/) { print; exit } $1" "$2 == g { print; exit }' | tr -s ' '; }
+hmrow() { printf '%s\n' "$hout" | awk -v g="$1" 'on && ($1 == g || $1" "$2 == g) { print; exit } /^Bash, by what/ { on = 1 }' | tr -s ' '; }
+same 'the heredoc census exits 0' 0 "$status"
+same 'a heredoc body is stripped, so its cat call is the whole verb' 'cat 1 1 1000 50%' "$(hrow cat)"
+same 'the real call outside the heredoc still files as its own verb' 'gh pr 1 1 1000 50%' "$(hrow 'gh pr')"
+same 'the mentions table does not count a poll word quoted inside the body' 'gh pr 1 1 1000 50%' "$(hmrow 'gh pr')"
+same '  the by-tool table counts both calls' 'Bash 2 2 2000 100%' "$(hrow Bash)"
+
 # The fleet. A parent that dispatches a builder at 00:00 and a verifier at
 # 00:10, rules at 00:45 with no tool call, compacts at 00:50, dispatches an
 # integrator at 01:00, and at 01:10 dispatches a type the harness refuses. The

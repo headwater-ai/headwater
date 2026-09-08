@@ -48,14 +48,24 @@ command -v jq >/dev/null 2>&1 || {
     exit 3
 }
 
+# A heredoc body is data a command writes and not a command it runs, and the
+# measured run wrote its ledger with one, a `cat >> decisions.md << EOF`, a
+# body, then `EOF`. Left in, a word the body happens to use, a stray `for`, a
+# `cargo test` a subagent quoted in its own report, reads as a mention the
+# parent never made. `strip_heredocs` removes the span below, once, before
+# either table reads `.cmd`, so a call is judged on what it runs.
+
 # One record per turn: id, cache reads, and the tool calls the turn made.
 turns=$(jq -c -n '
+    def strip_heredocs:
+        gsub("<<-?[ \t]*['"'"'\"]?(?<marker>[A-Za-z_][A-Za-z0-9_]*)['"'"'\"]?\n(?:(?!^\\k<marker>$).)*\n[ \t]*\\k<marker>";
+             ""; "sm");
     [inputs
      | select(.type == "assistant")
      | {id: .message.id,
         cr: (.message.usage.cache_read_input_tokens // 0),
         tools: [.message.content[]? | select(.type == "tool_use")
-                | {name: .name, cmd: (.input.command // "")}]}]
+                | {name: .name, cmd: (.input.command // "" | strip_heredocs)}]}]
     | group_by(.id)
     | map({id: .[0].id, cr: .[0].cr, tools: (map(.tools) | add)})
 ' "$file")
