@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 408,
-      "carried": 408,
+      "in the graph": 409,
+      "carried": 409,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1693,6 +1693,19 @@
             "activity": "measure+draft",
             "evidence_basis": "evidenced"
           }
+        }
+      },
+      {
+        "path": "docs/decisions/0060-the-engine-s-version-stays-one-number-and-a-build-s-exact-commit-is-a-separate-unwired-fact.md",
+        "kind": "decision",
+        "id": "HW-DR-0060",
+        "facets": {
+          "id": "HW-DR-0060",
+          "status": "draft",
+          "status_since": "2026-09-08",
+          "summary": "A binary's `--version` keeps naming one number, the `Cargo.toml` version a `requires_engine` range is read against. Which commit built it is a separate fact a build script now captures, kept out of that comparison and not yet on the command line.",
+          "last_verified": "2026-09-08",
+          "title": "The engine's version stays one number, and a build's exact commit is a separate, unwired fact"
         }
       },
       {
