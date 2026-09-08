@@ -18,15 +18,22 @@
 # used to sit in, structurally rather than as a defect: that refusal is what
 # stops an adopter's `vendor` from overwriting a package somebody maintains.
 # To change this package: edit the three files at
-# `taxonomy-source/headwater-standard/`, then run:
+# `taxonomy-source/headwater-standard/`, then run these four steps in this
+# order:
 #
 #     headwater taxonomy publish --from taxonomy-source/headwater-standard --out <scratch-dir>
+#     # write the digest `publish` printed as `taxonomy.digest` in `.headwater/taxonomy.yml`
 #     headwater taxonomy vendor <scratch-dir>
 #     headwater taxonomy resolve
 #
-# and pin the digest `publish` prints as `taxonomy.digest` in
-# `.headwater/taxonomy.yml`. `docs/spec/07-distribution-and-federation.md`
-# names this the vendored-bytes shape of self-consumption.
+# Step two is a hand edit and no verb performs it. It is second and not last
+# because `vendor` reads the pin it finds and refuses an artifact the pin does
+# not name, so a source that actually changed makes step three exit 1 against
+# the digest the previous publish printed. The order is what keeps the digest
+# typed once. `docs/spec/07-distribution-and-federation.md` names this the
+# vendored-bytes shape of self-consumption, and
+# `the_shipped_maintenance_loop_runs_as_written_over_a_source_that_changed` in
+# `engine/crates/cli/tests/publish.rs` runs these four steps out of this block.
 #
 # Spec 2 makes `package` a reserved reference root, and it rules that no
 # taxonomy may declare a block with that name. Spec 7 gives a package manifest a
