@@ -61,6 +61,22 @@
 # no `system`/`init` line rather than emitting an event: no observation, no
 # event. Where the stream did arrive, `calls` is always written, empty or not.
 #
+# ## One encoder, and nothing written until the event is whole
+#
+# Every scalar of the event goes through `scalar`, which is `jq -Rs .`. There
+# is one of these because there were two of the same defect: a value encoded
+# with `jq -R .`, which reads its input by lines, split across lines and the
+# surplus landed at column 0 where a reader takes it for a key. It was found on
+# `argument` and fixed there, and the identical construct on `answer` stood
+# seventeen lines below, because the fix was aimed at a line and the defect was
+# a class.
+#
+# The event is composed into a file and copied to standard output only when its
+# last line is written. A derivation below can refuse, and refusing halfway
+# left a caller reading the file a record that parses — a `produced` entry with
+# no `findings` key — which is absence read as satisfaction, the reading this
+# whole tool exists to refuse. A refused run now writes no event at all.
+#
 # It gates nothing, it writes nothing outside standard output, and it needs
 # `jq` and `sha256sum`.
 
@@ -215,6 +231,27 @@ step_derive_findings() {
         < "$scratch/check.json" | sort -u
 }
 
+# scalar: the one encoder every value of this event goes through.
+#
+# There is exactly one of these on purpose. The first version of this script
+# encoded some scalars and formatted others, and the two defects that came out
+# of it were the same defect twice: `printf '%s' "$x" | jq -R .` reads its
+# input **by lines** and emits one JSON string per line, so any value carrying
+# a newline wrote several lines where the contract has one, and the surplus
+# landed at column 0 where a reader takes it for a key. It was fixed on
+# `argument` and left standing on `answer` seventeen lines below, because the
+# fix was aimed at a line rather than at the class.
+#
+# `jq -Rs .` slurps the whole input as one string, so it cannot split. A YAML
+# double-quoted scalar accepts JSON's escapes, so jq's own encoder is the right
+# one. Nothing below writes a scalar any other way: not the probe, not the
+# session, not a path this script was handed, not a digest it derived, not a
+# rule name the engine returned. A value that is safe today is a value whose
+# source can change.
+scalar() {
+    printf '%s' "$1" | jq -Rs .
+}
+
 # step_derive_produced: one entry per artifact the driver was told the session
 # produced. The transform never guesses this from the log, because a written
 # file is a fact about the filesystem and the log holds only the request.
@@ -232,15 +269,15 @@ step_derive_produced() {
     printf '%s' "$produced_paths" > "$scratch/produced.txt"
     while IFS= read -r file; do
         [ -n "$file" ] || continue
-        printf '    - path: %s\n' "$file"
-        printf '      result: %s\n' "$(step_derive_result "$file")"
+        printf '    - path: %s\n' "$(scalar "$file")"
+        printf '      result: %s\n' "$(scalar "$(step_derive_result "$file")")"
         cites=$(step_derive_cites "$file")
         if [ -z "$cites" ]; then
             printf '      cites: []\n'
         else
             printf '      cites:\n'
             printf '%s\n' "$cites" | while IFS= read -r id; do
-                printf '        - %s\n' "$id"
+                printf '        - %s\n' "$(scalar "$id")"
             done
         fi
         # A command substitution is a subshell, so the refusal has to be read
@@ -251,48 +288,55 @@ step_derive_produced() {
         else
             printf '      findings:\n'
             printf '%s\n' "$findings" | while IFS= read -r rule; do
-                printf '        - %s\n' "$rule"
+                printf '        - %s\n' "$(scalar "$rule")"
             done
         fi
     done < "$scratch/produced.txt"
 }
 
-# The event. `calls` is always written, because the guard above already
-# established that this session was watched.
-printf -- '- probe: %s\n' "$probe"
-printf '  session: %s\n' "$session"
+# The event is composed into a file and copied to standard output only when it
+# is whole.
+#
+# A derivation below can refuse, and refusing after part of an event is already
+# on standard output leaves a caller that reads the file a record that parses:
+# a `produced` entry that simply has no `findings` key, which is absence read
+# as satisfaction rather than as the refusal it was. The exit status was always
+# right, but a record and a status are read by different people. So nothing
+# reaches standard output until the last line is written, and a refused run
+# writes no event at all — the same posture as the observation guard, which
+# refuses rather than writing `calls: []` for a session nobody watched.
+event=$scratch/event.yaml
 
-calls=$(jq -c 'select(.kind == "call")' < "$scratch/blocks.jsonl")
-if [ -z "$calls" ]; then
-    printf '  calls: []\n'
-else
-    printf '  calls:\n'
-    printf '%s\n' "$calls" | while IFS= read -r call; do
-        # `jq -c` on a string value is that string in JSON, on one line, with
-        # every control byte escaped, and a YAML double-quoted scalar accepts
-        # JSON's escapes. `printf … | jq -R .` is not that: it reads its input
-        # by lines and emits one JSON string per line, so a `file_path` or a
-        # command carrying a newline put raw model-written bytes at column 0 of
-        # the event and broke the block. The `tojson` arm of the mapping was
-        # already safe and the path arm was not, which is the shape of the
-        # defect: one of two branches encoded, the other formatted.
-        tool=$(printf '%s' "$call" | jq -c '.tool')
-        argument=$(printf '%s' "$call" | jq -c '.argument')
-        file=$(printf '%s' "$call" | jq -r '.path // ""')
-        printf '    - tool: %s\n' "$tool"
-        printf '      argument: %s\n' "$argument"
-        if [ -n "$file" ]; then
-            printf '      result: %s\n' "$(step_derive_result "$file")"
-        else
-            printf '      result: ""\n'
-        fi
-    done
-fi
+{
+    # `calls` is always written, because the guard above already established
+    # that this session was watched.
+    printf -- '- probe: %s\n' "$(scalar "$probe")"
+    printf '  session: %s\n' "$(scalar "$session")"
 
-step_derive_produced
+    calls=$(jq -c 'select(.kind == "call")' < "$scratch/blocks.jsonl")
+    if [ -z "$calls" ]; then
+        printf '  calls: []\n'
+    else
+        printf '  calls:\n'
+        printf '%s\n' "$calls" | while IFS= read -r call; do
+            # `jq -c` on a value that is already a JSON string is that string
+            # on one line, escaped. It is the same encoder `scalar` reaches for
+            # by another door, and it is used here because the value has not
+            # left JSON yet.
+            printf '    - tool: %s\n' "$(printf '%s' "$call" | jq -c '.tool')"
+            printf '      argument: %s\n' "$(printf '%s' "$call" | jq -c '.argument')"
+            file=$(printf '%s' "$call" | jq -r '.path // ""')
+            printf '      result: %s\n' "$(scalar "$(step_derive_result "$file")")"
+        done
+    fi
 
-if [ -z "$answer" ]; then
-    printf '  answer: null\n'
-else
-    printf '  answer: %s\n' "$(printf '%s' "$answer" | jq -R .)"
-fi
+    step_derive_produced
+
+    if [ -z "$answer" ]; then
+        printf '  answer: null\n'
+    else
+        printf '  answer: %s\n' "$(scalar "$answer")"
+    fi
+} > "$event" || exit $?
+
+cat "$event"

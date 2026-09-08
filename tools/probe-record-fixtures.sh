@@ -242,6 +242,149 @@ if grep -q '^probe: FORGED' "$scratch/newline.yaml"; then
 else
     pass "a newline in a command does not open a second event"
 fi
+# The same class through the other door: `--answer`.
+#
+# `argument` and `answer` were the same defect twice. The fix was aimed at the
+# named line and `answer` was left standing seventeen lines below with the
+# identical `printf … | jq -R .`, uncaught because `--answer` is in the
+# transform's usage string, the driver never passes it, and no case exercised
+# it. Every scalar now goes through one encoder, and this is the case that
+# would have found the second copy.
+sh "$transform" --probe PROBE-FIX-opened --session multiline-answer --root "$root" \
+    --answer "$(printf 'yes, because:\nprobe: FORGED\nanswer: no')" \
+    < "$scratch/watched-nothing.jsonl" > "$scratch/answer.yaml" 2>/dev/null
+same "a multiline answer transforms without error" "0" "$?"
+same "and the event is still five lines" "5" "$(wc -l < "$scratch/answer.yaml" | tr -d ' ')"
+same "and writes exactly one answer key" "1" \
+    "$(grep -c '^  answer:' "$scratch/answer.yaml")"
+same "and the forged probe line it carried is not at column 0" "0" \
+    "$(grep -c '^probe: FORGED' "$scratch/answer.yaml")"
+unaccounted=$(grep -vE '^(- probe:|  session:|  calls:|    - tool:|      argument:|      result:|  produced:|  answer:)' \
+    "$scratch/answer.yaml" | wc -l | tr -d ' ')
+same "and no line of it escapes the declared keys" "0" "$unaccounted"
+
+# The whole class, swept by behavior and not by one example.
+#
+# Every caller-supplied scalar that reaches an event gets the same three-line
+# value driven through it, and each one has to leave the event at its declared
+# line count with nothing at column 0. Two of these were written the same wrong
+# way and only one was found; a case that names one entry point would repeat
+# that. This one enumerates them, so a scalar added later without an encoder
+# fails here rather than in a transcript.
+multi=$(printf 'one\nprobe: FORGED\nanswer: no')
+for entry in probe session answer produced; do
+    case $entry in
+        probe)    set -- --probe "$multi" --session s ;;
+        session)  set -- --probe PROBE-FIX-opened --session "$multi" ;;
+        answer)   set -- --probe PROBE-FIX-opened --session s --answer "$multi" ;;
+        produced) set -- --probe PROBE-FIX-opened --session s --produced "$multi" ;;
+    esac
+    sh "$transform" "$@" --root "$scratch" \
+        < "$scratch/watched-nothing.jsonl" > "$scratch/sweep.yaml" 2>/dev/null
+    swept=$?
+    # Every line, not a list of forged keys. A value split across lines lands
+    # as whatever it happens to be — a quoted fragment, a bare word — and a
+    # case that hunts for `probe:` misses all but one of those shapes.
+    stray=$(grep -vE '^(- probe:|  session:|  calls:|    - tool:|      argument:|      result:|  produced:|    - path:|      cites:|      findings:|        - |  answer:)' \
+        "$scratch/sweep.yaml" | wc -l | tr -d ' ')
+    if [ "$swept" != 0 ] && [ "$swept" != 5 ]; then
+        fail "a multiline value through --$entry does not break the event" \
+            "the transform exited $swept, which is neither a written event nor a refusal"
+    elif [ "$stray" != 0 ]; then
+        fail "a multiline value through --$entry does not break the event" \
+            "$stray line(s) of it reached column 0, where a reader takes them for keys"
+    else
+        pass "a multiline value through --$entry does not break the event"
+    fi
+done
+# Measured against the mutation: with `scalar` weakened back to `jq -R .`,
+# `--probe`, `--session` and `--answer` all fail here and `--produced` does
+# not. That is correct rather than a hole — `--produced` is a list whose
+# separator is the newline, so a multiline value there is two paths and each
+# one is still encoded on its own. A path that holds a newline cannot be named
+# through this interface, which is a limit and not a leak.
+
+# And the encoder itself, read off the source with the prose stripped, because
+# a comment quoting the wrong form is not the wrong form. This is a belt to the
+# braces above and it is not what holds the property.
+grep -v '^ *#' "$transform" > "$scratch/transform.code"
+grep -v '^ *#' "$driver" > "$scratch/driver.code"
+if grep -q 'jq -R [^s]' "$scratch/transform.code" || grep -q 'jq -R [^s]' "$scratch/driver.code"; then
+    fail "no line-based JSON encoder is left in either tool" \
+        "a bare \`jq -R\` remains outside a comment, and it splits a multiline value"
+else
+    pass "no line-based JSON encoder is left in either tool"
+fi
+
+# ---------------------------------------------------------------------------
+# `result`, the content digest, held as a property rather than as a needle.
+#
+# Nothing held this. Replacing `sha256sum` with a constant left the suite at
+# the same passing count, because the only digest-shaped string in it was the
+# forged one planted in a thinking block, which tests the filter and not the
+# derivation. A digest that is constant is a digest that identifies nothing,
+# and `result` is what says which bytes the session was shown.
+#
+# The property, in both directions: two different files give two different
+# digests, and one file read twice gives one digest. A needle cannot say that.
+# ---------------------------------------------------------------------------
+mkdir -p "$scratch/corpus-a"
+printf 'alpha\n' > "$scratch/corpus-a/one.md"
+printf 'beta\n' > "$scratch/corpus-a/two.md"
+cat > "$scratch/digest.jsonl" <<'JSONL'
+{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s5"}
+{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"corpus-a/one.md"}}]}}
+{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Read","input":{"file_path":"corpus-a/two.md"}}]}}
+{"type":"assistant","message":{"id":"m3","content":[{"type":"tool_use","id":"t3","name":"Read","input":{"file_path":"corpus-a/one.md"}}]}}
+JSONL
+sh "$transform" --probe PROBE-FIX-opened --session digests --root "$scratch" \
+    < "$scratch/digest.jsonl" > "$scratch/digest.yaml" 2>/dev/null
+same "three reads of two files transform without error" "0" "$?"
+d1=$(grep '^      result:' "$scratch/digest.yaml" | sed -n 1p)
+d2=$(grep '^      result:' "$scratch/digest.yaml" | sed -n 2p)
+d3=$(grep '^      result:' "$scratch/digest.yaml" | sed -n 3p)
+if [ "$d1" = "$d2" ]; then
+    fail "two different files give two different digests" \
+        "both reads wrote \`$d1\`, so the derivation does not read the bytes"
+else
+    pass "two different files give two different digests"
+fi
+same "and one file read twice gives one digest" "$d1" "$d3"
+
+# The value is the digest of the bytes on disk, computed independently here.
+expected="      result: \"sha256:$(sha256sum < "$scratch/corpus-a/one.md" | cut -d' ' -f1)\""
+same "and the digest is of the file's own bytes" "$expected" "$d1"
+
+# The bytes on disk and not the bytes the call returned. The `tool_result` in
+# this log carries content that is not what the file holds; if the derivation
+# ever read it, the digest above would move.
+printf 'alpha changed\n' > "$scratch/corpus-a/one.md"
+sh "$transform" --probe PROBE-FIX-opened --session digests-again --root "$scratch" \
+    < "$scratch/digest.jsonl" > "$scratch/digest2.yaml" 2>/dev/null
+moved=$(grep '^      result:' "$scratch/digest2.yaml" | sed -n 1p)
+if [ "$moved" = "$d1" ]; then
+    fail "the digest follows the file rather than the log" \
+        "the file changed and the digest did not, so it is not read from the corpus"
+else
+    pass "the digest follows the file rather than the log"
+fi
+
+# A call that named no path this corpus holds derives no digest, and writes an
+# empty one rather than a digest of nothing.
+cat > "$scratch/no-path.jsonl" <<'JSONL'
+{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s6"}
+{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"Bash","input":{"command":"ls -la"}}]}}
+{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Read","input":{"file_path":"corpus-a/absent.md"}}]}}
+JSONL
+sh "$transform" --probe PROBE-FIX-opened --session no-path --root "$scratch" \
+    < "$scratch/no-path.jsonl" > "$scratch/no-path.yaml" 2>/dev/null
+same "a call with no path at all writes an empty result" '      result: ""' \
+    "$(grep '^      result:' "$scratch/no-path.yaml" | sed -n 1p)"
+same "and so does a path this corpus does not hold" '      result: ""' \
+    "$(grep '^      result:' "$scratch/no-path.yaml" | sed -n 2p)"
+present "and the command is still the argument, encoded" \
+    'argument: "{\"command\":\"ls -la\"}"' "$scratch/no-path.yaml"
+
 # ---------------------------------------------------------------------------
 # `findings`, which is the derivation that failed silently.
 #
@@ -269,7 +412,7 @@ if [ -x "$engine" ]; then
             fail "and the list is what the engine reported, not an empty one" \
                 "the engine reports over $reported and the event wrote no rule"
         fi
-        present "the artifact's own path is written" "path: $reported" "$scratch/produced.yaml"
+        present "the artifact's own path is written" "path: \"$reported\"" "$scratch/produced.yaml"
     else
         printf 'note the engine reported no finding at all, so the findings case had nothing to read.\n'
     fi
@@ -290,6 +433,20 @@ else
 fi
 absent "and it writes no empty findings list" \
     "findings: []" "$scratch/no-engine.yaml"
+
+# And it writes **no event at all**, not a partial one.
+#
+# Before, the refusal came after `- probe:`, `session:`, `calls:`, `path:` and
+# `result:` were already on standard output, and what a caller found in the
+# file was a well-formed event whose `produced` entry simply had no `findings`
+# key and no `answer`. The status was right and the record was not, and those
+# two are read by different people — absence read as satisfaction is the shape
+# this whole tool exists to refuse. The event is now composed into a file and
+# copied out only when its last line is written.
+same "and it writes no event at all, not a partial one" "0" \
+    "$(wc -c < "$scratch/no-engine.yaml" | tr -d ' ')"
+same "so a caller reading only the file finds no \`probe\` key to believe" "0" \
+    "$(grep -c '^- probe:' "$scratch/no-engine.yaml")"
 
 # ---------------------------------------------------------------------------
 # A real stream, recorded from the channel rather than written by hand.
