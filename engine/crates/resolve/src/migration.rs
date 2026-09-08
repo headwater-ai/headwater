@@ -301,8 +301,31 @@ impl Payload {
     /// piece of version arithmetic this engine has. A second reading of a
     /// version string here could disagree with the one `requires_engine` and
     /// `--to` are read by.
+    ///
+    /// # Why the two ranges are not the whole predicate
+    ///
+    /// The two ranges say which versions the steps were written against, and
+    /// nothing makes them disjoint: `from: ">=1 <3"` with `to: ">=2 <3"` is a
+    /// sound thing to publish. Read one against each end alone, and such a
+    /// payload holds for a move from a version to itself and for a move down,
+    /// because `2.5.0` satisfies both ranges. A migration runs forward only,
+    /// so the relation between the two arguments is part of the question.
+    ///
+    /// # Why the ranges are read first
+    ///
+    /// [`release::satisfies`] parses its version argument, so an `Err` it
+    /// returns names the range the version failed under, which names the file
+    /// a caller has to edit. `headwater_compat::migrate::transition` relies on
+    /// that: it lets an unreadable version through so that this predicate
+    /// owns the message. Reading the order first would refuse the same string
+    /// with a message that names no file. A version that reached the relation
+    /// therefore parses, but this propagates rather than unwraps, because a
+    /// panic is not the refusal a publisher can act on.
     pub fn covers(&self, from: &str, to: &str) -> Result<bool, String> {
-        Ok(release::satisfies(&self.from, from)? && release::satisfies(&self.to, to)?)
+        if !(release::satisfies(&self.from, from)? && release::satisfies(&self.to, to)?) {
+            return Ok(false);
+        }
+        Ok(release::parts(to)? > release::parts(from)?)
     }
 }
 
