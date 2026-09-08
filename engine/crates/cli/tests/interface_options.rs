@@ -25,6 +25,18 @@
 //! itself for the same reason — the alternative is a second hand-kept copy of
 //! prose that could drift from the file it is supposed to match.
 //!
+//! # Why a `docs/decisions/` record joined a file scoped to `docs/interfaces/`
+//!
+//! The sweep #475 and #476 ran reached eighteen documents on one shelf and
+//! stopped there. [HW-DR-0033](../../../../docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md)
+//! stated the same retired sentence in its own prose and was not among them,
+//! which is what [#668](https://github.com/headwater-ai/headwater/issues/668)
+//! is. So the omitted document is held here rather than in a file of its own:
+//! this is the table already built for this one sentence, and a second table
+//! asking the same question of a nineteenth document is the shape #257 is
+//! about. The two cases at the end of this file are the only ones that read
+//! outside `docs/interfaces/`, and neither uses [`REMAINING`].
+//!
 //! # Why this is a file of its own rather than a case in `interface_contract.rs`
 //!
 //! `interface_contract.rs` holds the *kind* `interface_contract` declares —
@@ -188,4 +200,106 @@ fn the_two_prose_only_documents_carry_no_banner_beside_no_color() {
             "{slug}.md names --no-color without --no-banner beside it"
         );
     }
+}
+
+// # HW-DR-0033's own paragraph, the nineteenth document
+//
+// See the module comment for why it is held here. Both cases below anchor on
+// something that exists — the ruling record on disk, and the cases `width.rs`
+// declares — rather than on the absence of a phrase alone. A bare "does not
+// contain" passes just as well when the paragraph has been renamed away,
+// deleted, or looked for at a path that no longer resolves, which is the
+// silent-success shape this repository keeps meeting.
+
+/// The path of the record this file's last two cases read.
+fn hw_dr_0033_path() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(
+        "../../../docs/decisions/\
+         0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md",
+    )
+}
+
+/// The `--no-color` paragraph of HW-DR-0033, as its one source line.
+///
+/// Markdown in this repository is never hard-wrapped, so a paragraph is a
+/// line. This finds the one that opens in bold on `--no-color`, and panics
+/// rather than returning `None`, because a missing paragraph is the failure
+/// both cases below exist to report.
+fn hw_dr_0033_no_color_paragraph() -> String {
+    let path = hw_dr_0033_path();
+    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    text.lines()
+        .find(|line| line.starts_with("**`--no-color`"))
+        .unwrap_or_else(|| {
+            panic!(
+                "{} carries no paragraph opening in bold on `--no-color`",
+                path.display()
+            )
+        })
+        .to_string()
+}
+
+/// HW-DR-0033's `--no-color` paragraph cites the ruling that moved it, and it
+/// no longer states the behavior that ruling reversed.
+///
+/// The citation is held against the record on disk rather than against a
+/// spelling of the identifier: the link must reach a file that declares
+/// `id: HW-DR-0045`, so a typo'd path fails here instead of passing quietly.
+#[test]
+fn hw_dr_0033_cites_the_ruling_that_moved_it_and_drops_the_reversed_claim() {
+    let paragraph = hw_dr_0033_no_color_paragraph();
+
+    let link = "0045-coloring-the-cli-and-where-the-banner-goes.md";
+    assert!(
+        paragraph.contains(link),
+        "the paragraph links nothing to the ruling that reversed it:\n{paragraph}"
+    );
+    let ruling = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/decisions").join(link);
+    let ruling = std::fs::read_to_string(&ruling)
+        .unwrap_or_else(|e| panic!("the paragraph links {}: {e}", ruling.display()));
+    assert!(
+        ruling.contains("id: HW-DR-0045"),
+        "the link the paragraph carries reaches a document that is not HW-DR-0045"
+    );
+
+    let reversed = [
+        "changes no byte",
+        "writes no color on either stream",
+        "under any terminal",
+    ];
+    let still: Vec<&str> = reversed
+        .into_iter()
+        .filter(|phrase| paragraph.contains(phrase))
+        .collect();
+    assert!(
+        still.is_empty(),
+        "the paragraph still states what HW-DR-0045 reversed: {still:?}\n{paragraph}"
+    );
+}
+
+/// The number of `no_escape_byte_*` cases the paragraph credits `width.rs`
+/// with is counted out of `width.rs` at run time, and never written here.
+///
+/// The paragraph said three on a day a fourth had already landed. A number
+/// pinned in this file would go stale the same way, one file further out.
+#[test]
+fn hw_dr_0033_states_the_number_of_escape_byte_cases_width_actually_holds() {
+    let width = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/width.rs");
+    let text =
+        std::fs::read_to_string(&width).unwrap_or_else(|e| panic!("{}: {e}", width.display()));
+    let held = text
+        .lines()
+        .filter(|line| line.starts_with("fn no_escape_byte_"))
+        .count();
+    let spelled = ["no", "one", "two", "three", "four", "five", "six", "seven"]
+        .get(held)
+        .copied()
+        .unwrap_or_else(|| panic!("{held} cases is past the range this case spells"));
+
+    let paragraph = hw_dr_0033_no_color_paragraph();
+    assert!(
+        paragraph.contains(&format!("in {spelled} places")),
+        "`width.rs` holds {held} `no_escape_byte_*` cases, and the paragraph does not say \
+         \"in {spelled} places\":\n{paragraph}"
+    );
 }
