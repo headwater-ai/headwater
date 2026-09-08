@@ -62,6 +62,7 @@ nav:
       - "A shelf layout is the second half of what the identifier claim store covers": "decisions/0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md"
       - "A blank facet value is a rule of its own and it reads every string facet": "decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md"
       - "A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to": "decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md"
+      - "The engine's version stays one number, and a build's exact commit is a separate, unwired fact": "decisions/0060-the-engine-s-version-stays-one-number-and-a-build-s-exact-commit-is-a-separate-unwired-fact.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"

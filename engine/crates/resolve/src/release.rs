@@ -106,6 +106,17 @@ pub const FORMAT: u32 = 1;
 /// verb printed it. The number below is the tag this repository published.
 pub const ENGINE: &str = env!("CARGO_PKG_VERSION");
 
+/// The commit `git describe --always --dirty --tags` named at build time, or
+/// `None` when the build ran outside a git checkout.
+///
+/// [HW-DR-0060](../../../../docs/decisions/0060-the-engine-s-version-stays-one-number-and-a-build-s-exact-commit-is-a-separate-unwired-fact.md)
+/// is why this is not [`ENGINE`] and why nothing reads it today. `ENGINE` is
+/// the number a `requires_engine` range compares against; this is a fact
+/// about how the binary was built, and never a version. `cargo publish`'s
+/// package tarball carries no `.git`, so a crate built from crates.io carries
+/// `None` here, by design and not by failure.
+pub const BUILD_COMMIT: Option<&str> = option_env!("HEADWATER_BUILD_DESCRIBE");
+
 /// The shape of the JSON document `taxonomy publish --json` writes, which a
 /// consumer of that document pins rather than [`ENGINE`].
 ///
@@ -866,5 +877,23 @@ mod tests {
     #[test]
     fn this_engine_satisfies_the_range_the_base_package_declares() {
         assert_eq!(satisfies(">=0.1 <2", ENGINE), Ok(true));
+    }
+
+    /// `BUILD_COMMIT` never carries whitespace or an empty string. `build.rs`
+    /// checks both before it emits the variable this constant reads, and this
+    /// is the test that would fail if a future edit to `build.rs` stopped
+    /// checking.
+    ///
+    /// It does not assert that `BUILD_COMMIT` is [`Some`]: this crate's own
+    /// tests run inside a git checkout today, but a crate built from the
+    /// tarball `cargo publish` uploads carries no `.git`, and [`None`] is the
+    /// correct reading there.
+    #[test]
+    fn build_commit_is_one_clean_token_when_it_is_present() {
+        if let Some(describe) = BUILD_COMMIT {
+            assert!(!describe.is_empty());
+            assert_eq!(describe, describe.trim());
+            assert!(!describe.chars().any(char::is_whitespace));
+        }
     }
 }

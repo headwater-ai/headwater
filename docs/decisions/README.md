@@ -2,7 +2,7 @@
 
 # Decision records
 
-59 documents on this shelf, in the reading order this corpus derives.
+60 documents on this shelf, in the reading order this corpus derives.
 
 - [Q1 — Implementation language](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [Q2 — Schema format](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -63,3 +63,4 @@
 - [A shelf layout is the second half of what the identifier claim store covers](0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md) — The claim store covers an identifier where the file name does not determine it: a shelf that declares a layout, or a scheme that reconciles
 - [A blank facet value is a rule of its own and it reads every string facet](0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md) — A declared facet that carries no content is a state that neither the required-facet rule nor the enum rule reaches. A new rule reports it, over every facet a taxonomy types as a string, at error severity. (asserted, and no human has accepted it)
 - [A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to](0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md) — A filter that keeps the tool calls of a harness session log and drops every block the model wrote is an outside observation, because the type tag it reads is the harness's and not the model's. The condition is the channel the log arrives by, and a file the session can open is not one. (asserted, and no human has accepted it)
+- [The engine's version stays one number, and a build's exact commit is a separate, unwired fact](0060-the-engine-s-version-stays-one-number-and-a-build-s-exact-commit-is-a-separate-unwired-fact.md) — A binary's `--version` keeps naming one number, the `Cargo.toml` version a `requires_engine` range is read against. Which commit built it is a separate fact a build script now captures, kept out of that comparison and not yet on the command line.
