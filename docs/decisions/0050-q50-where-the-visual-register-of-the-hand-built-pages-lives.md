@@ -2,8 +2,8 @@
 id: HW-DR-0050
 status: current
 status_since: 2026-09-06
-summary: "The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet."
-last_verified: 2026-09-06
+summary: "The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each hand-built page before the commit, because the content policy of those pages admits no linked stylesheet, and the generated half links the same file because its own policy admits one."
+last_verified: 2026-09-08
 title: "Q50 — Where the visual register of the hand-built pages lives"
 provenance:
   warrant: asserted
@@ -17,6 +17,8 @@ relations:
   governs:
     - tools/site-tokens.css
     - tools/refresh-site-tokens.sh
+    - mkdocs-hooks/site_tokens.py
+    - mkdocs-overrides/css/headwater.css
   traces_to:
     - notes/website-design-brief.md
 ---
@@ -42,6 +44,12 @@ relations:
 **The measure stays out of the file.** `max-width` differs by page for a reason a reader can see, because a comparison table is not set to the width of a prose column. A shared value here would be a figure with no source, which is what HW-DR-0037 forbids on these pages.
 
 **A page under `site/` with no marker pair fails the check.** The script walks the directory rather than reading a list of paths. A ninth page is therefore covered by the commit that adds it. A page that opts out of the register is refused rather than skipped.
+
+**The generated half links the same file, and it never restates a value from it.** The title above names the question as it was asked, and this clause widens the answer to the other half of the site. `mkdocs-hooks/site_tokens.py` registers `tools/site-tokens.css` as a generated file at `css/site-tokens.css`, and `mkdocs-overrides/main.html` links it. The served copy is the source bytes rather than a copy of them. `mkdocs-overrides/css/headwater.css` reads every color and every type stack through `var()`, and it declares none.
+
+**It links where the hand-built half inlines, because the two halves are served under different policies.** `site/_headers` gives each hand-built path `style-src 'unsafe-inline'` with no `'self'`, which is the property HW-DR-0037 states as a measurement. The generated half is served from `/*`, and that policy carries `style-src 'self'`. So the generated half can reach a stylesheet at read time and the hand-built half cannot. Neither policy moves for this record.
+
+**A second copy under `mkdocs-overrides/` fails `tools/refresh-site-tokens.sh --check`.** Before this clause, that script walked `site/` alone. So a theme stylesheet could write out a color of the register, and no reader in this repository would report it. The script now reads each `.css`, `.html` and `.js` file under `mkdocs-overrides/`. It fails on a file that carries a value that `tools/site-tokens.css` declares. It reads the values out of the file rather than from a list, so a new token is covered by the commit that adds it. The first run of this arm failed on a comment that quoted a color to explain the rule.
 
 ## Consequences
 

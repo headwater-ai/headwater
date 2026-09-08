@@ -102,13 +102,62 @@ for name in unmarked:
           file=sys.stderr)
     print("      %s\n      %s" % (OPEN.strip(), CLOSE.strip()), file=sys.stderr)
 
+# THE SECOND ARM: THE GENERATED HALF LINKS THE REGISTER AND NEVER RESTATES IT.
+#
+# HW-DR-0050 clause 4. The generated half is served from `/*`, whose policy
+# carries `style-src 'self'`, so `mkdocs-hooks/site_tokens.py` serves this same
+# file at `css/site-tokens.css` and `mkdocs-overrides/css/headwater.css` reads
+# it through `var(--…)`. A theme stylesheet that pasted `#1d5c54` instead would
+# be the exact second copy this record exists to prevent, and the arm above
+# would never see it: it walks `site/` alone. That was the gap on the day this
+# arm was written.
+#
+# It reads the values out of the block rather than listing them, so a token
+# added to `tools/site-tokens.css` is covered on the commit that adds it.
+declared = []
+for line in body.splitlines():
+    for part in line.split(";"):
+        if "--" not in part or ":" not in part:
+            continue
+        name, _, value = part.partition(":")
+        if name.strip().startswith("--"):
+            declared.append((name.strip(), value.strip()))
+
+theme = root / "mkdocs-overrides"
+copied = []
+unlinked = []
+if theme.is_dir():
+    entry = theme / "main.html"
+    if not entry.is_file() or "css/site-tokens.css" not in entry.read_text():
+        unlinked.append("mkdocs-overrides/main.html")
+    for f in sorted(theme.rglob("*")):
+        if not f.is_file() or f.suffix not in (".css", ".html", ".js"):
+            continue
+        text_of = f.read_text()
+        for name, value in declared:
+            if value and value in text_of:
+                copied.append((f.relative_to(root).as_posix(), name, value))
+
+for name, prop, value in copied:
+    print("%s restates `%s: %s`, which tools/site-tokens.css declares"
+          % (name, prop, value), file=sys.stderr)
+    print("  the generated half links the register. Read it as `var(%s)`."
+          % prop, file=sys.stderr)
+for name in unlinked:
+    print("%s does not link `css/site-tokens.css`, so the generated half is"
+          % name, file=sys.stderr)
+    print("  served with no visual register at all.", file=sys.stderr)
+
 if MODE == "check":
     for name in stale:
         print("stale %s (its block disagrees with tools/site-tokens.css)" % name,
               file=sys.stderr)
     print("%d page(s) read, %d unmarked, %d stale"
           % (len(pages), len(unmarked), len(stale)))
-    raise SystemExit(1 if (unmarked or stale) else 0)
+    print("%d token(s) declared, %d restated under `mkdocs-overrides/`, "
+          "%d file(s) that must link the register and do not"
+          % (len(declared), len(copied), len(unlinked)))
+    raise SystemExit(1 if (unmarked or stale or copied or unlinked) else 0)
 
 for name in stale:
     print("wrote %s" % name, file=sys.stderr)

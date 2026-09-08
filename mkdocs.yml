@@ -62,11 +62,23 @@ site_dir: .headwater/site-build
 
 theme:
   name: mkdocs
-  # `mkdocs-overrides/main.html` is the whole of the custom directory, and
-  # HW-DR-0038 is why it exists: spec 7 requires that a rendered page carry a
-  # link relation to the served copy of the corpus descriptor, and Q38 rules
-  # that the relation is `describedby`. Not `overrides/`, because *override* is
-  # already this corpus's word for an entry in `.headwater/overlay.yml`.
+  # HW-DR-0038 is why this directory exists at all: spec 7 requires that a
+  # rendered page carry a link relation to the served copy of the corpus
+  # descriptor, and Q38 rules that the relation is `describedby`. Not
+  # `overrides/`, because *override* is already this corpus's word for an entry
+  # in `.headwater/overlay.yml`.
+  #
+  # It holds four files now, and `main.html` is no longer the whole of it:
+  #
+  #   main.html      overrides blocks of the theme's `base.html` and never
+  #                  replaces it. A hand-written `base.html` here would shadow
+  #                  the stock one and silently drop both the canonical URL
+  #                  `tools/check-site-canonical.py` asserts on 302 pages and
+  #                  the `describedby` link above.
+  #   css/headwater.css       the generated half in this site's visual register.
+  #   js/leading-digit-anchor-shim.js   #614, loaded before `js/base.js`.
+  #   js/darkmode.js          SHADOWS the theme's file of the same path. The
+  #                  only file here that replaces one. See its own header.
   #
   # `.headwater/corpus.json` sits outside `docs_dir`, so no build copies it and
   # the CI job puts it beside the built pages instead. A local `mkdocs build`
@@ -75,6 +87,43 @@ theme:
   #
   #   cp .headwater/corpus.json .headwater/site-build/corpus.json
   custom_dir: mkdocs-overrides
+
+  # OFF, AND THE TWO THINGS THAT GO WITH IT
+  #
+  # HW-OBL-0160 is the record: the stock theme loads highlight.js and two
+  # stylesheets from `cdnjs.cloudflare.com` on every generated page, with no
+  # subresource integrity, so `script-src` and `style-src` on `/*` had to admit
+  # a third party that can change what it serves. Turning this off is that
+  # record's own named remedy, and it removes three requests per page.
+  #
+  # It removes two elements as well, and that is the trap. `base.html` emits
+  # `#hljs-light` and `#hljs-dark` only under this flag, and the theme's
+  # `js/darkmode.js` dereferences both with no null guard. So this setting and
+  # `color_mode: auto` below are safe together only because
+  # `mkdocs-overrides/js/darkmode.js` shadows the theme's copy. Measured over
+  # the assembled directory with the theme's own file in place: 325 pages with
+  # a finding, out of 333 served pages, every one of them `Uncaught TypeError:
+  # Cannot set properties of null (setting 'disabled')` at `js/darkmode.js:7`.
+  # `mkdocs build --strict`, `tools/assemble-site.sh` and
+  # `tools/check-site-fragments.py` each exit 0 over that same tree, and
+  # `tools/check-site-console.py` is the only reader that sees it.
+  #
+  # Fenced code is no longer highlighted anywhere on the generated half. That is
+  # the cost, it is paid on purpose, and `tools/check-site-console.py` had one
+  # `ALLOWANCES` entry for the CDN highlighter's unknown-language warning whose
+  # population is now zero.
+  highlightjs: false
+
+  # Not `light`. The visual register this half now links —
+  # `tools/site-tokens.css`, ruled by HW-DR-0050 — carries a
+  # `prefers-color-scheme: dark` block, and a page pinned to
+  # `data-bs-theme="light"` would serve the light tokens to a reader whose
+  # system asks for dark. `auto` hands the choice to the reader's system.
+  color_mode: auto
+
+  # Left at the theme default of `false`. The toggle it adds is a Bootstrap
+  # dropdown in the navbar, and this theme has no navbar to put it in.
+  user_color_mode_toggle: false
 
 # The site builds what the corpus types, and nothing else. This list mirrors
 # `.headwater/corpus.json` rather than deciding anything of its own.
@@ -133,6 +182,25 @@ exclude_docs: |
 #
 # `pymdown-extensions` is pinned in the CI step beside `mkdocs==1.6.1`, as
 # #431's Done-when requires of any new pip dependency.
+
+# One hook, and the reason it is a hook rather than a copied file.
+#
+# HW-DR-0050 rules that `tools/site-tokens.css` is the one copy of this site's
+# visual register that a person edits. The hand-built half inlines it, because
+# `site/_headers` gives those paths `style-src 'unsafe-inline'` with no
+# `'self'`. The generated half is served from `/*`, whose policy does carry
+# `'self'`, so it links the file instead — and it has to be the same file, not
+# a copy, because nothing in this repository would catch a copy drifting:
+# `tools/refresh-site-tokens.sh --check` walks `site/` alone.
+#
+# `mkdocs-hooks/site_tokens.py` registers that file as a generated `File` at
+# `css/site-tokens.css`. `hooks:` is a core MkDocs option since 1.4 and this
+# repository pins 1.6.1, so this adds no pip dependency and nothing to the two
+# places that must stay identical, `.github/workflows/ci.yml` and
+# `tools/cloudflare-build.sh`.
+hooks:
+  - mkdocs-hooks/site_tokens.py
+
 markdown_extensions:
   - toc:
       slugify: !!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}

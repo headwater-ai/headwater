@@ -251,6 +251,10 @@ anchors
     cited by HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary
   code_path `engine/crates/yaml/src/json.rs` via source-tree
     cited by HW-IFACE-headwater-json
+  code_path `mkdocs-hooks/site_tokens.py` via source-tree
+    cited by HW-DR-0050
+  code_path `mkdocs-overrides/css/headwater.css` via source-tree
+    cited by HW-DR-0050
   code_path `mkdocs-overrides/main.html` via source-tree
     cited by HW-DR-0038
   code_path `notes/website-design-brief.md` via source-tree

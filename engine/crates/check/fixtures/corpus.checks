@@ -1,4 +1,4 @@
-427 seen, 314 classified, 314 checked, 5698 check instances
+427 seen, 314 classified, 314 checked, 5700 check instances
      12 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
@@ -17,7 +17,7 @@ adoption
     314 instances of facet.value.blank
     314 instances of identifier.pattern.not_met
     314 instances of shelf.placement_is_primary
-    615 instances of relation.target.unresolved
+    617 instances of relation.target.unresolved
      88 instances of relation.reciprocity.missing
     376 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal

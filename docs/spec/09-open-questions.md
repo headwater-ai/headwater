@@ -78,7 +78,7 @@ relations:
 
 ## Q50 — Where the visual register of the hand-built pages lives
 
-[HW-DR-0050](../decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md) — The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet. (asserted, and no human has accepted it)
+[HW-DR-0050](../decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md) — The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each hand-built page before the commit, because the content policy of those pages admits no linked stylesheet, and the generated half links the same file because its own policy admits one. (asserted, and no human has accepted it)
 
 ## Q37 — Which parts of the site are hand-built and which are a projection of this corpus
 
