@@ -72,6 +72,78 @@ same '  and the Read' 'Read 1 1 1000 0.8%' "$(row 'Read')"
 same 'the mentions table counts the poll inside the loop as a poll' 'gh pr 4 4 83000 65.4%' "$(mrow 'gh pr')"
 same '  and the loop as a loop' 'until 1 1 64000 50.4%' "$(mrow 'until')"
 same 'no call is grouped under cd or set' 0 "$(printf '%s\n' "$out" | awk '$1 == "cd" || $1 == "set"' | wc -l | tr -d ' ')"
+same 'a session with no agent transcripts beside it has no fleet' 'no agent transcripts beside the session file, so no fleet' "$(printf '%s\n' "$out" | tail -1)"
+
+# A heredoc body is data a command writes, not a command it runs. Turn h1
+# appends a ledger entry that quotes `for`, `cargo test` and a `gh pr view`
+# call inside its body; none of those are mentions the parent made. Turn h2
+# runs a real `gh pr view`, so the table still counts what is actually run.
+cat > "$scratch/heredoc.jsonl" <<'EOF'
+{"type":"assistant","message":{"id":"h1","usage":{"cache_read_input_tokens":1000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"cat >> file.md << 'EOF2'\nfor this cargo test gh pr view is quoted, not run\nEOF2"}}]}}
+{"type":"assistant","message":{"id":"h2","usage":{"cache_read_input_tokens":1000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"gh pr view 9"}}]}}
+EOF
+
+hout=$(sh "$tool" "$scratch/heredoc.jsonl" 2>&1); status=$?
+hrow() { printf '%s\n' "$hout" | awk -v g="$1" '/^Bash, by what/ { exit } $1 == g && ($2 == "" || $2 !~ /^[a-z]/) { print; exit } $1" "$2 == g { print; exit }' | tr -s ' '; }
+hmrow() { printf '%s\n' "$hout" | awk -v g="$1" 'on && ($1 == g || $1" "$2 == g) { print; exit } /^Bash, by what/ { on = 1 }' | tr -s ' '; }
+same 'the heredoc census exits 0' 0 "$status"
+same 'a heredoc body is stripped, so its cat call is the whole verb' 'cat 1 1 1000 50%' "$(hrow cat)"
+same 'the real call outside the heredoc still files as its own verb' 'gh pr 1 1 1000 50%' "$(hrow 'gh pr')"
+same 'the mentions table does not count a poll word quoted inside the body' 'gh pr 1 1 1000 50%' "$(hmrow 'gh pr')"
+same '  the by-tool table counts both calls' 'Bash 2 2 2000 100%' "$(hrow Bash)"
+
+# The fleet. A parent that dispatches a builder at 00:00 and a verifier at
+# 00:10, rules at 00:45 with no tool call, compacts at 00:50, dispatches an
+# integrator at 01:00, and at 01:10 dispatches a type the harness refuses. The
+# builder runs to 00:30 and spawns a depth-two agent of its own; the verifier
+# runs to 00:40; the integrator to 01:20. So the span is 80 minutes, 20 of
+# them with no agent in flight, and the agent-minutes are 80 over 80, one in
+# flight on average. The builder's transcript carries a truncated line, the
+# shape the measured run left in one of its files, and it is skipped. Five
+# turns over one agent of each type is five turns per agent.
+mkdir -p "$scratch/fleet/subagents"
+cat > "$scratch/fleet.jsonl" <<'EOF'
+{"type":"assistant","timestamp":"2026-01-01T00:00:00.000Z","message":{"id":"f1","usage":{"cache_read_input_tokens":1000},"content":[{"type":"tool_use","id":"tA","name":"Agent","input":{"subagent_type":"hw-build","prompt":"a"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:10:00.000Z","message":{"id":"f2","usage":{"cache_read_input_tokens":1000},"content":[{"type":"tool_use","id":"tB","name":"Agent","input":{"subagent_type":"hw-verify","prompt":"b"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:45:00.000Z","message":{"id":"f3","usage":{"cache_read_input_tokens":1000},"content":[{"type":"text","text":"ruling"}]}}
+{"type":"user","timestamp":"2026-01-01T00:50:00.000Z","isCompactSummary":true,"message":{"role":"user","content":"summary"}}
+{"type":"assistant","timestamp":"2026-01-01T01:00:00.000Z","message":{"id":"f4","usage":{"cache_read_input_tokens":1000},"content":[{"type":"tool_use","id":"tC","name":"Agent","input":{"subagent_type":"hw-integrate","prompt":"c"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T01:10:00.000Z","message":{"id":"f5","usage":{"cache_read_input_tokens":1000},"content":[{"type":"tool_use","id":"tD","name":"Agent","input":{"subagent_type":"hw-build","prompt":"d"}}]}}
+{"type":"user","timestamp":"2026-01-01T01:10:01.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tD","is_error":true,"content":"Agent type not found."}]},"toolUseResult":"Error: Agent type not found."}
+EOF
+printf '%s\n' '{"agentType":"hw-build","description":"a","toolUseId":"tA","spawnDepth":1}' > "$scratch/fleet/subagents/agent-a1.meta.json"
+cat > "$scratch/fleet/subagents/agent-a1.jsonl" <<'EOF'
+{"type":"user","timestamp":"2026-01-01T00:00:00.000Z","message":{"role":"user","content":"a"}}
+{"type":"assistant","timestamp":"2026-01-01T00:12:00.000Z","message":{"id":"a1m1","content":[{"type":"text","text":"working"}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:29:00.000Z","message":{"id":"a1m2","content":[{"type":"text","text":"a line the harness cut sho
+{"type":"assistant","timestamp":"2026-01-01T00:30:00.000Z","message":{"id":"a1m3","content":[{"type":"text","text":"BRANCH: x"}]}}
+EOF
+printf '%s\n' '{"agentType":"hw-verify","description":"b","toolUseId":"tB","spawnDepth":1}' > "$scratch/fleet/subagents/agent-b1.meta.json"
+cat > "$scratch/fleet/subagents/agent-b1.jsonl" <<'EOF'
+{"type":"user","timestamp":"2026-01-01T00:10:00.000Z","message":{"role":"user","content":"b"}}
+{"type":"assistant","timestamp":"2026-01-01T00:40:00.000Z","message":{"id":"b1m1","content":[{"type":"text","text":"VERDICT: PASS"}]}}
+EOF
+printf '%s\n' '{"agentType":"hw-integrate","description":"c","toolUseId":"tC","spawnDepth":1}' > "$scratch/fleet/subagents/agent-c1.meta.json"
+cat > "$scratch/fleet/subagents/agent-c1.jsonl" <<'EOF'
+{"type":"user","timestamp":"2026-01-01T01:00:00.000Z","message":{"role":"user","content":"c"}}
+{"type":"assistant","timestamp":"2026-01-01T01:20:00.000Z","message":{"id":"c1m1","content":[{"type":"text","text":"MERGED: 1"}]}}
+EOF
+printf '%s\n' '{"agentType":"general-purpose","description":"e","toolUseId":"tE","spawnDepth":2}' > "$scratch/fleet/subagents/agent-e1.meta.json"
+cat > "$scratch/fleet/subagents/agent-e1.jsonl" <<'EOF'
+{"type":"user","timestamp":"2026-01-01T00:15:00.000Z","message":{"role":"user","content":"e"}}
+{"type":"assistant","timestamp":"2026-01-01T00:20:00.000Z","message":{"id":"e1m1","content":[{"type":"text","text":"found"}]}}
+EOF
+
+fout=$(sh "$tool" "$scratch/fleet.jsonl" 2>&1); status=$?
+same 'the fleet census exits 0' 0 "$status"
+fleet() { printf '%s\n' "$fout" | awk -v g="$1" 'on && $1 == g { print; exit } /^fleet$/ { on = 1 }' | tr -s ' '; }
+same 'agents are counted from the transcripts, a refused dispatch is not one, and depth two is set aside' 'dispatched 4 by Agent calls, 3 agents at depth one, 1 deeper' "$(fleet dispatched)"
+same 'the span runs from the first agent to the last' 'span 1.3 h from the first agent'"'"'s start to the last agent'"'"'s end' "$(fleet span)"
+same 'the idle share, and the largest window with nothing in flight' 'idle 25% of the span with no agent in flight, 0.3 h, largest window 20 min' "$(fleet idle)"
+same 'the mean concurrency is agent-minutes over the span' 'mean concurrency 1 agents in flight' "$(fleet mean)"
+same 'one compaction, with the gap on each side of it' ' 2026-01-01T00:50:00Z 5 min since the parent'"'"'s last turn, 10 min to its next dispatch' "$(fleet 2026-01-01T00:50:00Z)"
+same 'a truncated line in an agent transcript is skipped, and the builder still spans 30 minutes' 'hw-build 1 30 5' "$(fleet hw-build)"
+same '  the integrator row is the parent'"'"'s turns per merge' 'hw-integrate 1 20 5' "$(fleet hw-integrate)"
 
 sh "$tool" "$scratch/missing.jsonl" >/dev/null 2>&1; status=$?
 same 'a missing file is refused with usage' 2 "$status"
