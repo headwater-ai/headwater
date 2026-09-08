@@ -182,6 +182,7 @@ exclude_docs: |
 #
 # `pymdown-extensions` is pinned in the CI step beside `mkdocs==1.6.1`, as
 # #431's Done-when requires of any new pip dependency.
+
 # One hook, and the reason it is a hook rather than a copied file.
 #
 # HW-DR-0050 rules that `tools/site-tokens.css` is the one copy of this site's

@@ -32,10 +32,16 @@ otherwise reach it. That is the same reason `.headwater/corpus.json` needs
 
 WHAT HOLDS IT
 
-`tools/site-fragments-fixtures.sh` and the CI step that runs
-`tools/check-site-fragments.py` walk the served bytes. The narrower assertion
-this file needs is that the served copy is byte-identical to the source, and
-`tools/site-tokens-fixtures.sh` is where that lives.
+`tools/refresh-site-tokens.sh --check`, which runs in `.githooks/pre-commit` and
+in the CI step named "Every hand-built page carries the same visual register".
+It fails when `mkdocs-overrides/main.html` does not link `css/site-tokens.css`,
+and when any file under `mkdocs-overrides/` restates a value that
+`tools/site-tokens.css` declares. HW-DR-0050 states both as rulings.
+
+What no gate holds is the narrower assertion that the served copy is
+byte-identical to the source. That is a property of `File.generated` with an
+`abs_src_path`, which hands MkDocs the file rather than a copy of its bytes, and
+it was measured once by hand with `cmp` rather than pinned by a fixture.
 
 NO NEW DEPENDENCY
 
