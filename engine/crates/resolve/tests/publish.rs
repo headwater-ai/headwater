@@ -4926,8 +4926,14 @@ fn a_vendor_writes_under_packages_and_nowhere_else_in_the_consumers_tree() {
         "the vendor installed no doctrine, so the comparison below is vacuous"
     );
 
-    let added: Vec<&String> = after.keys().filter(|key| !before.contains_key(*key)).collect();
-    let removed: Vec<&String> = before.keys().filter(|key| !after.contains_key(*key)).collect();
+    let added: Vec<&String> = after
+        .keys()
+        .filter(|key| !before.contains_key(*key))
+        .collect();
+    let removed: Vec<&String> = before
+        .keys()
+        .filter(|key| !after.contains_key(*key))
+        .collect();
     let changed: Vec<&String> = before
         .iter()
         .filter(|(key, bytes)| after.get(*key).is_some_and(|now| now != *bytes))
