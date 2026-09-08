@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/headwater-ai/headwater/actions/workflows/ci.yml/badge.svg)](https://github.com/headwater-ai/headwater/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/headwater-ai/headwater)](https://github.com/headwater-ai/headwater/releases/latest) [![License](https://img.shields.io/github/license/headwater-ai/headwater)](LICENSE)
 
-**Start here: [Your first governed corpus](docs/tutorials/your-first-governed-corpus.md).** Sixteen steps from an empty directory to a passing check, and it teaches the model rather than the commands. Every step states what you should now see, and `sh .claude/tutorial/fixtures.sh` runs the page against the engine in CI so that no output block on it can go stale quietly. That page, and the rest of the `docs/` tree, is rendered at <https://headwater.tools/>.
+**Start here: [Your first governed corpus](docs/tutorials/your-first-governed-corpus.md).** Sixteen steps from an empty directory to a passing check, and it teaches the model rather than the commands. Every step states what you should now see, and `sh .claude/tutorial/fixtures.sh` runs the page against the engine in CI so that no output block on it can go stale quietly. That page, and the rest of the `docs/` tree, is rendered at <https://headwater.tools/>. The specification itself is indexed at [`docs/spec/README.md`](docs/spec/README.md), which `headwater generate` writes from the documents themselves in the reading order this corpus derives from its own relations.
 
 ## Obtaining a named version
 
@@ -40,10 +40,6 @@ Headwater's premise: **make the structure of the corpus a machine-readable contr
 2. **The corpus is a graph.** Documents are typed nodes; front-matter references are typed edges. Every validation rule is a constraint on that graph, every query is a traversal of it, and every derived artifact (indexes, site navigation, AI rules, agent context) is a projection of it.
 
 3. **AI assistants are readers in their own right, and measured ones.** The corpus feeds agents at intent time, read time, write time, and review time — and the system probes whether that context actually changes agent behavior, rather than assuming it does.
-
-## Read the specification
-
-[`docs/spec/README.md`](docs/spec/README.md) is the index of the specification shelf: every document the corpus checks, with the summary each one declares, in the reading order this corpus derives from its own relations rather than the sequence number in each file name. It is generated. `headwater generate` writes it from the front matter of the documents themselves, and `headwater generate --check` fails the build when the two drift apart. A table of the specification documents used to sit here, kept aligned by hand against the files it described. That copy is the defect [principle 2](docs/spec/00-vision-and-scope.md#design-principles) names, and deleting it is the remedy [13 — Open obligations](docs/spec/13-open-obligations.md#a-human-maintains-this-list-by-hand) asks for.
 
 ## License
 
