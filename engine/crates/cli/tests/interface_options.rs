@@ -254,7 +254,9 @@ fn hw_dr_0033_cites_the_ruling_that_moved_it_and_drops_the_reversed_claim() {
         paragraph.contains(link),
         "the paragraph links nothing to the ruling that reversed it:\n{paragraph}"
     );
-    let ruling = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/decisions").join(link);
+    let ruling = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../docs/decisions")
+        .join(link);
     let ruling = std::fs::read_to_string(&ruling)
         .unwrap_or_else(|e| panic!("the paragraph links {}: {e}", ruling.display()));
     assert!(
