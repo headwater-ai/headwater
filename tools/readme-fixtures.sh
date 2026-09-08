@@ -381,6 +381,14 @@ link_judge() {
 # The region is bounded at `## License` because the citation in that section is
 # a licensing fact and not a reading path, and because the boundary has to be
 # read out of the page rather than written down as a line number here.
+#
+# The target is NORMALIZED before it is read, and the first cut of this judge
+# was not. `](docs/spec/x.md)` and `](./docs/spec/x.md)` are the same file and
+# GitHub renders both, so a judge that tests the raw string reports the second
+# one clean — and `./`-prefixed links into this shelf already exist elsewhere in
+# this corpus, so that is a spelling somebody reaches for rather than one nobody
+# would find. `link_judge` above resolves a path before it judges it; this one
+# has to do the same or it holds a spelling instead of a claim.
 spec_link_judge() {
     slj_file=$1
     slj_stop=$(awk '/^##[ \t]+License[ \t]*$/ { print NR; exit }' "$slj_file")
@@ -392,11 +400,12 @@ spec_link_judge() {
     fi
     links_of "$slj_file" | awk -F'\t' -v stop="$slj_stop" '
         $1 >= stop { next }
-        $2 !~ /^docs\/spec\// { next }
         {
             path = $2
             sub(/#.*$/, "", path)
+            while (sub(/^\.\//, "", path)) ;
         }
+        path !~ /^docs\/spec\// { next }
         path == "docs/spec/README.md" { index_seen++; next }
         { print $1 ": " $2 "  a specification part above `## License`" }
         END { print "TAIL " index_seen + 0 }
@@ -1192,6 +1201,18 @@ same "  and a page whose only path into the shelf is the index is clean" "" "$go
 set -- $(spec_link_judge "$scratch/spec.d/folded.md" | tail -1)
 same "  counting both index occurrences, fragment or none" 2 "$1"
 same "  and reading the heading off the page rather than a written line number" 3 "$2"
+printf '%s\n' \
+    'Index: [the shelf](./docs/spec/README.md).' \
+    '' \
+    'And a part: [principle 2](./docs/spec/00-vision-and-scope.md#design-principles).' \
+    '' \
+    '## License' >"$scratch/spec.d/dotslash.md"
+got=$(spec_link_judge "$scratch/spec.d/dotslash.md" | sed '$d' | tr '\n' '|')
+same "  a \`./\` in front of the target hides nothing" \
+    "3: ./docs/spec/00-vision-and-scope.md#design-principles  a specification part above \`## License\`|" \
+    "$got"
+set -- $(spec_link_judge "$scratch/spec.d/dotslash.md" | tail -1)
+same "  and the index is still recognized through one" 1 "$1"
 printf '%s\n' 'No heading here, and [a part](docs/spec/09-decisions.md).' >"$scratch/spec.d/unbounded.md"
 got=$(spec_link_judge "$scratch/spec.d/unbounded.md" | sed '$d' | tr '\n' '|')
 same "  a page with no \`## License\` heading is refused rather than passed" \
