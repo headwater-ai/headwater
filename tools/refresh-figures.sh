@@ -136,6 +136,15 @@
 #                                                 exit 1 on any disagreement
 #   sh tools/refresh-figures.sh --print    measure, and print the table
 #
+# EXIT STATUS
+#
+#   0  the pages agree with the run, or the run wrote them
+#   1  a page and the run disagree, or a figure reached no page
+#   2  no engine of either profile is built
+#   3  the engine is older than the engine sources, so this cannot tell. It
+#      writes nothing in any mode, and it names the build command rather than
+#      itself. HW-DR-0039 rules the three outcomes.
+#
 set -eu
 
 MODE=write
@@ -163,6 +172,39 @@ if [ ! -x "$HW" ]; then
   echo "refresh-figures.sh: no engine of either profile under $ROOT/engine/target" >&2
   echo "  build it: cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
   exit 2
+fi
+
+# The binary must not be behind the engine sources beside it. Nothing else in
+# this tree asks that question, and the failure it lets through is the one this
+# script is least able to survive: a binary that predates a rule cannot see the
+# rule, counts one fewer wired rule than the page correctly states, and calls
+# every figure that reads the findings stale. The page is right and the report
+# is wrong. In `write` mode the script then puts the wrong number on the page.
+# Measured on 6c12f87: a binary a few hours old reported 12 stale figures over
+# 3 pages, and a rebuild at that same commit reported none.
+#
+# The guard sits above the mode split on purpose, so `--check`, `--print` and
+# the writing path cannot disagree about whether a run is trustworthy. It asks
+# the same mtime question `cargo` asks, so a tree that `cargo build` calls fresh
+# always passes here. `engine/target` is pruned: it holds the binary itself and
+# whatever the build wrote after it. HW-DR-0039 rules the three outcomes, and
+# `3` is this one — `1` is a disagreement and `2` is no engine of either profile.
+#
+# `find` runs inside a command substitution rather than as a test, because
+# `set -e` would end the script on a non-zero status before any of this printed.
+BEHIND=$(find engine -name target -prune -o \
+    \( -name '*.rs' -o -name 'Cargo.toml' -o -name 'Cargo.lock' \) \
+    -newer "$HW" -print 2>/dev/null | sort | head -3)
+if [ -n "$BEHIND" ]; then
+  echo "refresh-figures.sh: cannot tell whether a figure is stale. The engine" >&2
+  echo "  under engine/target is older than the engine sources beside it, so a" >&2
+  echo "  run of it measures this corpus with an engine the tree has moved past." >&2
+  echo "  A figure it calls stale may be a figure this corpus holds." >&2
+  echo "  newer than that binary:" >&2
+  printf '%s\n' "$BEHIND" | sed 's/^/        /' >&2
+  echo "  Build the engine again, then run this again:" >&2
+  echo "        cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
+  exit 3
 fi
 
 WORK=$(mktemp -d)

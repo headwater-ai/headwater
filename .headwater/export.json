@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 401,
-      "carried": 401,
+      "in the graph": 403,
+      "carried": 403,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 614,
-      "carried": 614,
+      "in the graph": 615,
+      "carried": 615,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -7484,6 +7484,33 @@
         }
       },
       {
+        "path": "docs/obligations/0179-the-commit-gate-checks-prose-with-a-binary-it-never-compares-against-the-engine-sources.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0179",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0179",
+          "status": "current",
+          "status_since": "2026-09-08",
+          "summary": "The figures clause of the commit gate refuses when its binary is behind the engine sources, and the prose clause above it asks nothing.",
+          "last_verified": "2026-09-08",
+          "title": "The commit gate checks prose with a binary it never compares against the engine sources",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              ".githooks/pre-commit"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
@@ -8635,6 +8662,11 @@
       {
         "anchor_kind": "code_path",
         "id": ".githooks/merge-regenerate",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".githooks/pre-commit",
         "resolver": "source-tree"
       },
       {
@@ -14176,6 +14208,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/check/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0179-the-commit-gate-checks-prose-with-a-binary-it-never-compares-against-the-engine-sources.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".githooks/pre-commit",
           "resolver": "source-tree"
         }
       },

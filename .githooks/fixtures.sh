@@ -85,6 +85,14 @@ terminal="docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-ch
 reset() {
     git -C "$scratch" reset -q --hard HEAD
     git -C "$scratch" clean -qfd
+    # The staged binary was built from the sources this commit holds, so it is
+    # the newest thing under `engine/` in a reset tree. Say so, because `git
+    # reset --hard` writes a restored file with the mtime of the reset: the
+    # cases that append to and remove `engine/crates/check/src/change.rs` above
+    # leave that file dated after the binary, and the figures clause now reads
+    # exactly that mtime question. Without this line every clause below the
+    # first of those would meet the refusal that clause plants.
+    touch "$scratch/engine/target/release/headwater"
 }
 
 move() {
@@ -603,6 +611,63 @@ sed -i 's/put("rules.fired"/put("rules.firedX"/' "$scratch/tools/refresh-figures
 out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
 judge 'a clock-partition entry that no run measures is refused' 1 "$status" \
     'the clock partition names rules.fired, which this run does not measure' "$out"
+
+# The engine behind the tree. Every case above measures with whatever binary is
+# under `engine/target/`, and until #679 nothing asked whether that binary was
+# older than the engine sources beside it. A binary that predates a rule counts
+# one fewer wired rule than the page correctly states, so it calls a correct
+# page stale, and the repair the hook then prints writes the wrong figure over
+# the right one. Measured on 6c12f87: a binary a few hours behind reported 12
+# stale figures across 3 pages, and a rebuild at the same commit reported 0.
+#
+# The control comes first and it is what makes the rest evidence. The staged
+# binary is byte-identical to the one this suite runs, so a run of it in the
+# behind state measures the same 34 figures and finds nothing stale. Without
+# the control, a case that asserted only the refusal would pass over a gate
+# that had never looked at an mtime at all.
+reset
+out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+judge 'a binary newer than the engine sources measures the pages and finds them current' \
+    0 "$status" '0 stale' "$out"
+
+# The provocation is the real cause rather than a stand-in: you pulled a change
+# to the engine and did not build it again.
+touch "$scratch/engine/crates/cli/src/main.rs"
+out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+judge 'an engine source newer than the binary makes the check refuse to measure' \
+    3 "$status" 'cannot tell whether a figure is stale' "$out"
+# The command is carried whole rather than truncated at the crate name.
+# `tools/build-declaration-fixtures.sh` reads every release build of the CLI in
+# the tracked tree and requires `--locked` on each, and a prefix written here
+# for brevity is an unflagged occurrence to that gate. It is also the weaker
+# assertion: the flag is part of what the refusal has to tell the author.
+judge 'and the refusal names the build command' 3 "$status" \
+    'cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked' "$out"
+refute 'and it prints no command that measures again' \
+    'sh tools/refresh-figures.sh' "$out"
+refute 'and it names no figure as stale' 'stale census.seen in' "$out"
+
+# The gate reads the status rather than the text. It used to collapse every
+# non-zero into one sentence about the pages and one instruction to measure
+# again, and that instruction is what did the damage.
+out=$(gate); status=$?
+judge 'the gate refuses the commit and blames the engine rather than the pages' \
+    1 "$status" 'the engine that would measure them is older than the engine sources' "$out"
+refute 'and it does not say the pages disagree with a fresh run' \
+    'disagrees with a fresh run' "$out"
+refute 'and it does not tell the author to measure again' \
+    'sh tools/refresh-figures.sh' "$out"
+
+# The writing path agrees with `--check`, which is the clause that stops the
+# corruption. A refresh in this state must not write a figure that a `--check`
+# in the same state refused to trust.
+out=$(cd "$scratch" && sh tools/refresh-figures.sh 2>&1); status=$?
+judge 'the writing path refuses in the same state' 3 "$status" \
+    'cannot tell whether a figure is stale' "$out"
+(cd "$scratch" && git diff --quiet -- site/); status=$?
+judge 'and it wrote no figure into site/' 0 "$status" '' 'site/ is unmodified'
+# `reset` puts the binary back in front of the sources, and every clause below
+# opens with one, so the state this case plants reaches none of them.
 
 # A finding whose location line lands on the width boundary, printed whole.
 #
