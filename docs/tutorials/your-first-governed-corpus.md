@@ -74,7 +74,7 @@ printf '# Store attempts in Postgres\n\nThe queue keeps every delivery attempt i
 postgres-note.md
 ```
 
-You now hold a repository with documentation in it and nothing that says what the documentation is. Every adopter starts here.
+A repository with documentation in it, and nothing that says what the documentation is. Every adopter starts here.
 
 ### Step 2 — Ask the engine what it can read off the tree
 
@@ -100,7 +100,7 @@ Answer them in .headwater/overlay.yml, then run `headwater taxonomy resolve` and
 
 **Check.** `ls .headwater` prints `overlay.yml` and `taxonomy.yml`.
 
-Read the two headings in that output. The first names what a tree states about itself: the **corpus** is `docs`, because that directory holds the most Markdown. The second names what no tree states, and those three questions are the interview. The verb asks about your documents and never about the model, which is the difference that [spec 7](../spec/07-distribution-and-federation.md) draws and the reason this tutorial exists.
+The first heading names what a tree states about itself: the **corpus** is `docs`, because that directory holds the most Markdown. The second names what no tree states, and those three questions are the interview. The verb asks about your documents, and never about the model — the difference [spec 7](../spec/07-distribution-and-federation.md) draws.
 
 ### Step 3 — Copy the package into your tree
 
@@ -120,9 +120,9 @@ taxonomy.yml
 
 A **package** carries a taxonomy: the kinds, the facets, the shelves and the rules. `headwater/standard` is the base package, and the taxonomy it declares is deliberately small. Two of the five entries are not taxonomy at all. `assemblies/` holds the publisher recipes this package ships, and `doctrine/` holds the prose that explains them to a person. Nothing you run in this tutorial reads either one. Nothing in this engine fetches a package over a network, so a package arrives in your tree by a copy that you can read.
 
-Step 2 named two routes, and this step took the first. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. It refuses a directory that somebody maintains by hand. What you copied is a package source directory, so no verb of this engine vendored anything. The difference between the two routes returns in step 16.
+Step 2 named two routes, and this step took the first. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. It refuses a directory that somebody maintains by hand. What you copied is a package source directory rather than a published artifact, so no verb of this engine vendored anything. Step 16 says what that costs.
 
-This copy costs nothing beyond `cp -r`, because the clone in *Before you start* already holds `taxonomy-source`. A reader who wants only the package, pinned to a release instead of the moving default branch, does not need `git` at all. `tools/headwater-bootstrap.sh` fetches one package from a release tag and hands it to `headwater taxonomy vendor`, the second route. *Where to go next* runs it.
+This copy costs nothing beyond `cp -r`, because the clone already holds `taxonomy-source`. A reader who wants only the package, pinned to a release instead of the moving branch, does not need `git` at all. `tools/headwater-bootstrap.sh` fetches one from a release tag and hands it to `headwater taxonomy vendor`, the second route. *Where to go next* runs it.
 
 ### Step 4 — Meet the first refusal
 
@@ -137,7 +137,7 @@ headwater: the taxonomy did not resolve, so no lock is possible
 
 **Check.** `echo $?` prints `1`.
 
-`headwater init` wrote `version: 0.0.0`, because it had no package in front of it to read a number from. The comment it left above that line names the two ways a package arrives, a copy or a vendored artifact. It also says the version comes from the package itself, which is where the number in the next step comes from. A refusal here is the design and not a fault. A **lock** is a validated taxonomy, so a taxonomy that does not validate produces no lock at all.
+A refusal here is the design and not a fault. A **lock** is a validated taxonomy, so a taxonomy that does not validate produces no lock at all. `headwater init` wrote `version: 0.0.0`, because it had no package in front of it to read a number from.
 
 ### Step 5 — Pin the version, and meet the second refusal
 
@@ -175,7 +175,7 @@ add:
 
 **Check.** `tail -2 .headwater/overlay.yml` prints those two lines back.
 
-Resolve again, now that the overlay answers the question the refusal asked.
+The overlay answers the question the refusal asked. Resolve again.
 
 ```
 headwater taxonomy resolve
@@ -219,7 +219,7 @@ census
 
 **Check.** `headwater check --strict > /dev/null 2>&1; echo $?` prints `0`.
 
-**This is the most important state in the tutorial.** The run is green, and it is green because it checked nothing. One file was seen, none was classified, and none was checked. A green run over an untyped corpus is a measurement of your taxonomy rather than of your documents. Read the census before you read the verdict, on every run, forever.
+**The most important state in the tutorial.** The run is green, and it is green because it checked nothing: one file seen, none classified, none checked. A green run over an untyped corpus measures your taxonomy rather than your documents. Read the census before the verdict, on every run, forever.
 
 ### Step 8 — Type the document
 

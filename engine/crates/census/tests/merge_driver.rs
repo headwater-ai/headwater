@@ -180,15 +180,17 @@ fn executable(repo: &Path, path: &str, body: &str) {
     std::fs::set_permissions(&full, mode).expect("the executable bit");
 }
 
-/// Plant the engine and the three scripts the gates run, each of them recording
+/// Plant the engine and the four scripts the gates run, each of them recording
 /// that it ran.
 ///
-/// `tools/refresh-crawler-files.sh` and `tools/refresh-site-tokens.sh` are here
-/// for a reason worth stating. `.githooks/pre-commit` runs both, and it runs
-/// before `commit-msg` on a `git commit` that finishes a merge. Absent, they
-/// exit 127 and `pre-commit` refuses the commit while reporting a stale derived
-/// file — a refusal that is real, is about something else, and would let the
-/// case below pass with the gate under test never reached.
+/// `tools/refresh-crawler-files.sh`, `tools/refresh-site-tokens.sh` and
+/// `tools/render-tutorial.py` are here for a reason worth stating.
+/// `.githooks/pre-commit` runs all three, and it runs before `commit-msg` on a
+/// `git commit` that finishes a merge. Absent, they exit 127 (the two shell
+/// scripts) or make `pre-commit`'s own `python3 ... --check` fail with no such
+/// file (the Python one), and `pre-commit` refuses the commit while reporting a
+/// stale derived file — a refusal that is real, is about something else, and
+/// would let the case below pass with the gate under test never reached.
 fn plant_producers(repo: &Path, generate_exit: i32) {
     let calls = repo.join("producer-calls");
     let calls = calls.display().to_string();
@@ -220,6 +222,20 @@ fn plant_producers(repo: &Path, generate_exit: i32) {
             &format!("#!/bin/sh\nprintf '%s\\n' \"{script} $*\" >> \"{calls}\"\nexit 0\n"),
         );
     }
+    // `render-tutorial.py` is called as `python3 tools/render-tutorial.py
+    // --check` rather than executed directly, so its planted body has to be
+    // valid Python and not the shell the three scripts above take.
+    executable(
+        repo,
+        "tools/render-tutorial.py",
+        &format!(
+            "#!/usr/bin/env python3\n\
+             import sys\n\
+             with open({calls:?}, 'a') as f:\n\
+             \x20\x20\x20\x20f.write('tools/render-tutorial.py ' + ' '.join(sys.argv[1:]) + '\\n')\n\
+             sys.exit(0)\n"
+        ),
+    );
 }
 
 /// Every producer invocation the gates made, in order.
