@@ -301,8 +301,31 @@ impl Payload {
     /// piece of version arithmetic this engine has. A second reading of a
     /// version string here could disagree with the one `requires_engine` and
     /// `--to` are read by.
+    ///
+    /// # Why the two ranges are not the whole predicate
+    ///
+    /// The two ranges say which versions the steps were written against, and
+    /// nothing makes them disjoint: `from: ">=1 <3"` with `to: ">=2 <3"` is a
+    /// sound thing to publish. Read one against each end alone, and such a
+    /// payload holds for a move from a version to itself and for a move down,
+    /// because `2.5.0` satisfies both ranges. A migration runs forward only,
+    /// so the relation between the two arguments is part of the question.
+    ///
+    /// # Why the ranges are read first
+    ///
+    /// [`release::satisfies`] parses its version argument, so an `Err` it
+    /// returns names the range the version failed under, which names the file
+    /// a caller has to edit. `headwater_compat::migrate::transition` relies on
+    /// that: it lets an unreadable version through so that this predicate
+    /// owns the message. Reading the order first would refuse the same string
+    /// with a message that names no file. A version that reached the relation
+    /// therefore parses, but this propagates rather than unwraps, because a
+    /// panic is not the refusal a publisher can act on.
     pub fn covers(&self, from: &str, to: &str) -> Result<bool, String> {
-        Ok(release::satisfies(&self.from, from)? && release::satisfies(&self.to, to)?)
+        if !(release::satisfies(&self.from, from)? && release::satisfies(&self.to, to)?) {
+            return Ok(false);
+        }
+        Ok(release::parts(to)? > release::parts(from)?)
     }
 }
 
@@ -919,8 +942,14 @@ mod tests {
     use super::*;
 
     fn payload(steps: &str) -> Result<Payload, Vec<PayloadError>> {
+        payload_over(">=1 <2", ">=2 <3", steps)
+    }
+
+    /// The same payload over two ranges the case states, because the ranges a
+    /// publisher writes are not always the disjoint pair `payload` hardcodes.
+    fn payload_over(from: &str, to: &str, steps: &str) -> Result<Payload, Vec<PayloadError>> {
         read(
-            &format!("migration:\n  from: \">=1 <2\"\n  to: \">=2 <3\"\nsteps:\n{steps}"),
+            &format!("migration:\n  from: \"{from}\"\n  to: \"{to}\"\nsteps:\n{steps}"),
             "migrations/1-to-2.yml",
         )
     }
@@ -1141,6 +1170,37 @@ mod tests {
         assert!(built.covers("1.4.0", "2.0.0").expect("both read"));
         assert!(!built.covers("2.0.0", "3.0.0").expect("both read"));
         assert!(!built.covers("0.9.0", "2.0.0").expect("both read"));
+    }
+
+    /// Two ranges that overlap do not order the move between them.
+    ///
+    /// A publisher may write a `from` and a `to` that share versions, which
+    /// nothing refuses and nothing should: the ranges say which versions the
+    /// steps were written against, not which direction the move runs in. So
+    /// the two range readings alone hold for a move from a version to itself
+    /// and for a move down, and the predicate has to relate its two arguments
+    /// rather than read each one against its own range.
+    #[test]
+    fn a_payload_covers_no_move_that_is_not_forward() {
+        let built = payload_over(
+            ">=1 <3",
+            ">=2 <3",
+            "  - subject: facet_value\n    facet: status\n    from: draft\n    to: [outline]\n    \
+             because: why\n",
+        )
+        .expect("it reads");
+        assert!(
+            built.covers("1.4.0", "2.0.0").expect("both read"),
+            "the move the payload is for"
+        );
+        assert!(
+            !built.covers("2.5.0", "2.5.0").expect("both read"),
+            "a version does not migrate to itself"
+        );
+        assert!(
+            !built.covers("2.5.0", "2.1.0").expect("both read"),
+            "a payload runs forward only"
+        );
     }
 
     /// One scope over one tree, for the cases that are not about the two ends.

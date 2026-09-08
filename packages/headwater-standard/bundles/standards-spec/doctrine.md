@@ -16,7 +16,7 @@ What runs between the four is traceability, and it is not governance. The standa
 
 His argument for the split is sequencing rather than audience. "The most important thing is to nail down the user experience." The choice of programming language is not worth arguing about until the product's behavior is settled. The functional document comes first because the cheapest decisions are the ones taken before any code exists.
 
-**This repository already wrote the same ladder down.** [Spec 2](../../spec/02-taxonomy-model.md#contract-sidecars-the-specification-as-oracle) sketches a contract sidecar over a layout of `specifications/ingest/parser/functional.md` and `technical.md`. It glosses the first as "prose: what it does and why — canonical for meaning". It glosses the second as "prose: how it is realized". That is in-corpus prior art, and it arrived from the sidecar question rather than from any of the three sources above. Four independent arrivals at one shape is the strongest argument this entry has for criterion 1.
+**This repository already wrote the same ladder down.** [Spec 2](https://github.com/headwater-ai/headwater/blob/main/docs/spec/02-taxonomy-model.md#contract-sidecars-the-specification-as-oracle) sketches a contract sidecar over a layout of `specifications/ingest/parser/functional.md` and `technical.md`. It glosses the first as "prose: what it does and why — canonical for meaning". It glosses the second as "prose: how it is realized". That is in-corpus prior art, and it arrived from the sidecar question rather than from any of the three sources above. Four independent arrivals at one shape is the strongest argument this entry has for criterion 1.
 
 ## What the tradition converges on
 
@@ -40,7 +40,7 @@ His argument for the split is sequencing rather than audience. "The most importa
 
 **The names are the plain words.** `standard`, `functional_spec` and `technical_spec`. `governing_standard` was considered and refused. Spec 2's rigidity rule refuses a kind named with a bare phase adjective and says nothing against a plain noun. The hedge would be this entry disagreeing with the tradition it models. `srs`, `sdd` and `requirements_spec` were refused for naming one standards body.
 
-**Two kinds serve one purpose, and that is legal.** [Spec 2](../../spec/02-taxonomy-model.md#purpose-is-declared-not-implied) says several kinds may serve one purpose, and it refuses only a kind that serves two unrelated purposes. The precedent inside this library is exact. The design-spec entry gives `review_prompt` and `review_record` the one `evidence` purpose, and it splits them because a relation runs between them. Here `realizes` runs between the two specification kinds, and a relation endpoint names a kind.
+**Two kinds serve one purpose, and that is legal.** [Spec 2](https://github.com/headwater-ai/headwater/blob/main/docs/spec/02-taxonomy-model.md#purpose-is-declared-not-implied) says several kinds may serve one purpose, and it refuses only a kind that serves two unrelated purposes. The precedent inside this library is exact. The design-spec entry gives `review_prompt` and `review_record` the one `evidence` purpose, and it splits them because a relation runs between them. Here `realizes` runs between the two specification kinds, and a relation endpoint names a kind.
 
 ## The relations, and who creates each edge
 
@@ -48,7 +48,7 @@ His argument for the split is sequencing rather than audience. "The most importa
 
 ### `regulates`, from the standard to the specification
 
-The direction is forced rather than chosen, and it is the sharpest point of this entry. [Spec 2](../../spec/02-taxonomy-model.md#reading-precedence-is-derived) derives reading precedence for the governance family in one clause: "On governance between two documents, the source governs." An edge spelled `conforms_to`, from the specification to the standard, would therefore derive the precedence backwards. The specification would govern the reading of the standard that binds it, and an agent that pruned by precedence would read the wrong document first.
+The direction is forced rather than chosen, and it is the sharpest point of this entry. [Spec 2](https://github.com/headwater-ai/headwater/blob/main/docs/spec/02-taxonomy-model.md#reading-precedence-is-derived) derives reading precedence for the governance family in one clause: "On governance between two documents, the source governs." An edge spelled `conforms_to`, from the specification to the standard, would therefore derive the precedence backwards. The specification would govern the reading of the standard that binds it, and an agent that pruned by precedence would read the wrong document first.
 
 The name avoids two addresses the base holds. `governs` runs from a document to a `code_path`, and `constrains` runs from a decision to a decision. Both declare their endpoints as lists, and an `add` cannot reach into a list that exists, so neither is reachable.
 
@@ -56,7 +56,7 @@ The name avoids two addresses the base holds. `governs` runs from a document to 
 
 ### `realizes`, from the technical specification to the functional one
 
-The family is `derivation` and the nucleus is the functional specification. This is where the entry earns its keep, and [spec 2](../../spec/02-taxonomy-model.md#relation-families-and-nuclearity) lists four things nuclearity buys. Three of them land here exactly.
+The family is `derivation` and the nucleus is the functional specification. This is where the entry earns its keep, and [spec 2](https://github.com/headwater-ai/headwater/blob/main/docs/spec/02-taxonomy-model.md#relation-families-and-nuclearity) lists four things nuclearity buys. Three of them land here exactly.
 
 - **Lifecycle inheritance.** A technical specification whose functional specification is superseded is stale the moment the succession lands, and the engine sees it structurally with no separate check.
 - **Context pruning.** An agent under a context budget drops the technical specification and keeps the functional one. That is the right way round, because the functional document is the one every source treats as canonical for meaning.
@@ -95,7 +95,7 @@ This is a full entry rather than a partial one. It declares kinds, shelves, a pu
 | `functional_spec` | `behavior`, from the base | what does this component do, and what may I rely on |
 | `technical_spec` | `behavior`, from the base | what does this component do, at the level of the realization |
 
-`purposes.constraint` is the one new purpose. [Spec 2](../../spec/02-taxonomy-model.md) already uses the word for it, in the product-suite column of its worked example. No entry and no package declares the address.
+`purposes.constraint` is the one new purpose. [Spec 2](https://github.com/headwater-ai/headwater/blob/main/docs/spec/02-taxonomy-model.md) already uses the word for it, in the product-suite column of its worked example. No entry and no package declares the address.
 
 **One correction, because the issue that asked for this entry stated the core wrongly.** The framing said the immutable core requires `rationale`, `constraint`, `procedure` and `behavior`. It does not. `core.requires` in the base package names the three facet roles, the purposes `rationale` and `behavior`, and a lifecycle-sensitive succession family. `procedure` is declared only by this repository's own consumer overlay, which is not an entry. `constraint` was declared nowhere at all before this entry.
 
@@ -107,7 +107,7 @@ This is a full entry rather than a partial one. It declares kinds, shelves, a pu
 
 **A normative-keyword voice regime.** The worked example promises one and no declaration in this language holds one. [Finding 4](#findings) states it. All three kinds bind the base's `declarative` regime instead.
 
-**A `standard_class` facet.** A facet that names a standard as internal, industry or regulatory reads well and no check, projection, routing rule or expectation would read it. The relevance canon of [spec 2](../../spec/02-taxonomy-model.md#facet-acceptance-tests) refuses a facet that nothing reads, and `taxonomy validate` enforces it.
+**A `standard_class` facet.** A facet that names a standard as internal, industry or regulatory reads well and no check, projection, routing rule or expectation would read it. The relevance canon of [spec 2](https://github.com/headwater-ai/headwater/blob/main/docs/spec/02-taxonomy-model.md#facet-acceptance-tests) refuses a facet that nothing reads, and `taxonomy validate` enforces it.
 
 **A shelf layout.** Neither shelf declares one. [Finding 8](#findings) records the reason.
 
@@ -131,7 +131,7 @@ Criterion 4 asks for at least one real or realistic corpus that the entry types.
 
 **[Beacon](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/standards-spec/fixtures/README.md), a realistic corpus.** Two standards on the `standards` shelf and six component specifications on the `component_specs` shelf, with planted defects that the fixture README names one by one. Beacon is invented, and four entries of this library share it, so a reader can hold four traditions over one project.
 
-**[n8n](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/standards-spec/fixtures/n8n/README.md), a real one.** Seven documents from `n8n-io/n8n`, pinned at `b0550cb3cb4d1752546a69056c55eccfb9111a12` on `master`, copied with a front-matter block added and every body byte-identical: six of the rule files that n8n's AI code reviewer loads on every pull request, and the README that files them. These are documents that decide what a reviewer comments on, which is what `purposes.constraint` names. [HW-EVAL-n8n-worked-example](../../evaluations/n8n-worked-example.md) is the report, and four of its results belong here.
+**[n8n](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/standards-spec/fixtures/n8n/README.md), a real one.** Seven documents from `n8n-io/n8n`, pinned at `b0550cb3cb4d1752546a69056c55eccfb9111a12` on `master`, copied with a front-matter block added and every body byte-identical: six of the rule files that n8n's AI code reviewer loads on every pull request, and the README that files them. These are documents that decide what a reviewer comments on, which is what `purposes.constraint` names. [HW-EVAL-n8n-worked-example](https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/n8n-worked-example.md) is the report, and four of its results belong here.
 
 **This entry as it ships types none of that corpus, and the strict run over it exits 0.** The shelf for `kinds.standard` is `standards` at `docs/standards/**`, and n8n keeps these documents at `.agents/review-rules/`. All seven go untyped with the reason `no shelf pattern claims this path`, no rule instantiates, and `headwater check --strict` exits 0. This is the design-spec entry's first result arriving a second time from a second kind, and it is now a property of the library rather than of one entry.
 
@@ -139,13 +139,13 @@ Criterion 4 asks for at least one real or realistic corpus that the entry types.
 
 **The homogeneous shelf resolves cleanly here, and it could not for `design_spec`.** The design-spec entry was forced into a heterogeneous shelf with one admitted kind, which its own fixture README calls a contradiction, because `design_spec` requires the facet `doc_type` and a homogeneous shelf refuses a document that restates its placement. `kinds.standard` requires no facet and forbids `spec_layer`, so `homogeneous: true, kind: standard` resolves with nothing to declare. Same library, second entry, and the contradiction is gone. The forced exclusion is gone with it: n8n's rule files are under `.agents/`, so the vendored package under `packages/` sits outside the corpus root and no exclusion is needed.
 
-**`obligations.OB-SS-1` carries `class: coherence`, and this corpus is its first member anywhere.** [Spec 4](../../spec/04-assurance-model.md) and [HW-OBL-0114](../../obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md) both record that this repository's own register declares no coherence-class obligation, so a sweep here discharges nothing. Selecting this entry over a real corpus gives that class its first member in the library. It still discharges nothing, because OB-SS-1's disposition is `unverifiable` and no control names a `sweep:` mechanism. The gap moves from hypothetical to visible, which is what a worked instance is for.
+**`obligations.OB-SS-1` carries `class: coherence`, and this corpus is its first member anywhere.** [Spec 4](https://github.com/headwater-ai/headwater/blob/main/docs/spec/04-assurance-model.md) and [HW-OBL-0114](https://github.com/headwater-ai/headwater/blob/main/docs/obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md) both record that this repository's own register declares no coherence-class obligation, so a sweep here discharges nothing. Selecting this entry over a real corpus gives that class its first member in the library. It still discharges nothing, because OB-SS-1's disposition is `unverifiable` and no control names a `sweep:` mechanism. The gap moves from hypothetical to visible, which is what a worked instance is for.
 
 ## Findings
 
-All eight below go to [13 — Open obligations](../../spec/13-open-obligations.md) as a separate change after this entry merges. That is the rule the [library index](../README.md#where-a-finding-goes) states. Finding 6 was found by running the engine rather than by reading the specification.
+All eight below go to [13 — Open obligations](https://github.com/headwater-ai/headwater/blob/main/docs/spec/13-open-obligations.md) as a separate change after this entry merges. That is the rule the [library index](../README.md#where-a-finding-goes) states. Finding 6 was found by running the engine rather than by reading the specification.
 
-**1. Tier 2 — the tradition's registered-deviation check cannot be declared.** [Spec 2](../../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) names one check of four that the decision-relation vocabulary brings:
+**1. Tier 2 — the tradition's registered-deviation check cannot be declared.** [Spec 2](https://github.com/headwater-ai/headwater/blob/main/docs/spec/02-taxonomy-model.md#the-decision-relation-vocabulary) names one check of four that the decision-relation vocabulary brings:
 
     a `does_not_comply_with` edge that points at a `current` standard, which is a registered deviation and must carry an owner and an expiry
 
@@ -161,6 +161,6 @@ The relation is defined-but-unenabled package content, reached by `$package.opti
 
 **6. Tier 2 — an unknown discriminator value removes a document from every check, and no gate reports it.** This one was measured rather than reasoned. The fixture corpus plants `spec_layer: interface_spec` on one document. Kind resolution stops, the census carries the row, and no rule instantiates over the document. A run with that document alone reports 0 findings and `headwater check --strict` exits 0. `engine/crates/check/src/coverage.rs` states the ruling deliberately, so this is not an engine defect. It is a property of every heterogeneous shelf, and the design-spec entry's `spec_series` shelf has carried it since the library opened. A typo in one metadata value is indistinguishable from a clean document at the gate. The [fixture README](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/standards-spec/fixtures/README.md#planted-defect-4-reports-nothing-and-that-is-the-measurement) holds the run.
 
-**7. Tier 3 — the bundle-set sketch names `standards` and this entry is `standards-spec`.** [Spec 7](../../spec/07-distribution-and-federation.md) lists `standards: {requires: []}` and `compliance: {requires: [standards, evidence]}` in its bundle-set example. Spec 13 says the bundle set waits on a first adopter, and the library index says every admitted entry is a revision of that guess. This entry is that revision for the standards cluster, and it is named for the whole ladder rather than for one shelf. The two must not drift.
+**7. Tier 3 — the bundle-set sketch names `standards` and this entry is `standards-spec`.** [Spec 7](https://github.com/headwater-ai/headwater/blob/main/docs/spec/07-distribution-and-federation.md) lists `standards: {requires: []}` and `compliance: {requires: [standards, evidence]}` in its bundle-set example. Spec 13 says the bundle set waits on a first adopter, and the library index says every admitted entry is a revision of that guess. This entry is that revision for the standards cluster, and it is named for the whole ladder rather than for one shelf. The two must not drift.
 
 **8. Tier 3 — assumptions this draft took.** Neither shelf declares a `layout`, because a layout has no form for a per-component subdirectory and the tradition's files are `<component>/functional.md`. `volatility: stable` on `spec_layer` is the same assumption the design-spec entry recorded for `doc_type`. Whether an entry may declare an identifier scheme with no namespace still has two live patterns in this library and no ruling. The two expectation windows are judgments rather than measurements. The section on assumptions above states each one with its reasoning.

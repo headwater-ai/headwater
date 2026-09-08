@@ -41,7 +41,7 @@ add:
   # gives the address to whichever entry claims it first, so a general word in
   # a partial entry is an address taken from everybody. `diataxis_mode` names
   # the method rather than the property, and a facet names what a document is.
-  # `reader_mode` is the term [HW-EVAL-theoretical-foundations](../../evaluations/theoretical-foundations.md)
+  # `reader_mode` is the term [HW-EVAL-theoretical-foundations](https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/theoretical-foundations.md)
   # already uses for this idea in this repository's own vocabulary.
   #
   # `values` is closed at four, which is the method's own claim rather than this
@@ -100,7 +100,7 @@ add:
   # list that exists. HW-OBL-0040 carries that.
   #
   # **What this line does in the engine, exactly.** It satisfies the relevance
-  # canon of [spec 2](../../spec/02-taxonomy-model.md#facet-acceptance-tests),
+  # canon of [spec 2](https://github.com/headwater-ai/headwater/blob/main/docs/spec/02-taxonomy-model.md#facet-acceptance-tests),
   # which `headwater taxonomy validate` refuses a facet without: a facet that no
   # kind requires *or lists as optional*, that no shelf discriminates on, that
   # no expectation reads and that carries no role, is refused as unread. It does

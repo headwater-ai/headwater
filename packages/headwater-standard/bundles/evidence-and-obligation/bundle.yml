@@ -67,7 +67,7 @@ add:
   # here would need this entry to require design-spec back, which cycles
   # against the edge design-spec already carries onto this entry, and no
   # second bundle may add a second entry to the `relations.expect` list a
-  # first bundle declared, which is [HW-OBL-0031](../../obligations/0031-list-extension-in-an-add-only-overlay.md)
+  # first bundle declared, which is [HW-OBL-0031](https://github.com/headwater-ai/headwater/blob/main/docs/obligations/0031-list-extension-in-an-add-only-overlay.md)
   # on the same kind that finding named. doctrine.md carries the argument in
   # full, and it is the same narrowness design-spec's own finding 4 already
   # recorded: the expectation could only ever be satisfied by a
