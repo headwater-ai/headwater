@@ -1,0 +1,98 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# What #735 asked for and #707 explicitly did not: a route from this
+# workspace to crates.io. `release.yml` hands a stranger a binary; this hands
+# a Rust user `cargo install headwater-cli`, which needs every crate the
+# binary depends on to exist on the registry too, not only the binary crate.
+#
+# # WHY `workflow_dispatch` ONLY, AND NO TAG TRIGGER
+#
+# `release.yml` fires on a pushed tag because attaching an asset to a release
+# is a thing every tag should get, automatically, forever. Publishing 23
+# crates for the first time is not that: a name, once claimed, is claimed for
+# good, and a bootstrap of this size is a deliberate act with no rollback
+# rather than routine. So this file takes no tag trigger at all — only a
+# person, running this by hand, decides when the closure below goes live.
+# Whether a later version bump should publish automatically is a question
+# this file leaves open rather than answers by default.
+#
+# # WHY ONE STEP AND NOT TWENTY-THREE
+#
+# The order is not alphabetical and not arbitrary: it is `cargo metadata`'s
+# own dependency closure, leaves first, so that by the time this step reaches
+# `headwater-cli` every crate it depends on already resolves through the
+# registry rather than through the path this workspace builds with locally.
+# Getting that order right, once, next to the loop that walks it, is safer
+# than getting it right in twenty-three separate step orderings that a future
+# edit can silently reorder.
+#
+# # WHY EACH CRATE IS CHECKED BEFORE IT IS PUBLISHED
+#
+# `cargo publish` refuses a version that already exists, so a rerun after a
+# partial failure — crate 9 of 23 rejected for a reason the first 8 already
+# cleared — would otherwise fail immediately on crate 1. The check makes a
+# rerun resume rather than restart: a crate the registry already carries at
+# this version is skipped, and the loop's first real publish is wherever the
+# previous run stopped.
+#
+# # WHY THE SLEEP
+#
+# crates.io's index takes a short, unspecified interval to make a freshly
+# published crate resolvable to the next `cargo publish` that depends on it.
+# Publishing `headwater-yaml` and immediately publishing `headwater-doc`,
+# which depends on it, is exactly the race group 7 of `tools/readme-fixtures`
+# guards a different version of on the release side. Thirty seconds is a
+# margin measured nowhere yet; `sh tools/build-declaration-fixtures.sh`-style
+# evidence for a shorter one is future work, not a claim this comment makes.
+name: Publish crates
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Every workspace crate, leaves first, to crates.io
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: The toolchain this build needs
+        run: |
+          rustup update --no-self-update stable
+          rustup default stable
+      - name: Publish the closure in dependency order, skipping what is already there
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        working-directory: engine
+        run: |
+          set -eo pipefail
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+              echo "::error::no CARGO_REGISTRY_TOKEN secret; nothing below can publish" && exit 1
+          fi
+          # Leaves first. `cargo metadata --no-deps --format-version 1` over
+          # this workspace names the same 23 crates and the same edges; this
+          # list is that graph's topological order, walked once when #735 was
+          # filed and not recomputed on every run, so a dependency a future
+          # crate adds is a diff here and not a silent reorder underneath one.
+          order="headwater-hash headwater-mark headwater-verbs headwater-yaml \
+                 headwater-doc headwater-ref headwater-meta headwater-resolve \
+                 headwater-census headwater-graph headwater-lock headwater-check \
+                 headwater-probe headwater-scaffold headwater-sweep \
+                 headwater-adapter headwater-audit headwater-import \
+                 headwater-query headwater-generate headwater-compat \
+                 headwater-conformance headwater-cli"
+          version=$(cargo metadata --no-deps --format-version 1 |
+                     python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(p["version"] for p in d["packages"] if p["name"]=="headwater-cli"))')
+          for crate in $order; do
+              status=$(curl -sS -o /dev/null -w '%{http_code}' \
+                  "https://crates.io/api/v1/crates/$crate/$version")
+              if [ "$status" = "200" ]; then
+                  echo "$crate $version already on crates.io, skipping"
+                  continue
+              fi
+              echo "publishing $crate $version"
+              cargo publish -p "$crate" --locked
+              sleep 30
+          done

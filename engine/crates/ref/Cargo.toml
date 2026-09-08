@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-ref"
+description = "The $-reference sublanguage: an overlay address, and a reference into a vocabulary or a package"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 # None, and that is the point. The sublanguage is a grammar over one string.
@@ -16,7 +18,7 @@ rust-version.workspace = true
 [dev-dependencies]
 # The fixtures hold the grammar to the addresses this repository already wrote,
 # and reading them out of the two sources needs the loader.
-headwater-yaml = { path = "../yaml" }
+headwater-yaml = { workspace = true }
 
 [lints]
 workspace = true

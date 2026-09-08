@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-conformance"
+description = "Whether a consumer wired the method or only copied it, which is the question spec 7 separates from holding a vendored taxonomy"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 # The rule set is package content, so it is read with the loader that reads the
@@ -13,7 +15,7 @@ rust-version.workspace = true
 # and `release` is what a pinned digest is compared against. `repository` and
 # `package::sources` are what `lock.current` resolves the lock from, which is
 # the same pair `taxonomy resolve` calls.
-headwater-resolve = { path = "../resolve" }
+headwater-resolve = { workspace = true }
 
 # The lock, and `diverged`, which is the comparison `taxonomy resolve --check`
 # decides with. `lock.current` calls that one rather than a narrower reading of
@@ -21,28 +23,28 @@ headwater-resolve = { path = "../resolve" }
 # CLI already prints — and the narrower reading was one, because the source
 # digests alone see nothing of the header, the `sources` list or the `founded:`
 # block.
-headwater-lock = { path = "../lock" }
+headwater-lock = { workspace = true }
 
 # The classified rows that `corpus.classified` reads.
-headwater-census = { path = "../census" }
+headwater-census = { workspace = true }
 
 # The projection plan that `projections.current` holds against the tree. The
 # comparison is `generate --check`, and this crate calls it rather than
 # repeating it.
-headwater-generate = { path = "../generate" }
+headwater-generate = { workspace = true }
 
 # `Date`, which a waiver expiry is read against. The clock is injected on the
 # same terms a check injects one.
-headwater-check = { path = "../check" }
+headwater-check = { workspace = true }
 
 # Both the rule set and the waiver block are spanned YAML.
-headwater-yaml = { path = "../yaml" }
+headwater-yaml = { workspace = true }
 
 [dev-dependencies]
 # Two tests run over this repository's own package and its own waivers, because
 # a rule set that its own publisher's engine refuses is a rule set nobody can
 # evaluate against.
-headwater-lock = { path = "../lock" }
+headwater-lock = { workspace = true }
 
 [lints]
 workspace = true

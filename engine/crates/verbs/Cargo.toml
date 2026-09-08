@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-verbs"
+description = "The command surface of the binary as one list, so the dispatch arms, the usage text and the unknown-verb message cannot disagree with one another"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 # No dependencies, for the reason `headwater-mark` has none. Two components read
 # the command surface and they sit on opposite sides of the engine: the binary

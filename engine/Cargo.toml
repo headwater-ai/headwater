@@ -34,7 +34,14 @@ resolver = "2"
 # published. `headwater_resolve::release::ENGINE` is what reads it.
 version = "0.1.0"
 edition = "2021"
-publish = false
+
+# #735: every member is now free to reach crates.io, once the workflow that
+# issue adds runs. `true` is cargo's own default when a manifest names no
+# `publish` key at all, so this line does not newly permit anything on its
+# own — it is the value `publish.workspace = true` resolves to on every member
+# that writes it, restated here so a reader finds one answer rather than
+# twenty-three defaults that happen to agree.
+publish = true
 
 # The oldest Rust this workspace builds on, declared where a machine reads it.
 # Until this line the floor lived in prose in `engine/README.md` and in the
@@ -57,10 +64,10 @@ rust-version = "1.90"
 
 # The license, restated where a machine reads it. `LICENSE` at the repository
 # root is Apache 2.0, and every source file under `crates/` that is not a test
-# fixture opens with `// SPDX-License-Identifier: Apache-2.0`.
-# `publish = false` above is why cargo never demanded this field: it requires a
-# license only on a crate bound for a registry. So every one of those files
-# asserted a license that no manifest agreed with, until this line.
+# fixture opens with `// SPDX-License-Identifier: Apache-2.0`. Cargo requires
+# this field on a crate bound for a registry, which every crate here is, and
+# this line is what answers that requirement rather than only the header each
+# source file carries.
 #
 # A key here is an inheritance SOURCE and not an inheritance RULE. On its own
 # it changes nothing: every member still reports `license: null` to
@@ -72,6 +79,48 @@ rust-version = "1.90"
 # line, is what `tools/build-declaration-fixtures.sh` holds, along with the
 # SPDX headers the sentence above claims.
 license = "Apache-2.0"
+
+# Where a registry sends a reader who wants the source behind a published
+# crate. crates.io shows this on every crate's page once #735 publishes one,
+# and it costs nothing before that.
+repository = "https://github.com/headwater-ai/headwater"
+
+# Every internal dependency, declared once here rather than once per line that
+# names it. #735 is why this exists: a path alone is not something a published
+# crate can depend on, so each of the 23 needs a version cargo can resolve
+# through the registry once the crate it names is itself published, and a
+# version repeated at each of the ~120 lines that named a path before this one
+# is 120 places a bump has to agree, not one. A member's own `[dependencies]`
+# now reads `headwater-x = { workspace = true }`, and the path and the version
+# both live here, once, for the same reason `version`, `edition`, `license`,
+# `rust-version` and `publish` already live in `[workspace.package]` above.
+#
+# The version is the same literal as `[workspace.package] version` above,
+# because every member of this workspace has always moved as one number; nothing
+# here reads that field to derive this one, so a bump has both to change.
+[workspace.dependencies]
+headwater-adapter = { path = "crates/adapter", version = "0.1.0" }
+headwater-audit = { path = "crates/audit", version = "0.1.0" }
+headwater-census = { path = "crates/census", version = "0.1.0" }
+headwater-check = { path = "crates/check", version = "0.1.0" }
+headwater-compat = { path = "crates/compat", version = "0.1.0" }
+headwater-conformance = { path = "crates/conformance", version = "0.1.0" }
+headwater-doc = { path = "crates/doc", version = "0.1.0" }
+headwater-generate = { path = "crates/generate", version = "0.1.0" }
+headwater-graph = { path = "crates/graph", version = "0.1.0" }
+headwater-hash = { path = "crates/hash", version = "0.1.0" }
+headwater-import = { path = "crates/import", version = "0.1.0" }
+headwater-lock = { path = "crates/lock", version = "0.1.0" }
+headwater-mark = { path = "crates/mark", version = "0.1.0" }
+headwater-meta = { path = "crates/meta", version = "0.1.0" }
+headwater-probe = { path = "crates/probe", version = "0.1.0" }
+headwater-query = { path = "crates/query", version = "0.1.0" }
+headwater-ref = { path = "crates/ref", version = "0.1.0" }
+headwater-resolve = { path = "crates/resolve", version = "0.1.0" }
+headwater-scaffold = { path = "crates/scaffold", version = "0.1.0" }
+headwater-sweep = { path = "crates/sweep", version = "0.1.0" }
+headwater-verbs = { path = "crates/verbs", version = "0.1.0" }
+headwater-yaml = { path = "crates/yaml", version = "0.1.0" }
 
 # The lint floor. Every crate inherits it with `[lints] workspace = true`, so a
 # rule is declared once here rather than repeated in twenty-two manifests or

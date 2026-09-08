@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-cli"
+description = "The headwater binary, and what CI runs. headwater --help is the verb list"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [[bin]]
 name = "headwater"
@@ -24,7 +26,7 @@ path = "src/main.rs"
 # The sampler, which is not a check and is a separate crate for that reason.
 # Nothing in `headwater-check` names it, so no rule can read a sweep finding
 # and `--strict` can never see one.
-headwater-sweep = { path = "../sweep" }
+headwater-sweep = { workspace = true }
 
 # The probe harness, on the same side of the same line and for the same reason.
 # It names `headwater-check`, so nothing in the check layer can name it, and no
@@ -32,58 +34,58 @@ headwater-sweep = { path = "../sweep" }
 # `tests/wiring.rs` starts this binary at `probe grade` over a fixture corpus
 # whose plan refuses. That is a test of the wiring above the harness, so no
 # probe of this repository is planned, recorded or graded by anything automatic.
-headwater-probe = { path = "../probe" }
+headwater-probe = { workspace = true }
 
 # The CI adapters. `check --format` is the one caller, and the dependency
 # points this way so that nothing in the engine below can reach a forge.
-headwater-adapter = { path = "../adapter" }
+headwater-adapter = { workspace = true }
 
 # `taxonomy audit`. Every reading is taken in the library and the verb prints
 # it, so a test reads the audit of a tree without starting a process.
-headwater-audit = { path = "../audit" }
+headwater-audit = { workspace = true }
 
-headwater-census = { path = "../census" }
-headwater-check = { path = "../check" }
+headwater-census = { workspace = true }
+headwater-check = { workspace = true }
 
 # `taxonomy diff`. The six dimensions of spec 2, and the crate runs no phase: it
 # takes two censuses, two runs, two plans and two graphs, and says where they
 # differ. Nothing else names it, so no phase can read a compatibility verdict.
-headwater-compat = { path = "../compat" }
+headwater-compat = { workspace = true }
 
 # `headwater conformance`. The rule set reader, the waiver reader and every
 # reading sit in the library, so the verb is a shell over them and a test reads
 # a repository without starting a process.
-headwater-conformance = { path = "../conformance" }
+headwater-conformance = { workspace = true }
 
-headwater-generate = { path = "../generate" }
-headwater-graph = { path = "../graph" }
+headwater-generate = { workspace = true }
+headwater-graph = { workspace = true }
 
 # `headwater import`. Every refusal is decided in the library, so the verb is a
 # shell and the fixture set that proves the correctness root runs without it.
-headwater-import = { path = "../import" }
+headwater-import = { workspace = true }
 
 # The one implementation of the digest function. `gate` re-hashes each input a
 # read set lists, and a gate that hashed by another rule than the census would
 # report that every file in the tree had moved.
-headwater-hash = { path = "../hash" }
-headwater-lock = { path = "../lock" }
-headwater-query = { path = "../query" }
-headwater-resolve = { path = "../resolve" }
+headwater-hash = { workspace = true }
+headwater-lock = { workspace = true }
+headwater-query = { workspace = true }
+headwater-resolve = { workspace = true }
 
 # `headwater new`. The verb is a shell over this, and every refusal, every
 # derived value and the assisted count are decided in the library.
-headwater-scaffold = { path = "../scaffold" }
+headwater-scaffold = { workspace = true }
 
 # The dispatch table. The arms below it are entered only for a first word this
 # crate carries, so an arm this list does not name never runs. `headwater
 # generate` reads the same list to write the verb index, which is why the list
 # is a crate under both rather than a constant in this one.
-headwater-verbs = { path = "../verbs" }
+headwater-verbs = { workspace = true }
 
 # `headwater infer` builds an adoption payload as text and loads it back before
 # it goes into the lock, so what the verb prints and what it stores are one
 # artifact that went through one reader.
-headwater-yaml = { path = "../yaml" }
+headwater-yaml = { workspace = true }
 
 # The one external dependency of this crate, and the third of this workspace.
 # `HW-DR-0033` states what it costs and what it withdraws: 17 packages into the

@@ -1,44 +1,46 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-census"
+description = "Walks a corpus root, resolves a kind for each document, and reports what became of every file"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 # A row carries the digest of the bytes it read, which is the content hash a
 # cache key and a read set are built from. One implementation of the function,
 # so a census row and a lock cannot disagree about one byte string.
-headwater-hash = { path = "../hash" }
+headwater-hash = { workspace = true }
 
 # A census row about a document needs the document. The parser also draws the
 # line this crate turns into two outcomes: a file with no front matter is an
 # untyped document, and a file whose block will not load is one the engine
 # could not read.
-headwater-doc = { path = "../doc" }
+headwater-doc = { workspace = true }
 
 # The generated-file marker. A projection lands inside the corpus root, so this
 # walk reaches files this engine wrote, and the marker is what says so. The
 # predicate lives below both this crate and the generator that writes it,
 # because the generator depends on this one and the rule must not be copied.
-headwater-mark = { path = "../mark" }
+headwater-mark = { workspace = true }
 
 # Shelves are declared in a taxonomy source, and a declaration that is wrong
 # reports at the line that declared it.
-headwater-yaml = { path = "../yaml" }
+headwater-yaml = { workspace = true }
 
 # The glob language a shelf path is written in, and the specificity order that
 # decides which of two shelves claims a path. It belongs to the meta-schema
 # because `taxonomy validate` reads it with no corpus in hand.
-headwater-meta = { path = "../meta" }
+headwater-meta = { workspace = true }
 
 [dev-dependencies]
 # The census of this repository needs this repository's taxonomy resolved. The
 # library takes an already-resolved taxonomy and knows nothing about where one
 # comes from, so the dependency is the fixture's rather than the crate's.
-headwater-resolve = { path = "../resolve" }
+headwater-resolve = { workspace = true }
 
 [lints]
 workspace = true
