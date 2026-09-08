@@ -2016,3 +2016,250 @@ fn the_flag_over_a_killed_runs_residue_clears_it_and_publishes() {
         "the run does not say what it removed: {message}"
     );
 }
+
+/// One step of the maintenance loop the shipped manifest instructs.
+#[derive(Debug, PartialEq, Eq)]
+enum Step {
+    /// A `headwater …` command line, `<scratch-dir>` still unsubstituted.
+    Run(Vec<String>),
+    /// The hand edit that no verb performs: write the digest `publish` printed
+    /// into `.headwater/taxonomy.yml` as `taxonomy.digest`. Spec 7 keeps this
+    /// step out of the engine deliberately, so an instruction block that omits
+    /// it omits the one step a reader cannot infer from a verb.
+    Pin,
+}
+
+/// The steps `taxonomy-source/headwater-standard/package.yml` instructs, taken
+/// out of its header comment in the order it states them.
+///
+/// The indented block is the whole grammar: a line under `#` and four spaces is
+/// a step, a step that opens `headwater ` is a command, and any other step is
+/// the hand-written pin. Nothing else in that file is indented, and a step this
+/// function cannot classify fails the case rather than being skipped — a parser
+/// that quietly dropped a step would report a loop shorter than the one that
+/// ships.
+fn maintenance_loop(manifest: &str) -> Vec<Step> {
+    manifest
+        .lines()
+        .filter_map(|line| line.strip_prefix("#    "))
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(|line| match line.strip_prefix("headwater ") {
+            Some(rest) => Step::Run(rest.split_whitespace().map(str::to_string).collect()),
+            None => {
+                assert!(
+                    line.contains("taxonomy.digest"),
+                    "the instruction block carries a step this case cannot run: {line}"
+                );
+                Step::Pin
+            }
+        })
+        .collect()
+}
+
+/// The binary, run from a directory, with the arguments exactly as a person
+/// reading the instruction block would type them.
+///
+/// No `--root`, because the block states none. The working directory is what
+/// makes `--from taxonomy-source/headwater-standard` mean what the block says
+/// it means, and a case that passed `--root` would be testing its own
+/// substitution rather than the sentence.
+fn run_at(cwd: &Path, arguments: &[String]) -> (Option<i32>, String, String) {
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(arguments)
+        .current_dir(cwd)
+        .output()
+        .expect("the binary runs");
+    (
+        output.status.code(),
+        String::from_utf8_lossy(&output.stdout).into_owned(),
+        String::from_utf8_lossy(&output.stderr).into_owned(),
+    )
+}
+
+/// The digest a `publish` run printed, off its own standard output.
+fn printed_digest(stdout: &str) -> String {
+    stdout
+        .lines()
+        .find_map(|line| line.trim().strip_prefix("digest "))
+        .unwrap_or_else(|| panic!("the publish printed no digest: {stdout}"))
+        .trim()
+        .to_string()
+}
+
+/// Rewrite `taxonomy.digest` in a consumer declaration. This is the hand edit,
+/// performed by the case because no verb performs it.
+fn pin_digest(consumer: &Path, digest: &str) {
+    let at = consumer.join(".headwater/taxonomy.yml");
+    let declaration = std::fs::read_to_string(&at).expect("the consumer declaration reads");
+    let rewritten = declaration
+        .lines()
+        .map(|line| match line.trim_start().starts_with("digest:") {
+            true => format!("  digest: {digest}"),
+            false => line.to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    std::fs::write(&at, format!("{rewritten}\n")).expect("the pin is written");
+}
+
+/// **The instruction block that ships inside the published artifact, executed.**
+///
+/// `the_shipped_starter_recipe_publishes_vendors_and_resolves` and
+/// `a_pin_that_no_longer_names_the_installed_bytes_is_refused_by_conformance_and_not_by_resolve`
+/// both run the publish/pin/vendor/resolve order, and both hardcode it. So both
+/// stay green while the document that instructs a maintainer states a different
+/// order. This case takes the order out of the document.
+///
+/// [#516](https://github.com/headwater-ai/headwater/issues/516) is why it
+/// exists. `vendor --expect` verifies a caller-supplied digest and discards it,
+/// and the refusal to record it stands: on the order `publish → pin → vendor →
+/// resolve` the digest is typed once, and `--expect` is what creates the second
+/// typing. That ruling is only true if the shipped instructions state that
+/// order, and until this case ran nothing had ever executed them.
+///
+/// **The provocation is a source that actually changed**, because that is the
+/// only state in which the two orders differ. On an unchanged source the
+/// artifact carries the digest already pinned, and `vendor` exits 0 wherever
+/// the pin step sits. A maintainer opens this block only after editing the
+/// source, which is exactly the state that makes the block wrong.
+///
+/// Green only if every step of the block exits 0, in the block's own order.
+/// Against a block that puts the pin after `vendor`, or leaves it to a sentence
+/// underneath, the `vendor` step exits 1 against the stale pin.
+///
+/// `taxonomy-source/headwater-standard/package.yml` ships inside the published
+/// artifact, so an adopter of `headwater/standard` reads this same block.
+#[test]
+fn the_shipped_maintenance_loop_runs_as_written_over_a_source_that_changed() {
+    let root = Root::scratch("shipped-maintenance-loop");
+    let consumer = root.path().join("consumer");
+
+    // A consumer laid out the way this repository is, because the block names
+    // `taxonomy-source/headwater-standard` by that relative path and the
+    // manifest reaches its bundle library with `../../docs/taxonomies`.
+    copy(
+        &repository().join("taxonomy-source/headwater-standard"),
+        &consumer.join("taxonomy-source/headwater-standard"),
+    );
+    copy(
+        &repository().join("docs/taxonomies"),
+        &consumer.join("docs/taxonomies"),
+    );
+    std::fs::create_dir_all(consumer.join(".headwater")).expect("the block directory is made");
+    std::fs::copy(
+        repository().join(".headwater/overlay.yml"),
+        consumer.join(".headwater/overlay.yml"),
+    )
+    .expect("the overlay copies");
+
+    let manifest = std::fs::read_to_string(
+        repository().join("taxonomy-source/headwater-standard/package.yml"),
+    )
+    .expect("the shipped manifest reads");
+    let steps = maintenance_loop(&manifest);
+
+    // ---- The state a maintainer is in before they edit anything. ---------
+    //
+    // Published, pinned, vendored and resolved once by hand, off the source as
+    // it stands. Every assertion below is about the second pass, so this pass
+    // has to be sound or the case would prove nothing.
+    let before = root.path().join("release-before");
+    let (code, stdout, stderr) = run_at(
+        &consumer,
+        &[
+            "taxonomy".to_string(),
+            "publish".to_string(),
+            "--from".to_string(),
+            "taxonomy-source/headwater-standard".to_string(),
+            "--out".to_string(),
+            before.to_str().expect("the path is UTF-8").to_string(),
+        ],
+    );
+    assert_eq!(code, Some(0), "{stderr}");
+    write(
+        &consumer.join(".headwater/taxonomy.yml"),
+        &format!(
+            "taxonomy:\n  package: headwater/standard\n  version: 4.2.0\n  digest: {}\n  bundles: [design-spec, evidence-and-obligation, decision-record]\n  overlay: .headwater/overlay.yml\ncorpus:\n  root: docs\n",
+            printed_digest(&stdout)
+        ),
+    );
+    for arguments in [
+        vec![
+            "taxonomy".to_string(),
+            "vendor".to_string(),
+            before.to_str().expect("the path is UTF-8").to_string(),
+        ],
+        vec!["taxonomy".to_string(), "resolve".to_string()],
+    ] {
+        let (code, _stdout, stderr) = run_at(&consumer, &arguments);
+        assert_eq!(code, Some(0), "the settled state is not sound: {stderr}");
+    }
+
+    // ---- The edit that sends a maintainer to the instruction block. ------
+    //
+    // A comment appended to the authored taxonomy source. It moves the bytes of
+    // a member file and nothing else, so the published digest moves and the
+    // package still resolves.
+    let source = consumer.join("taxonomy-source/headwater-standard/taxonomy.yml");
+    let authored = std::fs::read_to_string(&source).expect("the authored source reads");
+    std::fs::write(
+        &source,
+        format!("{authored}\n# an edit to the authored source, which moves the digest\n"),
+    )
+    .expect("the edit writes");
+
+    // ---- The block, run as written. --------------------------------------
+    let scratch = root.path().join("release-after");
+    let mut printed = String::new();
+    for step in &steps {
+        match step {
+            Step::Pin => pin_digest(&consumer, &printed_digest(&printed)),
+            Step::Run(arguments) => {
+                let arguments: Vec<String> = arguments
+                    .iter()
+                    .map(|argument| match argument.as_str() {
+                        "<scratch-dir>" => scratch.to_str().expect("the path is UTF-8").to_string(),
+                        other => other.to_string(),
+                    })
+                    .collect();
+                let (code, stdout, stderr) = run_at(&consumer, &arguments);
+                assert_eq!(
+                    code,
+                    Some(0),
+                    "the shipped instruction block does not run as written. `headwater {}` \
+                     refused after the source changed:\n{stderr}",
+                    arguments.join(" ")
+                );
+                printed = stdout;
+            }
+        }
+    }
+
+    // Read after the run and not before it, so that a block missing the pin
+    // step fails at the step that refuses rather than at a guard: the account a
+    // maintainer needs is `vendor`'s own message about the digest it was given.
+    assert!(
+        steps.contains(&Step::Pin),
+        "the instruction block ran green without stating a pin step, so this case no longer \
+         holds the order it exists for: {steps:?}"
+    );
+
+    // The loop ended somewhere real: the vendored bytes are the ones the second
+    // publish wrote, and the pin names them. `pin.current` is the reading that
+    // says so, and `--level L0` is what turns a gap in it into an exit status.
+    let (code, stdout, stderr) = run_at(
+        &consumer,
+        &[
+            "conformance".to_string(),
+            "--level".to_string(),
+            "L0".to_string(),
+        ],
+    );
+    assert_eq!(
+        code,
+        Some(0),
+        "the loop ran to the end and left a pin that does not name the installed bytes: \
+         {stdout}\n{stderr}"
+    );
+}
