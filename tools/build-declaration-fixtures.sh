@@ -398,7 +398,7 @@ echo "the judges, provoked on purpose"
 #     nobody has seen work. Every judge above returns the empty string on this
 #     tree, and the empty string is also what a broken judge returns.
 mkdir -p "$scratch/wf"
-sed 's/^\( *run: cargo test\) --locked$/\1/' \
+sed 's/^\( *run: cargo test\) --locked \(--workspace --exclude headwater-resolve\)$/\1 \2/' \
     "$root/.github/workflows/ci.yml" >"$scratch/wf/ci.yml"
 if cmp -s "$root/.github/workflows/ci.yml" "$scratch/wf/ci.yml"; then
     fail "the workflow judge names a step whose flag was removed" \
@@ -406,7 +406,7 @@ if cmp -s "$root/.github/workflows/ci.yml" "$scratch/wf/ci.yml"; then
 else
     bad=$(offenders "$scratch/wf/ci.yml" workflow '')
     same "the workflow judge names a step whose flag was removed" \
-        "cargo test" "$bad"
+        "cargo test --workspace --exclude headwater-resolve" "$bad"
 fi
 
 # 8b. The three shapes the first cut of this suite could not see. Each hides

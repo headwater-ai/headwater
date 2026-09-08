@@ -194,7 +194,7 @@ jobs:
           sudo mount -t tmpfs -o "size=64m,uid=$(id -u),gid=$(id -g),mode=0755" tmpfs "$RUNNER_TEMP/mount-point"
           echo "HEADWATER_MOUNT_POINT=$RUNNER_TEMP/mount-point" >> "$GITHUB_ENV"
       - name: Test
-        run: cargo test --locked
+        run: cargo test --locked --workspace --exclude headwater-resolve
         working-directory: engine
         env:
           HEADWATER_STOCK_VALIDATOR: required
@@ -205,6 +205,27 @@ jobs:
           # so `engine/crates/cli/tests/completions.rs` runs the command line
           # clause 8 of #321 states through it. A runner that lost `bash`
           # fails here rather than reporting a script nothing read.
+          HEADWATER_SHELL_ORACLE: required
+      - name: Test, headwater-resolve
+        # Split from the step above and run single-threaded. Measured on
+        # `ubuntu-latest` (2026-09-08): `HEADWATER_MOUNT_POINT` is one real
+        # directory, and `killed_publish.rs`'s mount-point cases write into it
+        # by its path rather than by a private namespace, so libtest's default
+        # thread-per-test parallelism ran several of them against that one
+        # directory at once and they collided — a file one case wrote gone by
+        # the time another case looked for it, a kill sweep that never landed
+        # a kill because a sibling thread's process crowded the same window.
+        # Serializing the crate, rather than the one file, is the fix that
+        # needs no change to the suite itself; `headwater-resolve`'s other
+        # five integration-test files are fast enough that losing their
+        # parallelism costs single-digit seconds.
+        run: cargo test --locked -p headwater-resolve -- --test-threads=1
+        working-directory: engine
+        env:
+          HEADWATER_STOCK_VALIDATOR: required
+          HEADWATER_SARIF_VALIDATOR: required
+          HEADWATER_SHA256_ORACLE: required
+          HEADWATER_JSON_ORACLE: required
           HEADWATER_SHELL_ORACLE: required
           # A mount point is handed to this run by one of the two steps
           # above, so the mount-point cases in
