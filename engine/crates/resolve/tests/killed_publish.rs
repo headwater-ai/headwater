@@ -1153,3 +1153,108 @@ fn an_empty_directory_at_the_staging_path_does_not_block_a_publish() {
         "the staging directory outlived the run that took it over"
     );
 }
+
+// ---------------------------------------------------------------------------
+// `--clear-killed` against the only `--out` that can ever hold this residue:
+// a real mount point. #485.
+// ---------------------------------------------------------------------------
+
+/// **`clear_killed` must empty `--out` and never remove it.**
+///
+/// # Why the ordinary case cannot find this
+///
+/// [`DIRECT`] is written on exactly one branch of `deliver` — the one a failed
+/// rename reaches, which is a mount point or a filesystem boundary. So every
+/// `--out` that can carry the residue this flag clears is a path
+/// `remove_dir_all` answers with `EBUSY`. Every case that plants the residue at
+/// an ordinary directory therefore exercises a removal the flag can never
+/// perform in production, and passes.
+///
+/// [`empty_out`] above this line already knew it, and says so in its own doc
+/// comment: `--out` is a mount point in every case in this file, so
+/// `remove_dir_all` on it is `EBUSY`. The first cut of `clear_killed` called
+/// the primitive that this file rules out, one directory over. The contents
+/// went, the mount survived, the run exited 1, and every retry repeated
+/// identically — a recovery that cannot recover, in the one configuration it
+/// exists for.
+///
+/// # What it would print if the property were absent
+///
+/// The refusal `clear_killed` returns, which quotes the `EBUSY` verbatim.
+#[test]
+fn the_flag_empties_a_mount_point_it_cannot_remove_and_publishes_into_it() {
+    inside_a_mount_point(
+        "clear-killed-mount",
+        CLEAR_KILLED_CHILD,
+        clears_a_mount_point,
+    );
+}
+
+const CLEAR_KILLED_CHILD: &str = "clears_a_killed_run_inside_a_mount_point";
+
+/// The half of the case above that runs where the mount point is.
+#[test]
+#[ignore = "the child half of the clear-killed case; the parent runs it inside a namespace"]
+fn clears_a_killed_run_inside_a_mount_point() {
+    in_the_namespace(clears_a_mount_point);
+}
+
+fn clears_a_mount_point(root: &Path, out: &Path) {
+    let staging = staging_beside(out);
+
+    // The residue a killed direct write leaves, planted at a path that really
+    // cannot be renamed onto and really cannot be removed.
+    let _ = std::fs::remove_dir_all(&staging);
+    std::fs::create_dir_all(&staging).expect("the staging directory is made");
+    std::fs::write(
+        staging.join(MARKER),
+        "an earlier run claimed this directory\n",
+    )
+    .expect("the marker is written");
+    std::fs::write(
+        staging.join(DIRECT),
+        format!("an earlier run\nThe output path is: {}\n", out.display()),
+    )
+    .expect("the note is written");
+    empty_out(out);
+    std::fs::write(out.join("taxonomy.yml"), "half of an artifact\n")
+        .expect("the residue is written");
+
+    assert!(
+        std::fs::remove_dir_all(out).is_err(),
+        "this case measures nothing unless `--out` is a path `remove_dir_all` refuses"
+    );
+
+    let cleared = package::clear_killed(root, out).unwrap_or_else(|why| {
+        panic!(
+            "the clear failed: {}",
+            headwater_resolve::render_errors(&why)
+        )
+    });
+    assert!(
+        matches!(cleared, package::Cleared::KilledDirectWrite { .. }),
+        "the flag did not recognize the residue it was handed"
+    );
+    assert!(
+        out.is_dir(),
+        "the flag removed the mount point rather than emptying it"
+    );
+    assert_eq!(
+        std::fs::read_dir(out)
+            .expect("the mount point reads")
+            .count(),
+        0,
+        "the killed run's files outlived the clear"
+    );
+    assert!(
+        !staging.exists(),
+        "the killed run's own directory outlived the clear"
+    );
+
+    package::publish(root, "acme/fixture", out)
+        .expect("the same run publishes into the mount point");
+    assert!(
+        release::at(out).is_ok(),
+        "the publish after the clear left no record"
+    );
+}

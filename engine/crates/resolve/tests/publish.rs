@@ -3155,8 +3155,19 @@ fn clearing_a_killed_run_removes_both_paths_and_the_same_run_publishes() {
         matches!(cleared, package::Cleared::KilledDirectWrite { .. }),
         "the flag did not name what it removed"
     );
+    // `--out` is emptied and never removed. In production it is always a mount
+    // point, because `DIRECT` is written on one branch of `deliver` and that is
+    // the branch a failed rename reaches, so `remove_dir_all` on it is `EBUSY`.
+    // `empty`'s doc comment carries it, and
+    // `the_flag_empties_a_mount_point_it_cannot_remove_and_publishes_into_it`
+    // in `killed_publish.rs` measures it inside a real mount.
     assert!(
-        !out.exists(),
+        out.is_dir(),
+        "the flag removed the output path rather than emptying it"
+    );
+    assert_eq!(
+        walk_files(&out),
+        0,
         "the killed run's files are still at the output path"
     );
     assert!(
@@ -3213,6 +3224,36 @@ fn clearing_a_killed_run_removes_nothing_from_an_output_that_holds_a_complete_pu
         message.contains("the output directory holds files already"),
         "the refusal for a complete publish moved under the flag: {message}"
     );
+}
+
+/// A staging directory that names an `--out` somebody already removed by hand
+/// is cleared, not refused.
+///
+/// The pair of files outlives the path it names, so this state is reachable: a
+/// person meets the refusal, removes `--out` themselves, and the marker and the
+/// note are still there. Emptying a path that is not there is emptying nothing,
+/// and a recovery that failed on it would leave the pair standing forever,
+/// offering a flag that could never act.
+#[test]
+fn clearing_a_killed_run_clears_the_staging_directory_where_the_output_path_went_by_hand() {
+    let scratch = Scratch::new("clear-killed-out-gone");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    let staging = plant_a_killed_direct_write(&out, &out);
+    std::fs::remove_dir_all(&out).expect("the person removes the output path");
+
+    let cleared = package::clear_killed(&root, &out).expect("the clear reads a path that is gone");
+    assert!(
+        matches!(cleared, package::Cleared::KilledDirectWrite { .. }),
+        "the flag left the marker pair standing over a path that is not there"
+    );
+    assert!(
+        !staging.exists(),
+        "the killed run's own directory outlived the clear"
+    );
+
+    package::publish(&root, "acme/fixture", &out).expect("the same run publishes");
+    assert!(release::at(&out).is_ok(), "the publish left no record");
 }
 
 /// A staging directory whose note names a **different** output path is not this

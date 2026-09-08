@@ -1167,15 +1167,24 @@ pub enum Cleared {
 /// [`deliver`], wrote both files, and was killed inside the one write this verb
 /// cannot undo. [`claim_direct`] carries that argument in full.
 ///
-/// # Why `out` goes first
+/// # `out` is emptied and never removed
 ///
-/// This function makes two removals and a kill can land between them. Removing
-/// `out` first leaves, at that instant, an empty or absent `out` beside a
-/// staging directory carrying its marker — which the [`clear_staging`] at the
-/// top of [`deliver`] sweeps on the next run. The other order leaves files at
-/// `out` and nothing on disk saying whose they are, which is the undecidable
-/// state this whole mechanism exists to keep off the disk. So the order is not
-/// a preference.
+/// [`empty`] carries the argument, and it is not a preference: the only `--out`
+/// that can hold this residue is a mount point or a path across a filesystem
+/// boundary, because that is the one branch of [`deliver`] that writes
+/// [`DIRECT`]. A `remove_dir_all` there takes the contents, leaves the mount,
+/// and returns `EBUSY`.
+///
+/// # Why `out` goes first anyway
+///
+/// This function empties one path and removes another, and a kill can land
+/// between them. Emptying `out` first leaves, at that instant, an empty `out`
+/// beside a staging directory still carrying its marker and its note — so the
+/// next run is offered this same flag again, and the [`clear_staging`] at the
+/// top of [`deliver`] sweeps the directory when the publish reaches it. The
+/// other order leaves files at `out` and nothing on disk saying whose they are,
+/// which is the undecidable state this whole mechanism exists to keep off the
+/// disk. So the order is not a preference either.
 ///
 /// # Why this is its own verb rather than a flag threaded through the publish
 ///
@@ -1196,12 +1205,10 @@ pub fn clear_killed(root: &Path, out: &Path) -> Result<Cleared, Vec<ResolveError
     if !killed_direct_write(out) || release::at(out).is_ok() {
         return Ok(Cleared::Nothing);
     }
-    std::fs::remove_dir_all(out).map_err(|error| {
+    empty(out).map_err(|why| {
         refusal(
             &named,
-            &format!(
-                "a publish was killed writing into this path and it cannot be removed: {error}"
-            ),
+            &format!("a publish was killed writing into this path and {why}"),
         )
     })?;
     std::fs::remove_dir_all(&staging).map_err(|error| {
@@ -3035,6 +3042,63 @@ fn carries_a_mount(error: &std::io::Error) -> bool {
         error.kind(),
         std::io::ErrorKind::ResourceBusy | std::io::ErrorKind::CrossesDevices
     )
+}
+
+/// Remove everything in a directory, and never the directory.
+///
+/// # `remove_dir_all` is the wrong primitive for `--out`, and provably so
+///
+/// [`DIRECT`] is written on exactly one branch of [`deliver`]: the one a failed
+/// rename reaches, which is a mount point or a filesystem boundary. So every
+/// `--out` that can ever carry the residue [`clear_killed`] removes is a path
+/// the kernel answers `EBUSY` for. A `remove_dir_all` there takes the contents,
+/// leaves the mount, and returns an error — a recovery that half-recovers and
+/// then reports failure, in the one configuration it exists for. Every case
+/// that plants the residue at an ordinary directory passes against that bug,
+/// because an ordinary directory is exactly the shape the production path
+/// cannot be.
+///
+/// `killed_publish.rs` already knew it and wrote it down before this function
+/// existed: its `empty_out` helper carries the same reason in its own doc
+/// comment, for the same `EBUSY`, one directory over. The first cut of
+/// [`clear_killed`] called the primitive that file rules out.
+/// `the_flag_empties_a_mount_point_it_cannot_remove_and_publishes_into_it` is
+/// the case that holds this, and it runs inside a real `bwrap --tmpfs` mount.
+///
+/// # What it does with each entry, and with an absent path
+///
+/// A directory entry goes with `remove_dir_all` and everything else with
+/// `remove_file`. `file_type` on a [`std::fs::DirEntry`] does not follow a
+/// symlink, so a link to a directory is unlinked rather than followed into
+/// somebody's tree — the same reading [`clear_staging`] takes with
+/// `symlink_metadata`. Recursion is safe on an entry in a way it is not on the
+/// path itself: an entry is a child of a directory this run has established is
+/// its own residue, and no child of one is a mount this verb put there.
+///
+/// A path that is not there is empty, and says so with `Ok`. `--out` removed by
+/// hand while its staging directory survives is a real state, and a recovery
+/// that failed on it would leave the marker pair standing forever.
+///
+/// Unlike [`found::Found::unwind`], which drops every error because it runs on
+/// the way out of a failure already being reported, this reports. It runs on
+/// the way *in*, at a person's explicit request, and a delete they cannot see
+/// fail is a delete they cannot check.
+fn empty(at: &Path) -> Result<(), String> {
+    let entries = match std::fs::read_dir(at) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(format!("it cannot be read: {error}")),
+        Ok(entries) => entries,
+    };
+    for entry in entries {
+        let entry = entry.map_err(|error| format!("an entry of it cannot be read: {error}"))?;
+        let path = entry.path();
+        let removed = match entry.file_type().map(|kind| kind.is_dir()) {
+            Ok(true) => std::fs::remove_dir_all(&path),
+            _ => std::fs::remove_file(&path),
+        };
+        removed.map_err(|error| format!("{} cannot be removed: {error}", path.display()))?;
+    }
+    Ok(())
 }
 
 /// Remove a staging directory, whatever state it is in and whether or not it is
