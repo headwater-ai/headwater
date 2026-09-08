@@ -12,11 +12,13 @@
 # gate at all.
 #
 # This suite closes TWO of those eight — the dead link and the dead fragment —
-# and it holds five further claims the page makes about itself. It closes none
-# of the other six. The section below says so with the measurement, rather than
-# leaving a reader to assume from a passing step that the page is covered.
+# it holds one further claim about those same links, that above `## License` the
+# only path into the specification shelf is the generated index, and it holds
+# five more claims the page makes about itself. It closes none of the other six.
+# The section below says so with the measurement, rather than leaving a reader
+# to assume from a passing step that the page is covered.
 #
-# The fifth of those claims is the newest and it is a different KIND of claim.
+# The fifth of those five is a different KIND of claim.
 # Groups 1 to 5 read the page and judge what it says. Group 6 takes a command
 # the page tells a newcomer to run, runs it against the engine, and reads what
 # that newcomer would see. The defect it closes was a command that always exited
@@ -366,6 +368,37 @@ link_judge() {
     lj_rel=$(awk -F'\t' '$2 !~ /^(https?:\/\/|mailto:)/ && $2 != ""' "$scratch/links" | wc -l | tr -d ' ')
     lj_frag=$(awk -F'\t' '$2 !~ /^(https?:\/\/|mailto:)/ && $2 ~ /#/' "$scratch/links" | wc -l | tr -d ' ')
     echo "$lj_all $lj_rel $lj_frag"
+}
+
+# spec_link_judge FILE — one line per link ABOVE the `## License` heading whose
+# target names the specification shelf and is not the generated index, then a
+# tail line holding `<index occurrences above> <the line the heading sits on>`.
+#
+# The region is bounded at `## License` because the citation in that section is
+# a licensing fact and not a reading path, and because the boundary has to be
+# read out of the page rather than written down as a line number here.
+spec_link_judge() {
+    slj_file=$1
+    slj_stop=$(awk '/^##[ \t]+License[ \t]*$/ { print NR; exit }' "$slj_file")
+    slj_stop=${slj_stop:-0}
+    if [ "$slj_stop" -eq 0 ]; then
+        echo "no \`## License\` heading, so the region above it has no lower edge"
+        echo "0 0"
+        return
+    fi
+    links_of "$slj_file" | awk -F'\t' -v stop="$slj_stop" '
+        $1 >= stop { next }
+        $2 !~ /^docs\/spec\// { next }
+        {
+            path = $2
+            sub(/#.*$/, "", path)
+        }
+        path == "docs/spec/README.md" { index_seen++; next }
+        { print $1 ": " $2 "  a specification part above `## License`" }
+        END { print "TAIL " index_seen + 0 }
+    ' >"$scratch/spec.links"
+    grep -v '^TAIL ' "$scratch/spec.links"
+    echo "$(awk '/^TAIL /{print $2}' "$scratch/spec.links") $slj_stop"
 }
 
 # png_size FILE — `<width> <height>` from the IHDR chunk, or `0 0`.
@@ -1106,6 +1139,60 @@ same "a link inside an inline code span is not a link" \
     "$got"
 set -- $(link_judge "$scratch/spans" "$scratch/spans/README.md" | tail -1)
 same "  and only the three outside a closed span are read" 3 "$1"
+
+# 1i. The specification shelf, above `## License`. The page once carried a
+#     hand-kept table of every specification part, and 34 of its 44 link
+#     occurrences were that table. The remedy is not a ceiling on the count:
+#     cases 1a-1c above refuse a constant on purpose, and the count went from 18
+#     to 21 through merges this page's own Done-when required — the release badge
+#     is two occurrences and the release-page deep link is a third. So the claim
+#     asserted here is structural. A stranger's first screen reaches the
+#     specification shelf through the GENERATED index and through nothing else,
+#     which is the state a regrown table breaks and a count does not detect.
+#
+#     The `## License` section is exempt because the part it cites, `09-decisions`
+#     at Q11, is the record of the licensing choice a reader of that section
+#     wants, and not a reading path into the shelf.
+spec_link_judge "$readme" >"$scratch/spec.out"
+strays=$(sed '$d' "$scratch/spec.out")
+set -- $(tail -1 "$scratch/spec.out")
+same "above \`## License\`, the only \`docs/spec/\` link is the generated index" "" "$strays"
+more_than "  and the generated index is linked there" 0 "$1"
+more_than "  and the \`## License\` heading bounds the region" 0 "$2"
+
+# 1j-1k. The judge, provoked in both shapes. A judge nobody has seen refuse a
+#        page is a judge nobody has seen work, and a judge that refuses every
+#        page holds nothing either. The green arm carries a specification part
+#        BELOW the heading, so the boundary is exercised rather than assumed.
+mkdir -p "$scratch/spec.d"
+printf '%s\n' \
+    'Index: [the shelf](docs/spec/README.md).' \
+    '' \
+    'And a part: [principle 2](docs/spec/00-vision-and-scope.md#design-principles).' \
+    '' \
+    '## License' \
+    '' \
+    '[Q11](docs/spec/09-decisions.md#q11--license-and-distribution-posture) records it.' >"$scratch/spec.d/regrown.md"
+got=$(spec_link_judge "$scratch/spec.d/regrown.md" | sed '$d' | tr '\n' '|')
+same "  a second specification link above the heading is named" \
+    "3: docs/spec/00-vision-and-scope.md#design-principles  a specification part above \`## License\`|" \
+    "$got"
+printf '%s\n' \
+    'Index: [the shelf](docs/spec/README.md), and its [reading order](docs/spec/README.md#reading-order).' \
+    '' \
+    '## License' \
+    '' \
+    '[Q11](docs/spec/09-decisions.md#q11--license-and-distribution-posture) records it.' >"$scratch/spec.d/folded.md"
+got=$(spec_link_judge "$scratch/spec.d/folded.md" | sed '$d' | tr '\n' '|')
+same "  and a page whose only path into the shelf is the index is clean" "" "$got"
+set -- $(spec_link_judge "$scratch/spec.d/folded.md" | tail -1)
+same "  counting both index occurrences, fragment or none" 2 "$1"
+same "  and reading the heading off the page rather than a written line number" 3 "$2"
+printf '%s\n' 'No heading here, and [a part](docs/spec/09-decisions.md).' >"$scratch/spec.d/unbounded.md"
+got=$(spec_link_judge "$scratch/spec.d/unbounded.md" | sed '$d' | tr '\n' '|')
+same "  a page with no \`## License\` heading is refused rather than passed" \
+    "no \`## License\` heading, so the region above it has no lower edge|" \
+    "$got"
 
 echo "the image the first screen opens with"
 
