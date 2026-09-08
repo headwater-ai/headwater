@@ -7030,10 +7030,10 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0160",
-          "status": "current",
-          "status_since": "2026-09-06",
-          "summary": "277 generated pages load highlight.js and two stylesheets from cdnjs with no integrity attribute, so a third party supplies script to a site whose own subject is provenance.",
-          "last_verified": "2026-09-06",
+          "status": "discharged",
+          "status_since": "2026-09-08",
+          "summary": "325 generated pages loaded highlight.js and two stylesheets from cdnjs with no integrity attribute. The theme option is off, a guarded color-mode script replaces the one that threw without those elements, and no served page names that origin.",
+          "last_verified": "2026-09-08",
           "title": "The generated half of the site loads highlight.js from a third party with no subresource integrity",
           "waiting_on": "build",
           "provenance": {

@@ -33,15 +33,22 @@
 #   the served page to have. The inline content is this repository's own build
 #   output on its own origin.
 #
-#   `https://cdnjs.cloudflare.com` is where the built-in MkDocs theme loads
-#   highlight.js and its two stylesheets, on 277 of the generated pages. It is
-#   third-party code, it carries no subresource integrity, and this corpus's
-#   own subject is provenance — so it is recorded as a debt in
-#   HW-OBL-0160 rather than accepted quietly. Removing the CDN is not a
-#   one-line change: `js/darkmode.js` dereferences the two `hljs-*` link
-#   elements with no null guard, so deleting them throws on page load, where
-#   refusing them at the network keeps the elements and costs only the
-#   coloring. Vendoring the three files is the remedy that record names.
+#   `https://cdnjs.cloudflare.com` is gone from both directives, and this
+#   paragraph is what it used to argue for. The built-in MkDocs theme loaded
+#   highlight.js and its two stylesheets from that origin on every generated
+#   page — third-party code with no subresource integrity, on a site whose own
+#   subject is provenance — and HW-OBL-0160 recorded it as a debt. #566 paid
+#   it: `mkdocs.yml` sets `highlightjs: false`, and `mkdocs-overrides/js/darkmode.js`
+#   shadows the theme's file, which dereferences the two `hljs-*` link elements
+#   with no null guard and threw on all 325 generated pages the moment they
+#   stopped being emitted. Measured over the assembled directory: no served
+#   page loads anything from that origin. The three files that still name it
+#   are this comment, HW-OBL-0160's own rendered page, and the search index
+#   that reads it.
+#
+#   Nothing on either half now reaches a third-party origin at read time. That
+#   was already the measured property of the hand-built half under HW-DR-0037,
+#   and it is a property of the whole host.
 #
 #   `worker-src` and `connect-src` are what search needs: `search/main.js`
 #   starts a worker, and the worker reads `search/search_index.json`.
@@ -50,7 +57,7 @@
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 
 # The hand-built half, which HW-DR-0037 governs by name. Each path re-asserts
 # the policy that half has always carried, unchanged from what it served
