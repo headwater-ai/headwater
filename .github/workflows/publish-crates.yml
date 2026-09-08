@@ -5,16 +5,18 @@
 # a Rust user `cargo install headwater-cli`, which needs every crate the
 # binary depends on to exist on the registry too, not only the binary crate.
 #
-# # WHY `workflow_dispatch` ONLY, AND NO TAG TRIGGER
+# # WHY THIS FIRES ON A TAG, THE SAME AS `release.yml`
 #
-# `release.yml` fires on a pushed tag because attaching an asset to a release
-# is a thing every tag should get, automatically, forever. Publishing 23
-# crates for the first time is not that: a name, once claimed, is claimed for
-# good, and a bootstrap of this size is a deliberate act with no rollback
-# rather than routine. So this file takes no tag trigger at all — only a
-# person, running this by hand, decides when the closure below goes live.
-# Whether a later version bump should publish automatically is a question
-# this file leaves open rather than answers by default.
+# A tag is a version bump a person already decided to cut, not a moving
+# branch head. Firing on `push: tags: [v*]` ties one crates.io publish to
+# one cut, the same commitment `release.yml` ties one binary to, rather than
+# to whatever `main` holds at some later moment nobody chose. `workflow_dispatch`
+# takes the same tag as an input, required and not defaulted to `main`, for a
+# run against a tag that already exists — a step this workflow gained after
+# the tag was cut, or a crate rejected for a reason unrelated to the tag. The
+# version guard beside `publish_with_retry` below is what a checkout at the
+# wrong tag, or a tag cut before the version bump it was meant to carry,
+# cannot get past silently.
 #
 # # WHY ONE STEP AND NOT TWENTY-THREE
 #
@@ -64,7 +66,14 @@
 name: Publish crates
 
 on:
-  workflow_dispatch: {}
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The tag whose version this dispatches a crates.io publish for
+        required: true
 
 permissions:
   contents: read
@@ -74,7 +83,22 @@ jobs:
     name: Every workspace crate, leaves first, to crates.io
     runs-on: ubuntu-24.04
     steps:
+      - name: The tag this run is about
+        # One value for both entry points: the ref for a tag push, the input
+        # for a hand run. Every step below reads this and never
+        # `github.ref_name`, so the two paths cannot diverge — the same
+        # reason `release.yml` names this step the same way.
+        id: tag
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          case "$tag" in
+              v*) ;;
+              *) echo "::error::\`$tag\` is not a tag of the form this workflow publishes" && exit 1 ;;
+          esac
+          echo "tag=$tag" >>"$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
       - name: The toolchain this build needs
         run: |
           rustup update --no-self-update stable
@@ -82,6 +106,7 @@ jobs:
       - name: Publish the closure in dependency order, skipping what is already there
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
         working-directory: engine
         run: |
           set -eo pipefail
@@ -102,6 +127,16 @@ jobs:
                  headwater-conformance headwater-cli"
           version=$(cargo metadata --no-deps --format-version 1 |
                      python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(p["version"] for p in d["packages"] if p["name"]=="headwater-cli"))')
+          # The tag names the version this run is meant to publish. A checkout
+          # at the wrong ref, or a tag cut before the version bump it was
+          # meant to carry, produces a workspace that is not what the tag
+          # says — the same defect `release.yml`'s own version-match step
+          # guards, and the same reason it is written here rather than
+          # trusted.
+          case "${TAG#v}" in
+              "$version") ;;
+              *) echo "::error::the tag names ${TAG#v} and the workspace carries $version" && exit 1 ;;
+          esac
           # A 429 from `cargo publish` names the exact moment the PublishNew
           # limiter refills, e.g. "Please try again after Tue, 08 Sep 2026
           # 20:48:04 GMT". This waits to that moment, plus a five-second
