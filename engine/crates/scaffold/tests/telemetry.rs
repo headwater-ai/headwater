@@ -113,6 +113,7 @@ fn scaffold(root: &Path, kind: &str, title: &str) -> headwater_scaffold::Plan {
         &Request {
             kind,
             title,
+            summary: None,
             now: Date::parse(PINNED).expect("the pinned date"),
             relates: &[],
             given: &[],

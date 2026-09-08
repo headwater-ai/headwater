@@ -398,6 +398,72 @@ refused, EndpointNotPermitted
 refused, TargetUnresolved
   `supersedes` names `DR-FIX-9999`, and no document of this corpus carries that identifier
 
+=== new decision_record --title "A scent role the caller states" --summary "What a reader learns before opening the file."
+
+wrote corpus/decisions/a-scent-role-the-caller-states.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+claim .headwater/ids/decision_id/DR-FIX-0008
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = What a reader learns before opening the file. [scaffolded: the facet is in the `scent` role, and `--summary` is the sentence]
+  title = A scent role the caller states [scaffolded: the facet is in the `name` role, and `--title` is the name]
+assisted 8 of 8 — fields 4/4, sections 3/3, identifier 1/1, halves 0/0
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "What a reader learns before opening the file."
+title: "A scent role the caller states"
+---
+
+# A scent role the caller states
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
+=== new decision_record --title "A scent role stated as blank spaces" --summary "   "
+
+wrote corpus/decisions/a-scent-role-stated-as-blank-spaces.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+claim .headwater/ids/decision_id/DR-FIX-0008
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = A scent role stated as blank spaces [scaffolded: the facet is in the `name` role, and `--title` is the name]
+assisted 7 of 8 — fields 3/4, sections 3/3, identifier 1/1, halves 0/0
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "A scent role stated as blank spaces"
+---
+
+# A scent role stated as blank spaces
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
 === new addressed --title "A closed set the caller states" --facet audience=internal
 
 wrote corpus/addressees/a-closed-set-the-caller-states.md

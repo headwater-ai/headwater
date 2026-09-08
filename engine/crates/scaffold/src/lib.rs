@@ -102,6 +102,11 @@ use headwater_yaml::Mapping;
 pub struct Request<'a> {
     pub kind: &'a str,
     pub title: &'a str,
+    /// A caller-stated value for the facet in the `scent` role, exactly as
+    /// `title` is a caller-stated value for the facet in the `name` role.
+    /// `None` leaves the field carrying a prompt, for a person to answer by
+    /// hand before the document is current.
+    pub summary: Option<&'a str>,
     /// The injected clock. Every date this run writes is this value, so the
     /// same request over the same corpus writes the same bytes.
     pub now: Date,
@@ -765,7 +770,15 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
     let shelf = one_shelf(sources.shelves, kind)?;
     let directory = literal_directory(shelf)?;
 
-    let fields = front_matter(sources, kind, shelf, title, request.now, request.given)?;
+    let fields = front_matter(
+        sources,
+        kind,
+        shelf,
+        title,
+        request.summary,
+        request.now,
+        request.given,
+    )?;
 
     // The identifier is minted before the placement, because a shelf layout may
     // name the sequence the identifier carries. Nothing is written either way,
@@ -976,6 +989,7 @@ fn front_matter(
     kind: &str,
     shelf: &Shelf,
     title: &str,
+    summary: Option<&str>,
     now: Date,
     given: &[(String, String)],
 ) -> Result<Vec<Field>, Refusal> {
@@ -1121,6 +1135,17 @@ fn front_matter(
                         "the facet is in the `name` role, and `--title` is the name".to_string(),
                     ),
                 },
+                Some("scent") if summary.map(str::trim).is_some_and(|text| !text.is_empty()) => {
+                    Field {
+                        key: name.clone(),
+                        value: summary.unwrap().trim().to_string(),
+                        quoted: true,
+                        origin: Origin::Scaffolded(
+                            "the facet is in the `scent` role, and `--summary` is the sentence"
+                                .to_string(),
+                        ),
+                    }
+                }
                 _ if !values.is_empty() => {
                     return Err(Refusal::FacetUndeterminable {
                         facet: name,

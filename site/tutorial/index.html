@@ -427,12 +427,12 @@ taxonomy.yml</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">08</span>Type the document</h2>
-        <p class="prose">Delete the note and let the engine write the document in its place. A shelf decided first, because <code>docs/decisions/**</code> is the shelf named <code>decisions</code>. Placement settled the kind, and three of the four required facets were filled by a role rather than by a guess. <code>summary</code> is the one left to you, because no declaration determines it.</p>
+        <p class="prose">Delete the note and let the engine write the document in its place. A shelf decided first, because <code>docs/decisions/**</code> is the shelf named <code>decisions</code>. Placement settled the kind, and three of the four required facets were filled by a role rather than by a guess. <code>summary</code> carries no role of its own, so <code>--summary</code> states it directly, exactly as <code>--title</code> states the name.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>cat docs/decisions/0001-store-attempts-in-postgres.md</code> prints the second block, with your own dates.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">rm docs/decisions/postgres-note.md
-headwater new decision --title "Store attempts in Postgres"</pre>
+headwater new decision --title "Store attempts in Postgres" --summary "The queue keeps every delivery attempt in Postgres."</pre>
           <pre class="out verbatim">wrote docs/decisions/0001-store-attempts-in-postgres.md
 
 what the taxonomy decided
@@ -440,7 +440,7 @@ what the taxonomy decided
   identifier ACME-DR-0001 under `decision_id`, allocation reconcile-first
   status — `regimes.lifecycle.standard` opens at `draft`
   status_since — the facet is in the `state_entered` role, and the run's clock is the date
-  summary — no declaration determines it, and this run states the question instead
+  summary — the facet is in the `scent` role, and `--summary` is the sentence
   last_verified — the facet is in the `freshness` role, and the run's clock is the date
   section `Context` — the kind requires it
   section `Decision` — the kind requires it
@@ -449,7 +449,7 @@ what the taxonomy decided
 id: ACME-DR-0001
 status: draft
 status_since: 2026-08-17
-summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+summary: "The queue keeps every delivery attempt in Postgres."
 last_verified: 2026-08-17
 ---
 
@@ -540,7 +540,7 @@ git commit -m "A first governed corpus"</pre>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>0</code>.</span></p>
       </div>
       <div>
-          <pre class="cmd verbatim">headwater new decision --title "Deliver at least once" --relates supersedes=ACME-DR-0001</pre>
+          <pre class="cmd verbatim">headwater new decision --title "Deliver at least once" --relates supersedes=ACME-DR-0001 --summary "Retrying a delivery is safe, so the queue may send one attempt twice."</pre>
           <pre class="out verbatim">wrote docs/decisions/0002-deliver-at-least-once.md
 edited docs/decisions/0001-store-attempts-in-postgres.md</pre>
           <pre class="out verbatim">the edges it proposed
@@ -635,8 +635,7 @@ headwater check</pre>
     shelf `decisions` matched on `docs/decisions/**`
     `decisions` is homogeneous, so placement carries the kind `decision`
   purpose rationale, to explain why a choice was made and what it forecloses
-  summary TODO one sentence: what a reader learns here, which is what routing
-    reads
+  summary Retrying a delivery is safe, so the queue may send one attempt twice.
   requires the facets status, status_since, summary, last_verified
   requires the sections Context, Decision, Consequences
   may declare supersedes to governed_document, and the other end writes
@@ -645,12 +644,11 @@ headwater check</pre>
   may declare constrains to decision
   may declare conflicts_with to decision
   may declare traces_to to governed_document, code_path
-  to ACME-DR-0001 supersedes — TODO one sentence: what a reader learns here,
-    which is what routing reads (the target's own summary) [this document
-    governs the reading]
-  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — TODO
-    one sentence: what a reader learns here, which is what routing reads (the
-    target's own summary) [this document governs the reading]</pre>
+  to ACME-DR-0001 supersedes — The queue keeps every delivery attempt in
+    Postgres. (the target's own summary) [this document governs the reading]
+  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — The
+    queue keeps every delivery attempt in Postgres. (the target's own summary)
+    [this document governs the reading]</pre>
       </div>
     </div>
   </div>
@@ -676,8 +674,8 @@ headwater check</pre>
   distinctive why do we keep attempts in postgres
   purpose behavior 3
   purpose rationale 3
-  docs/decisions/0001-store-attempts-in-postgres.md — TODO one sentence: what a
-    reader learns here, which is what routing reads</pre>
+  docs/decisions/0001-store-attempts-in-postgres.md — The queue keeps every
+    delivery attempt in Postgres.</pre>
       </div>
     </div>
   </div>
