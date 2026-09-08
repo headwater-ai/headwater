@@ -24,10 +24,10 @@ use headwater_census::walk::Corpus;
 use headwater_check::paint::ColorMode;
 use headwater_check::scope::{over_documents, over_edges, Digests};
 use headwater_check::{
-    coverage, declaration, duplicate, endpoint, facet_required, facet_value, fragment, identity,
-    language, participation, placement, reciprocity, retired, sections, source_form, target, voice,
-    Cache, Context, Date, Declared, Detail, DocumentCheck, DocumentView, EdgeCheck, EdgeView,
-    Grain, Outcome, Register, Run, Shape,
+    coverage, declaration, duplicate, endpoint, facet_required, facet_value, identity, language,
+    participation, placement, reciprocity, retired, sections, source_form, target, voice, Cache,
+    Context, Date, Declared, Detail, DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain,
+    Outcome, Register, Run, Shape,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;

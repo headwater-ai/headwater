@@ -233,13 +233,34 @@ impl Anchors {
     /// is a path outside the corpus or a file the census parsed no document
     /// out of. That is the absence of a verdict rather than a passing one, and
     /// the caller reports nothing on it.
+    /// An index built from a list, for the tests of the rule that reads one.
+    /// `cfg(test)` so that no shipped path can build an index whose anchors did
+    /// not come from a census.
+    #[cfg(test)]
+    pub(crate) fn of_pairs(pairs: &[(&str, &[&str])]) -> Anchors {
+        let mut by_path: Vec<(String, Vec<String>)> = pairs
+            .iter()
+            .map(|(path, anchors)| {
+                (
+                    (*path).to_string(),
+                    anchors.iter().map(|it| (*it).to_string()).collect(),
+                )
+            })
+            .collect();
+        // The shipped constructor inherits the census's path order, and
+        // `resolves` binary searches. A test index that was not sorted would
+        // answer `None` for a path it holds.
+        by_path.sort();
+        Anchors { by_path }
+    }
+
     fn resolves(&self, path: &str, fragment: &str) -> Option<bool> {
         let at = self
             .by_path
             .binary_search_by(|(known, _)| known.as_str().cmp(path))
             .ok()?;
         let wanted = fragment.to_lowercase();
-        Some(self.by_path[at].1.iter().any(|anchor| *anchor == wanted))
+        Some(self.by_path[at].1.contains(&wanted))
     }
 }
 
@@ -815,5 +836,227 @@ mod tests {
         assert_eq!(anchors, ["one-1", "one", "one-2"]);
         let issued: std::collections::HashSet<&String> = anchors.iter().collect();
         assert_eq!(issued.len(), anchors.len(), "an anchor is issued once");
+    }
+}
+
+#[cfg(test)]
+mod arms {
+    use super::*;
+    use crate::scope::CorpusView;
+    use headwater_doc::LinkForm;
+    use headwater_yaml::{Position, Span};
+
+    const CITER: &str = "docs/spec/01-conceptual-model.md";
+    const TARGET: &str = "docs/spec/glossary.md";
+
+    fn span() -> Span {
+        Span {
+            start: Position {
+                line: 30,
+                col: 5,
+                offset: 0,
+            },
+            end: Position {
+                line: 30,
+                col: 6,
+                offset: 1,
+            },
+        }
+    }
+
+    fn link(destination: &str, fragment: Option<&str>, binding: Binding) -> Link {
+        Link {
+            source_path: CITER.to_string(),
+            destination: destination.to_string(),
+            fragment: fragment.map(str::to_string),
+            form: LinkForm::Inline,
+            span: span(),
+            binding,
+        }
+    }
+
+    fn corpus(path: &str) -> Binding {
+        Binding::Corpus {
+            path: path.to_string(),
+            class: "typed",
+            id: None,
+        }
+    }
+
+    fn index() -> Anchors {
+        Anchors::of_pairs(&[
+            (CITER, &["a-heading-of-the-citer"]),
+            (TARGET, &["projection"]),
+        ])
+    }
+
+    /// The defect this rule was widened for. The finding is written at the
+    /// citing document and line, and it names the target rather than saying
+    /// "this document", which would send an author to the wrong file.
+    #[test]
+    fn a_fragment_that_names_no_heading_of_the_target_is_an_error_at_the_citing_line() {
+        let found = finding(
+            &link(
+                "glossary.md#projections",
+                Some("projections"),
+                corpus(TARGET),
+            ),
+            &index(),
+        )
+        .expect("a finding");
+        assert_eq!(found.rule, self::RULE);
+        assert_eq!(found.severity, Severity::Error);
+        assert_eq!(found.path, CITER);
+        assert_eq!(found.line, 30);
+        assert_eq!(found.column, 5);
+        assert!(found.message.contains(TARGET), "{found:#?}");
+        assert!(!found.message.contains("this document"), "{found:#?}");
+        assert!(!found.fixable(), "{found:#?}");
+    }
+
+    /// The near arm keeps its own sentence, and it names no path.
+    #[test]
+    fn the_near_arm_says_this_document_and_the_far_arm_names_the_file() {
+        let near = finding(
+            &link(
+                "#no-such-heading",
+                Some("no-such-heading"),
+                Binding::SameDocument,
+            ),
+            &index(),
+        )
+        .expect("a finding");
+        assert!(near.message.contains("this document"), "{near:#?}");
+        assert!(!near.message.contains(TARGET), "{near:#?}");
+        assert_eq!(near.path, CITER);
+    }
+
+    /// A fragment that resolves is nothing to this rule, on both arms.
+    #[test]
+    fn a_fragment_that_resolves_is_not_a_finding_on_either_arm() {
+        assert!(finding(
+            &link("glossary.md#projection", Some("projection"), corpus(TARGET)),
+            &index()
+        )
+        .is_none());
+        assert!(finding(
+            &link(
+                "#a-heading-of-the-citer",
+                Some("a-heading-of-the-citer"),
+                Binding::SameDocument
+            ),
+            &index()
+        )
+        .is_none());
+    }
+
+    /// The comparison is case folded, which is what a renderer does.
+    #[test]
+    fn a_fragment_resolves_whatever_case_the_author_wrote_it_in() {
+        assert!(finding(
+            &link("glossary.md#Projection", Some("Projection"), corpus(TARGET)),
+            &index()
+        )
+        .is_none());
+    }
+
+    /// The bindings this rule passes over, enumerated rather than sampled.
+    ///
+    /// Two belong to [`crate::link_path`], and two name a body this engine
+    /// never read. A finding on any of the four would be a second rule
+    /// reporting one defect, or a guess about bytes nobody opened.
+    #[test]
+    fn every_binding_that_is_not_this_rule_produces_nothing() {
+        for binding in [
+            Binding::Missing {
+                path: "docs/spec/gone.md".to_string(),
+            },
+            Binding::Unnormalizable {
+                why: "climbs above the repository root".to_string(),
+            },
+            Binding::Repository {
+                path: "CLAUDE.md".to_string(),
+            },
+            Binding::External,
+        ] {
+            assert!(finding(&link("x#y", Some("y"), binding), &index()).is_none());
+        }
+    }
+
+    /// A link with no fragment, and one with an empty fragment, are both
+    /// nothing to this rule. `split_fragment` gives `Some("")` for a
+    /// destination that ends in a bare `#`, so the emptiness has to be tested
+    /// rather than the option.
+    #[test]
+    fn a_link_carrying_no_fragment_is_not_this_rules_business() {
+        assert!(finding(&link("glossary.md", None, corpus(TARGET)), &index()).is_none());
+        assert!(finding(&link("glossary.md#", Some(""), corpus(TARGET)), &index()).is_none());
+    }
+
+    /// The case the module comment records as passed over: a corpus path the
+    /// census parsed no document out of. There is no heading list, so there is
+    /// no verdict, and a finding would be a guess about a file nobody read.
+    #[test]
+    fn a_corpus_path_with_no_parsed_document_gets_no_verdict_rather_than_a_guess() {
+        let untyped = "docs/spec/notes.txt";
+        assert_eq!(index().resolves(untyped, "anything"), None);
+        assert!(finding(
+            &link("notes.txt#anything", Some("anything"), corpus(untyped)),
+            &index()
+        )
+        .is_none());
+    }
+
+    /// A run whose scope admitted no links skips with the reason rather than
+    /// passing. A pass would report a corpus this rule never read as clean.
+    #[test]
+    fn a_view_with_no_links_skips_rather_than_passes() {
+        let view = CorpusView::only_links_and_anchors(None, None);
+        assert!(matches!(Fragments.evaluate(&view), Outcome::Skipped(why) if why == NO_LINKS));
+    }
+
+    /// And a run that reached the links but no anchors says the other thing.
+    /// Two absences that became one reason would leave an author guessing which
+    /// half of the rule was unavailable.
+    #[test]
+    fn a_view_with_links_and_no_anchors_skips_with_the_other_reason() {
+        let links = vec![link(
+            "glossary.md#projection",
+            Some("projection"),
+            corpus(TARGET),
+        )];
+        let view = CorpusView::only_links_and_anchors(Some(&links), None);
+        assert!(matches!(Fragments.evaluate(&view), Outcome::Skipped(why) if why == NO_ANCHORS));
+    }
+
+    /// The whole set, and one finding per unresolved member of it. A corpus
+    /// whose fragments all resolve passes, which is what lets this rule be an
+    /// error at all.
+    #[test]
+    fn the_unresolved_fragments_of_the_view_become_the_findings() {
+        let anchors = index();
+        let broken = vec![
+            link(
+                "glossary.md#projections",
+                Some("projections"),
+                corpus(TARGET),
+            ),
+            link("#nope", Some("nope"), Binding::SameDocument),
+            link("glossary.md#projection", Some("projection"), corpus(TARGET)),
+            link("https://example.com", None, Binding::External),
+        ];
+        let view = CorpusView::only_links_and_anchors(Some(&broken), Some(&anchors));
+        let Outcome::Failed(found) = Fragments.evaluate(&view) else {
+            panic!("two unresolved fragments are two findings");
+        };
+        assert_eq!(found.len(), 2, "{found:#?}");
+
+        let clean = vec![link(
+            "glossary.md#projection",
+            Some("projection"),
+            corpus(TARGET),
+        )];
+        let view = CorpusView::only_links_and_anchors(Some(&clean), Some(&anchors));
+        assert!(matches!(Fragments.evaluate(&view), Outcome::Passed));
     }
 }
