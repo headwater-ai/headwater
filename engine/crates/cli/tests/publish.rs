@@ -1794,15 +1794,70 @@ fn the_shipped_starter_recipe_inherits_no_record_of_another_artifacts_references
         "the publish reported a population this artifact does not carry: {stderr}"
     );
 
-    // The source it was flattened from does record a population, so this case
-    // is about the flattening and not about a record that is empty everywhere.
+    // The assertions above are all satisfied by a source that records nothing,
+    // and after #633 the maintained source is one. So the control is a copy of
+    // that source with a record planted back into it: the plain publish of the
+    // copy carries the pair, and the flattened publish of the same copy carries
+    // none. That is the difference this case is about, and the maintained source
+    // can no longer show it.
+    let planted = root.path().join("planted");
+    let source = planted.join("source/headwater-standard");
+    copy_tree(&repository().join("taxonomy-source/headwater-standard"), &source);
+    // `contents.bundles` names `../../docs/taxonomies` from the source
+    // directory, so the copy has to sit two levels under a tree that carries
+    // one.
+    let bundles = planted.join("docs/taxonomies");
+    copy_tree(&repository().join("docs/taxonomies"), &bundles);
+
+    let readme = bundles.join("README.md");
+    let mut body = std::fs::read_to_string(&readme).expect("the copied README reads");
+    body.push_str("\n[a planted reference](../../spec/07-distribution-and-federation.md)\n");
+    std::fs::write(&readme, body).expect("the copied README writes");
+    let manifest = source.join("package.yml");
+    let mut declared = std::fs::read_to_string(&manifest).expect("the copied manifest reads");
+    declared.push_str(&format!(
+        "\n{}:\n  bundles/README.md:\n    - spec/07-distribution-and-federation.md\n",
+        headwater_resolve::package::RECORDED_REFERENCES
+    ));
+    std::fs::write(&manifest, declared).expect("the copied manifest writes");
+
     let plain = root.path().join("plain");
-    let (code, message) = publish_real_source_into(&plain);
-    assert_eq!(code, Some(0), "{message}");
-    assert!(
-        !recorded_references(&plain.join("package.yml")).is_empty(),
-        "the source package records nothing, so this case holds nothing"
+    // The root is the copy and not the repository: a publish refuses a
+    // `contents.bundles` that resolves outside the tree it is reading.
+    let (code, _stdout, stderr) = publish_plain_from(&planted, &source, &plain);
+    assert_eq!(code, Some(0), "the planted source no longer publishes: {stderr}");
+    assert_eq!(
+        recorded_references(&plain.join("package.yml")),
+        vec![(
+            "bundles/README.md".to_string(),
+            "spec/07-distribution-and-federation.md".to_string()
+        )],
+        "the plant did not reach the plain artifact, so the control holds nothing"
     );
+
+    let flattened = root.path().join("planted-recipe");
+    let (code, _stdout, stderr) = publish_assembly_from(&planted, &source, &flattened);
+    assert_eq!(code, Some(0), "{stderr}");
+    let carried = std::fs::read_to_string(flattened.join("package.yml"))
+        .expect("the flattened manifest reads");
+    assert!(
+        !carried.contains(headwater_resolve::package::RECORDED_REFERENCES),
+        "a recipe flattened from a source that records a pair inherited the record:\n{carried}"
+    );
+}
+
+/// Every file under `from`, copied to `to`, directories made as they are met.
+fn copy_tree(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("the destination directory is made");
+    for entry in std::fs::read_dir(from).expect("the source directory reads") {
+        let entry = entry.expect("an entry reads");
+        let target = to.join(entry.file_name());
+        if entry.file_type().expect("a file type reads").is_dir() {
+            copy_tree(&entry.path(), &target);
+        } else {
+            std::fs::copy(entry.path(), &target).expect("a file copies");
+        }
+    }
 }
 
 /// The destination of every inline Markdown link on a line that is not inside a
