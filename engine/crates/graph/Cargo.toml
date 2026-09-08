@@ -1,23 +1,25 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-graph"
+description = "Resolves relations: into edges, indexes identifiers, binds external anchors, and reports what did not resolve"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 # The census is the input set. Only a typed row can be an edge endpoint, and a
 # row carries the document it read, so the graph never opens a file twice.
-headwater-census = { path = "../census" }
+headwater-census = { workspace = true }
 
 # Front matter and prose links both arrive from the parser.
-headwater-doc = { path = "../doc" }
+headwater-doc = { workspace = true }
 
 # A relation declaration is a taxonomy source, and a declaration that is wrong
 # reports at the line that declared it.
-headwater-yaml = { path = "../yaml" }
+headwater-yaml = { workspace = true }
 
 # `core.requires` is where `lifecycle_sensitive` is declared, and this crate
 # reads the flag onto the relations of the family a requirement names. The
@@ -25,7 +27,7 @@ headwater-yaml = { path = "../yaml" }
 # calling its reader rather than by parsing the block a second time here. The
 # build still takes an already-resolved taxonomy: this is a dependency on what
 # a declaration means and never on the act of resolving one.
-headwater-resolve = { path = "../resolve" }
+headwater-resolve = { workspace = true }
 
 [lints]
 workspace = true

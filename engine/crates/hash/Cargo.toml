@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-hash"
+description = "SHA-256, and nothing else. The lock, the census and the check cache all hash, and one implementation is what stops two of them disagreeing"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 # No dependencies, and none of the crates that use this one may add any through
 # it. Three components hash: the lock hashes a canonical taxonomy, the census

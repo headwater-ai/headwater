@@ -1,52 +1,54 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-audit"
+description = "taxonomy audit: the schema measured against a corpus. Its findings are about the taxonomy rather than about any document, and it gates nothing"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 # The classified rows and the document each one read. The audit is an ABox
 # reading, so the corpus is half of every number here.
-headwater-census = { path = "../census" }
+headwater-census = { workspace = true }
 
 # The edges, and the `created_by` each one carries from its relation type.
-headwater-graph = { path = "../graph" }
+headwater-graph = { workspace = true }
 
 # `Shape` reads the facet, kind and purpose declarations, and `Context` carries
 # the injected clock. A second reader of either would be the drift that spec 4
 # names, so this crate depends on the one that exists.
-headwater-check = { path = "../check" }
+headwater-check = { workspace = true }
 
 # The identifier template language, for the schemes this verb reports on.
-headwater-meta = { path = "../meta" }
+headwater-meta = { workspace = true }
 
 # The default nuclearity of each relation family, which `taxonomy validate`
 # already applies. The override reading compares a declaration against that
 # table, and a second copy of it here would be a table that could disagree with
 # the one a validator runs.
-headwater-resolve = { path = "../resolve" }
+headwater-resolve = { workspace = true }
 
 # A facet value is a spanned YAML value, and every reading here reads several.
-headwater-yaml = { path = "../yaml" }
+headwater-yaml = { workspace = true }
 
 # The layout renderer. `headwater new` writes a file name with it, and the
 # layout reading asks whether the file a document sits in is the name it would
 # have written. A second renderer here would measure adherence to a template
 # that the scaffolder does not follow.
-headwater-scaffold = { path = "../scaffold" }
+headwater-scaffold = { workspace = true }
 
 # The provenance block, whose shape belongs to the engine rather than to a
 # taxonomy. The warrant reading calls the one reader of it rather than opening
 # the block by key here, because a second reader is a second answer.
-headwater-doc = { path = "../doc" }
+headwater-doc = { workspace = true }
 
 [dev-dependencies]
 # The property test runs over this repository's own corpus, which needs its
 # committed lock and the consumer declaration that says what to walk.
-headwater-lock = { path = "../lock" }
+headwater-lock = { workspace = true }
 
 [lints]
 workspace = true

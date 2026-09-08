@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-sweep"
+description = "The deterministic half of the assisted coherence sweep. The sweep's provenance is marked agent, it never gates, and it is never cached as if it is reproducible"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 # The dependency direction is the whole argument that a sweep cannot gate.
 #
@@ -18,21 +20,21 @@ rust-version.workspace = true
 # The finding shape, which spec 4 fixes for every mechanism and which a sweep
 # shares with a check. It is shared rather than copied, because two shapes that
 # drift are two reports a reader has to learn separately.
-headwater-check = { path = "../check" }
+headwater-check = { workspace = true }
 
 # The classification. A sweep reads the documents the census typed and nothing
 # else, so a path a sweep names is either a classified document of this corpus
 # or a finding this crate refuses.
-headwater-census = { path = "../census" }
+headwater-census = { workspace = true }
 
 # The declared half. Spec 4 says a sweep never re-derives what the graph
 # declares, and this is what the refusal reads.
-headwater-graph = { path = "../graph" }
+headwater-graph = { workspace = true }
 
 # The loader for what comes back, and the JSON writer for what goes out. A
 # sweep's return file is YAML for the reason every other authored input here is:
 # one dialect, one parser, one set of spans in a refusal.
-headwater-yaml = { path = "../yaml" }
+headwater-yaml = { workspace = true }
 
 [lints]
 workspace = true

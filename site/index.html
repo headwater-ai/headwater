@@ -302,8 +302,11 @@
                existing tag attached the pair, 2026-09-08). What still
                makes this line false is narrower than before: a package
                registry entry, which #707 named and excluded as its own
-               scope, and nothing files yet. -->
-          <div class="note">v0.1.0 carries a binary and a checksum, but this line still does not work: <code>cargo install</code> needs a package registry entry, and there is none yet. The release page and the tutorial are the two routes that work today.</div>
+               scope. #735 is that issue and its workflow is written
+               (`.github/workflows/publish-crates.yml`); nobody has run it,
+               because it needs a `CARGO_REGISTRY_TOKEN` this repository
+               does not hold. -->
+          <div class="note">v0.1.0 carries a binary and a checksum, but this line still does not work: <code>cargo install</code> needs a package registry entry, and #735 has not published one yet. The release page and the tutorial are the two routes that work today.</div>
         </div>
       </div>
       <div class="cards">

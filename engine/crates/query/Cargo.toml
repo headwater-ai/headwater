@@ -1,45 +1,47 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-query"
+description = "The deterministic reads of the graph a run already built, as one surface that the CLI, an editor and an adapter each reach through rather than around"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 # The census is what a read answers over: it carries every row and the parsed
 # document each one read, so no phase here opens a file.
-headwater-census = { path = "../census" }
+headwater-census = { workspace = true }
 
 # The identifier index, the edges, and the anchors an edge reaches.
-headwater-graph = { path = "../graph" }
+headwater-graph = { workspace = true }
 
 # `Shape` is the reader of kind, facet and purpose declarations. A second
 # reader of the same declarations is the drift spec 4 names, so this crate
 # depends on the one that exists rather than writing another.
-headwater-check = { path = "../check" }
+headwater-check = { workspace = true }
 
 # The four output formats of a run. The MCP `check` tool renders through the
 # same dispatcher `headwater check` renders through, which is what makes an
 # agent and a terminal read one report rather than two.
-headwater-adapter = { path = "../adapter" }
+headwater-adapter = { workspace = true }
 
 # A facet value is a spanned YAML value, and this reads several of them.
-headwater-yaml = { path = "../yaml" }
+headwater-yaml = { workspace = true }
 # The provenance block, whose shape belongs to the engine rather than to a
 # taxonomy. The warrant reader lives beside the parse, so this crate and the
 # audit read one definition of it.
-headwater-doc = { path = "../doc" }
+headwater-doc = { workspace = true }
 
 # The engine's own release number, which the MCP handshake's `serverInfo`
 # reports by name rather than by its own crate's manifest version.
-headwater-resolve = { path = "../resolve" }
+headwater-resolve = { workspace = true }
 
 [dev-dependencies]
 # The reads run over this repository's own corpus in the fixture test, which
 # needs its taxonomy resolved and its lock read.
-headwater-lock = { path = "../lock" }
+headwater-lock = { workspace = true }
 
 [lints]
 workspace = true

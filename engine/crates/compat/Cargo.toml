@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-compat"
+description = "Compares two taxonomies over one corpus on the dimensions spec 2 fixes, so the required version bump follows the measurement rather than a publisher's guess"
 version.workspace = true
 edition.workspace = true
 publish = false
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 # The six dimensions read what four phases already produced, and this crate
@@ -13,17 +15,17 @@ rust-version.workspace = true
 # and the census, so naming it names all four and adds no edge this workspace
 # did not already carry. No crate names this one except the binary, so nothing
 # in a phase can read a compatibility verdict.
-headwater-generate = { path = "../generate" }
-headwater-check = { path = "../check" }
-headwater-census = { path = "../census" }
-headwater-graph = { path = "../graph" }
-headwater-resolve = { path = "../resolve" }
+headwater-generate = { workspace = true }
+headwater-check = { workspace = true }
+headwater-census = { workspace = true }
+headwater-graph = { workspace = true }
+headwater-resolve = { workspace = true }
 # The front matter of a document is a `headwater_yaml` mapping, and a step of a
 # migration payload names one value of it. Naming the loader here reads that
 # value; the alternative was a second accessor on `headwater-doc` that exists
 # for one caller.
-headwater-ref = { path = "../ref" }
-headwater-yaml = { path = "../yaml" }
+headwater-ref = { workspace = true }
+headwater-yaml = { workspace = true }
 
 [lints]
 workspace = true

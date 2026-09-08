@@ -1,18 +1,20 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-meta"
+description = "The meta-schema, as a file in the dialect it describes, what it decides over one source, and the shelf-path language"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 # The dialect, and the sublanguage. Nothing else: the meta-schema is shape, and
 # shape is decidable over one source. Referential integrity, confluence and
 # core satisfiability read a resolved tree, which is the resolver's.
-headwater-yaml = { path = "../yaml" }
-headwater-ref = { path = "../ref" }
+headwater-yaml = { workspace = true }
+headwater-ref = { workspace = true }
 
 [lints]
 workspace = true

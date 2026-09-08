@@ -1,50 +1,52 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-check"
+description = "Generates the rules from the taxonomy, runs them, computes coverage against the census, and keys each instance on what it read and on the clock it was handed"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 # A cache key is a hash over the in-scope input hashes, the lock digest and the
 # check version. It uses the function the census and the lock use, so no two of
 # the three can disagree about one byte string.
-headwater-hash = { path = "../hash" }
+headwater-hash = { workspace = true }
 
 # The census is the denominator. Coverage is computed against it and never
 # against the set of documents that classified.
-headwater-census = { path = "../census" }
+headwater-census = { workspace = true }
 
 # The graph is what a Graph-origin check reads.
-headwater-graph = { path = "../graph" }
+headwater-graph = { workspace = true }
 
 # A document-scoped view carries a parsed document, and the body is the half
 # that only a check which declares `NEEDS_BODY` receives.
-headwater-doc = { path = "../doc" }
+headwater-doc = { workspace = true }
 
 # A finding anchors at a line, and a span is where the line comes from.
-headwater-yaml = { path = "../yaml" }
+headwater-yaml = { workspace = true }
 
 # The identifier template language. One reader of it, shared with the resolver:
 # a scheme's `pattern` says what a document's identifier has to look like here
 # and what two schemes have to be disjoint over there, and two readings of one
 # grammar would disagree the day a placeholder form is added.
-headwater-meta = { path = "../meta" }
+headwater-meta = { workspace = true }
 
 # The resolver owns what a declaration means, and two readings here need it.
 # `role_is_terminal` says which roles on a state value end the machine, and
 # `headwater_graph::Declarations` reads `core.requires` through the same crate.
 # The runner still takes an already-resolved taxonomy: this is a dependency on
 # the meaning of a declaration and never on the act of resolving one.
-headwater-resolve = { path = "../resolve" }
+headwater-resolve = { workspace = true }
 
 [dev-dependencies]
 
 # The cache differential over this repository keys on the digest the committed
 # lock declares, which is the number a real run of `headwater check` uses.
-headwater-lock = { path = "../lock" }
+headwater-lock = { workspace = true }
 
 [lints]
 workspace = true

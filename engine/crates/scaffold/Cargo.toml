@@ -1,50 +1,52 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-scaffold"
+description = "What headwater new <kind> proposes and what it refuses, which spec 12 names a correctness root because nobody reviews a scaffolded edge on its own"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 # The kind, facet and identifier-scheme declarations.
-headwater-check = { path = "../check" }
+headwater-check = { workspace = true }
 
 # The identifier template language. `headwater new` mints an identifier that
 # `identifier.pattern.not_met` then reads, and both go through
 # `headwater_meta::identifier::Template`, which is the one reader of a pattern.
-headwater-meta = { path = "../meta" }
+headwater-meta = { workspace = true }
 
 # The shelves, and the classifier. A proposed path is held against
 # `headwater_census::resolve::shelf_for`, so the placement this crate derives is
 # the placement the engine reads back.
-headwater-census = { path = "../census" }
+headwater-census = { workspace = true }
 
 # The relation declarations and the identifier index. An edge this crate
 # proposes names a target the index already holds.
-headwater-graph = { path = "../graph" }
+headwater-graph = { workspace = true }
 
 # The reciprocal half is spliced into a document that an author wrote, and the
 # result is parsed again before anything reaches disk.
-headwater-doc = { path = "../doc" }
+headwater-doc = { workspace = true }
 
 # The overlay writer reads its own read-back through the resolver's operation
 # reader, so the comparison it makes is the reading the resolver will take.
-headwater-resolve = { path = "../resolve" }
+headwater-resolve = { workspace = true }
 
 # Four members of a resolved taxonomy that no typed reader carries. See
 # `declared.rs` for the list and for why each one is read here.
-headwater-yaml = { path = "../yaml" }
+headwater-yaml = { workspace = true }
 
 [dev-dependencies]
 # The grammar test runs over every scheme of this repository's committed lock as
 # well as over the fixture taxonomy, so a scheme added to either reaches it.
-headwater-lock = { path = "../lock" }
+headwater-lock = { workspace = true }
 
 # The pipeline test runs the real check layer over a scaffolded tree, and the
 # digest of the fixture taxonomy stands in for a lock digest.
-headwater-hash = { path = "../hash" }
+headwater-hash = { workspace = true }
 
 [lints]
 workspace = true

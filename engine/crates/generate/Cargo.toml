@@ -1,58 +1,60 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-generate"
+description = "Writes every projection the taxonomy declares, and generate --check refuses a committed output that differs from what this corpus and this lock produce now"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 # The projections block is read off the resolved taxonomy, which is a mapping,
 # in the way the obligations and controls block is.
-headwater-yaml = { path = "../yaml" }
+headwater-yaml = { workspace = true }
 
 # The generated-file marker: what this crate writes into every output, and what
 # the census reads to keep a generated file out of the authored population. It
 # sits below both crates so that the writer and the reader cannot disagree.
-headwater-mark = { path = "../mark" }
+headwater-mark = { workspace = true }
 
 # A shelf index groups the census rows by the shelf that claimed each one, and
 # the shelf name is already in the row that classified it.
-headwater-census = { path = "../census" }
+headwater-census = { workspace = true }
 
 # The reading order of a generated index is the derivation `route` and `explain`
 # already apply, and the query surface owns it.
-headwater-query = { path = "../query" }
+headwater-query = { workspace = true }
 
 # An export carries the property graph, so the emitter reads the graph rather
 # than a projection of it. Every other emitter here reads pointers.
-headwater-graph = { path = "../graph" }
+headwater-graph = { workspace = true }
 
 # The JSON Schema emitter reads the facet and kind declarations, which is what
 # the shape holds. It emits no check, and it reads what the generated Shape
 # checks read, so the two cannot drift.
-headwater-check = { path = "../check" }
+headwater-check = { workspace = true }
 
 # The grader, and the intake that reads a transcript back. A probe result is
 # a projection whose source is a committed transcript, so this crate reaches the
 # one component of the measurement layer that returns a verdict. The direction
 # is safe in both senses that matter: `headwater-probe` names `headwater-check`
 # and never this crate, and no crate in this workspace opens a socket.
-headwater-probe = { path = "../probe" }
+headwater-probe = { workspace = true }
 
 # The dispatch table of the binary. A verb index is a projection over it, and
 # the crate sits below both this one and the binary so that one list serves the
 # emitter and the arms. See `crates/verbs` for why it is not a module of either.
-headwater-verbs = { path = "../verbs" }
+headwater-verbs = { workspace = true }
 
 [dev-dependencies]
 # A fixture corpus needs a taxonomy resolved from sources, in the way every
 # other crate's fixture tree does.
-headwater-resolve = { path = "../resolve" }
+headwater-resolve = { workspace = true }
 # The dogfood test states this repository's own identity, and it reads the lock
 # for it rather than re-resolving, because the lock is what the binary reads.
-headwater-lock = { path = "../lock" }
+headwater-lock = { workspace = true }
 # A YAML parser this engine did not write, to check `site_nav`'s output
 # against something other than this engine's own `headwater-yaml` crate.
 # `saphyr-parser` is already resolved (`headwater-yaml` depends on it), and

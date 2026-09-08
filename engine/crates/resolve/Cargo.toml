@@ -1,38 +1,40 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-resolve"
+description = "The overlay resolver, and every rule of taxonomy validate that reads the resolved result"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 # The dialect. A base package, a bundle and an overlay are all YAML sources on
 # the Q2 rulings, and the resolved taxonomy is a tree of the same values.
-headwater-yaml = { path = "../yaml" }
+headwater-yaml = { workspace = true }
 
 # Addresses and references. An address is a sequence of segments, which is what
 # makes the confluence check decidable, and a reference is what resolves last.
-headwater-ref = { path = "../ref" }
+headwater-ref = { workspace = true }
 
 # Shape. Every source is validated before it is merged, and the meta-schema is
 # also what says which positions admit a reference and where an address may not
 # reach.
-headwater-meta = { path = "../meta" }
+headwater-meta = { workspace = true }
 
 # Front matter. A template is a Markdown document with a YAML block at the top,
 # and `taxonomy publish` holds every template a package ships against the
 # taxonomy that package resolves to. It reads that block through the one parser
 # spec 12 names a correctness root, because a second reading of front matter
 # would pass its own tests and admit what the corpus reader refuses.
-headwater-doc = { path = "../doc" }
+headwater-doc = { workspace = true }
 
 # The digest of a published package, member by member. One implementation of
 # SHA-256 serves the lock, the census, the check cache and a release record, so
 # a number this crate writes and a number a verifier recomputes cannot come from
 # two readings. `release.rs` argues why a fetched artifact is checked with it.
-headwater-hash = { path = "../hash" }
+headwater-hash = { workspace = true }
 
 [lints]
 workspace = true
