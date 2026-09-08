@@ -18,11 +18,11 @@
 //!
 //! Read the diff before committing it. A blessed fixture is the change.
 
-use headwater_check::paint::ColorMode;
 use headwater_census::census::{self, Census};
 use headwater_census::resolve::{shelf_for, ShelfMatch};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::paint::ColorMode;
 use headwater_check::Shape;
 use headwater_generate::{
     check, descriptor, plan, write, Emitter, Identity, Kind, Plan, Projections, Report, Runs,
@@ -1875,7 +1875,12 @@ fn a_committed_descriptor_from_another_emitter_set_withholds_the_remedy() {
     // Clause 4 of the issue: what this engine writes, this engine trusts. A
     // round trip in one engine reports no producer difference and exits zero.
     let round_trip = check(&tree, &plan);
-    assert_eq!(round_trip.producer, None, "{}", round_trip.render(ColorMode::Plain));
+    assert_eq!(
+        round_trip.producer,
+        None,
+        "{}",
+        round_trip.render(ColorMode::Plain)
+    );
     assert!(
         !round_trip.has_errors(),
         "a round trip in one engine failed: {}",

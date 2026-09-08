@@ -89,10 +89,10 @@
 //! about, and `headwater export --at <date>` supplies its time. Same corpus,
 //! same lock, same injected clock, byte-identical output, in both cases.
 
-use headwater_check::paint::{dim, paint, ColorMode, Role};
 use headwater_census::census::Census;
 use headwater_census::resolve::{shelf_for, ShelfMatch};
 use headwater_census::shelves::DeclarationError;
+use headwater_check::paint::{dim, paint, ColorMode, Role};
 use headwater_query::{Document, Pointer, Surface};
 use headwater_yaml::value::{Mapping, Value};
 use std::path::Path;
@@ -1511,7 +1511,10 @@ mod paint_tests {
     fn an_empty_report_is_painted_too() {
         let empty = Report::default();
         let painted = empty.render(ColorMode::Ansi);
-        assert!(painted.contains("\u{1b}[1mprojections\u{1b}[0m\n"), "{painted}");
+        assert!(
+            painted.contains("\u{1b}[1mprojections\u{1b}[0m\n"),
+            "{painted}"
+        );
         assert_eq!(stripped(&painted), empty.render(ColorMode::Plain));
     }
 }

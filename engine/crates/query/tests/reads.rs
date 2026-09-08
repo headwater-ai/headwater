@@ -624,7 +624,11 @@ fn a_route_within_its_budget_renders_no_withheld_line() {
         Budget { pointers: 512 },
     );
     assert_eq!(route.withheld, 0);
-    assert!(!route.render(PLAIN).contains("withheld"), "{}", route.render(PLAIN));
+    assert!(
+        !route.render(PLAIN).contains("withheld"),
+        "{}",
+        route.render(PLAIN)
+    );
 }
 
 /// A pointer to an unaccepted document says so, and one to an accepted document

@@ -13,10 +13,10 @@
 //! failing direction rather than the passing one, and every test here that
 //! asserts a failure was watched to fail before the emitter existed.
 
-use headwater_check::paint::ColorMode;
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::paint::ColorMode;
 use headwater_check::Shape;
 use headwater_generate::{check, plan, write, Identity, Kind, Plan, Projections, Runs};
 use headwater_graph::anchors::Resolvers;

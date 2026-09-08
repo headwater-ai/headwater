@@ -38,10 +38,10 @@
 //! as an empty list would report three of three, and the recorded bytes are
 //! where that shows up.
 
-use headwater_check::paint::ColorMode;
 use headwater_census::census::{self, Census, Outcome};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::paint::ColorMode;
 use headwater_check::Shape;
 use headwater_generate::{check, plan, write, Identity, Projections, Runs, Transcript, Verdict};
 use headwater_graph::anchors::Resolvers;

@@ -636,7 +636,11 @@ impl Route {
         );
         // The terms and the distinctive terms are the task read back, which
         // HW-DR-0045's table calls already-stated text and gives dim weight.
-        let _ = writeln!(out, "{}", dim(&format!("  terms {}", self.terms.join(" ")), mode));
+        let _ = writeln!(
+            out,
+            "{}",
+            dim(&format!("  terms {}", self.terms.join(" ")), mode)
+        );
         if !self.distinctive.is_empty() {
             let _ = writeln!(
                 out,
