@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 403,
-      "carried": 403,
+      "in the graph": 404,
+      "carried": 404,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -7507,6 +7507,28 @@
             "traces_to": [
               ".githooks/pre-commit"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0181",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0181",
+          "status": "current",
+          "status_since": "2026-09-08",
+          "summary": "A link in prose whose target path is absent is counted in the graph section of a run and reaches no rule, so it never becomes a finding and never fails a strict run.",
+          "last_verified": "2026-09-08",
+          "title": "An unresolved prose link reaches a run as a graph fact and no rule turns it into a finding",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
           }
         }
       },

@@ -327,13 +327,95 @@ gh api "repos/headwater-ai/n8n/git/trees/b0550cb3cb4d1752546a69056c55eccfb9111a1
 
 It prints `0`. Any other number makes this section false.
 
+## The three defects, fixed on a fork and sent to nobody
+
+This is the first two Done-when bullets of [#495](https://github.com/headwater-ai/headwater/issues/495). Every number in this section was measured on 2026-09-08 against `n8n-io/n8n@master`, which is the live branch and not the pin.
+
+**The `last_verified` date in the front matter covers neither this section nor [the one above](#what-was-enumerated-here-and-what-was-not), and the carve-out is deliberate rather than deferred.** A claim taken from a moving branch goes stale when the branch moves, so a single date over the whole document would say something false about this section within a week. Moving `last_verified` forward would also assert a re-verification of the two pinned runs that nobody ran.
+
+### Every recorded finding, partitioned
+
+The two runs and the sweep put 38 findings and facts into this document. This is all 38, in three buckets.
+
+| bucket | count | share of 38 |
+|---|---|---|
+| A genuine defect in n8n's own terms | 3 | 8% |
+| An artifact of this library's vocabulary | 33 | 87% |
+| Contestable, and this document adjudicates neither | 2 | 5% |
+
+**The 33 are every finding that either `headwater check` run reported.** 12 came from the design-spec corpus, out of 42 check instances over 4 typed documents of 105 files under that root. 21 came from the standards-spec corpus, out of 93 check instances over 7 typed documents of 7 files. All 33 are errors. All 33 are about the distance between an admitted entry and n8n's shape: a `sequence` facet that a package has no number for, a `title` facet that upstream does not write, an identifier scheme that the entry never declares, and three headings that this tradition writes as labeled paragraphs. Not one is about n8n's prose, [for the reason recorded above](#not-one-finding-is-about-n8ns-writing).
+
+The 143-finding run under this repository's own house regime stays out of the denominator on purpose. A house regime is not an admitted library entry, and holding somebody else's corpus to this repository's line breaks and contractions produces nothing that n8n would call a defect.
+
+**0 of the 3 genuine defects is reported by any `headwater check` rule.** One reaches a run as [a fact in the graph section](#the-broken-link-that-no-rule-reports) and never as a finding. One [reaches no run at all](#what-this-taxonomy-would-report-and-what-it-does-not), because no admitted entry declares a procedure-shaped kind and no run reads `.agents/skills/`. One came out of `headwater sweep`, which is a sampler and not a check. That inversion is the sharpest result here. The library, pointed at eleven real governing documents, raised 33 errors that say nothing n8n would act on, and stayed silent on the 3 things n8n would fix.
+
+The 2 contestable findings are the coverage-policy duplication reading and the undefined term "level of reach", [both recorded above](#whether-the-three-level-reach-model-holds). Neither is fixed and neither goes upstream. They are counted here rather than dropped, because a partition that quietly loses its awkward members is not a partition.
+
+### Each defect, re-measured on the live branch
+
+The failure this section exists to prevent is telling n8n about a defect that is not there. The report is pinned and the fork is a mirror, so nothing in this repository notices upstream fixing one. Each block below runs against `master` and prints the number that would strike the defect. All three were run on 2026-09-08 and all three defects still stand.
+
+**Defect 1, a link that resolves to no path.** `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` writes `- [n8n workflow package](../workflow/)`, which resolves to `packages/@n8n/workflow/`.
+
+```bash
+gh api -i "repos/n8n-io/n8n/contents/packages/@n8n/workflow?ref=master" 2>/dev/null | head -1
+gh api -i "repos/n8n-io/n8n/contents/packages/workflow?ref=master" 2>/dev/null | head -1
+```
+
+The first prints `HTTP/2.0 404 Not Found` and the second prints `HTTP/2.0 200 OK`. A 200 from the first, or a 404 from the second, makes this defect false.
+
+**Defect 2, a source-of-truth claim that no directory backs.** `.agents/skills/spec-driven-development/SKILL.md:8` names `.agents/specs/` as the source of truth for architectural decisions, API contracts and implementation scope.
+
+```bash
+gh api "repos/n8n-io/n8n/contents/.agents?ref=master" --jq '[.[].name] | join(" ")'
+```
+
+It prints `review-rules skills`. Any output that holds `specs` makes this defect false.
+
+**Defect 3, a count in prose that the configuration contradicts.** `.agents/review-rules/README.md:25` reads "Security and QA & DX deliberately don't link `testing/`", which names two agents. <!-- headwater allow=language.controlled.not_met scope=block until=2027-09-08 reason=false_positive note=quoting n8n's sentence verbatim, because the fix rewrites this exact line -->
+
+```bash
+gh api "repos/n8n-io/n8n/contents/cubic.yaml?ref=master" --jq .content | base64 -d | grep -c '^    - name: '
+gh api "repos/n8n-io/n8n/contents/cubic.yaml?ref=master" --jq .content | base64 -d | grep -c 'review-rules/testing/coverage.md'
+```
+
+The first prints `5` and the second prints `2`, so three agents do not link `testing/` where the prose names two. Any pair whose difference is 2 makes this defect false.
+
+### The fixes, and the rule that found each one
+
+The fixes stand on the branch [`fix-agents-doc-defects`](https://github.com/headwater-ai/n8n/tree/fix-agents-doc-defects) of the fork, cut from the pin, one commit per defect. Titles follow n8n's [pull-request title convention](https://github.com/n8n-io/n8n/blob/master/.github/pull_request_title_conventions.md). Each of the three files carries the same bytes at the pin as it does on `master` today, which is why a fix cut from the pin still applies.
+
+| defect | commit | what the fix writes | the rule that reported it |
+|---|---|---|---|
+| 1 | [`c7c3613`](https://github.com/headwater-ai/n8n/commit/c7c3613c5197b4d530383d6a7c0042ba298cdb65) | `../workflow/` becomes `../../workflow/` | none: a graph-section fact, and `link.fragment.unresolved` reads a fragment rather than a path |
+| 2 | [`667f926`](https://github.com/headwater-ai/n8n/commit/667f926ca88651d9ef6f38bbfb2e8d2ba2b182f4) | the claim becomes conditional, and the skill says what to do when the directory is absent | none: no admitted entry types `.agents/skills/`, so no run reads the file |
+| 3 | [`3d450a8`](https://github.com/headwater-ai/n8n/commit/3d450a89dea6fa917d9778665550a0e094313f98) | the sentence names DB migrations as the third agent | none: `headwater sweep` carried it, and a sweep is a proposal rather than a verdict |
+
+**The rule column reads `none` three times, and that is the result rather than a gap in the table.** Each fix here was found by a person reading, by a graph fact that no rule consumes, or by a sampler. Whether an unresolved prose link should become a finding is one open obligation of this repository. Whether a stated practice that no artifact backs should become a rule is [#496](https://github.com/headwater-ai/headwater/issues/496), and defect 2 is one instance of it.
+
+**No fixture copy was touched.** Two of the three fixed files are also held here as fixture copies, and [the typing note above](#what-was-typed-and-as-what) claims byte identity with the pin for those copies. Editing a copy would make that claim false and no check would report it. The fixes live on the fork and nowhere else.
+
+### Why nothing was sent, and what would reopen it
+
+The third Done-when bullet of [#495](https://github.com/headwater-ai/headwater/issues/495) asks for a pull request against `n8n-io/n8n`. **Nothing was posted, and that is a decision rather than an omission.** n8n's [CONTRIBUTING.md](https://github.com/n8n-io/n8n/blob/master/CONTRIBUTING.md) gates an incoming change three ways, and an autonomous run satisfies none of them.
+
+- **A bug fix needs a linked issue first.** Section 1 states that a bug-fix pull request with no linked issue is returned. Filing that issue is a claim on n8n's tracker, and it belongs to a person.
+- **A typo-only pull request is rejected.** Section 5 asks that a small fix go into a larger related change. Defect 1 on its own is exactly the shape that rule names.
+- **The description must be the author's own words.** Section 4 requires the author to understand every line and to write the description themselves, and it forbids pasted model output. Section 3 closes a pull request with no real description, and section 6 closes one with no tests after 14 days.
+
+So this run prepared everything and posted nothing. The commits are on the fork. The upstream issue text is in [`notes/n8n-upstream/issue.md`](https://github.com/headwater-ai/headwater/blob/main/notes/n8n-upstream/issue.md) and the pull-request body is in [`notes/n8n-upstream/pull-request.md`](https://github.com/headwater-ai/headwater/blob/main/notes/n8n-upstream/pull-request.md). Both are drafts for a person to rewrite in their own words and to send under their own name, with the disclosure that section 4 invites.
+
+**What reopens it:** the owner of this repository says to post, or n8n drops the linked-issue gate and the own-words gate. The upstream half is [#729](https://github.com/headwater-ai/headwater/issues/729), which carries the branch, the two drafts and the bar for sending. It stays open on a person, and this document records why rather than leaving a reader to guess.
+
 ## What this did not cover
 
 Typing `.agents/skills/` as documents of this library, which is the third of the three kinds [#492](https://github.com/headwater-ai/headwater/issues/492) names. That work is [#509](https://github.com/headwater-ai/headwater/issues/509), and it is blocked on a ruling rather than on effort, because no admitted entry declares a procedure-shaped concrete kind. The section above reports one finding in that corpus without typing any of it.
 
 A census of all 22 review-rule files as typed documents. Seven is the sample, and #508's own scope note sets that bar.
 
-Fixing any finding, or sending anything upstream to n8n, is [#495](https://github.com/headwater-ai/headwater/issues/495). Nothing here was reported to n8n and no pull request was opened against their repository.
+Sending anything upstream to n8n, which is [#729](https://github.com/headwater-ai/headwater/issues/729). [The three genuine defects are fixed on the fork](#the-fixes-and-the-rule-that-found-each-one) under [#495](https://github.com/headwater-ai/headwater/issues/495), and nothing was reported to n8n. No issue and no pull request was opened against their repository, and the section above says why.
+
+Fixing the 33 findings that the two runs reported. All 33 are artifacts of this library's vocabulary rather than defects in n8n's writing, so there is nothing there for n8n to accept.
 
 Whether the gap between a stated practice and an absent artifact deserves a check rule is [#496](https://github.com/headwater-ai/headwater/issues/496). [One instance of that gap is reported above](#what-this-taxonomy-would-report-and-what-it-does-not), and the rule question stays open.
 
