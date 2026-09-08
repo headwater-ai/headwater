@@ -243,7 +243,7 @@ export PATH="$HEADWATER_SRC/engine/target/release:$PATH"</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">01</span>Make a repository that nothing describes</h2>
-        <p class="prose">A repository with documentation in it and nothing that says what the documentation is. Every adopter starts here.</p>
+        <p class="prose">A repository with documentation in it, and nothing that says what the documentation is. Every adopter starts here.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>ls docs/decisions</code> prints one line, <code>postgres-note.md</code>.</span></p>
       </div>
       <div>
@@ -266,11 +266,12 @@ printf '# Store attempts in Postgres\n\nThe queue keeps every delivery attempt i
     <div class="stepgrid">
       <div>
         <h2><span class="n">02</span>Ask the engine what it can read off the tree</h2>
-        <p class="prose">The first heading names what a tree states about itself — the corpus is <code>docs</code>, because that directory holds the most Markdown. The second names what no tree states, and those three questions are the interview. The verb asks about your documents, and never about the model.</p>
+        <p class="prose">The first heading names what a tree states about itself: the <strong>corpus</strong> is <code>docs</code>, because that directory holds the most Markdown. The second names what no tree states, and those three questions are the interview. The verb asks about your documents, and never about the model — the difference spec 7 draws.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>ls .headwater</code> prints <code>overlay.yml</code> and <code>taxonomy.yml</code>.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">headwater init</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">wrote .headwater/taxonomy.yml
 wrote .headwater/overlay.yml
 
@@ -299,12 +300,14 @@ Answer them in .headwater/overlay.yml, then run `headwater taxonomy resolve` and
     <div class="stepgrid">
       <div>
         <h2><span class="n">03</span>Copy the package into your tree</h2>
-        <p class="prose">A package carries a taxonomy: the kinds, the facets, the shelves and the rules. Nothing in this engine fetches a package over a network, so a package arrives in your tree by a copy that you can read. What you copied is a package source directory rather than a published artifact, and step 16 says what that costs.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>ls packages/headwater-standard</code> prints five lines.</span></p>
+        <p class="prose">A <strong>package</strong> carries a taxonomy: the kinds, the facets, the shelves and the rules. <code>headwater/standard</code> is the base package, and the taxonomy it declares is deliberately small. Two of the five entries are not taxonomy at all. <code>assemblies/</code> holds the publisher recipes this package ships, and <code>doctrine/</code> holds the prose that explains them to a person. Nothing you run in this tutorial reads either one. Nothing in this engine fetches a package over a network, so a package arrives in your tree by a copy that you can read.</p>
+        <p class="prose">Step 2 named two routes, and this step took the first. <code>headwater taxonomy vendor</code> installs a <strong>published artifact</strong>, which is what <code>headwater taxonomy publish</code> writes. It refuses a directory that somebody maintains by hand. What you copied is a package source directory rather than a published artifact, so no verb of this engine vendored anything. Step 16 says what that costs.</p>
+        <p class="prose">This copy costs nothing beyond <code>cp -r</code>, because the clone already holds <code>taxonomy-source</code>. A reader who wants only the package, pinned to a release instead of the moving branch, does not need <code>git</code> at all. <code>tools/headwater-bootstrap.sh</code> fetches one from a release tag and hands it to <code>headwater taxonomy vendor</code>, the second route. <em>Where to go next</em> runs it.</p>
+        <p class="check"><span class="checkword">Check</span> <span><code>ls packages/headwater-standard</code> prints five lines:</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">cp -r "$HEADWATER_SRC/taxonomy-source" packages</pre>
-          <p class="blocklabel">the five lines that check prints</p>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">assemblies
 conformance.yml
 doctrine
@@ -325,11 +328,12 @@ taxonomy.yml</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">04</span>Meet the first refusal</h2>
-        <p class="prose">A refusal here is the design and not a fault. A lock is a validated taxonomy, so a taxonomy that does not validate produces no lock at all. <code>headwater init</code> wrote <code>version: 0.0.0</code>, because it had no package in front of it to read a number from.</p>
+        <p class="prose">A refusal here is the design and not a fault. A <strong>lock</strong> is a validated taxonomy, so a taxonomy that does not validate produces no lock at all. <code>headwater init</code> wrote <code>version: 0.0.0</code>, because it had no package in front of it to read a number from.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>echo $?</code> prints <code>1</code>.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">headwater taxonomy resolve</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">headwater: the taxonomy did not resolve, so no lock is possible
   .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 4.2.0</pre>
       </div>
@@ -347,13 +351,14 @@ taxonomy.yml</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">05</span>Pin the version, and meet the second refusal</h2>
-        <p class="prose">Open <code>.headwater/taxonomy.yml</code> and change the line <code>  version: 0.0.0</code> to the line on the right, then resolve again. The message names the second thing a package cannot know: a package that shipped a namespace would give every adopter the same one, so it ships none and refuses until you supply yours.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>echo $?</code> prints <code>1</code>.</span></p>
+        <p class="prose">Open <code>.headwater/taxonomy.yml</code>, and change the line <code>  version: 0.0.0</code> to <code>  version: 4.2.0</code>.</p>
+        <p class="prose">Now resolve again.</p>
+        <p class="prose">The message names the second thing a package cannot know. A package that shipped a namespace would give every adopter the same one, so it ships none and refuses until you supply yours.</p>
+        <p class="check"><span class="checkword">Check</span> <span><code>grep 'version:' .headwater/taxonomy.yml</code> prints one line, <code>  version: 4.2.0</code>. <code>echo $?</code> prints <code>1</code>.</span></p>
       </div>
       <div>
-          <p class="blocklabel">the line to change it to</p>
-          <pre class="edit verbatim">  version: 4.2.0</pre>
           <pre class="cmd verbatim">headwater taxonomy resolve</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">headwater: the taxonomy does not validate, so no lock is written. A lock is a validated taxonomy or it is nothing
   the resolved taxonomy `identifier_schemes.decision_id`: identifier integrity: carries no namespace after resolution. A package leaves the namespace to the corpus that adopts it, so an overlay of this corpus has to declare one</pre>
       </div>
@@ -371,14 +376,17 @@ taxonomy.yml</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">06</span>Answer the question in the overlay</h2>
-        <p class="prose">An overlay is what your repository says on top of the package it takes. Open <code>.headwater/overlay.yml</code> and replace its last line, <code>add: {}</code>, with the two lines on the right, then resolve. The lock is the one file every later command reads, and an edit to the package or the overlay reaches nothing until you resolve again.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>ls .headwater/taxonomy.lock</code> prints the path.</span></p>
+        <p class="prose">An <strong>overlay</strong> is what your repository says on top of the package it takes. Open <code>.headwater/overlay.yml</code>, and replace the last line, <code>add: {}</code>, with these two lines:</p>
+        <p class="prose">The overlay answers the question the refusal asked. Resolve again.</p>
+        <p class="prose">The lock is the one file every later command reads. An edit to the package or to the overlay reaches nothing until you resolve again, and that is the trap that catches most newcomers.</p>
+        <p class="check"><span class="checkword">Check</span> <span><code>tail -2 .headwater/overlay.yml</code> prints those two lines back. <code>ls .headwater/taxonomy.lock</code> prints the path.</span></p>
       </div>
       <div>
-          <p class="blocklabel">the two lines to write</p>
+          <p class="blocklabel">the lines to write</p>
           <pre class="edit verbatim">add:
   identifier_schemes.decision_id.namespace: ACME</pre>
           <pre class="cmd verbatim">headwater taxonomy resolve</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">wrote .headwater/taxonomy.lock
   from packages/headwater-standard/taxonomy.yml
   from .headwater/overlay.yml
@@ -398,11 +406,12 @@ taxonomy.yml</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">07</span>Check a corpus that nobody has typed</h2>
-        <p class="prose">The most important state in the tutorial. The run is green, and it is green because it checked nothing: one file seen, none classified, none checked. A green run over an untyped corpus measures your taxonomy rather than your documents. Read the census before the verdict, on every run, forever.</p>
+        <p class="prose"><strong>The most important state in the tutorial.</strong> The run is green, and it is green because it checked nothing: one file seen, none classified, none checked. A green run over an untyped corpus measures your taxonomy rather than your documents. Read the census before the verdict, on every run, forever.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>0</code>.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">headwater check</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">census
   1 files under the corpus root
         1 untyped
@@ -427,12 +436,17 @@ taxonomy.yml</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">08</span>Type the document</h2>
-        <p class="prose">Delete the note and let the engine write the document in its place. A shelf decided first, because <code>docs/decisions/**</code> is the shelf named <code>decisions</code>. Placement settled the kind, and three of the four required facets were filled by a role rather than by a guess. <code>summary</code> carries no role of its own, so <code>--summary</code> states it directly, exactly as <code>--title</code> states the name.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>cat docs/decisions/0001-store-attempts-in-postgres.md</code> prints the second block, with your own dates.</span></p>
+        <p class="prose">Delete the note, and let the engine write the document in its place.</p>
+        <p class="prose">Three words of the model arrive in that one block, and the verb names each one as it uses it.</p>
+        <p class="prose">A <strong>shelf</strong> is a region of the tree that carries a purpose, and <code>docs/decisions/**</code> is the shelf named <code>decisions</code>. Placement is the loudest signal a document sends, so a shelf decides first and metadata never contradicts it.</p>
+        <p class="prose">A <strong>kind</strong> is what a document permanently is. The <code>decisions</code> shelf holds one kind, so placement alone settled that this file is a <code>decision</code>. A kind names the facets a document must declare, the sections it must carry, and the relations it may declare.</p>
+        <p class="prose">A <strong>facet</strong> is a property of one document, declared in the front matter. <code>status</code>, <code>status_since</code>, <code>summary</code> and <code>last_verified</code> are the four that <code>decision</code> requires. Three of them were filled by a role rather than by a guess. <code>status</code> came from the lifecycle regime, and two dates came from the run's clock. <code>summary</code> carries no role of its own. <code>--summary &lt;text&gt;</code> states it directly, exactly as <code>--title</code> states the name. Left unstated, the field carries a prompt for a person to answer.</p>
+        <p class="check"><span class="checkword">Check</span> <span><code>cat docs/decisions/0001-store-attempts-in-postgres.md</code> prints this, with your own dates:</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">rm docs/decisions/postgres-note.md
 headwater new decision --title "Store attempts in Postgres" --summary "The queue keeps every delivery attempt in Postgres."</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">wrote docs/decisions/0001-store-attempts-in-postgres.md
 
 what the taxonomy decided
@@ -445,6 +459,8 @@ what the taxonomy decided
   section `Context` — the kind requires it
   section `Decision` — the kind requires it
   section `Consequences` — the kind requires it</pre>
+          <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">---
 id: ACME-DR-0001
 status: draft
@@ -466,7 +482,6 @@ TODO write this section.
 ## Consequences
 
 TODO write this section.</pre>
-          <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
       </div>
     </div>
   </div>
@@ -482,11 +497,12 @@ TODO write this section.</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">09</span>Check again, and read the difference</h2>
-        <p class="prose">The corpus did not grow, and the count of checks that ran went from 4 to 17, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and seventeen questions become answerable about it.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>headwater check 2&gt;/dev/null | grep 'check instances'</code> prints the last block.</span></p>
+        <p class="prose">The corpus did not grow. The count of checks that ran went from 4 to 17, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and seventeen questions become answerable about it.</p>
+        <p class="check"><span class="checkword">Check</span> <span><code>headwater check 2&gt;/dev/null | grep 'check instances'</code> prints the second block above.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">headwater check</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">census
   1 files under the corpus root
         1 typed
@@ -508,13 +524,14 @@ TODO write this section.</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">10</span>Commit the first governed corpus</h2>
-        <p class="prose"><code>headwater check</code> already wrote <code>.headwater/cache/.gitignore</code>, so the cache never needs a line of its own to stay out of the repository. The cache holds no fact of its own: every entry in it is recomputable from the tree it was written over.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>git ls-files .headwater</code> prints six files, the cache's own <code>.gitignore</code> among them.</span></p>
+        <p class="prose"><strong>The file under <code>ids/</code> is the claim on the identifier that <code>headwater new</code> minted.</strong> <code>decision_id</code> allocates reconcile-first, so the verb reads the tree for the highest value already spent. A tree tells it nothing about the branch somebody else holds. The claim file says the number is taken, and it holds the path of the document that took it. Two branches that mint one number add one path with two different contents, so the merge refuses and names both documents. Commit it with the document, and never write over one.</p>
+        <p class="prose"><code>.headwater/capture-cost.jsonl</code> is the one that takes a decision rather than a rule. It holds one reading per document that <code>headwater new</code> wrote, and it names no person and no agent. Headwater's own repository commits it, so that <code>headwater capture</code> can trend it. Keep it or ignore it, and know that you chose.</p>
+        <p class="check"><span class="checkword">Check</span> <span><code>git log --oneline</code> prints one line that ends in <code>A first governed corpus</code>. <code>git ls-files .headwater</code> prints six files: the five you have already met, and the <code>.gitignore</code> that <code>headwater check</code> writes inside <code>.headwater/cache/</code>.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">git add -A
 git commit -m "A first governed corpus"</pre>
-          <p class="blocklabel">what that check prints</p>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">.headwater/cache/.gitignore
 .headwater/capture-cost.jsonl
 .headwater/ids/decision_id/ACME-DR-0001
@@ -536,13 +553,15 @@ git commit -m "A first governed corpus"</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">11</span>Declare an edge between two documents</h2>
-        <p class="prose">A relation is a typed edge that names its target by identifier rather than by path — a path dies at the first rename and an identifier does not. <code>supersedes</code> requires both ends, so the verb wrote the far half into the target for you.</p>
+        <p class="prose">A <strong>relation</strong> is a typed edge between two documents, and it names its target by identifier rather than by path. A path dies at the first rename and an identifier does not. <code>supersedes</code> requires both ends, so the verb wrote the far half into the target for you. Two documents now carry one edge between them.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>0</code>.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">headwater new decision --title "Deliver at least once" --relates supersedes=ACME-DR-0001 --summary "Retrying a delivery is safe, so the queue may send one attempt twice."</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">wrote docs/decisions/0002-deliver-at-least-once.md
 edited docs/decisions/0001-store-attempts-in-postgres.md</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">the edges it proposed
   supersedes ACME-DR-0001 — `created_by: scaffold`, so a scaffold pays for it
     the far half `superseded_by` went into docs/decisions/0001-store-attempts-in-postgres.md, because reciprocity is required</pre>
@@ -562,12 +581,18 @@ edited docs/decisions/0001-store-attempts-in-postgres.md</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">12</span>Break one half, and read the finding</h2>
-        <p class="prose">The checkout put the target back to the version you committed, which is the version before the far half arrived. One edge now has one end. Read the identifier in parentheses: an obligation is a claim this system makes about itself, and every finding names the one it serves. The word <code>mechanical</code> on the fix line means the repair takes no judgment.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>1</code>.</span></p>
+        <p class="prose">The <code>git checkout</code> put the target back to the version you committed, which is the version before the far half arrived. One edge now has one end.</p>
+        <p class="prose">Read the identifier in parentheses. An <strong>obligation</strong> is a claim this system makes about itself: something a corpus owes, with the rule that verifies it named beside it. <code>OB-REL-1</code> is the obligation that this rule discharges, and every finding names the one it serves.</p>
+        <p class="prose"><strong>One of those readings is about the package and one is about your run.</strong> The thirty-one obligations and their severities come from <code>headwater/standard</code>. They read the same on your first day and on your thousandth. The last line is derived from the run in front of you. It names every rule that fired at you with no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.</p>
+        <p class="prose">One rule is named there. <code>facet.value.blank</code> reports a facet a document declares and leaves empty, and no control in <code>headwater/standard</code> names it yet. HW-OBL-0170 records that debt. A finding it raises is a true finding, and the line above is how a report tells you which of its rules answers to nothing.</p>
+        <p class="prose"><strong>Your corpus will not show you a gap, and the reason is worth knowing.</strong> A <code>gap</code> is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads <code>0 gap</code> on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares three obligations no mechanism verifies. The same block there reads <code>34 obligations: 31 verified, 2 gap, 1 unverifiable</code>, and it names the owner of each gap. The number worth watching is the one that is not <code>verified</code>.</p>
+        <p class="prose">The word <code>mechanical</code> on the fix line is the second thing to read. A rule is an error when the repair takes no judgment, and advisory when the repair is a rewrite. This one takes no judgment, so the next step is a command rather than an edit.</p>
+        <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>1</code>. <code>headwater check 2&gt;/dev/null | grep 'obligations:'</code> prints the <code>32 obligations:</code> line of the register block above, and nothing else.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">git checkout -- docs/decisions/0001-store-attempts-in-postgres.md
 headwater check</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">  1 findings
         1 ✗ error
 
@@ -577,6 +602,7 @@ headwater check</pre>
       docs/decisions/0001-store-attempts-in-postgres.md owes `superseded_by`
     fix (mechanical): add `superseded_by: ACME-DR-0002` under `relations:` in
       docs/decisions/0001-store-attempts-in-postgres.md</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">  register
     32 obligations: 32 verified, 0 gap, 0 unverifiable, 0 with no disposition
        13 high, 13 verified
@@ -600,15 +626,16 @@ headwater check</pre>
       <div>
         <h2><span class="n">13</span>Let the engine make the repair</h2>
         <p class="prose"><code>--fix</code> writes only the repairs that need no judgment, and it leaves every finding whose remedy is a rewrite. Read the diff before you commit it.</p>
-        <p class="check"><span class="checkword">Check</span> <span>the strict check passes again, and <code>grep -A2 '^relations:' docs/decisions/0001-store-attempts-in-postgres.md</code> prints the last block.</span></p>
+        <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>0</code>, and <code>grep -A2 '^relations:' docs/decisions/0001-store-attempts-in-postgres.md</code> prints:</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">headwater check --fix</pre>
           <pre class="out verbatim">headwater: fixed docs/decisions/0001-store-attempts-in-postgres.md (1 patch)</pre>
+          <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">relations:
   superseded_by:
     - ACME-DR-0002</pre>
-          <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
       </div>
     </div>
   </div>
@@ -624,11 +651,12 @@ headwater check</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">14</span>Ask the engine what it knows about one document</h2>
-        <p class="prose">Every word this tutorial taught is on one screen at once: the shelf, the kind, the facets, the sections, the relations and both halves of the edge. This is the verb to reach for before you open a file.</p>
-        <p class="check"><span class="checkword">Check</span> <span>the first line is the path of the document whose identifier you named.</span></p>
+        <p class="prose">Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. This is the verb to reach for before you open a file.</p>
+        <p class="check"><span class="checkword">Check</span> <span>The first line of that output is the path of the document whose identifier you named.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">headwater explain ACME-DR-0002</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">docs/decisions/0002-deliver-at-least-once.md
   ACME-DR-0002
   kind decision
@@ -664,11 +692,12 @@ headwater check</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">15</span>Ask a question in your own words</h2>
-        <p class="prose">A purpose is the reader intent that a kind exists to serve, and the route scored your question against both declared purposes before it looked at any prose. That is why the <code>summary</code> facet deserves the most care in any document, because routing serves it as the only pointer a reader gets.</p>
-        <p class="check"><span class="checkword">Check</span> <span>the last line names <code>docs/decisions/0001-store-attempts-in-postgres.md</code>.</span></p>
+        <p class="prose">A <strong>purpose</strong> is the reader intent that a kind exists to serve. The base package declares two, <code>rationale</code> and <code>behavior</code>, and the route scored your question against both before it looked at any prose. That is why the <code>summary</code> facet deserves the most care in any document. Routing serves it as the only pointer a reader gets.</p>
+        <p class="check"><span class="checkword">Check</span> <span>The last line names <code>docs/decisions/0001-store-attempts-in-postgres.md</code>.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">headwater route "why do we keep attempts in Postgres"</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">route "why do we keep attempts in Postgres"
   terms why do we keep attempts in postgres
   distinctive why do we keep attempts in postgres
@@ -691,11 +720,13 @@ headwater check</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">16</span>Ask what you have not wired up</h2>
-        <p class="prose">Your corpus passes every check and reaches no level, and both statements are correct — a level measures what you wired up rather than what your documents say. One of the two gaps closes with a command. The other, <code>pin.current</code>, stays open because this tutorial copied a package directory instead of vendoring a published artifact, and nothing here pretends otherwise.</p>
-        <p class="check"><span class="checkword">Check</span> <span>after the second command, <code>headwater conformance 2&gt;/dev/null | grep 'projections.current'</code> prints <code>  projections.current met</code>.</span></p>
+        <p class="prose">Your corpus passes every check and reaches no level, and both statements are correct. A level measures what you wired up rather than what your documents say. One of the two gaps closes with a command:</p>
+        <p class="prose">The other gap is <code>pin.current</code>, and it stays open for a real reason. The rule wants the digest of a published artifact, and this tutorial copied a package directory instead. Nothing here pretends otherwise, and the report states the remedy rather than a grade. <code>tools/headwater-bootstrap.sh</code> closes it. The script fetches a published release and vendors it, instead of the copied directory this tutorial used.</p>
+        <p class="check"><span class="checkword">Check</span> <span>The last line of the levels block reads <code>no level reached, against headwater/standard 4.2.0</code>. <code>headwater conformance 2&gt;/dev/null | grep 'projections.current'</code> prints <code>  projections.current met</code>.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">headwater conformance</pre>
+          <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">levels
   L0 Pointed at — not reached, 1 of 2 rules met
     1 gap, 0 of them waived
@@ -709,7 +740,6 @@ no level reached, against headwater/standard 4.2.0
   corpus, no key declares one, and a waiver moves the exit status and never the
   level.</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
-          <p class="blocklabel">what closes the first gap</p>
           <pre class="cmd verbatim">headwater generate
 headwater conformance</pre>
       </div>
@@ -739,12 +769,18 @@ headwater conformance</pre>
 <section>
   <div class="bar pad">
     <h2 class="label">Where to go next</h2>
-    <p style="font-size: 1.05rem; max-width: 44rem;"><strong>Point the engine at your own repository.</strong> Run <code>headwater init</code> in it, copy the package in as step 3 did, resolve, and then run <code>headwater infer</code>. It reports the files that classify as nothing and the documents that state no summary, and those two lists are the distance between your repository and a corpus.</p>
-    <p style="font-size: 0.95rem; color: var(--muted); max-width: 44rem;">Two things on this page are not solid, and you should know which. No level of the conformance ladder is reachable from a package directory that you copied by hand, for the reason step 16 states. And nobody has accepted this document.</p>
-    <div class="ctarow">
-      <a class="cta" href="/how-it-works/">Read how it works →</a>
-      <a class="sans" href="/proof/">Or read what a run of this engine over its own repository reports</a>
-    </div>
+    <p style="font-size: 1.05rem; max-width: 44rem;"><strong>Point the engine at your own repository.</strong> The steps above used a corpus made for the purpose. A tutorial cannot state what you should now see about a tree it has never read. Your own tree is the one that answers whether this is worth adopting. Run <code>headwater init</code> in it, copy the package in as step 3 did, resolve, and then run this:</p>
+    <p>It reports the files that classify as nothing, and the documents that state no summary. Those two lists are the distance between your repository and a corpus. <code>headwater infer --owner &lt;name&gt; --write</code> records that distance as declared debt with an expiry, so a strict run passes while the work is outstanding.</p>
+    <pre class="cmd verbatim">headwater infer</pre>
+
+    <p style="font-size: 1.05rem; max-width: 44rem;"><strong>Fetching without a clone.</strong> <code>tools/headwater-bootstrap.sh</code> fetches one package from a release tag on GitHub, and hands it to <code>headwater taxonomy vendor</code>. This route needs no local clone. Pass the digest the release page prints, and not one this script reads out of what it fetches. <code>vendor</code> states that same rule on its own page. <code>vendor</code> also refuses to write over a directory it did not put there itself. Point it at a fresh one, rather than the <code>packages/headwater-standard</code> step 3 filled by hand.</p>
+    <p>A run exits 0. <code>ls "$demo/packages/headwater-standard"</code> prints seven entries rather than the five step 3 checked: a published artifact carries <code>bundles/</code> and <code>release.yml</code> beside what the source directory held.</p>
+    <pre class="cmd verbatim">demo=$(mktemp -d)
+sh "$HEADWATER_SRC/tools/headwater-bootstrap.sh" --tag v0.1.0 --expect sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163 --root "$demo"</pre>
+
+    <p style="font-size: 1.05rem; max-width: 44rem;"><strong>Read <code>headwater check</code> next.</strong> The verb contract states what it reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit.</p>
+
+    <p style="font-size: 1.05rem; max-width: 44rem;"><strong>Two things on this page are not solid, and you should know which.</strong> No level of the conformance ladder is reachable from a package directory that you copied by hand, for the reason step 16 states. And nobody has accepted this document, which the front matter says and the top of this page repeats.</p>
   </div>
 </section>
 
