@@ -795,8 +795,8 @@ release_dispatch_judge() {
 }
 
 # release_uploaded_names FILE — the asset names the workflow ACTUALLY HANDS to
-# `gh release upload`, one per line, resolved through the shell assignments the
-# file makes.
+# `gh release upload` or `gh release create`, one per line, resolved through
+# the shell assignments the file makes.
 #
 # The judges above read the names the workflow DECLARES, and a declaration is
 # not an upload. Deleting the upload line entirely, or passing the checksum and
@@ -804,6 +804,14 @@ release_dispatch_judge() {
 # reproduces the same 404 the group exists to prevent — which is what a review
 # of the first cut of this group found, and which is why this function reads the
 # command rather than the file.
+#
+# `create` reads the same way `upload` always has: everything past the verb
+# token that is not a flag and not the flag's own argument. `v0.1.1` is why
+# `create` is a second verb here and not the only one left — GitHub made a
+# release immutable the moment `create` returns, so `release.yml` moved the
+# asset arguments onto that call and dropped the `upload` call that followed
+# it, and this function now has two calls to recognize rather than the one
+# call a workflow can still legally make twice.
 #
 # Resolution is file-scope rather than step-scope, because the two steps here
 # pass the value between them through `$GITHUB_ENV` and a step-scope reader
@@ -829,7 +837,7 @@ release_uploaded_names() {
                     var[substr(line, 1, RLENGTH - 1)] = substr(line, RLENGTH + 1)
                     next
                 }
-                if (index(line, "gh release upload") > 0) upload[++u] = line
+                if (index(line, "gh release upload") > 0 || index(line, "gh release create") > 0) upload[++u] = line
             }
             END {
                 for (i = 1; i <= u; i++) {
@@ -837,7 +845,7 @@ release_uploaded_names() {
                     seen = 0
                     for (j = 1; j <= n; j++) {
                         t = w[j]
-                        if (t == "upload") { seen = 1; continue }
+                        if (t == "upload" || t == "create") { seen = 1; continue }
                         if (!seen || t ~ /^-/) continue
                         if (t ~ /^\$\{?[A-Za-z_][A-Za-z0-9_]*\}?$/) {
                             key = t
@@ -858,7 +866,7 @@ release_upload_judge() {
     ru_page=$(release_names_raw "$1" page | LC_ALL=C sort -u)
     ru_up=$(release_uploaded_names "$2")
     if [ -z "$ru_up" ]; then
-        echo "no \`gh release upload\` hands over an asset, so the tag gets nothing"
+        echo "no \`gh release upload\` or \`gh release create\` hands over an asset, so the tag gets nothing"
     elif [ -z "$ru_page" ]; then
         echo "the upload attaches an asset and the page offers none"
     elif [ "$ru_page" = "$ru_up" ]; then
@@ -1625,12 +1633,12 @@ if [ -f "$release_wf" ]; then
     # reader to a 404. A review of the first cut of this group found both: the
     # judges above read what the file writes down, and neither of these changes
     # a single name it writes down.
-    grep -v 'gh release upload' "$release_wf" >"$scratch/release/no-upload.yml"
+    grep -v 'gh release create' "$release_wf" >"$scratch/release/no-upload.yml"
     same "  a workflow that declares the names and uploads neither is refused" \
-        "no \`gh release upload\` hands over an asset, so the tag gets nothing" \
+        "no \`gh release upload\` or \`gh release create\` hands over an asset, so the tag gets nothing" \
         "$(release_upload_judge "$readme" "$scratch/release/no-upload.yml")"
 
-    sed 's/upload "\$TAG" "\$asset" "\$checksum"/upload "$TAG" "$checksum"/' \
+    sed 's/create "\$TAG" "\$asset" "\$checksum"/create "$TAG" "$checksum"/' \
         "$release_wf" >"$scratch/release/checksum-only.yml"
     if cmp -s "$release_wf" "$scratch/release/checksum-only.yml"; then
         fail "  a workflow that uploads the checksum and not the archive is refused" \
@@ -1641,7 +1649,7 @@ if [ -f "$release_wf" ]; then
             "$(release_upload_judge "$readme" "$scratch/release/checksum-only.yml")"
     fi
 
-    sed 's/upload "\$TAG" "\$asset"/upload "$TAG" "$archive"/' \
+    sed 's/create "\$TAG" "\$asset"/create "$TAG" "$archive"/' \
         "$release_wf" >"$scratch/release/renamed-var.yml"
     if [ "$(release_upload_judge "$readme" "$scratch/release/renamed-var.yml")" = ok ]; then
         fail "  an operand naming a variable nothing assigns is refused" \
