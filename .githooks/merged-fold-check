@@ -47,7 +47,15 @@
 # with no built engine cannot run a producer, and a gate that refused there
 # would be a repository nobody can merge in. It prints a line and exits 0. A
 # fixture that asserts only "the merge failed" cannot tell that refusal from a
-# crash, so `.githooks/fixtures.sh` asserts on what each producer said.
+# crash, so the cases that hold this file assert on what each producer said and
+# on the calls it recorded.
+#
+# Those cases are in `engine/crates/census/tests/merge_driver.rs` and nowhere
+# else. `.githooks/fixtures.sh` names this file and `.githooks/commit-msg` not at
+# all: it drives `.githooks/pre-commit` over a scratch copy of this corpus, and a
+# shell-level case for the merge path has not been written. So a change to this
+# file is held by the census crate's case table, and `sh .githooks/fixtures.sh`
+# passing says nothing about it.
 
 set -u
 
@@ -58,8 +66,9 @@ root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 # answers. This is the rule `.githooks/pre-commit` and `.claude/hooks/lib.sh`
 # both state, written out a third time rather than sourced: a git hook that
 # reached into `.claude/` would make the git side of this repository depend on
-# the harness side, and `.githooks/fixtures.sh` holds the three copies against
-# each other.
+# the harness side. `sh .githooks/fixtures.sh` and `sh .claude/hooks/fixtures.sh`
+# hold those two copies. **They do not hold this one**, so a change to the rule
+# has to reach this file by hand until a case here does.
 release="$root/engine/target/release/headwater"
 dev_release="$root/engine/target/dev-release/headwater"
 engine=

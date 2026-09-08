@@ -730,8 +730,7 @@ fn completing_a_refused_merge_by_hand_is_refused_by_the_same_gate() {
         after.len() > before,
         "no producer ran on the `git commit` that completes the merge, so \
          whatever happened there was not this gate. Before {before}, after \
-         {:?}. What it said: {said}",
-        after
+         {after:?}. What it said: {said}"
     );
     assert!(
         !commit.status.success(),
