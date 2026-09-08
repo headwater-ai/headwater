@@ -144,6 +144,9 @@ impl Loaded {
 struct Case {
     kind: &'static str,
     title: &'static str,
+    /// What the caller stated with `--summary`, absent when the case does not
+    /// pass the flag.
+    summary: Option<&'static str>,
     relates: Vec<(String, String)>,
     /// What the caller stated with `--facet`, in the order they named it.
     given: Vec<(String, String)>,
@@ -153,6 +156,7 @@ fn case(kind: &'static str, title: &'static str) -> Case {
     Case {
         kind,
         title,
+        summary: None,
         relates: Vec::new(),
         given: Vec::new(),
     }
@@ -170,6 +174,12 @@ impl Case {
         self.given.push((facet.to_string(), value.to_string()));
         self
     }
+
+    /// A `--summary <text>` the caller states on the command line.
+    fn summarizing(mut self, text: &'static str) -> Self {
+        self.summary = Some(text);
+        self
+    }
 }
 
 /// The command line a case stands for, which is the header of its transcript
@@ -177,6 +187,9 @@ impl Case {
 /// that states a facet cannot be recorded under a header that omits it.
 fn invocation(case: &Case) -> String {
     let mut line = format!("=== new {} --title \"{}\"", case.kind, case.title);
+    if let Some(summary) = case.summary {
+        line.push_str(&format!(" --summary \"{summary}\""));
+    }
     for (relation, target) in &case.relates {
         line.push_str(&format!(" --relates {relation}={target}"));
     }
@@ -190,6 +203,7 @@ fn request<'a>(case: &'a Case) -> Request<'a> {
     Request {
         kind: case.kind,
         title: case.title,
+        summary: case.summary,
         now: pinned(),
         relates: &case.relates,
         given: &case.given,
@@ -242,6 +256,13 @@ fn cases() -> Vec<Case> {
         case("design_spec", "A target end the relation forbids").relating("refines", "DR-FIX-0007"),
         case("decision_record", "A target that resolves to nothing")
             .relating("supersedes", "DR-FIX-9999"),
+        // What `--summary` does. It fills the facet in the `scent` role
+        // directly, exactly as `--title` fills the one in the `name` role, so
+        // it needs the same two cases the `name` role never needed a comment
+        // for: stated, and stated as nothing.
+        case("decision_record", "A scent role the caller states")
+            .summarizing("What a reader learns before opening the file."),
+        case("decision_record", "A scent role stated as blank spaces").summarizing("   "),
         // What `--facet` does. Every branch the flag can reach, including the
         // one where it succeeds, because the flag shipped with no case at all
         // and that is why the discriminator branch could discard a value in
@@ -532,6 +553,7 @@ fn a_value_the_store_holds_is_taken_and_the_allocator_mints_past_it() {
         Request {
             kind: "decision_record",
             title,
+            summary: None,
             now: pinned(),
             relates: &[],
             given: &[],

@@ -214,6 +214,7 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
         let request = Request {
             kind,
             title,
+            summary: None,
             now: Date::parse(PINNED).expect("the pinned date"),
             relates,
             given: &[],

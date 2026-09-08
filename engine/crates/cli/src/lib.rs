@@ -589,6 +589,15 @@ pub enum Verb {
         title: Option<String>,
         #[arg(
             long,
+            value_name = "text",
+            help = "the one sentence a reader meets where a list of documents is rendered. \
+                    Fills the facet in the `scent` role directly, exactly as `--title` fills the \
+                    one in the `name` role. Without it the field carries a prompt, and a person \
+                    edits the front matter by hand before the document is current"
+        )]
+        summary: Option<String>,
+        #[arg(
+            long,
             value_name = "relation=identifier",
             value_parser = a_pair,
             help = "an edge to propose, as a relation and the identifier of the document at the \

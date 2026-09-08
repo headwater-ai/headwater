@@ -214,6 +214,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
         Verb::New {
             kind,
             title,
+            summary,
             relates,
             facet,
             now,
@@ -221,7 +222,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             None => fail(
                 "`new` takes a kind. Try `headwater new decision --title \"Adopt an overlay\"`",
             ),
-            Some(kind) => new(root, &kind, title, &relates, &facet, now),
+            Some(kind) => new(root, &kind, title, summary, &relates, &facet, now),
         },
         Verb::Capture { format, json } => capture(root, chosen(json, format)),
         Verb::Sweep { word } => match word {
@@ -3255,6 +3256,7 @@ fn new(
     root: &Path,
     kind: &str,
     title: Option<String>,
+    summary: Option<String>,
     relates: &[(String, String)],
     given: &[(String, String)],
     now: Option<Date>,
@@ -3269,6 +3271,7 @@ fn new(
         root,
         kind,
         &title,
+        summary.as_deref(),
         relates,
         given,
         now,
@@ -3297,10 +3300,12 @@ fn new(
 /// the term [HW-OBL-0004](../../../../docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md)
 /// asks the capture-cost store for, and it is the one input that is a fact
 /// about the caller rather than about the corpus.
+#[allow(clippy::too_many_arguments)]
 fn scaffold(
     root: &Path,
     kind: &str,
     title: &str,
+    summary: Option<&str>,
     relates: &[(String, String)],
     given: &[(String, String)],
     now: Option<Date>,
@@ -3336,6 +3341,7 @@ fn scaffold(
     let request = headwater_scaffold::Request {
         kind,
         title,
+        summary,
         now,
         relates,
         given,
@@ -4546,13 +4552,14 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
             root,
             kind,
             title,
-            relates,
-            // No facet values. The write tool declares a kind, a title and
-            // relations, and nothing else, so a kind that requires a facet no
-            // declaration determines is refused over the protocol and written
-            // from a terminal. Widening the tool is a change to the write
-            // class that [Q7](../../../../docs/spec/09-decisions.md#q7--scope-of-the-mcp-surface)
+            // No summary and no facet values. The write tool declares a kind,
+            // a title and relations, and nothing else, so a kind that
+            // requires a facet no declaration determines is refused over the
+            // protocol and written from a terminal. Widening the tool is a
+            // change to the write class that [Q7](../../../../docs/spec/09-decisions.md#q7--scope-of-the-mcp-surface)
             // fixed, and not a change to this call.
+            None,
+            relates,
             &[],
             Some(now),
             EntryPoint::Protocol,

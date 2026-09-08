@@ -225,7 +225,7 @@ Delete the note, and let the engine write the document in its place.
 
 ```
 rm docs/decisions/postgres-note.md
-headwater new decision --title "Store attempts in Postgres"
+headwater new decision --title "Store attempts in Postgres" --summary "The queue keeps every delivery attempt in Postgres."
 ```
 
 Trimmed to the first block. The run also prints the relations this document may declare, and a capture-cost reading:
@@ -238,7 +238,7 @@ what the taxonomy decided
   identifier ACME-DR-0001 under `decision_id`, allocation reconcile-first
   status — `regimes.lifecycle.standard` opens at `draft`
   status_since — the facet is in the `state_entered` role, and the run's clock is the date
-  summary — no declaration determines it, and this run states the question instead
+  summary — the facet is in the `scent` role, and `--summary` is the sentence
   last_verified — the facet is in the `freshness` role, and the run's clock is the date
   section `Context` — the kind requires it
   section `Decision` — the kind requires it
@@ -252,7 +252,7 @@ what the taxonomy decided
 id: ACME-DR-0001
 status: draft
 status_since: 2026-08-17
-summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+summary: "The queue keeps every delivery attempt in Postgres."
 last_verified: 2026-08-17
 ---
 
@@ -277,7 +277,7 @@ A **shelf** is a region of the tree that carries a purpose, and `docs/decisions/
 
 A **kind** is what a document permanently is. The `decisions` shelf holds one kind, so placement alone settled that this file is a `decision`. A kind names the facets a document must declare, the sections it must carry, and the relations it may declare.
 
-A **facet** is a property of one document, declared in the front matter. `status`, `status_since`, `summary` and `last_verified` are the four that `decision` requires. Three of them were filled by a role rather than by a guess. `status` came from the lifecycle regime, and two dates came from the run's clock. `summary` is the one the engine leaves to you, because no declaration determines it.
+A **facet** is a property of one document, declared in the front matter. `status`, `status_since`, `summary` and `last_verified` are the four that `decision` requires. Three of them were filled by a role rather than by a guess. `status` came from the lifecycle regime, and two dates came from the run's clock. `summary` carries no role of its own. `--summary <text>` states it directly, exactly as `--title` states the name. Left unstated, the field carries a prompt for a person to answer.
 
 ### Step 9 — Check again, and read the difference
 
@@ -327,7 +327,7 @@ git commit -m "A first governed corpus"
 ### Step 11 — Declare an edge between two documents
 
 ```
-headwater new decision --title "Deliver at least once" --relates supersedes=ACME-DR-0001
+headwater new decision --title "Deliver at least once" --relates supersedes=ACME-DR-0001 --summary "Retrying a delivery is safe, so the queue may send one attempt twice."
 ```
 
 Trimmed to the two blocks that matter:
@@ -433,8 +433,7 @@ docs/decisions/0002-deliver-at-least-once.md
     shelf `decisions` matched on `docs/decisions/**`
     `decisions` is homogeneous, so placement carries the kind `decision`
   purpose rationale, to explain why a choice was made and what it forecloses
-  summary TODO one sentence: what a reader learns here, which is what routing
-    reads
+  summary Retrying a delivery is safe, so the queue may send one attempt twice.
   requires the facets status, status_since, summary, last_verified
   requires the sections Context, Decision, Consequences
   may declare supersedes to governed_document, and the other end writes
@@ -443,12 +442,11 @@ docs/decisions/0002-deliver-at-least-once.md
   may declare constrains to decision
   may declare conflicts_with to decision
   may declare traces_to to governed_document, code_path
-  to ACME-DR-0001 supersedes — TODO one sentence: what a reader learns here,
-    which is what routing reads (the target's own summary) [this document
-    governs the reading]
-  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — TODO
-    one sentence: what a reader learns here, which is what routing reads (the
-    target's own summary) [this document governs the reading]
+  to ACME-DR-0001 supersedes — The queue keeps every delivery attempt in
+    Postgres. (the target's own summary) [this document governs the reading]
+  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — The
+    queue keeps every delivery attempt in Postgres. (the target's own summary)
+    [this document governs the reading]
 ```
 
 **Check.** The first line of that output is the path of the document whose identifier you named.
@@ -467,8 +465,8 @@ route "why do we keep attempts in Postgres"
   distinctive why do we keep attempts in postgres
   purpose behavior 3
   purpose rationale 3
-  docs/decisions/0001-store-attempts-in-postgres.md — TODO one sentence: what a
-    reader learns here, which is what routing reads
+  docs/decisions/0001-store-attempts-in-postgres.md — The queue keeps every
+    delivery attempt in Postgres.
 ```
 
 **Check.** The last line names `docs/decisions/0001-store-attempts-in-postgres.md`.

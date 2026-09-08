@@ -102,6 +102,11 @@ use headwater_yaml::Mapping;
 pub struct Request<'a> {
     pub kind: &'a str,
     pub title: &'a str,
+    /// A caller-stated value for the facet in the `scent` role, exactly as
+    /// `title` is a caller-stated value for the facet in the `name` role.
+    /// `None` leaves the field carrying a prompt, for a person to answer by
+    /// hand before the document is current.
+    pub summary: Option<&'a str>,
     /// The injected clock. Every date this run writes is this value, so the
     /// same request over the same corpus writes the same bytes.
     pub now: Date,
@@ -765,7 +770,15 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
     let shelf = one_shelf(sources.shelves, kind)?;
     let directory = literal_directory(shelf)?;
 
-    let fields = front_matter(sources, kind, shelf, title, request.now, request.given)?;
+    let fields = front_matter(
+        sources,
+        kind,
+        shelf,
+        title,
+        request.summary,
+        request.now,
+        request.given,
+    )?;
 
     // The identifier is minted before the placement, because a shelf layout may
     // name the sequence the identifier carries. Nothing is written either way,
@@ -976,6 +989,7 @@ fn front_matter(
     kind: &str,
     shelf: &Shelf,
     title: &str,
+    summary: Option<&str>,
     now: Date,
     given: &[(String, String)],
 ) -> Result<Vec<Field>, Refusal> {
@@ -1068,104 +1082,113 @@ fn front_matter(
             continue;
         }
 
-        let field =
-            match role {
-                Some("state") => {
-                    // Through the typed reader, which has carried both members
-                    // since a rule started reading the machine. An untyped
-                    // second path to one declaration is the drift that
-                    // [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
-                    // rules against, and the empty string is what an absent
-                    // `initial` reads as there, so it is refused here rather
-                    // than written into a document.
-                    let regime = sources.shape.lifecycle_of(kind);
-                    let initial = regime
-                        .map(|regime| regime.initial.as_str())
-                        .filter(|initial| !initial.is_empty());
-                    match initial {
-                        Some(state) => Field {
-                            key: name.clone(),
-                            value: state.to_string(),
-                            quoted: false,
-                            origin: Origin::Scaffolded(format!(
-                                "`regimes.lifecycle.{}` opens at `{state}`",
-                                regime
-                                    .map(|regime| regime.name.as_str())
-                                    .unwrap_or_default()
-                            )),
-                        },
-                        None => return Err(Refusal::FacetUndeterminable {
+        let field = match role {
+            Some("state") => {
+                // Through the typed reader, which has carried both members
+                // since a rule started reading the machine. An untyped
+                // second path to one declaration is the drift that
+                // [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+                // rules against, and the empty string is what an absent
+                // `initial` reads as there, so it is refused here rather
+                // than written into a document.
+                let regime = sources.shape.lifecycle_of(kind);
+                let initial = regime
+                    .map(|regime| regime.initial.as_str())
+                    .filter(|initial| !initial.is_empty());
+                match initial {
+                    Some(state) => Field {
+                        key: name.clone(),
+                        value: state.to_string(),
+                        quoted: false,
+                        origin: Origin::Scaffolded(format!(
+                            "`regimes.lifecycle.{}` opens at `{state}`",
+                            regime
+                                .map(|regime| regime.name.as_str())
+                                .unwrap_or_default()
+                        )),
+                    },
+                    None => {
+                        return Err(Refusal::FacetUndeterminable {
                             facet: name,
                             kind: kind.to_string(),
                             why: "no lifecycle regime that this kind binds declares an `initial` \
                                   state"
                                 .to_string(),
                             statable: false,
-                        }),
+                        })
                     }
                 }
-                Some("state_entered") | Some("freshness") => Field {
-                    key: name.clone(),
-                    value: now.to_string(),
-                    quoted: false,
-                    origin: Origin::Scaffolded(format!(
-                        "the facet is in the `{}` role, and the run's clock is the date",
-                        role.unwrap_or_default()
-                    )),
-                },
-                Some("name") => Field {
-                    key: name.clone(),
-                    value: title.to_string(),
-                    quoted: true,
-                    origin: Origin::Scaffolded(
-                        "the facet is in the `name` role, and `--title` is the name".to_string(),
-                    ),
-                },
-                _ if !values.is_empty() => {
-                    return Err(Refusal::FacetUndeterminable {
-                        facet: name,
-                        kind: kind.to_string(),
-                        why: "it declares a closed value set and it carries no role this engine \
+            }
+            Some("state_entered") | Some("freshness") => Field {
+                key: name.clone(),
+                value: now.to_string(),
+                quoted: false,
+                origin: Origin::Scaffolded(format!(
+                    "the facet is in the `{}` role, and the run's clock is the date",
+                    role.unwrap_or_default()
+                )),
+            },
+            Some("name") => Field {
+                key: name.clone(),
+                value: title.to_string(),
+                quoted: true,
+                origin: Origin::Scaffolded(
+                    "the facet is in the `name` role, and `--title` is the name".to_string(),
+                ),
+            },
+            Some("scent") if summary.map(str::trim).is_some_and(|text| !text.is_empty()) => Field {
+                key: name.clone(),
+                value: summary.unwrap().trim().to_string(),
+                quoted: true,
+                origin: Origin::Scaffolded(
+                    "the facet is in the `scent` role, and `--summary` is the sentence".to_string(),
+                ),
+            },
+            _ if !values.is_empty() => {
+                return Err(Refusal::FacetUndeterminable {
+                    facet: name,
+                    kind: kind.to_string(),
+                    why: "it declares a closed value set and it carries no role this engine \
                           derives a value for"
-                            .to_string(),
-                        statable: true,
-                    })
-                }
-                // An integer the shelf writes into its file names is a position in
-                // a series, and the series is on the shelf. Nothing else in a
-                // taxonomy says that an integer counts, so this reads the one
-                // declaration that does.
-                _ if declared_type == Some("integer") && names(shelf, &name) => Field {
-                    key: name.clone(),
-                    value: next_in_series(sources, shelf, &name).to_string(),
-                    quoted: false,
-                    origin: Origin::Scaffolded(format!(
+                        .to_string(),
+                    statable: true,
+                })
+            }
+            // An integer the shelf writes into its file names is a position in
+            // a series, and the series is on the shelf. Nothing else in a
+            // taxonomy says that an integer counts, so this reads the one
+            // declaration that does.
+            _ if declared_type == Some("integer") && names(shelf, &name) => Field {
+                key: name.clone(),
+                value: next_in_series(sources, shelf, &name).to_string(),
+                quoted: false,
+                origin: Origin::Scaffolded(format!(
                     "the shelf `{}` writes `{name}` into its layout, and this is the next value \
                      on it",
                     shelf.name
                 )),
-                },
-                _ if matches!(declared_type, Some("integer") | Some("date")) => {
-                    return Err(Refusal::FacetUndeterminable {
-                        facet: name,
-                        kind: kind.to_string(),
-                        why: format!(
-                            "it is declared `type: {}`, and a prompt is not one",
-                            declared_type.unwrap_or_default()
-                        ),
-                        statable: true,
-                    })
-                }
-                _ => Field {
-                    key: name.clone(),
-                    value: prompt(&name, role),
-                    quoted: true,
-                    origin: Origin::HandEntry(
-                        "no declaration determines it, and this run states the question instead"
-                            .to_string(),
+            },
+            _ if matches!(declared_type, Some("integer") | Some("date")) => {
+                return Err(Refusal::FacetUndeterminable {
+                    facet: name,
+                    kind: kind.to_string(),
+                    why: format!(
+                        "it is declared `type: {}`, and a prompt is not one",
+                        declared_type.unwrap_or_default()
                     ),
-                },
-            };
+                    statable: true,
+                })
+            }
+            _ => Field {
+                key: name.clone(),
+                value: prompt(&name, role),
+                quoted: true,
+                origin: Origin::HandEntry(
+                    "no declaration determines it, and this run states the question instead"
+                        .to_string(),
+                ),
+            },
+        };
         fields.push(field);
     }
     Ok(fields)
