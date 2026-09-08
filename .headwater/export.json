@@ -7352,10 +7352,10 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0174",
-          "status": "current",
-          "status_since": "2026-09-07",
+          "status": "discharged",
+          "status_since": "2026-09-08",
           "summary": "Publishing headwater/standard 4.1.0 prints that the artifact records 51 references resolving nowhere inside it, exits 0, ships the list in the manifest, and taxonomy vendor installs it without a word.",
-          "last_verified": "2026-09-07",
+          "last_verified": "2026-09-08",
           "title": "Publishing the base package reports 51 references that resolve nowhere and exits 0",
           "waiting_on": "adopter",
           "provenance": {

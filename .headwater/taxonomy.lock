@@ -32,7 +32,7 @@ lock:
     - path: packages/headwater-standard/bundles/design-spec/bundle.yml
       digest: sha256:39b514b8d5c971d291f2c662500a2c0d384f7446bf5bc0661a120ff4283f001c
     - path: packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
-      digest: sha256:b44a6d2dcddffde1f210efbf51b553fdf4b02dd7d5b63dc9892b5743b81dccbe
+      digest: sha256:1092c56eb53e4f4d439e6e15c932087ee84b256eb0fd27cc3edbafb1abb3202f
     - path: packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:a1d0295f3af618bb371291f264a5f3d85925aabdd171ccea64629ee42a0e1c24
     - path: .headwater/overlay.yml
