@@ -1,0 +1,30 @@
+{#
+  The theme's own `404.html` extends `base.html` directly, so it is the one
+  generated page that `main.html` never reaches. Left alone it was the last
+  page on the site carrying `Documentation built with MkDocs` — 1 of 333 after
+  the other 325 had lost it, which is the shape of an absence-grep that is
+  nearly but not quite zero.
+
+  It extends `main.html` here instead, so it carries the same header, the same
+  visual register and the same footer as every other page. It overrides
+  `content` because there is no page behind it: `page` is `None`, so there is
+  no file to name in a provenance band and no shelf to list. `mkdocs.yml`
+  records why this page gets no canonical URL either.
+#}
+{% extends "main.html" %}
+
+{% block content %}
+  <div class="col-md-12 hw-shelves">
+    <nav aria-label="Shelves">
+      {% for nav_item in nav %}
+        {% if nav_item.children %}
+          <a href="{{ nav_item.children[0].url|url }}">{{ nav_item.title }}</a>
+        {% endif %}
+      {% endfor %}
+    </nav>
+  </div>
+  <div class="col-md-12" role="main">
+    <h1 id="404-page-not-found">404</h1>
+    <p>{% trans %}Page not found{% endtrans %}. The shelves above are every part of this corpus that is published, and <a href="{{ 'corpus.json'|url }}">corpus.json</a> is the machine-readable list of what is on them.</p>
+  </div>
+{% endblock %}

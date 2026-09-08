@@ -62,11 +62,23 @@ site_dir: .headwater/site-build
 
 theme:
   name: mkdocs
-  # `mkdocs-overrides/main.html` is the whole of the custom directory, and
-  # HW-DR-0038 is why it exists: spec 7 requires that a rendered page carry a
-  # link relation to the served copy of the corpus descriptor, and Q38 rules
-  # that the relation is `describedby`. Not `overrides/`, because *override* is
-  # already this corpus's word for an entry in `.headwater/overlay.yml`.
+  # HW-DR-0038 is why this directory exists at all: spec 7 requires that a
+  # rendered page carry a link relation to the served copy of the corpus
+  # descriptor, and Q38 rules that the relation is `describedby`. Not
+  # `overrides/`, because *override* is already this corpus's word for an entry
+  # in `.headwater/overlay.yml`.
+  #
+  # It holds four files now, and `main.html` is no longer the whole of it:
+  #
+  #   main.html      overrides blocks of the theme's `base.html` and never
+  #                  replaces it. A hand-written `base.html` here would shadow
+  #                  the stock one and silently drop both the canonical URL
+  #                  `tools/check-site-canonical.py` asserts on 302 pages and
+  #                  the `describedby` link above.
+  #   css/headwater.css       the generated half in this site's visual register.
+  #   js/leading-digit-anchor-shim.js   #614, loaded before `js/base.js`.
+  #   js/darkmode.js          SHADOWS the theme's file of the same path. The
+  #                  only file here that replaces one. See its own header.
   #
   # `.headwater/corpus.json` sits outside `docs_dir`, so no build copies it and
   # the CI job puts it beside the built pages instead. A local `mkdocs build`
@@ -170,6 +182,24 @@ exclude_docs: |
 #
 # `pymdown-extensions` is pinned in the CI step beside `mkdocs==1.6.1`, as
 # #431's Done-when requires of any new pip dependency.
+# One hook, and the reason it is a hook rather than a copied file.
+#
+# HW-DR-0050 rules that `tools/site-tokens.css` is the one copy of this site's
+# visual register that a person edits. The hand-built half inlines it, because
+# `site/_headers` gives those paths `style-src 'unsafe-inline'` with no
+# `'self'`. The generated half is served from `/*`, whose policy does carry
+# `'self'`, so it links the file instead — and it has to be the same file, not
+# a copy, because nothing in this repository would catch a copy drifting:
+# `tools/refresh-site-tokens.sh --check` walks `site/` alone.
+#
+# `mkdocs-hooks/site_tokens.py` registers that file as a generated `File` at
+# `css/site-tokens.css`. `hooks:` is a core MkDocs option since 1.4 and this
+# repository pins 1.6.1, so this adds no pip dependency and nothing to the two
+# places that must stay identical, `.github/workflows/ci.yml` and
+# `tools/cloudflare-build.sh`.
+hooks:
+  - mkdocs-hooks/site_tokens.py
+
 markdown_extensions:
   - toc:
       slugify: !!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}

@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 403,
-      "carried": 403,
+      "in the graph": 405,
+      "carried": 405,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 615,
-      "carried": 615,
+      "in the graph": 617,
+      "carried": 617,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1457,8 +1457,8 @@
           "id": "HW-DR-0050",
           "status": "current",
           "status_since": "2026-09-06",
-          "summary": "The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet.",
-          "last_verified": "2026-09-06",
+          "summary": "The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each hand-built page before the commit, because the content policy of those pages admits no linked stylesheet, and the generated half links the same file because its own policy admits one.",
+          "last_verified": "2026-09-08",
           "title": "Q50 — Where the visual register of the hand-built pages lives",
           "provenance": {
             "warrant": "asserted",
@@ -1473,7 +1473,9 @@
             ],
             "governs": [
               "tools/site-tokens.css",
-              "tools/refresh-site-tokens.sh"
+              "tools/refresh-site-tokens.sh",
+              "mkdocs-hooks/site_tokens.py",
+              "mkdocs-overrides/css/headwater.css"
             ],
             "traces_to": [
               "notes/website-design-brief.md"
@@ -8937,6 +8939,16 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "mkdocs-hooks/site_tokens.py",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "mkdocs-overrides/css/headwater.css",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "mkdocs-overrides/main.html",
         "resolver": "source-tree"
       },
@@ -10292,6 +10304,28 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "tools/refresh-site-tokens.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "mkdocs-hooks/site_tokens.py",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "mkdocs-overrides/css/headwater.css",
           "resolver": "source-tree"
         }
       },
