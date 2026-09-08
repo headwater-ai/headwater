@@ -32,8 +32,8 @@ findings before
   check/spec/07-prose-defects.md link.path.unresolved `19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
   check/spec/07-prose-defects.md link.path.unresolved `19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
   check/spec/07-prose-defects.md link.path.unresolved `../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository
-  check/spec/07-prose-defects.md link.path.unresolved `/spec/00-both-halves.md` names no file of this repository: nothing stands at `check/spec/spec/00-both-halves.md`
-  check/spec/07-prose-defects.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 28
+  check/spec/07-prose-defects.md link.path.unresolved `19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
+  check/spec/07-prose-defects.md link.path.unresolved `/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md`
   check/spec/08-contract-met.md identifier.claim.missing `DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it
   check/spec/09-contract-missing.md section.required.missing `decision_record` requires the section `Decision`, and no heading of this document says so
   check/spec/09-contract-missing.md identifier.claim.missing `DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it
@@ -81,8 +81,8 @@ findings after
   check/spec/07-prose-defects.md link.path.unresolved `19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
   check/spec/07-prose-defects.md link.path.unresolved `19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
   check/spec/07-prose-defects.md link.path.unresolved `../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository
-  check/spec/07-prose-defects.md link.path.unresolved `/spec/00-both-halves.md` names no file of this repository: nothing stands at `check/spec/spec/00-both-halves.md`
-  check/spec/07-prose-defects.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 28
+  check/spec/07-prose-defects.md link.path.unresolved `19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
+  check/spec/07-prose-defects.md link.path.unresolved `/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md`
   check/spec/09-contract-missing.md section.required.missing `decision_record` requires the section `Decision`, and no heading of this document says so
   check/spec/10-suppressed.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 31
   check/spec/11-identifier-mismatch.md identifier.pattern.not_met `SPEC-XX-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where the namespace `FIX` was expected

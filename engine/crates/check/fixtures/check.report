@@ -145,8 +145,8 @@ register
   coverage.document_unchecked reaches no obligation, so it names none
   adoption.task.expired reaches no obligation, so it names none
 54 findings
-     34 ✗ error
-     20 ▲ warn
+     35 ✗ error
+     19 ▲ warn
 
 instances
   facet.required.missing check/evaluations/alpha.md
@@ -822,12 +822,12 @@ check/spec/07-prose-defects.md:65:91 ✗ error
 check/spec/07-prose-defects.md:67:63 ✗ error
   link.path.unresolved: `../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository
   fix: rewrite the destination as a path relative to the document that writes it, or as an absolute address with a scheme
-check/spec/07-prose-defects.md:69:67 ✗ error
-  link.path.unresolved: `/spec/00-both-halves.md` names no file of this repository: nothing stands at `check/spec/spec/00-both-halves.md`
-  fix: point it at a file that exists, or restore `check/spec/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went
-check/spec/07-prose-defects.md:69:115 ▲ warn
-  language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 28
-  fix: split the sentence, or move a clause into its own sentence
+check/spec/07-prose-defects.md:69:46 ✗ error
+  link.path.unresolved: `19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
+  fix: point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went
+check/spec/07-prose-defects.md:71:90 ✗ error
+  link.path.unresolved: `/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md`
+  fix: point it at a file that exists, or restore `/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went
 check/spec/08-contract-met.md:2:1 ✗ error
   identifier.claim.missing: `DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it
   fix (mechanical): run `headwater check --fix`, which writes `.headwater/ids/decision_id/DR-FIX-0008` holding `check/spec/08-contract-met.md`

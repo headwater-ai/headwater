@@ -2,11 +2,11 @@
       6 to a document
       3 to an anchor
       4 unbound
-8 prose links
-      4 to a corpus file
+12 prose links
+      6 to a corpus file
       1 to this document
       1 outside the repository
-      2 broken
+      4 broken
       1 skipped, quoted from another author
       1 carrying a fragment into this document
       1 carrying a fragment into another corpus document
@@ -68,6 +68,14 @@ links
     graph/notes/a%20literal.md (untyped)
   graph/notes/loose.md -> a%20missing.md
     no `graph/notes/a%20missing.md` in the repository
+  graph/notes/loose.md -> ../spec/00-first.md?v=2
+    graph/spec/00-first.md (typed)
+  graph/notes/loose.md -> no-such-note.md?v=2
+    no `graph/notes/no-such-note.md` in the repository
+  graph/notes/loose.md -> /graph/spec/01-second.md
+    graph/spec/01-second.md (typed)
+  graph/notes/loose.md -> /graph/notes/no-such-root-file.md
+    no `/graph/notes/no-such-root-file.md` in the repository
   graph/spec/00-first.md -> 01-second.md#a-heading
     graph/spec/01-second.md (typed)
   graph/spec/00-first.md -> ../excluded/note.md
@@ -81,6 +89,10 @@ links
 
 graph/notes/loose.md:11:26
   link: `a%20missing.md` no `graph/notes/a%20missing.md` in the repository
+graph/notes/loose.md:13:136
+  link: `no-such-note.md?v=2` no `graph/notes/no-such-note.md` in the repository
+graph/notes/loose.md:15:163
+  link: `/graph/notes/no-such-root-file.md` no `/graph/notes/no-such-root-file.md` in the repository
 graph/spec/00-first.md:11:7
   relations: `governs` names graph/spec/01-second.md twice, and the second declares no second edge
 graph/spec/00-first.md:13:7

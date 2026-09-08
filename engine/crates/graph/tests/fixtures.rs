@@ -373,6 +373,77 @@ fn a_destination_binds_under_either_reading_of_its_escapes() {
     );
 }
 
+/// A query string leaves the path, and a leading separator reads from the root.
+///
+/// Both shapes are legal Markdown that no file of this corpus writes, so the
+/// first adopter to write one meets whatever this binder does with it. A query
+/// string is not part of a filename in any reader, and a destination that opens
+/// with `/` is written from the root of the site rather than from the directory
+/// of the citing document. `link.path.unresolved` is an error that stops a
+/// commit, so each shape is a pair here: the reading has to find the file that
+/// stands under it, and it has to keep reporting the one that stands nowhere.
+///
+/// The negative half is the point. Dropping everything after `?`, or giving up
+/// on a leading `/`, would remove the false positive and take a true positive
+/// with it. The rendered binding is asserted as well as `is_broken`, because a
+/// report that names a path nobody wrote is a defect of its own: the joined
+/// reading of `/graph/notes/x.md` doubled the citing directory in front of it.
+#[test]
+fn a_query_string_leaves_the_path_and_a_leading_separator_reads_from_the_root() {
+    let graph = fixture_graph();
+    let bound = |destination: &str| {
+        graph
+            .links
+            .iter()
+            .find(|link| {
+                link.source_path == "graph/notes/loose.md" && link.destination == destination
+            })
+            .unwrap_or_else(|| panic!("`{destination}` reached the binding"))
+    };
+
+    for (destination, path) in [
+        ("../spec/00-first.md?v=2", "graph/spec/00-first.md"),
+        ("/graph/spec/01-second.md", "graph/spec/01-second.md"),
+    ] {
+        let link = bound(destination);
+        assert!(
+            !link.binding.is_broken(),
+            "`{destination}` is `{path}`: {:#?}",
+            link.binding
+        );
+        assert!(
+            format!("{}", link.binding).contains(path),
+            "and it names that file: {:#?}",
+            link.binding
+        );
+    }
+
+    // The negative half, and it is what makes each pair above a measurement.
+    let query = bound("no-such-note.md?v=2");
+    assert!(query.binding.is_broken(), "{:#?}", query.binding);
+    let rendered = format!("{}", query.binding);
+    assert!(
+        rendered.contains("graph/notes/no-such-note.md"),
+        "the report names the path the author wrote: {rendered}"
+    );
+    assert!(
+        !rendered.contains("?v=2"),
+        "and the query string never reached the filename: {rendered}"
+    );
+
+    let rooted = bound("/graph/notes/no-such-root-file.md");
+    assert!(rooted.binding.is_broken(), "{:#?}", rooted.binding);
+    let rendered = format!("{}", rooted.binding);
+    assert!(
+        rendered.contains("/graph/notes/no-such-root-file.md"),
+        "the report names the destination the author wrote: {rendered}"
+    );
+    assert!(
+        !rendered.contains("graph/notes/graph/notes/"),
+        "and the citing directory is never joined in front of it: {rendered}"
+    );
+}
+
 /// A generated document that declares an identity is a node at both ends.
 ///
 /// [Spec 6](../../../../docs/spec/06-engine-architecture.md#projections) says
