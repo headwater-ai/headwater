@@ -76,6 +76,43 @@ theme:
   #   cp .headwater/corpus.json .headwater/site-build/corpus.json
   custom_dir: mkdocs-overrides
 
+  # OFF, AND THE TWO THINGS THAT GO WITH IT
+  #
+  # HW-OBL-0160 is the record: the stock theme loads highlight.js and two
+  # stylesheets from `cdnjs.cloudflare.com` on every generated page, with no
+  # subresource integrity, so `script-src` and `style-src` on `/*` had to admit
+  # a third party that can change what it serves. Turning this off is that
+  # record's own named remedy, and it removes three requests per page.
+  #
+  # It removes two elements as well, and that is the trap. `base.html` emits
+  # `#hljs-light` and `#hljs-dark` only under this flag, and the theme's
+  # `js/darkmode.js` dereferences both with no null guard.
+  #
+  # THIS COMMIT IS RED ON `tools/check-site-console.py`, ON PURPOSE. Measured
+  # here: 325 pages with a finding, out of 333 served pages, every one of them
+  # `Uncaught TypeError: Cannot set properties of null (setting 'disabled')` at
+  # `js/darkmode.js:7`. `mkdocs build --strict` exits 0 over it,
+  # `tools/assemble-site.sh` exits 0 over it, and `tools/check-site-fragments.py`
+  # exits 0 over it. The next commit on this branch is the guard, and this
+  # paragraph is replaced when it lands.
+  #
+  # Fenced code is no longer highlighted anywhere on the generated half. That is
+  # the cost, it is paid on purpose, and `tools/check-site-console.py` had one
+  # `ALLOWANCES` entry for the CDN highlighter's unknown-language warning whose
+  # population is now zero.
+  highlightjs: false
+
+  # Not `light`. The visual register this half now links —
+  # `tools/site-tokens.css`, ruled by HW-DR-0050 — carries a
+  # `prefers-color-scheme: dark` block, and a page pinned to
+  # `data-bs-theme="light"` would serve the light tokens to a reader whose
+  # system asks for dark. `auto` hands the choice to the reader's system.
+  color_mode: auto
+
+  # Left at the theme default of `false`. The toggle it adds is a Bootstrap
+  # dropdown in the navbar, and this theme has no navbar to put it in.
+  user_color_mode_toggle: false
+
 # The site builds what the corpus types, and nothing else. This list mirrors
 # `.headwater/corpus.json` rather than deciding anything of its own.
 #
