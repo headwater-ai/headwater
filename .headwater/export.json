@@ -923,7 +923,7 @@
           "status": "current",
           "status_since": "2026-08-30",
           "summary": "`clap` derives the command line for 17 lock entries, and a flag belongs to the verb that reads it rather than to the binary.",
-          "last_verified": "2026-08-30",
+          "last_verified": "2026-09-08",
           "title": "Q33 — Whether the command line is derived, and who a flag belongs to",
           "provenance": {
             "warrant": "accepted",
