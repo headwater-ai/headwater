@@ -808,6 +808,25 @@ jobs:
             exit 0
           fi
           exit "$status"
+      - name: A recorder's transform drops every block the harness did not tag as a call
+        # `tools/probe-transform.sh` is the half of a recorder that decides
+        # what reaches `docs/probe-runs/`, and the failure it exists to
+        # prevent is silent: a model's account of its own process arriving as
+        # an observation. This suite feeds it a harness log whose `thinking`
+        # and `text` blocks carry content shaped like transcript fields and
+        # asserts that no byte of any of them survives, which is the one case
+        # a filter by position, by index or by the tags in a sample fails. It
+        # also holds spec 15's three-state rule, where `calls: []` for a
+        # stream nobody watched turns an unobserved run into a clean result.
+        # It needs `jq` and skips with a warning without it.
+        run: |
+          status=0
+          sh tools/probe-record-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Recorder fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
       - name: The run census counts a turn once per message and a call by what it is for
         # `tools/run-census.sh` is the measurement behind HW-PD-0003 as a
         # tool: one usage record per message id, because a response is

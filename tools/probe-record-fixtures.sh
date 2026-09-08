@@ -174,6 +174,49 @@ sh "$transform" --probe PROBE-FIX-opened --session forged --root "$root" \
 same "a log with calls but no init line is refused too" "4" "$?"
 
 # ---------------------------------------------------------------------------
+# A real stream, recorded from the channel rather than written by hand.
+#
+# `tools/fixtures/probe-record/live-haiku-session.jsonl` is the standard output
+# of one `claude -p --output-format stream-json --verbose` session, recorded on
+# 2026-09-08 against `claude-haiku-4-5` in a scratch directory outside this
+# corpus. It cost $0.0062. The hand-written log above is what a reader can
+# check by eye; this one is what the harness actually emits, and it carries two
+# line shapes no hand-written sample of this repository had: `system` lines of
+# subtype `thinking_tokens`, and a `modelUsage` object keyed by both an alias
+# and a dated version.
+# ---------------------------------------------------------------------------
+live="$root/tools/fixtures/probe-record/live-haiku-session.jsonl"
+if [ -f "$live" ]; then
+    sh "$transform" --probe PROBE-FIX-opened --session live --root "$root" \
+        < "$live" > "$scratch/live.yaml" 2>/dev/null
+    same "a stream recorded from the channel transforms without error" "0" "$?"
+    same "the real session's one call is the one call written" "1" \
+        "$(grep -c '^    - tool:' "$scratch/live.yaml")"
+    # The session read a file and then said the word it found. The log holds
+    # two `thinking` blocks and one `text` block; none of them is an event.
+    absent "no byte of the real session's answer text survives" \
+        "headwater" "$scratch/live.yaml"
+    unaccounted=$(grep -vE '^(- probe:|  session:|  calls:|    - tool:|      argument:|      result:|  produced:|  answer:)' \
+        "$scratch/live.yaml" | wc -l | tr -d ' ')
+    same "every line of the real session's event is a declared key" "0" "$unaccounted"
+
+    # `served_version` is the one identity member that says which weights
+    # answered, and the first key of `modelUsage` is the alias, not the pin.
+    provider=$(sh "$driver" --provider-only "$live" 2>/dev/null)
+    same "the served version is the dated key and not the alias" \
+        "served_version: claude-haiku-4-5-20251001" \
+        "$(printf '%s\n' "$provider" | grep '^served_version:')"
+    same "the model is the name the harness announced" \
+        "model: claude-haiku-4-5" \
+        "$(printf '%s\n' "$provider" | grep '^model:')"
+    same "the cost is whole cents, rounded from the dollars the harness reports" \
+        "cost_cents: 1" \
+        "$(printf '%s\n' "$provider" | grep '^cost_cents:')"
+else
+    fail "a stream recorded from the channel is on disk" "no file at $live"
+fi
+
+# ---------------------------------------------------------------------------
 # The negative direction. The raw harness log is refused by the intake on a key
 # outside the closed sets, which is the property the filter exists to restore.
 # ---------------------------------------------------------------------------

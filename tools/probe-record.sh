@@ -11,6 +11,10 @@
 #         --task-file task.md --model claude-haiku-4-5 \
 #         --workspace /tmp/scratch-copy [--raw raw.jsonl] [--produced docs/x.md]…
 #
+# Two modes read nothing from the network. `--identity-only` prints the six
+# members `headwater probe plan` fixes, and `--provider-only <log>` prints the
+# three the provider metadata carries, over a log already recorded.
+#
 # ## The channel, and the two ways to lose it
 #
 # The channel is the standard output of the harness process:
@@ -64,6 +68,7 @@ raw=
 tier=
 arm=
 identity_only=0
+provider_only=0
 transform_args=
 
 while [ $# -gt 0 ]; do
@@ -77,6 +82,7 @@ while [ $# -gt 0 ]; do
         --tier) tier=${2:-}; shift 2 ;;
         --arm) arm=${2:-}; shift 2 ;;
         --identity-only) identity_only=1; shift ;;
+        --provider-only) provider_only=1; raw=${2:-}; shift 2 ;;
         --produced) transform_args="$transform_args --produced ${2:-}"; shift 2 ;;
         *) echo "probe-record: unknown argument \`$1\`" >&2; exit 2 ;;
     esac
@@ -90,6 +96,40 @@ command -v jq >/dev/null 2>&1 || {
     echo "probe-record: \`jq\` is not on the path." >&2
     exit 3
 }
+
+# step_derive_provider. The harness `result` line carries the model, the usage
+# record and the realized cost in dollars; the contract wants whole cents.
+#
+# **A model name is not a pin.** Measured on 2026-09-08: one `claude-haiku-4-5`
+# session wrote `modelUsage` keyed by both `claude-haiku-4-5` and
+# `claude-haiku-4-5-20251001`, and the first key of that object is the alias.
+# Taking it would write an alias into `served_version`, which is the one member
+# of the identity that says which weights answered. So the served version is
+# the key that carries a dated suffix where the provider exposes one, and the
+# name as a name where none is exposed, which is what [spec 15] asks for.
+step_derive_provider() {
+    jq -s -r '
+        ([.[] | select(.type == "result")] | last) as $r
+        | ([.[] | select(.type == "system" and .subtype == "init")] | last) as $i
+        | (($r.modelUsage // {}) | keys) as $used
+        | ($i.model // ($used | first) // "unknown") as $name
+        | {
+            model: $name,
+            served: (([$used[] | select(test("-[0-9]{8}$"))] | first) // $name),
+            cost_cents: (((($r.total_cost_usd // 0) * 100) | round)),
+          }
+        | "model: \(.model)\nserved_version: \(.served)\ncost_cents: \(.cost_cents)"
+    ' < "$raw"
+}
+
+# `--provider-only <log>` runs that step alone over a recorded log, so the
+# derivation is held by a fixture without spending a session or an engine.
+if [ "$provider_only" = 1 ]; then
+    [ -f "$raw" ] || { echo "probe-record: no log at $raw" >&2; exit 2; }
+    step_derive_provider
+    exit 0
+fi
+
 [ -x "$engine" ] || {
     echo "probe-record: no engine at $root/engine/target/{dev-release,release}/headwater." >&2
     echo "probe-record: build one, or the plan members below would be guesses." >&2
@@ -151,13 +191,16 @@ esac
 raw=${raw:-$(mktemp)}
 
 # The channel. Standard output of the harness process, read by this script.
-# Never a file under `~/.claude/projects/`.
-claude -p --output-format stream-json --verbose \
-    ${model:+--model "$model"} \
-    "$(cat "$task_file")" \
-    > "$raw" 2>"$raw.err" &
-child=$!
-wait "$child"
+# Never a file under `~/.claude/projects/`. The session runs in the workspace
+# the guard above cleared, so nothing it writes moves the `tree` digest the
+# plan fixed; the subshell keeps that `cd` out of this script's own state.
+task=$(cat "$task_file")
+(
+    cd "$here" || exit 7
+    claude -p --output-format stream-json --verbose \
+        ${model:+--model "$model"} \
+        "$task"
+) > "$raw" 2>"$raw.err"
 status=$?
 if [ "$status" != 0 ]; then
     echo "probe-record: the harness exited $status." >&2
@@ -165,27 +208,14 @@ if [ "$status" != 0 ]; then
     exit "$status"
 fi
 
-# step_derive_provider. The harness `result` line carries the model, the usage
-# record and the realized cost in dollars; the contract wants whole cents.
-step_derive_provider() {
-    jq -s -r '
-        ([.[] | select(.type == "result")] | last) as $r
-        | ([.[] | select(.type == "system" and .subtype == "init")] | last) as $i
-        | {
-            model: ($r.modelUsage // {} | keys | first // $i.model // "unknown"),
-            cost_cents: (((($r.total_cost_usd // 0) * 100) | round)),
-          }
-        | "model: \(.model)\ncost_cents: \(.cost_cents)"
-    ' < "$raw"
-}
 
 printf '# raw harness log: %s\n' "$raw" >&2
 
 # The identity block, then the event the transform filters out of the stream.
+provider=$(step_derive_provider)
 printf '```yaml\n'
-step_derive_provider | sed -n 's/^model: //p' | sed 's/^/model: /'
-provider_model=$(step_derive_provider | sed -n 's/^model: //p')
-printf 'served_version: %s\n' "$provider_model"
+printf '%s\n' "$provider" | grep '^model: '
+printf '%s\n' "$provider" | grep '^served_version: '
 printf 'tree: %s\n' "$(member tree)"
 printf 'lock: %s\n' "$(member lock)"
 printf 'selection: %s\n' "$(member selection)"
@@ -195,7 +225,7 @@ printf 'harness: %s\n' "$(member harness)"
 printf 'tier: %s\n' "${tier:-regression}"
 printf 'arm: %s\n' "${arm:-present}"
 printf 'at: %s\n' "$(date -u +%Y-%m-%d)"
-step_derive_provider | sed -n 's/^cost_cents: //p' | sed 's/^/cost_cents: /'
+printf '%s\n' "$provider" | grep '^cost_cents: '
 printf '```\n'
 
 # The transform reads the same stream this script wrote, on its standard input.
