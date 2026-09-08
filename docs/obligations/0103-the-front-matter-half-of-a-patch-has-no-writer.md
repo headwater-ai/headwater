@@ -4,7 +4,7 @@ title: "The front-matter half of a patch has no writer"
 status: current
 status_since: 2026-08-14
 waiting_on: build
-last_verified: 2026-08-15
+last_verified: 2026-09-08
 summary: "Three documents name a mechanical correction inside front matter, and the two patch shapes that ship reach a run of prose and a relations block."
 provenance:
   warrant: accepted
@@ -47,5 +47,7 @@ The second is the grain. [HW-OBL-0088](0088-correcting-an-identifier-is-mechanic
 ## Discharge
 
 A patch shape that writes a facet, under a read-back that a reader can state in one sentence. `headwater taxonomy migrate --apply` supplies the read-back and not the patch shape. It writes a facet, it is no `Patch`, and no rule reaches it. What stays open is the variant `check --fix` carries, an expectation for an edit that moves a key, and the reach that [HW-OBL-0088](0088-correcting-an-identifier-is-mechanical-and-it-is-not-local.md) prices. Each way the read-back refuses owes a failing fixture. `shelf.placement_is_primary` is the first customer and its patch is a deletion, and the fixture corpus already holds the document that fails the rule.
+
+A fourth document names the gap, and it is the first to name it for a rule whose body half already writes a patch. [Spec 12](../spec/12-check-layer.md#the-five-origins-of-a-check) widens `language.controlled.not_met` and `language.retired_term.used` to the facet in the `scent` role. A contraction and a British spelling in a `summary` meet the mechanical-and-total bar exactly as they do in a paragraph. The same finding in a paragraph carries a patch and the one in front matter carries prose, so one rule now reports both readings of `fixable`, which is the split [HW-OBL-0087](0087-fixable-has-two-readings-inside-one-engine.md) settled. `engine/crates/check/fixtures/check/spec/21-summary-facet-prose.md` is the fixture that holds the absence.
 
 Until then every rule whose remedy is a facet reports remediation prose, and `fixable` in a report stays the narrow reading that [HW-OBL-0087](0087-fixable-has-two-readings-inside-one-engine.md) settled.

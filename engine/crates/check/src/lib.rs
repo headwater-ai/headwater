@@ -146,6 +146,7 @@ pub mod facet_value;
 pub mod fill;
 pub mod finding;
 pub mod fragment;
+pub mod frontmatter;
 pub mod gate;
 pub mod identifier;
 pub mod identity;

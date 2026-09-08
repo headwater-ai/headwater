@@ -398,6 +398,86 @@ fn the_fixture_tree_runs_to_the_recorded_report() {
     );
 }
 
+/// The two lexical rules read the facet in the `scent` role, and no other.
+///
+/// A stable corpus count is no evidence that a widened population runs, because
+/// this repository's own summaries are already clean. So the evidence is a
+/// document whose body holds nothing and whose front matter holds one defect of
+/// each kind. `21-summary-facet-prose.md` carries the same three defects twice:
+/// once in `summary`, which is the facet in the `scent` role, and once in
+/// `title`, which is in no role this rule reads.
+///
+/// It also holds the `--fix` outcome. No patch shape reaches a mapping, which
+/// [HW-OBL-0103](../../../../docs/obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md)
+/// records, so a front-matter finding carries remediation prose and nothing
+/// else. A finding here that offered a patch would offer one over a body span.
+#[test]
+fn a_lexical_rule_reads_the_facet_in_the_scent_role_and_no_other() {
+    const PATH: &str = "check/spec/21-summary-facet-prose.md";
+    // `title:` is line 6 of the fixture and `summary:` is line 7. Both are read
+    // from the source rather than assumed, so an edit to the front matter above
+    // them moves the expectation with the file.
+    let source = std::fs::read_to_string(fixtures_dir().join(PATH)).expect("the fixture");
+    let line_of = |key: &str| {
+        source
+            .lines()
+            .position(|line| line.starts_with(key))
+            .expect("the facet")
+            + 1
+    };
+    let (title, summary) = (line_of("title:"), line_of("summary:"));
+
+    let run = fixture_run();
+    let mine: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.path == PATH)
+        .collect();
+
+    let controlled: Vec<&&headwater_check::Finding> = mine
+        .iter()
+        .filter(|finding| finding.rule == language::RULE)
+        .collect();
+    assert_eq!(controlled.len(), 2, "{mine:#?}");
+    assert!(
+        controlled
+            .iter()
+            .any(|finding| finding.message.contains("doesn't")),
+        "{controlled:#?}"
+    );
+    assert!(
+        controlled
+            .iter()
+            .any(|finding| finding.message.contains("organisation")),
+        "{controlled:#?}"
+    );
+
+    let retired: Vec<&&headwater_check::Finding> = mine
+        .iter()
+        .filter(|finding| finding.rule == retired::RULE)
+        .collect();
+    assert_eq!(retired.len(), 1, "{mine:#?}");
+    assert!(
+        retired[0].message.contains("reference system"),
+        "{retired:#?}"
+    );
+
+    for finding in &mine {
+        assert_eq!(
+            finding.severity,
+            headwater_check::Severity::Error,
+            "{finding:#?}"
+        );
+        assert_eq!(finding.line, summary, "{finding:#?}");
+        assert_ne!(
+            finding.line, title,
+            "a label in the `name` role is not prose"
+        );
+        assert!(finding.patch.is_none(), "{finding:#?}");
+        assert!(finding.message.contains("summary"), "{finding:#?}");
+    }
+}
+
 /// This repository, checked by the taxonomy that types it.
 ///
 /// The recorded file holds the coverage totals, the instance count per rule,
@@ -1387,8 +1467,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 27);
-    assert_eq!(run.coverage.classified(), 25);
+    assert_eq!(run.coverage.seen(), 28);
+    assert_eq!(run.coverage.classified(), 26);
 
     // A file this engine wrote is the third state, and it is accounted for
     // without being judged. `check/spec/12-generated.md` sits on a heterogeneous
@@ -1721,7 +1801,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
         &mut Cache::disabled(),
     );
 
-    assert_eq!(declared.len(), 25, "one instance per typed document");
+    assert_eq!(declared.len(), 26, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()

@@ -50,7 +50,7 @@ Spec 6 sketched three tiers. The correct decomposition is five. It comes from th
 | **Shape** | the TBox, generated | required facet, enum membership, blank value, identifier pattern, cardinality, unknown-facet detection | JSON Schema, and LinkML or SHACL when either emitter arrives |
 | **Graph** | relation declarations, generated | reciprocity, endpoint kinds, lifecycle-sensitivity, satellite inheritance, live conflicts, windowed participation expectations | SHACL (via SPARQL), when that emitter arrives |
 | **Corpus** | declarations that need many documents | facet orthogonality, continuity distribution, scent distinctiveness | — |
-| **Document** | regimes, applied to the body | voice, section contract, normative language, size budgets, prose-link resolution | — |
+| **Document** | regimes, applied to the prose of the document | voice, section contract, normative language, size budgets, prose-link resolution | — |
 | **Plugin** | adopter code | anything organization-specific | — |
 
 This table settles three things.
@@ -64,6 +64,16 @@ One example in that row asks for more than the row supplies. Prose-link resoluti
 Whether the path names a file that exists is a fact about the corpus. A rename touches no byte of the document that cited it, so `link.path.unresolved` is corpus-scoped. Whether the fragment names a heading is a fact about the document the link points at. That document is another one as often as it is the citer, so `link.fragment.unresolved` is corpus-scoped too. It read the near half alone for two editions, at Document grain. A renamed heading then broke every citation from outside the file in silence.
 
 The near half could not stay where it was. A document-scoped rule that read the target documents must name them in its read set. Without that, a rename in a target leaves a cached pass standing. The read set is also what routes a rule to a document for the coverage account. So each target named there would count as a document this rule checked. One grain answers both halves and miscounts neither.
+
+**A summary is prose, and the row hid it for two editions.** A facet in the `scent` role carries a sentence about the document, and `headwater generate` publishes that sentence verbatim onto a shelf index. So the row held the most-read line of a document to nothing.
+
+The population of a lexical rule is the body and the facet the shape puts in the `scent` role. A role rather than a name, because `summary` is this repository's spelling of it and an adopter picks another. Two rules read it: `language.controlled.not_met` and `language.retired_term.used`. A corpus that declares no facet in that role loses nothing, because both rules then read the body alone.
+
+Every other role stays out, and a role is either prose or a label. A facet in the `name` role is a title that a reader scans, and it holds no verb. A sentence-length rule over a title reports a defect whose only repair is a rename. To hold a title to half the rules puts a third category between prose and label that nothing declares. A corpus that writes a sentence into a `name` facet reopens this, and this one does not.
+
+`voice.forbidden_construction` reads the body alone. The constructions it forbids are narrations, a summary that carries one is a separate measurement, and that measurement owes its own failing fixture.
+
+A finding in front matter carries no patch. `check --fix` reaches a run of prose and a relations block, and neither shape edits a mapping, which [HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md) records. The remediation names the correction and a person writes it.
 
 **An origin is not a scope.** The origin says which part of the taxonomy a rule comes from, and the scope says what one instance of it covers. `identifier.claimed_twice` is Graph-origin, because the identifier index reports the collision, and it is corpus-scoped, because nothing smaller holds both claimants.
 

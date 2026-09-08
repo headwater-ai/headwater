@@ -165,6 +165,10 @@ fn expansion(word: &str) -> Option<String> {
 /// The check, generated from the language regimes and the kinds that bind them.
 pub struct Language {
     bound: Vec<Bound>,
+    /// The facet in the `scent` role, resolved once from the shape. See
+    /// [`crate::frontmatter`] for why the population is a role rather than a
+    /// name, and `None` for a corpus that declares no such facet.
+    scent: Option<String>,
 }
 
 struct Bound {
@@ -216,7 +220,10 @@ impl Language {
                 tag: regime.tag.clone(),
             });
         }
-        Language { bound }
+        Language {
+            bound,
+            scent: crate::frontmatter::scent_facet(shape),
+        }
     }
 
     fn bound_to(&self, kind: &str) -> Option<&Bound> {
@@ -226,8 +233,17 @@ impl Language {
 
 impl DocumentCheck for Language {
     const RULE: &'static str = self::RULE;
-    /// The first edition of this rule. Raise it when a profile's rules change.
-    const VERSION: u32 = 1;
+    /// Edition two widens the population. Edition one read the body alone, and
+    /// the facet in the `scent` role is prose that a reader meets before any of
+    /// it. A widened rule at an unchanged version serves the old verdict out of
+    /// a warm cache, so the whole change reads as working while it does nothing.
+    ///
+    /// The message a rule writes is part of its output, so an edit to one is an
+    /// edition too. A loop that changes the wording and does not raise this
+    /// serves its own earlier text out of `.headwater/cache/`, and the run says
+    /// `0 evaluated` rather than anything that reads as stale. Raise it once per
+    /// landed change rather than once per edit, and clear the cache in between.
+    const VERSION: u32 = 2;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, kind: &str) -> bool {
@@ -244,20 +260,57 @@ impl DocumentCheck for Language {
                 bound.regime, bound.declared
             ));
         }
-        let Some(body) = view.body() else {
-            return Outcome::Passed;
-        };
+        let body = view.body();
+        // The front matter, read through the role and not the name. A corpus
+        // that declares no facet in the `scent` role reads the body alone.
+        let scent = self
+            .scent
+            .as_deref()
+            .and_then(|facet| crate::frontmatter::Scent::of(view, facet));
 
         let american = bound.tag.eq_ignore_ascii_case("en-US");
         let mut findings = Vec::new();
-        for sentence in body.sentences() {
+        let prose = body
+            .into_iter()
+            .flat_map(|body| body.sentences().into_iter().map(move |s| (s, Some(body))))
+            .chain(
+                scent
+                    .iter()
+                    .flat_map(|scent| scent.sentences.iter().cloned().map(|s| (s, None))),
+            );
+        for (sentence, in_body) in prose {
+            // Where the finding points and what it calls the text. A sentence
+            // of a body anchors at itself; a sentence of front matter anchors
+            // at the start of the value the author wrote, for the reason
+            // [`crate::frontmatter`] states.
+            let (line, column, subject) = match (in_body, &scent) {
+                (Some(_), _) => (
+                    sentence.span.start.line,
+                    sentence.span.start.col,
+                    "this sentence".to_string(),
+                ),
+                (None, Some(scent)) => (
+                    scent.span.start.line,
+                    scent.span.start.col,
+                    format!("the `{}` facet", scent.facet),
+                ),
+                // Unreachable: a sentence outside the body comes from the scent.
+                (None, None) => (0, 0, "this sentence".to_string()),
+            };
+            // The length rule counts a sentence rather than quoting one, so it
+            // names the thing counted. `this one` reads back to the sentence
+            // limit in the clause before it.
+            let counted = match in_body {
+                Some(_) => "this one",
+                None => subject.as_str(),
+            };
             let at = |severity, message: String, remediation: String| Finding {
                 rule: self::RULE,
                 severity,
                 obligation: None,
                 path: view.path().to_string(),
-                line: sentence.span.start.line,
-                column: sentence.span.start.col,
+                line,
+                column,
                 message,
                 remediation,
                 patch: None,
@@ -267,15 +320,29 @@ impl DocumentCheck for Language {
             // not: a sentence past the word limit and a semicolon both have a
             // rewrite for a remediation, and spec 4 keeps that category
             // advisory whatever a lexicon could do to it.
+            //
+            // A sentence of front matter reaches none of them. The patch shape
+            // replaces a byte range of a body under a read-back over two parses
+            // of a body, and HW-OBL-0103 records that nothing edits a mapping.
             let substitute = |word: &str, replacement: &str| {
-                crate::patch::substitution(view.path(), body, &sentence, word, replacement)
+                in_body.and_then(|body| {
+                    crate::patch::substitution(view.path(), body, &sentence, word, replacement)
+                })
+            };
+            // The clause a front-matter remediation carries, so that a reader
+            // meets the reason where the correction is asked for.
+            let by_hand = |remediation: String| match in_body {
+                Some(_) => remediation,
+                None => {
+                    format!("{remediation}, by hand: no patch of this engine edits front matter")
+                }
             };
 
             if sentence.words > MAX_WORDS && !is_a_citation_line(&sentence.text) {
                 findings.push(at(
                     Severity::Warn,
                     format!(
-                        "`{}` holds prose to {MAX_WORDS} words a sentence, and this one has {}",
+                        "`{}` holds prose to {MAX_WORDS} words a sentence, and {counted} has {}",
                         bound.regime, sentence.words
                     ),
                     "split the sentence, or move a clause into its own sentence".to_string(),
@@ -285,7 +352,7 @@ impl DocumentCheck for Language {
                 findings.push(at(
                     Severity::Warn,
                     format!(
-                        "`{}` admits no semicolon in running prose, and this sentence writes one",
+                        "`{}` admits no semicolon in running prose, and {subject} writes one",
                         bound.regime
                     ),
                     "split the sentence in two, and let each half state one thing".to_string(),
@@ -299,13 +366,13 @@ impl DocumentCheck for Language {
                 let mut finding = at(
                     Severity::Error,
                     format!(
-                        "`{}` admits no contraction, and this sentence writes `{word}`",
+                        "`{}` admits no contraction, and {subject} writes `{word}`",
                         bound.regime
                     ),
-                    match &expanded {
+                    by_hand(match &expanded {
                         Some(expanded) => format!("write `{expanded}`"),
                         None => format!("write `{word}` out in full"),
-                    },
+                    }),
                 );
                 finding.patch = expanded.and_then(|expanded| substitute(&word, &expanded));
                 findings.push(finding);
@@ -318,10 +385,10 @@ impl DocumentCheck for Language {
                     let mut finding = at(
                         Severity::Error,
                         format!(
-                            "`{}` declares the tag `{}`, and this sentence writes `{british}`",
+                            "`{}` declares the tag `{}`, and {subject} writes `{british}`",
                             bound.regime, bound.tag
                         ),
-                        format!("write `{american}`"),
+                        by_hand(format!("write `{american}`")),
                     );
                     finding.patch = substitute(&british, &american);
                     findings.push(finding);

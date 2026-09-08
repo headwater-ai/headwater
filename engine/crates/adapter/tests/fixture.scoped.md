@@ -1,6 +1,6 @@
 ## `headwater check`
 
-52 findings, 34 of them errors across 25 of 27 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
+55 findings, 37 of them errors across 26 of 28 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
 
 **Scoped to a change.** This run was told what one change carries, so the checks that read the version a document stood at before it could run at all. 10 documents were named: 2 that the change adds, 1 with a prior version this run read, and 3 whose prior version did not read, so every check that needed one was skipped over it. The findings above are over the whole corpus, as they are in a run that names no change.
 
@@ -13,11 +13,11 @@
 - `check/spec/00-both-halves.markdown`
 - `engine/crates/check/src/change.rs`
 
-**Coverage.** This run saw 27 files and classified 25 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 295 check instances, and 28 of them reached no verdict.
+**Coverage.** This run saw 28 files and classified 26 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 307 check instances, and 29 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
-- 18 — the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+- 19 — the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 - 2 — `guarded` forbids hedging, and this engine has no pattern set for it
 - 2 — `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
 - 3 — the prior version at `a prior version that no tree holds` did not open: no prior version stands at this name
@@ -78,6 +78,9 @@
 | error | `check/spec/18-blank-facets.md:7` | `facet.value.blank` | `title` is declared as empty text |
 | error | `check/spec/18-blank-facets.md:8` | `facet.value.blank` | `oracle` is declared as a sequence, and its declaration says `string` |
 | warn | `check/spec/18-blank-facets.md:15` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 32 |
+| error | `check/spec/21-summary-facet-prose.md:7` | `language.controlled.not_met` | `ste_house` admits no contraction, and the `summary` facet writes `doesn't` |
+| error | `check/spec/21-summary-facet-prose.md:7` | `language.controlled.not_met` | `ste_house` declares the tag `en-US`, and the `summary` facet writes `organisation` |
+| error | `check/spec/21-summary-facet-prose.md:7` | `language.retired_term.used` | `ste_house` retires `reference system`, and the `summary` facet writes it: the corpus renamed it |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `control.mechanism.unimplemented` | control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18 |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `control.mechanism.unimplemented` | control CT-FIX-17 names the mechanism phase:no.such.phase, which this engine does not implement, so nothing discharges OB-FIX-20 |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance |
@@ -95,4 +98,4 @@
 
 </details>
 
-29 documents in the read set, and 6 barriers that no gate carries across a merge. 27 obligations, 22 verified.
+30 documents in the read set, and 6 barriers that no gate carries across a merge. 27 obligations, 22 verified.

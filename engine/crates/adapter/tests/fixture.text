@@ -6,12 +6,12 @@ clock
   2026-08-12
 
 census
-  27 files under the corpus root
-       25 typed
+  28 files under the corpus root
+       26 typed
         1 generated
         1 untyped
         2 typed decision_record
-       15 typed design_spec
+       16 typed design_spec
         7 typed evaluation
         1 typed note
 
@@ -22,7 +22,7 @@ census
       than this census
 
 graph
-  23 nodes, 10 declared edge halves
+  24 nodes, 10 declared edge halves
         8 to a document
         2 unbound
   5 prose links that did not resolve
@@ -68,18 +68,18 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  27 seen, 25 classified, 24 checked, 295 check instances
+  28 seen, 26 classified, 25 checked, 307 check instances
         1 generated, held to regeneration by `headwater generate --check`
         1 skipped: no `id` facet, which is the key this engine reads an
           identifier from and which no declaration states
         1 skipped: the `id` facet is a sequence, and an identifier is a word
-       18 skipped: the shelf is heterogeneous, so the discriminator is the gap
+       19 skipped: the shelf is heterogeneous, so the discriminator is the gap
          metadata fills, and kind resolution already read it
         2 skipped: `guarded` forbids hedging, and this engine has no pattern set
           for it
         2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this
           engine has no rules for it
-       26 skipped: change-scoped-only: the prior version is available only in
+       27 skipped: change-scoped-only: the prior version is available only in
          change-scoped evaluation, and this run carries no change
         1 skipped: the document at the target end, `FIX-REG-open-questions`,
           declares no value for the state facet, so there is no state to read
@@ -90,31 +90,31 @@ checks
     1 pairs open, 0 closed, holding 1 finding, in 1 task
     AD-1 1 open, 0 closed, holding 1 finding, owner the fixture tree, until
       2027-01-01
-      one pair, so that a run carries a migration-pending finding27 documents in
+      one pair, so that a run carries a migration-pending finding28 documents in
         the read set, and 6 barriers that no gate carries across a merge
-       24 instances of facet.required.missing
-       24 instances of facet.value.not_permitted
-       24 instances of facet.value.blank
-       24 instances of identifier.pattern.not_met
-       25 instances of shelf.placement_is_primary
+       25 instances of facet.required.missing
+       25 instances of facet.value.not_permitted
+       25 instances of facet.value.blank
+       25 instances of identifier.pattern.not_met
+       26 instances of shelf.placement_is_primary
        10 instances of relation.target.unresolved
         4 instances of relation.reciprocity.missing
         7 instances of relation.endpoint.not_permitted
         1 instances of lifecycle.dependency.on_terminal
         7 instances of relation.participation.overdue
-       24 instances of relation.declaration.unusable
-       24 instances of identifier.unusable
+       25 instances of relation.declaration.unusable
+       25 instances of identifier.unusable
         1 instances of identifier.claimed_twice
         1 instances of identifier.claim.missing
         1 instances of identifier.claim.stale
-       17 instances of voice.forbidden_construction
-       17 instances of language.controlled.not_met
-       15 instances of language.retired_term.used
-       15 instances of language.source_form.not_met
+       18 instances of voice.forbidden_construction
+       18 instances of language.controlled.not_met
+       16 instances of language.retired_term.used
+       16 instances of language.source_form.not_met
         2 instances of section.required.missing
         1 instances of link.fragment.unresolved
         1 instances of link.path.unresolved
-       25 instances of warrant.promoted
+       26 instances of warrant.promoted
         1 instances of lifecycle.deletion.not_permitted
   suppressions
     2 findings hidden by 2 directives
@@ -247,8 +247,8 @@ checks
     lifecycle.deletion.not_permitted reaches no obligation, so it names none
     coverage.document_unchecked reaches no obligation, so it names none
     adoption.task.expired reaches no obligation, so it names none
-  53 findings
-       34 ✗ error
+  56 findings
+       37 ✗ error
        19 ▲ warn
 
   check/evaluations/epsilon.md:4:1 ▲ warn
@@ -496,6 +496,19 @@ checks
     language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
       a sentence, and this one has 32
     fix: split the sentence, or move a clause into its own sentence
+  check/spec/21-summary-facet-prose.md:7:10 ✗ error
+    language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction,
+      and the `summary` facet writes `doesn't`
+    fix: write `does not`, by hand: no patch of this engine edits front matter
+  check/spec/21-summary-facet-prose.md:7:10 ✗ error
+    language.controlled.not_met (OB-FIX-8): `ste_house` declares the tag
+      `en-US`, and the `summary` facet writes `organisation`
+    fix: write `organization`, by hand: no patch of this engine edits front
+      matter
+  check/spec/21-summary-facet-prose.md:7:10 ✗ error
+    language.retired_term.used (OB-FIX-22): `ste_house` retires `reference
+      system`, and the `summary` facet writes it: the corpus renamed it
+    fix: write `taxonomy`, by hand: no patch of this engine edits front matter
   engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
     control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-15 names the
       mechanism check:no.such.rule, which this engine does not implement, so
@@ -563,8 +576,8 @@ read set
   version identifier.claim.missing 2
   version identifier.claim.stale 1
   version voice.forbidden_construction 2
-  version language.controlled.not_met 1
-  version language.retired_term.used 1
+  version language.controlled.not_met 2
+  version language.retired_term.used 2
   version language.source_form.not_met 1
   version section.required.missing 1
   version link.fragment.unresolved 3
@@ -604,3 +617,4 @@ read set
   input check/spec/17-identifier-not-a-word.md sha256:9d82bc120f67b7b5a999433bbae8502e18587777cf94bcc8254491ebe9c73981
   input check/spec/18-blank-facets.md sha256:ab8d0eb139f3733cde3ca712a0f637ff8fe82f70fc93a55f87b27273fad00d57
   input check/spec/20-fragment-target.md sha256:fb666df2800fa7bc1213d78c4e42a46448d98cdc8b40043495c1b4cc706cc9a5
+  input check/spec/21-summary-facet-prose.md sha256:16254913bd0c34a373fdb76b1a6acd730f6bd03bdd1ad47b2d964a496aaf6695
