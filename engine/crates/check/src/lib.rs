@@ -482,9 +482,9 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
         ),
         (
             fragment::RULE,
-            scope::document_scope::<fragment::Fragments>(),
-            scope::document_version::<fragment::Fragments>(),
-            scope::document_exports::<fragment::Fragments>(),
+            scope::corpus_scope::<fragment::Fragments>(),
+            scope::corpus_version::<fragment::Fragments>(),
+            scope::corpus_exports::<fragment::Fragments>(),
         ),
         (
             link_path::RULE,
@@ -628,6 +628,11 @@ pub fn run(
     let retired = retired::Retired::over(declared.shape);
     let source_form = source_form::SourceForm::over(declared.shape);
     let sections = sections::Sections::over(declared.shape);
+    // Whether a fragment names a heading of the document it points at, whether
+    // that is the citing document or another one. Corpus-scoped for
+    // [`link_path`]'s reason below, and because handing a document-scoped rule
+    // the target documents would count each of them as checked by this rule.
+    // See [`fragment`].
     let fragments = fragment::Fragments;
     // The path half of the same question, and it reads nothing of its own
     // either: the set of links that resolved to nothing is what the build
@@ -747,7 +752,9 @@ pub fn run(
         cache,
     ));
     instances.extend(scope::over_documents(&sections, census, graph, ctx, cache));
-    instances.extend(scope::over_documents(&fragments, census, graph, ctx, cache));
+    instances.extend(scope::over_corpus(
+        &fragments, census, graph, claims, ctx, cache,
+    ));
     instances.extend(scope::over_corpus(
         &link_paths,
         census,

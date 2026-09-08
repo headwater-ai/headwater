@@ -1,6 +1,6 @@
 ## `headwater check`
 
-52 findings, 33 of them errors across 24 of 26 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
+52 findings, 33 of them errors across 25 of 27 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
 
 **Scoped to a change.** This run was told what one change carries, so the checks that read the version a document stood at before it could run at all. 10 documents were named: 2 that the change adds, 1 with a prior version this run read, and 3 whose prior version did not read, so every check that needed one was skipped over it. The findings above are over the whole corpus, as they are in a run that names no change.
 
@@ -13,14 +13,13 @@
 - `check/spec/00-both-halves.markdown`
 - `engine/crates/check/src/change.rs`
 
-**Coverage.** This run saw 26 files and classified 24 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 306 check instances, and 49 of them reached no verdict.
+**Coverage.** This run saw 27 files and classified 25 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 295 check instances, and 28 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
-- 17 — the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+- 18 — the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 - 2 — `guarded` forbids hedging, and this engine has no pattern set for it
 - 2 — `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
-- 22 — this document writes no fragment into itself
 - 3 — the prior version at `a prior version that no tree holds` did not open: no prior version stands at this name
 - 1 — the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there
 
@@ -96,4 +95,4 @@
 
 </details>
 
-28 documents in the read set, and 5 barriers that no gate carries across a merge. 27 obligations, 22 verified.
+29 documents in the read set, and 6 barriers that no gate carries across a merge. 27 obligations, 22 verified.

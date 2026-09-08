@@ -31,3 +31,5 @@ So an author who changes what a rule decides and leaves the version alone reads 
 ## Discharge
 
 [The fixture question for a correctness root that is a type](0079-a-correctness-root-that-is-a-type-has-no-failing-fixture.md) is the same class of gap. Both name a correctness root whose defect no fixture can reach.
+
+**Another version was raised by hand, and again nothing checked it.** `link.fragment.unresolved` went from 2 to 3 when it widened to read a fragment on a resolving path ([HW-OBL-0077](0077-a-fragment-on-a-path-needs-a-grain-that-no-scope-supplies.md)). The raise is necessary. A warm cache holds edition-2 verdicts about same-document fragments alone, and it would serve them over a corpus whose cross-document fragments were never examined. An author who forgot it would ship a rule that reads more and reports the same, and every gate would stay green.

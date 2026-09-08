@@ -4,13 +4,12 @@ touched corpus/spec/02-the-second-part.md
 touched corpus/decisions/a-second-successor.md
 touched corpus/decisions/an-earlier-decision.md
 
-9 seen, 9 classified, 9 checked, 131 check instances
+9 seen, 9 classified, 9 checked, 123 check instances
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
-      9 skipped: this document writes no fragment into itself
      19 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   a check read .headwater/ids, which the census never walked
   a check read .headwater/ids, which the census never walked
-10 documents in the read set, and 5 barriers that no gate carries across a merge
+10 documents in the read set, and 6 barriers that no gate carries across a merge
       9 instances of facet.required.missing
       9 instances of facet.value.not_permitted
       9 instances of facet.value.blank
@@ -26,7 +25,7 @@ touched corpus/decisions/an-earlier-decision.md
       1 instances of identifier.claim.stale
       7 instances of voice.forbidden_construction
       7 instances of section.required.missing
-      9 instances of link.fragment.unresolved
+      1 instances of link.fragment.unresolved
       1 instances of link.path.unresolved
       9 instances of warrant.promoted
       9 instances of lifecycle.transition.not_permitted
@@ -78,7 +77,7 @@ rules, and for each the scope that binds it
   section.required.missing
     document scope, one document, its front matter and its body
   link.fragment.unresolved
-    document scope, one document, its front matter and its body
+    corpus scope, every row of the census, and it is a barrier
   link.path.unresolved
     corpus scope, every row of the census, and it is a barrier
   warrant.promoted
@@ -326,24 +325,8 @@ instances
     passed
   section.required.missing corpus/spec/04-a-scaffolded-fourth-part.md
     passed
-  link.fragment.unresolved corpus/decisions/a-scaffolded-successor.md
-    skipped: this document writes no fragment into itself
-  link.fragment.unresolved corpus/decisions/a-second-successor.md
-    skipped: this document writes no fragment into itself
-  link.fragment.unresolved corpus/decisions/an-earlier-decision.md
-    skipped: this document writes no fragment into itself
-  link.fragment.unresolved corpus/exhausted/the-last-one.md
-    skipped: this document writes no fragment into itself
-  link.fragment.unresolved corpus/spec/01-the-first-part.md
-    skipped: this document writes no fragment into itself
-  link.fragment.unresolved corpus/spec/02-the-second-part.md
-    skipped: this document writes no fragment into itself
-  link.fragment.unresolved corpus/spec/03-the-third-part.md
-    skipped: this document writes no fragment into itself
-  link.fragment.unresolved corpus/spec/04-a-scaffolded-fourth-part.md
-    skipped: this document writes no fragment into itself
-  link.fragment.unresolved corpus/standards/a-standard.md
-    skipped: this document writes no fragment into itself
+  link.fragment.unresolved corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
+    passed
   link.path.unresolved corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
     passed
   warrant.promoted corpus/decisions/a-scaffolded-successor.md
