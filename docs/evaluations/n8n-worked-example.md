@@ -383,7 +383,9 @@ The first prints `5` and the second prints `2`, so three agents do not link `tes
 
 ### The fixes, and the rule that found each one
 
-The fixes stand on the branch [`fix-agents-doc-defects`](https://github.com/headwater-ai/n8n/tree/fix-agents-doc-defects) of the fork, cut from the pin, one commit per defect. Titles follow n8n's [pull-request title convention](https://github.com/n8n-io/n8n/blob/master/.github/pull_request_title_conventions.md). Each of the three files carries the same bytes at the pin as it does on `master` today, which is why a fix cut from the pin still applies.
+The fixes stand on the branch [`fix-agents-doc-defects`](https://github.com/headwater-ai/n8n/tree/fix-agents-doc-defects) of the fork, cut from the pin, one commit per defect. Titles follow n8n's [pull-request title convention](https://github.com/n8n-io/n8n/blob/master/.github/pull_request_title_conventions.md).
+
+**Two of the three files carry the same bytes on `master` today as at the pin, and the third does not.** `packages/@n8n/expression-runtime/ARCHITECTURE.md` is blob `d4d9c5b` at both, and `.agents/skills/spec-driven-development/SKILL.md` is `57470f1` at both. `.agents/review-rules/README.md` moved from `28140c5` to `b95b525`, in two hunks: the `security/` scope row of the Layout table, and a new paragraph under step 3 of *Adding a rule*. **Neither hunk reaches the three lines that the third fix rewrites**, which are lines 25 to 27 and identical at both. So a fix cut from the pin still applies to all three, and the reason is a line-level comparison rather than a whole-file one. This was measured on 2026-09-08 and it goes stale the same way every other number in this section does.
 
 | defect | commit | what the fix writes | the rule that reported it |
 |---|---|---|---|
