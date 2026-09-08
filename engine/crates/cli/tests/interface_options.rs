@@ -34,8 +34,8 @@
 //! is. So the omitted document is held here rather than in a file of its own:
 //! this is the table already built for this one sentence, and a second table
 //! asking the same question of a nineteenth document is the shape #257 is
-//! about. The two cases at the end of this file are the only ones that read
-//! outside `docs/interfaces/`, and neither uses [`REMAINING`].
+//! about. The three cases at the end of this file are the only ones that read
+//! outside `docs/interfaces/`, and none of them uses [`REMAINING`].
 //!
 //! # Why this is a file of its own rather than a case in `interface_contract.rs`
 //!
@@ -211,7 +211,28 @@ fn the_two_prose_only_documents_carry_no_banner_beside_no_color() {
 // deleted, or looked for at a path that no longer resolves, which is the
 // silent-success shape this repository keeps meeting.
 
-/// The path of the record this file's last two cases read.
+/// What HW-DR-0045 reversed, in the spellings HW-DR-0033 used for it.
+///
+/// One list, read by two cases: the paragraph-scoped one below and the
+/// document-wide one after it. The document-wide case exists because the
+/// first version of this file scoped its refusal to the `--no-color`
+/// paragraph alone, and a second copy of the same falsehood sat 24 lines
+/// above it, in the same `status: current` record, and survived. `The parse
+/// sets ColorChoice::Never, so no escape sequence reaches either stream` is
+/// true of what `clap` renders and false of everything `paint.rs` writes: a
+/// pty measures 778 escape bytes on standard output and a pipe measures 0.
+/// A phrase belongs here when it states the behavior rather than the
+/// mechanism, so `ColorChoice::Never` itself is absent from the list — the
+/// parser really does set it.
+const REVERSED: [&str; 5] = [
+    "changes no byte",
+    "writes no color on either stream",
+    "reaches either stream",
+    "under any terminal",
+    "is read by nothing",
+];
+
+/// The path of the record this file's last three cases read.
 fn hw_dr_0033_path() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(
         "../../../docs/decisions/\
@@ -264,18 +285,45 @@ fn hw_dr_0033_cites_the_ruling_that_moved_it_and_drops_the_reversed_claim() {
         "the link the paragraph carries reaches a document that is not HW-DR-0045"
     );
 
-    let reversed = [
-        "changes no byte",
-        "writes no color on either stream",
-        "under any terminal",
-    ];
-    let still: Vec<&str> = reversed
+    let still: Vec<&str> = REVERSED
         .into_iter()
         .filter(|phrase| paragraph.contains(phrase))
         .collect();
     assert!(
         still.is_empty(),
         "the paragraph still states what HW-DR-0045 reversed: {still:?}\n{paragraph}"
+    );
+}
+
+/// No line of HW-DR-0033 states what HW-DR-0045 reversed, wherever it sits.
+///
+/// The case above reads one paragraph, which is how the clause at the record's
+/// `Color is declared off` heading survived the first pass: it says the same
+/// thing about the same behavior, 24 lines higher, in the same `status:
+/// current` record. The scope of a refusal has to be the document a reader
+/// meets, not the paragraph an issue happened to name.
+///
+/// It calls [`hw_dr_0033_no_color_paragraph`] first, and that panics on a
+/// document with no such paragraph, so this cannot pass by reading a file that
+/// has been emptied, renamed away, or moved out from under the path.
+#[test]
+fn nothing_in_hw_dr_0033_still_states_the_behavior_hw_dr_0045_reversed() {
+    let _anchor = hw_dr_0033_no_color_paragraph();
+
+    let path = hw_dr_0033_path();
+    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let mut offenders = Vec::new();
+    for (number, line) in text.lines().enumerate() {
+        for phrase in REVERSED {
+            if line.contains(phrase) {
+                offenders.push(format!("line {}: {phrase:?}", number + 1));
+            }
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "HW-DR-0033 still states what HW-DR-0045 reversed:\n{}",
+        offenders.join("\n")
     );
 }
 
