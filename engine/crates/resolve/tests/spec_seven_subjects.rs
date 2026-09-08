@@ -102,13 +102,16 @@ fn subject_rows() -> Vec<String> {
         if cell.chars().all(|c| c == '-' || c == ':') {
             continue;
         }
-        let name = cell.strip_prefix('`').and_then(|c| c.strip_suffix('`')).unwrap_or_else(|| {
-            panic!(
-                "{}: the subject table's first column holds {cell:?}, and a subject name is \
+        let name = cell
+            .strip_prefix('`')
+            .and_then(|c| c.strip_suffix('`'))
+            .unwrap_or_else(|| {
+                panic!(
+                    "{}: the subject table's first column holds {cell:?}, and a subject name is \
                  written in backticks so that a reader can tell it from prose",
-                path.display()
-            )
-        });
+                    path.display()
+                )
+            });
         rows.push(name.to_string());
     }
     rows
@@ -225,7 +228,10 @@ fn the_facet_required_absence_names_its_route_and_the_condition_that_reopens_it(
             )
         });
 
-    for route in ["headwater infer --owner <name> --write", "migration-pending"] {
+    for route in [
+        "headwater infer --owner <name> --write",
+        "migration-pending",
+    ] {
         assert!(
             paragraph.contains(route),
             "{}: the facet-required paragraph does not name `{route}`, which is what `headwater \
