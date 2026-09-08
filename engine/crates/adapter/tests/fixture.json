@@ -996,21 +996,20 @@
       "severity": "error",
       "path": "check/spec/07-prose-defects.md",
       "line": 69,
-      "column": 67,
-      "message": "`/spec/00-both-halves.md` names no file of this repository: nothing stands at `check/spec/spec/00-both-halves.md`",
-      "remediation": "point it at a file that exists, or restore `check/spec/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
+      "column": 46,
+      "message": "`19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md`",
+      "remediation": "point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
       "fixable": false,
       "escape": "none"
     },
     {
-      "rule": "language.controlled.not_met",
-      "severity": "warn",
-      "obligation": "OB-FIX-8",
+      "rule": "link.path.unresolved",
+      "severity": "error",
       "path": "check/spec/07-prose-defects.md",
-      "line": 69,
-      "column": 115,
-      "message": "`ste_house` holds prose to 25 words a sentence, and this one has 28",
-      "remediation": "split the sentence, or move a clause into its own sentence",
+      "line": 71,
+      "column": 90,
+      "message": "`/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md`",
+      "remediation": "point it at a file that exists, or restore `/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
       "fixable": false,
       "escape": "none"
     },
@@ -1371,7 +1370,7 @@
     },
     {
       "path": "check/spec/00-both-halves.md",
-      "digest": "sha256:cb031d365aac5c22f6ea1f23faf48da297c1d6eaab7b9dad2e552ae36c28e62d"
+      "digest": "sha256:765e2163c2bbe8f9455a21519223192112ec14cae419e5cad3324a5c40638632"
     },
     {
       "path": "check/spec/01-one-half.md",
@@ -1399,7 +1398,7 @@
     },
     {
       "path": "check/spec/07-prose-defects.md",
-      "digest": "sha256:bc4f994c828a353fee808bdbdb6ca57c0ddef84528856df9c2cba272523abb24"
+      "digest": "sha256:6ca81f740c17f231ecc6c7268544dca0bd1bfd77b4498dccc67bc914ddb09024"
     },
     {
       "path": "check/spec/08-contract-met.md",
