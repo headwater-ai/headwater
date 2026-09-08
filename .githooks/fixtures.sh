@@ -636,8 +636,13 @@ touch "$scratch/engine/crates/cli/src/main.rs"
 out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
 judge 'an engine source newer than the binary makes the check refuse to measure' \
     3 "$status" 'cannot tell whether a figure is stale' "$out"
+# The command is carried whole rather than truncated at the crate name.
+# `tools/build-declaration-fixtures.sh` reads every release build of the CLI in
+# the tracked tree and requires `--locked` on each, and a prefix written here
+# for brevity is an unflagged occurrence to that gate. It is also the weaker
+# assertion: the flag is part of what the refusal has to tell the author.
 judge 'and the refusal names the build command' 3 "$status" \
-    'cargo build --profile dev-release -p headwater-cli' "$out"
+    'cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked' "$out"
 refute 'and it prints no command that measures again' \
     'sh tools/refresh-figures.sh' "$out"
 refute 'and it names no figure as stale' 'stale census.seen in' "$out"
