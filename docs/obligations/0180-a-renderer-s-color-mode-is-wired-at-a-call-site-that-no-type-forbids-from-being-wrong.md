@@ -2,7 +2,7 @@
 id: HW-OBL-0180
 status: current
 status_since: 2026-09-08
-summary: "A renderer takes a color mode as an ordinary argument, so the caller that hands it the plain value forever is the shape no type and no piped test can report."
+summary: "A caller that passes the plain color mode forever is a defect that no type and no piped test can report."
 last_verified: 2026-09-08
 title: "A renderer's color mode is wired at a call site that no type forbids from being wrong"
 waiting_on: build
