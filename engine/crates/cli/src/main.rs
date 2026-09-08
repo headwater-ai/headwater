@@ -3298,6 +3298,7 @@ fn new(
 /// the term [HW-OBL-0004](../../../../docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md)
 /// asks the capture-cost store for, and it is the one input that is a fact
 /// about the caller rather than about the corpus.
+#[allow(clippy::too_many_arguments)]
 fn scaffold(
     root: &Path,
     kind: &str,
