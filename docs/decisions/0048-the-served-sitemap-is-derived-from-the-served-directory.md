@@ -50,7 +50,7 @@ relations:
 
 **The commit gate holds the committed sitemap, and it held nothing before.** `.githooks/pre-commit` already refuses a commit whose `site/llms.txt` or `site/robots.txt` disagrees with a fresh run. `site/sitemap.xml` joins them as a third entry in the same table. A CI step of the same name reads the committed tree. `.githooks/fixtures.sh` drives both, and it carries a case that adds a page under `site/` and reads the refusal. A retitle does not move a sitemap, because a title is not a URL, so that case adds a page rather than retitling one.
 
-**The union is 294 URLs, and no step asserts the count.** 286 pages come from the generated half and 8 from the hand-built half, measured on 2026-09-06. The assembly prints the total on every run. A count in a CI step moves whenever a shelf gains a document. A step that a person re-blesses on ordinary work stops being read.
+**No step asserts the assembled URL count.** `tools/assemble-site.sh` prints the total on every run, and a reader who needs the number runs it. A count in a CI step moves whenever a shelf gains a document. A step that a person re-blesses on ordinary work stops being read. This paragraph carried a total until 2026-09-08. The assembly reported a larger number two days after that total was measured.
 
 **The sitemap carries `<loc>` and nothing else.** A `<lastmod>` element needs a date. Two dates are available. One is a file modification time, which a fresh clone resets. The other is a date a person types, which is the failure this record answers. A search engine treats `<lastmod>` as a hint and never as a requirement.
 
