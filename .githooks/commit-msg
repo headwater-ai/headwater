@@ -1,0 +1,79 @@
+#!/bin/sh
+# The gate on a merged tree, and it is on this hook position for a measured
+# reason rather than an obvious one.
+#
+# `.githooks/merged-fold-check` beside this file is the whole body: what it
+# runs, what it does not reach, and why it fails open with no built engine. This
+# file is about *when*.
+#
+# # Why not `pre-merge-commit`, which is the hook this looks like
+#
+# `pre-merge-commit` is the documented hook for a merge git commits by itself,
+# and it was the shape #717 and its own issue both proposed. Two measurements on
+# git 2.53.0 sent it back.
+#
+# **It is bypassed by the command git itself prints.** On a refusal git leaves
+# `MERGE_HEAD`, leaves the merged content in the working tree, and says "Not
+# committing merge; use 'git commit' to complete the merge." That command
+# completes the merge and does not run `pre-merge-commit` again — it runs
+# `pre-commit`, `prepare-commit-msg` and `commit-msg`, and `.githooks/pre-commit`
+# runs none of the producers a fold answers to. So a gate that stopped at
+# `pre-merge-commit` is one command from being no gate.
+#
+# **And it cannot cheaply hand off to this one.** `MERGE_HEAD` does **not** exist
+# yet when `pre-merge-commit` runs on a clean automatic merge, so the two
+# positions have no shared name for the merge they are both looking at, and a
+# `pre-merge-commit` beside this hook ran the three producers a second time for
+# every merge that passed. Measured: two `generate --check` calls for one merge.
+#
+# What git runs, measured on both paths into a merge commit:
+#
+#   git merge, hook passing:   pre-merge-commit, prepare-commit-msg, commit-msg,
+#                              post-merge; exit 0
+#   git merge, hook refusing:  the refusing hook alone; exit 1, MERGE_HEAD
+#                              present, merged content in the tree, and git
+#                              printing "Not committing merge; use 'git commit'
+#                              to complete the merge."
+#   git commit after that:     pre-commit, prepare-commit-msg, commit-msg;
+#                              MERGE_HEAD still present when this hook runs
+#
+# `commit-msg` is the one position on both lists. A refusal from here leaves
+# exactly what a refusal from `pre-merge-commit` leaves, git's own advice
+# included, and it covers `git commit` and `git merge --continue` as well. So one
+# hook does the whole job, and one hook is what this is.
+#
+# # Why not `.githooks/pre-commit`
+#
+# That file is the gate on every commit, and this clause has nothing to say
+# about one. A commit with no merge in progress reconciled nothing, so there is
+# no merged tree to check and the artifacts it carries are the author's own.
+# Putting a merge-only clause in the hook that runs on every commit would make
+# every commit pay for it.
+#
+# This hook takes the commit message path as `$1` and reads nothing from it.
+# Nothing here is about the message. It is on this position because of what git
+# runs and when, which is why the block above is where a reader who came looking
+# for a message rule finds out.
+#
+# Install once per clone, the same command `.githooks/pre-commit` needs:
+#     git config core.hooksPath .githooks
+
+git_dir=$(git rev-parse --git-dir 2>/dev/null) || exit 0
+[ -n "$git_dir" ] || exit 0
+
+# No merge in progress, so this commit reconciled nothing. Out before anything
+# else is read, because this hook runs on every commit and every one that is not
+# a merge pays only this.
+[ -f "$git_dir/MERGE_HEAD" ] || exit 0
+
+# Beside this file rather than under the repository being committed to.
+# `core.hooksPath` can name a directory outside the working tree — a worktree
+# with an absolute value does, and so does the case table in
+# `engine/crates/census/tests/merge_driver.rs`, which points a scratch
+# repository at this directory on purpose. Reading `<toplevel>/.githooks/` there
+# would find nothing and exit 0, which is a gate that cannot run reading as a
+# gate that passed.
+here=$(dirname "$0")
+
+sh "$here/merged-fold-check" || exit 1
+exit 0
