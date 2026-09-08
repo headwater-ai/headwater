@@ -385,10 +385,15 @@ link_judge() {
 # The target is NORMALIZED before it is read, and the first cut of this judge
 # was not. `](docs/spec/x.md)` and `](./docs/spec/x.md)` are the same file and
 # GitHub renders both, so a judge that tests the raw string reports the second
-# one clean — and `./`-prefixed links into this shelf already exist elsewhere in
-# this corpus, so that is a spelling somebody reaches for rather than one nobody
-# would find. `link_judge` above resolves a path before it judges it; this one
-# has to do the same or it holds a spelling instead of a claim.
+# one clean. `link_judge` above resolves a path before it judges it, and this
+# judge reading the same links has to agree with it or it holds a spelling
+# rather than a claim.
+#
+# No Markdown file in this repository writes a link that way today — `](./` is
+# in exactly two files, this one and a Rust doc comment, and in no `.md` at all.
+# That is the reason to normalize rather than a reason not to: the spelling is
+# legal, one writer reaches for it, and nothing here would have reported the
+# evasion, because the population that would have shown it up is empty.
 spec_link_judge() {
     slj_file=$1
     slj_stop=$(awk '/^##[ \t]+License[ \t]*$/ { print NR; exit }' "$slj_file")
