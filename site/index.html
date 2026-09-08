@@ -297,12 +297,13 @@
         </div>
         <div class="install">
           <div><span class="dim">$</span> cargo install headwater-cli <span class="cursor" aria-hidden="true">▍</span></div>
-          <!-- v0.1.0 is tagged and released (#526, 2026-09-07), so the
-               premise this note carried until then — no tag and no release
-               — is false. The release carries no binary asset, so this
-               line still does not work: #707, open under R1 (the first
-               installable release), is the condition. -->
-          <div class="note">There is a tag and a release, v0.1.0, but it carries no binary and no package registry entry, so this line does not work yet. Distribution is the open milestone R1, and a binary attached to the release is the condition. The tutorial builds from source today.</div>
+          <!-- v0.1.0 carries a binary and a checksum now (#707: the
+               workflow landed in #708, then a hand run of it against the
+               existing tag attached the pair, 2026-09-08). What still
+               makes this line false is narrower than before: a package
+               registry entry, which #707 named and excluded as its own
+               scope, and nothing files yet. -->
+          <div class="note">v0.1.0 carries a binary and a checksum, but this line still does not work: <code>cargo install</code> needs a package registry entry, and there is none yet. The release page and the tutorial are the two routes that work today.</div>
         </div>
       </div>
       <div class="cards">
