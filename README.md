@@ -8,7 +8,7 @@
 
 ## Obtaining a named version
 
-`v0.1.0` is the name of the first tagged release, and it is the version to build if you want a tree that does not move under you. There is no published binary and no package registry entry: the install path is a source build, and it needs a Rust toolchain at **1.90 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
+`v0.1.0` is the name of the first tagged release, and it is the version to build if you want a tree that does not move under you. That release carries no binary and there is no package registry entry, so the install path for it is a source build, and that needs a Rust toolchain at **1.90 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
 
 ```
 git clone https://github.com/headwater-ai/headwater.git
@@ -18,6 +18,8 @@ cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locke
 ```
 
 The binary lands at `engine/target/release/headwater`, and `headwater --version` prints the number the tag names. [The GitHub release for that tag](https://github.com/headwater-ai/headwater/releases/tag/v0.1.0) states one digest: the value of the `release.digest` field inside `packages/headwater-standard/release.yml`. It is not what `sha256sum` prints for that file, because the field covers the files the record lists and cannot cover the record itself. Pass the stated value to `headwater taxonomy vendor packages/headwater-standard --expect <digest>`, from the directory the block above leaves you in. The directory has to be named, because this engine opens no socket and checks a package somebody already fetched: `packages/headwater-standard` is the one the clone gave you, and a package vendors over itself. A matching digest exits 0 and reports the version and the file count; a digest that does not match exits 1, names both values and writes nothing. The check then rests on a number published outside the artifact rather than on one read out of it.
+
+**A tag cut after this paragraph landed carries a binary, and `v0.1.0` does not.** `.github/workflows/release.yml` runs on every tag whose name starts with `v` and attaches `headwater-<tag>-x86_64-unknown-linux-gnu.tar.gz`, which holds the `headwater` binary and the license, beside `headwater-<tag>-x86_64-unknown-linux-gnu.tar.gz.sha256` for `sha256sum -c`. That build is `x86_64` Linux on `ubuntu-24.04`, so it needs glibc 2.39 or later; every other platform, and `v0.1.0` itself, takes the source build above. [The releases page](https://github.com/headwater-ai/headwater/releases) is where you see which tags carry one.
 
 The tutorial above builds whatever tree you cloned, which is the default branch and moves. That is deliberate, because the tutorial is a claim about the default branch and CI holds it there. This paragraph is where the fixed version is.
 
