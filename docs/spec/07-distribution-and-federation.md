@@ -111,7 +111,9 @@ Publishing is a release: a semantic version, a changelog, an integrity digest, a
 
 ### The migration payload
 
-`contents.migrations` names a directory inside the package, and each file in it is one transition. A file states the versions it moves between as two ranges, which the one range reader of this engine reads. `headwater taxonomy diff` selects the file whose two ranges hold the version this repository takes and the version the artifact declares.
+`contents.migrations` names a directory inside the package, and each file in it is one transition. A file states the versions it moves between as two ranges, which the one range reader of this engine reads. `headwater taxonomy diff` selects the file whose two ranges hold the version this repository takes and the version the artifact declares, and whose transition runs forward.
+
+**The two ranges do not order the move, and the third condition is not a courtesy.** Nothing makes the two ranges disjoint, and a publisher may write `from: ">=1 <3"` beside `to: ">=2 <3"`. One version can satisfy both ends. The two range readings alone then hold for a move from a version to itself, and for a move down. A payload states the steps for a move up. Selection therefore also requires that the version the artifact declares is above the version this repository takes.
 
 ```yaml
 migration:
