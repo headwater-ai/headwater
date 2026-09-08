@@ -20,6 +20,13 @@ refuses an indented block so that the property stays true.
 temporary directory that this script removes at the end, and `HOME` is redirected
 into it so that a `~` in a tutorial command cannot escape.
 
+**One command reaches the network, and it is the last one.** *Where to go next*
+runs `tools/headwater-bootstrap.sh` against the real `v0.1.0` release, the same
+tag `README.md` pins, so this is the one place a live GitHub fetch stands for
+the claim that the script works rather than for a stub of it. Every other
+assertion above it runs first and reaches no network, so a fetch failure here
+never masks a defect in steps 1 through 16.
+
 **The first block is the one command this script does not run.** It clones the
 repository and builds the engine, which is not a claim about the engine's output.
 The runner supplies a built binary on `PATH` instead, and the tutorial's own check
@@ -225,8 +232,8 @@ def main():
         raise SystemExit('tutorial: no engine at ' + binary)
 
     blocks, trimmed = read_blocks(root)
-    if len(blocks) != 45:
-        raise SystemExit(f'tutorial: expected 45 code blocks and found {len(blocks)}')
+    if len(blocks) != 46:
+        raise SystemExit(f'tutorial: expected 46 code blocks and found {len(blocks)}')
 
     ok, detail = clock_reads_the_engine_s_day_and_not_the_local_one()
     assert_true("the substitution clock reads the engine's UTC day, not the local one", ok, detail)
@@ -428,6 +435,16 @@ def main():
         # Where to go next.
         assert_true('where to go next: headwater infer exits 0',
                     run(blocks[44].strip()).returncode == 0)
+
+        # The one command in this suite that reaches the network. Both lines run
+        # as one script, so `$demo` set on the first line is there for the
+        # second. It fetches the real v0.1.0 release into a directory of its
+        # own, never the `packages/headwater-standard` step 3 already filled, so
+        # a network or release failure here is reported as its own claim and
+        # never read as a defect in an earlier step.
+        result = run(blocks[45].strip())
+        assert_true('where to go next: headwater-bootstrap.sh vendors v0.1.0',
+                    result.returncode == 0, result.stdout + result.stderr)
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
 

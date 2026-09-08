@@ -122,6 +122,8 @@ A **package** carries a taxonomy: the kinds, the facets, the shelves and the rul
 
 Step 2 named two routes, and this step took the first. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. It refuses a directory that somebody maintains by hand. What you copied is a package source directory, so no verb of this engine vendored anything. The difference between the two routes returns in step 16.
 
+This copy costs nothing beyond `cp -r`, because the clone in *Before you start* already holds `taxonomy-source`. A reader who wants only the package, pinned to a release instead of the moving default branch, does not need `git` at all. `tools/headwater-bootstrap.sh` fetches one package from a release tag and hands it to `headwater taxonomy vendor`, the second route. *Where to go next* runs it.
+
 ### Step 4 — Meet the first refusal
 
 ```
@@ -507,7 +509,7 @@ headwater conformance
 
 **Check.** `headwater conformance 2>/dev/null | grep 'projections.current'` prints `  projections.current met`.
 
-The other gap is `pin.current`, and it stays open for a real reason. The rule wants the digest of a published artifact, and this tutorial copied a package directory instead. Nothing here pretends otherwise, and the report states the remedy rather than a grade.
+The other gap is `pin.current`, and it stays open for a real reason. The rule wants the digest of a published artifact, and this tutorial copied a package directory instead. Nothing here pretends otherwise, and the report states the remedy rather than a grade. `tools/headwater-bootstrap.sh` closes it. The script fetches a published release and vendors it, instead of the copied directory this tutorial used.
 
 ## The words this teaches
 
@@ -538,6 +540,15 @@ headwater infer
 ```
 
 It reports the files that classify as nothing, and the documents that state no summary. Those two lists are the distance between your repository and a corpus. `headwater infer --owner <name> --write` records that distance as declared debt with an expiry, so a strict run passes while the work is outstanding.
+
+**Fetching without a clone.** `tools/headwater-bootstrap.sh` fetches one package from a release tag on GitHub, and hands it to `headwater taxonomy vendor`. This route needs no local clone. Pass the digest the release page prints, and not one this script reads out of what it fetches. `vendor` states that same rule on its own page. `vendor` also refuses to write over a directory it did not put there itself. Point it at a fresh one, rather than the `packages/headwater-standard` step 3 filled by hand.
+
+```
+demo=$(mktemp -d)
+sh "$HEADWATER_SRC/tools/headwater-bootstrap.sh" --tag v0.1.0 --expect sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163 --root "$demo"
+```
+
+A run exits 0. `ls "$demo/packages/headwater-standard"` prints seven entries rather than the five step 3 checked: a published artifact carries `bundles/` and `release.yml` beside what the source directory held.
 
 **Read `headwater check` next.** [The verb contract](../interfaces/headwater-check.md) states what it reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit.
 
