@@ -163,7 +163,6 @@ Each admitted entry adds a line below, with its bundle name and the tradition th
 | [`design-spec`](design-spec/) | `design-spec` | The numbered specification series of IETF RFCs, academic papers, and software design documents |
 | [`decision-record`](decision-record/) | `decision-record` | The architecture-decision-record tradition of Nygard, MADR and the tooling around them |
 | [`diataxis`](diataxis/) | `diataxis` | Procida's four documentation modes, as one facet over the kinds a corpus already has |
-| [`diataxis-site`](diataxis-site/) | `diataxis-site` | Procida's four documentation modes, as the concrete kinds of a documentation site |
 | [`standards-spec`](standards-spec/) | `standards-spec` | The internal-standard ladder of MIL-STD-498, ISO/IEC/IEEE 29148 and the functional and technical specification convention |
 | [`brd-prd`](brd-prd/) | `brd-prd` | The business-analysis and product-management requirements handoff of IIBA's BABOK Guide, the Pragmatic Marketing Framework and the PRD convention |
 
