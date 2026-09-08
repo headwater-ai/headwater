@@ -765,7 +765,9 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
     let argument = held(tool.only().name);
 
     let text = match tool.name {
-        "route" => surface.route(&argument, Budget::default()).render(),
+        "route" => surface
+            .route(&argument, Budget::default())
+            .render(headwater_check::paint::ColorMode::Plain),
         "explain" => match surface.explain(&argument) {
             // Plain, unconditionally: an MCP server's own stdout is never a
             // terminal, so a real invocation piped the same way would sense

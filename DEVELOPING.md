@@ -118,6 +118,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh .claude/tutorial/fixtures.sh
     sh tools/assemble-site.sh --check
     sh tools/build-declaration-fixtures.sh
+    sh tools/color-fixtures.sh
     sh tools/developing-fixtures.sh
     sh tools/engine-readme-fixtures.sh
     sh tools/id-store-fixtures.sh
@@ -139,6 +140,8 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
 Each one holds an artifact that no rule of the engine reads: a workflow, a manifest, a page outside the corpus root, a hook, a skill file. They are cheap, they need no container, and running the ones your change touches before you push saves a round trip.
 
 Two things are deliberately absent from that list. `.githooks/change-manifest` is a producer the workflow calls rather than a gate that can fail on its own. `.claude/hooks/fixtures-live.sh` spends real AI credits against a real login, so no job runs it and nothing gates on it.
+
+One of them is the only thing in this repository that runs the engine under a terminal. `tools/color-fixtures.sh` attaches a pseudo-terminal with util-linux `script` and asserts that a verb whose interface contract promises to sense its stream emits an escape sequence there, and none through a pipe, under `NO_COLOR` or under `--no-color`. Everything else in this workflow reaches the engine through a pipe, where [HW-DR-0045](docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)'s refusal of a `--color=always` flag makes the painter the identity, so a renderer wired to plain output forever is green in every other gate. On a host with no `script` it prints one line saying every case is unrun and exits 0, so read its output and not only its status.
 
 ## What holds this repository
 

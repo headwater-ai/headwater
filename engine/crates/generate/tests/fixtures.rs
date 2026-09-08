@@ -18,6 +18,7 @@
 //!
 //! Read the diff before committing it. A blessed fixture is the change.
 
+use headwater_check::paint::ColorMode;
 use headwater_census::census::{self, Census};
 use headwater_census::resolve::{shelf_for, ShelfMatch};
 use headwater_census::shelves::Taxonomy;
@@ -159,7 +160,7 @@ fn empty_tree(name: &str) -> PathBuf {
 
 fn section(out: &mut String, title: &str, report: &Report) {
     out.push_str(&format!("\n--- {title} ---\n"));
-    out.push_str(&report.render());
+    out.push_str(&report.render(ColorMode::Plain));
     out.push_str(&format!("fails the run: {}\n", report.has_errors()));
 }
 
@@ -344,7 +345,7 @@ fn a_generated_file_is_censused_as_generated_and_orphaned_when_nothing_writes_it
 
     let tree = empty_tree("censused");
     let report = write(&tree, &first);
-    assert!(!report.has_errors(), "{}", report.render());
+    assert!(!report.has_errors(), "{}", report.render(ColorMode::Plain));
 
     // Which of the outputs landed inside the corpus root. The others sit
     // outside it by construction, and the census never sees those.
@@ -463,7 +464,7 @@ fn a_generated_document_is_a_document_of_its_shelf() {
         headwater_verbs::VERBS,
     );
     let report = write(&tree, &first);
-    assert!(!report.has_errors(), "{}", report.render());
+    assert!(!report.has_errors(), "{}", report.render(ColorMode::Plain));
 
     // The tree now holds the generated document, so the census walks it.
     let after = Built::over(&Corpus::new(&tree, "generate"), &root);
@@ -1423,7 +1424,7 @@ projections:
     assert!(
         !first.has_errors(),
         "the first write failed: {}",
-        first.render()
+        first.render(ColorMode::Plain)
     );
     let bytes_after_write =
         std::fs::read_to_string(tree.join("exports/site.json")).expect("it was written");
@@ -1431,7 +1432,7 @@ projections:
     assert!(
         !clean.has_errors(),
         "a fresh write does not satisfy its own check: {}",
-        clean.render()
+        clean.render(ColorMode::Plain)
     );
 
     // (b) a hand edit strips the marker, and the gate has to catch it.
@@ -1456,7 +1457,7 @@ projections:
     assert!(
         !second.has_errors(),
         "regeneration failed: {}",
-        second.render()
+        second.render(ColorMode::Plain)
     );
     let bytes_after_regen =
         std::fs::read_to_string(tree.join("exports/site.json")).expect("it is there again");
@@ -1468,7 +1469,7 @@ projections:
     assert!(
         !restored.has_errors(),
         "check does not pass again after regeneration: {}",
-        restored.render()
+        restored.render(ColorMode::Plain)
     );
 }
 
@@ -1525,14 +1526,14 @@ projections:
     assert!(
         !first.has_errors(),
         "the first write failed: {}",
-        first.render()
+        first.render(ColorMode::Plain)
     );
     let bytes_after_write = std::fs::read_to_string(tree.join("nav.yml")).expect("it was written");
     let clean = check(&tree, &plan);
     assert!(
         !clean.has_errors(),
         "a fresh write does not satisfy its own check: {}",
-        clean.render()
+        clean.render(ColorMode::Plain)
     );
 
     // (b) a hand edit strips the marker, and the gate has to catch it.
@@ -1556,7 +1557,7 @@ projections:
     assert!(
         !second.has_errors(),
         "regeneration failed: {}",
-        second.render()
+        second.render(ColorMode::Plain)
     );
     let bytes_after_regen =
         std::fs::read_to_string(tree.join("nav.yml")).expect("it is there again");
@@ -1568,7 +1569,7 @@ projections:
     assert!(
         !restored.has_errors(),
         "check does not pass again after regeneration: {}",
-        restored.render()
+        restored.render(ColorMode::Plain)
     );
 
     // Stronger than eyeballing: an independent parser, and the order checked
@@ -1868,17 +1869,17 @@ fn a_committed_descriptor_from_another_emitter_set_withholds_the_remedy() {
     assert!(
         !written.has_errors(),
         "the tree did not write clean: {}",
-        written.render()
+        written.render(ColorMode::Plain)
     );
 
     // Clause 4 of the issue: what this engine writes, this engine trusts. A
     // round trip in one engine reports no producer difference and exits zero.
     let round_trip = check(&tree, &plan);
-    assert_eq!(round_trip.producer, None, "{}", round_trip.render());
+    assert_eq!(round_trip.producer, None, "{}", round_trip.render(ColorMode::Plain));
     assert!(
         !round_trip.has_errors(),
         "a round trip in one engine failed: {}",
-        round_trip.render()
+        round_trip.render(ColorMode::Plain)
     );
     assert_eq!(round_trip.remedy(), None);
 
@@ -1903,7 +1904,7 @@ fn a_committed_descriptor_from_another_emitter_set_withholds_the_remedy() {
             current,
         }),
         "{}",
-        report.render()
+        report.render(ColorMode::Plain)
     );
 
     let remedy = report.remedy().expect("a failing run states why");
@@ -1916,9 +1917,9 @@ fn a_committed_descriptor_from_another_emitter_set_withholds_the_remedy() {
         "the run told a reader to regenerate over a producer difference: {remedy}"
     );
     assert!(
-        report.render().contains(&stale.to_string()),
+        report.render(ColorMode::Plain).contains(&stale.to_string()),
         "the report does not state the recorded emitter set: {}",
-        report.render()
+        report.render(ColorMode::Plain)
     );
     assert!(report.has_errors(), "a producer difference passed the run");
 }
@@ -1958,7 +1959,7 @@ fn a_descriptor_that_records_no_emitter_set_is_not_a_producer_difference() {
     std::fs::write(&at, &older).expect("the older descriptor");
 
     let report = check(&tree, &plan);
-    assert_eq!(report.producer, None, "{}", report.render());
+    assert_eq!(report.producer, None, "{}", report.render(ColorMode::Plain));
     let remedy = report.remedy().expect("the descriptor itself is now stale");
     assert!(
         remedy.contains("headwater generate"),

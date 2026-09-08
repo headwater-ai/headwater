@@ -111,7 +111,13 @@ fn of_route(route: &Route) -> Json {
     if let Some(silence) = silence {
         members.push(("silence", of_silence(silence)));
     }
-    members.push(("text", Json::string(route.render())));
+    // Plain, unconditionally. A JSON document is a machine format, and
+    // `main.rs` reads the terminal only for `Format::Text`. An escape sequence
+    // inside a string member would reach a program that never asked for one.
+    members.push((
+        "text",
+        Json::string(route.render(headwater_check::paint::ColorMode::Plain)),
+    ));
     Json::object(members)
 }
 
@@ -379,7 +385,10 @@ mod tests {
             .find(|(key, _)| key == "text")
             .map(|(_, value)| value)
             .expect("the route document carries `text`");
-        assert_eq!(text, &Json::string(route.render()));
+        assert_eq!(
+            text,
+            &Json::string(route.render(headwater_check::paint::ColorMode::Plain))
+        );
     }
 
     /// No escape byte reaches this document, whatever an author wrote.

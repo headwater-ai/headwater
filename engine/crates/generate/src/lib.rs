@@ -89,6 +89,7 @@
 //! about, and `headwater export --at <date>` supplies its time. Same corpus,
 //! same lock, same injected clock, byte-identical output, in both cases.
 
+use headwater_check::paint::{dim, paint, ColorMode, Role};
 use headwater_census::census::Census;
 use headwater_census::resolve::{shelf_for, ShelfMatch};
 use headwater_census::shelves::DeclarationError;
@@ -1040,15 +1041,24 @@ impl Report {
     }
 
     /// The report, which states what it did not do as well as what it did.
-    pub fn render(&self) -> String {
+    ///
+    /// `mode` is the terminal state of standard output, and
+    /// `docs/interfaces/headwater-generate.md` is what it answers to: the
+    /// default senses the stream and colors only there. A heading takes
+    /// [`Role::Heading`], every path takes [`Role::Path`], and the verdict and
+    /// reason lines under a path take dim weight, because HW-DR-0045's table
+    /// gives already-stated context no hue. Nothing here is filled, so paint
+    /// and layout do not meet — see `Route::render` for the case where they do.
+    pub fn render(&self, mode: ColorMode) -> String {
         let mut out = String::new();
         // First, because it is what decides whether anything below can be read
         // as drift at all.
         if let Some(producer) = &self.producer {
-            out.push_str("producer identity\n");
+            out.push_str(&paint(Role::Heading, "producer identity", mode));
+            out.push('\n');
             out.push_str(&format!(
                 "  committed {}: emitter set {}\n",
-                descriptor::PATH,
+                paint(Role::Path, descriptor::PATH, mode),
                 producer.recorded
             ));
             out.push_str(&format!(
@@ -1057,30 +1067,62 @@ impl Report {
             ));
         }
         match self.checked {
-            true => out.push_str("projections, held to regeneration\n"),
-            false => out.push_str("projections\n"),
+            true => out.push_str(&paint(
+                Role::Heading,
+                "projections, held to regeneration",
+                mode,
+            )),
+            false => out.push_str(&paint(Role::Heading, "projections", mode)),
         }
+        // The newline is pushed after the paint and never inside it, here and
+        // at the two headings below. An SGR reset written after `\n` would
+        // leave the attribute open across the line break, which a terminal
+        // renders as a bold blank line.
+        out.push('\n');
         match self.wrote.is_empty() {
             true => out.push_str("  no declaration produced a file\n"),
             false => {
                 for wrote in &self.wrote {
-                    out.push_str(&format!("  {} {}\n", wrote.kind.name(), wrote.path));
-                    out.push_str(&format!("    {}\n", wrote.verdict.line()));
+                    out.push_str(&format!(
+                        "  {} {}\n",
+                        wrote.kind.name(),
+                        paint(Role::Path, &wrote.path, mode)
+                    ));
+                    out.push_str(&dim(&format!("    {}", wrote.verdict.line()), mode));
+                    out.push('\n');
                 }
             }
         }
         if !self.orphaned.is_empty() {
-            out.push_str("\nmarked, and written by no declaration\n");
+            out.push('\n');
+            out.push_str(&paint(
+                Role::Heading,
+                "marked, and written by no declaration",
+                mode,
+            ));
+            out.push('\n');
             for orphaned in &self.orphaned {
-                out.push_str(&format!("  {}\n", orphaned.path));
-                out.push_str(&format!("    {}\n", orphaned.line()));
+                out.push_str(&format!("  {}\n", paint(Role::Path, &orphaned.path, mode)));
+                out.push_str(&dim(&format!("    {}", orphaned.line()), mode));
+                out.push('\n');
             }
         }
         if !self.unwritten.is_empty() {
-            out.push_str("\nwhat this verb does not write, and why\n");
+            out.push('\n');
+            out.push_str(&paint(
+                Role::Heading,
+                "what this verb does not write, and why",
+                mode,
+            ));
+            out.push('\n');
             for unwritten in &self.unwritten {
-                out.push_str(&format!("  {} {}\n", unwritten.kind.name(), unwritten.at));
-                out.push_str(&format!("    {}\n", unwritten.reason));
+                out.push_str(&format!(
+                    "  {} {}\n",
+                    unwritten.kind.name(),
+                    paint(Role::Path, &unwritten.at, mode)
+                ));
+                out.push_str(&dim(&format!("    {}", unwritten.reason), mode));
+                out.push('\n');
             }
         }
         out
@@ -1323,5 +1365,153 @@ mod label_tests {
         let both = pointer(Some("HW-DR-0001"), Some("Implementation language"));
         assert_eq!(label(&both), "Implementation language");
         assert_ne!(label(&both), "HW-DR-0001");
+    }
+}
+
+/// What the generate report paints, and the property that holds over all of it.
+///
+/// The same shape as `headwater_query::route::tests`, and the same caveat: a
+/// call site wired to [`ColorMode::Plain`] forever passes every case here.
+/// `tools/color-fixtures.sh` attaches a real terminal, which is what catches
+/// that.
+#[cfg(test)]
+mod paint_tests {
+    use super::*;
+
+    /// The text with every SGR sequence removed, written here rather than taken
+    /// from the painter: the property below is that color adds escape sequences
+    /// and moves no other byte, and a stripper built out of the painter could
+    /// not state it.
+    fn stripped(text: &str) -> String {
+        let mut out = String::new();
+        let mut chars = text.chars();
+        while let Some(c) = chars.next() {
+            if c != '\u{1b}' {
+                out.push(c);
+                continue;
+            }
+            for c in chars.by_ref() {
+                if c == 'm' {
+                    break;
+                }
+            }
+        }
+        out
+    }
+
+    /// A report with one of everything it can print. Every section is populated,
+    /// because an empty section is a painted line the cases below never reach.
+    fn report() -> Report {
+        Report {
+            wrote: vec![Wrote {
+                path: "docs/decisions/README.md".to_string(),
+                kind: Kind::ShelfIndex,
+                verdict: Verdict::Unchanged,
+            }],
+            unwritten: vec![Unwritten {
+                at: "docs/probes/".to_string(),
+                kind: Kind::ProbeResult,
+                reason: "no run composed a selection to grade".to_string(),
+            }],
+            orphaned: vec![Orphaned {
+                path: "docs/stale-index.md".to_string(),
+                kind: Some("shelf_index".to_string()),
+                declined: None,
+            }],
+            checked: true,
+            producer: Some(Producer {
+                recorded: 1,
+                current: 2,
+            }),
+        }
+    }
+
+    #[test]
+    fn each_line_reaches_the_role_the_palette_gives_it() {
+        struct Case {
+            what: &'static str,
+            opens_with: &'static str,
+        }
+        let cases = [
+            Case {
+                what: "the producer block is a heading, bold in the default color",
+                opens_with: "\u{1b}[1mproducer identity\u{1b}[0m\n",
+            },
+            Case {
+                what: "the descriptor path is a path, cyan",
+                opens_with: "  committed \u{1b}[36m.headwater/corpus.json",
+            },
+            Case {
+                what: "the projections block is a heading",
+                opens_with: "\u{1b}[1mprojections, held to regeneration\u{1b}[0m\n",
+            },
+            Case {
+                what: "a written path is a path",
+                opens_with: "\u{1b}[36mdocs/decisions/README.md",
+            },
+            Case {
+                what: "a verdict line is already-stated context, dim",
+                opens_with: "\u{1b}[2m    ",
+            },
+            Case {
+                what: "the orphan block is a heading",
+                opens_with: "\u{1b}[1mmarked, and written by no declaration\u{1b}[0m\n",
+            },
+            Case {
+                what: "the unwritten block is a heading",
+                opens_with: "\u{1b}[1mwhat this verb does not write, and why\u{1b}[0m\n",
+            },
+        ];
+        let painted = report().render(ColorMode::Ansi);
+        for case in cases {
+            assert!(
+                painted.contains(case.opens_with),
+                "{}: no `{}` in\n{painted}",
+                case.what,
+                case.opens_with.escape_debug()
+            );
+        }
+    }
+
+    /// Every SGR sequence closes before the line break it precedes. A reset
+    /// written after `\n` leaves the attribute open across the break, which a
+    /// terminal renders as a bold or dim blank line, and no piped run can see
+    /// it.
+    #[test]
+    fn no_attribute_stays_open_across_a_line_break() {
+        for line in report().render(ColorMode::Ansi).lines() {
+            let opens = line.matches("\u{1b}[").count();
+            let closes = line.matches("\u{1b}[0m").count();
+            assert_eq!(
+                opens,
+                closes * 2,
+                "an unclosed attribute on `{}`",
+                line.escape_debug()
+            );
+        }
+    }
+
+    #[test]
+    fn color_adds_escape_sequences_and_changes_nothing_else() {
+        let report = report();
+        assert_eq!(
+            stripped(&report.render(ColorMode::Ansi)),
+            report.render(ColorMode::Plain)
+        );
+    }
+
+    #[test]
+    fn plain_writes_no_escape_byte() {
+        assert!(!report().render(ColorMode::Plain).contains('\u{1b}'));
+    }
+
+    /// A report with nothing in it takes the other arm of every branch, and the
+    /// heading it does print is painted.
+    #[test]
+    fn an_empty_report_is_painted_too() {
+        let empty = Report::default();
+        let painted = empty.render(ColorMode::Ansi);
+        assert!(painted.contains("\u{1b}[1mprojections\u{1b}[0m\n"), "{painted}");
+        assert_eq!(stripped(&painted), empty.render(ColorMode::Plain));
     }
 }
