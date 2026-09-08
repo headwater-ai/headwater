@@ -1454,9 +1454,13 @@ fn a_fresh_publish_carries_no_bundle_fixtures_and_the_publisher_keeps_its_own() 
 /// **The population is enumerated and never listed.** Every `.md` file in the
 /// artifact, every inline link in it, and every target that lands inside
 /// `bundles/` after the `..` segments are resolved. A link that climbs out of
-/// the artifact is passed over rather than judged: `../../spec/…` out of a
-/// doctrine file names the publisher's specification, which no artifact ever
-/// carried, and that is a separate question from the one this case asks.
+/// the artifact is passed over here, because this case asks only about the
+/// bundle tree a publish reshapes. It is no longer passed over anywhere:
+/// #633 ruled that a doctrine reference to a document the artifact does not
+/// carry is written as an absolute URL, and
+/// `every_relative_link_a_carried_file_writes_resolves_inside_the_artifact`
+/// below judges both classes — the target inside `bundles/` that is missing,
+/// and the target that climbs clear of the artifact root.
 ///
 /// A code span and a fenced block are read past, because this repository
 /// prints a link as an example inside both, and a check that reddens on correct
@@ -1513,6 +1517,94 @@ fn no_file_the_artifact_carries_links_into_a_bundle_tree_it_does_not_carry() {
         "{} of the {read} links into the bundle tree do not resolve inside the artifact. Every \
          one of them resolves in `docs/taxonomies/`, so the publish carried the prose and left \
          the target behind:\n{dangling:#?}",
+        dangling.len()
+    );
+}
+
+/// #633: every relative link a carried `.md` file writes resolves to a file the
+/// artifact carries, so a consumer who vendors this package receives no dead
+/// relative link at all.
+///
+/// This is the bound the ruling on #633 needs, and it is wider than the two
+/// cases around it. The ruling says a doctrine reference to a document the
+/// artifact does not carry is written as an absolute URL. An absolute URL is
+/// read past here, so the only relative link that reaches the assertions is one
+/// the artifact is expected to resolve.
+///
+/// **Two classes, and each returns by a different route.** A target that lands
+/// inside `bundles/` and is missing is the class the sibling case above already
+/// holds. A target that climbs clear of the artifact root is the class nothing
+/// read before this case: `../../spec/07-…` written from
+/// `bundles/<name>/doctrine.md` normalizes past the artifact root, so the #619
+/// publish rule never sees it (the target is not inside the artifact),
+/// `link.fragment.unresolved` never opens the file (`docs/taxonomies/**` is
+/// outside the corpus root), and `inside_the_artifact` returns `None` for it,
+/// which every other walker in this file reads as "skip". It measures 0 today
+/// and it is asserted as a bound rather than recorded as a count, because the
+/// way the defect this issue repairs comes back is one doctrine author writing
+/// one `../../` link that nothing else in this repository can see.
+///
+/// A `bundle.yml` is out of scope here on purpose. Three of the fifty-two pairs
+/// #633 repaired were written in a YAML comment, and
+/// `the_real_package_records_exactly_the_references_it_carries` below walks
+/// every member rather than the `.md` ones, so the record holds those.
+#[test]
+fn every_relative_link_a_carried_file_writes_resolves_inside_the_artifact() {
+    let root = Root::scratch("relative-links");
+    let out = root.path().join("release");
+
+    let (code, message) = publish_real_source_into(&out);
+    assert_eq!(
+        code,
+        Some(0),
+        "the publish this case depends on failed: {message}"
+    );
+
+    let mut read = 0usize;
+    let mut dangling: Vec<String> = Vec::new();
+    let mut escaping: Vec<String> = Vec::new();
+    for member in relative_files(&out) {
+        if !member.ends_with(".md") {
+            continue;
+        }
+        let text = std::fs::read_to_string(out.join(&member)).expect("a member reads");
+        let directory = Path::new(&member)
+            .parent()
+            .unwrap_or(Path::new(""))
+            .to_owned();
+        for target in markdown_links(&text) {
+            let body = target.split('#').next().unwrap_or_default();
+            if body.is_empty() || body.contains("://") || body.starts_with("mailto:") {
+                continue;
+            }
+            read += 1;
+            let Some(at) = inside_the_artifact(&directory, body) else {
+                escaping.push(format!("{member} -> {target}"));
+                continue;
+            };
+            if !out.join(&at).exists() {
+                dangling.push(format!("{member} -> {target}"));
+            }
+        }
+    }
+
+    // A scanner that reads nothing passes everything, and this one reads the
+    // real library rather than a fixture, so it says how much it saw.
+    assert!(
+        read > 0,
+        "the scanner found no relative link in any carried file, so it held nothing"
+    );
+    assert!(
+        escaping.is_empty(),
+        "{} of the {read} relative links a carried file writes climb clear of the artifact root. \
+         #633 ruled that a reference to a document the artifact does not carry is written as an \
+         absolute URL, and nothing else in this repository reads these:\n{escaping:#?}",
+        escaping.len()
+    );
+    assert!(
+        dangling.is_empty(),
+        "{} of the {read} relative links a carried file writes name a path the artifact does not \
+         carry:\n{dangling:#?}",
         dangling.len()
     );
 }
@@ -1598,13 +1690,27 @@ fn the_real_package_records_exactly_the_references_it_carries() {
     // one this walker derived. `dropped` is the other line that reaches here
     // and it names a `contents` key, so a substring of the count alone would
     // pass on the wrong line.
-    assert!(
-        message.contains(&format!(
-            "the artifact records {} references that resolve nowhere inside it",
-            recorded.len()
-        )),
-        "the publish did not report the population it shipped: {message}"
-    );
+    //
+    // #633 emptied the record, and an empty record prints no line at all rather
+    // than a line reporting zero. So the assertion is on the account either way:
+    // a population is reported when there is one, and nothing is said when there
+    // is none. Reading only the first half here would let the account disappear
+    // from a run that still ships a population.
+    let account = "references that resolve nowhere inside it";
+    if recorded.is_empty() {
+        assert!(
+            !message.contains(account),
+            "the manifest records nothing and the publish still reported a population: {message}"
+        );
+    } else {
+        assert!(
+            message.contains(&format!(
+                "the artifact records {} {account}",
+                recorded.len()
+            )),
+            "the publish did not report the population it shipped: {message}"
+        );
+    }
 }
 
 /// The `(member, target)` pairs a manifest records under
