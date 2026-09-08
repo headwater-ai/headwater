@@ -42,8 +42,10 @@
 //! `check` keeps a cache at `.headwater/cache/checks`, keyed on the lock
 //! digest among the components
 //! [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
-//! names. It is not committed and it holds no corpus content: every entry is
-//! recomputable from the tree it was written over.
+//! names. It holds no corpus content: every entry is recomputable from the
+//! tree it was written over. The directory carries its own `.gitignore`,
+//! written beside the cache file, so a repository never needs one of its own
+//! to keep the cache uncommitted.
 //!
 //! `--no-cache` is the differential that spec 12 asks for rather than a way
 //! out of a bad cache. The two runs write the same bytes to standard output,

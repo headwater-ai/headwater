@@ -365,24 +365,19 @@ def main():
         whole('step 9: grep check instances',
               run("headwater check 2>/dev/null | grep 'check instances'").stdout, 24)
 
-        # Step 10. The ignore file is written before the commit, so the cache stays out.
+        # Step 10. `headwater check` already wrote the cache's own ignore file
+        # by step 9, so this step is one commit and no more.
         for command in blocks[25].strip('\n').split('\n'):
             run(command)
         log = run('git log --oneline').stdout.strip()
         assert_true('step 10: one commit',
                     len(log.split('\n')) == 1 and log.endswith('A first governed corpus'), log)
         whole('step 10: git ls-files .headwater', run('git ls-files .headwater').stdout, 26)
-        # The step tells the reader to ignore what this repository ignores, and it
-        # says so in the paragraph under it. Hold the two to each other rather than
-        # to a copy: an ignore rule that moves in `.gitignore` and not on the page
-        # is the second-copy defect the page is teaching against.
-        line = blocks[25].strip('\n').split('\n')[0]
-        prefix, suffix = "printf '", "\\n' > .gitignore"
-        named = line.startswith(prefix) and line.endswith(suffix)
-        rule = line[len(prefix):-len(suffix)] if named else None
-        assert_true('step 10: the page ignores what this repository ignores',
-                    named and rule in open(os.path.join(root, '.gitignore')).read().split('\n'),
-                    f'the page writes `{rule}` and `.gitignore` here does not carry that line')
+        # Held to the file on disk rather than to a copy of it: the pattern the
+        # page claims the run wrote is read back from the run's own tree.
+        ignore = os.path.join(cwd['at'], '.headwater/cache/.gitignore')
+        compare('step 10: the cache excludes itself', open(ignore).read(),
+                '*\n!.gitignore\n', today)
 
         # Step 11.
         result = run(blocks[27].strip())

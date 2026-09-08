@@ -113,6 +113,7 @@ A reader who met `HEADWATER_NOW` in a continuous-integration job is reading a sh
 | `.headwater/taxonomy.yml` | read. The corpus root, the exclusions and the package the repository consumes. |
 | the corpus | read. Every file under the declared root that no exclusion removes. |
 | `.headwater/cache/checks` | read and written, unless `--no-cache`. A file that is absent, unreadable or written by another engine reads as an empty cache. That costs one full run and is not an error. |
+| `.headwater/cache/.gitignore` | written, unless `--no-cache`. The pattern excludes `.headwater/cache/checks` and keeps itself, so a repository that adds this directory never needs a line of its own for the cache. |
 | `.headwater/imports/` | read where `.headwater/taxonomy.yml` declares an import, for the anchors an imported snapshot supplies. |
 | `.headwater/ids/` | read, and written under `--fix` alone. The identifier claim store, which two corpus-scoped rules take as one input with a digest over its whole listing. A write here creates a file and never modifies one, so a claim this verb met is a claim it left. |
 | the path `--read-set` names | written. The report carries the same bytes, indented two spaces and laid out at no width. `headwater gate` reads that file as a grammar, so a line break inside it would refuse the file rather than widen it. |

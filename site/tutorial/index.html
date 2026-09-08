@@ -507,16 +507,16 @@ TODO write this section.</pre>
     </div>
     <div class="stepgrid">
       <div>
-        <h2><span class="n">10</span>Say what does not belong in the repository, and commit</h2>
-        <p class="prose">The lock is committed and the cache is not, and the difference is the point. A reviewer reads the lock, because it is the taxonomy a verdict came from — a verdict you cannot trace to a schema is one nobody can argue with. The cache holds no fact of its own, and every entry in it is recomputable from the tree it was written over.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>git ls-files .headwater</code> prints five files and no cache.</span></p>
+        <h2><span class="n">10</span>Commit the first governed corpus</h2>
+        <p class="prose"><code>headwater check</code> already wrote <code>.headwater/cache/.gitignore</code>, so the cache never needs a line of its own to stay out of the repository. The cache holds no fact of its own: every entry in it is recomputable from the tree it was written over.</p>
+        <p class="check"><span class="checkword">Check</span> <span><code>git ls-files .headwater</code> prints six files, the cache's own <code>.gitignore</code> among them.</span></p>
       </div>
       <div>
-          <pre class="cmd verbatim">printf '.headwater/cache/\n' &gt; .gitignore
-git add -A
+          <pre class="cmd verbatim">git add -A
 git commit -m "A first governed corpus"</pre>
           <p class="blocklabel">what that check prints</p>
-          <pre class="out verbatim">.headwater/capture-cost.jsonl
+          <pre class="out verbatim">.headwater/cache/.gitignore
+.headwater/capture-cost.jsonl
 .headwater/ids/decision_id/ACME-DR-0001
 .headwater/overlay.yml
 .headwater/taxonomy.lock
