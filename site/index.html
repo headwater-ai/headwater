@@ -297,12 +297,12 @@
         </div>
         <div class="install">
           <div><span class="dim">$</span> cargo install headwater-cli <span class="cursor" aria-hidden="true">▍</span></div>
-          <!-- No release exists, so this line does not work yet. The condition
-               that makes it work is a tag and not a date, which Q31 and
-               HW-OBL-0130 reserve to the owner. M6 is named as the open
-               milestone that carries the work, and nothing here says when it
-               closes. -->
-          <div class="note">There is no tag and no release, so this line does not work yet. Distribution is the open milestone M6, and a tag is the condition. The tutorial builds from source today.</div>
+          <!-- v0.1.0 is tagged and released (#526, 2026-09-07), so the
+               premise this note carried until then — no tag and no release
+               — is false. The release carries no binary asset, so this
+               line still does not work: #707, open under R1 (the first
+               installable release), is the condition. -->
+          <div class="note">There is a tag and a release, v0.1.0, but it carries no binary and no package registry entry, so this line does not work yet. Distribution is the open milestone R1, and a binary attached to the release is the condition. The tutorial builds from source today.</div>
         </div>
       </div>
       <div class="cards">
