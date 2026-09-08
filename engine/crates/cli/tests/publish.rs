@@ -1802,7 +1802,10 @@ fn the_shipped_starter_recipe_inherits_no_record_of_another_artifacts_references
     // can no longer show it.
     let planted = root.path().join("planted");
     let source = planted.join("source/headwater-standard");
-    copy_tree(&repository().join("taxonomy-source/headwater-standard"), &source);
+    copy_tree(
+        &repository().join("taxonomy-source/headwater-standard"),
+        &source,
+    );
     // `contents.bundles` names `../../docs/taxonomies` from the source
     // directory, so the copy has to sit two levels under a tree that carries
     // one.
@@ -1825,7 +1828,11 @@ fn the_shipped_starter_recipe_inherits_no_record_of_another_artifacts_references
     // The root is the copy and not the repository: a publish refuses a
     // `contents.bundles` that resolves outside the tree it is reading.
     let (code, _stdout, stderr) = publish_plain_from(&planted, &source, &plain);
-    assert_eq!(code, Some(0), "the planted source no longer publishes: {stderr}");
+    assert_eq!(
+        code,
+        Some(0),
+        "the planted source no longer publishes: {stderr}"
+    );
     assert_eq!(
         recorded_references(&plain.join("package.yml")),
         vec![(
