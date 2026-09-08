@@ -94,10 +94,23 @@ jobs:
         # was meant to carry, produces a binary that is not what its name says.
         # This is the only step that can catch that, because nothing downstream
         # reads the binary again.
+        #
+        # Two lines here are the guard on the guard, and this step passed for
+        # every tag without them. GitHub's default shell for a `run:` block on
+        # Linux is `bash -e {0}` and NOT `bash -eo pipefail {0}`, so the exit
+        # status of the substitution below is `awk`'s and a binary that refuses
+        # to run at all leaves `printed` empty at exit 0. An empty `printed`
+        # then makes the pattern `"$printed"*` the pattern `*`, which matches
+        # every tag there is. So the option is set and the emptiness is refused
+        # by name: a check that cannot run is not a check that passes.
         env:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
+          set -eo pipefail
           printed=$(./engine/target/release/headwater --version | awk '{print $NF}')
+          if [ -z "$printed" ]; then
+              echo "::error::the binary printed no version, so this step would pass for any tag" && exit 1
+          fi
           case "${TAG#v}" in
               "$printed"*) echo "$TAG carries $printed" ;;
               *) echo "::error::the tag names ${TAG#v} and the binary prints $printed" && exit 1 ;;

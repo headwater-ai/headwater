@@ -31,10 +31,22 @@
 # request pushes no tag, so the whole file is unexercised until somebody cuts a
 # release and the person who finds the mismatch is the stranger who follows the
 # page to a 404. Group 7 runs on every push because it reads two files rather
-# than a release, and it holds four couplings: the archive name, the checksum
-# name, the tag pattern against the tag the fence pins, and the
-# `contents: write` the upload needs. What it cannot hold is that the run
-# succeeded, which only a cut tag shows.
+# than a release, and it holds the archive name, the checksum name, the tag
+# pattern against the tag the fence pins, and the `contents: write` the upload
+# needs. What it cannot hold is that the run succeeded, which only a cut tag
+# shows.
+#
+# Two of its cases read the workflow as a PROGRAM rather than as a set of names,
+# because a review of its first cut found two edits that leave every declared
+# name in place and still send the reader to a 404. Deleting the whole
+# `gh release upload` line changes no name; passing the checksum and not the
+# archive changes no name. So one judge resolves the operands that command is
+# actually handed, through the shell assignments the file makes, and compares
+# THOSE with the page. The other reads for a shell option: GitHub's default
+# `run:` shell on Linux is `bash -e {0}` and not `bash -eo pipefail {0}`, so
+# `x=$(binary | filter)` takes the filter's status, and the version guard in
+# that workflow passed for every tag on a binary that refused to run. Both
+# defects are in what the file DOES, and no reader of what it SAYS can see them.
 #
 # Run it from anywhere:
 #     sh tools/readme-fixtures.sh
@@ -731,6 +743,120 @@ release_dispatch_judge() {
     fi
 }
 
+# release_uploaded_names FILE — the asset names the workflow ACTUALLY HANDS to
+# `gh release upload`, one per line, resolved through the shell assignments the
+# file makes.
+#
+# The judges above read the names the workflow DECLARES, and a declaration is
+# not an upload. Deleting the upload line entirely, or passing the checksum and
+# not the archive, leaves every name in this file exactly where it was and
+# reproduces the same 404 the group exists to prevent — which is what a review
+# of the first cut of this group found, and which is why this function reads the
+# command rather than the file.
+#
+# Resolution is file-scope rather than step-scope, because the two steps here
+# pass the value between them through `$GITHUB_ENV` and a step-scope reader
+# would see an unassigned variable in the step that does the upload. An operand
+# naming a variable that nothing assigns is printed as `unresolved:<name>`, so a
+# renamed variable is a wrong name here rather than a missing one.
+#
+# Quotes are stripped before parsing because nothing below depends on them and
+# an operand is quoted or bare in different hands.
+release_uploaded_names() {
+    [ -f "$1" ] || return 0
+    release_yaml_text "$1" |
+        sed -e 's/\${{ *github\.ref_name *}}/<tag>/g' \
+            -e 's/\${{ *inputs\.tag *}}/<tag>/g' \
+            -e 's/\${{ *steps\.tag\.outputs\.tag *}}/<tag>/g' \
+            -e 's/\${TAG}/<tag>/g' -e 's/\$TAG/<tag>/g' |
+        tr -d '\42\47' |
+        awk '
+            {
+                line = $0
+                sub(/^[ \t]+/, "", line)
+                if (match(line, /^[A-Za-z_][A-Za-z0-9_]*=/)) {
+                    var[substr(line, 1, RLENGTH - 1)] = substr(line, RLENGTH + 1)
+                    next
+                }
+                if (index(line, "gh release upload") > 0) upload[++u] = line
+            }
+            END {
+                for (i = 1; i <= u; i++) {
+                    n = split(upload[i], w, /[ \t]+/)
+                    seen = 0
+                    for (j = 1; j <= n; j++) {
+                        t = w[j]
+                        if (t == "upload") { seen = 1; continue }
+                        if (!seen || t ~ /^-/) continue
+                        if (t ~ /^\$\{?[A-Za-z_][A-Za-z0-9_]*\}?$/) {
+                            key = t
+                            gsub(/[${}]/, "", key)
+                            t = (key in var) ? var[key] : "unresolved:" key
+                        }
+                        if (t ~ /headwater-[A-Za-z0-9._<>-]+\.tar\.gz/ || t ~ /^unresolved:/)
+                            print t
+                    }
+                }
+            }
+        ' | LC_ALL=C sort -u
+}
+
+# release_upload_judge PAGE WORKFLOW — the page's offer against the command that
+# attaches the files, rather than against the names the file writes down.
+release_upload_judge() {
+    ru_page=$(release_names_raw "$1" page | LC_ALL=C sort -u)
+    ru_up=$(release_uploaded_names "$2")
+    if [ -z "$ru_up" ]; then
+        echo "no \`gh release upload\` hands over an asset, so the tag gets nothing"
+    elif [ -z "$ru_page" ]; then
+        echo "the upload attaches an asset and the page offers none"
+    elif [ "$ru_page" = "$ru_up" ]; then
+        echo ok
+    else
+        echo "the page offers $(oneline "$ru_page") and the upload attaches $(oneline "$ru_up")"
+    fi
+}
+
+# release_pipe_steps FILE MODE — the steps of a workflow whose shell reads a
+# command through a pipe inside a substitution. MODE `offenders` names the ones
+# that do not set `pipefail`; MODE `guarded` names the ones that do.
+#
+# GitHub's default shell for a `run:` block on Linux is `bash -e {0}` and not
+# `bash -eo pipefail {0}`, so `x=$(cmd | filter)` takes the filter's exit status
+# and a command that refused to run leaves `x` empty at exit 0. The version
+# guard in `release.yml` passed for every tag on that alone. It is the same trap
+# this repository's own run policy states as "never pipe a gate", and nothing
+# read a workflow for it until now.
+release_pipe_steps() {
+    [ -f "$1" ] || return 0
+    awk -v want="$2" '
+        function endblock(   t) {
+            if (blk != "") {
+                t = blk
+                gsub(/\|\|/, "", t)
+                if (blk ~ /\$\(/ && t ~ /\|/) {
+                    if (blk ~ /pipefail/) { if (want == "guarded") print step }
+                    else if (want == "offenders") print step
+                }
+            }
+            blk = ""
+        }
+        /^[ \t]*-[ \t]*name:/ {
+            endblock()
+            step = $0
+            sub(/^[ \t]*-[ \t]*name:[ \t]*/, "", step)
+            next
+        }
+        /^[ \t]*run:[ \t]*\|[ \t]*$/ { endblock(); ind = index($0, "run:"); inblk = 1; next }
+        inblk {
+            if ($0 ~ /^[ \t]*$/) next
+            if (match($0, /[^ \t]/) < ind) { endblock(); inblk = 0 }
+            else { blk = blk $0 "\n"; next }
+        }
+        END { endblock() }
+    ' "$1"
+}
+
 # vendor_invocations_of FILE — every `headwater taxonomy vendor …` invocation
 # the page carries, one per line, read out of the page rather than written here.
 # An inline code span carries it today and the paste block could carry it
@@ -1311,10 +1437,18 @@ same "  and the job that uploads may write to the release" ok \
     "$(release_write_judge "$release_wf")"
 same "  and a tag already cut can be given one by hand" ok \
     "$(release_dispatch_judge "$release_wf")"
+same "  and the upload hands over exactly what the page offers" ok \
+    "$(release_upload_judge "$readme" "$release_wf")"
+same "  and no step reads a command through an unguarded pipe" "" \
+    "$(release_pipe_steps "$release_wf" offenders | tr '\n' '|')"
 more_than "  over the asset names the page carries" 0 \
     "$(release_archives_of "$readme" page | grep -c .)"
 more_than "  and the asset names the workflow carries" 0 \
     "$(release_archives_of "$release_wf" workflow | grep -c .)"
+more_than "  and the names the upload command hands over" 0 \
+    "$(release_uploaded_names "$release_wf" | grep -c .)"
+more_than "  and the steps whose pipe is guarded" 0 \
+    "$(release_pipe_steps "$release_wf" guarded | grep -c .)"
 
 # 7f-7k. The judges, provoked. Each arm mutates ONE side in a scratch copy and
 #        requires the verdict to name which way the pair went wrong. The
@@ -1369,6 +1503,51 @@ if [ -f "$release_wf" ]; then
     same "  and a permission that lives only in a comment grants nothing" \
         "no job declares \`contents: write\`, so the upload runs with a read-only token" \
         "$(release_write_judge "$scratch/release/comments.yml")"
+
+    # The two edits that leave every declared name in place and still send the
+    # reader to a 404. A review of the first cut of this group found both: the
+    # judges above read what the file writes down, and neither of these changes
+    # a single name it writes down.
+    grep -v 'gh release upload' "$release_wf" >"$scratch/release/no-upload.yml"
+    same "  a workflow that declares the names and uploads neither is refused" \
+        "no \`gh release upload\` hands over an asset, so the tag gets nothing" \
+        "$(release_upload_judge "$readme" "$scratch/release/no-upload.yml")"
+
+    sed 's/upload "\$TAG" "\$asset" "\$checksum"/upload "$TAG" "$checksum"/' \
+        "$release_wf" >"$scratch/release/checksum-only.yml"
+    if cmp -s "$release_wf" "$scratch/release/checksum-only.yml"; then
+        fail "  a workflow that uploads the checksum and not the archive is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a workflow that uploads the checksum and not the archive is refused" \
+            "the page offers $(oneline "$(release_names_raw "$readme" page | LC_ALL=C sort -u)") and the upload attaches $(oneline "$(release_checksums_of "$readme" page)")" \
+            "$(release_upload_judge "$readme" "$scratch/release/checksum-only.yml")"
+    fi
+
+    sed 's/upload "\$TAG" "\$asset"/upload "$TAG" "$archive"/' \
+        "$release_wf" >"$scratch/release/renamed-var.yml"
+    if [ "$(release_upload_judge "$readme" "$scratch/release/renamed-var.yml")" = ok ]; then
+        fail "  an operand naming a variable nothing assigns is refused" \
+            "the judge returned \`ok\` for an upload whose first operand resolves to nothing"
+    else
+        pass "  an operand naming a variable nothing assigns is refused"
+    fi
+
+    # The guard on the guard. `bash -e` without `pipefail` takes the LAST
+    # command's status, so a version check written as `$(binary | awk …)` passes
+    # for every tag when the binary refuses to run. That is what this workflow
+    # did, and no judge above could see it, because the defect is in a shell
+    # option and not in a name.
+    guarded=$(release_pipe_steps "$release_wf" guarded | tr '\n' '|')
+    sed 's/^          set -eo pipefail$//' "$release_wf" >"$scratch/release/no-pipefail.yml"
+    if cmp -s "$release_wf" "$scratch/release/no-pipefail.yml"; then
+        fail "  a step reading a command through an unguarded pipe is named" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a step reading a command through an unguarded pipe is named" \
+            "$guarded" \
+            "$(release_pipe_steps "$scratch/release/no-pipefail.yml" offenders | tr '\n' '|')"
+    fi
 else
     fail "  the judges are provoked in the shapes they refuse" \
         "the arms did not run: no \`.github/workflows/release.yml\` to mutate"
