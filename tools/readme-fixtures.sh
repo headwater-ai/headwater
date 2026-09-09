@@ -916,6 +916,39 @@ release_pipe_steps() {
     ' "$1"
 }
 
+# taxonomy_asset_name_of FILE — the `headwater-standard-<version>.zip` name
+# `release-taxonomy.yml` builds, or the page's own claim about it, with the
+# version placeholder normalized to `<version>` the same way `release_names_raw`
+# normalizes `$TAG` to `<tag>`: a real version on one side and a bare shell
+# variable on the other are the same string once both are read this way.
+taxonomy_asset_name_of() {
+    [ -f "$1" ] || return 0
+    grep -o 'headwater-standard-[A-Za-z0-9._${}<>-]*\.zip' "$1" |
+        sed -e 's/\${VERSION}/<version>/g' -e 's/\$VERSION/<version>/g' |
+        LC_ALL=C sort -u
+}
+
+# taxonomy_asset_judge PAGE WORKFLOW — the same coupling `release_asset_judge`
+# exists for, over the second release surface #760 adds. A taxonomy tag runs
+# this workflow on no pull request either, so the name it zips and the name the
+# page tells a reader to expect are two strings nothing but this comparison
+# ever puts side by side before the day someone cuts one.
+taxonomy_asset_judge() {
+    tan_page=$(taxonomy_asset_name_of "$1")
+    tan_flow=$(taxonomy_asset_name_of "$2")
+    if [ -z "$tan_page" ] && [ -z "$tan_flow" ]; then
+        echo "neither the page nor the workflow names the taxonomy artifact"
+    elif [ -z "$tan_page" ]; then
+        echo "the workflow builds an artifact and the page names none"
+    elif [ -z "$tan_flow" ]; then
+        echo "the page names an artifact and the workflow builds none"
+    elif [ "$tan_page" = "$tan_flow" ]; then
+        echo ok
+    else
+        echo "the page names $(oneline "$tan_page") and the workflow builds $(oneline "$tan_flow")"
+    fi
+}
+
 # vendor_invocations_of FILE — every `headwater taxonomy vendor …` invocation
 # the page carries, one per line, read out of the page rather than written here.
 # An inline code span carries it today and the paste block could carry it
@@ -1676,6 +1709,71 @@ if [ -f "$release_wf" ]; then
 else
     fail "  the judges are provoked in the shapes they refuse" \
         "the arms did not run: no \`.github/workflows/release.yml\` to mutate"
+fi
+
+echo
+echo "the taxonomy artifact, and the tag namespace of its own"
+
+# The third file this script reads other than the page, for the reason group 7
+# reads a second file: `.github/workflows/release-taxonomy.yml` runs on a
+# `push` of a `taxonomy/headwater-standard/v*` tag, and that tag is not pushed
+# by a pull request either, so this file sits as unexercised as `release.yml`
+# did until an engine tag was cut. #757 found the gap this closes; #760 named
+# this file as the mechanism. It has to trigger on its own tag namespace and
+# never on the engine's, or a taxonomy release and an engine release could
+# each start the other's workflow on the same push.
+
+tax_wf="$root/.github/workflows/release-taxonomy.yml"
+tax_version=$(awk '/^version:/{print $2}' "$root/taxonomy-source/headwater-standard/package.yml" 2>/dev/null)
+tax_tag="taxonomy/headwater-standard/v${tax_version:-0.0.0}"
+
+# 8a. The population.
+if [ -f "$tax_wf" ]; then
+    pass "a taxonomy release workflow exists (.github/workflows/release-taxonomy.yml)"
+else
+    fail "a taxonomy release workflow exists (.github/workflows/release-taxonomy.yml)" \
+        "no such file, so the cases below have nothing to check"
+fi
+
+# 8b-8i. The real page against the real workflow, and the tag namespaces
+# against each other.
+if [ -f "$tax_wf" ]; then
+    same "the page names the same artifact this workflow builds" ok \
+        "$(taxonomy_asset_judge "$readme" "$tax_wf")"
+    same "  a tag of the taxonomy package's own version starts this workflow" ok \
+        "$(release_trigger_judge "$tax_wf" "$tax_tag")"
+    same "  and the job that uploads may write to the release" ok \
+        "$(release_write_judge "$tax_wf")"
+    same "  and a tag already cut can be given an artifact by hand" ok \
+        "$(release_dispatch_judge "$tax_wf")"
+    same "  and no step reads a command through an unguarded pipe" "" \
+        "$(release_pipe_steps "$tax_wf" offenders | tr '\n' '|')"
+    more_than "  over the steps whose pipe is guarded" 0 \
+        "$(release_pipe_steps "$tax_wf" guarded | grep -c .)"
+
+    if [ -n "$tag" ]; then
+        engine_collision=$(release_trigger_judge "$tax_wf" "$tag")
+        if [ "$engine_collision" = ok ]; then
+            fail "  and the engine's own tag ($tag) does not also start it" \
+                "the taxonomy workflow's trigger pattern also matches $tag"
+        else
+            pass "  and the engine's own tag ($tag) does not also start it"
+        fi
+
+        taxonomy_collision=$(release_trigger_judge "$release_wf" "$tax_tag")
+        if [ "$taxonomy_collision" = ok ]; then
+            fail "  and the taxonomy's own tag ($tax_tag) does not also start the engine release" \
+                "release.yml's trigger pattern also matches $tax_tag"
+        else
+            pass "  and the taxonomy's own tag ($tax_tag) does not also start the engine release"
+        fi
+    else
+        fail "  the two tag namespaces are checked against each other" \
+            "no engine tag to check against: the fence pins none"
+    fi
+else
+    fail "  the judges above are provoked" \
+        "the arms did not run: no \`.github/workflows/release-taxonomy.yml\` to check"
 fi
 
 echo
