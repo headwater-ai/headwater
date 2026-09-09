@@ -297,16 +297,13 @@
         </div>
         <div class="install">
           <div><span class="dim">$</span> cargo install headwater-cli <span class="cursor" aria-hidden="true">▍</span></div>
-          <!-- v0.1.0 carries a binary and a checksum now (#707: the
-               workflow landed in #708, then a hand run of it against the
-               existing tag attached the pair, 2026-09-08). What still
-               makes this line false is narrower than before: a package
-               registry entry, which #707 named and excluded as its own
-               scope. #735 is that issue and its workflow is written
-               (`.github/workflows/publish-crates.yml`); nobody has run it,
-               because it needs a `CARGO_REGISTRY_TOKEN` this repository
-               does not hold. -->
-          <div class="note">v0.1.0 carries a binary and a checksum, but this line still does not work: <code>cargo install</code> needs a package registry entry, and #735 has not published one yet. The release page and the tutorial are the two routes that work today.</div>
+          <!-- This line works now: all 23 workspace crates are on crates.io
+               as of v0.1.1, published in dependency order by
+               `.github/workflows/publish-crates.yml` (#735, still open for
+               its own remaining Done-when items). Verified by an actual
+               `cargo install headwater-cli` into a scratch root, not only by
+               the registry listing. -->
+          <div class="note">This works: <code>cargo install headwater-cli</code> gets you the binary at whatever the newest published version is, no clone needed. It does not carry the taxonomy package beside it — the tutorial and the README's <em>Obtaining a named version</em> section are the two routes to that.</div>
         </div>
       </div>
       <div class="cards">
