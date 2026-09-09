@@ -343,6 +343,45 @@ if [ "$status" -eq 0 ]; then
     fi
 fi
 
+# `site/tutorial/index.html`, which used to be a second copy of the tutorial
+# typed by hand and is now `tools/render-tutorial.py`'s output, read from
+# `docs/tutorials/your-first-governed-corpus.md` and nothing else. The clause
+# above holds the page's blocks against the document, but only in the
+# direction that catches a block on the page going stale. A step, or a
+# paragraph inside one, added to the document with nothing added to the page
+# passes that clause silently, because it has nothing on the page to compare
+# the addition against. That is exactly how `tools/headwater-bootstrap.sh`
+# landed in the document and never reached the page.
+#
+# WHY IT SITS HERE. The same reason as the clause above: a change to the
+# document moves the page, and an engine finding outranks a regenerable one,
+# so this runs only once `headwater check --strict` has passed.
+#
+# WHAT IT DOES NOT CATCH. The script reads the working tree rather than the
+# index, so a partially staged commit can pass here. The CI step of the same
+# name reads the committed tree, and that is what holds it. The script reads
+# no engine of its own, so a clone with no built engine exits above this line
+# and the page goes unchecked there too — the same gap the clause above
+# carries, for the same reason.
+if [ "$status" -eq 0 ] && [ -z "${HEADWATER_SKIP_TUTORIAL_RENDER_CHECK:-}" ]; then
+    if command -v python3 >/dev/null 2>&1; then
+        if ! tutorial=$(python3 "$root/tools/render-tutorial.py" --check 2>&1); then
+            echo "headwater: site/tutorial/index.html no longer matches"
+            echo "  docs/tutorials/your-first-governed-corpus.md. It is written by"
+            echo "  \`tools/render-tutorial.py\` and never by hand."
+            printf '%s\n' "$tutorial" | sed 's/^/    /'
+            echo "  Regenerate and stage the result:"
+            echo "        python3 tools/render-tutorial.py"
+            echo "  Or skip this one clause for one commit:"
+            echo "        HEADWATER_SKIP_TUTORIAL_RENDER_CHECK=1 git commit ..."
+            exit 1
+        fi
+    else
+        echo "headwater: no python3, so site/tutorial/index.html is not checked"
+        echo "  against the document."
+    fi
+fi
+
 [ "$status" -eq 0 ] && exit 0
 
 # The error findings alone, whole. Every other finding is advisory and belongs

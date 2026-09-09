@@ -539,7 +539,7 @@ jobs:
         # HW-DR-0039 rules that a number on a hand-built page is interpolated
         # from a run of this engine rather than typed by a person, and
         # `tools/refresh-figures.sh` is that build. It writes 34 measured
-        # figures into `data-figure` elements, and it holds the 43 verbatim
+        # figures into `data-figure` elements, and it holds the 44 verbatim
         # blocks of `site/tutorial/index.html` against the tutorial document
         # that `.claude/tutorial/fixtures.sh` runs.
         #
@@ -560,6 +560,29 @@ jobs:
         # marker pair fails the step above: an empty `site/`, a renamed marker
         # or a moved page otherwise passes over a check that ran on nothing.
         run: sh tools/refresh-figures.sh --check
+      - name: The tutorial page came from the document
+        # `site/tutorial/index.html` used to be a second copy of the tutorial,
+        # typed by hand and independent of
+        # `docs/tutorials/your-first-governed-corpus.md`. The step above holds
+        # the page's blocks against the document, but only in the direction
+        # that catches a block on the page going stale — a step, or a
+        # paragraph inside one, added to the document with nothing added to
+        # the page passes that check silently, because it has nothing on the
+        # page to compare the addition against. That is exactly how
+        # `tools/headwater-bootstrap.sh` landed in the document and never
+        # reached the page.
+        #
+        # `tools/render-tutorial.py` closes the other direction by removing
+        # the second copy: the page is this script's output, read from the
+        # document and nothing else, checked into git the same way
+        # `tools/refresh-figures.sh` and `tools/refresh-site-tokens.sh`
+        # already check theirs in. `--check` writes nothing and exits 1 when
+        # the committed page disagrees with what the script would write.
+        #
+        # This is the fourth step that reads `site/`, and it belongs beside
+        # the other three and before the assembly, for the same reason each
+        # of them does.
+        run: python3 tools/render-tutorial.py --check
       - name: The two halves of the site compose into one served directory
         # This is the input the deploy serves, and this step is the only place
         # that runs the composition where a person reads the result. The

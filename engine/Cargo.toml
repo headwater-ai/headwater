@@ -32,7 +32,14 @@ resolver = "2"
 # range over this number, and a range is unreadable without one, so the
 # placeholder `0.0.0` that no verb printed became the tag this repository
 # published. `headwater_resolve::release::ENGINE` is what reads it.
-version = "0.1.0"
+#
+# `v0.1.0` was cut and released before `headwater-compat` lost its own
+# `publish = false` override (#748), so the tag whose tree the crates.io
+# publish workflow checks out could never carry a working manifest for it.
+# A tag is fixed once published — `v0.1.0` already has a GitHub release with
+# a binary built from its exact tree — so the fix is a new version rather
+# than a moved tag. `v0.1.0` stays as it was cut.
+version = "0.1.1"
 edition = "2021"
 
 # #735: every member is now free to reach crates.io, once the workflow that

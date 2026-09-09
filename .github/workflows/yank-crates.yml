@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# `cargo yank` needs `CARGO_REGISTRY_TOKEN`, the same secret
+# `publish-crates.yml` holds, and nowhere outside a workflow that already
+# runs with it can reach crates.io as this project. This file exists because
+# #748 and #750 stranded 20 of the 23 workspace crates at `0.1.0`: that
+# version published before `headwater-compat` could, so it never became a
+# complete, installable set, and `0.1.1` is the version anyone should
+# actually depend on. Yanking hides a version from a fresh `cargo add`
+# without deleting it or breaking a lockfile that already names it, which is
+# the whole point: `0.1.0`'s twenty crates keep existing, and stop being an
+# option for the twenty-first project that has not chosen a version yet.
+#
+# # WHY WORKFLOW_DISPATCH ONLY, AND WHY IT TAKES THE LIST BY HAND
+#
+# Nothing about a push, a pull request or a tag should ever yank a version:
+# yanking is a correction to a past publish, not a consequence of a commit,
+# so the only trigger is a person naming exactly what to yank and why. The
+# crate list and the version are inputs rather than a hard-coded closure walk
+# for the same reason `publish-crates.yml`'s IS one: that file publishes the
+# same 23 crates in the same dependency order every time, but a yank is
+# never "all of them" — it is whichever versions a specific mistake stranded,
+# named once by the person who found the mistake.
+name: Yank crates
+
+on:
+  workflow_dispatch:
+    inputs:
+      crates:
+        description: Space-separated crate names to yank
+        required: true
+      version:
+        description: The version to yank from each of them
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  yank:
+    name: Yank one version from the named crates
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: The toolchain this build needs
+        run: |
+          rustup update --no-self-update stable
+          rustup default stable
+      - name: Yank
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          CRATES: ${{ inputs.crates }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -eo pipefail
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+              echo "::error::no CARGO_REGISTRY_TOKEN secret; nothing below can yank" && exit 1
+          fi
+          for crate in $CRATES; do
+              echo "yanking $crate $VERSION"
+              cargo yank --version "$VERSION" "$crate"
+          done

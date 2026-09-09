@@ -136,6 +136,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     python3 tools/check-site-canonical.py .headwater/site-build
     python3 tools/check-site-console.py
     python3 tools/check-site-fragments.py
+    python3 tools/render-tutorial.py --check
 
 Each one holds an artifact that no rule of the engine reads: a workflow, a manifest, a page outside the corpus root, a hook, a skill file. They are cheap, they need no container, and running the ones your change touches before you push saves a round trip.
 
