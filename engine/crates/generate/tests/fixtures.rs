@@ -574,24 +574,24 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its fourteen artifacts, and it says why for
+/// This repository generates its eighteen artifacts, and it says why for
 /// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Nine of the fourteen are shelf indexes, one per shelf that holds a
+/// **Twelve of the eighteen are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
-/// file until #124 filled that shelf. The other eight are the overlay's own
+/// file until #124 filled that shelf. The other eleven are the overlay's own
 /// entry, in the order its `for` list names them, and the specification index
 /// leads it because that is the list the root README used to carry by hand.
 /// #528 is why the seven after it are there: each of those shelf roots answered
 /// 404 on the served site while every record under it was served, because a
 /// shelf with no index declaration writes no page for MkDocs to render.
 ///
-/// The other five are one each. The redirect map that the open-questions
+/// The other six are one each. The redirect map that the open-questions
 /// tombstone carries. The verb index #257 asked for, which reads the binary
 /// rather than the `interfaces` shelf and is why that shelf is absent from the
 /// index list above. The graph export #414 names: the whole graph, for the
@@ -612,7 +612,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_eighteen_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -680,6 +680,8 @@ fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() 
             "docs/requirements/README.md",
             "docs/acceptance-criteria/README.md",
             "docs/probes/README.md",
+            "docs/probe-results/README.md",
+            "docs/probe-runs/README.md",
             "docs/reviews/README.md",
             "docs/tutorials/README.md",
             "docs/process/decisions/README.md",
@@ -690,7 +692,7 @@ fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() 
             ".headwater/nav.yml",
             descriptor::PATH
         ],
-        "this repository writes an index for each of its ten shelves that hold a \
+        "this repository writes an index for each of its twelve shelves that hold a \
          document, then the redirect map, the verb index, the graph export, the \
          site navigation and the descriptor, in that order"
     );

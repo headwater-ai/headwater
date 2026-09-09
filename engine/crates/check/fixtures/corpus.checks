@@ -1,5 +1,5 @@
-447 seen, 318 classified, 318 checked, 5757 check instances
-     13 generated, held to regeneration by `headwater generate --check`
+449 seen, 318 classified, 318 checked, 5757 check instances
+     15 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
     637 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change

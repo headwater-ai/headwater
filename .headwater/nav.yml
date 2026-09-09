@@ -295,8 +295,10 @@ nav:
       - "An unresolved prose link reaches a run as a graph fact and no rule turns it into a finding": "obligations/0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md"
       - "The publish-crates retry loop has no retry ceiling": "obligations/0182-the-publish-crates-retry-loop-has-no-retry-ceiling.md"
   - "Probe results":
+      - "Probe results": "probe-results/README.md"
       - "HW-RESULT-regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"
   - "Probe runs":
+      - "Probe runs": "probe-runs/README.md"
       - "HW-RUN-regression-probe-transcript-for-2026-09-09": "probe-runs/regression-probe-transcript-for-2026-09-09.md"
   - "Probes":
       - "Probes": "probes/README.md"
