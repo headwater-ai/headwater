@@ -2,7 +2,7 @@
 
 # Obligation records
 
-181 documents on this shelf, in the reading order this corpus derives.
+182 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for.
@@ -185,3 +185,4 @@
 - [The commit gate checks prose with a binary it never compares against the engine sources](0179-the-commit-gate-checks-prose-with-a-binary-it-never-compares-against-the-engine-sources.md) — The figures clause of the commit gate refuses when its binary is behind the engine sources, and the prose clause above it asks nothing. (asserted, and no human has accepted it)
 - [A renderer's color mode is wired at a call site that no type forbids from being wrong](0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-type-forbids-from-being-wrong.md) — A caller that passes the plain color mode forever is a defect that no type and no piped test can report. (asserted, and no human has accepted it)
 - [An unresolved prose link reaches a run as a graph fact and no rule turns it into a finding](0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md) — A link in prose whose target path is absent is counted in the graph section of a run and reaches no rule, so it never becomes a finding and never fails a strict run. (asserted, and no human has accepted it)
+- [The publish-crates retry loop has no retry ceiling](0182-the-publish-crates-retry-loop-has-no-retry-ceiling.md) — publish_with_retry retries a 429 forever, so GitHub Actions' unstated default timeout is its only ceiling, and nobody has measured it. (asserted, and no human has accepted it)
