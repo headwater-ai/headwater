@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: Apache-2.0
+bundle: diataxis-site
+extends: headwater/standard@4.0.0
+requires: []
+
+add:
+  purposes.procedure:
+    intent: help a reader complete a task or learn a capability through ordered action
+    answers: ["how do I complete this task", "how do I learn this capability"]
+
+  identifier_schemes.tutorial_id:
+    pattern: "{namespace}-TUT-{slug}"
+    allocation: minted-once
+  identifier_schemes.how_to_id:
+    pattern: "{namespace}-HOW-{slug}"
+    allocation: minted-once
+  identifier_schemes.reference_id:
+    pattern: "{namespace}-REF-{slug}"
+    allocation: minted-once
+  identifier_schemes.explanation_id:
+    pattern: "{namespace}-EXP-{slug}"
+    allocation: minted-once
+
+  kinds.tutorial:
+    is_a: governed_document
+    purpose: procedure
+    identifier: {scheme: tutorial_id}
+    voice: declarative
+    lifecycle: standard
+    sections: {require: [Goal, Prerequisites, Steps, Result]}
+  kinds.how_to:
+    is_a: governed_document
+    purpose: procedure
+    identifier: {scheme: how_to_id}
+    voice: declarative
+    lifecycle: standard
+    sections: {require: [Goal, Steps, Verification]}
+  kinds.reference:
+    is_a: governed_document
+    purpose: behavior
+    identifier: {scheme: reference_id}
+    voice: declarative
+    lifecycle: standard
+    sections: {require: [Reference]}
+  kinds.explanation:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: explanation_id}
+    voice: declarative
+    lifecycle: standard
+    sections: {require: [Context, Explanation, Consequences]}
+
+  shelves.tutorials:
+    title: Tutorials
+    path: docs/tutorials/**
+    homogeneous: true
+    kind: tutorial
+  shelves.how_to:
+    title: How-to guides
+    path: docs/how-to/**
+    homogeneous: true
+    kind: how_to
+  shelves.reference:
+    title: Reference
+    path: docs/reference/**
+    homogeneous: true
+    kind: reference
+  shelves.explanations:
+    title: Explanations
+    path: docs/explanations/**
+    homogeneous: true
+    kind: explanation
