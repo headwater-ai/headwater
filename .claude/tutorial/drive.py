@@ -20,16 +20,16 @@ refuses an indented block so that the property stays true.
 temporary directory that this script removes at the end, and `HOME` is redirected
 into it so that a `~` in a tutorial command cannot escape.
 
-**One command reaches the network, and it is the last one.** *Where to go next*
-runs `tools/headwater-bootstrap.sh` against the real `v0.1.0` release, the same
-tag `README.md` pins, so this is the one place a live GitHub fetch stands for
-the claim that the script works rather than for a stub of it. Every other
-assertion above it runs first and reaches no network, so a fetch failure here
-never masks a defect in steps 1 through 16.
+**One command reaches the network, and it is step 3's.** Step 3 curls
+`tools/headwater-bootstrap.sh` off the default branch and pipes it into `sh`,
+against the real `v0.1.0` release, the same tag `README.md` pins. Every assertion
+before it runs first and reaches no network, so a fetch failure here is reported
+as its own claim and never read as a defect earlier. Nothing after step 3 reaches
+the network again.
 
-**The first block is the one command this script does not run.** It clones the
-repository and builds the engine, which is not a claim about the engine's output.
-The runner supplies a built binary on `PATH` instead, and the tutorial's own check
+**The first block is the one command this script does not run.** It installs the
+engine with `cargo install`, which is not a claim about the engine's output. The
+runner supplies a built binary on `PATH` instead, and the tutorial's own check
 for that block is the one assertion kept.
 
 Run it through `.claude/tutorial/fixtures.sh`, which locates the binary.
@@ -45,7 +45,7 @@ import tempfile
 import time
 
 DOC = 'docs/tutorials/your-first-governed-corpus.md'
-STATED_DATE = '2026-08-17'
+STATED_DATE = '2026-09-09'
 
 failures = []
 checks = 0
@@ -248,7 +248,6 @@ def main():
     scratch = tempfile.mkdtemp(prefix='headwater-tutorial-')
     env = dict(os.environ)
     env['PATH'] = os.path.dirname(binary) + os.pathsep + env['PATH']
-    env['HEADWATER_SRC'] = root
     env['HOME'] = scratch
     env['GIT_AUTHOR_NAME'] = env['GIT_COMMITTER_NAME'] = 'You'
     env['GIT_AUTHOR_EMAIL'] = env['GIT_COMMITTER_EMAIL'] = 'you@example.com'
@@ -259,10 +258,9 @@ def main():
                               capture_output=True, text=True)
 
     try:
-        # Before you start. The clone and the build are the one block not run.
-        assert_true('before you start: headwater is on the path',
-                    run('command -v headwater').stdout.strip().endswith(
-                        'engine/target/release/headwater'))
+        # Before you start. `cargo install` is the one block not run.
+        assert_true('before you start: headwater --version prints a number',
+                    re.match(r'^\d+\.\d+\.\d+', run('headwater --version').stdout.strip()) is not None)
 
         def cut(label, actual, index):
             """A block the page presents as a cut of the real output."""
@@ -286,14 +284,20 @@ def main():
         compare('step 2: ls .headwater', run('ls .headwater').stdout,
                 'overlay.yml\ntaxonomy.yml', today)
 
-        # Step 3.
-        run(blocks[5].strip())
+        # Step 3. The one command in this suite that reaches the network: it
+        # curls `tools/headwater-bootstrap.sh` off the default branch and pipes
+        # it into `sh`, against the real `v0.1.0` release. A fetch or network
+        # failure here is reported as its own claim, never read as a defect in
+        # a step above it, and nothing below this step reaches the network
+        # again.
+        result = run(blocks[5].strip())
+        cut('step 3: the account of what the script fetched', result.stdout + result.stderr, 6)
         whole('step 3: ls packages/headwater-standard',
-              run('ls packages/headwater-standard').stdout, 6)
+              run('ls packages/headwater-standard').stdout, 7)
 
         # Step 4.
-        result = run(blocks[7].strip())
-        whole('step 4: the first refusal', result.stdout + result.stderr, 8)
+        result = run(blocks[8].strip())
+        whole('step 4: the first refusal', result.stdout + result.stderr, 9)
         assert_true('step 4: exit status 1', result.returncode == 1)
 
         # One `match` arm of `headwater init` emits two messages under the same
@@ -315,71 +319,78 @@ def main():
                 ('the field the vendor route needs first', '# digest:')]:
             assert_true('step 4: what init wrote names ' + claim, token in declaration)
 
-        # Step 5. The tutorial names the line to change rather than a command,
-        # so this makes the edit the reader would make by hand.
+        # Step 5. The tutorial names the two lines to change rather than a
+        # command, so this makes the edit the reader would make by hand.
         #
-        # The new line is read out of block 9, which is the output the page says
-        # `grep 'version:'` prints after the edit, and never typed here. A
-        # literal in this file would be a second copy of the package version,
-        # and #427 bumped the package to 4.0.0 and moved six mentions in the
-        # tutorial while this one stayed at 3.5.0, so every step from 5 to 16
-        # failed on a tutorial that was right.
+        # The new lines are read out of block 10, which is the output the page
+        # says `grep -E 'digest:|version:' .headwater/taxonomy.yml` prints after
+        # the edit, and never typed here. A literal in this file would be a
+        # second copy of the package version and the release digest, and #427
+        # bumped the package to 4.0.0 and moved six mentions in the tutorial
+        # while this one stayed at 3.5.0, so every step from 5 to 16 failed on a
+        # tutorial that was right.
         path = os.path.join(cwd['at'], '.headwater/taxonomy.yml')
         source = open(path).read()
-        assert_true('step 5: the line the tutorial names is in the file',
-                    '  version: 0.0.0' in source)
-        pinned = blocks[9].strip('\n')
-        assert_true('step 5: the page states the version to pin',
-                    pinned.startswith('  version: ') and pinned != '  version: 0.0.0',
-                    pinned)
-        open(path, 'w').write(source.replace('  version: 0.0.0', pinned))
-        whole("step 5: grep 'version:'",
-              run("grep 'version:' .headwater/taxonomy.yml").stdout, 9)
-        result = run(blocks[10].strip())
-        whole('step 5: the second refusal', result.stdout + result.stderr, 11)
+        assert_true('step 5: the lines the tutorial names are in the file',
+                    '  # digest: sha256:<the digest the publisher printed>' in source
+                    and '  version: 0.0.0' in source)
+        lines = blocks[10].strip('\n').split('\n')
+        assert_true('step 5: the page states the digest and the version to pin',
+                    len(lines) == 2
+                    and lines[0].startswith('  digest: sha256:')
+                    and lines[1].startswith('  version: ') and lines[1] != '  version: 0.0.0',
+                    blocks[10])
+        source = source.replace(
+            '  # digest: sha256:<the digest the publisher printed>\n  version: 0.0.0',
+            lines[0] + '\n' + lines[1])
+        open(path, 'w').write(source)
+        whole("step 5: grep -E 'digest:|version:'",
+              run("grep -E 'digest:|version:' .headwater/taxonomy.yml").stdout, 10)
+        result = run(blocks[11].strip())
+        whole('step 5: the second refusal', result.stdout + result.stderr, 12)
         assert_true('step 5: exit status 1', result.returncode == 1)
 
         # Step 6. The tutorial names the last line to replace.
         path = os.path.join(cwd['at'], '.headwater/overlay.yml')
         source = open(path).read()
         assert_true('step 6: the last line is `add: {}`', source.rstrip('\n').endswith('add: {}'))
-        open(path, 'w').write(source.rstrip('\n')[:-len('add: {}')] + blocks[12].strip('\n') + '\n')
+        open(path, 'w').write(source.rstrip('\n')[:-len('add: {}')] + blocks[13].strip('\n') + '\n')
         whole('step 6: tail -2 .headwater/overlay.yml',
-              run('tail -2 .headwater/overlay.yml').stdout, 12)
-        result = run(blocks[13].strip())
-        whole('step 6: the lock is written', result.stdout + result.stderr, 14)
+              run('tail -2 .headwater/overlay.yml').stdout, 13)
+        result = run(blocks[14].strip())
+        whole('step 6: the lock is written', result.stdout + result.stderr, 15)
         compare('step 6: ls .headwater/taxonomy.lock',
                 run('ls .headwater/taxonomy.lock').stdout, '.headwater/taxonomy.lock', today)
 
         # Step 7.
-        result = run(blocks[15].strip())
-        cut('step 7: the census', result.stdout, 16)
-        cut('step 7: the coverage line', result.stdout, 17)
-        cut('step 7: the findings line', result.stdout, 18)
+        result = run(blocks[16].strip())
+        cut('step 7: the census', result.stdout, 17)
+        cut('step 7: the coverage line', result.stdout, 18)
+        cut('step 7: the findings line', result.stdout, 19)
         compare('step 7: strict exit',
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '0', today)
 
         # Step 8.
-        result = run(blocks[19].strip())
-        cut('step 8: what the taxonomy decided', result.stdout, 20)
+        result = run(blocks[20].strip())
+        cut('step 8: what the taxonomy decided', result.stdout, 21)
         whole('step 8: the document the verb wrote',
-              run('cat docs/decisions/0001-store-attempts-in-postgres.md').stdout, 21)
+              run('cat docs/decisions/0001-store-attempts-in-postgres.md').stdout, 22)
 
         # Step 9.
-        result = run(blocks[22].strip())
-        cut('step 9: the census', result.stdout, 23)
-        cut('step 9: the coverage line', result.stdout, 24)
+        result = run(blocks[23].strip())
+        cut('step 9: the census', result.stdout, 24)
+        cut('step 9: the coverage line', result.stdout, 25)
         whole('step 9: grep check instances',
-              run("headwater check 2>/dev/null | grep 'check instances'").stdout, 24)
+              run("headwater check 2>/dev/null | grep 'check instances'").stdout, 25)
 
         # Step 10. `headwater check` already wrote the cache's own ignore file
         # by step 9, so this step is one commit and no more.
-        for command in blocks[25].strip('\n').split('\n'):
+        for command in blocks[26].strip('\n').split('\n'):
             run(command)
         log = run('git log --oneline').stdout.strip()
         assert_true('step 10: one commit',
                     len(log.split('\n')) == 1 and log.endswith('A first governed corpus'), log)
-        whole('step 10: git ls-files .headwater', run('git ls-files .headwater').stdout, 26)
+        whole('step 10: git ls-files .headwater', run('git ls-files .headwater').stdout, 27)
         # Held to the file on disk rather than to a copy of it: the pattern the
         # page claims the run wrote is read back from the run's own tree.
         ignore = os.path.join(cwd['at'], '.headwater/cache/.gitignore')
@@ -387,64 +398,57 @@ def main():
                 '*\n!.gitignore\n', today)
 
         # Step 11.
-        result = run(blocks[27].strip())
-        cut('step 11: wrote and edited', result.stdout, 28)
-        cut('step 11: the edges it proposed', result.stdout, 29)
+        result = run(blocks[28].strip())
+        cut('step 11: wrote and edited', result.stdout, 29)
+        cut('step 11: the edges it proposed', result.stdout, 30)
         compare('step 11: strict exit',
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '0', today)
 
         # Step 12.
-        commands = blocks[30].strip('\n').split('\n')
+        commands = blocks[31].strip('\n').split('\n')
         run(commands[0])
         result = run(commands[1])
-        cut('step 12: the finding', result.stdout, 31)
-        cut('step 12: the head of the register', result.stdout, 32)
-        cut('step 12: every rule reaches one obligation', result.stdout, 33)
-        # The page's own check names the `27 obligations:` line of the register block,
+        cut('step 12: the finding', result.stdout, 32)
+        cut('step 12: the head of the register', result.stdout, 33)
+        cut('step 12: every rule reaches one obligation', result.stdout, 34)
+        # The page's own check names the `31 obligations:` line of the register block,
         # which is the second line of it.
         compare('step 12: grep obligations:',
                 run("headwater check 2>/dev/null | grep 'obligations:'").stdout,
-                blocks[32].strip('\n').split('\n')[1], today)
+                blocks[33].strip('\n').split('\n')[1], today)
         compare('step 12: strict exit',
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '1', today)
 
         # Step 13.
-        result = run(blocks[34].strip())
-        cut('step 13: the fix account, on standard error', result.stderr, 35)
+        result = run(blocks[35].strip())
+        cut('step 13: the fix account, on standard error', result.stderr, 36)
         compare('step 13: strict exit',
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '0', today)
         whole('step 13: the repaired front matter',
               run("grep -A2 '^relations:' docs/decisions/"
-                  "0001-store-attempts-in-postgres.md").stdout, 36)
+                  "0001-store-attempts-in-postgres.md").stdout, 37)
 
         # Step 14.
-        whole('step 14: explain', run(blocks[37].strip()).stdout, 38)
+        whole('step 14: explain', run(blocks[38].strip()).stdout, 39)
 
         # Step 15.
-        whole('step 15: route', run(blocks[39].strip()).stdout, 40)
+        whole('step 15: route', run(blocks[40].strip()).stdout, 41)
 
-        # Step 16.
-        result = run(blocks[41].strip())
-        cut('step 16: the levels', result.stdout, 42)
-        for command in blocks[43].strip('\n').split('\n'):
+        # Step 16. Pinning the digest in step 5 already carried this corpus onto
+        # `L0` and `L1`, unlike the copy route the page used to take, so the
+        # only gap left here is `projections.current`.
+        result = run(blocks[42].strip())
+        cut('step 16: the levels', result.stdout, 43)
+        for command in blocks[44].strip('\n').split('\n'):
             run(command)
-        compare('step 16: projections.current met',
-                run("headwater conformance 2>/dev/null | grep 'projections.current'").stdout,
-                '  projections.current met', today)
+        compare("step 16: grep 'L2'",
+                run("headwater conformance 2>/dev/null | grep 'L2'").stdout,
+                '  L2 Regenerated — reached, 4 of 4 rules met\n'
+                'L2 reached, against headwater/standard 4.1.0', today)
 
         # Where to go next.
         assert_true('where to go next: headwater infer exits 0',
-                    run(blocks[44].strip()).returncode == 0)
-
-        # The one command in this suite that reaches the network. Both lines run
-        # as one script, so `$demo` set on the first line is there for the
-        # second. It fetches the real v0.1.0 release into a directory of its
-        # own, never the `packages/headwater-standard` step 3 already filled, so
-        # a network or release failure here is reported as its own claim and
-        # never read as a defect in an earlier step.
-        result = run(blocks[45].strip())
-        assert_true('where to go next: headwater-bootstrap.sh vendors v0.1.0',
-                    result.returncode == 0, result.stdout + result.stderr)
+                    run(blocks[45].strip()).returncode == 0)
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
 
