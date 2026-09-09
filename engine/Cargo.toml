@@ -39,7 +39,7 @@ resolver = "2"
 # A tag is fixed once published — `v0.1.0` already has a GitHub release with
 # a binary built from its exact tree — so the fix is a new version rather
 # than a moved tag. `v0.1.0` stays as it was cut.
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
 # #735: every member is now free to reach crates.io, once the workflow that

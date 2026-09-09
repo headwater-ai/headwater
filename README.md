@@ -8,7 +8,7 @@
 
 ## Obtaining a named version
 
-**The simplest route now, and it works.** All 23 workspace crates are on crates.io as of `v0.1.1`, published in dependency order by `.github/workflows/publish-crates.yml`.
+**The simplest route now, and it works.** All 23 workspace crates are on crates.io as of `v0.1.1`, published in dependency order by `.github/workflows/publish-crates.yml`. The tag is not cut yet; until it is, `cargo install` installs `v0.1.1`.
 
 ```
 cargo install headwater-cli
@@ -16,12 +16,12 @@ cargo install headwater-cli
 
 The command needs nothing this repository ships: no clone, no toolchain floor beyond what `cargo` itself resolves from the crate's declared `rust-version`. It gets you the `headwater` binary alone, at whatever the newest published version is; it does not get you `taxonomy-source`, so a reader who also wants the base taxonomy package still needs one of the two routes below.
 
-`v0.1.1` is the name of the newest tagged release, and building it from source is the version to build if you want a tree that does not move under you and you also want the taxonomy package beside it. The block below is a source build, and it needs a Rust toolchain at **1.90 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
+`v0.1.2` is the next tagged release, and building it from source will give you a tree that does not move under you and the taxonomy package beside it. The block below is a source build, and it needs a Rust toolchain at **1.90 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
 
 ```
 git clone https://github.com/headwater-ai/headwater.git
 cd headwater
-git checkout v0.1.1
+git checkout v0.1.2
 cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked
 ```
 
@@ -29,7 +29,7 @@ The binary lands at `engine/target/release/headwater`, and `headwater --version`
 
 **An engine tag pins whatever `headwater/standard` version happened to ship with it, which is not always the newest one.** An engine tag is cut when the engine changes, not when the taxonomy does, so the version a `v<n>` tag carries can lag behind the version `taxonomy-source/headwater-standard/package.yml` states on the default branch for as long as nobody cuts the next engine release — [#757](https://github.com/headwater-ai/headwater/issues/757) is that gap, and it is a gap in the route rather than in the package. `taxonomy/headwater-standard/v<version>` is a second tag namespace, distinct from `v<version>` so the two never collide, cut independently by whoever maintains `headwater/standard` whenever they choose to publish a fixed version of it alone: no engine version bump and no engine tag required. `.github/workflows/release-taxonomy.yml` ([#760](https://github.com/headwater-ai/headwater/issues/760)) builds the engine at that tag, runs `headwater taxonomy publish` against `taxonomy-source/headwater-standard`, and attaches `headwater-standard-<version>.zip` to the tag's GitHub release, with the `release.digest` value `publish` printed stated in the release notes the same way the engine route states it on the release page. `tools/headwater-bootstrap.sh --tag taxonomy/headwater-standard/v<version> --expect <digest>` fetches it exactly the way it fetches an engine tag, because it reads whatever source tree a tag names and does not care which workflow cut it. [`taxonomy/headwater-standard/v4.2.0`](https://github.com/headwater-ai/headwater/releases/tag/taxonomy/headwater-standard/v4.2.0) is the first release this route ever cut, and the tutorial's step 3 fetches it.
 
-**`v0.1.0` carries a binary and a checksum on its GitHub release; `v0.1.1` does not yet.** `.github/workflows/release.yml` is meant to attach `headwater-<tag>-x86_64-unknown-linux-gnu.tar.gz`, which holds the `headwater` binary and the license, beside `headwater-<tag>-x86_64-unknown-linux-gnu.tar.gz.sha256` for `sha256sum -c`, to every tag whose name starts with `v`. The run against `v0.1.1` failed both times it was tried, on a GitHub release-immutability error its own guard could not see coming — [#753](https://github.com/headwater-ai/headwater/issues/753) is that gap, open. Until it closes, `v0.1.0`'s release is the newest one a binary download resolves to, and the crates.io route above is the one that already carries the newer version. That build is `x86_64` Linux on `ubuntu-24.04`, so it needs glibc 2.39 or later; every other platform still takes the source build above. [The releases page](https://github.com/headwater-ai/headwater/releases) is where you see which tags carry a binary.
+**`v0.1.0` carries a binary and a checksum on its GitHub release; `v0.1.1` does not.** `.github/workflows/release.yml` attaches `headwater-<tag>-x86_64-unknown-linux-gnu.tar.gz`, which holds the `headwater` binary and the license, beside `headwater-<tag>-x86_64-unknown-linux-gnu.tar.gz.sha256` for `sha256sum -c`, to every tag whose name starts with `v`. `v0.1.1` remains without a GitHub binary after its release collided with an immutable release object. That build is `x86_64` Linux on `ubuntu-24.04`, so it needs glibc 2.39 or later; every other platform still takes the source build above. [The releases page](https://github.com/headwater-ai/headwater/releases) is where you see which tags carry a binary.
 
 The tutorial above builds whatever tree you cloned, which is the default branch and moves. That is deliberate, because the tutorial is a claim about the default branch and CI holds it there. This paragraph is where the fixed version is.
 
