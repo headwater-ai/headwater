@@ -26,12 +26,12 @@ release:
   package: headwater/standard
   version: 4.2.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
+  digest: sha256:61e834384b5ec733ae861f8a5c3deebbcac6c0be692939bcd33bc0697d562115
   members:
     - path: assemblies/starter/assembly.yml
       digest: sha256:3b0f720e55119084f76aa51d178b833ae0311e61477a383298f0fb36f5e0d436
     - path: bundles/README.md
-      digest: sha256:626b5dd0061b69bb1f6ce51222374394d85e883e9ae842a32d313fc59bd258a5
+      digest: sha256:5d996f2e730a7ef7397dfab3dc78665e210ad8c151b58d1aceb223a7ddc89442
     - path: bundles/brd-prd/bundle.yml
       digest: sha256:af0637e7fd79d135b52d6eeca56eeeae9f3d1c1d0790669df0469fb13ca604a8
     - path: bundles/brd-prd/doctrine.md
@@ -62,6 +62,18 @@ release:
       digest: sha256:8863f6257d16fb5b5442be8109da072fcdc59d7d2680aafb2607d242241f210b
     - path: bundles/design-spec/templates/review_record.md
       digest: sha256:b874519e036ed6d4267b7f354ed42880c3722ca0e1a653506576bd7d9d9ba394
+    - path: bundles/diataxis-site/bundle.yml
+      digest: sha256:d1d729c52c81b6e53cda7f7333f49155d583ca1f9fceb07737b309be6f15132d
+    - path: bundles/diataxis-site/doctrine.md
+      digest: sha256:7872748398023a8fc1d0598fc3198abfc6feffaa4f8ef94dd043719284efe0b7
+    - path: bundles/diataxis-site/templates/explanation.md
+      digest: sha256:7f7dbb08f3eec987eab3996cfd987e18760d2aeb76b59f044e22b5d6fe9b7925
+    - path: bundles/diataxis-site/templates/how_to.md
+      digest: sha256:460b8c49a4b44504814076209c57288b2054d1425376ed49ba3dbfbb8f4e5ed8
+    - path: bundles/diataxis-site/templates/reference.md
+      digest: sha256:58d8d57d7b32ad209a68cc473d140b69c3d04bd4465d0d2984f9613e3d697b9a
+    - path: bundles/diataxis-site/templates/tutorial.md
+      digest: sha256:ade2bc9b5d31e5629cebde2b601118865b28260cf90fea01b15d2ae2751e6f94
     - path: bundles/diataxis/bundle.yml
       digest: sha256:4afe5c3405d8a17afcb3635ff00ebbcd276b411fd2cd59ba0215ef6206350feb
     - path: bundles/diataxis/doctrine.md

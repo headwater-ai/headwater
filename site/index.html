@@ -297,13 +297,16 @@
         </div>
         <div class="install">
           <div><span class="dim">$</span> cargo install headwater-cli <span class="cursor" aria-hidden="true">▍</span></div>
-          <!-- This line works now: all 23 workspace crates are on crates.io
-               as of v0.1.1, published in dependency order by
-               `.github/workflows/publish-crates.yml` (#735, still open for
-               its own remaining Done-when items). Verified by an actual
-               `cargo install headwater-cli` into a scratch root, not only by
-               the registry listing. -->
-          <div class="note">This works: <code>cargo install headwater-cli</code> gets you the binary at whatever the newest published version is, no clone needed. It does not carry the taxonomy package beside it — the tutorial and the README's <em>Obtaining a named version</em> section are the two routes to that.</div>
+          <!-- v0.1.0 carries a binary and a checksum now (#707: the
+               workflow landed in #708, then a hand run of it against the
+               existing tag attached the pair, 2026-09-08). What still
+               makes this line false is narrower than before: a package
+               registry entry, which #707 named and excluded as its own
+               scope. #735 is that issue and its workflow is written
+               (`.github/workflows/publish-crates.yml`); nobody has run it,
+               because it needs a `CARGO_REGISTRY_TOKEN` this repository
+               does not hold. -->
+          <div class="note">v0.1.0 carries a binary and a checksum, but this line still does not work: <code>cargo install</code> needs a package registry entry, and #735 has not published one yet. The release page and the tutorial are the two routes that work today.</div>
         </div>
       </div>
       <div class="cards">
@@ -333,7 +336,7 @@
                first line; suppressed is out of the findings raised. -->
           <pre><span class="dim">$ headwater check</span>
 census
-  <b class="key" data-figure="census.seen">430</b> files under the corpus root
+  <b class="key" data-figure="census.seen">445</b> files under the corpus root
       <b class="key" data-figure="census.typed">317</b> typed
         <b class="key" data-figure="census.untyped">2</b> untyped
         <b class="key" data-figure="census.unaccounted">2</b> unaccounted for
@@ -350,8 +353,8 @@ census
      translate of -50% loops seamlessly. Pure CSS, no script. -->
 <div class="tickerwrap" aria-hidden="true">
   <div class="tickerrun">
-    <span class="tickseg"><span data-figure="census.seen">430</span> files under the corpus root · <span data-figure="census.typed">317</span> typed · <span data-figure="census.untyped">2</span> untyped, reported as such · <span data-figure="census.unaccounted">2</span> silently unaccounted for · <span data-figure="census.instances">5746</span> check instances · <span data-figure="findings.reported">166</span> findings, every one named · <span data-figure="findings.suppressed">1</span> suppressed, each by a dated directive · <span data-figure="oblig.total">35</span> obligations: <span data-figure="oblig.verified">32</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable · taxonomy <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.2.0</span> · </span>
-    <span class="tickseg"><span data-figure="census.seen">430</span> files under the corpus root · <span data-figure="census.typed">317</span> typed · <span data-figure="census.untyped">2</span> untyped, reported as such · <span data-figure="census.unaccounted">2</span> silently unaccounted for · <span data-figure="census.instances">5746</span> check instances · <span data-figure="findings.reported">166</span> findings, every one named · <span data-figure="findings.suppressed">1</span> suppressed, each by a dated directive · <span data-figure="oblig.total">35</span> obligations: <span data-figure="oblig.verified">32</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable · taxonomy <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.2.0</span> · </span>
+    <span class="tickseg"><span data-figure="census.seen">445</span> files under the corpus root · <span data-figure="census.typed">317</span> typed · <span data-figure="census.untyped">2</span> untyped, reported as such · <span data-figure="census.unaccounted">2</span> silently unaccounted for · <span data-figure="census.instances">5746</span> check instances · <span data-figure="findings.reported">166</span> findings, every one named · <span data-figure="findings.suppressed">1</span> suppressed, each by a dated directive · <span data-figure="oblig.total">35</span> obligations: <span data-figure="oblig.verified">32</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable · taxonomy <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.2.0</span> · </span>
+    <span class="tickseg"><span data-figure="census.seen">445</span> files under the corpus root · <span data-figure="census.typed">317</span> typed · <span data-figure="census.untyped">2</span> untyped, reported as such · <span data-figure="census.unaccounted">2</span> silently unaccounted for · <span data-figure="census.instances">5746</span> check instances · <span data-figure="findings.reported">166</span> findings, every one named · <span data-figure="findings.suppressed">1</span> suppressed, each by a dated directive · <span data-figure="oblig.total">35</span> obligations: <span data-figure="oblig.verified">32</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable · taxonomy <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.2.0</span> · </span>
   </div>
 </div>
 
@@ -369,7 +372,7 @@ census
          first tile, and the last three are out of the findings the run raised.
          The full census partition is on /proof/. -->
     <div class="statgrid">
-      <div><div class="statnum" data-figure="census.seen">430</div><div class="statlab">files under the corpus root — the denominator for the tiles that follow</div></div>
+      <div><div class="statnum" data-figure="census.seen">445</div><div class="statlab">files under the corpus root — the denominator for the tiles that follow</div></div>
       <div><div class="statnum" data-figure="census.typed">317</div><div class="statlab">of those files typed, and all <span data-figure="census.checked">317</span> checked</div></div>
       <div><div class="statnum" data-figure="census.unaccounted">2</div><div class="statlab">of those files silently unaccounted for</div></div>
       <div><div class="statnum" data-figure="findings.reported">166</div><div class="statlab">findings reported, every one named and located</div></div>

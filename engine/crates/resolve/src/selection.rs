@@ -16,10 +16,10 @@
 //! says so beside the key. That ruling stands and this module does not disturb
 //! it. Three measurements are why the label is not the answer here anyway.
 //!
-//! 1. **The label is optional, and most publishers leave it empty.** Four of the
-//!    six bundles this repository's own package ships declare `requires: []`:
-//!    `brd-prd`, `diataxis`, `evidence-and-obligation` and `standards-spec`.
-//!    Only `design-spec` and `decision-record` name anything. A derivation works
+//! 1. **The label is optional, and most publishers leave it empty.** Five of the
+//!    seven bundles this repository's own package ships declare `requires: []`:
+//!    `brd-prd`, `diataxis`, `diataxis-site`, `evidence-and-obligation` and
+//!    `standards-spec`. Only `design-spec` and `decision-record` name anything. A derivation works
 //!    on a third-party package whose author never wrote the key.
 //! 2. **The label is unread, so no rule reports one that is wrong.** The two
 //!    values here are correct because a person keeps them so, with the reason

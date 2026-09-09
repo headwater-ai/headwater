@@ -766,6 +766,36 @@ docs/taxonomies/design-spec/templates/review_prompt.md
   excluded: docs/taxonomies/**
 docs/taxonomies/design-spec/templates/review_record.md
   excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/bundle.yml
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/doctrine.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/README.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/corpus/docs/explanations/why-keys-rotate.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/corpus/docs/how-to/rotate-key.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/corpus/docs/reference/api.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/corpus/docs/tutorials/get-started.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/sources/cockroach/life_of_a_query.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/sources/sysl/best-practices-intro.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/sources/sysl/lang-spec.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/sources/sysl/tutorial.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/templates/explanation.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/templates/how_to.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/templates/reference.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/templates/tutorial.md
+  excluded: docs/taxonomies/**
 docs/taxonomies/diataxis/bundle.yml
   excluded: docs/taxonomies/**
 docs/taxonomies/diataxis/doctrine.md
