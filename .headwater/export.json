@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 410,
-      "carried": 410,
+      "in the graph": 412,
+      "carried": 412,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2994,11 +2994,11 @@
         "facets": {
           "id": "HW-OBL-0010",
           "title": "The corpus descriptor exists and no probe has run against it",
-          "status": "current",
+          "status": "discharged",
           "status_since": "2026-08-10",
           "waiting_on": "build",
           "last_verified": "2026-08-13",
-          "summary": "Q14 claims that a descriptor lets a cold agent reach a governing document, and the probe categories that would show it do not exist.",
+          "summary": "A recorded regression session did not open the check-layer document, so the descriptor claim now has a measured result.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -6228,10 +6228,10 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0124",
-          "status": "current",
+          "status": "discharged",
           "status_since": "2026-08-14",
           "waiting_on": "build",
-          "summary": "The grader writes verdicts to standard output, no kind types a result, and the standing test spec 12 names cannot run.",
+          "summary": "A committed transcript now generates and holds a probe result under regeneration.",
           "last_verified": "2026-08-14",
           "title": "A probe result is printed and never committed, so nothing regenerates one",
           "provenance": {
@@ -7594,6 +7594,29 @@
             "activity": "measure+draft",
             "evidence_basis": "evidenced"
           }
+        }
+      },
+      {
+        "path": "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
+        "kind": "probe_result",
+        "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
+        "facets": {
+          "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
+          "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09"
+        }
+      },
+      {
+        "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-09.md",
+        "kind": "probe_transcript",
+        "id": "HW-RUN-regression-probe-transcript-for-2026-09-09",
+        "facets": {
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-09",
+          "status": "draft",
+          "status_since": "2026-09-09",
+          "summary": "Four regression sessions recorded the calls that a Claude Haiku session made while it answered the corpus probes.",
+          "last_verified": "2026-09-09",
+          "tier": "regression",
+          "arm": "present"
         }
       },
       {

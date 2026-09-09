@@ -1,11 +1,11 @@
 ---
 id: HW-OBL-0010
 title: "The corpus descriptor exists and no probe has run against it"
-status: current
+status: discharged
 status_since: 2026-08-10
 waiting_on: build
 last_verified: 2026-08-13
-summary: "Q14 claims that a descriptor lets a cold agent reach a governing document, and the probe categories that would show it do not exist."
+summary: "A recorded regression session did not open the check-layer document, so the descriptor claim now has a measured result."
 provenance:
   warrant: accepted
   agency: mixed

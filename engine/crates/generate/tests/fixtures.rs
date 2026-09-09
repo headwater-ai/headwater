@@ -599,10 +599,9 @@ fn every_output_carries_its_own_marker() {
 /// HW-DR-0036 and #418 name: MkDocs's `nav:` over the reading order
 /// `by_precedence` derives. And the descriptor, at the path Q14 fixes.
 ///
-/// Three declarations produce a reason rather than a file, and the count below
-/// asserts it. The package declares an index for one shelf this tree holds no
-/// document on, the probe-result declaration has no transcript to read, and the
-/// register is a function of the clock.
+/// Two declarations produce a reason rather than a file. The package declares
+/// an index for one shelf this tree holds no document on, and the register is a
+/// function of the clock.
 ///
 /// **The order is the plan's order, and it is asserted.** A declared projection
 /// is planned before the engine-defined descriptor, so a taxonomy that declares

@@ -43,6 +43,16 @@
           "id": "HW-OBL-0001"
         },
         {
+          "shelf": "probe_results",
+          "path": "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
+          "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09"
+        },
+        {
+          "shelf": "probe_runs",
+          "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-09.md",
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-09"
+        },
+        {
           "shelf": "probes",
           "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
           "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor"

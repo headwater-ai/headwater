@@ -294,6 +294,10 @@ nav:
       - "A renderer's color mode is wired at a call site that no type forbids from being wrong": "obligations/0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-type-forbids-from-being-wrong.md"
       - "An unresolved prose link reaches a run as a graph fact and no rule turns it into a finding": "obligations/0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md"
       - "The publish-crates retry loop has no retry ceiling": "obligations/0182-the-publish-crates-retry-loop-has-no-retry-ceiling.md"
+  - "Probe results":
+      - "HW-RESULT-regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"
+  - "Probe runs":
+      - "HW-RUN-regression-probe-transcript-for-2026-09-09": "probe-runs/regression-probe-transcript-for-2026-09-09.md"
   - "Probes":
       - "Probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
