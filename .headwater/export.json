@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 409,
-      "carried": 409,
+      "in the graph": 410,
+      "carried": 410,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -7569,6 +7569,28 @@
             "warrant": "asserted",
             "agency": "mixed",
             "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0182-the-publish-crates-retry-loop-has-no-retry-ceiling.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0182",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0182",
+          "status": "current",
+          "status_since": "2026-09-09",
+          "summary": "publish_with_retry retries a 429 forever, so GitHub Actions' unstated default timeout is its only ceiling, and nobody has measured it.",
+          "last_verified": "2026-09-09",
+          "title": "The publish-crates retry loop has no retry ceiling",
+          "waiting_on": "measurement",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-sonnet-5",
             "activity": "measure+draft",
             "evidence_basis": "evidenced"
           }
