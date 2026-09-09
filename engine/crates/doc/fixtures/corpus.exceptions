@@ -42,6 +42,12 @@ docs/taxonomies/diataxis/doctrine.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/diataxis/fixtures/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/diataxis-site/doctrine.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/diataxis-site/fixtures/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/diataxis-site/fixtures/sources/cockroach/life_of_a_query.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/evidence-and-obligation/doctrine.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/evidence-and-obligation/fixtures/README.md

@@ -675,6 +675,19 @@ jobs:
 
           print("%d shelf roots each serve an index page: %s" % (len(roots), ", ".join(sorted(roots))))
           PY
+      - name: No served page carries MkDocs's stock footer
+        # The footer override removed this string from the rendered pages, but
+        # MkDocs accepts a dropped override and the build stays green. This
+        # walks the assembled directory that the deploy serves, reports the
+        # forbidden-string numerator and served-page denominator, and refuses
+        # either a returned footer or a partial site below its stated floor.
+        # The fixture below proves the clean, planted-footer, and empty-root
+        # cases; the last is why an absence grep is not enough on its own.
+        env:
+          HEADWATER_SITE_FOOTER_MINIMUM_PAGES: 300
+        run: |
+          sh tools/check-site-footer.sh .headwater/site-deploy
+          sh tools/site-footer-fixtures.sh
       - name: Every hand-built page carries the narrow content policy
         # `site/_headers` sets the wide policy under `/*`, because a generated
         # page links its stylesheet, its script, its fonts and its search

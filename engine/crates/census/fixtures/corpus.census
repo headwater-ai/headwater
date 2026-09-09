@@ -574,6 +574,8 @@ docs/obligations/0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-ty
   typed: obligation_record
 docs/obligations/0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md
   typed: obligation_record
+docs/obligations/0182-the-publish-crates-retry-loop-has-no-retry-ceiling.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probes/README.md
