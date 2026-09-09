@@ -633,12 +633,39 @@ fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() 
         version: lock.version.clone(),
         lock: lock.digest.clone(),
     };
+    let mut runs = Runs::default();
+    for row in &built.census.rows {
+        let headwater_census::census::Outcome::Typed { kind, .. } = &row.outcome else {
+            continue;
+        };
+        if kind != headwater_probe::intake::KIND {
+            continue;
+        }
+        if let Ok(source) = std::fs::read_to_string(root.join(&row.path)) {
+            runs.transcripts.push(headwater_generate::Transcript {
+                path: row.path.clone(),
+                source,
+            });
+        }
+    }
+    let declaration = std::fs::read_to_string(root.join(headwater_probe::budget::PATH))
+        .expect("the probe budget declaration reads");
+    let budgets = headwater_probe::Budgets::read(&declaration).expect("the probe budgets read");
+    runs.graded_against(&headwater_probe::Plan::over(
+        &built.census,
+        &built.graph,
+        &built.config,
+        &budgets,
+        &lock.digest,
+        headwater_probe::Tier::Regression,
+        &headwater_probe::plan::Narrowing::default(),
+    ));
     let plan: Plan = plan(
         &surface,
         &built.census,
         &projections,
         &identity,
-        &Runs::default(),
+        &runs,
         headwater_verbs::VERBS,
     );
 
@@ -657,6 +684,7 @@ fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() 
             "docs/tutorials/README.md",
             "docs/process/decisions/README.md",
             "docs/spec/09-open-questions.md",
+            "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
             "docs/interfaces/README.md",
             ".headwater/export.json",
             ".headwater/nav.yml",
@@ -678,24 +706,8 @@ fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() 
     // property of this engine rather than of the corpus.
     assert_eq!(
         plan.unwritten.len(),
-        7,
+        6,
         "a projection produced neither a file nor a reason"
-    );
-    // The empty arm, and where it is stated. `docs/probe-runs/` holds no file,
-    // so no result is written and the run prints the reason. This assertion is
-    // what makes that a measurement rather than a silence, and it is the one
-    // that has to be deleted on the day a transcript is committed.
-    let result = plan
-        .unwritten
-        .iter()
-        .find(|unwritten| unwritten.kind == headwater_generate::Kind::ProbeResult)
-        .expect("the probe-result declaration reports itself");
-    assert!(
-        result
-            .reason
-            .contains("holds no `probe_transcript` document"),
-        "the reason does not name the missing input: {}",
-        result.reason
     );
     for unwritten in &plan.unwritten {
         assert!(

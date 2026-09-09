@@ -153,6 +153,7 @@ docs/reviews/README.md merge=headwater-regenerate
 docs/spec/09-open-questions.md merge=headwater-regenerate
 docs/spec/README.md merge=headwater-regenerate
 docs/tutorials/README.md merge=headwater-regenerate
+docs/probe-results/regression-probe-transcript-for-2026-09-09.md merge=headwater-regenerate
 
 # The hand-built pages that carry a measured figure. `tools/refresh-figures.sh`
 # substitutes 34 measured keys into every element marked `data-figure` on every
