@@ -661,8 +661,8 @@ fn every_refusal_branch_has_a_case() {
 /// is general over every template in every bundle a package ships, so a template
 /// nobody expected to trip has to stay silent.
 ///
-/// **A count of them is asserted rather than written down.** Thirteen templates
-/// across five bundles reached this case on the commit that added the sentence,
+/// **A count of them is asserted rather than written down.** Seventeen templates
+/// across six bundles reached this case on the commit that added the sentence,
 /// and nothing read either number, so a bundle that shipped no template at all
 /// would have left the case green and the sentence true-looking. The `walked`
 /// assertion below is what holds both, and it fails on the number rather than on
@@ -703,7 +703,7 @@ fn the_library_this_repository_ships_passes_its_own_reader() {
     }
     assert_eq!(
         (walked, carrying),
-        (13, 5),
+        (17, 6),
         "the library this case reads is not the one its doc comment describes"
     );
 
