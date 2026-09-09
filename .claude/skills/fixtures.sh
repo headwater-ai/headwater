@@ -746,17 +746,14 @@ $out" ;;
         fail "$name" "these run it:$callers"
     fi
 
-    # The one gate that reaches the grader, and what it says over a corpus that
-    # holds no transcript. The declaration is not passed over and the run is not
-    # silent about it: the reason names the missing input, which is where an
-    # empty arm belongs rather than in a register a reader has to look up.
-    name='the probe-result projection states the input this corpus does not hold'
+    # The transcript in this corpus exercises the probe-result projection.
+    name='the probe-result projection accepts the recorded transcript'
     "$engine" generate --check --root "$root" > "$scratch/generate.txt" 2>&1
     if grep -q 'probe_result' "$scratch/generate.txt" &&
-        grep -q 'holds no `probe_transcript` document' "$scratch/generate.txt"; then
+        grep -q 'regression-probe-transcript-for-2026-09-09' "$scratch/generate.txt"; then
         pass "$name"
     else
-        fail "$name" 'the run does not name the transcript it wants'
+        fail "$name" 'the run does not name the transcript it generated'
     fi
 
     # A run this repository refuses to pay for. It exits 0, because an exit

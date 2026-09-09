@@ -972,7 +972,7 @@ add_to:
     # writing of the missing probes. A shelf index reads what is on the shelf,
     # which is the whole of what this declaration claims.
     - kind: shelf_index
-      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, probes, reviews, tutorials, process_decisions]
+      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, probes, probe_results, probe_runs, reviews, tutorials, process_decisions]
       output: "{shelf}/README.md"
 
     # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: all

@@ -574,24 +574,24 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its fourteen artifacts, and it says why for
+/// This repository generates its eighteen artifacts, and it says why for
 /// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Nine of the fourteen are shelf indexes, one per shelf that holds a
+/// **Twelve of the eighteen are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
-/// file until #124 filled that shelf. The other eight are the overlay's own
+/// file until #124 filled that shelf. The other eleven are the overlay's own
 /// entry, in the order its `for` list names them, and the specification index
 /// leads it because that is the list the root README used to carry by hand.
 /// #528 is why the seven after it are there: each of those shelf roots answered
 /// 404 on the served site while every record under it was served, because a
 /// shelf with no index declaration writes no page for MkDocs to render.
 ///
-/// The other five are one each. The redirect map that the open-questions
+/// The other six are one each. The redirect map that the open-questions
 /// tombstone carries. The verb index #257 asked for, which reads the binary
 /// rather than the `interfaces` shelf and is why that shelf is absent from the
 /// index list above. The graph export #414 names: the whole graph, for the
@@ -599,10 +599,9 @@ fn every_output_carries_its_own_marker() {
 /// HW-DR-0036 and #418 name: MkDocs's `nav:` over the reading order
 /// `by_precedence` derives. And the descriptor, at the path Q14 fixes.
 ///
-/// Three declarations produce a reason rather than a file, and the count below
-/// asserts it. The package declares an index for one shelf this tree holds no
-/// document on, the probe-result declaration has no transcript to read, and the
-/// register is a function of the clock.
+/// Two declarations produce a reason rather than a file. The package declares
+/// an index for one shelf this tree holds no document on, and the register is a
+/// function of the clock.
 ///
 /// **The order is the plan's order, and it is asserted.** A declared projection
 /// is planned before the engine-defined descriptor, so a taxonomy that declares
@@ -613,7 +612,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_eighteen_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -634,12 +633,39 @@ fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() 
         version: lock.version.clone(),
         lock: lock.digest.clone(),
     };
+    let mut runs = Runs::default();
+    for row in &built.census.rows {
+        let headwater_census::census::Outcome::Typed { kind, .. } = &row.outcome else {
+            continue;
+        };
+        if kind != headwater_probe::intake::KIND {
+            continue;
+        }
+        if let Ok(source) = std::fs::read_to_string(root.join(&row.path)) {
+            runs.transcripts.push(headwater_generate::Transcript {
+                path: row.path.clone(),
+                source,
+            });
+        }
+    }
+    let declaration = std::fs::read_to_string(root.join(headwater_probe::budget::PATH))
+        .expect("the probe budget declaration reads");
+    let budgets = headwater_probe::Budgets::read(&declaration).expect("the probe budgets read");
+    runs.graded_against(&headwater_probe::Plan::over(
+        &built.census,
+        &built.graph,
+        &built.config,
+        &budgets,
+        &lock.digest,
+        headwater_probe::Tier::Regression,
+        &headwater_probe::plan::Narrowing::default(),
+    ));
     let plan: Plan = plan(
         &surface,
         &built.census,
         &projections,
         &identity,
-        &Runs::default(),
+        &runs,
         headwater_verbs::VERBS,
     );
 
@@ -654,16 +680,19 @@ fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() 
             "docs/requirements/README.md",
             "docs/acceptance-criteria/README.md",
             "docs/probes/README.md",
+            "docs/probe-results/README.md",
+            "docs/probe-runs/README.md",
             "docs/reviews/README.md",
             "docs/tutorials/README.md",
             "docs/process/decisions/README.md",
             "docs/spec/09-open-questions.md",
+            "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
             "docs/interfaces/README.md",
             ".headwater/export.json",
             ".headwater/nav.yml",
             descriptor::PATH
         ],
-        "this repository writes an index for each of its ten shelves that hold a \
+        "this repository writes an index for each of its twelve shelves that hold a \
          document, then the redirect map, the verb index, the graph export, the \
          site navigation and the descriptor, in that order"
     );
@@ -679,24 +708,8 @@ fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() 
     // property of this engine rather than of the corpus.
     assert_eq!(
         plan.unwritten.len(),
-        7,
+        6,
         "a projection produced neither a file nor a reason"
-    );
-    // The empty arm, and where it is stated. `docs/probe-runs/` holds no file,
-    // so no result is written and the run prints the reason. This assertion is
-    // what makes that a measurement rather than a silence, and it is the one
-    // that has to be deleted on the day a transcript is committed.
-    let result = plan
-        .unwritten
-        .iter()
-        .find(|unwritten| unwritten.kind == headwater_generate::Kind::ProbeResult)
-        .expect("the probe-result declaration reports itself");
-    assert!(
-        result
-            .reason
-            .contains("holds no `probe_transcript` document"),
-        "the reason does not name the missing input: {}",
-        result.reason
     );
     for unwritten in &plan.unwritten {
         assert!(
