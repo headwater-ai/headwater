@@ -329,7 +329,7 @@
     {
       "rule": "shelf.placement_is_primary",
       "scope": "document",
-      "version": 1,
+      "version": 2,
       "obligations": [
         "OB-FIX-2"
       ]

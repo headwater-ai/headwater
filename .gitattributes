@@ -199,3 +199,7 @@ docs/tutorials/README.md merge=headwater-regenerate
 site/how-it-works/index.html merge=headwater-regenerate
 site/index.html merge=headwater-regenerate
 site/proof/index.html merge=headwater-regenerate
+
+# Vendor snapshots retain upstream bytes, including whitespace that this
+# repository does not own. Their fixture README pins their source revisions.
+docs/taxonomies/diataxis-site/fixtures/sources/** whitespace=-trailing-space,-space-before-tab
