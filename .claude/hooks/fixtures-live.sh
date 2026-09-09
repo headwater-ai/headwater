@@ -183,7 +183,11 @@ fi
 
 printf '\n# Copilot\n'
 if command -v copilot >/dev/null 2>&1; then
-    if ! timeout 30 copilot -p "say pong" --allow-all-tools --silent >/dev/null 2>&1; then
+    # 90s and 180s, not 30s and 100s: `copilot -p "say pong"` measured 44s
+    # wall clock on an authenticated, working install with nothing to do,
+    # confirmed 2026-09-09 on copilot-cli 1.0.83. The shorter timeouts this
+    # suite shipped with read a live, correct install as unreachable.
+    if ! timeout 90 copilot -p "say pong" --allow-all-tools --silent >/dev/null 2>&1; then
         skip 'Copilot live cases' 'copilot is not usable: not authenticated, or unreachable'
     else
         new_clone
@@ -229,7 +233,7 @@ with open(path, "w") as f:
 EOF
 
         run_copilot() {
-            (cd "$scratch" && timeout 100 copilot -p "$1" --allow-all-tools --output-format json 2>&1)
+            (cd "$scratch" && timeout 180 copilot -p "$1" --allow-all-tools --output-format json 2>&1)
         }
         turn_starts() {
             printf '%s' "$1" | python3 -c '
@@ -273,6 +277,17 @@ print(count)
             pass 'a real check finding blocks the turn, and a second turn completes it'
         else
             fail 'a real check finding blocks the turn, and a second turn completes it' "turn_starts=$n"
+        fi
+
+        # C9: `--agent <name>` resolves a persona from `.claude/agents/<name>.md`
+        # directly, with no `.github/agents/*.agent.md` mirror required. Proof
+        # is removing the mirror this repository ships and dispatching anyway.
+        rm -f "$scratch/.github/agents/hw-queue.agent.md"
+        out=$(cd "$scratch" && timeout 180 copilot --agent hw-queue -p "Do not use any tool. State only the first eight words of the paragraph that follows the YAML front matter in your instructions, verbatim." --allow-all-tools --silent 2>&1)
+        if printf '%s' "$out" | grep -q 'You write the queue for one run of the'; then
+            pass 'C9: --agent resolves .claude/agents/<name>.md with no .github mirror'
+        else
+            fail 'C9: --agent resolves .claude/agents/<name>.md with no .github mirror' "$out"
         fi
 
         untrust

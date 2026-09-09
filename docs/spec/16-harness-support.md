@@ -3,7 +3,7 @@ id: HW-SPEC-harness-support
 status: current
 status_since: 2026-09-06
 summary: The ten capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.
-last_verified: 2026-08-25
+last_verified: 2026-09-09
 doc_type: design_spec
 sequence: 16
 title: "Harness support"
@@ -78,6 +78,8 @@ Four terms hold for a binding to any harness, and the first three restate the ho
 
 The Claude Code column is bound in `.claude/`. Two suites hold it: `.claude/hooks/fixtures.sh` for the positions, and `.claude/skills/fixtures.sh` for the skills. The Codex and Copilot rows for C3 through C6 bind the same way, in `.codex/hooks.json` and `.github/hooks/*.json`, and `.claude/hooks/fixtures.sh` holds their cases too. `.claude/hooks/fixtures-live.sh` reruns the live confirmation against a real install of each harness, and nothing gates on it, the same posture as `headwater probe`. The remaining cells of both columns are read from vendor documentation dated 2026-08-25, and no fixture holds them.
 
+A live run against copilot-cli 1.0.83 confirmed every Copilot case in `fixtures-live.sh` on 2026-09-09. Its own reachability probe and per-case timeout undercounted a working install. A trivial prompt took 44 seconds to answer, well past the 30-second probe. A live install then read as unreachable. Every case skipped in silence. The suite now waits 90 and 180 seconds, not 30 and 100.
+
 | Capability | Claude Code | GitHub Copilot | OpenAI Codex |
 |---|---|---|---|
 | C1 standing context | `CLAUDE.md` | `.github/copilot-instructions.md`, and it reads `AGENTS.md` | `AGENTS.md` |
@@ -88,7 +90,7 @@ The Claude Code column is bound in `.claude/`. Two suites hold it: `.claude/hook
 | C6 turn gate | `Stop`, exit 2 blocks the turn | `agentStop`, `decision: block` on the CLI and the cloud agent, and the IDE's `Stop` cannot block | `Stop` is documented, and whether it blocks is not |
 | C7 commands | `.claude/commands/*.md` | `.github/prompts/*.prompt.md` | `~/.codex/prompts/*.md`, personal rather than repository configuration |
 | C8 skills | `.claude/skills/*/SKILL.md` | `.github/skills/`, and it reads `.claude/skills/` and `.agents/skills/` | `.agents/skills/`, selected by name in the composer |
-| C9 isolated agents | `.claude/agents/*.md` | `.github/agents/*.agent.md` | subagents in the CLI |
+| C9 isolated agents | `.claude/agents/*.md` | `--agent <name>` reads `.claude/agents/<name>.md` directly, and `.github/agents/*.agent.md` mirrors some personas for a picker | subagents in the CLI |
 | C10 tool registration | `.mcp.json` in the checkout | a workspace file in the IDE, repository settings for the cloud agent | `[mcp_servers]` in `config.toml`, operator configuration |
 | position registration | `.claude/settings.json` | `.github/hooks/*.json`, and the IDE also reads `.claude/settings.json` | `.codex/hooks.json`, or `~/.codex/hooks.json`, behind a feature flag that ships on |
 
@@ -99,6 +101,10 @@ Every Claude Code cell except C2 is bound. The Codex and Copilot rows for C3 thr
 **The posture inversion is the one hazard the vocabulary has to name.** Every position of this repository fails open, and one harness documents a pre-tool position that fails closed on error. The second term of the binding contract above exists for that cell.
 
 **A second inversion held on the turn gate, and a live run is what found it.** Copilot's `agentStop` does not fail closed on exit 2. An exit-2 hook there is logged, and the turn ends anyway. The block that works is a `decision: block` object on standard output at exit 0. `.claude/hooks/review.sh` branches on the `COPILOT_CLI` environment variable for that one difference, and Claude Code and Codex keep the exit-2 path the hook contract states.
+
+**Copilot resolves an agent from two places, and only one of them is in the table.** `--agent <name>` reads `.claude/agents/<name>.md` directly, confirmed live by removing this repository's own `.github/agents/hw-queue.agent.md` and finding dispatch unchanged. The mirror files under `.github/agents/` serve a picker, not dispatch. A resumed session drops this identity unless `--agent` names it again. A bare `--resume` answers in Copilot's own voice. A repeated `--agent` restores both the persona and its memory of the session. The same round trip, run twice, confirmed this.
+
+**Copilot's own agent can dispatch a persona itself, through a `task` tool.** This table does not yet cover it. A running session can launch a named persona as an in-process sub-task. It reads the report back, synchronously or in the background. The synchronous case is confirmed live. Its model handling is stricter than the CLI's own `--agent` flag. An unavailable model in a persona's front matter fails the dispatch outright. `--agent` instead warns, and substitutes a model that exists. No cell of this table rests on the `task` tool yet, and [`tools/copilot-next-run.md`](../../tools/copilot-next-run.md) states why.
 
 **The IDE differs from the CLI under one vendor name.** Copilot's completion surface reads none of this table, and its IDE cannot block a turn where its CLI can. Its code reviewer reads instructions from the base branch rather than the feature branch. The column records the most capable surface, and a person binding one surface reads the vendor's own reference for that surface.
 
