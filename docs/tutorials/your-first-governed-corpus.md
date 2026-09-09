@@ -98,16 +98,16 @@ The first heading names what a tree states about itself: the **corpus** is `docs
 ### Step 3 — Fetch the package into your tree
 
 ```
-curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/main/tools/headwater-bootstrap.sh | sh -s -- --tag v0.1.0 --expect sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163
+curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/main/tools/headwater-bootstrap.sh | sh -s -- --tag taxonomy/headwater-standard/v4.2.0 --expect sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
 ```
 
 Trimmed to the account of what the script fetched.
 
 ```
-headwater-bootstrap: fetching packages/headwater-standard at v0.1.0
-vendored headwater/standard 4.1.0
+headwater-bootstrap: fetching packages/headwater-standard at taxonomy/headwater-standard/v4.2.0
+vendored headwater/standard 4.2.0
   31 files, all of them the pinned bytes
-  digest sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163
+  digest sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
   doctrine at packages/headwater-standard/doctrine/
 ```
 
@@ -127,7 +127,9 @@ A **package** carries a taxonomy: the kinds, the facets, the shelves and the rul
 
 Step 2 named two routes, and this step took the second. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. This fetch just checked it, file by file, against the digest you passed. `headwater-bootstrap.sh` is the harness around that verb, and not a part of this engine. It fetches a tagged release into a scratch directory nothing here keeps, extracts one package, and hands the result to `vendor`. Nothing under `engine/` opened a socket to get it. `vendor` itself takes a path and never a location. The script is what reached the network on `vendor`'s behalf.
 
-The version this pulled, `4.1.0`, is one behind `taxonomy-source/package.yml` on the moving default branch, currently `4.2.0`. `v0.1.0` is the newest tag this package is fetchable from. The README's *Obtaining a named version* section says more about why. A second tag route, `taxonomy/headwater-standard/v<version>`, publishes this package alone. It needs no new engine tag. The same README section names it. Step 5 pins this version, and it pins the digest this block already printed. Step 16 reads back what the second pin buys.
+`taxonomy/headwater-standard/v<version>` is the taxonomy-only route. It publishes `headwater/standard` alone, with no engine release. `.github/workflows/release-taxonomy.yml` cuts a tag of this form whenever the package authors choose to. It needs no new engine version.
+
+A second route pins an engine build and this package to the same commit. The README's *Obtaining a named version* section names both. Step 5 pins the version this pulled, `4.2.0`, and the digest this block already printed. Step 16 reads back what the second pin buys.
 
 ### Step 4 — Meet the first refusal
 
@@ -137,7 +139,7 @@ headwater taxonomy resolve
 
 ```
 headwater: the taxonomy did not resolve, so no lock is possible
-  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 4.1.0
+  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 4.2.0
 ```
 
 **Check.** `echo $?` prints `1`.
@@ -146,13 +148,13 @@ A refusal here is the design and not a fault. A **lock** is a validated taxonomy
 
 ### Step 5 — Pin the version and the digest, and meet the second refusal
 
-Open `.headwater/taxonomy.yml`. Change `  version: 0.0.0` to `  version: 4.1.0`, and change `  # digest: sha256:<the digest the publisher printed>` to the digest step 3 printed: `  digest: sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163`.
+Open `.headwater/taxonomy.yml`. Change `  version: 0.0.0` to `  version: 4.2.0`, and change `  # digest: sha256:<the digest the publisher printed>` to the digest step 3 printed: `  digest: sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5`.
 
 **Check.** `grep -E 'digest:|version:' .headwater/taxonomy.yml` prints two lines:
 
 ```
-  digest: sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163
-  version: 4.1.0
+  digest: sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
+  version: 4.2.0
 ```
 
 Now resolve again.
@@ -388,9 +390,9 @@ Trimmed to the head of the register and to its last line. The same run printed b
 
 ```
   register
-    31 obligations: 31 verified, 0 gap, 0 unverifiable, 0 with no disposition
+    32 obligations: 32 verified, 0 gap, 0 unverifiable, 0 with no disposition
        13 high, 13 verified
-       13 medium, 13 verified
+       14 medium, 14 verified
         5 low, 5 verified
 ```
 
@@ -398,9 +400,9 @@ Trimmed to the head of the register and to its last line. The same run printed b
     facet.value.blank reaches no obligation, so it names none
 ```
 
-**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `31 obligations:` line of the register block above, and nothing else.
+**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `32 obligations:` line of the register block above, and nothing else.
 
-**One of those readings is about the package and one is about your run.** The thirty-one obligations and their severities come from `headwater/standard`. They read the same on your first day and on your thousandth. The last line is derived from the run in front of you. It names every rule that fired at you with no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.
+**One of those readings is about the package and one is about your run.** The thirty-two obligations and their severities come from `headwater/standard`. They read the same on your first day and on your thousandth. The last line is derived from the run in front of you. It names every rule that fired at you with no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.
 
 One rule is named there. `facet.value.blank` reports a facet a document declares and leaves empty, and no control in `headwater/standard` names it yet. [HW-OBL-0170](https://github.com/headwater-ai/headwater/blob/main/docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md) records that debt. A finding it raises is a true finding, and the line above is how a report tells you which of its rules answers to nothing.
 
@@ -498,13 +500,13 @@ levels
   L2 Regenerated — not reached, 3 of 4 rules met
     1 gap, 0 of them waived
 
-L1 reached, against headwater/standard 4.1.0
+L1 reached, against headwater/standard 4.2.0
   a level states what this repository wired up. It measures nothing about the
   corpus, no key declares one, and a waiver moves the exit status and never the
   level.
 ```
 
-**Check.** The last line of the levels block reads `L1 reached, against headwater/standard 4.1.0`.
+**Check.** The last line of the levels block reads `L1 reached, against headwater/standard 4.2.0`.
 
 Your corpus already stands on the first two rungs, which a package copied by hand never reaches. `pin.current` is what carried you there. It reads the digest step 5 pinned against the record `packages/headwater-standard/release.yml` carries, and step 3 already gave you both. A package you copy from a source directory has no digest to pin, because nobody has published it. That route never reaches this rung: it stays off the ladder for the whole life of a corpus built that way. One gap is left, and it closes with a command:
 
@@ -513,7 +515,7 @@ headwater generate
 headwater conformance
 ```
 
-**Check.** `headwater conformance 2>/dev/null | grep 'L2'` prints `  L2 Regenerated — reached, 4 of 4 rules met` and, further down, `L2 reached, against headwater/standard 4.1.0`.
+**Check.** `headwater conformance 2>/dev/null | grep 'L2'` prints `  L2 Regenerated — reached, 4 of 4 rules met` and, further down, `L2 reached, against headwater/standard 4.2.0`.
 
 `headwater generate` wrote the two projections that were missing, `docs/decisions/README.md` and `.headwater/corpus.json`, and that closed `projections.current`, the last rule L2 asks for. Every rung this ladder has is reached. A level still measures what you wired up rather than what your documents say. Climbing it here took one pin and two commands, not a better decision record.
 
