@@ -166,7 +166,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-adapter"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-census",
  "headwater-check",
@@ -177,7 +177,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-audit"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-census",
  "headwater-check",
@@ -192,7 +192,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-census"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-doc",
  "headwater-hash",
@@ -204,7 +204,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-check"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-census",
  "headwater-doc",
@@ -218,7 +218,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-cli"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "clap",
  "clap_complete",
@@ -244,7 +244,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-compat"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-census",
  "headwater-check",
@@ -257,7 +257,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-conformance"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-census",
  "headwater-check",
@@ -269,7 +269,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-doc"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-yaml",
  "pulldown-cmark",
@@ -277,7 +277,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-generate"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-census",
  "headwater-check",
@@ -294,7 +294,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-graph"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-census",
  "headwater-doc",
@@ -304,11 +304,11 @@ dependencies = [
 
 [[package]]
 name = "headwater-hash"
-version = "0.1.1"
+version = "0.1.2"
 
 [[package]]
 name = "headwater-import"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-census",
  "headwater-check",
@@ -321,7 +321,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-lock"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-hash",
  "headwater-resolve",
@@ -330,11 +330,11 @@ dependencies = [
 
 [[package]]
 name = "headwater-mark"
-version = "0.1.1"
+version = "0.1.2"
 
 [[package]]
 name = "headwater-meta"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-ref",
  "headwater-yaml",
@@ -342,7 +342,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-probe"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-census",
  "headwater-check",
@@ -355,7 +355,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-query"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-adapter",
  "headwater-census",
@@ -369,14 +369,14 @@ dependencies = [
 
 [[package]]
 name = "headwater-ref"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-yaml",
 ]
 
 [[package]]
 name = "headwater-resolve"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-doc",
  "headwater-hash",
@@ -387,7 +387,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-scaffold"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-census",
  "headwater-check",
@@ -402,7 +402,7 @@ dependencies = [
 
 [[package]]
 name = "headwater-sweep"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "headwater-census",
  "headwater-check",
@@ -412,11 +412,11 @@ dependencies = [
 
 [[package]]
 name = "headwater-verbs"
-version = "0.1.1"
+version = "0.1.2"
 
 [[package]]
 name = "headwater-yaml"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "saphyr-parser",
 ]
