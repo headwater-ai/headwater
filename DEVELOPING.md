@@ -130,8 +130,10 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/refresh-site-tokens.sh --check
     sh tools/run-census-fixtures.sh
     sh tools/run-dir-fixtures.sh
+    sh tools/check-site-footer.sh .headwater/site-deploy
     sh tools/site-canonical-fixtures.sh
     sh tools/site-console-fixtures.sh
+    sh tools/site-footer-fixtures.sh
     sh tools/site-fragments-fixtures.sh
     python3 tools/check-site-canonical.py .headwater/site-build
     python3 tools/check-site-console.py
