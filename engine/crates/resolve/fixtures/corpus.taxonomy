@@ -816,6 +816,8 @@ projections:
       - requirements
       - acceptance_criteria
       - probes
+      - probe_results
+      - probe_runs
       - reviews
       - tutorials
       - process_decisions
