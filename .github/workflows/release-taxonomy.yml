@@ -1,0 +1,161 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# What #757 found missing and #760 names the shape of: a route from a
+# `headwater/standard` version bump to a verifiable, fetchable artifact that
+# does not run through an engine release.
+#
+# # WHY A SEPARATE TAG NAMESPACE, AND A SEPARATE FILE
+#
+# `release.yml` triggers on `v*` and ties one binary to one engine version a
+# person decided to cut. Tying a taxonomy publish to that same tag would mean
+# `headwater/standard`'s ten fixes between two engine releases stay
+# unreachable — the exact gap #757 is filed against. `taxonomy/headwater-standard/v*`
+# is a tag namespace of its own, so cutting one needs no engine version bump
+# and collides with `v*` in no case: a tag matches at most one of the two
+# patterns, by construction of the prefix. A second file rather than a second
+# job in `release.yml`, for the same reason `release.yml` itself is not a job
+# in `ci.yml`: this trigger fires zero times on a pull request, and a shared
+# file would make an unrelated edit to the engine-release job run this one's
+# steps for a diff that never touches `taxonomy-source/`.
+#
+# # WHY THIS BUILDS THE ENGINE RATHER THAN ZIPPING `packages/headwater-standard`
+#
+# `packages/headwater-standard` is already the vendored output of the last
+# `taxonomy publish` a maintainer ran by hand, committed alongside the source
+# it was published from — the four-step process `packages/headwater-standard/package.yml`
+# documents. Zipping that directory would attach whatever a maintainer last
+# vendored, which is a fact about when someone last ran step two of that
+# process and not a fact about the tagged commit. Running `taxonomy publish`
+# here, against `taxonomy-source/headwater-standard` at the tagged commit,
+# makes the release and the tag the same claim: this is what publishing this
+# commit's source produces, checked the same way a consumer's `vendor` checks
+# it, with a digest this run prints rather than one carried over from
+# whenever `packages/` was last regenerated.
+#
+# # THE VERSION GUARD
+#
+# A tag can be cut against a commit where `taxonomy-source/headwater-standard/package.yml`
+# does not yet carry the version the tag names — cut too early, or cut against
+# the wrong commit. `release.yml` catches the equivalent slip by comparing the
+# tag to what the binary prints; this compares the tag to what `publish`
+# actually wrote into the release record it just produced, which is the same
+# guard-on-guard `release.yml` already learned it needs: `bash -e` without
+# `pipefail` takes the last command's status in a pipeline, so a step written
+# as `$(publish | awk …)` would pass for every tag if `publish` refused to run
+# at all. The option is set, and the emptiness is refused by name.
+name: Release (taxonomy)
+
+on:
+  push:
+    tags:
+      - 'taxonomy/headwater-standard/v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The taxonomy tag to build and attach the artifact to
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  artifact:
+    name: A published taxonomy artifact attached to the tag
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: The tag this run is about, and the version it names
+        # One value for both entry points, the same reason `release.yml` reads
+        # a step output here and never `github.ref_name`.
+        id: tag
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          case "$tag" in
+              taxonomy/headwater-standard/v*) ;;
+              *) echo "::error::\`$tag\` is not a tag of the form this workflow releases" && exit 1 ;;
+          esac
+          version="${tag#taxonomy/headwater-standard/v}"
+          echo "tag=$tag" >>"$GITHUB_OUTPUT"
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+      - name: The toolchain this build needs
+        run: |
+          rustup update --no-self-update stable
+          rustup default stable
+      - name: Build the engine
+        # `--locked` for the reason `release.yml` states and holds: the copy
+        # of `publish` that produces a stranger's artifact must resolve the
+        # committed lock rather than whatever resolves today.
+        run: cargo build --release -p headwater-cli --locked
+        working-directory: engine
+      - name: Publish the package, and read the digest it printed
+        # `--from` is read relative to this step's working directory, which
+        # has to be the repository root: the source package's bundle paths
+        # resolve against the tree `publish` is reading, and running from
+        # inside `engine/` or handing `--from` a path relative to somewhere
+        # else makes a bundle under `docs/taxonomies` resolve outside the tree
+        # `publish` refuses to read from.
+        #
+        # The two lines are the guard on the guard, the same shape and the
+        # same reason `release.yml` sets `set -eo pipefail` before reading a
+        # binary's output through `awk`: GitHub's default `run:` shell takes
+        # the last command's exit status, so `publish | awk …` would report an
+        # empty digest at exit 0 if `publish` refused to run, and an empty
+        # digest is not a check that failed, it is a check that never ran.
+        id: publish
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          set -eo pipefail
+          stage=$(mktemp -d)
+          printed=$(./engine/target/release/headwater taxonomy publish \
+              --from taxonomy-source/headwater-standard --out "$stage" \
+              | tee /dev/stderr | awk '/^  digest /{print $2}')
+          if [ -z "$printed" ]; then
+              echo "::error::publish printed no digest, so this step would pass for any tag" && exit 1
+          fi
+          printed_version=$(awk '/^version:/{print $2}' "$stage/package.yml")
+          if [ "$printed_version" != "$VERSION" ]; then
+              echo "::error::the tag names $VERSION and the published record carries $printed_version" && exit 1
+          fi
+          echo "stage=$stage" >>"$GITHUB_OUTPUT"
+          echo "digest=$printed" >>"$GITHUB_OUTPUT"
+      - name: The archive beside the digest
+        # The name is spelled out in full for the same reason `release.yml`'s
+        # asset name is: a name built by shell concatenation at read time is a
+        # name no fixture and no reader can check against a page that states
+        # it separately.
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+          STAGE: ${{ steps.publish.outputs.stage }}
+        run: |
+          asset="headwater-standard-${VERSION}.zip"
+          repo_root=$(pwd)
+          (cd "$STAGE" && zip -qr "$repo_root/$asset" .)
+          echo "asset=$asset" >>"$GITHUB_ENV"
+      - name: Attach the archive to the release, with the digest in its notes
+        # `gh release create` takes the assets in the same call that makes the
+        # release, for the reason `release.yml`'s own comment on this step
+        # records: GitHub makes a release immutable the moment `create`
+        # returns, so a separate `gh release upload` after it fails every
+        # time. `--notes` states the digest a consumer pins, in the one place
+        # `--generate-notes` alone would not put it.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          DIGEST: ${{ steps.publish.outputs.digest }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+              echo "::error::$TAG already has a release, and GitHub will not let this step add assets to it. Delete the release (not the tag) and run this workflow again." && exit 1
+          fi
+          notes=$(printf 'release.digest: %s\n\nPass this value to `headwater taxonomy vendor <dir> --expect %s`, or to `tools/headwater-bootstrap.sh --tag %s --expect %s`. It is the value `headwater taxonomy publish` printed for this tag, not a checksum of %s.' \
+              "$DIGEST" "$DIGEST" "$TAG" "$DIGEST" "$asset")
+          gh release create "$TAG" "$asset" --title "$TAG" --notes "$notes"
+      - name: What the release now carries
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: gh release view "$TAG" --json assets --jq '.assets[].name'
