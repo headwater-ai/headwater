@@ -3,13 +3,14 @@ id: HW-TUT-your-first-governed-corpus
 status: current
 status_since: 2026-09-06
 summary: "An untyped repository reaches a passing strict check in sixteen steps, and the reader leaves holding shelf, kind, facet, overlay and obligation."
-last_verified: 2026-08-17
+last_verified: 2026-09-09
 title: "Your first governed corpus"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   traces_to:
@@ -20,42 +21,34 @@ relations:
 
 This tutorial takes an empty directory to a repository that passes `headwater check --strict`. It teaches the model as it goes. Every step ends in a state that a command reports, so no step asks you to judge the result by eye.
 
-**Nobody has accepted this document.** The front matter above states `warrant: asserted` and names no `accepted_by`. An agent drafted every word here, and [stop rule 5](../spec/05-ai-integration.md) forbids an agent to stamp its own work as accepted. [HW-OBL-0108](../obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) is the record of that gap across this whole corpus. Read this page as a draft that no person has yet approved.
-
-**Every command below was run, and every output block below is what that run printed.** The date of the run is 2026-08-17.
+**Every command below was run, and every output block below is what that run printed.** The date of the run is 2026-09-09.
 
 ## Before you start
 
 You need four things.
 
 - `git`, and a name and an email address configured in it.
-- A Rust toolchain, version 1.90 or later. The floor is the highest `rust-version` in the resolved dependency graph, and `engine/Cargo.toml` declares it.
-- A checkout of the Headwater repository, which is public at https://github.com/headwater-ai/headwater.
+- A Rust toolchain, version 1.90 or later, for `cargo install`. The floor is the highest `rust-version` in the resolved dependency graph, and `engine/Cargo.toml` declares it.
+- `curl`, for step 3.
 - About twenty minutes.
-
-Step 10 makes a commit, and git refuses a commit from an author it cannot name. `git config user.name` prints yours. If it prints nothing, run `git config --global user.name "Your Name"` and then `git config --global user.email "you@example.com"` with your own values.
 
 Three facts about the blocks below.
 
 - **A block is a command or it is output, and the two look the same.** Every step gives the command first and what it printed after. Nothing marks the difference, so read the sentence above a block before you paste it.
-- **Your dates differ.** The engine reads a clock, and it puts the date of your run into what it writes. Where a block below shows `2026-08-17`, yours shows the day you read this.
+- **Your dates differ.** The engine reads a clock, and it puts the date of your run into what it writes. Where a block below shows `2026-09-09`, yours shows the day you read this.
 - **Long output is trimmed.** A block that is shorter than the real output says so on the line above it.
 
-Build the engine once, and put it on your path.
+Install the engine once.
 
 ```
-git clone https://github.com/headwater-ai/headwater.git ~/headwater
-cd ~/headwater
-cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked
-export HEADWATER_SRC="$HOME/headwater"
-export PATH="$HEADWATER_SRC/engine/target/release:$PATH"
+cargo install headwater-cli
 ```
 
-**Check.** `command -v headwater` prints a path that ends in `engine/target/release/headwater`.
+**Check.** `headwater --version` prints a number.
 
-Every step below runs in that same shell, because `PATH` and `HEADWATER_SRC` do not survive into a new one.
+`cargo install` puts the binary in `cargo`'s own bin directory. `cargo` already put that directory on your `PATH` when it set itself up. Nothing here needs exporting, and nothing has to survive into a new shell.
 
-That clone builds the default branch, which moves. The tutorial is written against it on purpose, and CI runs this page against the engine built from it. For a version that does not move, the README's *Obtaining a named version* section names the tag to check out, or run `cargo install headwater-cli` for the binary alone — that route needs no clone, but step 3 below still does, for the taxonomy package a published binary does not carry.
+This installs whatever the newest published version is, from crates.io: no clone, and no local build. It does not get you `taxonomy-source`, the package this tutorial's step 3 needs. That package arrives the same way: fetched rather than cloned. Step 3 shows how. The README's *Obtaining a named version* section names the source-build route instead. It is for a reader who wants the engine and the package matched to one commit.
 
 ## Steps
 
@@ -102,27 +95,39 @@ Answer them in .headwater/overlay.yml, then run `headwater taxonomy resolve` and
 
 The first heading names what a tree states about itself: the **corpus** is `docs`, because that directory holds the most Markdown. The second names what no tree states, and those three questions are the interview. The verb asks about your documents, and never about the model — the difference [spec 7](../spec/07-distribution-and-federation.md) draws.
 
-### Step 3 — Copy the package into your tree
+### Step 3 — Fetch the package into your tree
 
 ```
-cp -r "$HEADWATER_SRC/taxonomy-source" packages
+curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/main/tools/headwater-bootstrap.sh | sh -s -- --tag v0.1.0 --expect sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163
 ```
 
-**Check.** `ls packages/headwater-standard` prints five lines:
+Trimmed to the account of what the script fetched.
+
+```
+headwater-bootstrap: fetching packages/headwater-standard at v0.1.0
+vendored headwater/standard 4.1.0
+  31 files, all of them the pinned bytes
+  digest sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163
+  doctrine at packages/headwater-standard/doctrine/
+```
+
+**Check.** `ls packages/headwater-standard` prints seven lines:
 
 ```
 assemblies
+bundles
 conformance.yml
 doctrine
 package.yml
+release.yml
 taxonomy.yml
 ```
 
-A **package** carries a taxonomy: the kinds, the facets, the shelves and the rules. `headwater/standard` is the base package, and the taxonomy it declares is deliberately small. Two of the five entries are not taxonomy at all. `assemblies/` holds the publisher recipes this package ships, and `doctrine/` holds the prose that explains them to a person. Nothing you run in this tutorial reads either one. Nothing in this engine fetches a package over a network, so a package arrives in your tree by a copy that you can read.
+A **package** carries a taxonomy: the kinds, the facets, the shelves and the rules. `headwater/standard` is the base package, and the taxonomy it declares is deliberately small. Four of the seven entries are not taxonomy at all. `assemblies/` holds the publisher recipes this package ships. `bundles/` holds optional traditions nothing here selects. `doctrine/` holds the prose that explains them to a person. `release.yml` is the publish record that carries the digest this fetch just checked. Nothing you run in this tutorial reads any of the four.
 
-Step 2 named two routes, and this step took the first. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. It refuses a directory that somebody maintains by hand. What you copied is a package source directory rather than a published artifact, so no verb of this engine vendored anything. Step 16 says what that costs.
+Step 2 named two routes, and this step took the second. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. This fetch just checked it, file by file, against the digest you passed. `headwater-bootstrap.sh` is the harness around that verb, and not a part of this engine. It fetches a tagged release into a scratch directory nothing here keeps, extracts one package, and hands the result to `vendor`. Nothing under `engine/` opened a socket to get it. `vendor` itself takes a path and never a location. The script is what reached the network on `vendor`'s behalf.
 
-This copy costs nothing beyond `cp -r`, because the clone already holds `taxonomy-source`. A reader who wants only the package, pinned to a release instead of the moving branch, does not need `git` at all. `tools/headwater-bootstrap.sh` fetches one from a release tag and hands it to `headwater taxonomy vendor`, the second route. *Where to go next* runs it.
+The version this pulled, `4.1.0`, is one behind `taxonomy-source/package.yml` on the moving default branch, currently `4.2.0`. `v0.1.0` is the newest tag this package is fetchable from. The README's *Obtaining a named version* section says more about why. Step 5 pins this version, and it pins the digest this block already printed. Step 16 reads back what the second pin buys.
 
 ### Step 4 — Meet the first refusal
 
@@ -132,21 +137,22 @@ headwater taxonomy resolve
 
 ```
 headwater: the taxonomy did not resolve, so no lock is possible
-  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 4.2.0
+  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 4.1.0
 ```
 
 **Check.** `echo $?` prints `1`.
 
 A refusal here is the design and not a fault. A **lock** is a validated taxonomy, so a taxonomy that does not validate produces no lock at all. `headwater init` wrote `version: 0.0.0`, because it had no package in front of it to read a number from.
 
-### Step 5 — Pin the version, and meet the second refusal
+### Step 5 — Pin the version and the digest, and meet the second refusal
 
-Open `.headwater/taxonomy.yml`, and change the line `  version: 0.0.0` to `  version: 4.2.0`.
+Open `.headwater/taxonomy.yml`. Change `  version: 0.0.0` to `  version: 4.1.0`, and change `  # digest: sha256:<the digest the publisher printed>` to the digest step 3 printed: `  digest: sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163`.
 
-**Check.** `grep 'version:' .headwater/taxonomy.yml` prints one line:
+**Check.** `grep -E 'digest:|version:' .headwater/taxonomy.yml` prints two lines:
 
 ```
-  version: 4.2.0
+  digest: sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163
+  version: 4.1.0
 ```
 
 Now resolve again.
@@ -162,7 +168,7 @@ headwater: the taxonomy does not validate, so no lock is written. A lock is a va
 
 **Check.** `echo $?` prints `1`.
 
-The message names the second thing a package cannot know. A package that shipped a namespace would give every adopter the same one, so it ships none and refuses until you supply yours.
+The message names the second thing a package cannot know. A package that shipped a namespace would give every adopter the same one, so it ships none and refuses until you supply yours. The digest plays no part in this refusal. `headwater taxonomy resolve` reads the version and never the digest, so pinning it here changes nothing about what you see next. It matters starting at step 16.
 
 ### Step 6 — Answer the question in the overlay
 
@@ -253,9 +259,9 @@ what the taxonomy decided
 ---
 id: ACME-DR-0001
 status: draft
-status_since: 2026-08-17
+status_since: 2026-09-09
 summary: "The queue keeps every delivery attempt in Postgres."
-last_verified: 2026-08-17
+last_verified: 2026-09-09
 ---
 
 # Store attempts in Postgres
@@ -305,6 +311,8 @@ census
 The corpus did not grow. The count of checks that ran went from 4 to 17, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and seventeen questions become answerable about it.
 
 ### Step 10 — Commit the first governed corpus
+
+Git refuses a commit from an author it cannot name. `git config user.name` prints yours. If it prints nothing, run `git config --global user.name "Your Name"` and then `git config --global user.email "you@example.com"` with your own values.
 
 ```
 git add -A
@@ -374,15 +382,15 @@ Trimmed to the findings block:
 
 The `git checkout` put the target back to the version you committed, which is the version before the far half arrived. One edge now has one end.
 
-Read the identifier in parentheses. An **obligation** is a claim this system makes about itself: something a corpus owes, with the rule that verifies it named beside it. `OB-REL-1` is the obligation that this rule discharges, and every finding names the one it serves.
+Read the identifier in parentheses. An **obligation** is a claim this system makes about itself, with the rule that verifies it named beside it. `OB-REL-1` is the obligation that this rule discharges, and every finding names the one it serves.
 
 Trimmed to the head of the register and to its last line. The same run printed both, above the findings:
 
 ```
   register
-    32 obligations: 32 verified, 0 gap, 0 unverifiable, 0 with no disposition
+    31 obligations: 31 verified, 0 gap, 0 unverifiable, 0 with no disposition
        13 high, 13 verified
-       14 medium, 14 verified
+       13 medium, 13 verified
         5 low, 5 verified
 ```
 
@@ -390,7 +398,7 @@ Trimmed to the head of the register and to its last line. The same run printed b
     facet.value.blank reaches no obligation, so it names none
 ```
 
-**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `32 obligations:` line of the register block above, and nothing else.
+**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `31 obligations:` line of the register block above, and nothing else.
 
 **One of those readings is about the package and one is about your run.** The thirty-one obligations and their severities come from `headwater/standard`. They read the same on your first day and on your thousandth. The last line is derived from the run in front of you. It names every rule that fired at you with no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.
 
@@ -458,11 +466,11 @@ Every word this tutorial taught is on that screen at once. There you read the sh
 ### Step 15 — Ask a question in your own words
 
 ```
-headwater route "why do we keep attempts in Postgres"
+headwater route "why do we keep attempts in postgres"
 ```
 
 ```
-route "why do we keep attempts in Postgres"
+route "why do we keep attempts in postgres"
   terms why do we keep attempts in postgres
   distinctive why do we keep attempts in postgres
   purpose behavior 3
@@ -485,31 +493,29 @@ Trimmed to the levels block:
 
 ```
 levels
-  L0 Pointed at — not reached, 1 of 2 rules met
+  L0 Pointed at — reached, 2 of 2 rules met
+  L1 Classified — reached, 3 of 3 rules met
+  L2 Regenerated — not reached, 3 of 4 rules met
     1 gap, 0 of them waived
-  L1 Classified — not reached, 2 of 3 rules met
-    1 gap, 0 of them waived
-  L2 Regenerated — not reached, 2 of 4 rules met
-    2 gaps, 0 of them waived
 
-no level reached, against headwater/standard 4.2.0
+L1 reached, against headwater/standard 4.1.0
   a level states what this repository wired up. It measures nothing about the
   corpus, no key declares one, and a waiver moves the exit status and never the
   level.
 ```
 
-**Check.** The last line of the levels block reads `no level reached, against headwater/standard 4.2.0`.
+**Check.** The last line of the levels block reads `L1 reached, against headwater/standard 4.1.0`.
 
-Your corpus passes every check and reaches no level, and both statements are correct. A level measures what you wired up rather than what your documents say. One of the two gaps closes with a command:
+Your corpus already stands on the first two rungs, which a package copied by hand never reaches. `pin.current` is what carried you there. It reads the digest step 5 pinned against the record `packages/headwater-standard/release.yml` carries, and step 3 already gave you both. A package you copy from a source directory has no digest to pin, because nobody has published it. That route never reaches this rung: it stays off the ladder for the whole life of a corpus built that way. One gap is left, and it closes with a command:
 
 ```
 headwater generate
 headwater conformance
 ```
 
-**Check.** `headwater conformance 2>/dev/null | grep 'projections.current'` prints `  projections.current met`.
+**Check.** `headwater conformance 2>/dev/null | grep 'L2'` prints `  L2 Regenerated — reached, 4 of 4 rules met` and, further down, `L2 reached, against headwater/standard 4.1.0`.
 
-The other gap is `pin.current`, and it stays open for a real reason. The rule wants the digest of a published artifact, and this tutorial copied a package directory instead. Nothing here pretends otherwise, and the report states the remedy rather than a grade. `tools/headwater-bootstrap.sh` closes it. The script fetches a published release and vendors it, instead of the copied directory this tutorial used.
+`headwater generate` wrote the two projections that were missing, `docs/decisions/README.md` and `.headwater/corpus.json`, and that closed `projections.current`, the last rule L2 asks for. Every rung this ladder has is reached. A level still measures what you wired up rather than what your documents say. Climbing it here took one pin and two commands, not a better decision record.
 
 ## The words this teaches
 
@@ -533,7 +539,7 @@ Four more words earn their place beside those five.
 
 ## Where to go next
 
-**Point the engine at your own repository.** The steps above used a corpus made for the purpose. A tutorial cannot state what you should now see about a tree it has never read. Your own tree is the one that answers whether this is worth adopting. Run `headwater init` in it, copy the package in as step 3 did, resolve, and then run this:
+**Point the engine at your own repository.** The steps above used a corpus made for the purpose. A tutorial cannot state what you should now see about a tree it has never read. Your own tree is the one that answers whether this is worth adopting. Run `headwater init` in it, fetch the package as step 3 did, resolve, and then run this:
 
 ```
 headwater infer
@@ -541,15 +547,6 @@ headwater infer
 
 It reports the files that classify as nothing, and the documents that state no summary. Those two lists are the distance between your repository and a corpus. `headwater infer --owner <name> --write` records that distance as declared debt with an expiry, so a strict run passes while the work is outstanding.
 
-**Fetching without a clone.** `tools/headwater-bootstrap.sh` fetches one package from a release tag on GitHub, and hands it to `headwater taxonomy vendor`. This route needs no local clone. Pass the digest the release page prints, and not one this script reads out of what it fetches. `vendor` states that same rule on its own page. `vendor` also refuses to write over a directory it did not put there itself. Point it at a fresh one, rather than the `packages/headwater-standard` step 3 filled by hand.
-
-```
-demo=$(mktemp -d)
-sh "$HEADWATER_SRC/tools/headwater-bootstrap.sh" --tag v0.1.0 --expect sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163 --root "$demo"
-```
-
-A run exits 0. `ls "$demo/packages/headwater-standard"` prints seven entries rather than the five step 3 checked: a published artifact carries `bundles/` and `release.yml` beside what the source directory held.
-
 **Read `headwater check` next.** [The verb contract](../interfaces/headwater-check.md) states what it reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit.
 
-**Two things on this page are not solid, and you should know which.** No level of the conformance ladder is reachable from a package directory that you copied by hand, for the reason step 16 states. And nobody has accepted this document, which the front matter says and the top of this page repeats.
+**This corpus reached `L2`.** Step 16 climbed the whole ladder, from an untyped file to every rule this base package states about itself. A level names what a repository wired up, never what its documents say. Step 16 said the same, and it is the last thing this page has for you.

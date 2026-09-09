@@ -8644,19 +8644,20 @@
         "path": "docs/tutorials/your-first-governed-corpus.md",
         "kind": "tutorial",
         "id": "HW-TUT-your-first-governed-corpus",
-        "warrant": "asserted",
+        "warrant": "accepted",
         "facets": {
           "id": "HW-TUT-your-first-governed-corpus",
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "An untyped repository reaches a passing strict check in sixteen steps, and the reader leaves holding shelf, kind, facet, overlay and obligation.",
-          "last_verified": "2026-08-17",
+          "last_verified": "2026-09-09",
           "title": "Your first governed corpus",
           "provenance": {
-            "warrant": "asserted",
+            "warrant": "accepted",
             "agency": "agent",
             "drafted_by": "claude-opus-5",
             "activity": "measure+draft",
+            "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
           },
           "relations": {

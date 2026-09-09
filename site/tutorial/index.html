@@ -208,8 +208,7 @@
        appears in that document, so a change to the tutorial that this page
        does not follow fails rather than drifts quietly. The run date below is
        read from the same document. -->
-  <p class="lede">An empty directory reaches a passing <code>headwater check --strict</code> in sixteen steps, and you leave holding shelf, kind, facet, overlay and obligation. Every command below was run, every output block is what that run printed, and the date of the run is <span data-tutorial-date>2026-08-17</span>.</p>
-  <p class="warn"><strong>Nobody has accepted this document.</strong> An agent drafted every word of it, its front matter states <code>warrant: asserted</code>, and a stop rule forbids an agent to stamp its own work as accepted. Read it as a draft that no person has yet approved.</p>
+  <p class="lede">An empty directory reaches a passing <code>headwater check --strict</code> in sixteen steps, and you leave holding shelf, kind, facet, overlay and obligation. Every command below was run, every output block is what that run printed, and the date of the run is <span data-tutorial-date>2026-09-09</span>.</p>
 </header>
 
 <section>
@@ -217,17 +216,13 @@
     <h2 class="label">Before you start</h2>
     <div class="split">
       <div style="font-size: 0.98rem;">
-        <p>You need four things: <strong>git</strong>, with a name and an email address configured in it, a <strong>Rust toolchain 1.90 or later</strong>, a <strong>checkout of the Headwater repository</strong>, and about twenty minutes. The repository is public at <a href="https://github.com/headwater-ai/headwater">github.com/headwater-ai/headwater</a>, so you can clone it.</p>
+        <p>You need four things: <strong>git</strong>, with a name and an email address configured in it, a <strong>Rust toolchain 1.90 or later</strong> for <code>cargo install</code>, <strong>curl</strong> for step 3, and about twenty minutes. No clone.</p>
         <p style="color: var(--muted); font-size: 0.92rem; margin: 0;">Three facts about the blocks below. A block is a command or it is output, and the two look the same, so read the sentence above one before you paste it. Your dates differ, and where a block shows a date, yours shows the day you read this. Long output is trimmed, and says so.</p>
       </div>
       <div>
-        <pre class="cmd verbatim">git clone https://github.com/headwater-ai/headwater.git ~/headwater
-cd ~/headwater
-cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked
-export HEADWATER_SRC="$HOME/headwater"
-export PATH="$HEADWATER_SRC/engine/target/release:$PATH"</pre>
-        <p class="check"><span class="checkword">Check</span> <span><code>command -v headwater</code> prints a path that ends in <code>engine/target/release/headwater</code>. Every step below runs in that same shell.</span></p>
-        <p>That clone builds the default branch, which moves. The tutorial is written against it on purpose. For a version that does not move, the repository&rsquo;s README names the tag to check out under <em>Obtaining a named version</em>.</p>
+        <pre class="cmd verbatim">cargo install headwater-cli</pre>
+        <p class="check"><span class="checkword">Check</span> <span><code>headwater --version</code> prints a number. <code>cargo install</code> already put the binary on your <code>PATH</code>, so every step below runs in that same shell with nothing to export.</span></p>
+        <p>This installs whatever the newest published version is, from crates.io: no clone, no local build. It does not get you <code>taxonomy-source</code>, which step 3 fetches the same way. For the engine and the package matched to one commit, the repository&rsquo;s README names the source-build route under <em>Obtaining a named version</em>.</p>
       </div>
     </div>
   </div>
@@ -299,19 +294,28 @@ Answer them in .headwater/overlay.yml, then run `headwater taxonomy resolve` and
     </div>
     <div class="stepgrid">
       <div>
-        <h2><span class="n">03</span>Copy the package into your tree</h2>
-        <p class="prose">A <strong>package</strong> carries a taxonomy: the kinds, the facets, the shelves and the rules. <code>headwater/standard</code> is the base package, and the taxonomy it declares is deliberately small. Two of the five entries are not taxonomy at all. <code>assemblies/</code> holds the publisher recipes this package ships, and <code>doctrine/</code> holds the prose that explains them to a person. Nothing you run in this tutorial reads either one. Nothing in this engine fetches a package over a network, so a package arrives in your tree by a copy that you can read.</p>
-        <p class="prose">Step 2 named two routes, and this step took the first. <code>headwater taxonomy vendor</code> installs a <strong>published artifact</strong>, which is what <code>headwater taxonomy publish</code> writes. It refuses a directory that somebody maintains by hand. What you copied is a package source directory rather than a published artifact, so no verb of this engine vendored anything. Step 16 says what that costs.</p>
-        <p class="prose">This copy costs nothing beyond <code>cp -r</code>, because the clone already holds <code>taxonomy-source</code>. A reader who wants only the package, pinned to a release instead of the moving branch, does not need <code>git</code> at all. <code>tools/headwater-bootstrap.sh</code> fetches one from a release tag and hands it to <code>headwater taxonomy vendor</code>, the second route. <em>Where to go next</em> runs it.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>ls packages/headwater-standard</code> prints five lines:</span></p>
+        <h2><span class="n">03</span>Fetch the package into your tree</h2>
+        <p class="prose">A <strong>package</strong> carries a taxonomy: the kinds, the facets, the shelves and the rules. <code>headwater/standard</code> is the base package, and the taxonomy it declares is deliberately small. Four of the seven entries are not taxonomy at all. <code>assemblies/</code> holds the publisher recipes this package ships. <code>bundles/</code> holds optional traditions nothing here selects. <code>doctrine/</code> holds the prose that explains them to a person. <code>release.yml</code> is the publish record that carries the digest this fetch just checked. Nothing you run in this tutorial reads any of the four.</p>
+        <p class="prose">Step 2 named two routes, and this step took the second. <code>headwater taxonomy vendor</code> installs a <strong>published artifact</strong>, which is what <code>headwater taxonomy publish</code> writes. This fetch just checked it, file by file, against the digest you passed. <code>headwater-bootstrap.sh</code> is the harness around that verb, and not a part of this engine. It fetches a tagged release into a scratch directory nothing here keeps, extracts one package, and hands the result to <code>vendor</code>. Nothing under <code>engine/</code> opened a socket to get it. <code>vendor</code> itself takes a path and never a location. The script is what reached the network on <code>vendor</code>'s behalf.</p>
+        <p class="prose">The version this pulled, <code>4.1.0</code>, is one behind <code>taxonomy-source/package.yml</code> on the moving default branch, currently <code>4.2.0</code>. <code>v0.1.0</code> is the newest tag this package is fetchable from. The README's <em>Obtaining a named version</em> section says more about why. Step 5 pins this version, and it pins the digest this block already printed. Step 16 reads back what the second pin buys.</p>
+        <p class="check"><span class="checkword">Check</span> <span><code>ls packages/headwater-standard</code> prints seven lines:</span></p>
       </div>
       <div>
-          <pre class="cmd verbatim">cp -r "$HEADWATER_SRC/taxonomy-source" packages</pre>
+          <pre class="cmd verbatim">curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/main/tools/headwater-bootstrap.sh | sh -s -- --tag v0.1.0 --expect sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163</pre>
+          <p class="blocklabel">what that prints</p>
+          <pre class="out verbatim">headwater-bootstrap: fetching packages/headwater-standard at v0.1.0
+vendored headwater/standard 4.1.0
+  31 files, all of them the pinned bytes
+  digest sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163
+  doctrine at packages/headwater-standard/doctrine/</pre>
+          <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
           <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">assemblies
+bundles
 conformance.yml
 doctrine
 package.yml
+release.yml
 taxonomy.yml</pre>
       </div>
     </div>
@@ -335,7 +339,7 @@ taxonomy.yml</pre>
           <pre class="cmd verbatim">headwater taxonomy resolve</pre>
           <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">headwater: the taxonomy did not resolve, so no lock is possible
-  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 4.2.0</pre>
+  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 4.1.0</pre>
       </div>
     </div>
   </div>
@@ -350,13 +354,16 @@ taxonomy.yml</pre>
     </div>
     <div class="stepgrid">
       <div>
-        <h2><span class="n">05</span>Pin the version, and meet the second refusal</h2>
-        <p class="prose">Open <code>.headwater/taxonomy.yml</code>, and change the line <code>  version: 0.0.0</code> to <code>  version: 4.2.0</code>.</p>
+        <h2><span class="n">05</span>Pin the version and the digest, and meet the second refusal</h2>
+        <p class="prose">Open <code>.headwater/taxonomy.yml</code>. Change <code>  version: 0.0.0</code> to <code>  version: 4.1.0</code>, and change <code>  # digest: sha256:&lt;the digest the publisher printed&gt;</code> to the digest step 3 printed: <code>  digest: sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163</code>.</p>
         <p class="prose">Now resolve again.</p>
-        <p class="prose">The message names the second thing a package cannot know. A package that shipped a namespace would give every adopter the same one, so it ships none and refuses until you supply yours.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>grep 'version:' .headwater/taxonomy.yml</code> prints one line, <code>  version: 4.2.0</code>. <code>echo $?</code> prints <code>1</code>.</span></p>
+        <p class="prose">The message names the second thing a package cannot know. A package that shipped a namespace would give every adopter the same one, so it ships none and refuses until you supply yours. The digest plays no part in this refusal. <code>headwater taxonomy resolve</code> reads the version and never the digest, so pinning it here changes nothing about what you see next. It matters starting at step 16.</p>
+        <p class="check"><span class="checkword">Check</span> <span><code>grep -E 'digest:|version:' .headwater/taxonomy.yml</code> prints two lines: <code>echo $?</code> prints <code>1</code>.</span></p>
       </div>
       <div>
+          <p class="blocklabel">what that prints</p>
+          <pre class="out verbatim">  digest: sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163
+  version: 4.1.0</pre>
           <pre class="cmd verbatim">headwater taxonomy resolve</pre>
           <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">headwater: the taxonomy does not validate, so no lock is written. A lock is a validated taxonomy or it is nothing
@@ -464,9 +471,9 @@ what the taxonomy decided
           <pre class="out verbatim">---
 id: ACME-DR-0001
 status: draft
-status_since: 2026-08-17
+status_since: 2026-09-09
 summary: "The queue keeps every delivery attempt in Postgres."
-last_verified: 2026-08-17
+last_verified: 2026-09-09
 ---
 
 # Store attempts in Postgres
@@ -524,6 +531,7 @@ TODO write this section.</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">10</span>Commit the first governed corpus</h2>
+        <p class="prose">Git refuses a commit from an author it cannot name. <code>git config user.name</code> prints yours. If it prints nothing, run <code>git config --global user.name "Your Name"</code> and then <code>git config --global user.email "you@example.com"</code> with your own values.</p>
         <p class="prose"><strong>The file under <code>ids/</code> is the claim on the identifier that <code>headwater new</code> minted.</strong> <code>decision_id</code> allocates reconcile-first, so the verb reads the tree for the highest value already spent. A tree tells it nothing about the branch somebody else holds. The claim file says the number is taken, and it holds the path of the document that took it. Two branches that mint one number add one path with two different contents, so the merge refuses and names both documents. Commit it with the document, and never write over one.</p>
         <p class="prose"><code>.headwater/capture-cost.jsonl</code> is the one that takes a decision rather than a rule. It holds one reading per document that <code>headwater new</code> wrote, and it names no person and no agent. Headwater's own repository commits it, so that <code>headwater capture</code> can trend it. Keep it or ignore it, and know that you chose.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>git log --oneline</code> prints one line that ends in <code>A first governed corpus</code>. <code>git ls-files .headwater</code> prints six files: the five you have already met, and the <code>.gitignore</code> that <code>headwater check</code> writes inside <code>.headwater/cache/</code>.</span></p>
@@ -582,12 +590,12 @@ edited docs/decisions/0001-store-attempts-in-postgres.md</pre>
       <div>
         <h2><span class="n">12</span>Break one half, and read the finding</h2>
         <p class="prose">The <code>git checkout</code> put the target back to the version you committed, which is the version before the far half arrived. One edge now has one end.</p>
-        <p class="prose">Read the identifier in parentheses. An <strong>obligation</strong> is a claim this system makes about itself: something a corpus owes, with the rule that verifies it named beside it. <code>OB-REL-1</code> is the obligation that this rule discharges, and every finding names the one it serves.</p>
+        <p class="prose">Read the identifier in parentheses. An <strong>obligation</strong> is a claim this system makes about itself, with the rule that verifies it named beside it. <code>OB-REL-1</code> is the obligation that this rule discharges, and every finding names the one it serves.</p>
         <p class="prose"><strong>One of those readings is about the package and one is about your run.</strong> The thirty-one obligations and their severities come from <code>headwater/standard</code>. They read the same on your first day and on your thousandth. The last line is derived from the run in front of you. It names every rule that fired at you with no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.</p>
         <p class="prose">One rule is named there. <code>facet.value.blank</code> reports a facet a document declares and leaves empty, and no control in <code>headwater/standard</code> names it yet. HW-OBL-0170 records that debt. A finding it raises is a true finding, and the line above is how a report tells you which of its rules answers to nothing.</p>
         <p class="prose"><strong>Your corpus will not show you a gap, and the reason is worth knowing.</strong> A <code>gap</code> is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads <code>0 gap</code> on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares three obligations no mechanism verifies. The same block there reads <code>34 obligations: 31 verified, 2 gap, 1 unverifiable</code>, and it names the owner of each gap. The number worth watching is the one that is not <code>verified</code>.</p>
         <p class="prose">The word <code>mechanical</code> on the fix line is the second thing to read. A rule is an error when the repair takes no judgment, and advisory when the repair is a rewrite. This one takes no judgment, so the next step is a command rather than an edit.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>1</code>. <code>headwater check 2&gt;/dev/null | grep 'obligations:'</code> prints the <code>32 obligations:</code> line of the register block above, and nothing else.</span></p>
+        <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>1</code>. <code>headwater check 2&gt;/dev/null | grep 'obligations:'</code> prints the <code>31 obligations:</code> line of the register block above, and nothing else.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">git checkout -- docs/decisions/0001-store-attempts-in-postgres.md
@@ -604,9 +612,9 @@ headwater check</pre>
       docs/decisions/0001-store-attempts-in-postgres.md</pre>
           <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">  register
-    32 obligations: 32 verified, 0 gap, 0 unverifiable, 0 with no disposition
+    31 obligations: 31 verified, 0 gap, 0 unverifiable, 0 with no disposition
        13 high, 13 verified
-       14 medium, 14 verified
+       13 medium, 13 verified
         5 low, 5 verified</pre>
           <pre class="out verbatim">    facet.value.blank reaches no obligation, so it names none</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
@@ -696,9 +704,9 @@ headwater check</pre>
         <p class="check"><span class="checkword">Check</span> <span>The last line names <code>docs/decisions/0001-store-attempts-in-postgres.md</code>.</span></p>
       </div>
       <div>
-          <pre class="cmd verbatim">headwater route "why do we keep attempts in Postgres"</pre>
+          <pre class="cmd verbatim">headwater route "why do we keep attempts in postgres"</pre>
           <p class="blocklabel">what that prints</p>
-          <pre class="out verbatim">route "why do we keep attempts in Postgres"
+          <pre class="out verbatim">route "why do we keep attempts in postgres"
   terms why do we keep attempts in postgres
   distinctive why do we keep attempts in postgres
   purpose behavior 3
@@ -720,22 +728,20 @@ headwater check</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">16</span>Ask what you have not wired up</h2>
-        <p class="prose">Your corpus passes every check and reaches no level, and both statements are correct. A level measures what you wired up rather than what your documents say. One of the two gaps closes with a command:</p>
-        <p class="prose">The other gap is <code>pin.current</code>, and it stays open for a real reason. The rule wants the digest of a published artifact, and this tutorial copied a package directory instead. Nothing here pretends otherwise, and the report states the remedy rather than a grade. <code>tools/headwater-bootstrap.sh</code> closes it. The script fetches a published release and vendors it, instead of the copied directory this tutorial used.</p>
-        <p class="check"><span class="checkword">Check</span> <span>The last line of the levels block reads <code>no level reached, against headwater/standard 4.2.0</code>. <code>headwater conformance 2&gt;/dev/null | grep 'projections.current'</code> prints <code>  projections.current met</code>.</span></p>
+        <p class="prose">Your corpus already stands on the first two rungs, which a package copied by hand never reaches. <code>pin.current</code> is what carried you there. It reads the digest step 5 pinned against the record <code>packages/headwater-standard/release.yml</code> carries, and step 3 already gave you both. A package you copy from a source directory has no digest to pin, because nobody has published it. That route never reaches this rung: it stays off the ladder for the whole life of a corpus built that way. One gap is left, and it closes with a command:</p>
+        <p class="prose"><code>headwater generate</code> wrote the two projections that were missing, <code>docs/decisions/README.md</code> and <code>.headwater/corpus.json</code>, and that closed <code>projections.current</code>, the last rule L2 asks for. Every rung this ladder has is reached. A level still measures what you wired up rather than what your documents say. Climbing it here took one pin and two commands, not a better decision record.</p>
+        <p class="check"><span class="checkword">Check</span> <span>The last line of the levels block reads <code>L1 reached, against headwater/standard 4.1.0</code>. <code>headwater conformance 2&gt;/dev/null | grep 'L2'</code> prints <code>  L2 Regenerated — reached, 4 of 4 rules met</code> and, further down, <code>L2 reached, against headwater/standard 4.1.0</code>.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">headwater conformance</pre>
           <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">levels
-  L0 Pointed at — not reached, 1 of 2 rules met
+  L0 Pointed at — reached, 2 of 2 rules met
+  L1 Classified — reached, 3 of 3 rules met
+  L2 Regenerated — not reached, 3 of 4 rules met
     1 gap, 0 of them waived
-  L1 Classified — not reached, 2 of 3 rules met
-    1 gap, 0 of them waived
-  L2 Regenerated — not reached, 2 of 4 rules met
-    2 gaps, 0 of them waived
 
-no level reached, against headwater/standard 4.2.0
+L1 reached, against headwater/standard 4.1.0
   a level states what this repository wired up. It measures nothing about the
   corpus, no key declares one, and a waiver moves the exit status and never the
   level.</pre>
@@ -769,18 +775,13 @@ headwater conformance</pre>
 <section>
   <div class="bar pad">
     <h2 class="label">Where to go next</h2>
-    <p style="font-size: 1.05rem; max-width: 44rem;"><strong>Point the engine at your own repository.</strong> The steps above used a corpus made for the purpose. A tutorial cannot state what you should now see about a tree it has never read. Your own tree is the one that answers whether this is worth adopting. Run <code>headwater init</code> in it, copy the package in as step 3 did, resolve, and then run this:</p>
+    <p style="font-size: 1.05rem; max-width: 44rem;"><strong>Point the engine at your own repository.</strong> The steps above used a corpus made for the purpose. A tutorial cannot state what you should now see about a tree it has never read. Your own tree is the one that answers whether this is worth adopting. Run <code>headwater init</code> in it, fetch the package as step 3 did, resolve, and then run this:</p>
     <p>It reports the files that classify as nothing, and the documents that state no summary. Those two lists are the distance between your repository and a corpus. <code>headwater infer --owner &lt;name&gt; --write</code> records that distance as declared debt with an expiry, so a strict run passes while the work is outstanding.</p>
     <pre class="cmd verbatim">headwater infer</pre>
 
-    <p style="font-size: 1.05rem; max-width: 44rem;"><strong>Fetching without a clone.</strong> <code>tools/headwater-bootstrap.sh</code> fetches one package from a release tag on GitHub, and hands it to <code>headwater taxonomy vendor</code>. This route needs no local clone. Pass the digest the release page prints, and not one this script reads out of what it fetches. <code>vendor</code> states that same rule on its own page. <code>vendor</code> also refuses to write over a directory it did not put there itself. Point it at a fresh one, rather than the <code>packages/headwater-standard</code> step 3 filled by hand.</p>
-    <p>A run exits 0. <code>ls "$demo/packages/headwater-standard"</code> prints seven entries rather than the five step 3 checked: a published artifact carries <code>bundles/</code> and <code>release.yml</code> beside what the source directory held.</p>
-    <pre class="cmd verbatim">demo=$(mktemp -d)
-sh "$HEADWATER_SRC/tools/headwater-bootstrap.sh" --tag v0.1.0 --expect sha256:733b3b4029800b203d53ad8f656294fbcb00bf802904ffed193a6102cfb84163 --root "$demo"</pre>
-
     <p style="font-size: 1.05rem; max-width: 44rem;"><strong>Read <code>headwater check</code> next.</strong> The verb contract states what it reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit.</p>
 
-    <p style="font-size: 1.05rem; max-width: 44rem;"><strong>Two things on this page are not solid, and you should know which.</strong> No level of the conformance ladder is reachable from a package directory that you copied by hand, for the reason step 16 states. And nobody has accepted this document, which the front matter says and the top of this page repeats.</p>
+    <p style="font-size: 1.05rem; max-width: 44rem;"><strong>This corpus reached <code>L2</code>.</strong> Step 16 climbed the whole ladder, from an untyped file to every rule this base package states about itself. A level names what a repository wired up, never what its documents say. Step 16 said the same, and it is the last thing this page has for you.</p>
   </div>
 </section>
 
