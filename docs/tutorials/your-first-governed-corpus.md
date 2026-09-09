@@ -55,7 +55,7 @@ export PATH="$HEADWATER_SRC/engine/target/release:$PATH"
 
 Every step below runs in that same shell, because `PATH` and `HEADWATER_SRC` do not survive into a new one.
 
-That clone builds the default branch, which moves. The tutorial is written against it on purpose, and CI runs this page against the engine built from it. For a version that does not move, the README's *Obtaining a named version* section names the tag to check out.
+That clone builds the default branch, which moves. The tutorial is written against it on purpose, and CI runs this page against the engine built from it. For a version that does not move, the README's *Obtaining a named version* section names the tag to check out, or run `cargo install headwater-cli` for the binary alone — that route needs no clone, but step 3 below still does, for the taxonomy package a published binary does not carry.
 
 ## Steps
 
