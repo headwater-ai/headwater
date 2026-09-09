@@ -22,10 +22,11 @@ into it so that a `~` in a tutorial command cannot escape.
 
 **One command reaches the network, and it is step 3's.** Step 3 curls
 `tools/headwater-bootstrap.sh` off the default branch and pipes it into `sh`,
-against the real `v0.1.0` release, the same tag `README.md` pins. Every assertion
-before it runs first and reaches no network, so a fetch failure here is reported
-as its own claim and never read as a defect earlier. Nothing after step 3 reaches
-the network again.
+against the real `taxonomy/headwater-standard/v4.2.0` release — the taxonomy-only
+route `.github/workflows/release-taxonomy.yml` cuts, and not an engine tag. Every
+assertion before it runs first and reaches no network, so a fetch failure here is
+reported as its own claim and never read as a defect earlier. Nothing after step
+3 reaches the network again.
 
 **The first block is the one command this script does not run.** It installs the
 engine with `cargo install`, which is not a claim about the engine's output. The
@@ -286,9 +287,10 @@ def main():
 
         # Step 3. The one command in this suite that reaches the network: it
         # curls `tools/headwater-bootstrap.sh` off the default branch and pipes
-        # it into `sh`, against the real `v0.1.0` release. A fetch or network
-        # failure here is reported as its own claim, never read as a defect in
-        # a step above it, and nothing below this step reaches the network
+        # it into `sh`, against the real `taxonomy/headwater-standard/v4.2.0`
+        # release. A fetch or network failure here is reported as its own claim,
+        # never read as a defect in a step above it, and nothing below this step
+        # reaches the network
         # again.
         result = run(blocks[5].strip())
         cut('step 3: the account of what the script fetched', result.stdout + result.stderr, 6)
@@ -444,7 +446,7 @@ def main():
         compare("step 16: grep 'L2'",
                 run("headwater conformance 2>/dev/null | grep 'L2'").stdout,
                 '  L2 Regenerated — reached, 4 of 4 rules met\n'
-                'L2 reached, against headwater/standard 4.1.0', today)
+                'L2 reached, against headwater/standard 4.2.0', today)
 
         # Where to go next.
         assert_true('where to go next: headwater infer exits 0',
