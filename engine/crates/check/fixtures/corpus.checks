@@ -7,7 +7,8 @@
   a check read .headwater/ids, which the census never walked
 adoption
   0 pairs open, 1 closed, holding 0 findings, in 1 task
-  AD-1 0 open, 1 closed, holding 0 findings, owner the specification authors, until 2027-06-30
+  AD-1 0 open, 1 closed, holding 0 findings, owner the specification authors,
+    until 2027-06-30
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The
       baseline held two when the linter retired. The other named a semicolon
       inside a block quotation, which the engine does not report at all, because

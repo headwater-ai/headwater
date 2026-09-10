@@ -556,10 +556,14 @@ impl Ledger {
         for task in &self.tasks {
             match task.state {
                 State::Open => {
-                    let _ = writeln!(
-                        out,
-                        "  {} {} open, {} closed, holding {} {}, owner {}, until {}",
-                        paint(Role::Obligation, &task.id, mode),
+                    // Fold first with the plain identifier, then substitute the painted one in place.
+                    // The fill measures lines in characters, and an ANSI escape sequence is
+                    // characters that occupy no column. Painting before the fold would push the
+                    // fold nine characters early (the length of `\033[35m` and `\033[0m`), so the
+                    // terminal and piped versions would break at different places.
+                    let plain = format!(
+                        "  {} {} open, {} closed, holding {} {}, owner {}, until {}\n",
+                        task.id,
                         task.pairs.len() - task.closed.len(),
                         task.closed.len(),
                         task.held,
@@ -567,16 +571,28 @@ impl Ledger {
                         task.owner,
                         task.until
                     );
+                    let folded = crate::fill::filled(&plain, crate::fill::WIDTH);
+                    out.push_str(&folded.replacen(
+                        &task.id,
+                        &paint(Role::Obligation, &task.id, mode),
+                        1,
+                    ));
                 }
                 State::Expired => {
-                    let _ = writeln!(
-                        out,
-                        "  {} lapsed on {}, and the {} pairs it named are reported, owner {}",
-                        paint(Role::Obligation, &task.id, mode),
+                    // Fold first with the plain identifier, then substitute the painted one in place.
+                    let plain = format!(
+                        "  {} lapsed on {}, and the {} pairs it named are reported, owner {}\n",
+                        task.id,
                         task.until,
                         task.pairs.len(),
                         task.owner
                     );
+                    let folded = crate::fill::filled(&plain, crate::fill::WIDTH);
+                    out.push_str(&folded.replacen(
+                        &task.id,
+                        &paint(Role::Obligation, &task.id, mode),
+                        1,
+                    ));
                 }
             }
             out.push_str(&crate::fill::filled(
@@ -1061,5 +1077,48 @@ tasks:
         let ansi = ledger.render(crate::paint::ColorMode::Ansi);
         assert!(ansi.contains('\x1b'), "{ansi:?}");
         assert!(ansi.contains("AD-1"), "{ansi:?}");
+    }
+
+    /// The terminal and piped outputs are the same bytes when both are
+    /// rendered and the colored version has its SGR sequences stripped.
+    ///
+    /// This ensures the line-folding code sees the right column count and the
+    /// two versions break at the same places. The fold measures lines in
+    /// characters, and an ANSI escape sequence is characters that occupy no
+    /// column: a task identifier painted before the fold would push the fold
+    /// nine characters early and leave a reset code counted as a word.
+    #[test]
+    fn a_folded_ledger_breaks_where_a_plain_one_does() {
+        let block = one_task("      - {path: docs/a.md, rule: facet.required.missing}");
+        let declared = read(&block, &RULES);
+        let (_, ledger) = apply(
+            vec![finding("docs/a.md", "facet.required.missing")],
+            declared,
+            day("2026-08-13"),
+        );
+
+        let plain = ledger.render(crate::paint::ColorMode::Plain);
+        let ansi = ledger.render(crate::paint::ColorMode::Ansi);
+
+        // Strip SGR sequences: \033[<number>m format
+        let mut stripped = String::new();
+        let mut chars = ansi.chars();
+        while let Some(ch) = chars.next() {
+            if ch == '\x1b' {
+                // Skip escape sequence: \033[...m
+                while let Some(c) = chars.next() {
+                    if c == 'm' {
+                        break;
+                    }
+                }
+            } else {
+                stripped.push(ch);
+            }
+        }
+
+        assert_eq!(
+            stripped, plain,
+            "stripped ANSI output does not match plain"
+        );
     }
 }
