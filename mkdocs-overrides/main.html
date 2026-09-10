@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 
 {#
-  THIS FILE OVERRIDES BLOCKS. IT DOES NOT REPLACE `base.html`.
+  THIS FILE OVERRIDES BLOCKS IN THE CUSTOM base.html THAT REMOVES THE NAVBAR.
+
+  The custom base.html in mkdocs-overrides/ removes the Bootstrap navbar
+  that the stock MkDocs theme includes. This file provides the customizations
+  that go into the navbar area and the content area.
 
   A hand-written `base.html` in `custom_dir` shadows the stock one, and the two
   things the stock one emits outside every block would go with it: the
