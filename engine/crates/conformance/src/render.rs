@@ -35,8 +35,20 @@
 //! The line that matters is this: **a report may hand-wrap every line or fill
 //! every line, and it may not do both.** That is why the disclaimer below is one
 //! logical sentence now rather than a literal carrying its own break.
+//!
+//! # Color is applied after the fill, never before it
+//!
+//! [`headwater_check::fill::block`] measures its label in **characters** to
+//! derive the continuation indent, and it measures each line the same way to
+//! decide where to break. An escape sequence introduced before that runs is
+//! counted as text, so every break moves and the label hangs at the wrong
+//! column. So [`labeled`] fills with the plain label and swaps the painted form
+//! in afterwards, and every other painted token here is written outside the
+//! fill. `headwater_query::route`'s renderer folds first and paints after for
+//! the same reason.
 
 use crate::{Cover, Installed, LevelState, PinCheck, Reading, Report, Verdict};
+use headwater_check::paint::{dim, paint, ColorMode, Role};
 use std::fmt::Write;
 
 /// The widest line this report prints, in characters.
@@ -70,8 +82,42 @@ fn block(out: &mut String, indent: usize, label: &str, text: &str) {
     headwater_check::fill::block(out, indent, label, text, WIDTH);
 }
 
+/// [`block`] whose label carries a name this report paints.
+///
+/// `label` is what the fill measures and `name` is the substring of it that
+/// takes the color, so `fix: ` is filled at five characters and printed with
+/// three of them green. The swap is over the filled string rather than over the
+/// argument, for the reason the module comment gives: a painted label handed to
+/// the fill moves every line break under it.
+///
+/// The first occurrence of `name` in the filled block is the label, because the
+/// fill writes `indent` spaces and then the label before any of the text. A
+/// `name` that is empty paints nothing and is written through unchanged, so a
+/// caller that has no token to color reaches [`block`] instead.
+fn labeled(
+    out: &mut String,
+    indent: usize,
+    label: &str,
+    name: &str,
+    text: &str,
+    role: Role,
+    mode: ColorMode,
+) {
+    let mut one = String::new();
+    block(&mut one, indent, label, text);
+    match name.is_empty() {
+        true => out.push_str(&one),
+        false => out.push_str(&one.replacen(name, &paint(role, name, mode), 1)),
+    }
+}
+
 impl Report {
-    pub fn render(&self) -> String {
+    /// The report a person reads, in `mode`.
+    ///
+    /// `mode` is the color decision the caller already made — `paint::
+    /// stdout_color()` under `headwater-cli`, or [`ColorMode::Plain`] for the
+    /// JSON format and for every recorded fixture. Nothing here reads a stream.
+    pub fn render(&self, mode: ColorMode) -> String {
         let mut out = String::new();
 
         // Four of the header lines are identity rather than prose: a package
@@ -79,39 +125,50 @@ impl Report {
         // fill could only leave alone — a digest is 73 characters with its
         // indent — so they are written as they are and the boundary is stated
         // here. The fifth is [`pin`], which is a sentence, so it is filled.
-        out.push_str("conformance\n");
-        let _ = writeln!(out, "  {} {}", self.package, self.version);
+        let _ = writeln!(out, "{}", paint(Role::Heading, "conformance", mode));
+        let _ = writeln!(
+            out,
+            "  {} {}",
+            paint(Role::Path, &self.package, mode),
+            dim(&self.version, mode)
+        );
         match &self.digest {
             Some(digest) => {
-                let _ = writeln!(out, "  {digest}");
+                let _ = writeln!(out, "  {}", dim(digest, mode));
                 block(&mut out, 2, "", &pin(&self.pin, digest));
             }
             None => out.push_str("  no digest pinned\n"),
         }
-        let _ = writeln!(out, "  at {}", self.now);
+        let _ = writeln!(out, "  at {}", dim(&self.now.to_string(), mode));
 
-        out.push_str("\nrules\n");
+        let _ = writeln!(out, "\n{}", paint(Role::Heading, "rules", mode));
         for reading in &self.readings {
-            out.push_str(&rule(reading));
+            out.push_str(&rule(reading, mode));
         }
 
-        out.push_str("\nlevels\n");
+        let _ = writeln!(out, "\n{}", paint(Role::Heading, "levels", mode));
         match self.levels.is_empty() {
             true => block(&mut out, 2, "", "this package declares no level"),
             false => {
                 for state in &self.levels {
-                    out.push_str(&level(state));
+                    out.push_str(&level(state, mode));
                 }
             }
         }
 
+        // The verdict line, and the one place a level name is the subject of a
+        // sentence rather than a label. The name takes the color and the rest of
+        // the sentence does not, so a reader scanning for the rung finds it.
         out.push('\n');
         match &self.reached {
-            Some(name) => block(
+            Some(name) => labeled(
                 &mut out,
                 0,
                 "",
+                name,
                 &format!("{name} reached, against {} {}", self.package, self.version),
+                Role::Verb,
+                mode,
             ),
             None => block(
                 &mut out,
@@ -143,9 +200,9 @@ impl Report {
             .filter(|reading| !matches!(reading.cover, Cover::None))
             .collect();
         if !waived.is_empty() {
-            out.push_str("\nwaivers\n");
+            let _ = writeln!(out, "\n{}", paint(Role::Heading, "waivers", mode));
             for reading in waived {
-                out.push_str(&waiver(reading));
+                out.push_str(&waiver(reading, mode));
             }
         }
 
@@ -189,20 +246,39 @@ fn pin(check: &PinCheck, pinned: &str) -> String {
     }
 }
 
-fn rule(reading: &Reading) -> String {
+/// One rule of the set, with its verdict.
+///
+/// The verdict takes the color and the rule name does not, which is the
+/// convention `Finding::render` already sets: the name is what a reader looks
+/// up and the verdict is what a reader scans for. `fix` is green there and it is
+/// green here.
+fn rule(reading: &Reading, mode: ColorMode) -> String {
     let mut out = String::new();
-    let mark = match &reading.verdict {
-        Verdict::Met => "met",
-        Verdict::Gap(_) => "gap",
-        Verdict::NotDecided(_) => "not decided",
+    let (mark, role) = match &reading.verdict {
+        Verdict::Met => ("met", Role::Verb),
+        Verdict::Gap(_) => ("gap", Role::Warn),
+        Verdict::NotDecided(_) => ("not decided", Role::Info),
     };
-    let _ = writeln!(out, "  {} {}", reading.rule.name, mark);
+    let _ = writeln!(
+        out,
+        "  {} {}",
+        reading.rule.name,
+        paint(role, mark, mode)
+    );
     block(&mut out, 4, "", &reading.rule.title);
     match &reading.verdict {
         Verdict::Met => {}
         Verdict::Gap(detail) => {
             block(&mut out, 4, "", detail);
-            block(&mut out, 4, "fix: ", &reading.rule.remediation);
+            labeled(
+                &mut out,
+                4,
+                "fix: ",
+                "fix",
+                &reading.rule.remediation,
+                Role::Verb,
+                mode,
+            );
         }
         Verdict::NotDecided(_) => {
             block(
@@ -212,28 +288,42 @@ fn rule(reading: &Reading) -> String {
                 "no reading of a tree decides this, and no attestation record exists yet. It is \
                  neither met nor missing",
             );
-            block(&mut out, 4, "fix: ", &reading.rule.remediation);
+            labeled(
+                &mut out,
+                4,
+                "fix: ",
+                "fix",
+                &reading.rule.remediation,
+                Role::Verb,
+                mode,
+            );
         }
     }
     out
 }
 
-fn level(state: &LevelState) -> String {
+fn level(state: &LevelState, mode: ColorMode) -> String {
     let mut out = String::new();
     let verdict = match state.reached {
         true => "reached",
         false => "not reached",
     };
-    block(
+    labeled(
         &mut out,
         2,
         &format!("{} ", state.name),
+        &state.name,
         &format!(
             "{} — {verdict}, {} of {} rules met",
             state.title,
             state.met,
             state.rules.len()
         ),
+        match state.reached {
+            true => Role::Verb,
+            false => Role::Warn,
+        },
+        mode,
     );
     if state.gaps > 0 {
         block(
@@ -269,23 +359,28 @@ fn level(state: &LevelState) -> String {
     out
 }
 
-fn waiver(reading: &Reading) -> String {
+fn waiver(reading: &Reading, mode: ColorMode) -> String {
     let mut out = String::new();
-    let (waiver, state) = match &reading.cover {
+    let (waiver, state, role) = match &reading.cover {
         Cover::None => return out,
-        Cover::Live(waiver) => (waiver, "stands until"),
-        Cover::Expired(waiver) => (waiver, "EXPIRED on"),
+        Cover::Live(waiver) => (waiver, "stands until", Role::Obligation),
+        // An expired waiver covers nothing, so it is the one line of this
+        // report that reads as an error rather than as a state.
+        Cover::Expired(waiver) => (waiver, "EXPIRED on", Role::Error),
     };
-    block(
+    labeled(
         &mut out,
         2,
         &format!("{} ", waiver.rule),
+        &waiver.rule,
         &format!(
             "{state} {}, {}, owner {}",
             waiver.until,
             waiver.reason.name(),
             waiver.owner
         ),
+        role,
+        mode,
     );
     if let Some(note) = &waiver.note {
         block(&mut out, 4, "", note);
