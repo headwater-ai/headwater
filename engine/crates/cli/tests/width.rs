@@ -423,6 +423,44 @@ fn no_escape_byte_reaches_a_caller_under_any_of_the_four_conditions() {
         Case("--no-color", &[], &["--no-color", "--help"]),
         Case("--no-color deep", &[], &["check", "--no-color", "--help"]),
         Case("CLICOLOR_FORCE", &[("CLICOLOR_FORCE", "1")], &["--help"]),
+        // Every page of the help family, and `CLICOLOR_FORCE` over each shape
+        // of it. The root screen is one template, a verb page is `clap`'s own
+        // `{options}` renderer, a verb with second words is a third template,
+        // and `headwater help <verb>` reaches the second of those through
+        // `print_help_for` rather than through the parse. A palette wired at
+        // the tree keeps all four plain or breaks all four, and only running
+        // each says which.
+        Case("verb page", &[], &["check", "--help"]),
+        Case("second-word page", &[], &["taxonomy", "--help"]),
+        Case("help verb", &[], &["help", "check"]),
+        Case("help second word", &[], &["help", "taxonomy", "diff"]),
+        Case(
+            "CLICOLOR_FORCE on a verb page",
+            &[("CLICOLOR_FORCE", "1")],
+            &["check", "--help"],
+        ),
+        Case(
+            "CLICOLOR_FORCE on help verb",
+            &[("CLICOLOR_FORCE", "1")],
+            &["help", "check"],
+        ),
+        // A completion script is written out of the same tree, so a palette on
+        // that tree is one line away from an escape byte inside a shell script.
+        Case(
+            "CLICOLOR_FORCE on a completion script",
+            &[("CLICOLOR_FORCE", "1")],
+            &["completions", "bash"],
+        ),
+        Case(
+            "NO_COLOR on a verb page",
+            &[("NO_COLOR", "1")],
+            &["check", "--help"],
+        ),
+        Case(
+            "--no-color on help verb",
+            &[],
+            &["--no-color", "help", "check"],
+        ),
     ];
     for Case(label, environment, arguments) in cases {
         let at = std::env::temp_dir().join(format!("headwater-color-{}", std::process::id()));
@@ -543,6 +581,103 @@ fn no_escape_byte_reaches_a_refusal_that_is_not_fail_or_the_bare_invocation() {
         text.contains("taxonomy.lock"),
         "the refusal names the lock this run looked for:\n{text}"
     );
+}
+
+/// **The palette moves no break, on every page of the help.**
+///
+/// Every case above runs headless, so the painted help is a page none of them
+/// can reach: a process on a pipe renders `ColorMode::Plain` whatever else is
+/// true of it. This one asks the library for both trees at one width and holds
+/// the two properties that are worth nothing apart.
+///
+/// The first is the fold: strip the SGR sequences from the painted page and it
+/// is the plain page byte for byte, so no break moved and no column shifted
+/// when the color arrived. `paint::painted_row` folds before it paints for
+/// exactly this reason, and `headwater_check::fill` measures a label in
+/// characters, so a paint that ran first would be counted as text.
+///
+/// The second is that the painted page is painted at all. The strip property
+/// alone is satisfied by a palette that emits nothing anywhere — which is the
+/// defect [#479](https://github.com/headwater-ai/headwater/issues/479) was
+/// filed about and the reason `tools/color-fixtures.sh` exists — so the count
+/// of painted pages is compared against the count of pages.
+#[test]
+fn stripping_the_painted_help_gives_the_plain_help_byte_for_byte() {
+    use headwater_cli::paint::ColorMode;
+
+    let mut painted = headwater_cli::command_in(WIDTH, ColorMode::Ansi);
+    let mut plain = headwater_cli::command_in(WIDTH, ColorMode::Plain);
+    painted.build();
+    plain.build();
+
+    let lines = command_lines();
+    assert!(!lines.is_empty(), "the tree has pages to render");
+    let mut colored = 0usize;
+    for words in &lines {
+        let typed = format!("headwater {}", words.join(" "));
+        let with_color = help_at(&mut painted, words);
+        let without = help_at(&mut plain, words);
+        assert!(
+            !contains_escape(without.as_bytes()),
+            "`{typed} --help` renders an escape byte in ColorMode::Plain"
+        );
+        assert_eq!(
+            strip_sgr(&with_color),
+            without,
+            "`{typed} --help` moves a byte when it is painted"
+        );
+        if contains_escape(with_color.as_bytes()) {
+            colored += 1;
+        }
+    }
+    assert_eq!(
+        colored,
+        lines.len(),
+        "every page of the help is painted in ColorMode::Ansi, and {} of {} were",
+        colored,
+        lines.len()
+    );
+}
+
+/// The help of one node of a built tree, named by the words that reach it.
+///
+/// `StyledStr::ansi()` and not `to_string()`. `Display for StyledStr` walks
+/// `iter_text`, which is the text with every sequence already gone, so a test
+/// that read it would compare a stripped page against a stripped page and pass
+/// on a tree with no palette on it at all. `ansi()` is the bytes `print_help`
+/// hands its writer, which is the thing a caller sees.
+fn help_at(command: &mut clap::Command, words: &[String]) -> String {
+    let mut cursor = command;
+    for word in words {
+        cursor = cursor
+            .find_subcommand_mut(word.as_str())
+            .unwrap_or_else(|| panic!("the tree carries `{word}`"));
+    }
+    cursor.render_help().ansi().to_string()
+}
+
+/// The same text with every SGR sequence removed and nothing else touched.
+///
+/// It reads `ESC [ … m` and drops it. That is the whole of what this binary and
+/// `clap` emit — `paint::paint` writes `\x1b[1;32m` and `\x1b[0m`, and `anstyle`
+/// writes the same shape — so a sequence of another kind arriving here would be
+/// left in place and reported as a difference rather than passed over.
+fn strip_sgr(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(at) = rest.find("\x1b[") {
+        out.push_str(&rest[..at]);
+        let tail = &rest[at + 2..];
+        match tail.find('m') {
+            Some(end) => rest = &tail[end + 1..],
+            None => {
+                out.push_str(&rest[at..]);
+                return out;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
 }
 
 /// The two bytes that open every ANSI colour sequence.

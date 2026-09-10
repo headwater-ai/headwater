@@ -597,8 +597,18 @@ fn completions(shell: Option<headwater_cli::Shell>) -> ExitCode {
             headwater_verbs::BINARY
         ));
     };
-    let mut command =
-        headwater_cli::paint::flattened(headwater_cli::command_at(headwater_cli::paint::WIDTH));
+    // The mode is stated rather than sensed, for the reason the width above is.
+    // `command_at` reads standard output's terminal state, and a caller running
+    // `headwater completions bash` from a terminal without redirecting it would
+    // then get a tree carrying a palette. `clap_complete` writes a script out of
+    // the `about` and `help` strings, which no palette touches — but a script
+    // with an escape byte in it is a broken script, and this is the one line
+    // that has to be wrong for that to happen. `tools/color-fixtures.sh` runs
+    // the pty case that would report it.
+    let mut command = headwater_cli::paint::flattened(headwater_cli::command_in(
+        headwater_cli::paint::WIDTH,
+        headwater_cli::paint::ColorMode::Plain,
+    ));
     clap_complete::generate(
         clap_complete::Shell::from(shell),
         &mut command,
