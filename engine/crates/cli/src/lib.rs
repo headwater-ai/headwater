@@ -286,7 +286,7 @@ use std::path::PathBuf;
 #[command(
     name = headwater_verbs::BINARY,
     bin_name = headwater_verbs::BINARY,
-    color = clap::ColorChoice::Never,
+    color = clap::ColorChoice::Auto,
     disable_help_subcommand = true,
     disable_version_flag = true
 )]
