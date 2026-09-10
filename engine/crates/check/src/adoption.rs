@@ -1100,9 +1100,16 @@ tasks:
         let plain = ledger.render(crate::paint::ColorMode::Plain);
         let ansi = ledger.render(crate::paint::ColorMode::Ansi);
 
-        // Strip SGR sequences: \033[<number>m format
-        let mut stripped = String::new();
-        let mut chars = ansi.chars();
+        // Strip SGR sequences: \033[<digits>m format.
+        let stripped = strip_ansi(&ansi);
+
+        assert_eq!(stripped, plain, "stripped ANSI output does not match plain");
+    }
+
+    /// Strip ANSI SGR sequences from text. Removes sequences like \033[35m and \033[0m.
+    fn strip_ansi(text: &str) -> String {
+        let mut result = String::new();
+        let mut chars = text.chars();
         while let Some(ch) = chars.next() {
             if ch == '\x1b' {
                 // Skip escape sequence: \033[...m
@@ -1112,10 +1119,9 @@ tasks:
                     }
                 }
             } else {
-                stripped.push(ch);
+                result.push(ch);
             }
         }
-
-        assert_eq!(stripped, plain, "stripped ANSI output does not match plain");
+        result
     }
 }
