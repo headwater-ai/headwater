@@ -134,6 +134,12 @@
         {%- endfor %}
       {%- endblock %}
 
+      {# Load darkmode.js if needed. The custom version in mkdocs-overrides/js/
+         has guards against errors when highlightjs is disabled. #}
+      {%- if config.theme.color_mode != "light" or config.theme.user_color_mode_toggle %}
+      <script src="{{ 'js/darkmode.js'|url }}"></script>
+      {%- endif %}
+
         {% if 'search' in config.plugins %}{%- include "search-modal.html" %}{% endif %}
         {%- include "keyboard-modal.html" %}
 
