@@ -1107,12 +1107,15 @@ tasks:
     }
 
     /// Strip ANSI SGR sequences from text. Removes sequences like \033[35m and \033[0m.
+    #[allow(clippy::while_let_on_iterator)]
     fn strip_ansi(text: &str) -> String {
         let mut result = String::new();
         let mut chars = text.chars();
         while let Some(ch) = chars.next() {
             if ch == '\x1b' {
-                // Skip escape sequence: \033[...m
+                // Skip escape sequence: \033[...m by consuming until we see 'm'.
+                // This pattern requires while let because we need to break the
+                // inner loop while continuing the outer one.
                 while let Some(c) = chars.next() {
                     if c == 'm' {
                         break;
