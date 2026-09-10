@@ -1116,9 +1116,6 @@ tasks:
             }
         }
 
-        assert_eq!(
-            stripped, plain,
-            "stripped ANSI output does not match plain"
-        );
+        assert_eq!(stripped, plain, "stripped ANSI output does not match plain");
     }
 }
