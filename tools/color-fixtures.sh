@@ -170,5 +170,12 @@ senses_its_terminal 'conformance' "$engine conformance --root ."
 judge_none 'route --json stays plain under a terminal' \
     "$(escapes_on_a_terminal "$engine route 'add rate limiting' --json --root .")"
 
+# Completions must stay plain under a pty, because a shell script with escape
+# bytes baked in breaks consumers. A completion script is a machine format like
+# json, and `clap`'s ColorChoice::Auto detects that the output is not a terminal
+# (it is redirected inside `script`) and suppresses color accordingly.
+judge_none 'completions stays plain under a terminal' \
+    "$(escapes_on_a_terminal "$engine completions bash --root .")"
+
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
