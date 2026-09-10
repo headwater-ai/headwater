@@ -153,6 +153,16 @@ senses_its_terminal 'check' "$engine check --root ."
 senses_its_terminal 'explain' "$engine explain HW-DR-0045 --root ."
 senses_its_terminal 'sweep plan' "$engine sweep plan --root ."
 
+# The three this change wired, and the reason it exists. All three rendered
+# zero escapes under a terminal before it, measured on the parent commit.
+#
+# `infer` is run without `--write`, so it reads the tree and writes nothing.
+# `--owner` is passed because the report names an owner in the payload it
+# prints, and a run without one prints a placeholder rather than refusing.
+senses_its_terminal 'infer' "$engine infer --owner 'a color fixture' --root ."
+senses_its_terminal 'capture' "$engine capture --root ."
+senses_its_terminal 'conformance' "$engine conformance --root ."
+
 # The machine formats, which sense nothing on purpose. `--format json` reaches
 # the same renderers through `main.rs`'s `Format::Text => stdout_color(), _ =>
 # ColorMode::Plain`, so a change that widened the sensing to a format a program
