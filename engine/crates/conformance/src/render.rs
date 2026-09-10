@@ -259,12 +259,7 @@ fn rule(reading: &Reading, mode: ColorMode) -> String {
         Verdict::Gap(_) => ("gap", Role::Warn),
         Verdict::NotDecided(_) => ("not decided", Role::Info),
     };
-    let _ = writeln!(
-        out,
-        "  {} {}",
-        reading.rule.name,
-        paint(role, mark, mode)
-    );
+    let _ = writeln!(out, "  {} {}", reading.rule.name, paint(role, mark, mode));
     block(&mut out, 4, "", &reading.rule.title);
     match &reading.verdict {
         Verdict::Met => {}

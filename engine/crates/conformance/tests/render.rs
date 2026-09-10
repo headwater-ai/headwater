@@ -386,7 +386,8 @@ fn one_gap(remediation: &str) -> Report {
 /// passes is an arm whose green answer is the only one anybody measured.
 #[test]
 fn a_remediation_that_fits_the_width_is_one_line() {
-    let rendered = one_gap("Run `headwater taxonomy resolve`.").render(headwater_check::paint::ColorMode::Plain);
+    let rendered = one_gap("Run `headwater taxonomy resolve`.")
+        .render(headwater_check::paint::ColorMode::Plain);
     assert!(
         rendered.contains("\n    fix: Run `headwater taxonomy resolve`.\n"),
         "the short remediation is not one line:\n{rendered}"
@@ -410,7 +411,8 @@ fn a_remediation_that_fits_the_width_is_one_line() {
 #[test]
 fn a_word_longer_than_the_column_is_not_broken() {
     let word = "a".repeat(90);
-    let rendered = one_gap(&format!("Compare the digest against {word} and stop.")).render(headwater_check::paint::ColorMode::Plain);
+    let rendered = one_gap(&format!("Compare the digest against {word} and stop."))
+        .render(headwater_check::paint::ColorMode::Plain);
     assert!(
         rendered.contains(&word),
         "the fill broke a word that does not fit its column"

@@ -3617,7 +3617,14 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
     }
 
     let mode = headwater_cli::paint::stdout_color();
-    println!("{}", headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "capture-cost store", mode));
+    println!(
+        "{}",
+        headwater_cli::paint::paint(
+            headwater_cli::paint::Role::Heading,
+            "capture-cost store",
+            mode
+        )
+    );
     println!(
         "  {}, which is outside the corpus root. No census row covers it, no language regime \
          binds it, and no rule reads it",
@@ -3643,7 +3650,14 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
     }
 
     if !readings.is_empty() {
-        println!("\n{}", headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "assisted fraction over every reading", mode));
+        println!(
+            "\n{}",
+            headwater_cli::paint::paint(
+                headwater_cli::paint::Role::Heading,
+                "assisted fraction over every reading",
+                mode
+            )
+        );
         println!(
             "  {} of {} — front matter {}/{}, sections {}/{}, identifier {}/{}, edge halves \
              {}/{}",
@@ -3678,7 +3692,10 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
             }
         }
 
-        println!("\n{}", headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "by kind", mode));
+        println!(
+            "\n{}",
+            headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "by kind", mode)
+        );
         for (kind, taken, assisted) in headwater_scaffold::reading::by_kind(&readings) {
             println!(
                 "  {kind} — {}, {} of {}",
@@ -3692,7 +3709,10 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
         // comparison. Q7 claims that a write tool raises the fraction, and a
         // claim of that shape needs a powered comparison rather than two rows
         // that differ.
-        println!("\n{}", headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "by surface", mode));
+        println!(
+            "\n{}",
+            headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "by surface", mode)
+        );
         for (surface, taken, assisted) in headwater_scaffold::reading::by_surface(&readings) {
             println!(
                 "  {} — {}, {} of {}",
@@ -5312,7 +5332,14 @@ fn infer(
         .iter()
         .filter(|row| matches!(row.outcome.class(), "untyped" | "unreadable"))
         .collect();
-    println!("\n{}", headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "what this taxonomy does not explain", mode));
+    println!(
+        "\n{}",
+        headwater_cli::paint::paint(
+            headwater_cli::paint::Role::Heading,
+            "what this taxonomy does not explain",
+            mode
+        )
+    );
     match unexplained.is_empty() {
         true => println!("  every file the census walked classified"),
         false => {
@@ -5341,7 +5368,14 @@ fn infer(
         .filter(|document| surface.summary(document).is_none())
         .map(|document| document.path)
         .collect();
-    println!("\n{}", headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "what nothing will route to", mode));
+    println!(
+        "\n{}",
+        headwater_cli::paint::paint(
+            headwater_cli::paint::Role::Heading,
+            "what nothing will route to",
+            mode
+        )
+    );
     if documents.is_empty() {
         println!("  no document classified, so a route has nothing to reach whatever it matches");
     } else {

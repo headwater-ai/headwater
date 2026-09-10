@@ -430,8 +430,12 @@ fn an_expired_waiver_is_reported_rather_than_honored() {
     );
     // It is reported rather than dropped. A waiver that vanished on its expiry
     // would leave nobody a record of the deviation that just came back.
-    assert!(lapsed.render(headwater_check::paint::ColorMode::Plain).contains("EXPIRED on 2027-02-28"));
-    assert!(lapsed.render(headwater_check::paint::ColorMode::Plain).contains("it covers nothing"));
+    assert!(lapsed
+        .render(headwater_check::paint::ColorMode::Plain)
+        .contains("EXPIRED on 2027-02-28"));
+    assert!(lapsed
+        .render(headwater_check::paint::ColorMode::Plain)
+        .contains("it covers nothing"));
 }
 
 // ---------------------------------------------------------------------------
