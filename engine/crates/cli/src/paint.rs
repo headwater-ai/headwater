@@ -293,6 +293,75 @@ pub fn fold_indented(text: &str, width: usize, at: usize) -> String {
     format!("{indent}{body}\n")
 }
 
+/// The `clap` color choice a [`ColorMode`] means, stated rather than sensed.
+///
+/// # Why never `ColorChoice::Auto`
+///
+/// `Auto` hands the decision to `anstream`, which senses the stream itself and
+/// then reads `CLICOLOR_FORCE`. Both halves are wrong here.
+/// [`HW-DR-0045`](../../../../docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)
+/// rules that no run may force color into a pipe — there is no `--color=always`
+/// for the same reason — so an environment variable that turns escape bytes on
+/// in a redirected run is a promise this binary broke, and
+/// `tests/width.rs`'s `CLICOLOR_FORCE` case is the one that reports it.
+/// `anstream` also knows nothing of this binary's own `--no-color`, so `Auto`
+/// colors a help page the caller asked to be plain.
+///
+/// [`stdout_color`] has already read the flag, the environment and the stream,
+/// which is every input the decision has. This turns that one answer into
+/// `clap`'s vocabulary and adds no input of its own.
+#[must_use]
+pub fn color_choice(mode: ColorMode) -> clap::ColorChoice {
+    match mode {
+        ColorMode::Ansi => clap::ColorChoice::Always,
+        ColorMode::Plain => clap::ColorChoice::Never,
+    }
+}
+
+/// The palette `clap` paints a help page with, in the roles HW-DR-0045 names.
+///
+/// # Why the base is `Styles::plain()` rather than `clap`'s own default
+///
+/// `Styles::styled()` is bold and underline over nine roles, and HW-DR-0045
+/// rules on three: a section heading is default bold, a file path or a flag
+/// name is cyan, a verb name is green bold. Starting from plain and setting
+/// only what the decision names keeps the help screen on the same palette as
+/// `headwater check`, `headwater sweep report` and `headwater explain`, which
+/// is what the decision asks for in those words.
+///
+/// # The one judgment the palette does not settle
+///
+/// `clap` paints a flag name and a subcommand name with a single `literal`
+/// style, where HW-DR-0045 gives them cyan and green bold. Cyan wins here,
+/// because a verb page is mostly flags and a subcommand name appears on the
+/// root screen and the four `taxonomy`-shaped pages alone. Those verb names are
+/// painted green by hand in `first_screen`, where the layout is this crate's
+/// own, so the decision is kept on the surface that shows the most of them.
+///
+/// # Why `error`, `invalid` and `valid` stay plain
+///
+/// `clap` writes a parse refusal to standard error and renders it with these
+/// same styles, while the choice above is read off **standard output**. A run
+/// with a terminal on one stream and a pipe on the other would then color a
+/// refusal nobody asked to be colored. `err` in `main.rs` already colors every
+/// refusal this binary composes, off [`stderr_color`], which is the stream that
+/// answers for it.
+#[must_use]
+pub fn help_styles(mode: ColorMode) -> clap::builder::Styles {
+    use clap::builder::styling::{AnsiColor, Style};
+    let base = clap::builder::Styles::plain();
+    match mode {
+        ColorMode::Plain => base,
+        // `usage` is set alongside `header` because `{usage-heading}` renders
+        // the word `Usage:` through it, and that is a section heading beside
+        // `Options:` on the same page rather than a role of its own.
+        ColorMode::Ansi => base
+            .header(Style::new().bold())
+            .usage(Style::new().bold())
+            .literal(Style::new().fg_color(Some(AnsiColor::Cyan.into()))),
+    }
+}
+
 /// One row of a two-column list, folded so that no line passes `width`.
 ///
 /// `at` is the column the second field starts at. A row whose text does not fit
@@ -304,6 +373,37 @@ pub fn row(name: &str, text: &str, at: usize, width: usize) -> String {
     let indent = " ".repeat(at);
     let body = folded.replace('\n', &format!("\n{indent}"));
     format!("  {name}{}{body}\n", " ".repeat(pad))
+}
+
+/// The same row with the name painted, and the layout decided before it is.
+///
+/// [`row`] runs first over the plain name, so the pad and the fold are computed
+/// in characters a reader sees, and the escape sequence is substituted into the
+/// finished line afterwards. That is the order `Route::render` takes and the
+/// order `a_folded_pointer_breaks_where_an_unpainted_one_does` holds it to:
+/// paint before fold and every break moves by the width of an escape sequence
+/// nothing prints.
+///
+/// The substitution is anchored rather than searched. [`row`] opens the line
+/// with two spaces and the name, so replacing that prefix once cannot reach a
+/// second occurrence of the name inside the summary that follows it.
+pub fn painted_row(
+    name: &str,
+    text: &str,
+    at: usize,
+    width: usize,
+    role: Role,
+    mode: ColorMode,
+) -> String {
+    let plain = row(name, text, at, width);
+    match mode {
+        ColorMode::Plain => plain,
+        ColorMode::Ansi => plain.replacen(
+            &format!("  {name}"),
+            &format!("  {}", paint(role, name, mode)),
+            1,
+        ),
+    }
 }
 
 /// [`ColorMode`], [`Role`], [`color_of`], [`paint`] and [`dim`] moved to

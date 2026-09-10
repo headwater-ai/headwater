@@ -278,7 +278,7 @@ fn one_word(line: &str) -> bool {
 /// blessed regression to one long line fails on the first of them.
 #[test]
 fn the_report_wraps_every_line_to_the_width() {
-    let rendered = subject().render();
+    let rendered = subject().render(headwater_check::paint::ColorMode::Plain);
     compare(&fixtures_dir().join("wrapped.report"), &rendered);
 
     let over: Vec<String> = rendered
@@ -328,7 +328,7 @@ fn the_report_wraps_every_line_to_the_width() {
 /// whitespace runs the fill normalizes.
 #[test]
 fn the_filled_block_rejoins_to_the_shipped_remediation() {
-    let rendered = subject().render();
+    let rendered = subject().render(headwater_check::paint::ColorMode::Plain);
     let mut block: Vec<&str> = Vec::new();
     for line in rendered.lines() {
         match block.is_empty() {
@@ -386,7 +386,8 @@ fn one_gap(remediation: &str) -> Report {
 /// passes is an arm whose green answer is the only one anybody measured.
 #[test]
 fn a_remediation_that_fits_the_width_is_one_line() {
-    let rendered = one_gap("Run `headwater taxonomy resolve`.").render();
+    let rendered = one_gap("Run `headwater taxonomy resolve`.")
+        .render(headwater_check::paint::ColorMode::Plain);
     assert!(
         rendered.contains("\n    fix: Run `headwater taxonomy resolve`.\n"),
         "the short remediation is not one line:\n{rendered}"
@@ -410,7 +411,8 @@ fn a_remediation_that_fits_the_width_is_one_line() {
 #[test]
 fn a_word_longer_than_the_column_is_not_broken() {
     let word = "a".repeat(90);
-    let rendered = one_gap(&format!("Compare the digest against {word} and stop.")).render();
+    let rendered = one_gap(&format!("Compare the digest against {word} and stop."))
+        .render(headwater_check::paint::ColorMode::Plain);
     assert!(
         rendered.contains(&word),
         "the fill broke a word that does not fit its column"
@@ -441,7 +443,7 @@ fn a_line_of_exactly_the_width_with_a_multibyte_dash_is_not_wrapped() {
     let mut report = subject();
     report.readings = Vec::new();
     report.levels.truncate(1);
-    let rendered = report.render();
+    let rendered = report.render(headwater_check::paint::ColorMode::Plain);
     let line = rendered
         .lines()
         .find(|line| line.starts_with("  L0 "))
@@ -519,7 +521,7 @@ conformance:
     let taken = vec![("lock.current".to_string(), Verdict::Met)];
     let rendered = assemble(&set, &[], &identity, &taken, at("2026-08-12"), no_pin())
         .expect("it assembles")
-        .render();
+        .render(headwater_check::paint::ColorMode::Plain);
 
     assert!(
         rendered.contains(&format!("\n    {FIRST}\n")),
@@ -566,4 +568,114 @@ fn the_recorded_block_is_the_one_this_width_produces() {
         longest > WIDTH - 12,
         "the recorded block reaches only {longest} of {WIDTH}, so it was recorded at another width"
     );
+}
+
+// ---------------------------------------------------------------------------
+// Color
+// ---------------------------------------------------------------------------
+
+/// The text with every SGR sequence removed, written here rather than taken from
+/// the painter.
+///
+/// The property below is that color adds escape sequences and moves no other
+/// byte, and a stripper built out of the painter could not state it. The same
+/// helper stands in `headwater_generate`'s renderer tests, which hold the same
+/// property over the report `generate --check` writes.
+fn stripped(text: &str) -> String {
+    let mut out = String::new();
+    let mut chars = text.chars();
+    while let Some(c) = chars.next() {
+        if c != '\u{1b}' {
+            out.push(c);
+            continue;
+        }
+        for c in chars.by_ref() {
+            if c == 'm' {
+                break;
+            }
+        }
+    }
+    out
+}
+
+/// [`subject`] with the two fields it leaves empty filled in: a pinned digest,
+/// which reaches the header line and the sentence under it, and a rung reached,
+/// which reaches the other arm of the verdict line.
+fn painted_subject() -> Report {
+    let mut report = subject();
+    report.digest = Some(format!("sha256:{}", "0".repeat(64)));
+    report.reached = Some("L0".to_string());
+    report
+}
+
+#[test]
+fn color_adds_escape_sequences_and_changes_nothing_else() {
+    for report in [subject(), painted_subject()] {
+        assert_eq!(
+            stripped(&report.render(headwater_check::paint::ColorMode::Ansi)),
+            report.render(headwater_check::paint::ColorMode::Plain)
+        );
+    }
+}
+
+#[test]
+fn plain_writes_no_escape_byte() {
+    for report in [subject(), painted_subject()] {
+        assert!(!report
+            .render(headwater_check::paint::ColorMode::Plain)
+            .contains('\u{1b}'));
+    }
+}
+
+/// The fill runs before the paint, so a painted report breaks where an unpainted
+/// one does.
+///
+/// This is the case the module comment of `src/render.rs` is about: the fill
+/// measures a label in characters, and an escape sequence introduced before it
+/// would be counted as text. The byte comparison above implies this, and this
+/// states it as the line-level claim a reader of the report would notice — a
+/// misplaced break shows up here naming the two lines rather than as one
+/// unreadable diff of the whole report.
+#[test]
+fn a_painted_report_breaks_where_an_unpainted_one_does() {
+    let report = painted_subject();
+    let painted = stripped(&report.render(headwater_check::paint::ColorMode::Ansi));
+    let plain = report.render(headwater_check::paint::ColorMode::Plain);
+    for (one, two) in painted.lines().zip(plain.lines()) {
+        assert_eq!(one, two);
+    }
+    assert_eq!(painted.lines().count(), plain.lines().count());
+}
+
+/// Every painted token of the report, named.
+///
+/// A property test alone passes a renderer that paints nothing at all, which is
+/// the defect `tools/color-fixtures.sh` exists to catch and the reason
+/// [#726](https://github.com/headwater-ai/headwater/issues/726) was filed. This
+/// names the sequences the report has to carry.
+#[test]
+fn the_report_paints_its_headings_its_verdicts_and_its_waivers() {
+    let painted = painted_subject().render(headwater_check::paint::ColorMode::Ansi);
+    for expected in [
+        "\u{1b}[1mconformance\u{1b}[0m",
+        "\u{1b}[1mrules\u{1b}[0m",
+        "\u{1b}[1mlevels\u{1b}[0m",
+        "\u{1b}[1mwaivers\u{1b}[0m",
+        // Met is green, a gap is yellow, an undecided rule is blue, which is
+        // the severity palette HW-DR-0045 fixes.
+        "\u{1b}[1;32mmet\u{1b}[0m",
+        "\u{1b}[1;33mgap\u{1b}[0m",
+        "\u{1b}[34mnot decided\u{1b}[0m",
+        // `fix` is green, which is what `Finding::render` already does.
+        "\u{1b}[1;32mfix\u{1b}[0m: ",
+        // A live waiver is magenta and an expired one is red, because an expired
+        // waiver covers nothing.
+        "\u{1b}[35mcorpus.classified\u{1b}[0m ",
+        "\u{1b}[1;31mprojections.current\u{1b}[0m ",
+    ] {
+        assert!(
+            painted.contains(expected),
+            "{expected:?} is not in\n{painted}"
+        );
+    }
 }

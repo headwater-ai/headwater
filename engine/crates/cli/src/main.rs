@@ -597,8 +597,18 @@ fn completions(shell: Option<headwater_cli::Shell>) -> ExitCode {
             headwater_verbs::BINARY
         ));
     };
-    let mut command =
-        headwater_cli::paint::flattened(headwater_cli::command_at(headwater_cli::paint::WIDTH));
+    // The mode is stated rather than sensed, for the reason the width above is.
+    // `command_at` reads standard output's terminal state, and a caller running
+    // `headwater completions bash` from a terminal without redirecting it would
+    // then get a tree carrying a palette. `clap_complete` writes a script out of
+    // the `about` and `help` strings, which no palette touches — but a script
+    // with an escape byte in it is a broken script, and this is the one line
+    // that has to be wrong for that to happen. `tools/color-fixtures.sh` runs
+    // the pty case that would report it.
+    let mut command = headwater_cli::paint::flattened(headwater_cli::command_in(
+        headwater_cli::paint::WIDTH,
+        headwater_cli::paint::ColorMode::Plain,
+    ));
     clap_complete::generate(
         clap_complete::Shell::from(shell),
         &mut command,
@@ -1253,7 +1263,7 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
     // arrives under the gaps it is about. The document cannot take that order,
     // because the gate is a member of it, so it is written after.
     if !json {
-        print!("{}", report.render());
+        print!("{}", report.render(headwater_cli::paint::stdout_color()));
     }
     let gated = match level {
         None => None,
@@ -3616,7 +3626,15 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
         return ExitCode::SUCCESS;
     }
 
-    println!("capture-cost store");
+    let mode = headwater_cli::paint::stdout_color();
+    println!(
+        "{}",
+        headwater_cli::paint::paint(
+            headwater_cli::paint::Role::Heading,
+            "capture-cost store",
+            mode
+        )
+    );
     println!(
         "  {}, which is outside the corpus root. No census row covers it, no language regime \
          binds it, and no rule reads it",
@@ -3642,7 +3660,14 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
     }
 
     if !readings.is_empty() {
-        println!("\nassisted fraction over every reading");
+        println!(
+            "\n{}",
+            headwater_cli::paint::paint(
+                headwater_cli::paint::Role::Heading,
+                "assisted fraction over every reading",
+                mode
+            )
+        );
         println!(
             "  {} of {} — front matter {}/{}, sections {}/{}, identifier {}/{}, edge halves \
              {}/{}",
@@ -3677,7 +3702,10 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
             }
         }
 
-        println!("\nby kind");
+        println!(
+            "\n{}",
+            headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "by kind", mode)
+        );
         for (kind, taken, assisted) in headwater_scaffold::reading::by_kind(&readings) {
             println!(
                 "  {kind} — {}, {} of {}",
@@ -3691,7 +3719,10 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
         // comparison. Q7 claims that a write tool raises the fraction, and a
         // claim of that shape needs a powered comparison rather than two rows
         // that differ.
-        println!("\nby surface");
+        println!(
+            "\n{}",
+            headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "by surface", mode)
+        );
         for (surface, taken, assisted) in headwater_scaffold::reading::by_surface(&readings) {
             println!(
                 "  {} — {}, {} of {}",
@@ -5124,6 +5155,7 @@ fn infer(
     write: bool,
     now: Option<Date>,
 ) -> ExitCode {
+    let mode = headwater_cli::paint::stdout_color();
     let loaded = match load(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
@@ -5310,7 +5342,14 @@ fn infer(
         .iter()
         .filter(|row| matches!(row.outcome.class(), "untyped" | "unreadable"))
         .collect();
-    println!("\nwhat this taxonomy does not explain");
+    println!(
+        "\n{}",
+        headwater_cli::paint::paint(
+            headwater_cli::paint::Role::Heading,
+            "what this taxonomy does not explain",
+            mode
+        )
+    );
     match unexplained.is_empty() {
         true => println!("  every file the census walked classified"),
         false => {
@@ -5339,7 +5378,14 @@ fn infer(
         .filter(|document| surface.summary(document).is_none())
         .map(|document| document.path)
         .collect();
-    println!("\nwhat nothing will route to");
+    println!(
+        "\n{}",
+        headwater_cli::paint::paint(
+            headwater_cli::paint::Role::Heading,
+            "what nothing will route to",
+            mode
+        )
+    );
     if documents.is_empty() {
         println!("  no document classified, so a route has nothing to reach whatever it matches");
     } else {

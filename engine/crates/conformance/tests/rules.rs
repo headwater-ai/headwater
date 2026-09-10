@@ -430,8 +430,12 @@ fn an_expired_waiver_is_reported_rather_than_honored() {
     );
     // It is reported rather than dropped. A waiver that vanished on its expiry
     // would leave nobody a record of the deviation that just came back.
-    assert!(lapsed.render().contains("EXPIRED on 2027-02-28"));
-    assert!(lapsed.render().contains("it covers nothing"));
+    assert!(lapsed
+        .render(headwater_check::paint::ColorMode::Plain)
+        .contains("EXPIRED on 2027-02-28"));
+    assert!(lapsed
+        .render(headwater_check::paint::ColorMode::Plain)
+        .contains("it covers nothing"));
 }
 
 // ---------------------------------------------------------------------------
@@ -569,7 +573,7 @@ conformance:
     // The rung says what it waits on, and the rule says it is neither met nor
     // missing. A rung reported only as "not reached" would read as a gap
     // somebody can close, and this one nobody can.
-    let rendered = report.render();
+    let rendered = report.render(headwater_check::paint::ColorMode::Plain);
     assert!(rendered.contains("L4 Gated — not reached, 0 of 1 rules met"));
     assert!(rendered.contains("waits on an attestation record"));
     // The report fills every line of prose to `render::WIDTH`, so this sentence
@@ -621,7 +625,7 @@ fn the_report_says_what_a_level_is_not_even_when_every_rung_is_reached() {
     ];
     let rendered = assemble(&set, &[], &identity, &all, at("2026-08-14"), no_pin())
         .expect("it assembles")
-        .render();
+        .render(headwater_check::paint::ColorMode::Plain);
     assert!(rendered.contains("L1 reached"));
     // Same reason as above: the disclaimer is filled, and the break now falls
     // between `the` and `corpus,`. The fragment asserted here is the first
@@ -894,7 +898,7 @@ fn a_pinned_digest_that_no_rule_reads_is_printed_as_one_nothing_checked() {
         Some("L0"),
         "the rung this change must not move has moved"
     );
-    let with_record = with_record.render();
+    let with_record = with_record.render(headwater_check::paint::ColorMode::Plain);
 
     assert!(
         with_record.contains(&names_nothing),
@@ -924,7 +928,7 @@ fn a_pinned_digest_that_no_rule_reads_is_printed_as_one_nothing_checked() {
         pin_check(&set, &root, &consumer),
     )
     .expect("it assembles")
-    .render();
+    .render(headwater_check::paint::ColorMode::Plain);
 
     assert_ne!(
         with_record, without_record,
@@ -971,7 +975,7 @@ fn the_header_names_the_rule_that_read_the_pin_and_reads_no_tree_to_say_so() {
         pin_check(&reads_it, nowhere, &consumer),
     )
     .expect("it assembles")
-    .render();
+    .render(headwater_check::paint::ColorMode::Plain);
     assert!(
         collapsed(&rendered)
             .contains("checked against the installed release record by `pin.current`"),

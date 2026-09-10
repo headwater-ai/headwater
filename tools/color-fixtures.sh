@@ -40,6 +40,22 @@
 # what the tree already had, and they passed a binary that emitted no color at
 # all. Neither half means anything without the other.
 #
+# # The fifth arm, on the surfaces that admit it
+#
+# `strips_to_the_plain_bytes` runs the same command twice, takes the SGR
+# sequences and the pty's carriage returns back off the terminal run, and
+# compares the two byte for byte. Four arms say that color arrives and leaves
+# when it should; this one says that nothing else moved when it did.
+#
+# It is the arm that catches painting before folding. `headwater_check::fill`
+# measures a line in characters, so a `\033[35m` introduced before the fill is
+# nine characters of text as far as the fold is concerned, and every break after
+# it lands one word early. Nothing else in this repository can see that: the
+# painted report and the plain report are each internally consistent, both are
+# 80 columns wide, and no test compares them. A renderer that folds first and
+# substitutes the painted token afterwards passes this arm, and that is the
+# order `Route::render` and `paint::painted_row` both take.
+#
 # Standard error is dropped inside the pty command rather than outside it, so
 # that the count is over the verb's own report. `err()` already colors every
 # refusal on standard error under a terminal, and a pty gives both streams one,
@@ -132,6 +148,32 @@ senses_its_terminal() {
         "$(escapes_on_a_terminal "$command --no-color")"
 }
 
+# The painted run and the plain run, with the color taken back off the first.
+#
+# The pty converts every `\n` it carries into `\r\n`, so the carriage return
+# goes with the SGR sequence: it is the terminal's, not the renderer's, and a
+# comparison that kept it would fail on every surface for a reason that has
+# nothing to do with color.
+strips_to_the_plain_bytes() {
+    label=$1
+    command=$2
+    painted="${TMPDIR:-/tmp}/headwater-color-painted.$$"
+    plain="${TMPDIR:-/tmp}/headwater-color-plain.$$"
+    script -qec "$command 2>/dev/null" /dev/null 2>/dev/null \
+        | sed -e "s/$(printf '\033')\[[0-9;]*m//g" -e 's/\r$//' >"$painted"
+    sh -c "$command 2>/dev/null" >"$plain"
+    if cmp -s "$painted" "$plain"; then
+        printf 'ok   %s strips to the bytes it writes through a pipe\n' "$label"
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s strips to the bytes it writes through a pipe\n' "$label"
+        printf '  a break moved when the color arrived, so something painted before it folded:\n'
+        diff "$painted" "$plain" | sed -n '1,8p' | sed 's/^/    /'
+        failed=$((failed + 1))
+    fi
+    rm -f "$painted" "$plain"
+}
+
 # The set is measured rather than listed. Every surface below writes bytes of
 # its own report to standard output, its interface contract carries the sensing
 # row, and it is not a machine format. `headwater completions`, `--format json`
@@ -153,12 +195,59 @@ senses_its_terminal 'check' "$engine check --root ."
 senses_its_terminal 'explain' "$engine explain HW-DR-0045 --root ."
 senses_its_terminal 'sweep plan' "$engine sweep plan --root ."
 
+# The three this change wired, and the reason it exists. All three rendered
+# zero escapes under a terminal before it, measured on the parent commit.
+#
+# `infer` is run without `--write`, so it reads the tree and writes nothing.
+# `--owner` is passed because the report names an owner in the payload it
+# prints, and a run without one prints a placeholder rather than refusing.
+senses_its_terminal 'infer' "$engine infer --owner 'a color fixture' --root ."
+senses_its_terminal 'capture' "$engine capture --root ."
+senses_its_terminal 'conformance' "$engine conformance --root ."
+
+# The help family, which is four templates rather than one. The root screen is
+# written by `first_screen`, a verb page is `clap`'s own `{options}` renderer, a
+# verb with second words is `second_words`, and `headwater help <verb>` reaches
+# a page through `print_help_for` rather than through the parse. `clap` decides
+# what to strip from all four at write time, off the one `ColorChoice`
+# `paint::color_choice` hands the tree, so a mistake there is a mistake on every
+# page — and only running each of them says whether it was made.
+#
+# `headwater --help` is the one surface whose arm 1 would pass without any of
+# this: it has printed a masthead by plain I/O since HW-DR-0045, ahead of
+# `clap`'s writer. It is here for arms 2 to 4, which the masthead does not
+# answer for, and the pages below are what arm 1 is evidence about.
+senses_its_terminal 'headwater --help' "$engine --help"
+senses_its_terminal 'check --help' "$engine check --help"
+senses_its_terminal 'help check' "$engine help check"
+senses_its_terminal 'taxonomy --help' "$engine taxonomy --help"
+
+# The fifth arm. Every surface here composes a report or a page and folds it,
+# and the fold is where a paint that ran too early shows up.
+strips_to_the_plain_bytes 'infer' "$engine infer --owner 'a color fixture' --root ."
+strips_to_the_plain_bytes 'capture' "$engine capture --root ."
+strips_to_the_plain_bytes 'conformance' "$engine conformance --root ."
+strips_to_the_plain_bytes 'headwater --help' "$engine --help"
+strips_to_the_plain_bytes 'check --help' "$engine check --help"
+strips_to_the_plain_bytes 'help check' "$engine help check"
+
 # The machine formats, which sense nothing on purpose. `--format json` reaches
 # the same renderers through `main.rs`'s `Format::Text => stdout_color(), _ =>
 # ColorMode::Plain`, so a change that widened the sensing to a format a program
 # parses would break a consumer rather than a reader.
 judge_none 'route --json stays plain under a terminal' \
     "$(escapes_on_a_terminal "$engine route 'add rate limiting' --json --root .")"
+
+# Completions must stay plain under a pty, because a shell script with escape
+# bytes baked in is a broken script. It is a machine format like json, and it is
+# the one that has to be run under a terminal to be evidence: `main`'s
+# `completions` builds from the same tree the help pages are printed from, so
+# the palette is one line away from it, and every case in
+# `engine/crates/cli/tests/width.rs` runs headless. What holds it is that the
+# call site states `ColorMode::Plain` rather than sensing a stream. Nothing
+# about the sensing itself is being relied on here.
+judge_none 'completions stays plain under a terminal' \
+    "$(escapes_on_a_terminal "$engine completions bash --root .")"
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]

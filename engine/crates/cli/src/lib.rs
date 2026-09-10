@@ -1162,13 +1162,32 @@ pub fn command() -> Command {
 /// layout. [`command`] is this at [`paint::WIDTH`] unless the command line
 /// carries `--wide`.
 pub fn command_at(width: usize) -> Command {
+    command_in(width, paint::stdout_color())
+}
+
+/// The same tree again, at a width and in a color mode the caller states.
+///
+/// [`command_at`] is this with the mode read off standard output, which is the
+/// only place that reading happens. A caller that states the mode gets a tree
+/// whose help renders the same bytes wherever it runs, which is what a test and
+/// a completion script both need: `main`'s `completions` states
+/// [`paint::ColorMode::Plain`], and `tests/width.rs` renders both modes and
+/// compares them.
+pub fn command_in(width: usize, mode: paint::ColorMode) -> Command {
     let mut root = Cli::command()
         .about(format!(
             "{} — {}",
             headwater_verbs::BINARY,
             headwater_verbs::TAGLINE
         ))
-        .help_template(first_screen(width));
+        // The choice and the palette are set together and from one mode. The
+        // choice alone would turn on `clap`'s own bold-and-underline defaults,
+        // which `HW-DR-0045` does not rule on; the palette alone would be
+        // stripped at write time by the `Never` the derive declares. See
+        // `paint::color_choice` for why this is never `ColorChoice::Auto`.
+        .color(paint::color_choice(mode))
+        .styles(paint::help_styles(mode))
+        .help_template(first_screen(width, mode));
     for verb in headwater_verbs::VERBS {
         // A name the derive does not carry is skipped rather than added.
         //
@@ -1181,7 +1200,7 @@ pub fn command_at(width: usize) -> Command {
         // against the table in both directions and prints the command lines that
         // are on one side and not the other.
         if root.find_subcommand(verb.name).is_some() {
-            root = root.mut_subcommand(verb.name, |one| described(one, verb, width));
+            root = root.mut_subcommand(verb.name, |one| described(one, verb, width, mode));
         }
     }
     paint::painted(root, width)
@@ -1300,10 +1319,15 @@ fn a_width_for_a_run_that_lays_nothing_out(matches: &clap::ArgMatches) -> Option
 }
 
 /// One verb of the tree, with the words the table carries for it.
-fn described(command: Command, verb: &headwater_verbs::Verb, width: usize) -> Command {
+fn described(
+    command: Command,
+    verb: &headwater_verbs::Verb,
+    width: usize,
+    mode: paint::ColorMode,
+) -> Command {
     let mut one = command.about(verb.description);
     if !verb.words.is_empty() {
-        one = one.help_template(second_words(verb, width));
+        one = one.help_template(second_words(verb, width, mode));
         for word in verb.words {
             if one.find_subcommand(word.name).is_none() {
                 continue;
@@ -1333,7 +1357,7 @@ const COLUMN: usize = 15;
 /// binary carried. #321 measured the old help and found no example anywhere in
 /// its 25,415 bytes, so these are written rather than recovered, and each one
 /// is a command line that runs.
-fn first_screen(width: usize) -> String {
+fn first_screen(width: usize, mode: paint::ColorMode) -> String {
     // `{about}` is dropped rather than kept beside the masthead: the two say
     // the same tagline, and `HW-DR-0045`'s masthead is printed separately, by
     // plain I/O, before this template is ever reached — never embedded in it.
@@ -1348,7 +1372,10 @@ fn first_screen(width: usize) -> String {
     // on. So the masthead is not this template's problem: `wants_root_help`
     // in `main.rs` decides when to print it, with `paint::banner`, entirely
     // outside `clap`'s own writer.
-    let mut out = String::from("{usage-heading} {usage}\n\nExamples:\n");
+    let mut out = format!(
+        "{{usage-heading}} {{usage}}\n\n{}:\n",
+        paint::paint(paint::Role::Heading, "Examples", mode)
+    );
     for (line, says) in [
         (
             "headwater check --strict",
@@ -1378,13 +1405,30 @@ fn first_screen(width: usize) -> String {
         out.push_str(&format!("  {line}\n"));
         out.push_str(&paint::fold_indented(says, width, 6));
     }
+    // A group heading is a section heading and a verb name is a verb name, so
+    // both take the role `HW-DR-0045` gives them and neither invents one. They
+    // are painted here rather than through `clap`'s `Styles`, because this
+    // screen is a template written by this crate and `clap` renders a template's
+    // literal text without knowing what any of it is. Under
+    // `paint::ColorMode::Plain` both calls return the byte for byte string this
+    // template carried before the palette reached it.
     for group in headwater_verbs::groups() {
-        out.push_str(&format!("\n{group}:\n"));
+        out.push_str(&format!(
+            "\n{}:\n",
+            paint::paint(paint::Role::Heading, group, mode)
+        ));
         for verb in headwater_verbs::VERBS
             .iter()
             .filter(|one| one.group == group)
         {
-            out.push_str(&paint::row(verb.name, verb.summary, COLUMN, width));
+            out.push_str(&paint::painted_row(
+                verb.name,
+                verb.summary,
+                COLUMN,
+                width,
+                paint::Role::Verb,
+                mode,
+            ));
         }
     }
     // The global flags are rendered here for the reason the verbs above are.
@@ -1409,9 +1453,19 @@ fn first_screen(width: usize) -> String {
         .max()
         .unwrap_or(0);
     let at = 2 + longest + 2;
-    out.push_str("\nGlobal flags:\n");
+    out.push_str(&format!(
+        "\n{}:\n",
+        paint::paint(paint::Role::Heading, "Global flags", mode)
+    ));
     for one in GLOBALS {
-        out.push_str(&paint::row(one.name, one.summary, at, width));
+        out.push_str(&paint::painted_row(
+            one.name,
+            one.summary,
+            at,
+            width,
+            paint::Role::Path,
+            mode,
+        ));
     }
     out.push('\n');
     out.push_str(&paint::fold_indented(
@@ -1432,10 +1486,17 @@ fn first_screen(width: usize) -> String {
 /// caller who typed `headwater sweep` to find out what `plan` is would meet
 /// both descriptions in full. This prints the summary the table carries and
 /// names where the long one is.
-fn second_words(verb: &headwater_verbs::Verb, width: usize) -> String {
+fn second_words(verb: &headwater_verbs::Verb, width: usize, mode: paint::ColorMode) -> String {
     let mut out = String::from("{about}\n\n{usage-heading} {usage}\n\nSecond words:\n");
     for word in verb.words {
-        out.push_str(&paint::row(word.name, word.summary, COLUMN, width));
+        out.push_str(&paint::painted_row(
+            word.name,
+            word.summary,
+            COLUMN,
+            width,
+            paint::Role::Verb,
+            mode,
+        ));
     }
     out.push_str("\nFlags:\n{options}\n\n");
     out.push_str(&paint::fold_indented(
