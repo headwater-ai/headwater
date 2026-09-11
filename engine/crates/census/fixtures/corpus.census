@@ -792,6 +792,84 @@ docs/taxonomies/diataxis-site/fixtures/corpus/docs/reference/api.md
   excluded: docs/taxonomies/**
 docs/taxonomies/diataxis-site/fixtures/corpus/docs/tutorials/get-started.md
   excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/.headwater/overlay.yml
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/.headwater/taxonomy.yml
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/LICENSE.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/README.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/AGENTS.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/community-pr-readiness-check/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/community-pr-readiness-check/reference/checks.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/community-pr-readiness-check/reference/label-flow.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/community-pr-readiness-check/reference/re-review.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/community-pr-readiness-check/reference/teams.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/content-design/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/conventions/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-community-node-lint-rule/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-community-node-lint-rule/reference.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-instance-ai-eval/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-instance-ai-eval/case-shapes.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-instance-ai-eval/running-evals.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-instance-ai-eval/sourcing-cases.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-issue/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-pr/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-skill/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/db-migrations/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/design-system/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/design-system/rules/web-animation-guidelines.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/design-system/rules/web-interface-guidelines.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/experiments/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/experiments/reference.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/gh-stack/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/human-like-code-review/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/linear-issue/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/loom-transcript/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/nathan/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/node-add-oauth/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/protect-endpoints/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/public-api/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/public-api/reference.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/reproduce-bug/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/spec-driven-development/SKILL.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/telemetry/SKILL.md
+  excluded: docs/taxonomies/**
 docs/taxonomies/diataxis-site/fixtures/sources/cockroach/life_of_a_query.md
   excluded: docs/taxonomies/**
 docs/taxonomies/diataxis-site/fixtures/sources/sysl/best-practices-intro.md

@@ -83,3 +83,21 @@ No kind name, shelf path, source path or expected count is written into `tools/r
 *Two more routes leave the table stale without any edit here.* An engine whose rules widened, and a re-pin to a newer upstream commit. Both are deliberate acts by a person already editing this page.
 
 A run that asserted the counts would turn every one of these into a red suite with a number to copy, which teaches a reader to copy numbers rather than re-read the run. So the counts stay recorded, and this paragraph is the statement of what that costs.
+
+## A second external corpus: n8n's skills
+
+[`n8n/`](n8n/README.md) holds a second external corpus, vendored into the tree rather than assembled at run time. It is the 35 files of `.agents/skills/` from `n8n-io/n8n` at `b0550cb3cb4d1752546a69056c55eccfb9111a12` on `master`, every body byte-identical below its front matter, typed by one homogeneous shelf at `.agents/skills/**` carrying `how_to`. That corpus is what #509 was open for, and its README records the assembly commands and every denominator.
+
+| Denominator | Reading |
+|---|---|
+| Files under the corpus root | 35 |
+| Typed | 35 of 35, all `how_to` |
+| Excluded, and untyped | 0 and 0 |
+| Findings | 139 |
+| Errors | 118 |
+| Warnings | 21 |
+| Exit status | 0 from `headwater check`, 1 from `headwater check --strict` |
+
+**`tools/diataxis-fixtures.sh` does not run it, and neither does CI.** The runner above assembles its four documents from `sources/` at each run, and this corpus is 425,316 bytes of vendored prose that no runner reassembles. So its denominators are a recorded run in exactly the sense criterion 4 asks for, and they carry the same exposure to drift that the paragraphs above measure for the assembled corpus. The same is true of the [design-spec](../../design-spec/fixtures/n8n/README.md) and [standards-spec](../../standards-spec/fixtures/n8n/README.md) n8n corpora, which nothing runs either.
+
+**One result belongs beside the run record above, because it is the same finding from a second corpus.** 104 of the 139 are `section.required.missing`, which is 104 of a possible 105 over 35 documents and three required headings. The assembled corpus reports 11 section errors over 4 documents. Two unrelated real corpora, one written for a documentation site and one written for an AI agent, and neither carries the headings this entry's kinds require. That is the entry's report against itself a second time, and #349 carries the remedy.

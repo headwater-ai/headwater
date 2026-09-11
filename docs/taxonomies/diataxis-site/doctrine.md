@@ -10,6 +10,14 @@ The bundle writes `purposes.procedure`, `kinds.tutorial`, `identifier_schemes.tu
 
 The relationship to #509 is that this bundle supplies the new-entry form of procedure-shaped kinds. It does not decide the composition demonstration or HW-OBL-0040; an add-only connection between this kind set and another entry remains separate work.
 
+## Worked instances
+
+Criterion 4 asks for at least one real or realistic corpus that the entry types. This entry carries two.
+
+**[The shape fixtures](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/diataxis-site/fixtures/README.md), a realistic corpus.** One short document of each concrete kind under `fixtures/corpus/`, beside byte-identical source pages from `sysl` and `cockroach` under `fixtures/sources/`. The case table in that README is the contract, and it records the isolated run, the three-entry run, the constructor sweep, the overlay collision and the planted defect.
+
+**[n8n](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/diataxis-site/fixtures/n8n/README.md), a real one.** The 35 files of `.agents/skills/` from `n8n-io/n8n`, pinned at `b0550cb3cb4d1752546a69056c55eccfb9111a12` on `master`, every body byte-identical below its front matter. All 35 are typed as `how_to` on one homogeneous shelf, which is the answer to the question #509 held open. It is the third corpus of one repository in this library and the first that already carried front matter of its own. [HW-EVAL-n8n-worked-example](https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/n8n-worked-example.md) is the report.
+
 ## Findings
 
 **1. A section contract is a Headwater invention, and the tradition this entry models does not supply one.** The external corpus of criterion 4 is four real documentation pages from two projects that never met this taxonomy, and the entry types every one of them at the kind its shelf gives. Not one of them satisfies the kind's `sections: require` list: 11 of the 16 errors in the recorded run are `section.required.missing`, spread across all four documents. Diátaxis constrains what a page is for and it says nothing about what a page's headings are called. So an entry that models the tradition faithfully in its kinds and its purposes still refuses the tradition's own prose, and the refusal comes entirely from a list this entry wrote. [The fixture record](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/diataxis-site/fixtures/README.md#the-run-record-that-criterion-4-asks-for) holds the run. The remedy is a ruling on whether a kind of a library entry may declare no section contract at all, and it is not an edit to somebody else's prose.

@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The consumer declaration for the n8n skills corpus. It is not read from here:
+# `headwater check` reads one corpus root, and this tree sits inside a directory
+# that this repository excludes from its own corpus. `README.md` beside this
+# directory states the commands that assemble a scratch root out of this file,
+# `overlay.yml`, `packages/headwater-standard/` and `corpus/.agents/`.
+#
+# `corpus.root` is `.agents`, the same root the standards-spec fixture uses for
+# the same repository at the same pin. This is a third corpus of one repository
+# and not an extension of either earlier one: `corpus.root` is a single scalar,
+# and a shelf set is a property of the entry rather than of the tree.
+
+taxonomy:
+  package: headwater/standard
+  version: 4.2.0
+  bundles: [diataxis-site]
+  overlay: .headwater/overlay.yml
+
+# No exclusion. With `root: .agents` the vendored package sits outside the
+# corpus root entirely, so nothing under `packages/` is ever walked.
+corpus:
+  root: .agents

@@ -3,7 +3,7 @@ id: HW-EVAL-n8n-worked-example
 status: current
 status_since: 2026-09-01
 last_verified: 2026-09-01
-summary: Eleven real governing documents from n8n, typed against two entries of the library, and what two runs and one coherence sweep found in a corpus that keeps its prose beside the code.
+summary: Forty-six real governing documents from n8n, typed against three entries of the library, and what three runs and one coherence sweep found in a corpus that keeps its prose beside the code.
 title: "n8n as a worked instance — a corpus with no docs root"
 provenance:
   warrant: asserted
@@ -21,7 +21,7 @@ It is also the first corpus in this library with no collected documentation root
 
 **The short answer is that it does not, and the correction it needs is one declaration.** The longer answer is below, with the run that produced it.
 
-This document reports two of the three kinds that [#492](https://github.com/headwater-ai/headwater/issues/492) names. The architecture documents are [#492](https://github.com/headwater-ai/headwater/issues/492) itself and the review rules are [#508](https://github.com/headwater-ai/headwater/issues/508), and the two halves are marked below. The third is [#509](https://github.com/headwater-ai/headwater/issues/509). The reason for the split is that the third has no admitted kind to be typed against at all.
+This document reports two of the three kinds that [#492](https://github.com/headwater-ai/headwater/issues/492) names. The architecture documents are [#492](https://github.com/headwater-ai/headwater/issues/492) itself and the review rules are [#508](https://github.com/headwater-ai/headwater/issues/508), and the two halves are marked below. The third is [#509](https://github.com/headwater-ai/headwater/issues/509), and it is reported here too. The reason for the original split was that the third had no admitted kind to be typed against. The `diataxis-site` entry supplied one, and the skills corpus is typed below.
 
 **The first half of this document reads `packages/`, and [the second half](#the-review-rules-a-second-corpus-of-the-same-repository) reads `.agents/review-rules/`.** They are two corpora at one pin, because `corpus.root` is a single scalar and one root cannot reach both trees.
 
@@ -268,13 +268,13 @@ This is the fourth Done-when bullet of #508, and it is a `headwater sweep` job r
 
 ## What this adds to criterion 4
 
-This is the seventh Done-when bullet of #492 and the sixth of #508. Two entries of the library now carry this repository. The design-spec entry carries the invented Beacon corpus and n8n's architecture documents, and its [doctrine](../taxonomies/design-spec/doctrine.md#worked-instances) cites both. The standards-spec entry carries the invented Beacon ladder and n8n's review rules, and its [doctrine](../taxonomies/standards-spec/doctrine.md#worked-instances) gained a `Worked instances` section that cites both.
+This is the seventh Done-when bullet of #492 and the sixth of #508. Three entries of the library now carry this repository. The design-spec entry carries the invented Beacon corpus and n8n's architecture documents, and its [doctrine](../taxonomies/design-spec/doctrine.md#worked-instances) cites both. The standards-spec entry carries the invented Beacon ladder and n8n's review rules, and its [doctrine](../taxonomies/standards-spec/doctrine.md#worked-instances) gained a `Worked instances` section that cites both. The diataxis-site entry carries the invented Beacon-style shape fixtures and n8n's skills, and its [doctrine](../taxonomies/diataxis-site/doctrine.md#worked-instances) gained the same section.
 
 **One note, which is not fixed here.** This document is a `kinds.evaluation`, and `evaluation` moved out of design-spec into the `evidence-and-obligation` entry with HW-DR-0044. That entry is not in the admitted-entry table of `docs/taxonomies/README.md`, which still lists five rows while `docs/taxonomies/` holds six directories. Two admitted entries now declare `requires: [evidence-and-obligation]`. That gap is [#510](https://github.com/headwater-ai/headwater/issues/510) and is not touched here.
 
 ## What `.agents/skills/` states, and what the tree holds
 
-The third corpus that [#492](https://github.com/headwater-ai/headwater/issues/492) names is `.agents/skills/`, and this section reports one finding in it. It does not type the corpus. No admitted entry declares a procedure-shaped concrete kind, so a skill file has nothing to be, and that ruling stays open as [#509](https://github.com/headwater-ai/headwater/issues/509). The finding below needs no kind, because it is a claim the corpus makes about itself.
+The third corpus that [#492](https://github.com/headwater-ai/headwater/issues/492) names is `.agents/skills/`, and this section reports one finding in it without typing any of it. The next section types the corpus. The finding below needs no kind either way, because it is a claim the corpus makes about itself.
 
 At the pin, `.agents/skills/spec-driven-development/SKILL.md:8` states this:
 
@@ -290,7 +290,7 @@ The tree at the pin holds no such path. `.agents/` holds two entries, `review-ru
 
 Two relations in the resolved taxonomy have the shape this needs. `governs` runs from a `governed_document` to a `code_path`, and `traces_to` runs from a `governed_document` to a `governed_document` or a `code_path`. Either one could carry the claim that a stated practice makes, and a check could then ask whether the target exists. Neither relation is required on any kind, and no rule asks a document to declare one.
 
-So this taxonomy has the vocabulary for the claim and no obligation to state it. This document already records the near case. The unresolved link at `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` reaches `headwater check` as [a fact in the graph section, and never as a finding](#the-broken-link-that-no-rule-reports). The `.agents/specs/` claim does not reach the engine at all, because the corpus that holds it has no kind and no run reads it. That is two gaps and not one, and [#509](https://github.com/headwater-ai/headwater/issues/509) is only the second of them.
+So this taxonomy has the vocabulary for the claim and no obligation to state it. This document already records the near case. The unresolved link at `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` reaches `headwater check` as [a fact in the graph section, and never as a finding](#the-broken-link-that-no-rule-reports). The `.agents/specs/` claim does not reach the engine at all, and typing the corpus does not change that. The run in the next section types every file of `.agents/skills/` and reports 139 findings, and not one of them is this claim. A stated practice that no artifact backs is invisible to a check whether or not the document carrying it has a kind.
 
 Whether a rule should report a stated practice that no artifact backs is [#496](https://github.com/headwater-ai/headwater/issues/496), and this section decides nothing about it.
 
@@ -326,6 +326,58 @@ gh api "repos/headwater-ai/n8n/git/trees/b0550cb3cb4d1752546a69056c55eccfb9111a1
 ```
 
 It prints `0`. Any other number makes this section false.
+
+## The skills corpus, typed
+
+The section above reports one finding in `.agents/skills/` and types none of it. This section types all of it. The premise both #492 and #509 rest on is dead: the [`diataxis-site` entry](../taxonomies/diataxis-site/doctrine.md) landed in `46b86799` and declares `kinds.how_to`, a concrete kind under `purposes.procedure`. That kind is what the third corpus waited for. The vendored slice is [`docs/taxonomies/diataxis-site/fixtures/n8n/`](../taxonomies/diataxis-site/fixtures/n8n/README.md), at the pin the other two corpora use, and its README carries the assembly commands that produced every number below.
+
+**What the pin holds, re-measured.** `.agents/skills/` holds 22 skill directories, 34 files inside them, and one top-level `AGENTS.md` of 1,952 bytes. That is 35 files and 425,316 bytes of upstream body. #492 and #509 each write "22 skill directories and 35 files". Neither one names `AGENTS.md`, so a reader of either issue puts all 35 files inside the 22 directories. The files that are not a `SKILL.md` number 12 and not the ten that #509 enumerates.
+
+**Every file is typed, and that is the result this corpus was vendored for.** One homogeneous shelf at `.agents/skills/**` carries `how_to`. The run reports **35 files under the corpus root, 35 typed, 0 excluded, 35 checked, 426 check instances, 139 findings**. The census reads 35 `how_to`. The graph reads 35 nodes and 0 declared edge halves. Nothing is untyped, and `headwater check --strict` exits 1.
+
+| Rule | Count | Severity |
+|---|---|---|
+| `section.required.missing` | 104 | error |
+| `link.path.unresolved` | 14 | error |
+| `voice.forbidden_construction` | 21 | warn |
+
+**104 of a possible 105, and the missing one is the interesting number.** `kinds.how_to` requires `Goal`, `Steps` and `Verification`. Thirty-five documents times three headings is 105. The run reports `Goal` 35 times, `Steps` 34 times and `Verification` 35 times. One file writes a `Steps` heading by name, `.agents/skills/create-pr/SKILL.md`. That is the only heading of the three the corpus supplies anywhere. The review-rules corpus reported this shape from a different kind. A section contract reads headings, and the tradition writes the same content as an imperative paragraph.
+
+**Thirteen of the 14 link findings are a property of the corpus root and not of n8n.** `corpus.root` is `.agents`, and 13 of the targets are relative paths that climb above it, such as `../../../packages/@n8n/instance-ai/evaluations/README.md` and `../../../AGENTS.md`. Each of the 13 was checked against the pin through the contents API and **all 13 exist upstream**. A run whose root reached the whole repository would resolve every one of them.
+
+**The fourteenth is a real dangling link, and this time a rule reports it.** `.agents/skills/design-system/rules/web-animation-guidelines.md:84` links `PRACTICAL-TIPS.md`, and the tree at the pin holds no such path under `.agents/skills/design-system/rules/`. This is the shape of the `.agents/specs/` claim above, written as a link rather than as a sentence. The difference is what a rule can reach. A link resolves or it does not, and a stated practice reaches no rule at all.
+
+**The symlink tree, measured.** `.claude/plugins/n8n/skills/` holds 24 entries at the pin. Twenty-two are symlinks at mode `120000`. The set of 22 link names equals the set of 22 shared directory names, with no difference in either direction. The other two entries are a real directory, `setup-mcps/`, and the `SKILL.md` inside it. A corpus rooted at `.agents` sees none of this, because a symlink tree outside the root is outside the census. So the run types 35 documents where a run over both trees would type 36. The one it cannot reach is the only skill that no shared directory carries.
+
+**The front matter is merged here and prepended in the other two fixtures.** Twenty-two of these 35 files already carry Agent Skills front matter with `name` and `description`. A second block above the first one would not be read, because a parser takes the first block. So the Headwater keys go into the block that is already there, under n8n's own keys, and no upstream key is changed or removed. The 13 files with no upstream front matter get a new block above the body. Under both shapes every byte below the front matter is the file at the pin. **Byte identity was verified mechanically.** The blob hash of each upstream body was recomputed and compared against the tree API's blob at that commit: 35 comparisons and 35 matches.
+
+**The `summary` facet came from the corpus rather than from an author.** `governed_document` requires `summary`, and 35 hand-written summaries would be 35 sentences of invented prose inside a fixture that exists to be byte-identical. For the 22 files with upstream front matter the summary is n8n's own `description` line, copied. For the other 13 it is the document's own first heading, copied. The fixture invents no prose, and a weak summary on 13 documents is what that costs.
+
+**One number in the review-rules fixture has already gone stale, and it is not a number about n8n.** `docs/taxonomies/standards-spec/fixtures/n8n/.headwater/taxonomy.yml` takes `headwater/standard` at `4.0.0`, and the package in this repository is now `4.2.0`. `headwater taxonomy resolve` refuses that mismatch and prints both versions, so the commands that fixture states no longer run as written. The skills fixture takes `4.2.0` and resolves. No check reads either scalar, because `docs/taxonomies/**` is outside this repository's corpus.
+
+### The count, extended to a third kind
+
+The terms are #492's. #511 recorded 8 findings for the architecture documents and #512 recorded 21 for the review rules. This is the third row, and it takes the third tool #509 names.
+
+| | Findings |
+|---|---|
+| Raised by `headwater check` over the typed slice | 139 |
+| Also caught by `prettier` | 0 |
+| Also caught by `cubic` | 0 |
+| Also caught by `sync-agent-skill-links.mjs --check` | 0 |
+| Caught by none of the three | 139 |
+| Of those, written by `headwater check --fix` | 0 |
+| Of those, needing a rewrite | 139 |
+
+**`prettier` reaches nothing here, and for two independent reasons.** `.prettierignore` at the pin ignores `**/*.md` under a comment that reads "Ignored for now", so no markdown file anywhere in the repository reaches prettier. And `lefthook.yml` scopes its `prettier_check` command to a glob of `packages/**`, which `.agents/` is not under. Either reason alone gives zero, which is the same answer the architecture corpus got for a different reason.
+
+**`cubic` reaches one of the 35 files and reviews none of them.** The `Frontend` agent in `cubic.yaml` names `.agents/skills/design-system/SKILL.md` in its `file_paths`, so cubic loads that one skill as guidance on every frontend review. Every `include` pattern of every agent in that file is under `packages/`. So a change to a file under `.agents/skills/` is reviewed by no agent at all. One of the 35 is an input to the tool, and none of the 35 is a subject of it.
+
+**`sync-agent-skill-links.mjs --check` reaches all 35 and reads none of them.** `lefthook.yml` runs it at pre-commit on a glob of `.agents/skills/**`, so its reach over this slice is total where the other two tools have none. It compares the plugin symlinks against the shared tree and reads no prose. Total reach and zero overlap is the sharpest version of the result #492 asks for.
+
+**Nothing here is mechanically fixable, and the engine states that rather than writing nothing quietly.** A `--fix` arm over the assembled root printed `no finding of this run carries a patch` and changed no file. That is 0 of 139. The review-rules corpus recorded 6 fixable of 143 under this repository's house regime. The difference is the regime rather than the corpus. A contraction and a British spelling carry a patch, and a missing heading, a broken link and a forbidden voice construction do not.
+
+**What ages here.** Every count above is of the 35 blobs at `b0550cb`, and a later commit of `master` is a different measurement. The `last_verified` date in the front matter of this document covers neither this section nor the one above it. Both were measured at the pin on 2026-09-11 and neither moves when the rest of this document is re-verified.
 
 ## The three defects, fixed on a fork and sent to nobody
 
@@ -411,7 +463,7 @@ So this run prepared everything and posted nothing. The commits are on the fork.
 
 ## What this did not cover
 
-Typing `.agents/skills/` as documents of this library, which is the third of the three kinds [#492](https://github.com/headwater-ai/headwater/issues/492) names. That work is [#509](https://github.com/headwater-ai/headwater/issues/509), and it is blocked on a ruling rather than on effort, because no admitted entry declares a procedure-shaped concrete kind. The section above reports one finding in that corpus without typing any of it.
+Sending any finding of the skills corpus upstream, or fixing one, which is [#495](https://github.com/headwater-ai/headwater/issues/495). Typing that corpus is no longer outstanding: [#509](https://github.com/headwater-ai/headwater/issues/509) was blocked on a procedure-shaped kind, the `diataxis-site` entry declares one, and *The skills corpus, typed* above is the run.
 
 A census of all 22 review-rule files as typed documents. Seven is the sample, and #508's own scope note sets that bar.
 
