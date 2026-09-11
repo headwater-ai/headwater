@@ -36,7 +36,7 @@ use headwater_census::census;
 use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::paint::ColorMode;
+use headwater_check::paint::{paint, ColorMode, Role};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -1207,22 +1207,161 @@ fn the_colored_plan_strips_to_the_plain_plan() {
     assert_eq!(stripped(&ansi), plain);
 }
 
-/// Every role this briefing reaches for, painted where a reader expects it.
+/// The roles `Plan::render` declares, enumerated from the renderer.
+///
+/// Two `paint(Role::` families reach this briefing: `Heading` on the `##`
+/// lines and `Path` on the two document-path positions. A third role wired in
+/// and not added here fails `the_plan_paints_no_role_this_enumeration_omits`.
+const PROBE_ROLES: [Role; 2] = [Role::Heading, Role::Path];
+
+/// The opening SGR sequence a role writes, with no text and no reset.
+fn opening(role: Role) -> String {
+    let painted = paint(role, "x", ColorMode::Ansi);
+    painted
+        .strip_suffix("x\u{1b}[0m")
+        .expect("paint wraps its text and closes with a reset")
+        .to_string()
+}
+
+/// The headings this plan writes, decided by the plan's own state.
+///
+/// Three of the six are conditional in the renderer, so a fixed list would
+/// either overclaim or undercount. `## The cost` is written only where a cost
+/// was computed, and a refusal replaces the last three sections with one and
+/// returns.
+fn headings_of(plan: &Plan) -> Vec<&'static str> {
+    let mut headings = vec!["## The run identity this plan fixes"];
+    if plan.budget > 0 {
+        headings.push("## The cost");
+    }
+    match plan.refusal.is_some() {
+        true => headings.push("## This run does not start"),
+        false => headings.extend([
+            "## The selection",
+            "## The read set",
+            "## What the recorder writes back",
+        ]),
+    }
+    headings
+}
+
+/// How many times each declared role is painted, against a count derived from
+/// the plan rather than from the report.
+///
+/// The count half of the bar. Setting either of the two `Role::Path` call
+/// sites to `Plain` leaves the other standing, and before this case the whole
+/// suite stayed green while the briefing lost four of its ten color sequences
+/// under a terminal.
 #[test]
-fn the_colored_plan_writes_every_role_it_declares() {
-    let ansi = regression().render(ColorMode::Ansi);
-    let cases: [(&str, &str); 3] = [
-        (
-            "the selection heading",
-            "\u{1b}[1m## The selection\u{1b}[0m",
-        ),
-        ("the read set heading", "\u{1b}[1m## The read set\u{1b}[0m"),
-        ("a document path", "\u{1b}[36m"),
-    ];
-    for (what, wanted) in cases {
+fn every_declared_role_of_the_plan_is_painted_the_number_of_times_it_is_reached() {
+    let plan = regression();
+    let ansi = plan.render(ColorMode::Ansi);
+    assert!(
+        plan.refusal.is_none(),
+        "this plan refuses, so it writes no selection and holds neither count"
+    );
+    for role in PROBE_ROLES {
+        let wanted = match role {
+            // One per heading this plan's own state says it writes.
+            Role::Heading => headings_of(&plan).len(),
+            // One per selected probe, and one per document of the read set.
+            Role::Path => plan.selected.len() + plan.reads.len(),
+            other => panic!("{other:?} is in PROBE_ROLES with no expected count"),
+        };
         assert!(
-            ansi.contains(wanted),
-            "{what} is not painted in the colored plan"
+            wanted > 0,
+            "{role:?} has an empty population on this plan, so its count holds nothing"
+        );
+        let got = ansi.matches(&opening(role)).count();
+        assert_eq!(
+            got, wanted,
+            "{role:?} is painted {got} times and this plan reaches it {wanted} times"
+        );
+    }
+}
+
+/// No role outside the enumeration is painted, so the enumeration is the set.
+#[test]
+fn the_plan_paints_no_role_this_enumeration_omits() {
+    let ansi = regression().render(ColorMode::Ansi);
+    for role in [
+        Role::Error,
+        Role::Warn,
+        Role::Info,
+        Role::Path,
+        Role::Verb,
+        Role::Obligation,
+        Role::Heading,
+    ] {
+        let painted = ansi.contains(&opening(role));
+        // `Role` derives no `PartialEq`, and every opening sequence is distinct,
+        // so the enumeration is searched by what each member writes.
+        let declared = PROBE_ROLES
+            .iter()
+            .any(|member| opening(*member) == opening(role));
+        assert_eq!(
+            painted, declared,
+            "{role:?} is painted={painted} and enumerated={declared}. Add it to \
+             PROBE_ROLES with a position case and a count, or stop painting it"
+        );
+    }
+}
+
+/// `Role::Heading`, in the position only this surface writes it.
+///
+/// A whole painted literal per heading, `##` markers included. A bare
+/// `\x1b[1m` would be satisfied by any one of the six.
+#[test]
+fn every_plan_heading_is_painted_whole() {
+    let plan = regression();
+    let ansi = plan.render(ColorMode::Ansi);
+    for heading in headings_of(&plan) {
+        let wanted = paint(Role::Heading, heading, ColorMode::Ansi);
+        assert!(
+            ansi.contains(&wanted),
+            "the heading {heading:?} is not painted in the colored plan"
+        );
+    }
+}
+
+/// `Role::Path`, in **both** of the two positions this surface writes it.
+///
+/// The selection line puts the path in parentheses after the identifier, and
+/// the read-set line puts it first with the reason after it. Those two
+/// positions cannot be satisfied by one another, so setting either call site
+/// to `Plain` fails here. This is the case the audit side already had and the
+/// probe side did not: a bare escape-prefix assertion is satisfied by any
+/// sibling caller of the same role.
+#[test]
+fn both_path_positions_of_the_plan_are_painted() {
+    let plan = regression();
+    let ansi = plan.render(ColorMode::Ansi);
+    assert!(
+        !plan.selected.is_empty() && !plan.reads.is_empty(),
+        "both populations have to be non-empty, or this case asserts nothing"
+    );
+    for selected in &plan.selected {
+        let wanted = format!(
+            "- {} ({})",
+            selected.id,
+            paint(Role::Path, &selected.path, ColorMode::Ansi)
+        );
+        assert!(
+            ansi.contains(&wanted),
+            "the selection line of {} does not paint its path:\n{wanted:?}",
+            selected.id
+        );
+    }
+    for read in &plan.reads {
+        let wanted = format!(
+            "- {} ({})",
+            paint(Role::Path, &read.path, ColorMode::Ansi),
+            read.because.name()
+        );
+        assert!(
+            ansi.contains(&wanted),
+            "the read-set line of {} does not paint its path:\n{wanted:?}",
+            read.path
         );
     }
 }

@@ -943,32 +943,178 @@ fn the_colored_audit_strips_to_the_plain_audit() {
     );
 }
 
-/// Every role this report reaches for, painted where a reader expects it.
+/// The roles `Audit::render` declares, enumerated from the renderer.
 ///
-/// A case table rather than one assertion per role, on the shape
-/// `headwater_check::paint::tests` uses: a role that stops being written is a
-/// silent loss, and a table names each one so the failure says which.
+/// Three `paint(Role::` families reach this report: `Heading` at eleven
+/// positions, `Path` at two, and `Obligation` at one. This array is the set,
+/// and the cases below iterate it rather than a list somebody typed beside it.
+/// A fourth role wired into the renderer and not added here fails
+/// `the_audit_paints_no_role_this_enumeration_omits`.
+const AUDIT_ROLES: [Role; 3] = [Role::Heading, Role::Path, Role::Obligation];
+
+/// Every heading literal the renderer writes, in the order it writes them.
 ///
-/// Every case asserts a whole painted token and never a bare `\x1b[` prefix. A
-/// prefix is written by the heading of every section, so a case that asked for
-/// one would be satisfied by a report that had lost every other paint. That is
-/// a guard whose asserted outcome is produced by something else, and it passes
-/// vacuously.
+/// `findings` is written from one of two arms and both write the same literal,
+/// so the count is one either way.
+const AUDIT_HEADINGS: [&str; 11] = [
+    "taxonomy audit of",
+    "findings",
+    "relations, by the creator each one declares",
+    "relation families",
+    "facets, and what each one separates",
+    "shelves that hold several kinds",
+    "file names, against the layout each shelf declares",
+    "dwell in the current state",
+    "warrants, over the closed set spec 3 declares",
+    "adoption payload decay",
+    "what this verb does not measure, and what each one waits on",
+];
+
+/// This corpus, with one adoption reading handed to it, so that every role the
+/// renderer declares has a non-empty population in one report.
+///
+/// `this_repository().audit(AT)` is handed an empty series: the adoption store
+/// is outside the corpus root and no case of this file reads one. So
+/// `Role::Obligation` is reached zero times there, a count case over it would
+/// hold `0 == 0`, and a position case would have nothing to find. **That
+/// absence is why nothing asserted this report's only magenta until now**, and
+/// a helper that supplies the population is what closes it rather than a
+/// weaker assertion.
+fn an_audit_reaching_every_role(built: &Built) -> Audit {
+    built.audit_over(AT, |lock, date| Series {
+        reading: a_reading(
+            lock,
+            &date.render(),
+            vec![a_task("AD-1", "2027-06-30", 0, 1, 0)],
+        ),
+        recorded: vec![],
+        unreadable: vec![],
+    })
+}
+
+/// The opening SGR sequence a role writes, with no text and no reset.
+///
+/// Derived from `paint` rather than written as a literal, so a palette change
+/// moves one place and every case here follows it.
+fn opening(role: Role) -> String {
+    let painted = paint(role, "x", ColorMode::Ansi);
+    painted
+        .strip_suffix("x\u{1b}[0m")
+        .expect("paint wraps its text and closes with a reset")
+        .to_string()
+}
+
+/// How many times each declared role is painted, against a count this run
+/// derives from the audit rather than from the report.
+///
+/// This is the count half of the bar. A position case says a role reached the
+/// one place only this surface puts it. This says it reached every one of them,
+/// so setting a single call site to `Plain` is a failure rather than a quieter
+/// report. Every expected count is asserted non-zero first, because a role
+/// whose population is empty would otherwise be held by `0 == 0`.
 #[test]
-fn the_colored_audit_writes_every_role_it_declares() {
+fn every_declared_role_of_the_audit_is_painted_the_number_of_times_it_is_reached() {
+    let built = this_repository();
+    let audit = an_audit_reaching_every_role(&built);
+    let ansi = audit.render(ColorMode::Ansi);
+    for role in AUDIT_ROLES {
+        let wanted = match role {
+            // One per literal above.
+            Role::Heading => AUDIT_HEADINGS.len(),
+            // The shelf line and the folded prose under it, per reading.
+            Role::Path => 2 * audit.layouts.len(),
+            // One per adoption task the lock declares.
+            Role::Obligation => audit.adoption.reading.tasks.len(),
+            other => panic!("{other:?} is in AUDIT_ROLES with no expected count"),
+        };
+        assert!(
+            wanted > 0,
+            "{role:?} has an empty population on this corpus, so its count holds nothing"
+        );
+        let got = ansi.matches(&opening(role)).count();
+        assert_eq!(
+            got, wanted,
+            "{role:?} is painted {got} times and this run reaches it {wanted} times"
+        );
+    }
+}
+
+/// No role outside the enumeration is painted, so the enumeration is the set.
+///
+/// Without this, adding a fourth `paint(Role::` to the renderer and no case for
+/// it leaves the coverage claim above false and nothing says so.
+#[test]
+fn the_audit_paints_no_role_this_enumeration_omits() {
+    let built = this_repository();
+    let ansi = an_audit_reaching_every_role(&built).render(ColorMode::Ansi);
+    for role in [
+        Role::Error,
+        Role::Warn,
+        Role::Info,
+        Role::Path,
+        Role::Verb,
+        Role::Obligation,
+        Role::Heading,
+    ] {
+        let painted = ansi.contains(&opening(role));
+        // `Role` derives no `PartialEq`, and every opening sequence is distinct,
+        // so the enumeration is searched by what each member writes.
+        let declared = AUDIT_ROLES
+            .iter()
+            .any(|member| opening(*member) == opening(role));
+        assert_eq!(
+            painted, declared,
+            "{role:?} is painted={painted} and enumerated={declared}. Add it to \
+             AUDIT_ROLES with a position case and a count, or stop painting it"
+        );
+    }
+}
+
+/// `Role::Heading`, in the position only this surface writes it.
+///
+/// A whole painted literal per heading. A bare `\x1b[1m` would be satisfied by
+/// any one of the eleven, which is the shape that let a deleted paint pass.
+#[test]
+fn every_audit_heading_is_painted_whole() {
     let built = this_repository();
     let ansi = repository_audit(&built, AT).render(ColorMode::Ansi);
-    let cases: [(&str, &str); 2] = [
-        ("a heading", "\u{1b}[1mtaxonomy audit of\u{1b}[0m"),
-        (
-            "a section heading",
-            "\u{1b}[1madoption payload decay\u{1b}[0m",
-        ),
-    ];
-    for (what, wanted) in cases {
+    for heading in AUDIT_HEADINGS {
+        let wanted = paint(Role::Heading, heading, ColorMode::Ansi);
         assert!(
-            ansi.contains(wanted),
-            "{what} is not painted in the colored report"
+            ansi.contains(&wanted),
+            "the heading {heading:?} is not painted in the colored report"
+        );
+    }
+}
+
+/// `Role::Obligation`, in the position only the adoption section writes it.
+///
+/// This report's only magenta, and until this case nothing asserted it at all:
+/// setting `render.rs`'s `paint(Role::Obligation, …)` to `Plain` took the
+/// magenta from one occurrence to none with every suite green. The identifier
+/// is followed by two spaces and `open `, which no other line of this report
+/// writes, so the assertion cannot be satisfied by a sibling caller.
+#[test]
+fn the_adoption_task_identifier_is_painted_where_the_task_line_puts_it() {
+    let built = this_repository();
+    let audit = an_audit_reaching_every_role(&built);
+    let ansi = audit.render(ColorMode::Ansi);
+    let tasks = &audit.adoption.reading.tasks;
+    assert!(
+        !tasks.is_empty(),
+        "the lock declares no adoption task, so this case asserts nothing"
+    );
+    for task in tasks {
+        let wanted = format!(
+            "    {}  open {}, closed {}",
+            paint(Role::Obligation, &task.id, ColorMode::Ansi),
+            task.open,
+            task.closed
+        );
+        assert!(
+            ansi.contains(&wanted),
+            "the task {} is not painted on its own line:\n{wanted:?}",
+            task.id
         );
     }
 }
