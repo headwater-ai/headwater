@@ -793,35 +793,39 @@ add:
   # after 90 days, at `warn`, which is the posture `evidence-cited` takes on an
   # evaluation in the base package.
   #
-  # **It names `acceptance_criterion`, `verified_by` admits two kinds, and the
-  # gap between those two facts is a cost this block states rather than hides.**
-  # `to_kind` is one name and a relation's `to:` is a list, so this expectation
-  # recognizes the first endpoint and not the second. A `current` requirement
-  # that a probe alone verifies is reported after 90 days as reaching nothing,
-  # and the remediation tells its author to declare an edge already declared.
-  # That is a false report, at `warn`, over a case no document in this corpus
-  # holds today: the one requirement here is verified by an acceptance
-  # criterion.
+  # **It names no `to_kind`, and `verified_by` admits two kinds.** A relation's
+  # `to:` is a list, and an expectation that names no target kind is satisfied
+  # by any kind the relation admits at its target end. So an acceptance
+  # criterion settles this expectation and so does a probe, which is the
+  # reading this corpus wants and the reading
+  # [spec 2](../docs/spec/02-taxonomy-model.md#participation-expectations)
+  # states. The finding text follows the declaration: it names the relation
+  # alone, because the relation alone is what the document is owed.
   #
-  # **It is declared this way because no other declaration validates.**
-  # `Participation::satisfied` reads an absent `to_kind` as "any neighbour on
-  # this relation", which is exactly the reading wanted here, and the
-  # meta-schema declares `to_kind` a required member, so that branch is a
-  # decline point no declaration can reach.
-  # [HW-OBL-0128](../docs/obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md)
-  # already records that sentence, and
+  # **It was declared `to_kind: acceptance_criterion` until 2026-09-11, and
+  # that was a false report waiting for a document to trip it.** A `current`
+  # requirement that a probe alone verified was reported after 90 days as
+  # reaching nothing, and the remediation told its author to declare an edge
+  # already declared. `Participation::satisfied` always read an absent
+  # `to_kind` the right way, and `engine/crates/meta/meta-schema.yml` declared
+  # the member required, so no declaration anywhere could reach that branch.
+  # The member is optional now and
   # [HW-OBL-0039](../docs/obligations/0039-a-participation-expectation-names-one-target-kind.md)
-  # holds the obligation. That record proposes an abstract kind over the target
-  # kinds as the remedy, and this declaration measured it: `to_kind:
-  # governed_document` is refused twice by expectation well-formedness, once for
-  # naming a kind no shelf reaches and once because `verified_by` does not admit
-  # it at its target end. So the recorded remedy does not run either, and
-  # closing this needs the meta-schema member to become optional.
+  # is discharged.
   #
-  # `engine/crates/check/tests/participation_target.rs` is the fixture the rule
-  # had no case for. It holds two kinds that differ in this one clause over one
-  # tree, so the cost above is a number a reader can check rather than a worry,
-  # and the day the meta-schema yields, that test already says what changes.
+  # The abstract kind that record proposed as the remedy was measured here and
+  # does not run. `to_kind: governed_document` is refused twice by expectation
+  # well-formedness, once for naming a kind no shelf reaches and once because
+  # `verified_by` does not admit it at its target end.
+  # [HW-OBL-0128](../docs/obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md)
+  # records the same measurement from the other side and stays open, because
+  # its subject is the crate root and not this member.
+  #
+  # `engine/crates/check/tests/participation_target.rs` holds the behavior over
+  # one tree: two kinds that differ in this one clause, where the narrow arm
+  # reports a probe-verified document and the broad arm does not.
+  # `engine/crates/resolve/fixtures/validate/valid/` holds the other half, that
+  # an expectation with no `to_kind` passes the meta-schema and validates.
   kinds.requirement:
     is_a: governed_document
     purpose: requirement
@@ -837,7 +841,6 @@ add:
       expect:
         - id: requirement-verified
           relation: verified_by
-          to_kind: acceptance_criterion
           when: {status: current}
           within: 90d
           since: state_entered

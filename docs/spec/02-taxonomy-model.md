@@ -527,7 +527,7 @@ Sidecars are optional. A component with nothing mechanically checkable carries n
 
 ## Participation expectations
 
-A kind may declare that its documents are **expected to participate** in a relation. A document of this kind, in a given state, should acquire the named relation to a document of another kind within a window.
+A kind may declare that its documents are **expected to participate** in a relation. A document of this kind, in a given state, should acquire the named relation to another document within a window.
 
 ```yaml
 kinds:
@@ -543,6 +543,8 @@ kinds:
           severity: warn
           rationale: a decision nothing implements is either not a decision or not done
 ```
+
+**`to_kind` is optional, and its absence widens the expectation.** Where an expectation names a `to_kind`, only a target document of that kind satisfies it. Where it names none, a target document of any kind that the relation admits at its target end satisfies it. A relation's `to:` is a list, so an expectation over a relation with two target kinds either names one of the two or reads the whole list. The finding text follows the declaration: it names the target kind where the expectation named one, and the relation alone where it did not.
 
 An earlier draft declared these as a separate top-level concept, `sequences`, sold as chains. Every declared chain was in fact a single hop: *kind + state ⇒ expected relation, within window*. A chain is three expectations that share endpoints. A single hop is a state-conditional, windowed, detective-posture participation constraint — the `required` end of the cardinality spectrum that a relation already has, plus a clock. So it is declared on the kind, beside the other obligations that a kind carries, and the separate concept is gone. What it models is unchanged: genre theory's *genre system* — proposal → decision → specification → evidence, and incident → postmortem → standard change.
 

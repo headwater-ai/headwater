@@ -478,7 +478,6 @@ kinds:
       expect:
         - id: requirement-verified
           relation: verified_by
-          to_kind: acceptance_criterion
           when:
             status: current
           within: 90d
