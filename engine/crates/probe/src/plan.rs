@@ -34,6 +34,7 @@
 use crate::budget::{Budgets, Envelope};
 use crate::{dollars, Arm, Category, Cents, Expectation, Tier};
 use headwater_census::census::{Census, Outcome};
+use headwater_check::paint::{paint, ColorMode, Role};
 use headwater_graph::edges::Target;
 use headwater_graph::{Config, Graph};
 
@@ -797,12 +798,18 @@ impl Plan {
 
     /// The briefing, for the recorder rather than for a model.
     ///
+    /// `mode` is a parameter and never a read, so this crate holds no opinion
+    /// about whether anything is a terminal. The one human call site in
+    /// `headwater_cli` states `stdout_color()` and every test states
+    /// [`ColorMode::Plain`]. Nothing here folds, so every paint is applied
+    /// where the token is written.
+    ///
     /// One format, and it is prose, for the reason the sweep's plan is prose.
     /// The difference is the reader: a sweep briefs a model and this briefs the
     /// process that drives one. Nothing here is a prompt, because a prompt that
     /// the engine wrote would put this engine's phrasing inside the thing under
     /// test.
-    pub fn render(&self) -> String {
+    pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
         let _ = writeln!(
@@ -814,7 +821,11 @@ impl Plan {
         );
         let _ = writeln!(out);
 
-        let _ = writeln!(out, "## The run identity this plan fixes");
+        let _ = writeln!(
+            out,
+            "{}",
+            paint(Role::Heading, "## The run identity this plan fixes", mode)
+        );
         let _ = writeln!(out);
         let _ = writeln!(out, "```yaml");
         let _ = writeln!(out, "lock: {}", self.lock);
@@ -848,7 +859,7 @@ impl Plan {
         // of zeros beside a refusal reads as a run that costs nothing rather
         // than as a run that was never priced.
         if self.budget > 0 {
-            let _ = writeln!(out, "## The cost");
+            let _ = writeln!(out, "{}", paint(Role::Heading, "## The cost", mode));
             let _ = writeln!(out);
             let _ = writeln!(
                 out,
@@ -873,16 +884,25 @@ impl Plan {
         }
 
         if let Some(refusal) = &self.refusal {
-            let _ = writeln!(out, "## This run does not start");
+            let _ = writeln!(
+                out,
+                "{}",
+                paint(Role::Heading, "## This run does not start", mode)
+            );
             let _ = writeln!(out);
             let _ = writeln!(out, "{refusal}");
             return out;
         }
 
-        let _ = writeln!(out, "## The selection");
+        let _ = writeln!(out, "{}", paint(Role::Heading, "## The selection", mode));
         let _ = writeln!(out);
         for selected in &self.selected {
-            let _ = writeln!(out, "- {} ({})", selected.id, selected.path);
+            let _ = writeln!(
+                out,
+                "- {} ({})",
+                selected.id,
+                paint(Role::Path, &selected.path, mode)
+            );
             let _ = writeln!(out, "    category: {}", selected.category.name());
             let _ = writeln!(out, "    expects: {}", selected.expectation.name());
             if !selected.examines.is_empty() {
@@ -906,7 +926,7 @@ impl Plan {
         }
         let _ = writeln!(out);
 
-        let _ = writeln!(out, "## The read set");
+        let _ = writeln!(out, "{}", paint(Role::Heading, "## The read set", mode));
         let _ = writeln!(out);
         let _ = writeln!(
             out,
@@ -919,7 +939,7 @@ impl Plan {
             let _ = writeln!(
                 out,
                 "- {} ({}) {}",
-                read.path,
+                paint(Role::Path, &read.path, mode),
                 read.because.name(),
                 read.digest.as_deref().unwrap_or("-")
             );
@@ -943,7 +963,11 @@ impl Plan {
         }
         let _ = writeln!(out);
 
-        let _ = writeln!(out, "## What the recorder writes back");
+        let _ = writeln!(
+            out,
+            "{}",
+            paint(Role::Heading, "## What the recorder writes back", mode)
+        );
         let _ = writeln!(out);
         let _ = writeln!(
             out,

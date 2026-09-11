@@ -25,6 +25,7 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::adoption::State;
 use headwater_check::context::Date;
+use headwater_check::paint::ColorMode;
 use headwater_check::Shape;
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -164,7 +165,7 @@ fn the_fixture_tree_produces_the_recorded_audit() {
     let built = fixture_tree();
     compare(
         &fixtures_dir().join("audit.report"),
-        &built.audit(AT).render(),
+        &built.audit(AT).render(ColorMode::Plain),
     );
 }
 
@@ -289,7 +290,12 @@ fn a_finding_arrives_from_the_declared_window_and_leaves_when_the_date_moves() {
         .iter()
         .map(|reading| reading.name.as_str())
         .collect();
-    assert_eq!(found, ["catalogues", "supersedes"], "{}", audit.render());
+    assert_eq!(
+        found,
+        ["catalogues", "supersedes"],
+        "{}",
+        audit.render(ColorMode::Plain)
+    );
 
     // 2025-08-01 is the earliest freshness date the tree declares, so on the
     // day after it every document is inside a 90-day window.
@@ -314,7 +320,7 @@ fn a_finding_arrives_from_the_declared_window_and_leaves_when_the_date_moves() {
         found,
         ["catalogues", "supersedes", "governs"],
         "{}",
-        outside.render()
+        outside.render(ColorMode::Plain)
     );
 }
 
@@ -362,7 +368,7 @@ fn every_declared_creator_has_a_row_and_the_absent_ones_are_named() {
     assert_eq!(rows, CREATORS);
     assert_eq!(audit.creators.absent(), ["generator", "import"]);
 
-    let report = audit.render();
+    let report = audit.render(ColorMode::Plain);
     assert!(
         report.contains("import — no relation declares it"),
         "{report}"
@@ -408,8 +414,8 @@ fn two_audits_of_one_corpus_at_one_date_are_byte_identical() {
     let first = this_repository();
     let second = this_repository();
     assert_eq!(
-        repository_audit(&first, "2026-01-01").render(),
-        repository_audit(&second, "2026-01-01").render()
+        repository_audit(&first, "2026-01-01").render(ColorMode::Plain),
+        repository_audit(&second, "2026-01-01").render(ColorMode::Plain)
     );
 }
 
@@ -569,7 +575,7 @@ fn a_wait_ends_when_the_corpus_supplies_what_it_waits_on() {
         supplied.says()
     );
     assert_eq!(supplied.says(), "1 of 7 halves carry a `cue` attribute");
-    let report = after.render();
+    let report = after.render(ColorMode::Plain);
     assert!(!report.contains("no half of the"), "{report}");
     assert!(
         report.contains("      supplied — 1 of 7 halves"),
@@ -626,7 +632,7 @@ fn a_reading_that_still_waits_says_where_the_absence_lives() {
         cue.says()
     );
 
-    let report = audit.render();
+    let report = audit.render(ColorMode::Plain);
     assert!(report.contains("nothing declares it —"), "{report}");
     assert!(report.contains("nothing authored one —"), "{report}");
     assert!(report.contains("2 of 2 still wait"), "{report}");
@@ -662,7 +668,7 @@ fn every_warrant_of_the_closed_set_has_a_row_and_a_value_outside_it_is_reported(
         audit.documents
     );
 
-    let report = audit.render();
+    let report = audit.render(ColorMode::Plain);
     assert!(report.contains("`pending`"), "{report}");
     assert!(
         report.contains("No\n  check of this engine reads a warrant"),
@@ -699,7 +705,7 @@ fn a_reading(lock: &str, date: &str, tasks: Vec<TaskReading>) -> Reading {
 #[test]
 fn an_empty_store_and_an_empty_payload_are_two_different_sentences() {
     let built = fixture_tree();
-    let text = built.audit(AT).render();
+    let text = built.audit(AT).render(ColorMode::Plain);
     assert!(
         text.contains("no reading recorded"),
         "the store is empty and the section says so:\n{text}"
@@ -734,7 +740,7 @@ fn an_open_payload_and_a_discharged_one_render_differently() {
             recorded: vec![],
             unreadable: vec![],
         })
-        .render();
+        .render(ColorMode::Plain);
     let zero = built
         .audit_over(AT, |lock, date| Series {
             reading: a_reading(
@@ -745,7 +751,7 @@ fn an_open_payload_and_a_discharged_one_render_differently() {
             recorded: vec![],
             unreadable: vec![],
         })
-        .render();
+        .render(ColorMode::Plain);
     assert_ne!(open, zero, "two payloads, two readings");
     assert!(
         open.contains("4 pairs open") && open.contains("open 4, closed 0"),
@@ -788,7 +794,7 @@ fn two_digests_are_named_and_never_trended_across() {
             ],
             unreadable: vec![],
         })
-        .render();
+        .render(ColorMode::Plain);
     assert!(
         text.contains("2 taxonomies produced these readings"),
         "the section counts the denominators:\n{text}"
@@ -824,7 +830,7 @@ fn an_unreadable_line_is_named_and_counted_nowhere() {
                 why: "it names no `tasks`".to_string(),
             }],
         })
-        .render();
+        .render(ColorMode::Plain);
     assert!(
         text.contains("line 2 of the store is not a reading and is counted nowhere"),
         "the line is named:\n{text}"
@@ -862,8 +868,8 @@ fn an_empty_task_list_names_the_cause_it_read() {
             recorded: vec![],
             unreadable: vec![],
         })
-        .render();
-    let undeclared = built.audit(AT).render();
+        .render(ColorMode::Plain);
+    let undeclared = built.audit(AT).render(ColorMode::Plain);
 
     assert!(
         refused.contains("the cause is a refusal rather than an"),
@@ -884,5 +890,91 @@ fn an_empty_task_list_names_the_cause_it_read() {
     assert!(
         !undeclared.contains("it could not read"),
         "with no refusal line, because nothing was refused:\n{undeclared}"
+    );
+}
+
+/// Every SGR sequence in a string, taken back off it.
+///
+/// The report is composed, folded and then painted, so the painted report and
+/// the plain report have to be one string with the color added and nothing
+/// else moved. This is what says so.
+fn stripped(text: &str) -> String {
+    let mut out = String::new();
+    let mut rest = text;
+    while let Some(start) = rest.find('\u{1b}') {
+        out.push_str(&rest[..start]);
+        match rest[start..].find('m') {
+            Some(end) => rest = &rest[start + end + 1..],
+            None => {
+                rest = "";
+                break;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+/// The colored audit strips to the plain audit, byte for byte.
+///
+/// `render` folds two blocks through [`headwater_check::filled`], which
+/// measures a line in characters. An SGR sequence is characters that occupy no
+/// column, so a layout name painted before the fold would spend nine of the
+/// line's eighty characters on bytes a terminal never shows and every break
+/// after it would land early. Both reports are internally consistent and both
+/// are eighty columns wide, so nothing but this comparison can see it.
+///
+/// `this_repository` rather than the fixture tree, because the fold this
+/// protects is the layouts block and the shelves of this corpus are what
+/// declare a layout with a name long enough to reach a break.
+#[test]
+fn the_colored_audit_strips_to_the_plain_audit() {
+    let built = this_repository();
+    let ansi = repository_audit(&built, AT).render(ColorMode::Ansi);
+    let plain = repository_audit(&built, AT).render(ColorMode::Plain);
+    assert!(
+        ansi.contains('\u{1b}'),
+        "the colored report has to carry color, or this comparison holds nothing"
+    );
+    assert_eq!(
+        stripped(&ansi),
+        plain,
+        "a break moved when the color arrived, so something painted before it folded"
+    );
+}
+
+/// Every role this report reaches for, painted where a reader expects it.
+///
+/// A case table rather than one assertion per role, on the shape
+/// `headwater_check::paint::tests` uses: a role that stops being written is a
+/// silent loss, and a table names each one so the failure says which.
+#[test]
+fn the_colored_audit_writes_every_role_it_declares() {
+    let built = this_repository();
+    let ansi = repository_audit(&built, AT).render(ColorMode::Ansi);
+    let cases: [(&str, &str); 3] = [
+        ("a heading", "\u{1b}[1mtaxonomy audit of\u{1b}[0m"),
+        (
+            "a section heading",
+            "\u{1b}[1madoption payload decay\u{1b}[0m",
+        ),
+        ("a layout name, which is a path", "\u{1b}[36m"),
+    ];
+    for (what, wanted) in cases {
+        assert!(
+            ansi.contains(wanted),
+            "{what} is not painted in the colored report"
+        );
+    }
+}
+
+/// The plain audit carries no escape byte at all.
+#[test]
+fn the_plain_audit_writes_no_escape_byte() {
+    let built = this_repository();
+    let plain = repository_audit(&built, AT).render(ColorMode::Plain);
+    assert!(
+        !plain.contains('\u{1b}'),
+        "the plain report has to be plain"
     );
 }

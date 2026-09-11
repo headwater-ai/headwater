@@ -10,7 +10,25 @@
 
 use crate::Audit;
 use headwater_check::filled;
+use headwater_check::paint::{paint, ColorMode, Role};
 use std::fmt::Write;
+
+/// A token painted into text that is already folded.
+///
+/// [`filled`] measures a line in characters, and an SGR sequence is characters
+/// that occupy no column. A token painted before the fold therefore spends nine
+/// characters of the line's budget on bytes a terminal never shows, and every
+/// break after it lands early. Compose plain, fold, then substitute here.
+///
+/// The token is a single word with no space in it, so the word-boundary fold
+/// never splits one and the substitution always finds it whole. That is the
+/// same condition `headwater_adapter::text` states for its own color words.
+fn painted_in_place(folded: &str, token: &str, role: Role, mode: ColorMode) -> String {
+    match mode {
+        ColorMode::Plain => folded.to_string(),
+        ColorMode::Ansi => folded.replace(token, &paint(role, token, mode)),
+    }
+}
 
 /// A count with its noun, in the number the count calls for.
 ///
@@ -25,26 +43,34 @@ fn many(count: usize, singular: &str, plural: &str) -> String {
 }
 
 impl Audit {
-    pub fn render(&self) -> String {
+    /// The report, rendered in the mode the caller sensed for its stream.
+    ///
+    /// `mode` is a parameter and never a read, so this crate holds no opinion
+    /// about whether anything is a terminal. Every `--format json` path, the
+    /// MCP tool and every test state [`ColorMode::Plain`], and the one human
+    /// call site in `headwater_cli` states `stdout_color()`.
+    pub fn render(&self, mode: ColorMode) -> String {
         let mut out = String::new();
-        self.header(&mut out);
-        self.creators_section(&mut out);
-        self.families_section(&mut out);
-        self.facets_section(&mut out);
-        self.shelves_section(&mut out);
-        self.layouts_section(&mut out);
-        self.dwell_section(&mut out);
-        self.warrants_section(&mut out);
-        self.adoption_section(&mut out);
-        self.waiting_section(&mut out);
+        self.header(&mut out, mode);
+        self.creators_section(&mut out, mode);
+        self.families_section(&mut out, mode);
+        self.facets_section(&mut out, mode);
+        self.shelves_section(&mut out, mode);
+        self.layouts_section(&mut out, mode);
+        self.dwell_section(&mut out, mode);
+        self.warrants_section(&mut out, mode);
+        self.adoption_section(&mut out, mode);
+        self.waiting_section(&mut out, mode);
         out
     }
 
-    fn header(&self, out: &mut String) {
+    fn header(&self, out: &mut String, mode: ColorMode) {
         let _ = writeln!(
             out,
-            "taxonomy audit of {} {}",
-            self.subject.package, self.subject.version
+            "{} {} {}",
+            paint(Role::Heading, "taxonomy audit of", mode),
+            self.subject.package,
+            self.subject.version
         );
         let _ = writeln!(out, "  lock {}", self.subject.lock);
         let _ = writeln!(
@@ -82,9 +108,15 @@ impl Audit {
 
         let findings = self.findings();
         match findings.is_empty() {
-            true => out.push_str("\nfindings\n  none. No relation has a half on a document past the declared window.\n"),
+            true => {
+                let _ = writeln!(
+                    out,
+                    "\n{}\n  none. No relation has a half on a document past the declared window.",
+                    paint(Role::Heading, "findings", mode)
+                );
+            }
             false => {
-                out.push_str("\nfindings\n");
+                let _ = writeln!(out, "\n{}", paint(Role::Heading, "findings", mode));
                 for reading in findings {
                     let _ = writeln!(
                         out,
@@ -96,8 +128,16 @@ impl Audit {
         }
     }
 
-    fn creators_section(&self, out: &mut String) {
-        out.push_str("\nrelations, by the creator each one declares\n");
+    fn creators_section(&self, out: &mut String, mode: ColorMode) {
+        let _ = writeln!(
+            out,
+            "\n{}",
+            paint(
+                Role::Heading,
+                "relations, by the creator each one declares",
+                mode
+            )
+        );
         out.push_str(
             "  Q4 keeps `created_by` on the relation type, so every row is a relation and never\n  \
              an edge instance. Two halves of one relation carry one value whatever wrote them.\n  \
@@ -160,8 +200,8 @@ impl Audit {
         }
     }
 
-    fn families_section(&self, out: &mut String) {
-        out.push_str("\nrelation families\n");
+    fn families_section(&self, out: &mut String, mode: ColorMode) {
+        let _ = writeln!(out, "\n{}", paint(Role::Heading, "relation families", mode));
         let mut overrides = 0;
         for reading in &self.families {
             let _ = writeln!(
@@ -190,8 +230,12 @@ impl Audit {
         }
     }
 
-    fn facets_section(&self, out: &mut String) {
-        out.push_str("\nfacets, and what each one separates\n");
+    fn facets_section(&self, out: &mut String, mode: ColorMode) {
+        let _ = writeln!(
+            out,
+            "\n{}",
+            paint(Role::Heading, "facets, and what each one separates", mode)
+        );
         for reading in &self.facets {
             let role = match &reading.role {
                 Some(role) => format!("role {role}"),
@@ -255,8 +299,12 @@ impl Audit {
         }
     }
 
-    fn shelves_section(&self, out: &mut String) {
-        out.push_str("\nshelves that hold several kinds\n");
+    fn shelves_section(&self, out: &mut String, mode: ColorMode) {
+        let _ = writeln!(
+            out,
+            "\n{}",
+            paint(Role::Heading, "shelves that hold several kinds", mode)
+        );
         if self.shelves.is_empty() {
             out.push_str("  none. Every shelf this taxonomy declares holds one kind.\n");
             return;
@@ -289,8 +337,16 @@ impl Audit {
     /// state an authoring failure where a declaration is missing.
     ///
     /// [`Supply`]: crate::Supply
-    fn layouts_section(&self, out: &mut String) {
-        out.push_str("\nfile names, against the layout each shelf declares\n");
+    fn layouts_section(&self, out: &mut String, mode: ColorMode) {
+        let _ = writeln!(
+            out,
+            "\n{}",
+            paint(
+                Role::Heading,
+                "file names, against the layout each shelf declares",
+                mode
+            )
+        );
         if self.layouts.is_empty() {
             out.push_str(
                 "  none. No shelf of this taxonomy declares a layout, so nothing names a\n  \
@@ -308,16 +364,27 @@ impl Audit {
                 out,
                 "  {} — `{}`, {}",
                 reading.shelf,
-                reading.layout,
+                paint(Role::Path, &reading.layout, mode),
                 many(reading.identified, "document", "documents")
             );
-            out.push_str(&filled(
+            // Folded first and painted afterwards. `says()` quotes the layout
+            // inside the prose it folds, so a paint that ran before this call
+            // would move every break after the layout name six characters
+            // left, and the fifth arm of `tools/color-fixtures.sh` is what
+            // sees that.
+            let folded = filled(
                 &format!(
                     "      {} — {}\n",
                     reading.adherence.located(),
                     reading.adherence.says()
                 ),
                 headwater_check::fill::WIDTH,
+            );
+            out.push_str(&painted_in_place(
+                &folded,
+                &reading.layout,
+                Role::Path,
+                mode,
             ));
         }
         let measured: usize = self.layouts.iter().map(|reading| reading.measured).sum();
@@ -331,8 +398,12 @@ impl Audit {
         );
     }
 
-    fn dwell_section(&self, out: &mut String) {
-        out.push_str("\ndwell in the current state\n");
+    fn dwell_section(&self, out: &mut String, mode: ColorMode) {
+        let _ = writeln!(
+            out,
+            "\n{}",
+            paint(Role::Heading, "dwell in the current state", mode)
+        );
         if self.dwell.is_empty() {
             out.push_str(
                 "  no reading. It needs a facet in the `state` role and one in `state_entered`,\n  \
@@ -376,9 +447,17 @@ impl Audit {
     /// a reader can tell an empty arm from an absent one. Two of the four rows
     /// stand at zero by construction rather than for want of authoring, and
     /// the row says so instead of leaving a reader to work it out.
-    fn warrants_section(&self, out: &mut String) {
+    fn warrants_section(&self, out: &mut String, mode: ColorMode) {
         let warrants = &self.warrants;
-        out.push_str("\nwarrants, over the closed set spec 3 declares\n");
+        let _ = writeln!(
+            out,
+            "\n{}",
+            paint(
+                Role::Heading,
+                "warrants, over the closed set spec 3 declares",
+                mode
+            )
+        );
         out.push_str(
             "  A warrant states what stands behind a document, and promotion is the act that\n  \
              moves one from `asserted` to `accepted`. The set is closed, so every value has a\n  \
@@ -431,10 +510,14 @@ impl Audit {
     /// this verb **takes**, and the waits are what it does not take. What this
     /// verb cannot do is state a trend from one reading, and the section says
     /// that in its own words rather than becoming a fourth `Supply` arm.
-    fn adoption_section(&self, out: &mut String) {
+    fn adoption_section(&self, out: &mut String, mode: ColorMode) {
         let series = &self.adoption;
         let recorded = &series.recorded;
-        out.push_str("\nadoption payload decay\n");
+        let _ = writeln!(
+            out,
+            "\n{}",
+            paint(Role::Heading, "adoption payload decay", mode)
+        );
         out.push_str(
             "  The store is `.headwater/adoption.jsonl`, which is outside the corpus root. No\n  \
              census row covers it, no language regime binds it, and no rule reads it. No crate\n  \
@@ -500,7 +583,7 @@ impl Audit {
             let _ = writeln!(
                 out,
                 "    {}  open {}, closed {}, holding {}, until {}, {}",
-                task.id,
+                paint(Role::Obligation, &task.id, mode),
                 task.open,
                 task.closed,
                 many(task.held, "finding", "findings"),
@@ -580,8 +663,16 @@ impl Audit {
     /// now evaluated against the corpus in front of the run, and each one names
     /// where its absence lives, because a declaration, an authoring pass and a
     /// decision are three different things to go and do.
-    fn waiting_section(&self, out: &mut String) {
-        out.push_str("\nwhat this verb does not measure, and what each one waits on\n");
+    fn waiting_section(&self, out: &mut String, mode: ColorMode) {
+        let _ = writeln!(
+            out,
+            "\n{}",
+            paint(
+                Role::Heading,
+                "what this verb does not measure, and what each one waits on",
+                mode
+            )
+        );
         out.push_str(
             "  Every prerequisite below was evaluated against this corpus on this run, so a\n  wait that a corpus has ended says so with no edit to this engine.\n",
         );

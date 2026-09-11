@@ -36,6 +36,7 @@ use headwater_census::census;
 use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::paint::ColorMode;
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -424,7 +425,10 @@ fn a_call_that_named_no_document_of_this_corpus_is_reported_apart() {
 
 #[test]
 fn the_regression_plan_over_the_fixture_corpus_is_recorded() {
-    compare(&fixtures_dir().join("plan.txt"), &regression().render());
+    compare(
+        &fixtures_dir().join("plan.txt"),
+        &regression().render(ColorMode::Plain),
+    );
 }
 
 /// A plan's `harness` field names [`headwater_resolve::release::ENGINE`] and
@@ -483,7 +487,10 @@ fn every_predicate_form_is_recorded_satisfied_refuted_and_refused() {
 /// the recorded fixtures above exist and why this test is not the instrument.
 #[test]
 fn a_plan_a_record_and_a_grade_are_each_the_same_bytes_twice() {
-    assert_eq!(regression().render(), regression().render());
+    assert_eq!(
+        regression().render(ColorMode::Plain),
+        regression().render(ColorMode::Plain)
+    );
     let source = transcript("transcript.md");
     assert_eq!(record_of(&source).render(), record_of(&source).render());
     assert_eq!(
@@ -762,7 +769,7 @@ fn an_arm_the_tier_does_not_declare_refuses_rather_than_planning_the_other_one()
 /// back.
 #[test]
 fn a_narrowed_plan_is_not_the_plan_the_caller_would_have_got_by_asking_for_nothing() {
-    let asked_for_nothing = regression().render();
+    let asked_for_nothing = regression().render(ColorMode::Plain);
     let asked_for_absent = plan_at(
         Tier::Regression,
         &Narrowing {
@@ -770,7 +777,7 @@ fn a_narrowed_plan_is_not_the_plan_the_caller_would_have_got_by_asking_for_nothi
             ..Narrowing::default()
         },
     )
-    .render();
+    .render(ColorMode::Plain);
     assert_ne!(
         asked_for_nothing, asked_for_absent,
         "an undeclared arm handed back the plan of a run nobody asked for"
@@ -1163,4 +1170,66 @@ fn a_ceiling_the_run_would_have_exceeded_leaves_the_plan_gradable() {
         .gradable()
         .expect("a cost is a fact about a run that has not happened");
     assert_eq!(selected.len(), plan.selected.len());
+}
+
+/// Every SGR sequence in a string, taken back off it.
+fn stripped(text: &str) -> String {
+    let mut out = String::new();
+    let mut rest = text;
+    while let Some(start) = rest.find('\u{1b}') {
+        out.push_str(&rest[..start]);
+        match rest[start..].find('m') {
+            Some(end) => rest = &rest[start + end + 1..],
+            None => {
+                rest = "";
+                break;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+/// The colored plan strips to the plain plan, byte for byte.
+///
+/// Nothing in this briefing folds, so there is no early break to catch here.
+/// What this holds is the other half: the color is added and no other byte
+/// moves, which is what a recorded fixture of the plain plan already assumes
+/// and nothing else states.
+#[test]
+fn the_colored_plan_strips_to_the_plain_plan() {
+    let ansi = regression().render(ColorMode::Ansi);
+    let plain = regression().render(ColorMode::Plain);
+    assert!(
+        ansi.contains('\u{1b}'),
+        "the colored plan has to carry color, or this comparison holds nothing"
+    );
+    assert_eq!(stripped(&ansi), plain);
+}
+
+/// Every role this briefing reaches for, painted where a reader expects it.
+#[test]
+fn the_colored_plan_writes_every_role_it_declares() {
+    let ansi = regression().render(ColorMode::Ansi);
+    let cases: [(&str, &str); 3] = [
+        (
+            "the selection heading",
+            "\u{1b}[1m## The selection\u{1b}[0m",
+        ),
+        ("the read set heading", "\u{1b}[1m## The read set\u{1b}[0m"),
+        ("a document path", "\u{1b}[36m"),
+    ];
+    for (what, wanted) in cases {
+        assert!(
+            ansi.contains(wanted),
+            "{what} is not painted in the colored plan"
+        );
+    }
+}
+
+/// The plain plan carries no escape byte at all.
+#[test]
+fn the_plain_plan_writes_no_escape_byte() {
+    let plain = regression().render(ColorMode::Plain);
+    assert!(!plain.contains('\u{1b}'), "the plain plan has to be plain");
 }
