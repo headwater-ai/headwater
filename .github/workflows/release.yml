@@ -134,6 +134,28 @@ jobs:
           cat "$checksum"
           echo "asset=$asset" >>"$GITHUB_ENV"
           echo "checksum=$checksum" >>"$GITHUB_ENV"
+      - name: The digest the package in this tree publishes
+        # `--generate-notes` writes a list of merged pull requests and a compare
+        # link, and nothing else. So an engine release has never stated the
+        # `release.digest` a consumer pins, and `v0.1.2` still does not: a
+        # reader following the front page was sent to the notes of a DIFFERENT
+        # tag for it, which is #775. `release-taxonomy.yml` states the value
+        # because it passes `--notes` as well, and the two lines below build
+        # the same sentence out of the record already in the tree at this tag.
+        #
+        # Nothing here reaches the network, and that is why it is a step of its
+        # own rather than three more lines inside the `gh release create` step.
+        # `tools/readme-fixtures.sh` extracts this `run:` block by the name
+        # above and RUNS it against the checkout, asserting what it writes
+        # against the digest of that checkout's own record. A workflow that
+        # only ever runs on a pushed tag gets no other run before the day
+        # somebody cuts a release, and a grep for the flag is not one.
+        run: |
+          digest=$(awk '/^release:/{b=1;next} /^[^ \t#]/{b=0} b && /^  digest:/{print $2; exit}' packages/headwater-standard/release.yml)
+          if [ -z "$digest" ]; then
+              echo "::error::packages/headwater-standard/release.yml states no release.digest, so this release would carry none" && exit 1
+          fi
+          printf 'release.digest: %s\n\nThis tag carries `headwater/standard` with that `release.digest`. Pass the value to `headwater taxonomy vendor <dir> --expect %s`. It is what `headwater taxonomy publish` printed for the package in this tree, and it is not a checksum of any one file.\n' "$digest" "$digest" >release-notes.md
       - name: Attach both to the release
         # A pushed tag has no release object until somebody makes one, and
         # `gh release upload` refuses a tag that has none. `v0.1.1` is why
@@ -152,6 +174,11 @@ jobs:
         # retrying a call GitHub has already refused once. Deleting the
         # release and running this workflow again is the only way back in,
         # and that is a person's decision, not this step's.
+        #
+        # `--generate-notes` and `--notes-file` together are one legal call:
+        # `gh` puts the file's text first and appends the generated list to it.
+        # The file is the step above, and it is the only place an engine
+        # release states the `release.digest` a consumer pins.
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.tag.outputs.tag }}
@@ -159,7 +186,7 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
               echo "::error::$TAG already has a release, and GitHub will not let this step add assets to it. Delete the release (not the tag) and run this workflow again." && exit 1
           fi
-          gh release create "$TAG" "$asset" "$checksum" --title "$TAG" --generate-notes
+          gh release create "$TAG" "$asset" "$checksum" --title "$TAG" --generate-notes --notes-file release-notes.md
       - name: What the release now carries
         env:
           GH_TOKEN: ${{ github.token }}

@@ -139,6 +139,12 @@
 # that with a local bare repository instead. Group 6 runs the engine, which
 # opens no socket at all.
 #
+# Group 6 also reads a file out of the tree a TAG names, with `git show`, and
+# that opens no socket either — but it does need the tag OBJECT in the clone,
+# which `actions/checkout` does not fetch unless it is told to. `fetch-tags:
+# true` on the `headwater` job in `.github/workflows/ci.yml` is what supplies
+# it, and a missing tag is reported red by name rather than skipped.
+#
 # Every scratch file is made under `mktemp -d`, the directory goes on an
 # interrupt, and nothing inside this checkout is written. Group 6 matters most
 # here, because the arm it runs SUCCEEDS and a successful `taxonomy vendor`
@@ -874,6 +880,48 @@ release_upload_judge() {
     else
         echo "the page offers $(oneline "$ru_page") and the upload attaches $(oneline "$ru_up")"
     fi
+}
+
+# workflow_step_run WORKFLOW NAME — the body of the `run: |` block of the step
+# whose `name:` is NAME, with the block indentation removed, so what comes out
+# is a runnable script. Reading the step BY ITS NAME rather than by a line
+# number is what lets the case below run the workflow's own text instead of
+# describing it.
+workflow_step_run() {
+    awk -v want="$2" '
+        !seen && index($0, "- name: " want) { instep = 1; seen = 1; next }
+        instep && !inrun && /^[ \t]*run: \|/ { inrun = 1; next }
+        inrun {
+            if ($0 ~ /^[ \t]*$/) { print ""; next }
+            if ($0 !~ /^          /) exit
+            line = $0
+            sub(/^          /, "", line)
+            print line
+            next
+        }
+        instep && /^[ \t]*- name:/ { exit }
+    ' "$1"
+}
+
+# release_notes_judge WORKFLOW — `ok`, or the sentence that says why the release
+# this workflow creates would state no digest.
+#
+# `--generate-notes` writes a list of merged pull requests and a compare link.
+# It states no `release.digest`, and `v0.1.2` is the release that proves it, so
+# a `gh release create` carrying that flag ALONE is the defect rather than the
+# fix. The second flag is what `release-taxonomy.yml` already passes.
+release_notes_judge() {
+    rnj_line=$(grep 'gh release create' "$1" | grep -v '^[ \t]*#' | head -1)
+    if [ -z "$rnj_line" ]; then
+        echo "no \`gh release create\` line, so this workflow makes no release to state a digest in"
+        return 0
+    fi
+    case $rnj_line in
+        *--notes*) echo ok ;;
+        *--generate-notes*)
+            echo "\`gh release create\` passes \`--generate-notes\` and nothing else, and generated notes are a list of merged pull requests: the release would state no \`release.digest\`" ;;
+        *) echo "\`gh release create\` passes no notes flag at all, so the release would state no \`release.digest\`" ;;
+    esac
 }
 
 # release_pipe_steps FILE MODE — the steps of a workflow whose shell reads a
@@ -1883,6 +1931,63 @@ if [ -f "$release_wf" ]; then
         same "  a step reading a command through an unguarded pipe is named" \
             "$guarded" \
             "$(release_pipe_steps "$scratch/release/no-pipefail.yml" offenders | tr '\n' '|')"
+
+    # 7l. The strongest assertion available about a workflow no pull request can
+    #     run. Nothing on a branch can prove that the next cut release carries
+    #     the digest: the run happens on a pushed tag, against a GitHub API, on
+    #     a machine this suite never sees. What IS available is the workflow's
+    #     own text, extracted by the step name and EXECUTED against this
+    #     checkout, so the awk that reads the record and the sentence it prints
+    #     are the ones the tag will run rather than a paraphrase of them.
+    same "  and the release it creates states the digest a consumer pins" ok \
+        "$(release_notes_judge "$release_wf")"
+
+    notes_step="The digest the package in this tree publishes"
+    workflow_step_run "$release_wf" "$notes_step" >"$scratch/release/notes-step.sh"
+    if [ -s "$scratch/release/notes-step.sh" ]; then
+        pass "  and the step that builds those notes can be read out by name"
+        mkdir -p "$scratch/release/tree/packages/headwater-standard"
+        cp "$root/packages/headwater-standard/release.yml" \
+            "$scratch/release/tree/packages/headwater-standard/release.yml"
+        notes_status=$(cd "$scratch/release/tree" && sh "$scratch/release/notes-step.sh" >notes.log 2>&1; echo $?)
+        same "  and running it against this checkout exits 0" 0 "$notes_status"
+        same "  and it writes the \`release.digest\` of the record in the tree it ran in" \
+            "release.digest: $good_digest" \
+            "$(head -1 "$scratch/release/tree/release-notes.md" 2>/dev/null)"
+
+        # The mutation arm. A record with no `release.digest` must stop the
+        # release rather than cut one whose notes open with an empty value.
+        grep -v '^  digest:' "$root/packages/headwater-standard/release.yml" \
+            >"$scratch/release/tree/packages/headwater-standard/release.yml"
+        rm -f "$scratch/release/tree/release-notes.md"
+        blank_status=$(cd "$scratch/release/tree" && sh "$scratch/release/notes-step.sh" >notes.log 2>&1; echo $?)
+        if [ "$blank_status" = 0 ]; then
+            fail "  and a record stating no digest stops the release" \
+                "the step exited 0 over a record with no \`release.digest\`, so the release would be cut with an empty value in its notes"
+        else
+            pass "  and a record stating no digest stops the release"
+        fi
+    else
+        fail "  and the step that builds those notes can be read out by name" \
+            "no step named \`$notes_step\` with a \`run: |\` block, so the notes this workflow states cannot be run here and a grep for the flag is all that is left"
+    fi
+
+    # 7m. The judge, provoked. Stripping the second flag leaves the call legal,
+    #     leaves every name in place, and leaves the release stating no digest —
+    #     which is the state `v0.1.2` was cut in.
+    sed 's/ --notes-file release-notes\.md//' "$release_wf" >"$scratch/release/generated-only.yml"
+    if cmp -s "$release_wf" "$scratch/release/generated-only.yml"; then
+        fail "  a release cut with generated notes alone is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a release cut with generated notes alone is refused" \
+            "\`gh release create\` passes \`--generate-notes\` and nothing else, and generated notes are a list of merged pull requests: the release would state no \`release.digest\`" \
+            "$(release_notes_judge "$scratch/release/generated-only.yml")"
+    fi
+
+    same "  and a workflow that creates no release at all is refused" \
+        "no \`gh release create\` line, so this workflow makes no release to state a digest in" \
+        "$(release_notes_judge "$scratch/release/no-upload.yml")"
     fi
 else
     fail "  the judges are provoked in the shapes they refuse" \
