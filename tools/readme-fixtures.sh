@@ -139,6 +139,12 @@
 # that with a local bare repository instead. Group 6 runs the engine, which
 # opens no socket at all.
 #
+# Group 6 also reads a file out of the tree a TAG names, with `git show`, and
+# that opens no socket either — but it does need the tag OBJECT in the clone,
+# which `actions/checkout` does not fetch unless it is told to. `fetch-tags:
+# true` on the `headwater` job in `.github/workflows/ci.yml` is what supplies
+# it, and a missing tag is reported red by name rather than skipped.
+#
 # Every scratch file is made under `mktemp -d`, the directory goes on an
 # interrupt, and nothing inside this checkout is written. Group 6 matters most
 # here, because the arm it runs SUCCEEDS and a successful `taxonomy vendor`
@@ -876,6 +882,48 @@ release_upload_judge() {
     fi
 }
 
+# workflow_step_run WORKFLOW NAME — the body of the `run: |` block of the step
+# whose `name:` is NAME, with the block indentation removed, so what comes out
+# is a runnable script. Reading the step BY ITS NAME rather than by a line
+# number is what lets the case below run the workflow's own text instead of
+# describing it.
+workflow_step_run() {
+    awk -v want="$2" '
+        !seen && index($0, "- name: " want) { instep = 1; seen = 1; next }
+        instep && !inrun && /^[ \t]*run: \|/ { inrun = 1; next }
+        inrun {
+            if ($0 ~ /^[ \t]*$/) { print ""; next }
+            if ($0 !~ /^          /) exit
+            line = $0
+            sub(/^          /, "", line)
+            print line
+            next
+        }
+        instep && /^[ \t]*- name:/ { exit }
+    ' "$1"
+}
+
+# release_notes_judge WORKFLOW — `ok`, or the sentence that says why the release
+# this workflow creates would state no digest.
+#
+# `--generate-notes` writes a list of merged pull requests and a compare link.
+# It states no `release.digest`, and `v0.1.2` is the release that proves it, so
+# a `gh release create` carrying that flag ALONE is the defect rather than the
+# fix. The second flag is what `release-taxonomy.yml` already passes.
+release_notes_judge() {
+    rnj_line=$(grep 'gh release create' "$1" | grep -v '^[ \t]*#' | head -1)
+    if [ -z "$rnj_line" ]; then
+        echo "no \`gh release create\` line, so this workflow makes no release to state a digest in"
+        return 0
+    fi
+    case $rnj_line in
+        *--notes*) echo ok ;;
+        *--generate-notes*)
+            echo "\`gh release create\` passes \`--generate-notes\` and nothing else, and generated notes are a list of merged pull requests: the release would state no \`release.digest\`" ;;
+        *) echo "\`gh release create\` passes no notes flag at all, so the release would state no \`release.digest\`" ;;
+    esac
+}
+
 # release_pipe_steps FILE MODE — the steps of a workflow whose shell reads a
 # command through a pipe inside a substitution. MODE `offenders` names the ones
 # that do not set `pipefail`; MODE `guarded` names the ones that do.
@@ -1003,12 +1051,142 @@ vendor_operand_of() {
 # release_digest_of FILE — the `release.digest` field of a release record. That
 # is the one value the GitHub release page states, and it is the value the page
 # tells a reader to paste.
+#
+# THE TWO SPACES IN THE PATTERN ARE THE WHOLE CORRECTNESS OF THIS FUNCTION.
+# Every MEMBER of the artifact carries a `digest:` key too, at deeper
+# indentation, and an unanchored match on the key name takes the first one it
+# reaches. A record whose top-level `release.digest` is missing then yields a
+# member's digest instead of nothing, which is a value `headwater taxonomy
+# vendor` refuses — so a judge fed from here would report that a page quoting
+# that member is fine while a reader following the page is turned away. That is
+# the exact class of failure #775 exists to remove, and the cases below plant a
+# record with no top-level digest and require the empty string.
+#
+# `.github/workflows/release.yml` reads the same field with the same anchor, for
+# the same reason, and its own arm plants the same record.
 release_digest_of() {
     awk '
         /^release:/ { block = 1; next }
         /^[^ \t#]/ { block = 0 }
-        block && $1 == "digest:" { print $2; exit }
+        block && /^  digest:/ { print $2; exit }
     ' "$1"
+}
+
+# digest_paragraph_of FILE — the paragraph that tells a reader where the digest
+# they pass to `--expect` comes from: the first paragraph outside a fence that
+# names `release.digest`. It is read out of the page rather than named by line
+# number, because a line number is the thing every edit above it moves.
+digest_paragraph_of() {
+    awk '
+        /^[ \t]*```/ { fence = 1 - fence; next }
+        fence { next }
+        /^[ \t]*$/ { if (hit) exit; para = ""; next }
+        { para = para $0 "\n"; if ($0 ~ /release\.digest/) hit = 1 }
+        END { if (hit) printf "%s", para }
+    ' "$1"
+}
+
+# release_tags_in TEXT — every tag a `releases/tag/<tag>` URL in TEXT names, in
+# the order they stand. A tag may carry slashes, which is why the taxonomy
+# namespace exists at all, so the match runs to the closing delimiter of the
+# link rather than to the next slash.
+release_tags_in() {
+    printf '%s' "$1" | awk '
+        {
+            s = $0
+            while ((i = index(s, "/releases/tag/")) > 0) {
+                s = substr(s, i + 14)
+                t = s
+                sub(/[)>"'"'"' \t].*$/, "", t)
+                if (t != "") print t
+            }
+        }
+    '
+}
+
+# digest_of_tag TAG — the `release.digest` of `packages/headwater-standard/` in
+# the tree THAT TAG names, or the empty string when the tag object is not in
+# this clone. This is the value a reader following the page's route actually
+# receives, and reading it out of the tag rather than out of the working tree is
+# the whole point: a digest read from the checkout a reader is verifying
+# authenticates the pin and never the publisher (HW-OBL-0115).
+digest_of_tag() {
+    if tag_record_readable "$1"; then
+        release_digest_of "$scratch/tag-release.yml"
+    fi
+}
+
+# tag_record_readable TAG — writes the record at TAG to the scratch file and
+# answers whether it could be read at all. The judge needs this apart from the
+# digest, because an absent TAG and a record stating no top-level digest are two
+# different findings with two different remedies, and one empty string cannot
+# say which happened.
+tag_record_readable() {
+    git_show_tag_release "$1" >"$scratch/tag-release.yml" 2>/dev/null
+}
+
+# git_show_tag_release TAG — one `git show`, kept in its own function so that
+# the redirection above reads a file this suite wrote under `mktemp -d`.
+git_show_tag_release() {
+    git -C "$root" show "$1:packages/headwater-standard/release.yml"
+}
+
+# digest_route_judge FILE PINNED_TAG — `ok`, or the sentence that says how the
+# route the digest paragraph sends a reader down contradicts itself.
+#
+# The property, stated once: THE DIGEST A READER IS SENT TO READ MUST BELONG TO
+# THE TREE THE SAME PARAGRAPH SENDS THEM TO FETCH. Two routes satisfy it and
+# nothing else does. An engine release page states the digest of the package in
+# that engine tag's tree, so it is honest only when its tag is the tag the fence
+# pins. A taxonomy release page states the digest of its own tag's tree, which
+# the reader fetches by that tag, so it is honest only when the literal standing
+# beside it in the paragraph is that tree's digest.
+#
+# Case 6f, which runs the page's command, can see none of this: it reads the
+# digest out of the working tree beside it and then vendors a copy of that same
+# tree, so both sides of its comparison come from one file and it stays green
+# with the link deleted outright. This judge opens no socket and is handed no
+# literal: every value below comes out of the page or out of a tag.
+digest_route_judge() {
+    drj_para=$(digest_paragraph_of "$1")
+    if [ -z "$drj_para" ]; then
+        echo "no paragraph outside a fence names \`release.digest\`, so nothing on the page says where the digest a reader passes to \`--expect\` comes from"
+        return 0
+    fi
+    drj_tags=$(release_tags_in "$drj_para")
+    if [ -z "$drj_tags" ]; then
+        echo "the digest paragraph links no release page, so the digest it tells a reader to pass has no stated source"
+        return 0
+    fi
+    drj_sentence=
+    for drj_tag in $drj_tags; do
+        case $drj_tag in
+            taxonomy/*)
+                if tag_record_readable "$drj_tag"; then
+                    drj_want=$(release_digest_of "$scratch/tag-release.yml")
+                else
+                    drj_want=
+                fi
+                if ! tag_record_readable "$drj_tag"; then
+                    drj_sentence="$drj_sentence; the tag $drj_tag is not in this clone, so the digest it publishes cannot be read. Fetch it, or set \`fetch-tags: true\` on the checkout"
+                elif [ -z "$drj_want" ]; then
+                    drj_sentence="$drj_sentence; the record at $drj_tag states no top-level \`release.digest\`, so nothing there can authorize the literal this paragraph quotes"
+                elif ! printf '%s' "$drj_para" | grep -q -- "$drj_want"; then
+                    drj_sentence="$drj_sentence; the paragraph links the release page for $drj_tag and does not state that tag's digest $drj_want beside it"
+                fi
+                ;;
+            *)
+                if [ "$drj_tag" != "$2" ]; then
+                    drj_sentence="$drj_sentence; the paragraph sends a reader to the release page for $drj_tag for a digest, and the fence pins ${2:-no tag}"
+                fi
+                ;;
+        esac
+    done
+    if [ -n "$drj_sentence" ]; then
+        printf '%s\n' "${drj_sentence#; }"
+    else
+        echo ok
+    fi
 }
 
 # vendor_corpus DIR OPERAND — the part of a checkout the page's command reads:
@@ -1557,6 +1735,119 @@ else
         "the arms did not run: engine \`${engine:-none}\`, digest \`${good_digest:-none}\`"
 fi
 
+# 6i. THE DECISIVE CASE OF THIS GROUP, and the one every case above it cannot
+#     reach. 6f runs the page's command, and it reads the digest out of the
+#     working tree and then vendors a copy of that same tree: both sides come
+#     from one file, the release page the prose links is never opened, and the
+#     tag the fence pins is never consulted. Delete the link outright and 6a-6h
+#     stay green. So the property this case holds is the one #775 is about —
+#     the digest a reader is sent to read has to belong to the tree the same
+#     paragraph sends them to fetch — and it is two values extracted from the
+#     page and from a tag and compared to each other, never a literal written
+#     down here.
+same "the digest paragraph's route to a digest is self-consistent" ok \
+    "$(digest_route_judge "$readme" "$tag")"
+
+# 6j-6m. The judge, provoked, in the four shapes it refuses. Each arm plants one
+#        paragraph and requires the verdict to name which way the route went
+#        wrong, so a judge that stopped working cannot be told from a page that
+#        is right by reading the case name alone.
+
+#        THE ARM THE VERIFIER OF #775 FOUND MISSING, and the defect it holds is
+#        in the extractor every route above ends in rather than in a judge. A
+#        release record carries a top-level `release.digest` AND one `digest:`
+#        per member, at deeper indentation. An extractor matching the key name
+#        alone takes whichever comes first, so a record with no top-level digest
+#        yields a MEMBER's digest — a value `headwater taxonomy vendor` refuses.
+#        Fed into 6i that produced the one verdict this issue exists to make
+#        impossible: `ok` for a page quoting a value a reader would be turned
+#        away with, and that same member value printed as the authority in the
+#        refusal arm. The anchor is the fix, and these two arms are what keep it.
+mkdir -p "$scratch/digest"
+printf '%s\n' \
+    'release:' \
+    '  name: headwater/standard' \
+    '  version: 4.2.0' \
+    '  members:' \
+    '    - path: taxonomy.yml' \
+    '      digest: sha256:0000000000000000000000000000000000000000000000000000000000000001' \
+    '    - path: overlay.yml' \
+    '      digest: sha256:0000000000000000000000000000000000000000000000000000000000000002' \
+    >"$scratch/digest/no-top-level.yml"
+same "  a release record stating no top-level digest yields no digest, never a member's" \
+    "" "$(release_digest_of "$scratch/digest/no-top-level.yml")"
+
+printf '%s\n' \
+    'release:' \
+    '  name: headwater/standard' \
+    '  version: 4.2.0' \
+    '  digest: sha256:000000000000000000000000000000000000000000000000000000000000000a' \
+    '  members:' \
+    '    - path: taxonomy.yml' \
+    '      digest: sha256:0000000000000000000000000000000000000000000000000000000000000001' \
+    >"$scratch/digest/top-level-first.yml"
+same "  and a record that states one yields that one and not the member below it" \
+    "sha256:000000000000000000000000000000000000000000000000000000000000000a" \
+    "$(release_digest_of "$scratch/digest/top-level-first.yml")"
+
+tax_release_tag=$(release_tags_in "$(digest_paragraph_of "$readme")" | grep '^taxonomy/' | head -1)
+
+printf '%s\n' 'Nothing here names the field.' '' 'Nor here.' >"$scratch/digest/no-paragraph.md"
+same "  a page whose prose never names \`release.digest\` is refused" \
+    "no paragraph outside a fence names \`release.digest\`, so nothing on the page says where the digest a reader passes to \`--expect\` comes from" \
+    "$(digest_route_judge "$scratch/digest/no-paragraph.md" "$tag")"
+
+printf '%s\n' 'Pass the `release.digest` field to `--expect`.' '' 'And that is all.' \
+    >"$scratch/digest/no-link.md"
+same "  a digest paragraph that links no release page at all is refused" \
+    "the digest paragraph links no release page, so the digest it tells a reader to pass has no stated source" \
+    "$(digest_route_judge "$scratch/digest/no-link.md" "$tag")"
+
+printf '%s\n' \
+    '[The release for `v0.0.1`](https://github.com/headwater-ai/headwater/releases/tag/v0.0.1) states the `release.digest` field.' \
+    '' 'And that is all.' >"$scratch/digest/other-engine-tag.md"
+same "  an engine release page for a tag the fence does not pin is refused" \
+    "the paragraph sends a reader to the release page for v0.0.1 for a digest, and the fence pins ${tag:-no tag}" \
+    "$(digest_route_judge "$scratch/digest/other-engine-tag.md" "$tag")"
+
+#        The state `origin/main` was in when #775 was filed, rebuilt here so the
+#        red stays reachable after the page is fixed: the paragraph cited the
+#        release page for one engine tag while the fence pinned another.
+if [ -n "$tag" ]; then
+    printf '%s\n' \
+        "[The release for \`v0.1.0\`](https://github.com/headwater-ai/headwater/releases/tag/v0.1.0) states one digest: the value of the \`release.digest\` field." \
+        '' 'And that is all.' >"$scratch/digest/filed-state.md"
+    if [ "$tag" = v0.1.0 ]; then
+        pass "  the state #775 was filed in is refused (the fence now pins v0.1.0, so this arm is vacuous)"
+    else
+        same "  the state #775 was filed in is refused" \
+            "the paragraph sends a reader to the release page for v0.1.0 for a digest, and the fence pins $tag" \
+            "$(digest_route_judge "$scratch/digest/filed-state.md" "$tag")"
+    fi
+else
+    fail "  the state #775 was filed in is refused" \
+        "the fence pins no tag, so the arm has nothing to differ from"
+fi
+
+#        A taxonomy release page is honest only with its own tag's digest
+#        standing beside it. This arm keeps the link and drops the literal.
+if [ -n "$tax_release_tag" ]; then
+    tax_release_digest=$(digest_of_tag "$tax_release_tag")
+    printf '%s\n' \
+        "[The release for \`$tax_release_tag\`](https://github.com/headwater-ai/headwater/releases/tag/$tax_release_tag) states the \`release.digest\` field." \
+        '' 'And that is all.' >"$scratch/digest/tax-no-literal.md"
+    if [ -n "$tax_release_digest" ]; then
+        same "  a taxonomy release page cited without its own tag's digest is refused" \
+            "the paragraph links the release page for $tax_release_tag and does not state that tag's digest $tax_release_digest beside it" \
+            "$(digest_route_judge "$scratch/digest/tax-no-literal.md" "$tag")"
+    else
+        fail "  a taxonomy release page cited without its own tag's digest is refused" \
+            "the tag $tax_release_tag is not in this clone, so no digest could be read out of it. The checkout that runs this suite needs \`fetch-tags: true\`"
+    fi
+else
+    pass "  the digest paragraph cites no taxonomy release page, so that arm has nothing to provoke"
+fi
+
 echo "the binary the page offers, and the run that uploads it"
 
 # The second group here that reads something other than the page, and it reads
@@ -1705,6 +1996,63 @@ if [ -f "$release_wf" ]; then
         same "  a step reading a command through an unguarded pipe is named" \
             "$guarded" \
             "$(release_pipe_steps "$scratch/release/no-pipefail.yml" offenders | tr '\n' '|')"
+
+    # 7l. The strongest assertion available about a workflow no pull request can
+    #     run. Nothing on a branch can prove that the next cut release carries
+    #     the digest: the run happens on a pushed tag, against a GitHub API, on
+    #     a machine this suite never sees. What IS available is the workflow's
+    #     own text, extracted by the step name and EXECUTED against this
+    #     checkout, so the awk that reads the record and the sentence it prints
+    #     are the ones the tag will run rather than a paraphrase of them.
+    same "  and the release it creates states the digest a consumer pins" ok \
+        "$(release_notes_judge "$release_wf")"
+
+    notes_step="The digest the package in this tree publishes"
+    workflow_step_run "$release_wf" "$notes_step" >"$scratch/release/notes-step.sh"
+    if [ -s "$scratch/release/notes-step.sh" ]; then
+        pass "  and the step that builds those notes can be read out by name"
+        mkdir -p "$scratch/release/tree/packages/headwater-standard"
+        cp "$root/packages/headwater-standard/release.yml" \
+            "$scratch/release/tree/packages/headwater-standard/release.yml"
+        notes_status=$(cd "$scratch/release/tree" && sh "$scratch/release/notes-step.sh" >notes.log 2>&1; echo $?)
+        same "  and running it against this checkout exits 0" 0 "$notes_status"
+        same "  and it writes the \`release.digest\` of the record in the tree it ran in" \
+            "release.digest: $good_digest" \
+            "$(head -1 "$scratch/release/tree/release-notes.md" 2>/dev/null)"
+
+        # The mutation arm. A record with no `release.digest` must stop the
+        # release rather than cut one whose notes open with an empty value.
+        grep -v '^  digest:' "$root/packages/headwater-standard/release.yml" \
+            >"$scratch/release/tree/packages/headwater-standard/release.yml"
+        rm -f "$scratch/release/tree/release-notes.md"
+        blank_status=$(cd "$scratch/release/tree" && sh "$scratch/release/notes-step.sh" >notes.log 2>&1; echo $?)
+        if [ "$blank_status" = 0 ]; then
+            fail "  and a record stating no digest stops the release" \
+                "the step exited 0 over a record with no \`release.digest\`, so the release would be cut with an empty value in its notes"
+        else
+            pass "  and a record stating no digest stops the release"
+        fi
+    else
+        fail "  and the step that builds those notes can be read out by name" \
+            "no step named \`$notes_step\` with a \`run: |\` block, so the notes this workflow states cannot be run here and a grep for the flag is all that is left"
+    fi
+
+    # 7m. The judge, provoked. Stripping the second flag leaves the call legal,
+    #     leaves every name in place, and leaves the release stating no digest —
+    #     which is the state `v0.1.2` was cut in.
+    sed 's/ --notes-file release-notes\.md//' "$release_wf" >"$scratch/release/generated-only.yml"
+    if cmp -s "$release_wf" "$scratch/release/generated-only.yml"; then
+        fail "  a release cut with generated notes alone is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a release cut with generated notes alone is refused" \
+            "\`gh release create\` passes \`--generate-notes\` and nothing else, and generated notes are a list of merged pull requests: the release would state no \`release.digest\`" \
+            "$(release_notes_judge "$scratch/release/generated-only.yml")"
+    fi
+
+    same "  and a workflow that creates no release at all is refused" \
+        "no \`gh release create\` line, so this workflow makes no release to state a digest in" \
+        "$(release_notes_judge "$scratch/release/no-upload.yml")"
     fi
 else
     fail "  the judges are provoked in the shapes they refuse" \

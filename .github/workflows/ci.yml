@@ -262,6 +262,15 @@ jobs:
           # rather than describing a shorter change, so a depth of 1 would turn
           # that step red instead of quietly reporting a change of nothing.
           fetch-depth: 0
+          # The tags too, which `fetch-depth: 0` does NOT bring: this action
+          # passes `--no-tags` unless this input is set, whatever the depth.
+          # `tools/readme-fixtures.sh` reads `packages/headwater-standard/
+          # release.yml` out of the tree a taxonomy release tag names, to hold
+          # that the digest the front page sends a reader to belongs to the
+          # tree that page's own route fetches (#775). Without the tag object
+          # that case is RED here and green on a developer's clone, which is
+          # the worst of both.
+          fetch-tags: true
       - name: The cargo cache, on a hosted runner only
         # The same step in the `engine` job above carries the reasoning. The
         # key differs by one word because that job builds test artifacts and
