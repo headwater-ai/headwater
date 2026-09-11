@@ -125,7 +125,7 @@ The stages are adjudication, construction, verification and integration, and int
 | `cargo build` in the parent | 26 calls, 67 min | 8 by leading verb, 15 mentioned | 0 | 0 |
 | First-to-last completion spread per batch | 9.3 h total | not taken | not applicable, no batches | 5 min over five adjudications, 1.95 h over five constructions |
 
-`tools/run-census.sh` takes these from a session log and the agent transcripts beside it. The run that follows this design writes its numbers into this table.
+`tools/run/run-census.sh` takes these from a session log and the agent transcripts beside it. The run that follows this design writes its numbers into this table.
 
 The figures in the table were taken by hand, part-way through the run, and the tool was written after them. Over the whole transcript of that run the tool reports 880 turns and 227.3 million cache reads. Mentions of `gh pr view` cost 66 calls, 66 turns and 18.1 million cache reads, which is 8.0% of the run. Mentions of `gh pr list` cost 24 calls, 24 turns and 6.7 million, which is 2.9%. The tool counts a call once per turn and a turn once per message, and it reads a verb past a leading `cd` or `set -e`, because that run wrote nearly every command in that shape. The next run is compared with numbers the same tool takes, and not with the hand count.
 

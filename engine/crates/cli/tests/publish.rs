@@ -2255,6 +2255,22 @@ fn printed_digest(stdout: &str) -> String {
         .to_string()
 }
 
+/// The version the shipped manifest declares, read rather than written down.
+///
+/// The case below copies this repository's real `taxonomy-source/` into its
+/// scratch consumer, so a version literal here would be a second copy of a
+/// number that moves whenever the package is republished. It was one, and a
+/// republish to 4.2.1 reddened this case over a pin that named 4.2.0 against a
+/// source that declared 4.2.1.
+fn declared_version(manifest: &str) -> String {
+    manifest
+        .lines()
+        .find_map(|line| line.strip_prefix("version:"))
+        .unwrap_or_else(|| panic!("the shipped manifest declares no version: {manifest}"))
+        .trim()
+        .to_string()
+}
+
 /// Rewrite `taxonomy.digest` in a consumer declaration. This is the hand edit,
 /// performed by the case because no verb performs it.
 fn pin_digest(consumer: &Path, digest: &str) {
@@ -2348,7 +2364,8 @@ fn the_shipped_maintenance_loop_runs_as_written_over_a_source_that_changed() {
     write(
         &consumer.join(".headwater/taxonomy.yml"),
         &format!(
-            "taxonomy:\n  package: headwater/standard\n  version: 4.3.0\n  digest: {}\n  bundles: [design-spec, evidence-and-obligation, decision-record]\n  overlay: .headwater/overlay.yml\ncorpus:\n  root: docs\n",
+            "taxonomy:\n  package: headwater/standard\n  version: {}\n  digest: {}\n  bundles: [design-spec, evidence-and-obligation, decision-record]\n  overlay: .headwater/overlay.yml\ncorpus:\n  root: docs\n",
+            declared_version(&manifest),
             printed_digest(&stdout)
         ),
     );

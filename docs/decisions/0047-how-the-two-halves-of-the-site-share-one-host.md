@@ -2,7 +2,7 @@
 id: HW-DR-0047
 status: current
 status_since: 2026-09-06
-summary: "One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time."
+summary: "One directory holds both halves of the site, composed by `tools/site/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time."
 last_verified: 2026-09-06
 title: "How the two halves of the site share one host"
 provenance:
@@ -17,8 +17,8 @@ relations:
     - HW-DR-0038
     - HW-DR-0039
   governs:
-    - tools/assemble-site.sh
-    - tools/cloudflare-build.sh
+    - tools/site/assemble-site.sh
+    - tools/site/cloudflare-build.sh
     - wrangler.jsonc
     - site/_headers
 ---
@@ -37,9 +37,9 @@ Two halves make up `https://headwater.tools/`. `site/` holds the hand-built page
 
 ## Decision
 
-**One directory holds both halves, and `tools/assemble-site.sh` composes it.** The script copies the generated half into `.headwater/site-deploy` first and the hand-built half second. A path that both halves carry is served with the committed bytes, and the script names every such path on each run. [HW-DR-0048](0048-the-served-sitemap-is-derived-from-the-served-directory.md) names the one exception to that sentence. `sitemap.xml` is composed by the script from the assembled directory, because neither half holds the list of every served page.
+**One directory holds both halves, and `tools/site/assemble-site.sh` composes it.** The script copies the generated half into `.headwater/site-deploy` first and the hand-built half second. A path that both halves carry is served with the committed bytes, and the script names every such path on each run. [HW-DR-0048](0048-the-served-sitemap-is-derived-from-the-served-directory.md) names the one exception to that sentence. `sitemap.xml` is composed by the script from the assembled directory, because neither half holds the list of every served page.
 
-**Every Cloudflare Workers Builds configuration runs that script.** A build command names one file, `tools/cloudflare-build.sh`, which installs the pinned site toolchain, runs the build, and runs the assembly. This project holds two such configurations, one for the default branch and one for every other branch. Each carries a build command of its own. A dashboard field carries no commit and goes stale in silence, so every version this deploy installs moves in a reviewed change instead. `wrangler.jsonc` names `.headwater/site-deploy` as the asset directory and states what writes it.
+**Every Cloudflare Workers Builds configuration runs that script.** A build command names one file, `tools/site/cloudflare-build.sh`, which installs the pinned site toolchain, runs the build, and runs the assembly. This project holds two such configurations, one for the default branch and one for every other branch. Each carries a build command of its own. A dashboard field carries no commit and goes stale in silence, so every version this deploy installs moves in a reviewed change instead. `wrangler.jsonc` names `.headwater/site-deploy` as the asset directory and states what writes it.
 
 **The repository keeps one deploy path.** A second path in GitHub Actions would race the first, and the last writer would decide what a reader sees.
 
@@ -49,13 +49,13 @@ Two halves make up `https://headwater.tools/`. `site/` holds the hand-built page
 
 ## Consequences
 
-**Something now runs between the commit and the served bytes.** HW-DR-0037 states that nothing does, and that sentence measured a tree with no build command. [HW-DR-0039](0039-q39-how-a-figure-reaches-a-hand-built-page.md) names a build command on the deploy path as one of the two events that retire `tools/refresh-figures.sh` as the only answer. Both sentences answer to this record.
+**Something now runs between the commit and the served bytes.** HW-DR-0037 states that nothing does, and that sentence measured a tree with no build command. [HW-DR-0039](0039-q39-how-a-figure-reaches-a-hand-built-page.md) names a build command on the deploy path as one of the two events that retire `tools/site/refresh-figures.sh` as the only answer. Both sentences answer to this record.
 
 **The build image carries the risk this repository cannot test.** The Cloudflare image must hold `python3` and `pip`. CI runs the same assembly on every push, so a break in the script is found by the runner that already builds the site. A break in the image is found by the deploy, which fails visibly and leaves the previous deploy live.
 
 **A build configuration with no build command has no directory to serve.** The second configuration deploys a preview of each pull request, with `wrangler versions upload` in place of `wrangler deploy`. It reaches the same `wrangler.jsonc` and therefore the same asset directory, which only a build writes. A preview build that fails on every change reports nothing about any change, and a check that is always red is a check nobody reads.
 
-**One of the two configurations is edited in a dashboard and the other through an API.** The Builds settings page carries a single build command, and it writes the configuration of the default branch. `tools/cloudflare-build.sh` records the request that reaches the other one. So the record above states a requirement that the vendor's own interface does not present. A reader who looks for a second field finds none.
+**One of the two configurations is edited in a dashboard and the other through an API.** The Builds settings page carries a single build command, and it writes the configuration of the default branch. `tools/site/cloudflare-build.sh` records the request that reaches the other one. So the record above states a requirement that the vendor's own interface does not present. A reader who looks for a second field finds none.
 
 **The order of the two acts is not free.** `wrangler.jsonc` names a directory that git ignores, so the build command has to exist before that name reaches the default branch. The reverse order serves a directory that is not there.
 

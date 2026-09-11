@@ -650,7 +650,7 @@ fn a_painted_report_breaks_where_an_unpainted_one_does() {
 /// Every painted token of the report, named.
 ///
 /// A property test alone passes a renderer that paints nothing at all, which is
-/// the defect `tools/color-fixtures.sh` exists to catch and the reason
+/// the defect `tools/engine/color-fixtures.sh` exists to catch and the reason
 /// [#726](https://github.com/headwater-ai/headwater/issues/726) was filed. This
 /// names the sequences the report has to carry.
 #[test]

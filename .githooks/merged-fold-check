@@ -107,13 +107,13 @@ run_producer "headwater generate --check" "$engine" generate --check --root "$ro
 # `headwater taxonomy resolve` writes `.headwater/taxonomy.lock`.
 run_producer "headwater taxonomy resolve --check" "$engine" taxonomy resolve --check --root "$root"
 
-# `tools/refresh-figures.sh` writes the measured figures on the three pages
+# `tools/site/refresh-figures.sh` writes the measured figures on the three pages
 # under `site/`. It runs `python3` under `set -eu`, so a host without one would
 # make this refuse a merge while reporting stale figures, which is a refusal
 # whose message is false. The guard turns a lying refusal into a printed line,
 # which is the same trade `.githooks/pre-commit` makes for the same script.
 if command -v python3 >/dev/null 2>&1; then
-    run_producer "sh tools/refresh-figures.sh --check" sh "$root/tools/refresh-figures.sh" --check
+    run_producer "sh tools/site/refresh-figures.sh --check" sh "$root/tools/site/refresh-figures.sh" --check
 else
     echo "headwater: no python3, so the figures on the hand-built pages are not"
     echo "  checked against this merged tree."
@@ -142,7 +142,7 @@ echo "  working tree, so regenerate there and complete it. This gate runs again"
 echo "  on that commit and passes when the artifacts describe the tree:"
 echo "        headwater generate"
 echo "        headwater taxonomy resolve --write"
-echo "        sh tools/refresh-figures.sh"
+echo "        sh tools/site/refresh-figures.sh"
 echo "        git add -A"
 echo "        git commit"
 echo "  Or abandon it: git merge --abort"

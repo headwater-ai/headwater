@@ -35,6 +35,6 @@ The parent runs no `gh` and no `cargo build`. Pull request state arrives inside 
 
 A parent that finds itself making a shell call asks first what turn the call is riding. A call on a turn already being paid is free. A call that is its own turn is the most expensive way to get one line.
 
-Repetition counting does not find this class of cost. The 76 calls covered 43 pull requests at about one and a half each. `tools/run-census.sh` groups a session's shell calls by purpose and prints turns and cache reads per group, and that is how the next instance is found.
+Repetition counting does not find this class of cost. The 76 calls covered 43 pull requests at about one and a half each. `tools/run/run-census.sh` groups a session's shell calls by purpose and prints turns and cache reads per group, and that is how the next instance is found.
 
 A stale binary in the shared checkout is a correctness failure and not a throughput one. The integrator builds before it regenerates on every merge, at one profile, so the artifact it writes and the check that reads it come from the same engine.

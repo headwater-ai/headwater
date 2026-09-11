@@ -408,7 +408,7 @@ judge 'a retitled page whose crawler files are stale is refused' 1 "$status" \
 judge 'and the refusal names the line that moved' 1 "$status" \
     'RETITLED' "$out"
 judge 'and it names the command that repairs it' 1 "$status" \
-    'sh tools/refresh-crawler-files.sh' "$out"
+    'sh tools/site/refresh-crawler-files.sh' "$out"
 
 # The sitemap joined the derived files in #554, and it is the one of the three
 # that a retitle does not move: a title is not a URL. So the case that holds it
@@ -444,7 +444,7 @@ out=$(cd "$scratch" && HEADWATER_ALLOW_SITE_DELETE=1 sh .githooks/pre-commit 2>&
 judge 'the variable releases this clause and not the rule that reads a governed path' 1 "$status" \
     'relation.target.unresolved' "$out"
 
-# The token clause. `tools/site-tokens.css` is the one copy of the visual
+# The token clause. `tools/site/site-tokens.css` is the one copy of the visual
 # register, and each hand-built page carries it between two markers. Before
 # HW-DR-0050 every page carried its own copy of the six color tokens, and four
 # of the eight had drifted to a seventh the other four did not declare. The
@@ -459,7 +459,7 @@ judge 'a page whose visual register was edited by hand is refused' 1 "$status" \
 judge 'and the refusal names the page that moved' 1 "$status" \
     'site/proof/index.html' "$out"
 judge 'and it names the command that repairs it' 1 "$status" \
-    'sh tools/refresh-site-tokens.sh' "$out"
+    'sh tools/site/refresh-site-tokens.sh' "$out"
 
 # A page with no marker pair is refused rather than skipped, which is the half
 # of the clause a stale-block case cannot reach. A ninth page that opted out of
@@ -488,7 +488,7 @@ judge 'and the named variable releases that one clause' 0 "$status" '' "$out"
 
 # The figures clause. Every number on a hand-built page comes from a run of
 # this engine, written into a `data-figure` element by
-# `tools/refresh-figures.sh`, and HW-DR-0039 rules it. The five cases below are
+# `tools/site/refresh-figures.sh`, and HW-DR-0039 rules it. The five cases below are
 # the three directions a derived figure has to move in, plus the escape hatch
 # and the denominator.
 #
@@ -521,7 +521,7 @@ judge 'a figure edited by hand on a page of the deployed site is refused' 1 "$st
 judge 'and the refusal names the figure and the page' 1 "$status" \
     "census.seen in $figpage" "$out"
 judge 'and it names the command that repairs it' 1 "$status" \
-    'sh tools/refresh-figures.sh' "$out"
+    'sh tools/site/refresh-figures.sh' "$out"
 
 # The escape hatch, which is a silent pass in the two clauses above and an
 # announced one here. The hook cannot write into the commit, so the line it
@@ -590,7 +590,7 @@ judge 'and the refusal states the denominator it ran over' 1 "$status" \
 # came from somewhere else.
 reset
 mv "$scratch/site/tutorial/index.html" "$scratch/site/tutorial/away.html"
-out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
 judge 'the tutorial page missing is an error rather than a skip' 1 "$status" \
     'site/tutorial/index.html is not there' "$out"
 judge 'and the refusal says which record governs it by name' 1 "$status" \
@@ -598,7 +598,7 @@ judge 'and the refusal says which record governs it by name' 1 "$status" \
 
 reset
 mv "$scratch/site/index.html" "$scratch/site/away.html"
-out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
 judge 'the landing page missing is an error rather than a skip' 1 "$status" \
     'site/index.html is not there' "$out"
 
@@ -607,8 +607,8 @@ judge 'the landing page missing is an error rather than a skip' 1 "$status" \
 # moment a key is renamed and the exemption then covers nothing. The script
 # holds its own list against the run, and this provokes that guard.
 reset
-sed -i 's/put("rules.fired"/put("rules.firedX"/' "$scratch/tools/refresh-figures.sh"
-out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+sed -i 's/put("rules.fired"/put("rules.firedX"/' "$scratch/tools/site/refresh-figures.sh"
+out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
 judge 'a clock-partition entry that no run measures is refused' 1 "$status" \
     'the clock partition names rules.fired, which this run does not measure' "$out"
 
@@ -626,25 +626,25 @@ judge 'a clock-partition entry that no run measures is refused' 1 "$status" \
 # the control, a case that asserted only the refusal would pass over a gate
 # that had never looked at an mtime at all.
 reset
-out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
 judge 'a binary newer than the engine sources measures the pages and finds them current' \
     0 "$status" '0 stale' "$out"
 
 # The provocation is the real cause rather than a stand-in: you pulled a change
 # to the engine and did not build it again.
 touch "$scratch/engine/crates/cli/src/main.rs"
-out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
 judge 'an engine source newer than the binary makes the check refuse to measure' \
     3 "$status" 'cannot tell whether a figure is stale' "$out"
 # The command is carried whole rather than truncated at the crate name.
-# `tools/build-declaration-fixtures.sh` reads every release build of the CLI in
+# `tools/engine/build-declaration-fixtures.sh` reads every release build of the CLI in
 # the tracked tree and requires `--locked` on each, and a prefix written here
 # for brevity is an unflagged occurrence to that gate. It is also the weaker
 # assertion: the flag is part of what the refusal has to tell the author.
 judge 'and the refusal names the build command' 3 "$status" \
     'cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked' "$out"
 refute 'and it prints no command that measures again' \
-    'sh tools/refresh-figures.sh' "$out"
+    'sh tools/site/refresh-figures.sh' "$out"
 refute 'and it names no figure as stale' 'stale census.seen in' "$out"
 
 # The gate reads the status rather than the text. It used to collapse every
@@ -656,12 +656,12 @@ judge 'the gate refuses the commit and blames the engine rather than the pages' 
 refute 'and it does not say the pages disagree with a fresh run' \
     'disagrees with a fresh run' "$out"
 refute 'and it does not tell the author to measure again' \
-    'sh tools/refresh-figures.sh' "$out"
+    'sh tools/site/refresh-figures.sh' "$out"
 
 # The writing path agrees with `--check`, which is the clause that stops the
 # corruption. A refresh in this state must not write a figure that a `--check`
 # in the same state refused to trust.
-out=$(cd "$scratch" && sh tools/refresh-figures.sh 2>&1); status=$?
+out=$(cd "$scratch" && sh tools/site/refresh-figures.sh 2>&1); status=$?
 judge 'the writing path refuses in the same state' 3 "$status" \
     'cannot tell whether a figure is stale' "$out"
 (cd "$scratch" && git diff --quiet -- site/); status=$?

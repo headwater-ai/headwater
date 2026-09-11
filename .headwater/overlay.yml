@@ -1014,7 +1014,7 @@ add_to:
     # says the page is a tombstone rather than a live register, because a reader
     # who follows a five-year-old citation lands here and needs to be told that
     # before reading. It has to differ from every other served title, and
-    # `tools/check-site-fragments.py` exits 1 on a repeat, so nothing here has to
+    # `tools/site/check-site-fragments.py` exits 1 on a repeat, so nothing here has to
     # guard it a second time.
     - kind: shelf_sections
       for: [decisions]

@@ -16,7 +16,7 @@ relations:
   cited_by:
     - HW-REG-open-obligations
   traces_to:
-    - tools/rdf-probe/emit.py
+    - tools/probe/rdf-probe/emit.py
 ---
 
 # The taxonomy in OWL and SKOS — a worked example
@@ -25,7 +25,7 @@ The third of the substrate worked examples, after [LinkML](linkml-worked-example
 
 **Nothing here reopens Q13.** The staging order stands. RDF and SKOS are emitter 4, and they ship when a named external consumer asks. This document is evidence about what that emitter will owe when it is written, gathered by writing a throwaway version of it now.
 
-The two earlier examples were written by hand. This one was run. The emitter is committed at [`tools/rdf-probe/emit.py`](../../tools/rdf-probe/emit.py), it reads the real base package and the real design-spec bundle, and it emits the real `docs/` tree. Every number below comes from that run.
+The two earlier examples were written by hand. This one was run. The emitter is committed at [`tools/probe/rdf-probe/emit.py`](../../tools/probe/rdf-probe/emit.py), it reads the real base package and the real design-spec bundle, and it emits the real `docs/` tree. Every number below comes from that run.
 
 ## The method
 
@@ -209,6 +209,6 @@ Four items, and [the register](../spec/13-open-obligations.md) now carries all o
 
     python3 -m venv .venv
     .venv/bin/pip install rdflib pyshacl owlrl pyyaml
-    .venv/bin/python tools/rdf-probe/emit.py --repo . --out out
+    .venv/bin/python tools/probe/rdf-probe/emit.py --repo . --out out
 
 Four files land in `out/`: the two graphs, the shapes, and `loss.json` with the census and the loss set. The dependencies are the reason this is not wired into the commit hook, and the reason the script is a probe rather than a tool.

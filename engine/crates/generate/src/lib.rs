@@ -1474,7 +1474,7 @@ mod label_tests {
 ///
 /// The same shape as `headwater_query::route::tests`, and the same caveat: a
 /// call site wired to [`ColorMode::Plain`] forever passes every case here.
-/// `tools/color-fixtures.sh` attaches a real terminal, which is what catches
+/// `tools/engine/color-fixtures.sh` attaches a real terminal, which is what catches
 /// that.
 #[cfg(test)]
 mod paint_tests {

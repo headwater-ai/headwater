@@ -45,9 +45,9 @@
 # crates.io's index takes a short, unspecified interval to make a freshly
 # published crate resolvable to the next `cargo publish` that depends on it.
 # Publishing `headwater-yaml` and immediately publishing `headwater-doc`,
-# which depends on it, is exactly the race group 7 of `tools/readme-fixtures`
+# which depends on it, is exactly the race group 7 of `tools/repo/readme-fixtures`
 # guards a different version of on the release side. Thirty seconds is a
-# margin measured nowhere yet; `sh tools/build-declaration-fixtures.sh`-style
+# margin measured nowhere yet; `sh tools/engine/build-declaration-fixtures.sh`-style
 # evidence for a shorter one is future work, not a claim this comment makes.
 #
 # # WHY A FAILED PUBLISH RETRIES INSTEAD OF EXITING

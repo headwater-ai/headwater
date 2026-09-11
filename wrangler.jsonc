@@ -13,7 +13,7 @@
   //   the specification, the decisions, the obligations, the tutorial — and
   //   git ignores it, because every byte of it is recomputable.
   //
-  //   `tools/assemble-site.sh` composes the two into `.headwater/site-deploy`,
+  //   `tools/site/assemble-site.sh` composes the two into `.headwater/site-deploy`,
   //   the generated half first and the hand-built half last, so a path that
   //   both halves carry is served with the committed bytes. That directory is
   //   what this deploy serves, and HW-DR-0047 rules the arrangement.
@@ -27,20 +27,20 @@
   //   The Workers Builds build command, which is set in the Cloudflare
   //   dashboard and is one line that names a file in this repository:
   //
-  //       sh tools/cloudflare-build.sh
+  //       sh tools/site/cloudflare-build.sh
   //
   //   That script installs the pinned site toolchain, runs
-  //   `mkdocs build --strict`, and runs `tools/assemble-site.sh`. Cloudflare
+  //   `mkdocs build --strict`, and runs `tools/site/assemble-site.sh`. Cloudflare
   //   then deploys from the repository root, which is where it reads this
-  //   file. `tools/cloudflare-build.sh` states why the dashboard field names
+  //   file. `tools/site/cloudflare-build.sh` states why the dashboard field names
   //   a file rather than carrying those commands itself.
   //
   //   TWO CONFIGURATIONS HAVE TO NAME THAT SCRIPT, AND THE DASHBOARD EDITS
   //   ONE OF THEM. Workers Builds keeps one build configuration for the
   //   default branch and a second for every other branch:
   //
-  //       default branch   sh tools/cloudflare-build.sh   npx wrangler deploy
-  //       every other      sh tools/cloudflare-build.sh   npx wrangler versions upload
+  //       default branch   sh tools/site/cloudflare-build.sh   npx wrangler deploy
+  //       every other      sh tools/site/cloudflare-build.sh   npx wrangler versions upload
   //
   //   The second one is what runs on a pull request. Both read this file, so
   //   both need the directory below, and only a build writes it. A second
@@ -49,7 +49,7 @@
   //   about the change under it.
   //
   //   The Builds settings page shows a single `Build command`, and it writes
-  //   the first configuration only. `tools/cloudflare-build.sh` carries the
+  //   the first configuration only. `tools/site/cloudflare-build.sh` carries the
   //   API call that reaches the second, because no page of that dashboard
   //   does.
   //

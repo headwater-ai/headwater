@@ -18,12 +18,12 @@ relations:
     - HW-SPEC-engine-architecture
     - HW-SPEC-check-layer
   traces_to:
-    - tools/language-spike/build.sh
+    - tools/engine/language-spike/build.sh
 ---
 
 # The Q1 spike — results
 
-The risk-retirement spike that [Q1](../spec/09-open-questions.md#q1--implementation-language) requires, run. The argument under test is in the [language evaluation](language-choice.md), and the code is in [`tools/language-spike/`](../../tools/language-spike/). Reproduce with `tools/language-spike/build.sh`.
+The risk-retirement spike that [Q1](../spec/09-open-questions.md#q1--implementation-language) requires, run. The argument under test is in the [language evaluation](language-choice.md), and the code is in [`tools/engine/language-spike/`](../../tools/engine/language-spike/). Reproduce with `tools/engine/language-spike/build.sh`.
 
 **All four items pass. Q1 stands: the language is Rust.** Three findings came out of the work that the argument did not predict. One of them is a correction to the specification rather than to the code.
 
@@ -76,7 +76,7 @@ The evaluation predicted that the archived-YAML-crate problem would land on a la
 - `Marker::col` is documented as 1-indexed and is **0-indexed**. Trusting the comment puts every column off by one.
 - `key:` with nothing after it arrives as a *plain* `~` scalar, while `key: ""` arrives as a double-quoted empty string. Only the scalar style separates "the author left this blank" from "the author wrote an empty string". A required-facet check has to tell them apart. A deserializer collapses both.
 
-Both are recorded in `tools/language-spike/crates/core/examples/yaml_events.rs`, which is the probe that found them. This is the concrete form of the cost the evaluation named: the YAML layer is yours to own, including its surprises.
+Both are recorded in `tools/engine/language-spike/crates/core/examples/yaml_events.rs`, which is the probe that found them. This is the concrete form of the cost the evaluation named: the YAML layer is yours to own, including its surprises.
 
 ## Item 3 — embedding
 

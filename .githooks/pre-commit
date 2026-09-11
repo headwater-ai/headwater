@@ -64,7 +64,7 @@ root=$(git rev-parse --show-toplevel) || exit 0
 #
 # `site/llms.txt`, `site/robots.txt` and `site/sitemap.xml` are the three the
 # variable releases on its own. No record names them,
-# `tools/refresh-crawler-files.sh` writes all three from the pages under
+# `tools/site/refresh-crawler-files.sh` writes all three from the pages under
 # `site/`, and a crawler reads each one at a fixed path with no link to follow.
 # So this clause is the whole gate on exactly the files whose loss is silent.
 if [ -z "${HEADWATER_ALLOW_SITE_DELETE:-}" ]; then
@@ -210,13 +210,13 @@ status=$?
 # COST. 0.13 seconds, against about 1.0 for the rest of this hook.
 if [ "$status" -eq 0 ] && [ -z "${HEADWATER_SKIP_CRAWLER_CHECK:-}" ]; then
     if command -v python3 >/dev/null 2>&1; then
-        if ! crawler=$(sh "$root/tools/refresh-crawler-files.sh" --check 2>&1); then
+        if ! crawler=$(sh "$root/tools/site/refresh-crawler-files.sh" --check 2>&1); then
             echo "headwater: a derived file under \`site/\` no longer matches the pages"
             echo "  committed there. \`llms.txt\`, \`robots.txt\` and \`sitemap.xml\` are all"
-            echo "  written by \`tools/refresh-crawler-files.sh\` and none of them by hand."
+            echo "  written by \`tools/site/refresh-crawler-files.sh\` and none of them by hand."
             printf '%s\n' "$crawler" | sed 's/^/    /'
             echo "  Regenerate and stage the result:"
-            echo "        sh tools/refresh-crawler-files.sh"
+            echo "        sh tools/site/refresh-crawler-files.sh"
             echo "  Or skip this one clause for one commit:"
             echo "        HEADWATER_SKIP_CRAWLER_CHECK=1 git commit ..."
             exit 1
@@ -227,7 +227,7 @@ if [ "$status" -eq 0 ] && [ -z "${HEADWATER_SKIP_CRAWLER_CHECK:-}" ]; then
 fi
 
 # The shared visual register of the hand-built pages, which HW-DR-0050 rules.
-# `tools/site-tokens.css` is the one copy of it, and every page carries the
+# `tools/site/site-tokens.css` is the one copy of it, and every page carries the
 # block between its two `headwater:tokens` markers. A page cannot link that
 # file: `site/_headers` gives every hand-built path `default-src 'none'` with
 # no `'self'`, so the copy happens before the commit and the committed bytes
@@ -242,14 +242,14 @@ fi
 # name reads the committed tree, and that is what holds it.
 if [ "$status" -eq 0 ] && [ -z "${HEADWATER_SKIP_TOKEN_CHECK:-}" ]; then
     if command -v python3 >/dev/null 2>&1; then
-        if ! tokens=$(sh "$root/tools/refresh-site-tokens.sh" --check 2>&1); then
+        if ! tokens=$(sh "$root/tools/site/refresh-site-tokens.sh" --check 2>&1); then
             echo "headwater: a hand-built page under \`site/\` carries a visual register"
-            echo "  that disagrees with \`tools/site-tokens.css\`, which is the one copy"
+            echo "  that disagrees with \`tools/site/site-tokens.css\`, which is the one copy"
             echo "  of it. The block between the \`headwater:tokens\` markers is written"
-            echo "  by \`tools/refresh-site-tokens.sh\` and never by hand."
+            echo "  by \`tools/site/refresh-site-tokens.sh\` and never by hand."
             printf '%s\n' "$tokens" | sed 's/^/    /'
-            echo "  Edit \`tools/site-tokens.css\`, regenerate, and stage the result:"
-            echo "        sh tools/refresh-site-tokens.sh"
+            echo "  Edit \`tools/site/site-tokens.css\`, regenerate, and stage the result:"
+            echo "        sh tools/site/refresh-site-tokens.sh"
             echo "  Or skip this one clause for one commit:"
             echo "        HEADWATER_SKIP_TOKEN_CHECK=1 git commit ..."
             exit 1
@@ -261,7 +261,7 @@ fi
 
 # The figures on the hand-built pages, which HW-DR-0039 rules. Every number a
 # page under `site/` states comes from a run of this engine, written into a
-# `data-figure` element by `tools/refresh-figures.sh`, and the page carries no
+# `data-figure` element by `tools/site/refresh-figures.sh`, and the page carries no
 # source of its own. HW-DR-0039 recorded that nothing ran the check. This is
 # the first of the two callers that now do.
 #
@@ -292,7 +292,7 @@ fi
 # here on purpose: two measurements of it on one machine on one day, under
 # different loads, disagreed by a factor of six, and a timing with no load
 # beside it misleads. Measure it where you are, with
-# `time sh tools/refresh-figures.sh --check`.
+# `time sh tools/site/refresh-figures.sh --check`.
 #
 # What justifies the cost is the miss rate rather than the seconds. The crawler
 # clause above was adopted on a measured one-in-three miss over the life of the
@@ -308,7 +308,7 @@ if [ "$status" -eq 0 ]; then
         echo "headwater: HEADWATER_SKIP_FIGURE_CHECK is set, so the figures on the"
         echo "  hand-built pages are not checked. CI checks them with no such hatch."
     elif command -v python3 >/dev/null 2>&1; then
-        figures=$(sh "$root/tools/refresh-figures.sh" --check 2>&1) && figures_status=0 || figures_status=$?
+        figures=$(sh "$root/tools/site/refresh-figures.sh" --check 2>&1) && figures_status=0 || figures_status=$?
         # Exit 3 is the script saying it cannot tell, because the engine it
         # would measure with is older than the engine sources in this tree.
         # This branch exists because the one below is the wrong sentence for
@@ -327,10 +327,10 @@ if [ "$status" -eq 0 ]; then
         elif [ "$figures_status" -ne 0 ]; then
             echo "headwater: a figure on a hand-built page under \`site/\` disagrees with"
             echo "  a fresh run of this engine. Every such figure is written by"
-            echo "  \`tools/refresh-figures.sh\` from a run, and none of them by hand."
+            echo "  \`tools/site/refresh-figures.sh\` from a run, and none of them by hand."
             printf '%s\n' "$figures" | sed 's/^/    /'
             echo "  Measure again and stage the result:"
-            echo "        sh tools/refresh-figures.sh"
+            echo "        sh tools/site/refresh-figures.sh"
             echo "  A verbatim tutorial block is the one thing that command will not"
             echo "  repair. Copy the block out of the document it names."
             echo "  Or skip this one clause for one commit:"
@@ -344,7 +344,7 @@ if [ "$status" -eq 0 ]; then
 fi
 
 # `site/tutorial/index.html`, which used to be a second copy of the tutorial
-# typed by hand and is now `tools/render-tutorial.py`'s output, read from
+# typed by hand and is now `tools/site/render-tutorial.py`'s output, read from
 # `docs/tutorials/your-first-governed-corpus.md` and nothing else. The clause
 # above holds the page's blocks against the document, but only in the
 # direction that catches a block on the page going stale. A step, or a
@@ -365,13 +365,13 @@ fi
 # carries, for the same reason.
 if [ "$status" -eq 0 ] && [ -z "${HEADWATER_SKIP_TUTORIAL_RENDER_CHECK:-}" ]; then
     if command -v python3 >/dev/null 2>&1; then
-        if ! tutorial=$(python3 "$root/tools/render-tutorial.py" --check 2>&1); then
+        if ! tutorial=$(python3 "$root/tools/site/render-tutorial.py" --check 2>&1); then
             echo "headwater: site/tutorial/index.html no longer matches"
             echo "  docs/tutorials/your-first-governed-corpus.md. It is written by"
-            echo "  \`tools/render-tutorial.py\` and never by hand."
+            echo "  \`tools/site/render-tutorial.py\` and never by hand."
             printf '%s\n' "$tutorial" | sed 's/^/    /'
             echo "  Regenerate and stage the result:"
-            echo "        python3 tools/render-tutorial.py"
+            echo "        python3 tools/site/render-tutorial.py"
             echo "  Or skip this one clause for one commit:"
             echo "        HEADWATER_SKIP_TUTORIAL_RENDER_CHECK=1 git commit ..."
             exit 1

@@ -211,7 +211,7 @@ relations:
 
 ## How the two halves of the site share one host
 
-[HW-DR-0047](../decisions/0047-how-the-two-halves-of-the-site-share-one-host.md) — One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time. (asserted, and no human has accepted it)
+[HW-DR-0047](../decisions/0047-how-the-two-halves-of-the-site-share-one-host.md) — One directory holds both halves of the site, composed by `tools/site/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time. (asserted, and no human has accepted it)
 
 ## A corpus-wide fold is derived and never stored
 
