@@ -1011,6 +1011,108 @@ release_digest_of() {
     ' "$1"
 }
 
+# digest_paragraph_of FILE — the paragraph that tells a reader where the digest
+# they pass to `--expect` comes from: the first paragraph outside a fence that
+# names `release.digest`. It is read out of the page rather than named by line
+# number, because a line number is the thing every edit above it moves.
+digest_paragraph_of() {
+    awk '
+        /^[ \t]*```/ { fence = 1 - fence; next }
+        fence { next }
+        /^[ \t]*$/ { if (hit) exit; para = ""; next }
+        { para = para $0 "\n"; if ($0 ~ /release\.digest/) hit = 1 }
+        END { if (hit) printf "%s", para }
+    ' "$1"
+}
+
+# release_tags_in TEXT — every tag a `releases/tag/<tag>` URL in TEXT names, in
+# the order they stand. A tag may carry slashes, which is why the taxonomy
+# namespace exists at all, so the match runs to the closing delimiter of the
+# link rather than to the next slash.
+release_tags_in() {
+    printf '%s' "$1" | awk '
+        {
+            s = $0
+            while ((i = index(s, "/releases/tag/")) > 0) {
+                s = substr(s, i + 14)
+                t = s
+                sub(/[)>"'"'"' \t].*$/, "", t)
+                if (t != "") print t
+            }
+        }
+    '
+}
+
+# digest_of_tag TAG — the `release.digest` of `packages/headwater-standard/` in
+# the tree THAT TAG names, or the empty string when the tag object is not in
+# this clone. This is the value a reader following the page's route actually
+# receives, and reading it out of the tag rather than out of the working tree is
+# the whole point: a digest read from the checkout a reader is verifying
+# authenticates the pin and never the publisher (HW-OBL-0115).
+digest_of_tag() {
+    if git_show_tag_release "$1" >"$scratch/tag-release.yml" 2>/dev/null; then
+        release_digest_of "$scratch/tag-release.yml"
+    fi
+}
+
+# git_show_tag_release TAG — one `git show`, kept in its own function so that
+# the redirection above reads a file this suite wrote under `mktemp -d`.
+git_show_tag_release() {
+    git -C "$root" show "$1:packages/headwater-standard/release.yml"
+}
+
+# digest_route_judge FILE PINNED_TAG — `ok`, or the sentence that says how the
+# route the digest paragraph sends a reader down contradicts itself.
+#
+# The property, stated once: THE DIGEST A READER IS SENT TO READ MUST BELONG TO
+# THE TREE THE SAME PARAGRAPH SENDS THEM TO FETCH. Two routes satisfy it and
+# nothing else does. An engine release page states the digest of the package in
+# that engine tag's tree, so it is honest only when its tag is the tag the fence
+# pins. A taxonomy release page states the digest of its own tag's tree, which
+# the reader fetches by that tag, so it is honest only when the literal standing
+# beside it in the paragraph is that tree's digest.
+#
+# Case 6f, which runs the page's command, can see none of this: it reads the
+# digest out of the working tree beside it and then vendors a copy of that same
+# tree, so both sides of its comparison come from one file and it stays green
+# with the link deleted outright. This judge opens no socket and is handed no
+# literal: every value below comes out of the page or out of a tag.
+digest_route_judge() {
+    drj_para=$(digest_paragraph_of "$1")
+    if [ -z "$drj_para" ]; then
+        echo "no paragraph outside a fence names \`release.digest\`, so nothing on the page says where the digest a reader passes to \`--expect\` comes from"
+        return 0
+    fi
+    drj_tags=$(release_tags_in "$drj_para")
+    if [ -z "$drj_tags" ]; then
+        echo "the digest paragraph links no release page, so the digest it tells a reader to pass has no stated source"
+        return 0
+    fi
+    drj_sentence=
+    for drj_tag in $drj_tags; do
+        case $drj_tag in
+            taxonomy/*)
+                drj_want=$(digest_of_tag "$drj_tag")
+                if [ -z "$drj_want" ]; then
+                    drj_sentence="$drj_sentence; the tag $drj_tag is not in this clone, so the digest it publishes cannot be read. Fetch it, or set \`fetch-tags: true\` on the checkout"
+                elif ! printf '%s' "$drj_para" | grep -q -- "$drj_want"; then
+                    drj_sentence="$drj_sentence; the paragraph links the release page for $drj_tag and does not state that tag's digest $drj_want beside it"
+                fi
+                ;;
+            *)
+                if [ "$drj_tag" != "$2" ]; then
+                    drj_sentence="$drj_sentence; the paragraph sends a reader to the release page for $drj_tag for a digest, and the fence pins ${2:-no tag}"
+                fi
+                ;;
+        esac
+    done
+    if [ -n "$drj_sentence" ]; then
+        printf '%s\n' "${drj_sentence#; }"
+    else
+        echo ok
+    fi
+}
+
 # vendor_corpus DIR OPERAND — the part of a checkout the page's command reads:
 # the pin, and the directory the invocation names. The matching arm WRITES, and
 # it vendors the package over itself, so every run below happens over a copy
@@ -1555,6 +1657,82 @@ if [ -n "$engine" ] && [ -n "$good_digest" ]; then
 else
     fail "  the judge is provoked in both shapes it refuses" \
         "the arms did not run: engine \`${engine:-none}\`, digest \`${good_digest:-none}\`"
+fi
+
+# 6i. THE DECISIVE CASE OF THIS GROUP, and the one every case above it cannot
+#     reach. 6f runs the page's command, and it reads the digest out of the
+#     working tree and then vendors a copy of that same tree: both sides come
+#     from one file, the release page the prose links is never opened, and the
+#     tag the fence pins is never consulted. Delete the link outright and 6a-6h
+#     stay green. So the property this case holds is the one #775 is about —
+#     the digest a reader is sent to read has to belong to the tree the same
+#     paragraph sends them to fetch — and it is two values extracted from the
+#     page and from a tag and compared to each other, never a literal written
+#     down here.
+same "the digest paragraph's route to a digest is self-consistent" ok \
+    "$(digest_route_judge "$readme" "$tag")"
+
+# 6j-6m. The judge, provoked, in the four shapes it refuses. Each arm plants one
+#        paragraph and requires the verdict to name which way the route went
+#        wrong, so a judge that stopped working cannot be told from a page that
+#        is right by reading the case name alone.
+mkdir -p "$scratch/digest"
+tax_release_tag=$(release_tags_in "$(digest_paragraph_of "$readme")" | grep '^taxonomy/' | head -1)
+
+printf '%s\n' 'Nothing here names the field.' '' 'Nor here.' >"$scratch/digest/no-paragraph.md"
+same "  a page whose prose never names \`release.digest\` is refused" \
+    "no paragraph outside a fence names \`release.digest\`, so nothing on the page says where the digest a reader passes to \`--expect\` comes from" \
+    "$(digest_route_judge "$scratch/digest/no-paragraph.md" "$tag")"
+
+printf '%s\n' 'Pass the `release.digest` field to `--expect`.' '' 'And that is all.' \
+    >"$scratch/digest/no-link.md"
+same "  a digest paragraph that links no release page at all is refused" \
+    "the digest paragraph links no release page, so the digest it tells a reader to pass has no stated source" \
+    "$(digest_route_judge "$scratch/digest/no-link.md" "$tag")"
+
+printf '%s\n' \
+    '[The release for `v0.0.1`](https://github.com/headwater-ai/headwater/releases/tag/v0.0.1) states the `release.digest` field.' \
+    '' 'And that is all.' >"$scratch/digest/other-engine-tag.md"
+same "  an engine release page for a tag the fence does not pin is refused" \
+    "the paragraph sends a reader to the release page for v0.0.1 for a digest, and the fence pins ${tag:-no tag}" \
+    "$(digest_route_judge "$scratch/digest/other-engine-tag.md" "$tag")"
+
+#        The state `origin/main` was in when #775 was filed, rebuilt here so the
+#        red stays reachable after the page is fixed: the paragraph cited the
+#        release page for one engine tag while the fence pinned another.
+if [ -n "$tag" ]; then
+    printf '%s\n' \
+        "[The release for \`v0.1.0\`](https://github.com/headwater-ai/headwater/releases/tag/v0.1.0) states one digest: the value of the \`release.digest\` field." \
+        '' 'And that is all.' >"$scratch/digest/filed-state.md"
+    if [ "$tag" = v0.1.0 ]; then
+        pass "  the state #775 was filed in is refused (the fence now pins v0.1.0, so this arm is vacuous)"
+    else
+        same "  the state #775 was filed in is refused" \
+            "the paragraph sends a reader to the release page for v0.1.0 for a digest, and the fence pins $tag" \
+            "$(digest_route_judge "$scratch/digest/filed-state.md" "$tag")"
+    fi
+else
+    fail "  the state #775 was filed in is refused" \
+        "the fence pins no tag, so the arm has nothing to differ from"
+fi
+
+#        A taxonomy release page is honest only with its own tag's digest
+#        standing beside it. This arm keeps the link and drops the literal.
+if [ -n "$tax_release_tag" ]; then
+    tax_release_digest=$(digest_of_tag "$tax_release_tag")
+    printf '%s\n' \
+        "[The release for \`$tax_release_tag\`](https://github.com/headwater-ai/headwater/releases/tag/$tax_release_tag) states the \`release.digest\` field." \
+        '' 'And that is all.' >"$scratch/digest/tax-no-literal.md"
+    if [ -n "$tax_release_digest" ]; then
+        same "  a taxonomy release page cited without its own tag's digest is refused" \
+            "the paragraph links the release page for $tax_release_tag and does not state that tag's digest $tax_release_digest beside it" \
+            "$(digest_route_judge "$scratch/digest/tax-no-literal.md" "$tag")"
+    else
+        fail "  a taxonomy release page cited without its own tag's digest is refused" \
+            "the tag $tax_release_tag is not in this clone, so no digest could be read out of it. The checkout that runs this suite needs \`fetch-tags: true\`"
+    fi
+else
+    pass "  the digest paragraph cites no taxonomy release page, so that arm has nothing to provoke"
 fi
 
 echo "the binary the page offers, and the run that uploads it"
