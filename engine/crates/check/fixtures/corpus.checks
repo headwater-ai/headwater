@@ -42,10 +42,7 @@ adoption
     322 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
 suppressions
-  1 findings hidden by 1 directives
-      1 false_positive
-      1 of language.controlled.not_met
-      1 on the shelf evaluations
+  0 findings hidden by 0 directives
       2 matched no finding
 rules, and for each the scope that binds it
   facet.required.missing
@@ -117,7 +114,6 @@ register
      14 high, 13 verified
      17 medium, 15 verified
       5 low, 5 verified
-  OB-LANG-1 verified, 1 finding escaped under it
   OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
   OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
   OB-DR-3 unverifiable, To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
@@ -132,5 +128,5 @@ register
       3 at a final posture
       5 permanently advisory
       2 producing facts rather than findings
-  escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 1 suppressed
+  escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 0 suppressed
   facet.value.blank reaches no obligation, so it names none
