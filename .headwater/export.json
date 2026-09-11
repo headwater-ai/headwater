@@ -1061,7 +1061,7 @@
               "site/changelog/index.html"
             ],
             "traces_to": [
-              "notes/website-design-brief.md"
+              ".headwater/notes/website-design-brief.md"
             ]
           }
         }
@@ -1088,7 +1088,7 @@
           },
           "relations": {
             "governs": [
-              "mkdocs-overrides/main.html"
+              "mkdocs/overrides/main.html"
             ],
             "traces_to": [
               "HW-SPEC-distribution-and-federation",
@@ -1122,10 +1122,10 @@
               "HW-DR-0037"
             ],
             "governs": [
-              "tools/refresh-figures.sh"
+              "tools/site/refresh-figures.sh"
             ],
             "traces_to": [
-              "notes/website-design-brief.md"
+              ".headwater/notes/website-design-brief.md"
             ]
           }
         }
@@ -1360,7 +1360,7 @@
           "id": "HW-DR-0047",
           "status": "current",
           "status_since": "2026-09-06",
-          "summary": "One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time.",
+          "summary": "One directory holds both halves of the site, composed by `tools/site/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time.",
           "last_verified": "2026-09-06",
           "title": "How the two halves of the site share one host",
           "provenance": {
@@ -1377,8 +1377,8 @@
               "HW-DR-0039"
             ],
             "governs": [
-              "tools/assemble-site.sh",
-              "tools/cloudflare-build.sh",
+              "tools/site/assemble-site.sh",
+              "tools/site/cloudflare-build.sh",
               "wrangler.jsonc",
               "site/_headers"
             ]
@@ -1413,8 +1413,8 @@
               "HW-DR-0047"
             ],
             "governs": [
-              "tools/sitemap.py",
-              "tools/refresh-crawler-files.sh"
+              "tools/site/sitemap.py",
+              "tools/site/refresh-crawler-files.sh"
             ]
           }
         }
@@ -1472,13 +1472,13 @@
               "HW-DR-0037"
             ],
             "governs": [
-              "tools/site-tokens.css",
-              "tools/refresh-site-tokens.sh",
-              "mkdocs-hooks/site_tokens.py",
-              "mkdocs-overrides/css/headwater.css"
+              "tools/site/site-tokens.css",
+              "tools/site/refresh-site-tokens.sh",
+              "mkdocs/hooks/site_tokens.py",
+              "mkdocs/overrides/css/headwater.css"
             ],
             "traces_to": [
-              "notes/website-design-brief.md"
+              ".headwater/notes/website-design-brief.md"
             ]
           }
         }
@@ -1505,7 +1505,7 @@
           "relations": {
             "traces_to": [
               "HW-DR-0037",
-              "notes/website-design-brief.md"
+              ".headwater/notes/website-design-brief.md"
             ]
           }
         }
@@ -1945,7 +1945,7 @@
               "HW-SPEC-check-layer"
             ],
             "traces_to": [
-              "tools/language-spike/build.sh"
+              "tools/engine/language-spike/build.sh"
             ]
           }
         }
@@ -2026,7 +2026,7 @@
               "HW-REG-open-obligations"
             ],
             "traces_to": [
-              "tools/rdf-probe/emit.py"
+              "tools/probe/rdf-probe/emit.py"
             ]
           }
         }
@@ -2801,8 +2801,8 @@
           "status": "current",
           "status_since": "2026-08-11",
           "waiting_on": "adopter",
-          "last_verified": "2026-09-06",
-          "summary": "The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for.",
+          "last_verified": "2026-09-11",
+          "summary": "The three voice categories run over this corpus, and the largest reading is 36 findings against a sample bar of 50.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -3019,21 +3019,20 @@
         "path": "docs/obligations/0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md",
         "kind": "obligation_record",
         "id": "HW-OBL-0010",
-        "warrant": "accepted",
+        "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0010",
           "title": "The corpus descriptor exists and no probe has run against it",
-          "status": "discharged",
-          "status_since": "2026-08-10",
+          "status": "current",
+          "status_since": "2026-09-11",
           "waiting_on": "build",
-          "last_verified": "2026-08-13",
-          "summary": "A recorded regression session did not open the check-layer document, so the descriptor claim now has a measured result.",
+          "last_verified": "2026-09-11",
+          "summary": "The instrument is declared, one session was recorded, and the recording was refused whole, so the descriptor claim still has no reading.",
           "provenance": {
-            "warrant": "accepted",
+            "warrant": "asserted",
             "agency": "mixed",
             "drafted_by": "claude-opus-5",
             "activity": "draft+revise",
-            "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
           },
           "relations": {
@@ -6257,11 +6256,11 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0124",
-          "status": "discharged",
-          "status_since": "2026-08-14",
+          "status": "current",
+          "status_since": "2026-09-11",
           "waiting_on": "build",
-          "summary": "A committed transcript now generates and holds a probe result under regeneration.",
-          "last_verified": "2026-08-14",
+          "summary": "A committed transcript generates a result and regeneration holds the pair, and the one result this corpus holds carries no verdict.",
+          "last_verified": "2026-09-11",
           "title": "A probe result is printed and never committed, so nothing regenerates one",
           "provenance": {
             "warrant": "asserted",
@@ -7237,7 +7236,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "The voice rule reports zero because not one of its forty patterns occurs here, and that reads the same as a clean corpus.",
-          "last_verified": "2026-09-06",
+          "last_verified": "2026-09-11",
           "title": "A saturated pattern set and a clean corpus are the same zero, and no report separates them",
           "waiting_on": "build",
           "provenance": {
@@ -8845,6 +8844,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": ".headwater/notes/website-design-brief.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": ".headwater/overlay.yml",
         "resolver": "source-tree"
       },
@@ -9116,22 +9120,17 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": "mkdocs-hooks/site_tokens.py",
+        "id": "mkdocs/hooks/site_tokens.py",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "mkdocs-overrides/css/headwater.css",
+        "id": "mkdocs/overrides/css/headwater.css",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "mkdocs-overrides/main.html",
-        "resolver": "source-tree"
-      },
-      {
-        "anchor_kind": "code_path",
-        "id": "notes/website-design-brief.md",
+        "id": "mkdocs/overrides/main.html",
         "resolver": "source-tree"
       },
       {
@@ -9191,47 +9190,47 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": "tools/assemble-site.sh",
+        "id": "tools/engine/language-spike/build.sh",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "tools/cloudflare-build.sh",
+        "id": "tools/probe/rdf-probe/emit.py",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "tools/language-spike/build.sh",
+        "id": "tools/site/assemble-site.sh",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "tools/rdf-probe/emit.py",
+        "id": "tools/site/cloudflare-build.sh",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "tools/refresh-crawler-files.sh",
+        "id": "tools/site/refresh-crawler-files.sh",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "tools/refresh-figures.sh",
+        "id": "tools/site/refresh-figures.sh",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "tools/refresh-site-tokens.sh",
+        "id": "tools/site/refresh-site-tokens.sh",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "tools/site-tokens.css",
+        "id": "tools/site/site-tokens.css",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "tools/sitemap.py",
+        "id": "tools/site/sitemap.py",
         "resolver": "source-tree"
       },
       {
@@ -9897,7 +9896,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "notes/website-design-brief.md",
+          "id": ".headwater/notes/website-design-brief.md",
           "resolver": "source-tree"
         }
       },
@@ -9908,7 +9907,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "mkdocs-overrides/main.html",
+          "id": "mkdocs/overrides/main.html",
           "resolver": "source-tree"
         }
       },
@@ -9952,7 +9951,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "tools/refresh-figures.sh",
+          "id": "tools/site/refresh-figures.sh",
           "resolver": "source-tree"
         }
       },
@@ -9963,7 +9962,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "notes/website-design-brief.md",
+          "id": ".headwater/notes/website-design-brief.md",
           "resolver": "source-tree"
         }
       },
@@ -10315,7 +10314,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "tools/assemble-site.sh",
+          "id": "tools/site/assemble-site.sh",
           "resolver": "source-tree"
         }
       },
@@ -10326,7 +10325,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "tools/cloudflare-build.sh",
+          "id": "tools/site/cloudflare-build.sh",
           "resolver": "source-tree"
         }
       },
@@ -10392,7 +10391,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "tools/sitemap.py",
+          "id": "tools/site/sitemap.py",
           "resolver": "source-tree"
         }
       },
@@ -10403,7 +10402,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "tools/refresh-crawler-files.sh",
+          "id": "tools/site/refresh-crawler-files.sh",
           "resolver": "source-tree"
         }
       },
@@ -10469,7 +10468,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "tools/site-tokens.css",
+          "id": "tools/site/site-tokens.css",
           "resolver": "source-tree"
         }
       },
@@ -10480,7 +10479,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "tools/refresh-site-tokens.sh",
+          "id": "tools/site/refresh-site-tokens.sh",
           "resolver": "source-tree"
         }
       },
@@ -10491,7 +10490,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "mkdocs-hooks/site_tokens.py",
+          "id": "mkdocs/hooks/site_tokens.py",
           "resolver": "source-tree"
         }
       },
@@ -10502,7 +10501,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "mkdocs-overrides/css/headwater.css",
+          "id": "mkdocs/overrides/css/headwater.css",
           "resolver": "source-tree"
         }
       },
@@ -10513,7 +10512,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "notes/website-design-brief.md",
+          "id": ".headwater/notes/website-design-brief.md",
           "resolver": "source-tree"
         }
       },
@@ -10535,7 +10534,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "notes/website-design-brief.md",
+          "id": ".headwater/notes/website-design-brief.md",
           "resolver": "source-tree"
         }
       },
@@ -10986,7 +10985,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "tools/language-spike/build.sh",
+          "id": "tools/engine/language-spike/build.sh",
           "resolver": "source-tree"
         }
       },
@@ -11019,7 +11018,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "tools/rdf-probe/emit.py",
+          "id": "tools/probe/rdf-probe/emit.py",
           "resolver": "source-tree"
         }
       },

@@ -26,7 +26,7 @@ release:
   package: headwater/standard
   version: 4.3.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:831b65df28236945f2e34b37a26c98962639f2a9d30382fd669c77ca8f0f7dbb
+  digest: sha256:f4b7933aa8f8a1eb5fb5844913a65955873f6e30f1dc662d17a0ce8e7918a3bb
   members:
     - path: assemblies/starter/assembly.yml
       digest: sha256:a31fc170c7e398feb01c0cc2d5f684744b24b8df4ce86a896d5ee64963567d2e
@@ -65,7 +65,7 @@ release:
     - path: bundles/diataxis-site/bundle.yml
       digest: sha256:d1d729c52c81b6e53cda7f7333f49155d583ca1f9fceb07737b309be6f15132d
     - path: bundles/diataxis-site/doctrine.md
-      digest: sha256:4437b2dfa01ed9fd8f28c6c39f4c501a278b499281c4c333ab566933a773e15f
+      digest: sha256:b20d68c6dfb85f52a45b8a3ebff7649a968e0da1adad56e3691d3d6bd3b32ebb
     - path: bundles/diataxis-site/templates/explanation.md
       digest: sha256:7f7dbb08f3eec987eab3996cfd987e18760d2aeb76b59f044e22b5d6fe9b7925
     - path: bundles/diataxis-site/templates/how_to.md
