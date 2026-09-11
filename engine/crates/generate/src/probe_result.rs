@@ -200,10 +200,7 @@ pub(crate) fn emit(
                     // the identifier: one declaration writes one file per
                     // transcript, so a name that did not carry the stem would
                     // label every result of the shelf the same.
-                    name: declared
-                        .name
-                        .as_ref()
-                        .map(|name| name.replace(RUN, &stem)),
+                    name: declared.name.as_ref().map(|name| name.replace(RUN, &stem)),
                 };
                 match crate::identity::front_matter(surface, &minted, &output, Kind::ProbeResult) {
                     Ok(block) => block,
