@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 421,
-      "carried": 421,
+      "in the graph": 422,
+      "carried": 422,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -7705,6 +7705,28 @@
           "last_verified": "2026-09-11",
           "title": "Nothing states why the vendored package root is visible in an adopter tree",
           "waiting_on": "adopter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0185-whether-an-admitted-library-entry-may-require-a-bundle-that-admission-refuses.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0185",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0185",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "An entry the canonical library refuses is required by two entries it admits, and no criterion and no ruling reads that direction",
+          "last_verified": "2026-09-11",
+          "title": "Whether an admitted library entry may require a bundle that admission refuses",
+          "waiting_on": "ruling",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
