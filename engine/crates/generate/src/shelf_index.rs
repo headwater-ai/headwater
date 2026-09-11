@@ -232,7 +232,7 @@ fn render(shelf: &str, output: &str, ordered: &[Pointer], front: Option<&str>) -
     let base = parent_of(output);
     for pointer in ordered {
         let target = relative(&base, &pointer.path);
-        let label = crate::label(pointer);
+        let label = pointer.id.clone().unwrap_or_else(|| file_name(&pointer.path));
         out.push_str(&format!("- [{label}]({target})"));
         if let Some(summary) = &pointer.summary {
             out.push_str(&format!(" — {summary}"));
