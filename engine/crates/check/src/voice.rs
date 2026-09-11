@@ -459,11 +459,12 @@ mod tests {
     }
 
     /// The false positives of the census of 2026-09-11, one sentence for each
-    /// of the five modes, verbatim from this corpus and each one checked
-    /// against its source file on `404dc0cb`. The test holds its own copy and
-    /// reads no document, so a reword of one of these sentences leaves this
-    /// case green while its claim to quote the corpus goes false. Nothing
-    /// detects that, which is the shape HW-OBL-0168 is open about. They match, and the
+    /// of the five modes, verbatim from the corpus of `d0ef8273` and each one
+    /// checked against its source file there by a script that ran once. This
+    /// case holds its own copies and reads no document, so a reword of any of
+    /// these sentences leaves it green while its claim to quote the corpus
+    /// goes false. Nothing gates the six against that drift, and a script that
+    /// ran once is not a gate. They match, and the
     /// comment on the tier-two set states why they are allowed to: a narrowing
     /// that excludes one of them rules on the mode rather than on the sentence,
     /// and it meets this case before it meets the corpus.
