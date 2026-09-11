@@ -235,6 +235,7 @@ pub(crate) fn emit(
                 confirmation: refusal.confirmation(),
                 why: refusal.to_string(),
                 held: promoted,
+                readers: Vec::new(),
             });
         }
         plan.outputs.push(Output {
