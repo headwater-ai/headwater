@@ -459,7 +459,11 @@ mod tests {
     }
 
     /// The false positives of the census of 2026-09-11, one sentence for each
-    /// of the five modes, verbatim from this corpus. They match, and the
+    /// of the five modes, verbatim from this corpus and each one checked
+    /// against its source file on `404dc0cb`. The test holds its own copy and
+    /// reads no document, so a reword of one of these sentences leaves this
+    /// case green while its claim to quote the corpus goes false. Nothing
+    /// detects that, which is the shape HW-OBL-0168 is open about. They match, and the
     /// comment on the tier-two set states why they are allowed to: a narrowing
     /// that excludes one of them rules on the mode rather than on the sentence,
     /// and it meets this case before it meets the corpus.
@@ -473,13 +477,13 @@ mod tests {
             "If the engine can name that thing too, the finding is relational, and the argument above no longer holds.",
             // An inline quotation, which spec 3 puts outside every voice rule
             // and which this engine reads because only a block quote is marked.
-            "The judgment \"we no longer describe it that way\" existed only as prose and a diff.",
+            "The judgment \"we no longer describe it that way\" existed only as prose and a diff, so no mechanism could inherit it.",
             // Another system's behavior, in the present tense.
-            "ESLint fails a run that carries a suppression which no longer matches.",
+            "ESLint fails a run that carries a suppression which no longer matches, and that is the property `.ste-lint-baseline.json` lacked.",
             // A heading, which is not a sentence.
             "Terms that used to collide",
             // An adjectival compound that names an input rather than a change.
-            "A document-scoped check that declares needs_prior receives the previously committed version of the changed document.",
+            "A document-scoped check that declares `needs_prior` receives the previously committed version of the changed document.",
         ] {
             assert!(
                 narration
