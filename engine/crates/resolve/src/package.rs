@@ -3687,7 +3687,7 @@ fn doctrine_at(
 /// verification pass on such an adopter, a `~staged` residue took the census
 /// from 55 files and 38 untyped to 107 and 76. Say which of the two
 /// configurations a claim about a residue is about.
-pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<ResolveError>> {
+pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Vendored, Vec<ResolveError>> {
     let name = display(root, fetched);
     let record =
         release::verify(fetched, pinned).map_err(|error| release::as_error(&name, &error))?;
@@ -3738,6 +3738,7 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
     }
 
     let installed = target.exists();
+    let mut divergence = None;
     if installed {
         match release::at(&target) {
             // The guard reads and writes nothing, and it sits here rather than
@@ -3745,7 +3746,10 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
             // has since moved; the question it answers — is the directory that
             // is there the package this artifact declares — is one for the
             // phase that reads.
-            Ok(_) => holds_the_same_package(&target, &under, &declared)?,
+            Ok(resident) => {
+                holds_the_same_package(&target, &under, &declared)?;
+                divergence = diverged(&resident, &record);
+            }
             Err(ReleaseError::Absent(_)) => {
                 return Err(refusal(
                     &under,
@@ -3863,7 +3867,84 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
         let _ = std::fs::remove_dir_all(&aside);
     }
     tidy(&staging_root);
-    Ok(record)
+    Ok(Vendored {
+        release: record,
+        divergence,
+    })
+}
+
+/// What a [`vendor`] run installed, and the one thing it saw on the way in that
+/// no other run of this engine can see.
+///
+/// **The observation travels out of the run that made it.** [`Published`] sets
+/// the precedent in this module and states the reason: a reporter that
+/// re-derives a fact the run already decided is two functions answering one
+/// question, which is the defect
+/// [#581](https://github.com/headwater-ai/headwater/issues/581) exists for.
+/// Reading the installed record in the CLI *before* the call would be the cheap
+/// version of this and it is worse, because the next caller of [`vendor`]
+/// forgets to and the fact is lost with no error anywhere.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Vendored {
+    /// The release record of the artifact that was installed.
+    pub release: Release,
+    /// A second set of bytes under the version that was already there, where
+    /// this run found one. `None` on a first install, on a version that moved,
+    /// and on an artifact whose bytes are the bytes already installed.
+    pub divergence: Option<Divergence>,
+}
+
+/// Two published artifacts of one package that state one version and different
+/// bytes, seen together on disk.
+///
+/// **A version number does not name an artifact, and nothing in this engine
+/// makes it one.** Spec 7 states the invariant that is held: a pin names bytes.
+/// Nothing refuses a republish of different bytes under a version already
+/// published, and [`publish`] could not refuse one if it wanted to — it calls
+/// `found::observe`, which refuses a non-empty `--out`, so every publish writes
+/// into a directory that holds no prior record of anything. [`vendor`] is the
+/// one run of this engine that holds two published records of one package at
+/// once, so this is the only place the pair is visible at all.
+///
+/// **This reports and it does not refuse**, and the cost of the other choice is
+/// what decided it: across the last 14 commits to this repository's own
+/// `packages/headwater-standard/release.yml` the digest moved 14 times and the
+/// version moved 3, so 11 of those 14 maintenance loops republished different
+/// bytes under a version already published. A refusal is a version policy and
+/// an owner decision, tracked on
+/// [#784](https://github.com/headwater-ai/headwater/issues/784).
+///
+/// **Both fields come from the installed `release.yml`, whose header the digest
+/// does not cover.** That is the same seam
+/// [`identity`] documents for the artifact's own record, read from the other
+/// end: a resident record edited by hand can state a version it is not, and the
+/// report then stays silent. It is a report rather than a gate, and the adopter
+/// who can rewrite their own installed record has already replaced the bytes.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Divergence {
+    /// The version both records state.
+    pub version: String,
+    /// The digest of the record that stood at the target before this run.
+    pub installed_digest: String,
+    /// How many members that record covers.
+    pub installed_members: usize,
+}
+
+/// The pair, where the record already installed and the record arriving state
+/// one version and different bytes.
+///
+/// The package name is settled above this by [`holds_the_same_package`], which
+/// reads the `package:` of each *manifest* rather than of either record,
+/// because a manifest is inside the digest and a record header is not. So this
+/// compares the two fields that are left and never the name.
+fn diverged(resident: &Release, incoming: &Release) -> Option<Divergence> {
+    (resident.version == incoming.version && resident.digest != incoming.digest).then(|| {
+        Divergence {
+            version: incoming.version.clone(),
+            installed_digest: resident.digest.clone(),
+            installed_members: resident.members.len(),
+        }
+    })
 }
 
 /// The name of the directory [`vendor`] copies a new package into, one level
