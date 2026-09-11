@@ -705,6 +705,27 @@ fn a_plan_that_stopped_partway_hands_a_grading_caller_no_selection() {
 fn a_transcript_planned_against_another_taxonomy_fails_the_run() {
     let matched = copied("probe-result-lock-matches");
     let held = write(&matched, &plan_over(&matched));
+    // The walk reached a transcript, before anything is asserted about what it
+    // did not find. An empty refusal list is what a run over a corpus with no
+    // transcript in it also produces, and a negative arm that cannot tell the
+    // two apart tests the subject and not the instrument.
+    let wrote = held
+        .wrote
+        .iter()
+        .find(|wrote| wrote.path == RESULT)
+        .expect("the run wrote a result, so it reached the transcript that result comes from");
+    assert!(
+        !wrote.verdict.is_error(),
+        "the run reached the transcript and then failed over it: {:?}",
+        wrote.verdict
+    );
+    assert!(
+        std::fs::read_to_string(matched.join(RESULT))
+            .expect("the result reads")
+            .contains("## The verdicts"),
+        "the matching arm grades: a result with no verdicts section would satisfy every \
+         assertion below and measure nothing"
+    );
     assert!(
         held.refused.is_empty(),
         "a transcript this tree's taxonomy matches is refused by nothing"

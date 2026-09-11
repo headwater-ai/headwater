@@ -27,7 +27,7 @@ relations:
 
 `headwater probe grade` now evaluates every expectation form and returns a verdict for each. It writes that report to standard output and it writes no document. Three facts were measured on this tree rather than argued:
 
-- `docs/probe-runs/` is declared by the overlay and holds no file, so no transcript is corpus content.
+- `docs/probe-runs/` is declared by the overlay and held no file, so no transcript was corpus content. The section at the end of this record is what moved that fact and what it did not move.
 - No kind of this taxonomy types a probe result, so a result document has nothing to be.
 - `headwater generate --check` regenerates three documents, and each is a shelf index or a shelf section.
 
@@ -35,7 +35,7 @@ So the artifact that spec 5 calls a probe result exists as terminal output and a
 
 **The second and the third of those three are false, and the first is true.** `probe_result` is a kind of this taxonomy, `docs/probe-results/**` is a shelf that holds it, and `probe_result` is the ninth declarable projection kind. The generator reads every committed transcript, grades it against the selection that `headwater probe plan` composes, and writes one document for each. It writes nothing at all when the plan refuses. A plan that gives up part way through holds the probes it read and none of the rest. A result over that part would report a rate over a denominator no document declares. The run names the probe that stopped the plan in the place a result would be. A recorded fixture tree holds the pair and asserts the three directions of the gate. The committed pair is green. An unrelated edit leaves it green, and an edit to one event of the transcript turns it red.
 
-This corpus writes no result, because the first fact holds. `headwater generate` prints the reason on every run rather than passing the declaration over, so the missing input has a location that a run states.
+This corpus wrote no result while the first fact held, and `headwater generate` printed the reason on every run rather than passing the declaration over. The first fact stopped holding on 2026-09-09. The run now writes a result and reports that a confirmation refused the transcript it wrote it from, which is the same posture applied to the failure that replaced the empty one.
 
 ## Obligation
 

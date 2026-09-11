@@ -3063,7 +3063,8 @@ impl Loaded {
     /// declaration composes no selection, because the selection a transcript is
     /// graded against is the one the plan composed. A transcript this walk
     /// cannot read supplies no source. A corpus that holds no transcript
-    /// supplies nothing at all, which is this repository today.
+    /// supplies nothing at all, which this repository was until 2026-09-09 and
+    /// is no longer: it holds one transcript, which a confirmation refuses.
     ///
     /// # The tier below prices a run that already happened, so it reaches
     /// nothing

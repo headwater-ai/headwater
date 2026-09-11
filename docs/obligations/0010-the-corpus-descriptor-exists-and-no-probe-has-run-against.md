@@ -31,9 +31,9 @@ The Discovery and Navigability probe categories are the instrument, and this cor
 
 ## Discharge
 
-**The artifact under test exists, the instrument is declared, and no run has happened.** [HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor](../probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md) states the task and the expectation, and `headwater probe plan` selects it. What is missing is a recorder: a transcript is observed from outside the session that produced it, and no such process is in this repository. So the wait moved from an instrument nobody had declared to a run nobody has taken.
+**The artifact under test exists, the instrument is declared, and one run has happened and produced no verdict.** [HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor](../probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md) states the task and the expectation, and `headwater probe plan` selects it. The recorder that was missing landed in #725, and it recorded four sessions on 2026-09-09. What is missing now is a recording that a confirmation does not refuse. The section at the end of this record states what refused it.
 
-`headwater generate` writes `.headwater/corpus.json`, and `generate --check` holds it to regeneration. The descriptor over this corpus names one root, one exclusion, the taxonomy identity and the lock hash. It names one entry point for each shelf that holds a document. `.headwater/corpus.json` is where that set is counted, and a shelf with no document on it puts nothing there. So a probe has something to run against, and no probe has run.
+`headwater generate` writes `.headwater/corpus.json`, and `generate --check` holds it to regeneration. The descriptor over this corpus names one root, one exclusion, the taxonomy identity and the lock hash. It names one entry point for each shelf that holds a document. `.headwater/corpus.json` is where that set is counted, and a shelf with no document on it puts nothing there. So a probe has something to run against, and no probe has yet returned a verdict against it.
 
 The descriptor carries each declared export profile as well, and this repository declares none, so that list is empty and means it.
 
