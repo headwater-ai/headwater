@@ -65,6 +65,12 @@ pub const PROVENANCE: &str = "provenance";
 /// The member of that block that states what stands behind the document.
 pub const WARRANT: &str = "warrant";
 
+/// The member of that block that states what kind of evidence the document
+/// rests on. Spec 3's three honest states are `evidenced`, `reconstructed` and
+/// `unevidenced`, and the block that carries them is the engine's on the same
+/// terms as the warrant beside it.
+pub const EVIDENCE_BASIS: &str = "evidence_basis";
+
 /// What stands behind a document, from the provenance block of its front
 /// matter.
 ///
@@ -72,10 +78,26 @@ pub const WARRANT: &str = "warrant";
 /// whether a pointer states a warrant out loud and whether a corpus has a
 /// population to promote from.
 pub fn warrant(facets: &Mapping) -> Option<&str> {
+    member(facets, WARRANT)
+}
+
+/// What kind of evidence a document claims to rest on, from the same block.
+///
+/// One reader, for the reason [`warrant`] has one. The value comes back as
+/// written, including the unfilled template placeholder that three bundles of
+/// the base package ship: a document that still carries
+/// `"{{evidenced | reconstructed | unevidenced}}"` has chosen nothing, and a
+/// reader that split the string would read a choice into it.
+pub fn evidence_basis(facets: &Mapping) -> Option<&str> {
+    member(facets, EVIDENCE_BASIS)
+}
+
+/// One scalar member of the provenance block, as written.
+fn member<'a>(facets: &'a Mapping, name: &str) -> Option<&'a str> {
     facets
         .get(PROVENANCE)
         .and_then(|node| node.value.as_map())
-        .and_then(|map| map.get(WARRANT))
+        .and_then(|map| map.get(name))
         .and_then(|node| node.value.as_scalar())
         .map(|scalar| scalar.text.as_str())
 }

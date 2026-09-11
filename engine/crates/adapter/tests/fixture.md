@@ -2,7 +2,7 @@
 
 56 findings, 37 of them errors across 25 of 28 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
 
-**Coverage.** This run saw 28 files and classified 26 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 307 check instances, and 53 of them reached no verdict.
+**Coverage.** This run saw 28 files and classified 26 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 314 check instances, and 53 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
