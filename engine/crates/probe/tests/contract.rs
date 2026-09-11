@@ -23,7 +23,7 @@
 //! the heading over each table. Those three are the parts of the document that a
 //! change to the engine invalidates.
 
-use headwater_probe::intake::{CALL_KEYS, EVENT_KEYS, IDENTITY_KEYS, PRODUCED_KEYS};
+use headwater_probe::intake::{CALL_KEYS, CONFIRMATIONS, EVENT_KEYS, IDENTITY_KEYS, PRODUCED_KEYS};
 use std::path::{Path, PathBuf};
 
 /// The document this test holds to the engine.
@@ -145,6 +145,53 @@ fn the_four_tables_of_the_contract_are_the_four_closed_sets_of_the_intake() {
             "the heading `{}` does not say `{count}`, and the set it covers holds {} keys",
             table.heading,
             keys.len()
+        );
+    }
+}
+
+/// The five confirmations the contract numbers are the five this engine names
+/// when it refuses a transcript.
+///
+/// Derived from the document rather than listed here, for the reason the four
+/// tables above are: a report that names the confirmation a transcript failed
+/// has to name it out of the same list the specification numbers, or a reader
+/// who meets the name in a run and the name in the contract meets two strings
+/// that drifted apart.
+///
+/// Each numbered item of the contract opens `**The taxonomy.**` and so on, and
+/// the assertion is that the bolded opener of item *n* holds the *n*th member
+/// of [`CONFIRMATIONS`] — case-folded, because a sentence opener is capitalized
+/// and a report is not.
+#[test]
+fn the_five_confirmations_of_the_contract_are_the_five_this_engine_names() {
+    let path = repository_root().join(CONTRACT);
+    let source =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+
+    let numbered: Vec<&str> = source
+        .lines()
+        .filter_map(|line| line.strip_prefix("1. **").or(line.strip_prefix("2. **")))
+        .chain(source.lines().filter_map(|line| {
+            line.strip_prefix("3. **")
+                .or(line.strip_prefix("4. **"))
+                .or(line.strip_prefix("5. **"))
+        }))
+        .filter_map(|rest| rest.split_once("**").map(|(opener, _)| opener))
+        .collect();
+
+    assert_eq!(
+        numbered.len(),
+        CONFIRMATIONS.len(),
+        "{CONTRACT} numbers {} confirmations and this engine names {}. The openers it found were \
+         {numbered:?}",
+        numbered.len(),
+        CONFIRMATIONS.len()
+    );
+    for (opener, confirmation) in numbered.iter().zip(CONFIRMATIONS) {
+        let opener = opener.trim_end_matches('.').to_lowercase();
+        assert_eq!(
+            opener, confirmation,
+            "the contract names `{opener}` and this engine reports `{confirmation}`"
         );
     }
 }

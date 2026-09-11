@@ -1030,11 +1030,13 @@ add_to:
     # file stem and one declaration writes as many files as this corpus holds
     # transcripts.
     #
-    # It writes none today. `docs/probe-runs/` holds no file, a transcript is
-    # written by a recorder that observes a session from outside it, and no verb
-    # of this engine writes one. `headwater generate` prints that reason on every
-    # run, which is where an empty arm belongs rather than in a register a reader
-    # has to go and look up.
+    # It writes one today, from the one transcript `docs/probe-runs/` holds. A
+    # transcript is written by a recorder that observes a session from outside
+    # it, and no verb of this engine writes one. That transcript is refused by
+    # the first of the five confirmations, so the file this declaration writes
+    # carries the refusal and no verdict. `headwater generate` reports the
+    # refusal as a refusal of the run, which is where it belongs rather than
+    # inside a document only its own reader opens.
     - kind: probe_result
       output: "docs/probe-results/{run}.md"
       identity:

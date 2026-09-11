@@ -649,6 +649,15 @@ same "  a doctrine edited in the artifact, a template only it holds, and a schem
 # lists: either a source declares the purpose, or the section records that none
 # does. Never both, and never neither. Deleting the paragraph reddens this, and
 # so does adding the purpose without touching the paragraph.
+#
+# What it reads for "the section records the gap" is the bare token `procedure`
+# in backticks, anywhere in that section, and that proxy has one measured false
+# positive. On 2026-09-11 the index gained a paragraph reading criterion 7
+# against `diataxis-site`, which named the purpose the entry serves and recorded
+# no gap at all. The judge refused it. The prose was reworded rather than the
+# proxy loosened, because the arm that fires here has no anchor text to match on
+# instead: this library declares the purpose today, so no gap paragraph exists
+# to name. A later reader who does write one can tighten this to that sentence.
 
 # procedure_declared FILE... — `yes` when any named source declares the
 # `procedure` purpose or a kind that serves it, `no` otherwise. Comments are

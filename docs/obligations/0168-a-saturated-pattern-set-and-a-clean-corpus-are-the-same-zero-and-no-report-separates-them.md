@@ -3,7 +3,7 @@ id: HW-OBL-0168
 status: current
 status_since: 2026-09-06
 summary: "The voice rule reports zero because not one of its forty patterns occurs here, and that reads the same as a clean corpus."
-last_verified: 2026-09-06
+last_verified: 2026-09-11
 title: "A saturated pattern set and a clean corpus are the same zero, and no report separates them"
 waiting_on: build
 provenance:
@@ -26,9 +26,11 @@ relations:
 
 A zero from a lexical rule carries two readings, and the report states neither. The first reading is a corpus that holds none of the fault. The second is a pattern set whose entries are absent from the language the corpus writes. A direct count separates them here: not one of the forty patterns of edition one occurs in a declarative document of this corpus.
 
-[HW-OBL-0002](0002-declarative-voice-is-called-detectable-at-useful-precision.md) took the first reading. It asks for an adjudicated sample of at least 50 findings per category, and it records the count as an order of magnitude short. It concludes that no larger corpus under the declarative regime exists to run against, so the claim waits on an adopter.
+[HW-OBL-0002](0002-declarative-voice-is-called-detectable-at-useful-precision.md) took the first reading. It asks for an adjudicated sample of at least 50 findings per category. On the day this record was written, that record read every category as an order of magnitude short of the bar. It now carries the reading of 2026-09-11 instead: 36 findings for one category, and none for the other two. It concludes that no larger corpus under the declarative regime exists to run against, so the claim waits on an adopter.
 
-Edition two of the `change_narration` set reports 60 findings over the same documents. The corpus that HW-OBL-0002 calls too small for the sample supplies it. So the bar that record waits on is a property of the pattern set rather than of the corpus.
+Edition two of the `change_narration` set reported 60 findings over the same documents on the day it landed. The reading on commit `58f46a8d`, made on 2026-09-11, is 36. Two merged rewrites of the corpus removed the sentences that the set was curated against. So the widened set carried the bar of HW-OBL-0002 from out of reach to within reach. The corpus then carried it back out, at 36 findings against a required 50. The bar answers to the pattern set and to the corpus together, and a reading of either one alone dates within days.
+
+**The same reading shows that edition two leaves the other two categories saturated.** On that commit `future_intent` matches on 0 of its 14 patterns over the 291 documents that bind the declarative regime. `phased_rollout` matches on 0 of its 13 over the 293 that bind the declarative or the prospective regime. The three corpus occurrences of either set sit under `docs/reviews/` and `docs/evaluations/`, which bind `narrative` and forbid nothing. So the shape this record describes is live for two categories of the three. A hand count is still the only instrument that separates the two readings.
 
 **Curation against a corpus rejects candidates that intuition admits.** Three entries measured badly enough to stay out, and each failed for a reason a reader of the phrase alone would miss. `the retired` matches four sentences of this corpus and none is a narration, because "retired term" is the vocabulary of a rule here. `at one point` matches the positional sense in "worth making at one point in a text". `was replaced` matches three sentences that state a measurement procedure rather than a change to the system.
 

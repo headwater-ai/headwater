@@ -37,4 +37,4 @@ The task is written against behavior and not against a phrasing. It names no doc
 
 **This probe measures the descriptor and never the answer.** Whether the rule the session proposes is a good rule is a judgment, and a question that needs a judgment is not a probe. The predicate is over the read set, which is a fact about the transcript.
 
-[HW-OBL-0010](../obligations/0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md) is what this discharges when it runs. It has not run: no transcript exists in this repository, and the recorder that would write one is not here.
+[HW-OBL-0010](../obligations/0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md) is what this discharges when it runs. It has not discharged it. The recorder landed and one session was recorded on 2026-09-09, and the commit that committed the transcript moved `.headwater/taxonomy.lock` in the same commit, so the first of the five confirmations refuses the recording and the result carries no verdict for this probe.
