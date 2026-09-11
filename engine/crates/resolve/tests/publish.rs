@@ -5661,3 +5661,78 @@ fn a_backtick_run_with_a_backtick_in_its_information_string_opens_no_fence() {
         "the reader opened a fence nothing closes and stopped seeing the document"
     );
 }
+
+/// The literal a tree vendored before #792 carries, spelled out rather than
+/// taken from [`package::PACKAGES`] because the whole case is that the two
+/// differ.
+const OLD_ROOT: &str = "packages";
+
+/// True when `message` names the old root as a path in its own right, rather
+/// than as the tail of the new one.
+///
+/// `.headwater/packages/` ends in `packages/`, so a bare `contains` answers
+/// true for every refusal the moved engine writes. Blanking the new root first
+/// is what makes the question answerable at all.
+fn names_the_old_root(message: &str) -> bool {
+    message
+        .replace(package::PACKAGES, "<the new root>")
+        .contains(&format!("{OLD_ROOT}/"))
+}
+
+/// A directory standing at the old `packages/` root is named in one refusal,
+/// and a tree that carries no such directory is told nothing about it.
+///
+/// [#792](https://github.com/headwater-ai/headwater/issues/792) moved the
+/// vendored package root to `.headwater/packages/`. Every tree vendored before
+/// that move carries a directory at the old root, and after the move nothing
+/// reads it. Left silent, the lookup reports only that no package declares the
+/// name, while the package the adopter installed sits right there unread: a
+/// check that cannot run, reading exactly like a check that passes.
+///
+/// The second half is the half that can fail quietly. A refusal that named the
+/// old root on every tree would pass the first assertion while saying nothing
+/// about this tree at all — [#211](https://github.com/headwater-ai/headwater/issues/211)'s
+/// defect, where a fixture passed by reporting the ambient outcome.
+#[test]
+fn a_directory_at_the_old_package_root_is_named_in_the_refusal() {
+    let scratch = Scratch::new("stale-old-root");
+
+    // A complete package, installed where a `vendor` before #792 put it.
+    scratch.write(
+        &format!("stale/{OLD_ROOT}/acme-fixture/package.yml"),
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write(
+        &format!("stale/{OLD_ROOT}/acme-fixture/taxonomy.yml"),
+        TAXONOMY,
+    );
+    let stale = scratch.path().join("stale");
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&stale, "acme/fixture", &out)
+        .expect_err("the old root is not read, so nothing under this tree declares acme/fixture");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(
+        names_the_old_root(&message),
+        "a package sits at the old root and the refusal never names it, so the adopter is told \
+         their taxonomy does not exist:\n{message}"
+    );
+    assert!(
+        message.contains(package::PACKAGES),
+        "the refusal names the old root and not the root to move it to:\n{message}"
+    );
+
+    // The same request against a tree that carries no old root at all.
+    let clean = scratch.path().join("clean");
+    std::fs::create_dir_all(clean.join(package::PACKAGES)).expect("the new root is made");
+    let refused = package::publish(&clean, "acme/fixture", &out)
+        .expect_err("nothing under this tree declares acme/fixture either");
+    let ambient = headwater_resolve::render_errors(&refused);
+
+    assert!(
+        !names_the_old_root(&ambient),
+        "the old root is named on a tree that has no directory there, so the sentence is ambient \
+         and says nothing about the tree it is printed for:\n{ambient}"
+    );
+}
