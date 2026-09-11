@@ -126,24 +126,32 @@ Front matter must carry `status`, and the value set is the base `lifecycle_state
 
 No file name, kind name, shelf path, identifier or expected finding count is written into `tools/repo/decision-record-fixtures.sh`. The source rows come from the table above, the kinds come from the resolved taxonomy of the scratch root, the identifier pattern comes from `identifier_schemes.decision_id`, the status map comes from the status table above, and `status_since` comes from each document's own `## Date` heading. Each group opens with a population floor of zero, because a judge whose population came back empty reports green for the wrong reason.
 
+**The runner claims every identifier it mints.** An adopter that mints an identifier writes a claim file under `.headwater/ids/<scheme>/`, so the assembler does too. Without it the run reports one `identifier.claim.missing` per document, which is a defect of the assembly and not of anybody's prose: the first run of this suite reported 18 findings, of which 10 were that.
+
 **One value is a constant the runner writes, and it is a finding.** `summary` is required on every `governed_document` and nothing in an ADR of this tradition supplies one. The tradition writes a title and then a Context section; it has no one-sentence scent line, and no mechanical rule derives one from the prose without inventing it. So the runner writes the same sentence into all ten documents, and the corpus cannot satisfy that facet honestly. The evaluation carries this as a finding rather than a defect in their writing.
 
 ### The run record that criterion 4 asks for
 
-Criterion 4 asks for a recorded run. It does not ask for a clean one. Recorded on 2026-09-11 by `sh tools/repo/decision-record-fixtures.sh`, against engine 0.1.2 and `headwater/standard` 4.2.0:
+Criterion 4 asks for a recorded run. It does not ask for a clean one. Recorded on 2026-09-11 by `sh tools/repo/decision-record-fixtures.sh`, against engine 0.1.2 and `headwater/standard` 4.3.0:
 
 | Denominator | Reading |
 |---|---|
-| Files under the corpus root | RUN_DOCS |
-| Typed | RUN_TYPED, all at `decision` |
-| Findings | RUN_FINDINGS |
-| Errors | RUN_ERRORS |
-| Warnings | RUN_WARNS |
-| Exit status | RUN_EXIT_PLAIN from `headwater check`, RUN_EXIT_STRICT from `headwater check --strict` |
-| `section.required.missing` | 0, in 0 of the 10 documents |
+| Files under the corpus root | 10 |
+| Typed | 10 of 10, all at `decision` |
+| Findings | 8 |
+| Errors | 4, all `link.path.unresolved` |
+| Warnings | 4, all `voice.forbidden_construction` |
+| Exit status | 0 from `headwater check`, 1 from `headwater check --strict` |
+| `section.required.missing` | 0 findings, and the rule ran 10 times over the 10 documents |
 | `## Status` values the enum has no cell for | 4 of 10 |
+| Findings `headwater check --fix` repairs | 0 of 8: `no finding of this run carries a patch` |
 
-RUN_BY_RULE
+**The section contract holds in 10 of 10, and that is the headline.** `diataxis-site` had to refuse all 4 of its 4 external documents on `section.required.missing`, and this corpus satisfies the contract with no edit to any body. The difference is that Nygard's three sections are a convention the ADR tradition carries, while Diátaxis constrains a reader's purpose and says nothing about headings. Every one of the ten also carries `Status` and `Date`, and seven carry `Considered Options`. That reading goes against the open finding in [13 — Open obligations](../../../spec/13-open-obligations.md) that a kind of a library entry cannot decline to state a section contract. It does not close it: that finding is `diataxis-site`'s, and one counter-case is not a ruling.
+
+**The 4 errors are all the same class, and they are a property of the trimmed root.** 8 of the 15 relative links in the corpus point out of `adr/`, so a root holding the 10 files alone cannot resolve them. The engine reports 4 of the 8, and the other 4 went unreported for a reason that is a defect of the engine rather than of the corpus. The [evaluation](../../../evaluations/inspect-evals-worked-example.md) carries the measurement.
+
+**The 4 warnings are the first thing this run found in somebody else's prose that no linter of theirs reads.** `voice.forbidden_construction`, in 3 of the 10 documents: three sentences narrate a change (`previously` twice, `used to` once) and one states a future intent (`will eventually`). The `declarative` voice that the base binds to `decision` forbids both, on the reading that a decision record states the position that holds and leaves the change to the record that made it.
+
 
 ### What the two link populations are, and why they are counted apart
 
