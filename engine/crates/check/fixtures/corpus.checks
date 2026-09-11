@@ -1,7 +1,8 @@
-452 seen, 321 classified, 321 checked, 5807 check instances
+491 seen, 321 classified, 321 checked, 6178 check instances
      15 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
+      1 skipped: the document at the target end, `HW-REG-open-questions`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
     643 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   a check read .headwater/ids, which the census never walked
   a check read .headwater/ids, which the census never walked
@@ -22,6 +23,7 @@ adoption
      88 instances of relation.reciprocity.missing
     378 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
+    371 instances of warrant.evidence.unsupported
       2 instances of relation.participation.overdue
     321 instances of relation.declaration.unusable
     321 instances of identifier.unusable
@@ -66,6 +68,8 @@ rules, and for each the scope that binds it
     edge scope, one relation instance and both endpoints
   lifecycle.dependency.on_terminal
     edge scope, one relation instance and both endpoints
+  warrant.evidence.unsupported
+    edge scope, one relation instance and both endpoints
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
   relation.declaration.unusable
@@ -109,24 +113,24 @@ rules, and for each the scope that binds it
   adoption.task.expired
     taxonomy scope, the resolved taxonomy, and no document
 register
-  35 obligations: 32 verified, 2 gap, 1 unverifiable, 0 with no disposition
+  36 obligations: 33 verified, 2 gap, 1 unverifiable, 0 with no disposition
      14 high, 13 verified
-     16 medium, 14 verified
+     17 medium, 15 verified
       5 low, 5 verified
   OB-LANG-1 verified, 1 finding escaped under it
   OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
   OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
   OB-DR-3 unverifiable, To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
-  32 controls
-     29 posture advisory
+  33 controls
+     30 posture advisory
       3 posture blocking
-     32 acts detective
-     30 name a rule this engine carries
+     33 acts detective
+     31 name a rule this engine carries
       2 name a phase this engine runs
      13 with no promotion record, so nothing states what would promote them
      10 with criteria
       3 at a final posture
-      4 permanently advisory
+      5 permanently advisory
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 1 suppressed
   facet.value.blank reaches no obligation, so it names none
