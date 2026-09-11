@@ -48,7 +48,7 @@ use std::path::{Path, PathBuf};
 /// As every other recorded run: a verdict is a function of the injected clock.
 const PINNED: &str = "2026-08-12";
 
-const RULE: &str = "warrant.evidence.unsupported";
+const RULE: &str = headwater_check::basis::RULE;
 
 /// The `evidence` family of this repository's resolved lock, read out of
 /// `.headwater/taxonomy.lock` rather than out of the one name a report quoted.

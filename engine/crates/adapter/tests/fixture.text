@@ -68,7 +68,7 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  28 seen, 26 classified, 25 checked, 307 check instances
+  28 seen, 26 classified, 25 checked, 314 check instances
         1 generated, held to regeneration by `headwater generate --check`
         1 skipped: no `id` facet, which is the key this engine reads an
           identifier from and which no declaration states
@@ -101,6 +101,7 @@ checks
         4 instances of relation.reciprocity.missing
         7 instances of relation.endpoint.not_permitted
         1 instances of lifecycle.dependency.on_terminal
+        7 instances of warrant.evidence.unsupported
         7 instances of relation.participation.overdue
        25 instances of relation.declaration.unusable
        25 instances of identifier.unusable
@@ -147,6 +148,8 @@ checks
     relation.endpoint.not_permitted
       edge scope, one relation instance and both endpoints
     lifecycle.dependency.on_terminal
+      edge scope, one relation instance and both endpoints
+    warrant.evidence.unsupported
       edge scope, one relation instance and both endpoints
     relation.participation.overdue
       neighbourhood scope, one document and the documents one relation away from
@@ -237,6 +240,7 @@ checks
     relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding
       names one obligation, so it names none
     lifecycle.dependency.on_terminal reaches no obligation, so it names none
+    warrant.evidence.unsupported reaches no obligation, so it names none
     identifier.claimed_twice reaches no obligation, so it names none
     identifier.claim.missing reaches no obligation, so it names none
     identifier.claim.stale reaches no obligation, so it names none
@@ -569,6 +573,7 @@ read set
   version relation.reciprocity.missing 1
   version relation.endpoint.not_permitted 1
   version lifecycle.dependency.on_terminal 1
+  version warrant.evidence.unsupported 1
   version relation.participation.overdue 1
   version relation.declaration.unusable 1
   version identifier.unusable 1
