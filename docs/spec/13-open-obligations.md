@@ -288,6 +288,7 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0180](../obligations/0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-type-forbids-from-being-wrong.md) — A renderer's color mode is wired at a call site that no type forbids from being wrong
 - [HW-OBL-0181](../obligations/0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md) — An unresolved prose link reaches a run as a graph fact and no rule turns it into a finding
 - [HW-OBL-0183](../obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md) — No mechanism holds a committed binary asset against a run
+- [HW-OBL-0185](../obligations/0185-whether-an-admitted-library-entry-may-require-a-bundle-that-admission-refuses.md) — Whether an admitted library entry may require a bundle that admission refuses
 
 ## What the first typing of this corpus found
 
