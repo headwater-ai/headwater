@@ -2019,7 +2019,7 @@ fn a_descriptor_that_records_no_emitter_set_is_not_a_producer_difference() {
 ///
 /// At `origin/main` before this change it failed at 3 identifier-shaped nav
 /// leaves of 333 (`HW-RESULT-…`, `HW-RUN-…`, `HW-REG-open-questions`) and 3
-/// identifier-shaped shelf-index rows of 202 across 12 generated index pages.
+/// identifier-shaped shelf-index rows of 300 across 12 generated index pages.
 #[test]
 fn no_label_a_generating_emitter_writes_is_identifier_shaped() {
     let root = repository_root();

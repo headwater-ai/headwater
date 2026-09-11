@@ -7602,7 +7602,8 @@
         "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
         "facets": {
           "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
-          "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09"
+          "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
+          "title": "Probe result for regression-probe-transcript-for-2026-09-09"
         }
       },
       {
@@ -7611,6 +7612,7 @@
         "id": "HW-RUN-regression-probe-transcript-for-2026-09-09",
         "facets": {
           "id": "HW-RUN-regression-probe-transcript-for-2026-09-09",
+          "title": "Regression probe transcript for 2026-09-09",
           "status": "draft",
           "status_since": "2026-09-09",
           "summary": "Four regression sessions recorded the calls that a Claude Haiku session made while it answered the corpus probes.",
@@ -8510,6 +8512,7 @@
           "headwater:generated": "shelf_sections. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
           "id": "HW-REG-open-questions",
           "doc_type": "decision_register",
+          "title": "Open questions, closed and redirected",
           "relations": {
             "superseded_by": [
               "HW-REG-decisions",
