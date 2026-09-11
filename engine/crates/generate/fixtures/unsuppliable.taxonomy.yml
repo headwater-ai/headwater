@@ -1,0 +1,145 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the identity-refusal fixture is written against. Every
+# declaration here is the one `generate.taxonomy.yml` carries, except that the
+# `guide` kind requires the facet in the `name` role. The `shelf_sections`
+# declaration that writes `generate/archive/RETIRED.md` as a `guide` states no
+# `name`, so the `identity` block cannot supply `title`, and #780 is the finding
+# that nothing anywhere reported such a gap.
+#
+#
+# The taxonomy the generated fixtures are written against. It is the smallest
+# shape in which every branch of the verb has something to produce: a shelf that
+# holds documents, a shelf that holds none, a governance edge and a succession
+# pair so that the derived reading order is not the file order, a document whose
+# warrant is `asserted`, and a declared kind that this engine does not emit.
+#
+# It is not a resolved package, for the reason the check tree's is not: a fixture
+# that depended on the base package would change whenever the base does.
+
+purposes:
+  rationale:
+    intent: explain why a choice was made and what it forecloses
+    answers: ["why is it this way", "what was rejected"]
+  procedure:
+    intent: enable a reader to carry out a task correctly
+    answers: ["how do I do this", "what do I do when it fails"]
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: superseded, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+  # The facet in the `name` role. Not required, because one guide leaves it
+  # empty on purpose: that is the branch where a `shelf_sections` declines a
+  # whole file rather than writing one with a section missing.
+  title:
+    role: name
+    required: false
+  # The discriminator of the heterogeneous shelf below. Not required, because a
+  # document on a homogeneous shelf takes its kind from the directory and a
+  # facet that restated it would be a second copy of one fact.
+  doc_type:
+    values: [decision, guide]
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: decision_id}
+  # The one difference from `generate.taxonomy.yml`: this kind requires the facet
+  # in the `name` role. The `shelf_sections` declaration below writes a document
+  # of this kind and states no `name`, so the block cannot supply `title` and the
+  # declaration is refused.
+  guide:
+    is_a: governed_document
+    purpose: procedure
+    identifier: {scheme: guide_id}
+    facets: {require: [title]}
+
+identifier_schemes:
+  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: FIX, allocation: minted-once}
+  guide_id: {pattern: "GD-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [decision]
+    inverse: superseded_by
+    reciprocal: required
+  # A governance edge, so that a guide which one decision governs sorts below it
+  # even though its file name sorts above.
+  governs_guide:
+    family: governance
+    from: [decision]
+    to: [guide]
+    inverse: governed_by
+    reciprocal: required
+
+shelves:
+  decisions: {path: "generate/decisions/**", homogeneous: true, kind: decision}
+  guides:    {path: "generate/guides/**",    homogeneous: true, kind: guide}
+  # Declared, and nothing is on it. An index of nothing asserts that a shelf is
+  # there, so the verb reports it and writes no file. It is also the one
+  # heterogeneous shelf, which is what gives the JSON Schema emitter a shelf
+  # whose kind a front-matter member states. That is the only shape in which a
+  # schema can select a kind for itself, and it holds no document, so it moves
+  # no count.
+  archive:
+    path: "generate/archive/**"
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [decision, guide]
+
+projections:
+  - {kind: shelf_index, for: [decisions, guides, archive], output: "{shelf}/README.md"}
+  # One declaration over three shelves, so that one entry exercises all three
+  # branches of the sections emitter. `decisions` names every document and is
+  # written. `guides` holds one document with no name, so the whole file is
+  # declined and the plan says which document stopped it. `archive` holds no
+  # document at all.
+  - {kind: shelf_sections, for: [decisions, guides, archive], output: "{shelf}/SECTIONS.md"}
+  # The same emitter, writing a document rather than a list. The `identity`
+  # block is what makes the difference: the output carries a front-matter block
+  # with the marker inside it, the identifier the declaration mints, and the
+  # discriminator that the heterogeneous `archive` shelf needs to resolve
+  # `guide`. The `governed_by` half under it is derived and never declared —
+  # `DR-FIX-0002` declares `governs_guide: GD-FIX-archive`, the relation says
+  # `reciprocal: required`, and this end owes the inverse. Nothing in the block
+  # is prose, and nothing in it is an edge that another document did not write.
+  - kind: shelf_sections
+    for: [decisions]
+    output: generate/archive/RETIRED.md
+    identity:
+      id: GD-FIX-archive
+      kind: guide
+  # Two exports for one audience, which is what makes `default` a profile
+  # rather than a single entry. Both output paths sit outside the corpus root,
+  # so neither generated file is walked by the census that produced it.
+  - kind: graph_export
+    format: json
+    output: exports/native.json
+  - kind: graph_export
+    format: jsonschema
+    output: exports/front-matter.schema.json
+  # A second audience, filtered. One document of this tree is a draft, and the
+  # exclusion withholds it and every edge that names it.
+  - kind: graph_export
+    profile: partner
+    format: json
+    output: exports/partner.json
+    filter: {exclude: {status: [draft]}}
+    tombstone: counted
