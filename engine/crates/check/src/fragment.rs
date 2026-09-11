@@ -109,14 +109,15 @@ pub struct Fragments;
 
 impl CorpusCheck for Fragments {
     const RULE: &'static str = self::RULE;
-    /// The third edition, and this one widened what the rule reads rather than
-    /// changing an answer. A warm cache holding an edition-2 verdict holds a
-    /// verdict about same-document fragments alone, and it would serve that
-    /// forever over a corpus whose cross-document fragments were never
-    /// examined. The second edition renumbered a repeated heading; the first
-    /// counted every earlier anchor that began with its slug and a hyphen,
-    /// which is not what a renderer does.
-    const VERSION: u32 = 3;
+    /// The fourth edition, and this one stopped case folding the citation, so
+    /// it reports links that every earlier edition passed. A warm cache holding
+    /// an edition-3 verdict holds a verdict reached by a wider comparison, and
+    /// it would serve that pass forever over the citations this edition reads
+    /// as dead. The third edition widened the rule to cross-document
+    /// fragments; the second renumbered a repeated heading; the first counted
+    /// every earlier anchor that began with its slug and a hyphen, which is not
+    /// what a renderer does.
+    const VERSION: u32 = 4;
     const NEEDS_LINKS: bool = true;
     const NEEDS_ANCHORS: bool = true;
 
@@ -259,8 +260,14 @@ impl Anchors {
             .by_path
             .binary_search_by(|(known, _)| known.as_str().cmp(path))
             .ok()?;
-        let wanted = fragment.to_lowercase();
-        Some(self.by_path[at].1.contains(&wanted))
+        // Exactly, and not folded. [`anchors`] folds the *heading text*
+        // because GitHub's slugger does, and the result is the identifier a
+        // browser is handed. The citation is then matched against it byte for
+        // byte, because "find a potential indicated element" matches an `id`
+        // exactly and falls back to an `a` element's `name` exactly. Folding
+        // here failed open in one direction: a dead link passed, and no live
+        // link was ever reported. The case table carries what Chrome did.
+        Some(self.by_path[at].1.iter().any(|it| it == fragment))
     }
 }
 
@@ -607,7 +614,7 @@ mod comment_links {
                 }
                 let Some(fragment) = fragment else { continue };
                 if resolved.extension().is_some_and(|e| e == "md")
-                    && !anchors_of(&resolved).contains(&fragment.to_lowercase())
+                    && !anchors_of(&resolved).iter().any(|it| it == fragment)
                 {
                     out.push(format!("{where_}: no such heading: {}", link.destination));
                 }
@@ -700,6 +707,35 @@ mod comment_links {
         std::fs::create_dir_all(path.parent().expect("a file has a directory"))
             .expect("a fixture directory");
         std::fs::write(path, body).expect("a fixture file");
+    }
+
+    /// The comment guard compares a fragment exactly, as the rule above does.
+    ///
+    /// A second copy of the comparison lives here, so a case that only the
+    /// corpus rule carried would leave this one folding forever. The heading is
+    /// `## The heading that is here` and the citation differs from its anchor
+    /// in nothing but capitalization.
+    #[test]
+    fn a_comment_fragment_that_differs_only_in_case_is_named() {
+        let dir = scratch("comment-case");
+        write(
+            &dir.join("docs/spec/02-taxonomy-model.md"),
+            "# A model\n\nThe body.\n\n## The heading that is here\n\nMore body.\n",
+        );
+        write(
+            &dir.join("engine/crates/check/src/sample.rs"),
+            concat!(
+                "//! [exact](../../../../docs/spec/02-taxonomy-model.md#the-heading-that-is-here)\n",
+                "//! [cased](../../../../docs/spec/02-taxonomy-model.md#The-Heading-That-Is-Here)\n",
+            ),
+        );
+
+        let found = broken(&dir, &dir);
+        std::fs::remove_dir_all(&dir).ok();
+
+        let expected = "engine/crates/check/src/sample.rs:2: no such heading: \
+                        ../../../../docs/spec/02-taxonomy-model.md#The-Heading-That-Is-Here";
+        assert_eq!(found, [expected]);
     }
 
     /// The whole chain, against a tree written here, one link of each class.
@@ -950,14 +986,42 @@ mod arms {
         .is_none());
     }
 
-    /// The comparison is case folded, which is what a renderer does.
+    /// The comparison is exact, which is what a browser does.
+    ///
+    /// What a renderer *writes* and what a browser *resolves* are two
+    /// questions, and this rule answers the second one. [`anchors`] case folds
+    /// the heading text because GitHub's slugger does; the citation is compared
+    /// to the result byte for byte, because the HTML standard's "find a
+    /// potential indicated element" matches an `id` exactly and falls back to
+    /// an `a` element's `name` exactly, and neither step case folds. Chrome 153
+    /// was driven against a local page carrying `id="edit-sites"` to settle it
+    /// rather than to read it: `#edit-sites` scrolled the document to 5020 and
+    /// `:target` named the heading, while `#Edit-Sites` and `#EDIT-SITES` each
+    /// left the scroll at 0 with no `:target` at all. The `name` fallback
+    /// answered the same way. So a citation that differs from its heading only
+    /// in capitalization is a dead link, and folding it here passed one.
+    ///
+    /// Both arms carry a case, because the two comparisons are separate lines
+    /// and one of them was already changed without the other (#206).
     #[test]
-    fn a_fragment_resolves_whatever_case_the_author_wrote_it_in() {
-        assert!(finding(
+    fn a_fragment_that_differs_from_its_heading_only_in_case_is_a_finding() {
+        let across = finding(
             &link("glossary.md#Projection", Some("Projection"), corpus(TARGET)),
-            &index()
+            &index(),
         )
-        .is_none());
+        .expect("a finding");
+        assert!(across.message.contains(TARGET), "{across:#?}");
+
+        let near = finding(
+            &link(
+                "#A-Heading-Of-The-Citer",
+                Some("A-Heading-Of-The-Citer"),
+                Binding::SameDocument,
+            ),
+            &index(),
+        )
+        .expect("a finding");
+        assert!(near.message.contains("this document"), "{near:#?}");
     }
 
     /// The bindings this rule passes over, enumerated rather than sampled.

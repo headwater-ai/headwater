@@ -609,7 +609,7 @@ read set
   version language.retired_term.used 2
   version language.source_form.not_met 1
   version section.required.missing 1
-  version link.fragment.unresolved 3
+  version link.fragment.unresolved 4
   version link.path.unresolved 1
   version warrant.promoted 1
   version lifecycle.transition.not_permitted 2

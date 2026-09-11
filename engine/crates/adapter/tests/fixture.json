@@ -610,7 +610,7 @@
     {
       "rule": "link.fragment.unresolved",
       "scope": "corpus",
-      "version": 3,
+      "version": 4,
       "obligations": [
         "OB-FIX-10"
       ]
