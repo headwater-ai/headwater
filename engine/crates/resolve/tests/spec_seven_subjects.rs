@@ -308,12 +308,50 @@ fn facet_required_paragraph(path: &Path) -> String {
 /// extractor anchors on.
 const RULING_OPENS: &str = "The vocabulary holds no fourth subject";
 
+/// The byte index one past the period that ends the first sentence of `text`,
+/// or `None` when no period in it ends a sentence.
+///
+/// A period ends a sentence when what follows it is the end of the text, or a
+/// space and then a character that opens one. A period inside `e.g.`, inside
+/// `4.0.0` and inside `spec 2.` followed by a lower-case word does not.
+///
+/// The bound matters beyond the verdict. A case that truncates the sentence
+/// still reddens for the right reason, and then prints a fragment and calls it
+/// what the specification says, which sends the reader to fix the wrong half.
+///
+/// The rule is a heuristic and it has a known limit, stated here because the
+/// message is what a reader acts on: an abbreviation whose next word is
+/// capitalized, `U.S. Federal`, ends a sentence as far as this reads. Spec 7
+/// holds no such construction today.
+fn sentence_end(text: &str) -> Option<usize> {
+    for (index, _) in text.match_indices('.') {
+        let after = &text[index + 1..];
+        match after.chars().next() {
+            None => return Some(index + 1),
+            Some(c) if c.is_whitespace() => match after.trim_start().chars().next() {
+                None => return Some(index + 1),
+                Some(next) if next.is_uppercase() || next == '*' || next == '[' => {
+                    return Some(index + 1);
+                }
+                _ => continue,
+            },
+            _ => continue,
+        }
+    }
+    None
+}
+
 /// Spec 7's own ruling sentence, read out of the specification at run time.
 ///
 /// Typing the sentence here would be a second copy of it, and a reword of
 /// spec 7 would leave the copy standing. Reading it means the package record is
 /// held against whatever spec 7 says today: a reword of the ruling reddens the
 /// record until the record follows.
+///
+/// A sentence that closes the section with no space after its period is bounded
+/// by [`sentence_end`] on the end of the text, so it does not reach the refusal
+/// below. What reaches it is a ruling sentence with no terminating period at
+/// all.
 fn spec_seven_ruling() -> String {
     let (path, section) = migration_payload_section();
     let start = section.find(RULING_OPENS).unwrap_or_else(|| {
@@ -324,14 +362,66 @@ fn spec_seven_ruling() -> String {
         )
     });
     let rest = &section[start..];
-    let end = rest.find(". ").unwrap_or_else(|| {
+    let end = sentence_end(rest).unwrap_or_else(|| {
         panic!(
-            "{}: the ruling sentence of `{SECTION}` does not end, so the extractor cannot bound \
-             it. It reads:\n\n{rest}",
+            "{}: the ruling sentence of `{SECTION}` reaches the end of the section without a \
+             period that closes it, so the extractor cannot bound it and would otherwise hold the \
+             package record against the rest of the section. It reads:\n\n{rest}",
             path.display()
         )
     });
-    rest[..=end].to_string()
+    rest[..end].to_string()
+}
+
+/// The sentence bound is a sentence bound, and not the first period.
+///
+/// The case that provokes what the ruling extractor is asked to survive. Each
+/// row is a text and the sentence [`sentence_end`] takes out of it, and the rows
+/// are the constructions a specification part actually writes: a version number,
+/// an abbreviation, a cross-reference, a sentence that ends the text, and a text
+/// with no sentence in it at all.
+///
+/// # Watched failing
+///
+/// Bounding on the first `". "` again, which is what this file did until the
+/// abbreviation row was written, reddens rows two and three, printing the
+/// fragment each one truncates to.
+#[test]
+fn the_ruling_extractor_bounds_on_a_sentence_and_not_on_the_first_period() {
+    let cases: [(&str, Option<&str>); 7] = [
+        ("One sentence. And a second.", Some("One sentence.")),
+        (
+            "It landed in 4.0.0. The release after it did not.",
+            Some("It landed in 4.0.0."),
+        ),
+        (
+            "A step, e.g. a rename, moves a value. Nothing else does.",
+            Some("A step, e.g. a rename, moves a value."),
+        ),
+        (
+            "The rule is stated in spec 2. and read here.",
+            Some("The rule is stated in spec 2. and read here."),
+        ),
+        (
+            "It ends the section here.",
+            Some("It ends the section here."),
+        ),
+        (
+            "It ends the section here.\n",
+            Some("It ends the section here."),
+        ),
+        ("No period closes this one", None),
+    ];
+
+    for (text, expected) in cases {
+        let taken = sentence_end(text).map(|end| &text[..end]);
+        assert_eq!(
+            taken, expected,
+            "the sentence bound over {text:?} is {taken:?} and not {expected:?}. A bound that \
+             truncates still reddens the ruling case for the right reason, and then prints a \
+             fragment and calls it what the specification says"
+        );
+    }
 }
 
 /// Wordings that put the answer on the specification rather than take it.
