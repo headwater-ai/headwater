@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:00b0ab37849dff65b359e70275f35e519b9388dbe2fdb461e606b1f1689cf503
+  digest: sha256:55b3dc8d6a5166aefdc15139b1630808e8f052648836fd98a8df949013831f33
   rules: 1
   package: headwater/standard
   version: 4.2.0
@@ -36,7 +36,7 @@ lock:
     - path: packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:a1d0295f3af618bb371291f264a5f3d85925aabdd171ccea64629ee42a0e1c24
     - path: .headwater/overlay.yml
-      digest: sha256:3a5249d1ff77fd78770e18165755f8d1642e9527209471dd8480dfe831624d13
+      digest: sha256:1cc3e11e1eae125e9b9ae3a222d3de3a59c233835fd2a9a166f1d6f9e20a9910
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -489,6 +489,9 @@ resolved:
           - Expectation
       voice: declarative
     probe_result:
+      facets:
+        require:
+          - title
       identifier:
         scheme: result_id
       is_a: governed_document
@@ -500,6 +503,7 @@ resolved:
         require:
           - tier
           - arm
+          - title
       identifier:
         scheme: run_id
       is_a: governed_document
@@ -892,11 +896,13 @@ resolved:
       identity:
         id: HW-REG-open-questions
         kind: decision_register
+        name: "Open questions, closed and redirected"
     - kind: probe_result
       output: "docs/probe-results/{run}.md"
       identity:
         id: "HW-RESULT-{run}"
         kind: probe_result
+        name: "Probe result for {run}"
     - kind: verb_index
       for:
         - interfaces

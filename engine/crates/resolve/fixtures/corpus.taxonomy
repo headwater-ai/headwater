@@ -426,6 +426,9 @@ kinds:
         - Expectation
     voice: declarative
   probe_result:
+    facets:
+      require:
+        - title
     identifier:
       scheme: result_id
     is_a: governed_document
@@ -437,6 +440,7 @@ kinds:
       require:
         - tier
         - arm
+        - title
     identifier:
       scheme: run_id
     is_a: governed_document
@@ -829,11 +833,13 @@ projections:
     identity:
       id: HW-REG-open-questions
       kind: decision_register
+      name: "Open questions, closed and redirected"
   - kind: probe_result
     output: "docs/probe-results/{run}.md"
     identity:
       id: "HW-RESULT-{run}"
       kind: probe_result
+      name: "Probe result for {run}"
   - kind: verb_index
     for:
       - interfaces

@@ -196,6 +196,11 @@ pub(crate) fn emit(
                 let minted = DeclaredIdentity {
                     id: declared.id.replace(RUN, &stem),
                     kind: declared.kind.clone(),
+                    // `{run}` reaches the name for the same reason it reaches
+                    // the identifier: one declaration writes one file per
+                    // transcript, so a name that did not carry the stem would
+                    // label every result of the shelf the same.
+                    name: declared.name.as_ref().map(|name| name.replace(RUN, &stem)),
                 };
                 match crate::identity::front_matter(surface, &minted, &output, Kind::ProbeResult) {
                     Ok(block) => block,

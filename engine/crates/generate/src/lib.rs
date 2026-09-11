@@ -319,7 +319,7 @@ impl Kind {
 
 /// What a generated document declares about itself: the `identity` block.
 ///
-/// Two scalars, and the block is closed at two. See
+/// Three scalars, and the block is closed at three. See
 /// [`crate::identity`] for the argument, and the meta-schema for the same
 /// argument in the place a taxonomy author reads.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -331,6 +331,13 @@ pub struct DeclaredIdentity {
     /// what the front matter needs in order to resolve it is the shelf's
     /// business and this engine reads it from the shelf.
     pub kind: String,
+    /// What the document is called, and `None` for a declaration that states
+    /// none. A *role* and never a facet name, for the reason [`label`] gives:
+    /// `title` means something in one taxonomy and nothing in the next, so the
+    /// engine writes this under whichever facet the taxonomy puts in the `name`
+    /// role. Without it every emitter that labels a document falls through to
+    /// the identifier.
+    pub name: Option<String>,
 }
 
 /// One entry of the `projections` block.

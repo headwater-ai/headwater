@@ -2,6 +2,7 @@
 "headwater:generated": "shelf_sections. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file."
 id: HW-REG-open-questions
 doc_type: decision_register
+title: Open questions, closed and redirected
 relations:
   superseded_by:
     - HW-REG-decisions

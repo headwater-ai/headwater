@@ -298,10 +298,10 @@ nav:
       - "No mechanism holds a committed binary asset against a run": "obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
-      - "HW-RESULT-regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"
+      - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"
   - "Probe runs":
       - "Probe runs": "probe-runs/README.md"
-      - "HW-RUN-regression-probe-transcript-for-2026-09-09": "probe-runs/regression-probe-transcript-for-2026-09-09.md"
+      - "Regression probe transcript for 2026-09-09": "probe-runs/regression-probe-transcript-for-2026-09-09.md"
   - "Probes":
       - "Probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
@@ -341,7 +341,7 @@ nav:
       - "Design departures": "spec/08-design-departures.md"
       - "The decision register": "spec/09-decisions.md"
       - "Open obligations": "spec/13-open-obligations.md"
-      - "HW-REG-open-questions": "spec/09-open-questions.md"
+      - "Open questions, closed and redirected": "spec/09-open-questions.md"
       - "The check layer": "spec/12-check-layer.md"
       - "The recorder contract": "spec/15-the-recorder-contract.md"
       - "Harness support": "spec/16-harness-support.md"
