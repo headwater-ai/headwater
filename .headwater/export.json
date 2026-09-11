@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 417,
-      "carried": 417,
+      "in the graph": 418,
+      "carried": 418,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -7681,6 +7681,16 @@
           "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
           "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
           "title": "Probe result for regression-probe-transcript-for-2026-09-09"
+        }
+      },
+      {
+        "path": "docs/probe-results/regression-probe-transcript-for-2026-09-11.md",
+        "kind": "probe_result",
+        "id": "HW-RESULT-regression-probe-transcript-for-2026-09-11",
+        "facets": {
+          "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
+          "id": "HW-RESULT-regression-probe-transcript-for-2026-09-11",
+          "title": "Probe result for regression-probe-transcript-for-2026-09-11"
         }
       },
       {
