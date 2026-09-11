@@ -25,7 +25,7 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::adoption::State;
 use headwater_check::context::Date;
-use headwater_check::paint::ColorMode;
+use headwater_check::paint::{paint, ColorMode, Role};
 use headwater_check::Shape;
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -948,17 +948,22 @@ fn the_colored_audit_strips_to_the_plain_audit() {
 /// A case table rather than one assertion per role, on the shape
 /// `headwater_check::paint::tests` uses: a role that stops being written is a
 /// silent loss, and a table names each one so the failure says which.
+///
+/// Every case asserts a whole painted token and never a bare `\x1b[` prefix. A
+/// prefix is written by the heading of every section, so a case that asked for
+/// one would be satisfied by a report that had lost every other paint. That is
+/// a guard whose asserted outcome is produced by something else, and it passes
+/// vacuously.
 #[test]
 fn the_colored_audit_writes_every_role_it_declares() {
     let built = this_repository();
     let ansi = repository_audit(&built, AT).render(ColorMode::Ansi);
-    let cases: [(&str, &str); 3] = [
+    let cases: [(&str, &str); 2] = [
         ("a heading", "\u{1b}[1mtaxonomy audit of\u{1b}[0m"),
         (
             "a section heading",
             "\u{1b}[1madoption payload decay\u{1b}[0m",
         ),
-        ("a layout name, which is a path", "\u{1b}[36m"),
     ];
     for (what, wanted) in cases {
         assert!(
@@ -966,6 +971,81 @@ fn the_colored_audit_writes_every_role_it_declares() {
             "{what} is not painted in the colored report"
         );
     }
+}
+
+/// The layout name is painted **inside the prose that was folded**, and not
+/// only on the unfolded line above it.
+///
+/// Two lines of the layouts section carry the layout name. The shelf line is
+/// composed painted, and the line under it is composed plain, folded through
+/// [`headwater_check::filled`], and painted afterwards by `painted_in_place`.
+/// Deleting the second of those two paints leaves the first one standing, so
+/// every assertion that asks only whether the report contains a cyan sequence
+/// stays green while half the path color of this report disappears. That
+/// regression was run: the audit target passed 20 of 20 and
+/// `tools/color-fixtures.sh` passed 65 of 65 with the in-fold paint removed.
+///
+/// `strips_to_the_plain_audit` cannot see it either, because less color still
+/// strips to the plain bytes. This case is the one that can: it asks for the
+/// painted layout name in the position only the folded prose puts it in, which
+/// is after the word `located()` prints and inside the backticks `says()`
+/// writes.
+#[test]
+fn the_layout_name_is_painted_inside_the_folded_prose() {
+    let built = this_repository();
+    let audit = repository_audit(&built, AT);
+    let ansi = audit.render(ColorMode::Ansi);
+    assert!(
+        !audit.layouts.is_empty(),
+        "no shelf of this corpus declares a layout, so this case asserts nothing"
+    );
+    for reading in &audit.layouts {
+        let wanted = format!(
+            "{} — `{}`",
+            reading.adherence.located(),
+            paint(Role::Path, &reading.layout, ColorMode::Ansi)
+        );
+        assert!(
+            ansi.contains(&wanted),
+            "the layout of `{}` is not painted inside the folded prose. \
+             Something paints it on the shelf line alone, or the fold and the \
+             paint ran in the wrong order:\n{wanted:?}",
+            reading.shelf
+        );
+    }
+}
+
+/// The two lines that carry a layout name are painted the same number of times.
+///
+/// The case above holds one position. This holds the count, so a change that
+/// keeps the folded paint and drops the shelf-line paint is also seen. The
+/// corpus declares several shelves that share one layout string, so the count
+/// is taken per line rather than per token.
+#[test]
+fn both_lines_of_a_layout_reading_paint_the_name() {
+    let built = this_repository();
+    let audit = repository_audit(&built, AT);
+    let ansi = audit.render(ColorMode::Ansi);
+    let cyan = "\u{1b}[36m";
+    // The shelf line is indented two spaces and the folded prose six.
+    let shelf_lines = ansi
+        .lines()
+        .filter(|line| line.starts_with("  ") && !line.starts_with("   ") && line.contains(cyan))
+        .count();
+    let folded_lines = ansi
+        .lines()
+        .filter(|line| line.starts_with("      ") && line.contains(cyan))
+        .count();
+    assert_eq!(
+        shelf_lines,
+        audit.layouts.len(),
+        "one shelf line per layout reading carries the painted name"
+    );
+    assert_eq!(
+        folded_lines,
+        audit.layouts.len(),
+        "and one folded line per layout reading carries it too"
+    );
 }
 
 /// The plain audit carries no escape byte at all.
