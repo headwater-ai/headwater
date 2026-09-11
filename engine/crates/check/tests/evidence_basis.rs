@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! An `evidenced` document whose pointer reaches an `asserted` one, and the
-//! five ways a rule about it is easy to get wrong.
+//! six ways a rule about it is easy to get wrong.
 //!
 //! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)
 //! already rules it: "A pointer to a document with the `asserted` warrant does
@@ -32,6 +32,14 @@
 //! **A rule at `EdgeUnit::Entry`** reaches the anchor half that
 //! `claims/traces-to-an-anchor.md` declares, where there is no second document
 //! to read a warrant from.
+//!
+//! **A rule that read only a declared warrant** passes nothing and decides
+//! nothing over `claims/onto-generated.md`, whose target this engine wrote.
+//! Spec 3 derives `regenerated` from the marker and never from a declaration,
+//! so a generated document has a warrant and states none, and a rule that
+//! reads the declaration alone records a skip where there is an answer. The
+//! set of such targets is open, because a projection can be declared over any
+//! shelf, so every one of them reaches this rule undecided.
 //!
 //! No change manifest is bound anywhere below, and none is needed: both values
 //! this rule reads survive in the two documents in front of it.
@@ -330,6 +338,64 @@ fn a_target_that_declares_no_warrant_skips_rather_than_passing() {
         mine[0].1.contains("target end"),
         "the skip does not say which end had nothing to read: {}",
         mine[0].1
+    );
+}
+
+/// A target this engine wrote is decided, on the warrant the engine derives.
+///
+/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires):
+/// "The engine derives `regenerated` from the marker, and never from a
+/// declaration." `targets/generated.md` carries the marker in its front matter
+/// and declares no provenance block, which is the shape every generated
+/// document that declares an identity has. `regenerated` is not `asserted`, so
+/// the pair passes.
+///
+/// The two assertions below are one case, and dropping either loses the point.
+/// A rule that never generated an instance over the pair also reports nothing
+/// about it, and a rule that still reads the declaration alone records a skip
+/// rather than a finding. Neither is a decision.
+#[test]
+fn a_generated_target_is_decided_on_a_derived_warrant_rather_than_skipped() {
+    let run = run();
+    assert!(
+        about(&run, "NOTE-FIX-onto-generated").is_empty(),
+        "a generated target was reported: {:?}",
+        refusals(&run)
+    );
+    assert!(
+        read_by_instances(&run).contains(&"evidence-basis/claims/onto-generated.md"),
+        "no instance exists over the generated pair: {:?}",
+        read_by_instances(&run)
+    );
+    assert!(
+        !skips(&run)
+            .iter()
+            .any(|(reads, _)| reads.contains(&"evidence-basis/targets/generated.md")),
+        "the generated pair skipped rather than passing: {:?}",
+        skips(&run)
+    );
+}
+
+/// The document that declares no warrant and that nothing generated still skips.
+///
+/// This is the guard on the case above. The two targets differ in one line, the
+/// marker, and a fix that answered `regenerated` for every target with no
+/// provenance block turns `claims/onto-quiet.md` green and loses the reading
+/// that `a_target_that_declares_no_warrant_skips_rather_than_passing` holds.
+#[test]
+fn deriving_a_warrant_for_a_generated_target_does_not_answer_for_an_ungenerated_one() {
+    let run = run();
+    let skips = skips(&run);
+    let quiet: Vec<&(Vec<&str>, &String)> = skips
+        .iter()
+        .filter(|(reads, _)| reads.contains(&"evidence-basis/targets/quiet.md"))
+        .collect();
+    assert_eq!(quiet.len(), 1, "the ungenerated target stopped skipping: {skips:?}");
+    assert_eq!(
+        about(&run, "NOTE-FIX-rests-on-asserted").len(),
+        1,
+        "the decisive finding went with it: {:?}",
+        refusals(&run)
     );
 }
 
