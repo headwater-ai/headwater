@@ -146,6 +146,8 @@ Present is not confirmed, and the difference is what the rest of this section st
 
 **The `tree` digest is recorded and never compared.** It covers every classified document of the corpus, so it moves on any edit to any document. A result that reported it would need a fresh commit after every prose change, and `generate --check` would ask for one on every pull request. A statement that nobody can leave standing is not a statement. The read set above is the narrow instrument that this reasoning defers to. It covers the documents that a whole-tree digest cannot separate from the rest of the corpus.
 
+**A refusal is reported by the run and not only by the file it writes.** The refusal text is what `headwater generate` derives for a refused transcript, so `generate --check` regenerates it faithfully and a corpus can carry a result with no verdict through every gate it has. One did. So the run prints a `refused transcripts` section that names the transcript, the confirmation that refused it and the reason, and the run fails where the transcript has been promoted past `draft`. A transcript still at `draft` is reported and does not fail the run, because the remedy is a fresh recording rather than an edit, and promoting a refused recording is the moment a reader would start citing it.
+
 **The `seed` and the `harness` are provenance.** A seed is a number the caller stated, and this corpus holds nothing to compare it against. A harness version is the version of the engine that planned the run. A comparison against the version that reads the run refuses every transcript on the first release.
 
 ## Nothing here separates a recorded transcript from a typed one
@@ -170,8 +172,8 @@ A published rate is a claim that a reader can re-derive. `headwater generate` wr
 
 **`headwater probe stale` names no window, and it answers a different question.** It recomposes the read set over the tree in front of the reader and reports which recorded results a change to the corpus voided. Age expires a result and an edit voids one. They are two facts, and neither one substitutes for the other. A window is a policy of the repository that runs the probes, and `.headwater/probe.yml` is where such a policy already lives.
 
-## This corpus declares its probes on one shelf and holds no transcript
+## This corpus declares its probes on one shelf and holds one refused transcript
 
-`docs/probes/` is the shelf that declares them, and `headwater probe plan` prints the count it reads from the tree. No count is written here, because a hand-kept count of a shelf drifts as the shelf grows. `docs/probe-runs/` is a declared shelf that holds nothing, so `headwater generate` writes no probe result and prints the reason on every run.
+`docs/probes/` is the shelf that declares them, and `headwater probe plan` prints the count it reads from the tree. No count is written here, because a hand-kept count of a shelf drifts as the shelf grows. `docs/probe-runs/` holds one transcript, recorded on 2026-09-09, and `headwater generate` writes the result beside it. The first confirmation refuses that transcript: the commit that landed it moved the lock in the same commit, so the `lock` it pins is not the lock of this tree and the result carries no verdict.
 
 The reason is this part, read from the other end. A recorder observes a session from outside it, and no process in this repository does that. An agent that works here and writes a file about the documents it opened produces the self-report that spec 5 refuses. No check here tells that file from a recorded one. So the transcript is owed by a component that this repository does not hold. [HW-OBL-0124](../obligations/0124-a-probe-result-is-printed-and-never-committed-so-nothing-regenerates-one.md) carries the debt.

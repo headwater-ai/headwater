@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0124
-status: discharged
-status_since: 2026-08-14
+status: current
+status_since: 2026-09-11
 waiting_on: build
-summary: "A committed transcript now generates and holds a probe result under regeneration."
-last_verified: 2026-08-14
+summary: "A committed transcript generates a result and regeneration holds the pair, and the one result this corpus holds carries no verdict."
+last_verified: 2026-09-11
 title: "A probe result is printed and never committed, so nothing regenerates one"
 provenance:
   warrant: asserted
@@ -16,6 +16,8 @@ relations:
   traces_to:
     - HW-SPEC-ai-integration
 ---
+
+<!-- headwater allow=lifecycle.transition.not_permitted scope=file until=2027-12-31 reason=accepted_deviation note=a discharge taken on a measurement that does not exist has to be retractable, and `discharged` is terminal in the `obligation` regime -->
 
 # A probe result is printed and never committed, so nothing regenerates one
 
@@ -56,3 +58,11 @@ The issue that lands a recorder and a committed transcript discharges the first 
 One thing is settled here and needs no further work. The grader is a pure function of its three inputs, and two runs over one transcript write one set of bytes. That is what makes the projection possible when the source arrives, and it is tested in the crate and again over the verb. What is missing is the source rather than the function.
 
 This record does not ask for a result document written by hand. A hand-typed rate is the `asserted` warrant by another route, and it is the thing the second consequence above names.
+
+## The first link landed and the debt did not close
+
+`docs/probe-runs/regression-probe-transcript-for-2026-09-09.md` is a recorded transcript, `docs/probe-results/regression-probe-transcript-for-2026-09-09.md` is generated from it, and `generate --check` holds the pair. So the pair this record asks for exists, and the record stood at `discharged` on that reading from 2026-08-14 to 2026-09-11.
+
+**The pair is not the measurement.** The commit that landed the transcript also moved `.headwater/taxonomy.lock`, so the `lock` the transcript pins stopped being the lock of this tree at the moment of the merge, the first of the five confirmations refused the recording whole, and the generated result carries zero verdicts of four. The two consequences above therefore both still stand: no document of this corpus holds a recomputed rate, and every efficacy rate here is `asserted`. That is why the status returns to `current`.
+
+What closes this record is a transcript that a confirmation does not refuse. `headwater generate` now reports a refused transcript as a refusal of the run rather than as a line inside the document nobody re-reads, which is the reporting this record went twenty-eight days without.

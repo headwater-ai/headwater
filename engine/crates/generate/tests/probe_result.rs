@@ -685,10 +685,30 @@ fn a_plan_that_stopped_partway_hands_a_grading_caller_no_selection() {
 
 /// A transcript planned against another taxonomy fails the run, and a matching
 /// one reports nothing.
+///
+/// The pair, because neither half is a test on its own. An absence assertion is
+/// satisfied by a walk that reached no transcript at all, and a presence
+/// assertion is satisfied by a rule that fires on every transcript forever.
+///
+/// The defect this holds is the one `f615fb86` landed in the repository above:
+/// a transcript whose `lock` member names a taxonomy this tree no longer
+/// carries is refused whole by the first of the five confirmations
+/// [spec 15](../../../../docs/spec/15-the-recorder-contract.md#what-the-engine-confirms-and-what-it-records-without-confirming)
+/// states, the refusal text *is* the derived output, so `generate --check`
+/// regenerates it faithfully and stays green, and no check rule reads a probe
+/// result. The corpus then published three measurements taken off a result
+/// that carries zero verdicts of four, and nothing anywhere reported it.
+///
+/// So the assertion is on the run and not on the bytes. The bytes were already
+/// right.
 #[test]
 fn a_transcript_planned_against_another_taxonomy_fails_the_run() {
     let matched = copied("probe-result-lock-matches");
     let held = write(&matched, &plan_over(&matched));
+    assert!(
+        held.refused.is_empty(),
+        "a transcript this tree's taxonomy matches is refused by nothing"
+    );
     assert_eq!(
         held.remedy(),
         None,
@@ -702,7 +722,28 @@ fn a_transcript_planned_against_another_taxonomy_fails_the_run() {
         "lock: sha256:fixture",
         "lock: sha256:another-taxonomy",
     );
-    let report = write(&moved, &plan_over(&moved));
+    let plan = plan_over(&moved);
+    let report = write(&moved, &plan);
+
+    let refused = match report.refused.as_slice() {
+        [one] => one,
+        other => panic!(
+            "the run reported {} refused transcripts, not one",
+            other.len()
+        ),
+    };
+    assert_eq!(refused.transcript, TRANSCRIPT);
+    assert_eq!(refused.output, RESULT);
+    assert_eq!(
+        refused.confirmation,
+        headwater_probe::intake::CONFIRMATIONS[0],
+        "the report names the confirmation that failed, from the closed set rather than a literal"
+    );
+    assert!(
+        refused.why.contains("sha256:another-taxonomy") && refused.why.contains("sha256:fixture"),
+        "the report names both digests, and it names neither: {}",
+        refused.why
+    );
     assert!(
         report
             .render(ColorMode::Plain)
