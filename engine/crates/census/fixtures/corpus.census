@@ -588,9 +588,13 @@ docs/probe-results/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/regression-probe-transcript-for-2026-09-09.md
   generated: `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/regression-probe-transcript-for-2026-09-11.md
+  generated: `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-runs/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-runs/regression-probe-transcript-for-2026-09-09.md
+  typed: probe_transcript
+docs/probe-runs/regression-probe-transcript-for-2026-09-11.md
   typed: probe_transcript
 docs/probes/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census

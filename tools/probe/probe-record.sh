@@ -11,9 +11,10 @@
 #         --task-file task.md --model claude-haiku-4-5 \
 #         --workspace /tmp/scratch-copy [--raw raw.jsonl] [--produced docs/x.md]…
 #
-# Two modes read nothing from the network. `--identity-only` prints the six
-# members `headwater probe plan` fixes, and `--provider-only <log>` prints the
-# three the provider metadata carries, over a log already recorded.
+# Three modes read nothing from the network. `--identity-only` prints the six
+# members `headwater probe plan` fixes, `--provider-only <log>` prints the
+# three the provider metadata carries, and `--answer-only <log> --answers
+# <set>` prints the final answer, each over a log already recorded.
 #
 # ## The channel, and the two ways to lose it
 #
@@ -50,6 +51,26 @@
 #   step_derive_provider      `model`, `served_version` and `cost_cents`, read
 #                             from the harness `result` line, because a usage
 #                             record carries token counts and not cents
+#   step_derive_answer        `answer`, read from the same `result` line, for a
+#                             probe that expects one and for no other
+#
+# ## Why `answer` is read here and why it is read so narrowly
+#
+# [Spec 15] rules that `answer: null` and an absent `answer` key are two facts:
+# `null` says the recorder watched and saw no final answer. This script wrote
+# `null` for every session it ever drove, because it called the transform with
+# no `--answer` and the transform defaults it empty. One session of 2026-09-11
+# ended with the single word `present` and the transcript said it ended with
+# nothing, so a quarter of this corpus's only efficacy figure graded the
+# recorder rather than the corpus ([#803]).
+#
+# The derivation is deliberately narrow in two directions, and both are the
+# same rule: **a transcript holds no model prose.** It runs only for a probe
+# whose expectation is `answered`, because the final text of an `opened`
+# session is prose. It writes a value only where the whole trimmed final text
+# is one answer the probe declares, because anything else is prose too. A
+# session that argues its way to `present` over a paragraph is a session that
+# gave no answer in the closed set, and `null` is the true record of it.
 #
 # The remaining three identity members — `tier`, `arm` and `at` — are stated by
 # the caller and the clock, and `--tier`/`--arm` default to what the plan says.
@@ -69,6 +90,8 @@ tier=
 arm=
 identity_only=0
 provider_only=0
+answer_only=0
+answers=
 transform_args=
 
 while [ $# -gt 0 ]; do
@@ -83,6 +106,8 @@ while [ $# -gt 0 ]; do
         --arm) arm=${2:-}; shift 2 ;;
         --identity-only) identity_only=1; shift ;;
         --provider-only) provider_only=1; raw=${2:-}; shift 2 ;;
+        --answer-only) answer_only=1; raw=${2:-}; shift 2 ;;
+        --answers) answers=${2:-}; shift 2 ;;
         --produced) transform_args="$transform_args --produced ${2:-}"; shift 2 ;;
         *) echo "probe-record: unknown argument \`$1\`" >&2; exit 2 ;;
     esac
@@ -108,7 +133,7 @@ engine=$root/engine/target/dev-release/headwater
 # status from `[ -x "$engine" ]` — a fact about the host, and the wrong one.
 # A guard that only fires where the tools happen to be installed is a guard
 # that is absent on the machine most likely to need it.
-if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ]; then
+if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 ]; then
     [ -n "$probe" ] && [ -n "$session" ] && [ -n "$task_file" ] && [ -n "$workspace" ] || {
         echo "usage: probe-record.sh --probe <id> --session <name> --task-file <f> --workspace <dir> [--model <m>]" >&2
         exit 2
@@ -167,6 +192,45 @@ if [ "$provider_only" = 1 ]; then
     exit 0
 fi
 
+# step_derive_answer. The final text of the harness `result` line, and a value
+# only where that whole text is one of the answers the probe declares. It
+# prints nothing otherwise, and the caller then passes no `--answer`, which is
+# the `null` the contract asks for.
+#
+# The comparison folds case and trims surrounding space, because a harness that
+# ends a session with `Present.` has said the same word. It does not strip a
+# trailing period or match a substring: `the answer is present` is prose that
+# contains an answer, and a recorder that took the word out of it would be
+# reading the session rather than observing it.
+step_derive_answer() {
+    [ -n "$answers" ] || return 0
+    said=$(jq -s -r '([.[] | select(.type == "result")] | last | .result // "")' < "$raw" \
+        | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/\.$//')
+    [ -n "$said" ] || return 0
+    folded=$(printf '%s' "$said" | tr '[:upper:]' '[:lower:]')
+    # `printf '%s\n'` and never `printf '%s'`: a set of one answer carries no
+    # comma, so the unterminated form gives `read` a line with no newline, and
+    # `while read` stops before the body on that. The fixture below caught it
+    # dropping the last answer of every set, which for a three-answer probe is
+    # a value the recorder would have written as `null` forever.
+    printf '%s\n' "$answers" | tr ',' '\n' | while read -r one; do
+        one=$(printf '%s' "$one" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+        [ -n "$one" ] || continue
+        if [ "$folded" = "$(printf '%s' "$one" | tr '[:upper:]' '[:lower:]')" ]; then
+            printf '%s' "$one"
+            return 0
+        fi
+    done
+}
+
+# `--answer-only <log> --answers <set>` runs that step alone, so the derivation
+# is held by a fixture without spending a session or an engine.
+if [ "$answer_only" = 1 ]; then
+    [ -f "$raw" ] || { echo "probe-record: no log at $raw" >&2; exit 2; }
+    step_derive_answer
+    exit 0
+fi
+
 [ -x "$engine" ] || {
     echo "probe-record: no engine at $root/engine/target/{dev-release,release}/headwater." >&2
     echo "probe-record: build one, or the plan members below would be guesses." >&2
@@ -190,6 +254,17 @@ step_copy_plan_identity "$plan" || {
 }
 
 member() { sed -n "s/^${1}: *//p" "$plan" | head -1; }
+
+# The plan prints one indented block per selected probe, and the `answers` line
+# is present only for a probe whose expectation is `answered`. Reading the set
+# from the plan rather than from the probe document keeps every value in this
+# script on the one channel the plan already fixed.
+declared_answers() {
+    awk -v want="$1" '
+        /^- / { here = (index($0, "- " want " (") == 1) }
+        here && /^    answers: / { sub(/^    answers: /, ""); print; exit }
+    ' "$plan"
+}
 
 if [ "$identity_only" = 1 ]; then
     printf 'lock: %s\n' "$(member lock)"
@@ -246,7 +321,10 @@ printf 'at: %s\n' "$(date -u +%Y-%m-%d)"
 printf '%s\n' "$provider" | grep '^cost_cents: '
 printf '```\n'
 
+answers=$(declared_answers "$probe")
+answer=$(step_derive_answer)
+
 # The transform reads the same stream this script wrote, on its standard input.
 # shellcheck disable=SC2086
 sh "$root/tools/probe/probe-transform.sh" --probe "$probe" --session "$session" \
-    --root "$root" $transform_args < "$raw"
+    --root "$root" $transform_args ${answer:+--answer "$answer"} < "$raw"

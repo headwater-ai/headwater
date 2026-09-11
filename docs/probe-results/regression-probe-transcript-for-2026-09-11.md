@@ -30,7 +30,7 @@ A regression run in the present arm, on claude-haiku-4-5 at served version claud
 - HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor (discovery, expects opened)
     session regression-20260911-cold-current: not satisfied — 37 recorded calls, and none named any of the 1 document
 - HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer (sufficiency, expects answered)
-    session regression-20260911-tombstone-current: not satisfied — the session ended with no answer
+    session regression-20260911-tombstone-current: satisfied — event 2: answered `present`
 - HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it (navigability, expects opened)
     session regression-20260911-adjudication-current: not satisfied — 1 recorded call, and none named any of the 1 document
 - HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document (discovery, expects opened)
@@ -38,7 +38,7 @@ A regression run in the present arm, on claude-haiku-4-5 at served version claud
 
 ## The rate, and the denominator it is over
 
-0 of 4 graded sessions satisfied their expectation: 0.0%, in a 95% interval of 0.0% to 49.0%.
+1 of 4 graded sessions satisfied their expectation: 25.0%, in a 95% interval of 4.6% to 69.9%.
 The denominator is the graded sessions and never the selected probes. 0 sessions reached no verdict, and a session with no verdict is outside both halves of that fraction.
 
 An interval that overlaps the previous run's is variance and one that does not is drift. This is one arm, so it estimates no effect: an efficacy claim is a comparison of two results, and the arm each one recorded is on it.

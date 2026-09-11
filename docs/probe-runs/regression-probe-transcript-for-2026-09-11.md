@@ -197,7 +197,7 @@ This transcript stands at `current` and not at `draft`. A refused transcript at 
       argument: "{\"command\":\"grep -E \\\"filtered|profile|tombstone\\\" /tmp/headwater-170-probes.wlPHN4/tombstone-workspace/.headwater/corpus.json\",\"description\":\"Check for profile and tombstone configuration\"}"
       result: ""
   produced: []
-  answer: null
+  answer: "present"
 - probe: "HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it"
   session: "regression-20260911-adjudication-current"
   calls:
@@ -222,6 +222,8 @@ This transcript stands at `current` and not at `draft`. A refused transcript at 
   answer: null
 ```
 
-## What the recorder did not observe
+## What the recorder observes, and what it observed here
 
-The session of `HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer` ended with the single word `present` on the harness `result` line, and the event above carries `answer: null`. That is a fact about the recorder rather than about the session: `tools/probe/probe-record.sh` never passes `--answer` to `tools/probe/probe-transform.sh`, so every `answered` probe it drives records no answer whatever the session says. Spec 15 rules that `answer: null` states that the recorder watched and saw no final answer, so the verdict this event earns is a verdict about the instrument. The result beside this transcript therefore reads one of its four verdicts as a reading of the recorder.
+The `answer` of the `HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer` event is the word the session put on the harness `result` line, and `tools/probe/probe-record.sh` derives it there. It derived nothing for the other three, which is correct: an `opened` probe declares no answer set, and the final text of such a session is prose that a transcript does not hold.
+
+The first transform of these four logs wrote `answer: null` for all four, because the driver called the transform with no `--answer` at all. Spec 15 rules that `answer: null` says the recorder watched and saw no final answer, so that transcript said this session ended with nothing when it ended with `present`, and a quarter of the result beside it graded the recorder. [#803](https://github.com/headwater-ai/headwater/issues/803) carries the defect. The events above come from the same four logs, re-read by the corrected driver: the recording is the recording of 2026-09-11 and only the derivation moved.
