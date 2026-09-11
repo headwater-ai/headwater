@@ -2,6 +2,7 @@
 
 # Probe results
 
-1 document on this shelf, in the reading order this corpus derives.
+2 documents on this shelf, in the reading order this corpus derives.
 
 - [Probe result for regression-probe-transcript-for-2026-09-09](regression-probe-transcript-for-2026-09-09.md)
+- [Probe result for regression-probe-transcript-for-2026-09-11](regression-probe-transcript-for-2026-09-11.md)

@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 416,
-      "carried": 416,
+      "in the graph": 418,
+      "carried": 418,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2887,7 +2887,7 @@
           "status_since": "2026-08-11",
           "waiting_on": "build",
           "last_verified": "2026-08-13",
-          "summary": "Q8 claims that a closed-set expectation makes a probe verdict reproducible, and no probe has run.",
+          "summary": "Q8 claims that a closed-set expectation makes a probe verdict reproducible, and the one closed-set probe this corpus declares has now returned a verdict.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -3023,11 +3023,11 @@
         "facets": {
           "id": "HW-OBL-0010",
           "title": "The corpus descriptor exists and no probe has run against it",
-          "status": "current",
+          "status": "discharged",
           "status_since": "2026-09-11",
           "waiting_on": "build",
           "last_verified": "2026-09-11",
-          "summary": "The instrument is declared, one session was recorded, and the recording was refused whole, so the descriptor claim still has no reading.",
+          "summary": "The descriptor has a reading at last, and it says that a cold session reached neither the check layer nor the decision register.",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -3110,7 +3110,7 @@
           "status_since": "2026-08-10",
           "waiting_on": "build",
           "last_verified": "2026-08-28",
-          "summary": "Q17 claims that a counted tombstone stops an agent reporting absence with confidence, and no probe has run.",
+          "summary": "Q17 claims that a counted tombstone stops an agent reporting absence with confidence, and the probe has run against a corpus that serves no tombstone.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -3138,7 +3138,7 @@
           "status_since": "2026-08-10",
           "waiting_on": "build",
           "last_verified": "2026-08-13",
-          "summary": "Q18 claims that an agent meeting the losing document first reaches the adjudication, and no probe has run.",
+          "summary": "Q18 claims that an agent meeting the losing document first reaches the adjudication, and one run says that it did not.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -6256,10 +6256,10 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0124",
-          "status": "current",
+          "status": "discharged",
           "status_since": "2026-09-11",
           "waiting_on": "build",
-          "summary": "A committed transcript generates a result and regeneration holds the pair, and the one result this corpus holds carries no verdict.",
+          "summary": "A committed transcript generates a result, regeneration holds the pair, and the result this corpus holds carries a verdict for every probe it graded.",
           "last_verified": "2026-09-11",
           "title": "A probe result is printed and never committed, so nothing regenerates one",
           "provenance": {
@@ -7684,6 +7684,16 @@
         }
       },
       {
+        "path": "docs/probe-results/regression-probe-transcript-for-2026-09-11.md",
+        "kind": "probe_result",
+        "id": "HW-RESULT-regression-probe-transcript-for-2026-09-11",
+        "facets": {
+          "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
+          "id": "HW-RESULT-regression-probe-transcript-for-2026-09-11",
+          "title": "Probe result for regression-probe-transcript-for-2026-09-11"
+        }
+      },
+      {
         "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-09.md",
         "kind": "probe_transcript",
         "id": "HW-RUN-regression-probe-transcript-for-2026-09-09",
@@ -7696,6 +7706,21 @@
           "last_verified": "2026-09-09",
           "tier": "regression",
           "arm": "present"
+        }
+      },
+      {
+        "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-11.md",
+        "kind": "probe_transcript",
+        "id": "HW-RUN-regression-probe-transcript-for-2026-09-11",
+        "facets": {
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-11",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Four regression sessions ran against the lock of this tree, and the recorder observed every tool call each one made.",
+          "last_verified": "2026-09-11",
+          "tier": "regression",
+          "arm": "present",
+          "title": "Regression probe transcript for 2026-09-11"
         }
       },
       {

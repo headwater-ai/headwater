@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0124
-status: current
+status: discharged
 status_since: 2026-09-11
 waiting_on: build
-summary: "A committed transcript generates a result and regeneration holds the pair, and the one result this corpus holds carries no verdict."
+summary: "A committed transcript generates a result, regeneration holds the pair, and the result this corpus holds carries a verdict for every probe it graded."
 last_verified: 2026-09-11
 title: "A probe result is printed and never committed, so nothing regenerates one"
 provenance:
@@ -65,4 +65,6 @@ This record does not ask for a result document written by hand. A hand-typed rat
 
 **The pair is not the measurement.** The commit that landed the transcript also moved `.headwater/taxonomy.lock`, so the `lock` the transcript pins stopped being the lock of this tree at the moment of the merge, the first of the five confirmations refused the recording whole, and the generated result carries zero verdicts of four. The two consequences above therefore both still stand: no document of this corpus holds a recomputed rate, and every efficacy rate here is `asserted`. That is why the status returns to `current`.
 
-What closes this record is a transcript that a confirmation does not refuse. `headwater generate` now reports a refused transcript as a refusal of the run rather than as a line inside the document nobody re-reads, which is the reporting this record went twenty-eight days without.
+What closes this record is a transcript that a confirmation does not refuse, and [the transcript of 2026-09-11](../probe-runs/regression-probe-transcript-for-2026-09-11.md) is one. It stands at `current` rather than at `draft`, so a lock that moves under it fails the run instead of waiting for a reader. [The result](../probe-results/regression-probe-transcript-for-2026-09-11.md) is generated from it, `generate --check` holds the pair, and it states a rate of 1 of 4 over a denominator it names. So a document of this corpus now holds a recomputed rate, and this record discharges.
+
+**The rate it holds is 1 of 4, and the first transform of those four logs made it 0 of 4.** `tools/probe/probe-record.sh` called the transform with no `--answer`, so the one probe that declares a closed answer set recorded `answer: null` whatever the session said, and a quarter of this corpus's only efficacy figure graded the recorder. The driver now derives the answer from the same harness line it already reads the cost from, and the result above is the same four logs read again. [#803](https://github.com/headwater-ai/headwater/issues/803) carries what is left of that defect.
