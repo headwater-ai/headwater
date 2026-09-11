@@ -1,5 +1,5 @@
 ---
-id: HW-DR-0062
+id: HW-DR-0063
 status: current
 status_since: 2026-09-11
 summary: "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars."

@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 422,
-      "carried": 422,
+      "in the graph": 424,
+      "carried": 424,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1738,12 +1738,33 @@
         }
       },
       {
-        "path": "docs/decisions/0062-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md",
+        "path": "docs/decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md",
         "kind": "decision",
         "id": "HW-DR-0062",
         "warrant": "asserted",
         "facets": {
           "id": "HW-DR-0062",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A refused transcript fails the run where its state carries the `live` role. A role that says nobody relies on the document leaves the run green.",
+          "last_verified": "2026-09-11",
+          "title": "A refused recording is held by the reliance its state claims, and not by promotion",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md",
+        "kind": "decision",
+        "id": "HW-DR-0063",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0063",
           "status": "current",
           "status_since": "2026-09-11",
           "summary": "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars.",
@@ -3892,11 +3913,11 @@
         "facets": {
           "id": "HW-OBL-0039",
           "title": "A participation expectation names one target kind",
-          "status": "current",
-          "status_since": "2026-08-12",
+          "status": "discharged",
+          "status_since": "2026-09-11",
           "waiting_on": "build",
-          "last_verified": "2026-08-13",
-          "summary": "The declaration carries one `to_kind`, so a corpus that expects a citation from any of several register kinds cannot state it.",
+          "last_verified": "2026-09-11",
+          "summary": "The declaration carried one required `to_kind`, and the member is optional now. An expectation that names none admits every target kind of its relation.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -6417,7 +6438,7 @@
           "status_since": "2026-09-06",
           "waiting_on": "ruling",
           "summary": "Q29 keeps the engine outside the corpus root, so a contract may name a crate and nothing names a crate that has no contract. A participation expectation runs between documents, and an anchor target is no node with a kind.",
-          "last_verified": "2026-08-17",
+          "last_verified": "2026-09-11",
           "title": "Nothing holds a crate to having a contract under a root that excludes it",
           "provenance": {
             "warrant": "asserted",
@@ -7723,6 +7744,28 @@
         }
       },
       {
+        "path": "docs/obligations/0185-whether-an-admitted-library-entry-may-require-a-bundle-that-admission-refuses.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0185",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0185",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "An entry the canonical library refuses is required by two entries it admits, and no criterion and no ruling reads that direction",
+          "last_verified": "2026-09-11",
+          "title": "Whether an admitted library entry may require a bundle that admission refuses",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
         "path": "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
         "kind": "probe_result",
         "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
@@ -7771,9 +7814,9 @@
         "id": "HW-RUN-regression-probe-transcript-for-2026-09-11",
         "facets": {
           "id": "HW-RUN-regression-probe-transcript-for-2026-09-11",
-          "status": "current",
+          "status": "deprecated",
           "status_since": "2026-09-11",
-          "summary": "Four regression sessions ran against the lock of this tree, and the recorder observed every tool call each one made.",
+          "summary": "Four regression sessions ran against the lock of 2026-09-11, and the recorder observed every tool call each one made. The recording is retired, because a later change moved the lock it pins.",
           "last_verified": "2026-09-11",
           "tier": "regression",
           "arm": "present",
@@ -8674,7 +8717,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 62 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 63 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
@@ -10768,7 +10811,7 @@
         }
       },
       {
-        "source": "docs/decisions/0062-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md",
+        "source": "docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -10779,7 +10822,7 @@
         }
       },
       {
-        "source": "docs/decisions/0062-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md",
+        "source": "docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md",
         "relation": "governs",
         "written_as": "governs",
         "target": {

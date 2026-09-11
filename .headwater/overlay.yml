@@ -1010,7 +1010,7 @@ add_to:
     # binds it, and no rule reads it. The count that is held is the one the
     # emitter composes into the `summary` of the file it writes, because
     # `generate --check` compares those bytes
-    # ([HW-DR-0062](../docs/decisions/0062-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md)).
+    # ([HW-DR-0063](../docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md)).
     #
     # The `identity` block is why a projection may take this path at all. Three
     # documents name `HW-REG-open-questions`, and a generated file with no front

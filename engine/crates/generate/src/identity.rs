@@ -30,7 +30,7 @@
 //! A summary, a status, a date and a body are prose, and no member here can
 //! carry one. That is a rule about this block and never an exemption for the
 //! document: [`crate::derived`] writes every other facet the kind requires, and
-//! [HW-DR-0062](../../../../docs/decisions/0062-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md)
+//! [HW-DR-0063](../../../../docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md)
 //! is why the values are computed rather than declared here.
 //!
 //! `name` is not prose either: it is a label, it cannot be a sentence, and
