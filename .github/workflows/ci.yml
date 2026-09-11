@@ -1337,3 +1337,30 @@ jobs:
         # It writes nothing inside the checkout: every scratch root is under a
         # temporary directory, removed at the end.
         run: sh tools/taxonomy/n8n-fixtures.sh
+      - name: The external ADR corpus types, and nobody has quietly repaired it
+        # `docs/taxonomies/decision-record/fixtures/sources/inspect-evals/` holds
+        # the 10 ADRs of `UKGovernmentBEIS/inspect_evals` at one pin, MIT, and
+        # the runner assembles a corpus root out of them at each run, adds front
+        # matter and nothing else, and types them against the entry.
+        #
+        # The step exists for one defect. The whole value of an external corpus
+        # is that its prose was not written to pass, so a run that goes green
+        # because somebody repaired a heading, a status line or a link in the
+        # vendored copy has measured this repository against itself again. Two
+        # cases catch that and each holds half: a SHA-256 seal on every vendored
+        # file, and a `cmp` of each assembled document below its front matter
+        # against the file it was assembled from. Measured on 2026-09-11,
+        # rewriting one `Accepted — implementation deferred` status line to
+        # `Accepted` moves this suite from 37 passed and 0 failed to 36 and 1.
+        #
+        # One finding class is asserted and the denominators are not.
+        # `section.required.missing` must be reported for no document here and
+        # the rule must have run over every one of them, because a check that
+        # could not run reads as a check that passed. Everything else the run
+        # reports is printed, because a finding count is a property of somebody
+        # else's prose.
+        #
+        # It runs the engine this job built, `awk`, `sed`, `cmp` and
+        # `sha256sum`, opens no socket, and writes only under a temporary
+        # directory.
+        run: sh tools/repo/decision-record-fixtures.sh
