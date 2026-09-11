@@ -569,8 +569,8 @@ fn vendoring_over_a_maintained_package_is_refused() {
     let consumer_root = scratch.path().join("consumer");
     consumer(&scratch, &record.digest);
     package::vendor(&consumer_root, &out, &record.digest).expect("the first vendor lands");
-    let again = package::vendor(&consumer_root, &out, &record.digest)
-        .expect("the second replaces it");
+    let again =
+        package::vendor(&consumer_root, &out, &record.digest).expect("the second replaces it");
     assert!(
         again.divergence.is_none(),
         "one artifact installed twice is one set of bytes, and there is nothing to report"
@@ -618,8 +618,8 @@ fn a_second_artifact_of_the_installed_version_is_named_before_it_replaces_it() {
 
     let adopter = scratch.path().join("adopter");
     std::fs::create_dir_all(&adopter).expect("the adopter root is made");
-    let landed = package::vendor(&adopter, &first_out, &first.digest)
-        .expect("the first vendor lands");
+    let landed =
+        package::vendor(&adopter, &first_out, &first.digest).expect("the first vendor lands");
     assert!(
         landed.divergence.is_none(),
         "a first install has no record to diverge from"
@@ -634,7 +634,8 @@ One more file, and the version stays where it is.
 ",
     );
     let second_out = scratch.path().join("artifact-2");
-    let second = package::publish(&root, "acme/fixture", &second_out).expect("the second publishes");
+    let second =
+        package::publish(&root, "acme/fixture", &second_out).expect("the second publishes");
 
     assert_eq!(
         first.version, second.version,
