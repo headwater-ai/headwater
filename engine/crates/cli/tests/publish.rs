@@ -2448,3 +2448,154 @@ fn the_shipped_maintenance_loop_runs_as_written_over_a_source_that_changed() {
          {stdout}\n{stderr}"
     );
 }
+
+/// The divergence report an adopter reads, out of the built binary.
+///
+/// **The library half of this is held one crate down and that is not enough.**
+/// `headwater-resolve/tests/publish.rs` asserts
+/// `Vendored::divergence` over a package built in process. Every one of those
+/// assertions stays green with the `if let Some(divergence)` block in
+/// `main.rs` deleted, because the value would still be computed and simply
+/// never printed. The contract clause of `docs/interfaces/headwater-taxonomy.md`
+/// and the paragraph in spec 7 both promise what a person *sees*, so this runs
+/// the binary and reads standard output. It is the same separation the module
+/// comment above states for `nothing was published`: a correctness root can be
+/// completely right and the visible result still be missing.
+///
+/// **Both counts are read off the two release records rather than typed here.**
+/// A literal `3 files` and `4 files` would pass against a report that printed
+/// one artifact's count twice, which is the defect most worth catching in a
+/// line that exists to tell two artifacts apart.
+///
+/// The silence of the first install is asserted too. Without it the case passes
+/// against a report that fires on every vendor.
+#[test]
+fn the_vendor_report_names_both_artifacts_of_one_version() {
+    let root = Root::scratch("one-version-two-artifacts");
+    let publisher = root.path().join("publisher");
+    write(
+        &publisher.join("packages/acme-fixture/package.yml"),
+        "package: acme/fixture\nversion: 4.2.0\ncontents:\n  taxonomy: taxonomy.yml\n  doctrine: doctrine/\n",
+    );
+    write(
+        &publisher.join("packages/acme-fixture/taxonomy.yml"),
+        "taxonomy: acme/fixture\nversion: 4.2.0\npurposes:\n  rationale: {intent: explain why a choice was made and what it forecloses}\n",
+    );
+    write(
+        &publisher.join("packages/acme-fixture/doctrine/method.md"),
+        "# Method\n\nWhy this taxonomy shelves what it shelves.\n",
+    );
+
+    let first_out = root.path().join("artifact-1");
+    let (code, _stdout, stderr) = consumer_run(
+        &publisher,
+        &[
+            "taxonomy",
+            "publish",
+            "--package",
+            "acme/fixture",
+            "--out",
+            first_out.to_str().expect("the path is UTF-8"),
+        ],
+    );
+    assert_eq!(code, Some(0), "{stderr}");
+    let first = record_at(&first_out);
+
+    let adopter = root.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    let (code, stdout, stderr) = consumer_run(
+        &adopter,
+        &[
+            "taxonomy",
+            "vendor",
+            first_out.to_str().expect("the path is UTF-8"),
+            "--expect",
+            &first.digest,
+        ],
+    );
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(
+        !stdout.contains("two sets of bytes"),
+        "a first install has no record to diverge from, and the report fired anyway:\n{stdout}"
+    );
+
+    // One more member of the maintained source. Neither version key moves: a
+    // package that states two versions of itself is refused at publish.
+    write(
+        &publisher.join("packages/acme-fixture/doctrine/second.md"),
+        "# Second\n\nOne more file, and the version stays where it is.\n",
+    );
+    let second_out = root.path().join("artifact-2");
+    let (code, _stdout, stderr) = consumer_run(
+        &publisher,
+        &[
+            "taxonomy",
+            "publish",
+            "--package",
+            "acme/fixture",
+            "--out",
+            second_out.to_str().expect("the path is UTF-8"),
+        ],
+    );
+    assert_eq!(code, Some(0), "{stderr}");
+    let second = record_at(&second_out);
+    assert_eq!(
+        first.version, second.version,
+        "this is an upgrade, not the pair under test"
+    );
+    assert_ne!(
+        first.digest, second.digest,
+        "the two artifacts are one set of bytes"
+    );
+    assert_ne!(
+        first.members.len(),
+        second.members.len(),
+        "the two counts are equal, so a report that printed one of them twice would pass"
+    );
+
+    let (code, stdout, stderr) = consumer_run(
+        &adopter,
+        &[
+            "taxonomy",
+            "vendor",
+            second_out.to_str().expect("the path is UTF-8"),
+            "--expect",
+            &second.digest,
+        ],
+    );
+
+    assert_eq!(
+        code,
+        Some(0),
+        "this reports and it does not refuse: {stderr}"
+    );
+    assert!(
+        stdout.contains("two sets of bytes"),
+        "the adopter was told nothing about the second artifact:\n{stdout}"
+    );
+    assert!(
+        stdout.contains(&format!("{}  {} files", first.digest, first.members.len())),
+        "the installed artifact is not named with its own member count:\n{stdout}"
+    );
+    assert!(
+        stdout.contains(&format!(
+            "{}  {} files",
+            second.digest,
+            second.members.len()
+        )),
+        "the arriving artifact is not named with its own member count:\n{stdout}"
+    );
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some(second.version.clone()),
+        "the report replaced the install rather than accompanying it"
+    );
+}
+
+/// The release record a publish wrote, read back off `--out`.
+fn record_at(out: &Path) -> headwater_resolve::release::Release {
+    headwater_resolve::release::read(
+        &std::fs::read_to_string(out.join("release.yml")).expect("the release reads"),
+    )
+    .expect("the published record reads")
+}
