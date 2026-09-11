@@ -11,4 +11,6 @@ body
   paragraph quoted×2 10:5(208)-11:1(248)
     quoted "A quote inside a quote is deeper still." 10:5(208)-10:44(247)
   paragraph 12:1(249)-13:1(307)
-    authored "Back to the author, who quotes \"a phrase\" inline as well." 12:1(249)-12:58(306)
+    authored "Back to the author, who quotes " 12:1(249)-12:32(280)
+    quoted "\"a phrase\"" 12:32(280)-12:42(290)
+    authored " inline as well." 12:42(290)-12:58(306)
