@@ -402,9 +402,12 @@ mod tests {
         assert!(!check.instantiates("note"));
     }
 
-    /// The fold spec 3's rule needs, and the arm that is neither.
+    /// The fold spec 3's rule needs, and the two arms that are neither live nor
+    /// terminal. They are separate because `headwater-generate` releases a
+    /// refused recording at the initial state and holds one whose role it
+    /// cannot read.
     #[test]
-    fn a_role_says_whether_a_state_is_live_or_terminal_and_a_draft_is_neither() {
+    fn a_role_says_whether_a_state_is_live_terminal_or_the_one_a_document_opens_at() {
         let facet = StateFacet::of(&shape());
         assert_eq!(facet.standing("current"), Standing::Live);
         assert_eq!(facet.standing("superseded"), Standing::Terminal);
@@ -432,6 +435,7 @@ mod tests {
         let facet = StateFacet::of(&Shape::read(&source).expect("a shape"));
         assert_eq!(facet.standing("ratified"), Standing::Live);
         assert_eq!(facet.standing("withdrawn"), Standing::Terminal);
+        assert_eq!(facet.standing("opened"), Standing::Initial);
         assert_eq!(facet.standing("current"), Standing::Neither);
     }
 
