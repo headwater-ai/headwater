@@ -214,6 +214,14 @@ senses_its_terminal 'conformance' "$engine conformance --root ."
 senses_its_terminal 'taxonomy audit' "$engine taxonomy audit --root ."
 senses_its_terminal 'probe plan' "$engine probe plan --root ."
 
+# The one this change wired, and the first surface on this page that renders below
+# `headwater-check`. `derived` composes its report in `headwater-census`, which
+# `headwater-check` depends on, so the palette could not reach it at all while the
+# primitives lived in `headwater-check`. It rendered zero escapes under a terminal
+# before the move, measured on the parent commit, and it needs no argument this
+# suite would have to invent: `derived --root .` reads the tree and writes nothing.
+senses_its_terminal 'derived' "$engine derived --root ."
+
 # The help family, which is four templates rather than one. The root screen is
 # written by `first_screen`, a verb page is `clap`'s own `{options}` renderer, a
 # verb with second words is `second_words`, and `headwater help <verb>` reaches
@@ -235,7 +243,9 @@ senses_its_terminal 'taxonomy --help' "$engine taxonomy --help"
 # and the fold is where a paint that ran too early shows up. `taxonomy audit`
 # folds at two call sites through `headwater_check::filled`, so it belongs here.
 # `probe plan` calls no fold, writes one line per fact and is absent for that
-# reason rather than by oversight.
+# reason rather than by oversight. `derived` is absent for the same reason and it
+# is now the second: `Population::render` reaches nothing in `headwater_check::fill`,
+# and `headwater-census` cannot depend on `headwater-check` to reach one.
 strips_to_the_plain_bytes 'taxonomy audit' "$engine taxonomy audit --root ."
 strips_to_the_plain_bytes 'infer' "$engine infer --owner 'a color fixture' --root ."
 strips_to_the_plain_bytes 'capture' "$engine capture --root ."
