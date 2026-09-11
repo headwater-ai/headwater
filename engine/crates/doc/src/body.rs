@@ -465,13 +465,12 @@ fn mark_inline_quotations(block: &mut Block) {
         }
         let chars: Vec<char> = run.text.chars().collect();
         let mut cut = 0usize;
-        let mut push = |out: &mut Vec<(usize, Run)>, from: usize, to: usize, quoted: bool| {
+        let push = |out: &mut Vec<(usize, Run)>, from: usize, to: usize, quoted: bool| {
             if from < to {
                 out.push((origin, sub_run(run, &chars, from, to, quoted)));
             }
         };
-        for index in 0..chars.len() {
-            let c = chars[index];
+        for (index, &c) in chars.iter().enumerate() {
             match open.as_mut() {
                 None if c == STRAIGHT || c == CURLY_OPEN => {
                     push(&mut out, cut, index, false);
