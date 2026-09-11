@@ -245,6 +245,25 @@ make_root() {
     cp -r "$corpus" "$at/docs"
 }
 
+# The label, written into the scratch copy of one page and never into the
+# tree. It goes at the top of the front-matter block, which moves every line
+# below it; nothing downstream reads a line number, for the reason the header
+# of this file gives. $1 = root, $2 = page, $3 = value.
+label_page() {
+    f="$1/$2"
+    if [ ! -f "$f" ]; then
+        fail "the page to label is there" "no $2 under the assembled root"
+        return 1
+    fi
+    if [ "$(sed -n '1p' "$f")" != "---" ]; then
+        fail "$2 opens with a front-matter block" \
+            "the label would land in the body and the page would carry no value"
+        return 1
+    fi
+    sed -i "1a $facet: $3" "$f"
+    pass "$2 carries $facet: $3 in the assembled root and nowhere else"
+}
+
 # One arm: resolve, then check with an injected clock. $1 = root, $2 = tag.
 run_arm() {
     (cd "$1" && "$engine" taxonomy resolve) > "$scratch/$2-resolve.out" 2>&1
@@ -372,11 +391,18 @@ judge "validate's last line names the package as valid" \
 (cd "$unlabeled" && "$engine" taxonomy resolve) > "$scratch/resolve.out" 2> "$scratch/resolve.err"
 judge "the composed selection resolves" 0 "$?"
 
+echo
+echo "case group 3 — the labels, injected into the scratch root"
 labeled="$scratch/labeled"
 make_root "$labeled" "$selection"
+label_page "$labeled" "$labeled_page" "$good_value"
+label_page "$labeled" "$planted_page" "$planted_value"
+judge "the sibling corpus in the tree carries no $facet line of its own" "" \
+    "$(grep -rl "^$facet:" "$root/$sibling" 2>/dev/null |
+        sed "s|^$root/||" | tr '\n' ' ' | sed 's/ *$//')"
 
 echo
-echo "case group 3 — the two arms, and the parser that reads them"
+echo "case group 4 — the two arms, and the parser that reads them"
 run_arm "$unlabeled" unlabeled
 run_arm "$labeled" labeled
 
@@ -405,7 +431,7 @@ judge "both arms walk the same census" "${u_files:-0}/${u_typed:-0}" "${l_files:
 judge "both arms instantiate the same number of checks" "${u_inst:-0}" "${l_inst:-0}"
 
 echo
-echo "case group 4 — the one finding the labels add"
+echo "case group 5 — the one finding the labels add"
 judge "the labeled arm carries exactly one more finding" \
     "$((${u_find:-0} + 1))" "${l_find:-0}"
 comm -13 "$scratch/unlabeled.pairs" "$scratch/labeled.pairs" > "$scratch/gained"
@@ -418,7 +444,7 @@ judge "what they gain is a facet value refusal against the planted page" \
     "$(tr '\t' ' ' < "$scratch/gained" | head -n 1 | sed 's/ *$//')"
 
 echo
-echo "case group 5 — what that finding says"
+echo "case group 6 — what that finding says"
 finding_block "$scratch/labeled.out" "$planted_page" facet.value.not_permitted \
     > "$scratch/gained.block"
 if [ ! -s "$scratch/gained.block" ]; then
@@ -443,7 +469,7 @@ else
 fi
 
 echo
-echo "case group 6 — the correctly labeled page stays silent"
+echo "case group 7 — the correctly labeled page stays silent"
 grep "^$labeled_page	" "$scratch/unlabeled.pairs" > "$scratch/labeled-page.before" || true
 grep "^$labeled_page	" "$scratch/labeled.pairs" > "$scratch/labeled-page.after" || true
 judge "an admitted value adds no finding to the page that carries it" "" \
@@ -455,7 +481,11 @@ while IFS="$(printf '\t')" read -r p r; do
     finding_block "$scratch/labeled.out" "$p" "$r" > "$scratch/page.block"
     grep -q "$facet" "$scratch/page.block" && said="$said $r"
 done < "$scratch/labeled-page.after"
-judge "no finding against that page names $facet" "" "$(echo "$said" | sed 's/^ *//')"
+# The count is in the name because this case passes over an empty population
+# too, and a page that reported nothing at all would read the same as a page
+# that reported and never named the facet.
+judge "no finding against that page names $facet ($(grep -c . "$scratch/labeled-page.after" || true) read on it)" \
+    "" "$(echo "$said" | sed 's/^ *//')"
 
 echo
 echo "the run record, recorded and not asserted"
