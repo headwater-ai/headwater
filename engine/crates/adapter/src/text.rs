@@ -53,7 +53,7 @@
 //! this format by cutting it into blocks and asking each one for the location
 //! it opens on.
 
-use crate::{Carrier, Loss, Subject};
+use crate::{held_by, reported, Carrier, Loss, Subject};
 use headwater_census::census::{Census, Detail as CensusDetail};
 use headwater_check::paint::{paint, ColorMode, Role};
 use headwater_check::{fill, Run};
@@ -143,11 +143,54 @@ pub fn render_at(
         &indent(&run.render(headwater_check::Detail::Findings, mode)),
         width,
     ));
+    // The escaped findings, each marked with what holds it. Spec 6: "A
+    // suppressed finding is in the output, and it is marked. A live finding, a
+    // `migration-pending` finding and a suppressed one are three different
+    // things." They go after the checks block and before the read set, which is
+    // inside the region every reader of this report cuts records out of, and
+    // under a heading of their own, which is what keeps them from reading as
+    // declared debt reported a second time as a regression.
+    let escaped = not_reported(run, mode);
+    if !escaped.is_empty() {
+        out.push_str(&format!(
+            "\n{}\n",
+            paint(Role::Heading, "not reported", mode)
+        ));
+        out.push_str(&fill::filled(&indent(&escaped), width));
+    }
     // The same bytes `check --read-set` writes to a file, so a gate reading the
     // file and a reader of this report are looking at one artifact. Not laid
     // out, for that reason — see the module comment.
     out.push_str(&format!("\n{}\n", paint(Role::Heading, "read set", mode)));
     out.push_str(&indent(&run.read_set.render()));
+    out
+}
+
+/// The findings a reader does not see among the findings, one record each.
+///
+/// The grain is the live finding's grain — `Finding::render` writes the same
+/// three lines here as it writes above — with a fourth line naming the escape
+/// class and the sentence `held_by` writes for SARIF's `justification`. Same
+/// grain, because `crate::census` cuts this report into blocks and reads each
+/// one for a path and a rule, so a record written in some smaller shape would
+/// be a finding the audit reports as dropped.
+///
+/// Empty when nothing escaped, and then the heading above it is not written
+/// either. The counts are stated regardless, in the census block's `escaped
+/// findings` line and in the adoption and suppression blocks, so a corpus that
+/// escapes nothing still says so. That is the same zero case `HW-OBL-0152`
+/// holds open against `Ledger::render`, and this does not close it.
+fn not_reported(run: &Run, mode: ColorMode) -> String {
+    let mut out = String::new();
+    for entry in reported(run) {
+        let Some(escape) = entry.escape else { continue };
+        out.push_str(&entry.finding.render(mode));
+        out.push_str(&format!(
+            "  not reported ({}): {}\n",
+            escape.name(),
+            held_by(&entry, escape)
+        ));
+    }
     out
 }
 

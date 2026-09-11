@@ -490,7 +490,10 @@ fn message(entry: &Reported<'_>) -> Json {
     let finding = entry.finding;
     let mut markdown = format!("{}\n\n**Fix:** {}", finding.message, finding.remediation);
     if let Some(escape) = entry.escape {
-        markdown.push_str(&format!("\n\n_Not reported: {}._", held_by(entry, escape)));
+        markdown.push_str(&format!(
+            "\n\n_Not reported: {}._",
+            crate::held_by(entry, escape)
+        ));
     }
     Json::object([
         ("text", Json::string(finding.message.clone())),
@@ -520,37 +523,6 @@ fn location(finding: &headwater_check::Finding) -> Json {
     Json::object([("physicalLocation", physical)])
 }
 
-/// Why this finding is not among the ones a reader sees.
-fn held_by(entry: &Reported<'_>, escape: Escape) -> String {
-    match escape {
-        Escape::MigrationPending => match entry.task {
-            Some(task) => format!(
-                "held by the adoption task {}, owned by {}, until {}",
-                task.id,
-                task.owner,
-                task.until.render()
-            ),
-            None => "held by the adoption payload".to_string(),
-        },
-        Escape::Suppression => match entry.directive {
-            Some(directive) => {
-                let note = match directive.note.is_empty() {
-                    true => String::new(),
-                    false => format!(" ({})", directive.note),
-                };
-                format!(
-                    "suppressed at {}:{} as {}, until {}{note}",
-                    directive.path,
-                    directive.line,
-                    directive.reason.name(),
-                    directive.until.render()
-                )
-            }
-            None => "suppressed by a directive".to_string(),
-        },
-    }
-}
-
 /// One SARIF suppression.
 ///
 /// `status` is `accepted` in both classes, and it is a statement about the
@@ -562,7 +534,7 @@ fn suppression(entry: &Reported<'_>, escape: Escape) -> Json {
     Json::object([
         ("kind", Json::string(kind(escape))),
         ("status", Json::string("accepted")),
-        ("justification", Json::string(held_by(entry, escape))),
+        ("justification", Json::string(crate::held_by(entry, escape))),
         (
             "properties",
             Json::object([(

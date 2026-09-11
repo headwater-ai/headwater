@@ -553,6 +553,30 @@ checks
       `disposition: {gap: {owner: …}}` or `disposition: {unverifiable:
       {reasoning: …}}` on it, and exactly one of the three
 
+not reported
+  check/evaluations/delta.md:8:7 ✗ error
+    relation.reciprocity.missing (OB-FIX-1): `EVAL-FIX-delta` declares
+      `cited_by: SPEC-FIX-cited-only`, and `cites_evidence` requires both ends,
+      so check/spec/02-cited-only.md owes `cites_evidence`
+    fix (mechanical): add `cites_evidence: EVAL-FIX-delta` under `relations:` in
+      check/spec/02-cited-only.md
+    not reported (migration-pending): held by the adoption task AD-1, owned by
+      the fixture tree, until 2027-01-01
+  check/spec/10-suppressed.md:17:1 ▲ warn
+    voice.forbidden_construction (OB-FIX-7): `declarative` forbids
+      future_intent, and this sentence writes `will be`
+    fix: state what the system does now, or move the sentence to a document
+      whose kind narrates
+    not reported (suppression): suppressed at check/spec/10-suppressed.md:15 as
+      accepted_deviation, until 2030-01-01 (this fixture states a plan on
+      purpose)
+  check/spec/10-suppressed.md:21:1 ▲ warn
+    language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
+      a sentence, and this one has 33
+    fix: split the sentence, or move a clause into its own sentence
+    not reported (suppression): suppressed at check/spec/10-suppressed.md:21 as
+      false_positive, until 2030-01-01 (the length is the fixture)
+
 read set
   lock 9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0
   clock 2026-08-12
