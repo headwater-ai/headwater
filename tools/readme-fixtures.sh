@@ -1051,11 +1051,24 @@ vendor_operand_of() {
 # release_digest_of FILE — the `release.digest` field of a release record. That
 # is the one value the GitHub release page states, and it is the value the page
 # tells a reader to paste.
+#
+# THE TWO SPACES IN THE PATTERN ARE THE WHOLE CORRECTNESS OF THIS FUNCTION.
+# Every MEMBER of the artifact carries a `digest:` key too, at deeper
+# indentation, and an unanchored match on the key name takes the first one it
+# reaches. A record whose top-level `release.digest` is missing then yields a
+# member's digest instead of nothing, which is a value `headwater taxonomy
+# vendor` refuses — so a judge fed from here would report that a page quoting
+# that member is fine while a reader following the page is turned away. That is
+# the exact class of failure #775 exists to remove, and the cases below plant a
+# record with no top-level digest and require the empty string.
+#
+# `.github/workflows/release.yml` reads the same field with the same anchor, for
+# the same reason, and its own arm plants the same record.
 release_digest_of() {
     awk '
         /^release:/ { block = 1; next }
         /^[^ \t#]/ { block = 0 }
-        block && $1 == "digest:" { print $2; exit }
+        block && /^  digest:/ { print $2; exit }
     ' "$1"
 }
 
@@ -1098,9 +1111,18 @@ release_tags_in() {
 # the whole point: a digest read from the checkout a reader is verifying
 # authenticates the pin and never the publisher (HW-OBL-0115).
 digest_of_tag() {
-    if git_show_tag_release "$1" >"$scratch/tag-release.yml" 2>/dev/null; then
+    if tag_record_readable "$1"; then
         release_digest_of "$scratch/tag-release.yml"
     fi
+}
+
+# tag_record_readable TAG — writes the record at TAG to the scratch file and
+# answers whether it could be read at all. The judge needs this apart from the
+# digest, because an absent TAG and a record stating no top-level digest are two
+# different findings with two different remedies, and one empty string cannot
+# say which happened.
+tag_record_readable() {
+    git_show_tag_release "$1" >"$scratch/tag-release.yml" 2>/dev/null
 }
 
 # git_show_tag_release TAG — one `git show`, kept in its own function so that
@@ -1140,9 +1162,15 @@ digest_route_judge() {
     for drj_tag in $drj_tags; do
         case $drj_tag in
             taxonomy/*)
-                drj_want=$(digest_of_tag "$drj_tag")
-                if [ -z "$drj_want" ]; then
+                if tag_record_readable "$drj_tag"; then
+                    drj_want=$(release_digest_of "$scratch/tag-release.yml")
+                else
+                    drj_want=
+                fi
+                if ! tag_record_readable "$drj_tag"; then
                     drj_sentence="$drj_sentence; the tag $drj_tag is not in this clone, so the digest it publishes cannot be read. Fetch it, or set \`fetch-tags: true\` on the checkout"
+                elif [ -z "$drj_want" ]; then
+                    drj_sentence="$drj_sentence; the record at $drj_tag states no top-level \`release.digest\`, so nothing there can authorize the literal this paragraph quotes"
                 elif ! printf '%s' "$drj_para" | grep -q -- "$drj_want"; then
                     drj_sentence="$drj_sentence; the paragraph links the release page for $drj_tag and does not state that tag's digest $drj_want beside it"
                 fi
@@ -1724,7 +1752,44 @@ same "the digest paragraph's route to a digest is self-consistent" ok \
 #        paragraph and requires the verdict to name which way the route went
 #        wrong, so a judge that stopped working cannot be told from a page that
 #        is right by reading the case name alone.
+
+#        THE ARM THE VERIFIER OF #775 FOUND MISSING, and the defect it holds is
+#        in the extractor every route above ends in rather than in a judge. A
+#        release record carries a top-level `release.digest` AND one `digest:`
+#        per member, at deeper indentation. An extractor matching the key name
+#        alone takes whichever comes first, so a record with no top-level digest
+#        yields a MEMBER's digest — a value `headwater taxonomy vendor` refuses.
+#        Fed into 6i that produced the one verdict this issue exists to make
+#        impossible: `ok` for a page quoting a value a reader would be turned
+#        away with, and that same member value printed as the authority in the
+#        refusal arm. The anchor is the fix, and these two arms are what keep it.
 mkdir -p "$scratch/digest"
+printf '%s\n' \
+    'release:' \
+    '  name: headwater/standard' \
+    '  version: 4.2.0' \
+    '  members:' \
+    '    - path: taxonomy.yml' \
+    '      digest: sha256:0000000000000000000000000000000000000000000000000000000000000001' \
+    '    - path: overlay.yml' \
+    '      digest: sha256:0000000000000000000000000000000000000000000000000000000000000002' \
+    >"$scratch/digest/no-top-level.yml"
+same "  a release record stating no top-level digest yields no digest, never a member's" \
+    "" "$(release_digest_of "$scratch/digest/no-top-level.yml")"
+
+printf '%s\n' \
+    'release:' \
+    '  name: headwater/standard' \
+    '  version: 4.2.0' \
+    '  digest: sha256:000000000000000000000000000000000000000000000000000000000000000a' \
+    '  members:' \
+    '    - path: taxonomy.yml' \
+    '      digest: sha256:0000000000000000000000000000000000000000000000000000000000000001' \
+    >"$scratch/digest/top-level-first.yml"
+same "  and a record that states one yields that one and not the member below it" \
+    "sha256:000000000000000000000000000000000000000000000000000000000000000a" \
+    "$(release_digest_of "$scratch/digest/top-level-first.yml")"
+
 tax_release_tag=$(release_tags_in "$(digest_paragraph_of "$readme")" | grep '^taxonomy/' | head -1)
 
 printf '%s\n' 'Nothing here names the field.' '' 'Nor here.' >"$scratch/digest/no-paragraph.md"
