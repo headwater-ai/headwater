@@ -357,7 +357,10 @@ definitions:
     members:
       id: {scalar: string, required: true}
       relation: {scalar: string, required: true}
-      to_kind: {scalar: string, required: true}
+      # Optional. An expectation that names no target kind is satisfied by any
+      # kind the relation admits at its target end, which spec 2 states and
+      # `Participation::satisfied` has always implemented (HW-OBL-0039).
+      to_kind: {scalar: string}
       when: {map: {scalar: string}}
       within: {scalar: duration, required: true}
       since: {enum: [created, state_entered], required: true}
