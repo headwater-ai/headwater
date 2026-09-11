@@ -937,3 +937,95 @@ fn promoting_a_refused_transcript_turns_a_green_run_red() {
         "the remedy for a promoted refusal names the transcript and the recording: {remedy}"
     );
 }
+
+/// The note that links the result, which is the reader a refusal has.
+const CITING: &str = "runs/notes/citing.md";
+
+/// The note that links nothing, which is the file the list may not name.
+const UNRELATED: &str = "runs/notes/scratch.md";
+
+/// A refusal a role released is still reported to every document that reads it.
+///
+/// [HW-DR-0062](../../../../docs/decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md)
+/// releases the gate where the state a recording stands in says that no reader
+/// relies on it. A document that links the recording, or the result derived
+/// from it, is a reader the state of the recording knows nothing about. That is
+/// the case this corpus met on `0149a92c`: a transcript moved to `deprecated`,
+/// the run went green, and two obligation records went on stating a rate the
+/// result does not carry.
+///
+/// So the run reports the readers and fails on none of them, which is the
+/// posture the ruling takes for a released refusal. The list goes into the
+/// result as well as into the run, because a reader of a committed result is
+/// not the person who ran the verb, and `generate --check` then holds the list
+/// to the corpus: a document that starts citing a refused result moves these
+/// bytes and stops a merge.
+///
+/// The fixture note links the result and the transcript, so one reader is named
+/// once rather than twice. The unrelated note links neither, and a list that
+/// named it would be a list of the corpus rather than of the readers.
+#[test]
+fn a_released_refusal_names_every_document_that_reads_it() {
+    let (at, report) = refused_at("refused-with-a-reader", "deprecated");
+    let refused = only_refusal(&report);
+    assert!(
+        !refused.held,
+        "a `terminal-` role releases the refusal, and this case is about what it still reports"
+    );
+    assert_eq!(
+        refused.readers,
+        vec![CITING.to_string()],
+        "the run names the documents that read a refused recording, once each"
+    );
+
+    let printed = report.render(ColorMode::Plain);
+    assert!(
+        printed.contains(CITING),
+        "the run reports the reader where a reader of the run meets it:\n{printed}"
+    );
+    assert!(
+        !printed.contains(UNRELATED),
+        "the run named a document that links neither the transcript nor its result:\n{printed}"
+    );
+
+    let written = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    assert!(
+        written.contains(CITING),
+        "the result a refused transcript wrote does not name the document that reads it:\n\
+         {written}"
+    );
+    assert!(
+        !written.contains(UNRELATED),
+        "the result named a document that links neither it nor its transcript:\n{written}"
+    );
+}
+
+/// A refused recording that nothing reads says so, rather than printing an
+/// empty list a reader has to interpret.
+///
+/// The two directions matter together. A list that is always empty and a list
+/// that always names something are both useless, and both look the same from a
+/// green run. This is the corpus the case above would be wrong about.
+#[test]
+fn a_refused_recording_with_no_reader_says_that_nothing_reads_it() {
+    let at = copied("refused-with-no-reader");
+    std::fs::remove_file(at.join(CITING)).expect("the citing note is removed");
+    edit(
+        &at,
+        TRANSCRIPT,
+        "lock: sha256:fixture",
+        "lock: sha256:another-taxonomy",
+    );
+    edit(&at, TRANSCRIPT, "status: current", "status: deprecated");
+    let report = write(&at, &plan_over(&at));
+
+    assert!(
+        only_refusal(&report).readers.is_empty(),
+        "a corpus whose only reader was removed still reported one"
+    );
+    let written = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    assert!(
+        written.contains("No document of this corpus"),
+        "the result of a refusal nothing reads does not say that nothing reads it:\n{written}"
+    );
+}

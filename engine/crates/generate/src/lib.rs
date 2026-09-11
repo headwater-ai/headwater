@@ -618,6 +618,23 @@ pub struct RefusedTranscript {
     /// `headwater_generate::probe_result::claims_reliance` is where the
     /// taxonomy answers it.
     pub held: bool,
+    /// Every document of this corpus that links the transcript or the result,
+    /// in path order, once each.
+    ///
+    /// **A state releases a refusal and says nothing about who reads the
+    /// recording.** `0149a92c` retired a refused transcript to a state whose
+    /// role is terminal, the run went green, and two obligation records went on
+    /// stating a rate the result does not carry. The state of the recording is
+    /// the wrong place to look for that, because the documents that read it are
+    /// not the document that declares the state.
+    ///
+    /// So this list is reported and it fails nothing, which is
+    /// [HW-DR-0062](../../../../docs/decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md)'s
+    /// posture one hop out: the corpus names where a reader would meet a
+    /// measurement that does not exist, and a person decides what each sentence
+    /// should now say. `headwater_generate::probe_result::readers` is where the
+    /// set is taken, off the links the graph build already bound.
+    pub readers: Vec<String>,
 }
 
 impl RefusedTranscript {
@@ -633,9 +650,34 @@ impl RefusedTranscript {
         };
         format!(
             "{} refused it: {}. The result at `{}` therefore carries no verdict, and any rate \
-             taken off it is a rate over none. {posture}",
-            self.confirmation, self.why, self.output
+             taken off it is a rate over none. {posture}. {}",
+            self.confirmation,
+            self.why,
+            self.output,
+            self.read_by()
         )
+    }
+
+    /// What the run says about the documents that read this recording.
+    ///
+    /// Both directions are printed, because a list that is empty says
+    /// something: it is the one reading under which a refusal costs the corpus
+    /// nothing but the recording itself.
+    pub fn read_by(&self) -> String {
+        match self.readers.as_slice() {
+            [] => "No document of this corpus links the transcript or the result, so no sentence \
+                   of this corpus rests on it"
+                .to_string(),
+            readers => format!(
+                "{} of this corpus link the transcript or the result, and each one is where a \
+                 reader meets a measurement that does not exist: {}",
+                match readers.len() {
+                    1 => "1 document".to_string(),
+                    many => format!("{many} documents"),
+                },
+                readers.join(", ")
+            ),
+        }
     }
 }
 
