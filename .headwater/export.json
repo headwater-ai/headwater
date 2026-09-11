@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 416,
-      "carried": 416,
+      "in the graph": 417,
+      "carried": 417,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -7696,6 +7696,21 @@
           "last_verified": "2026-09-09",
           "tier": "regression",
           "arm": "present"
+        }
+      },
+      {
+        "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-11.md",
+        "kind": "probe_transcript",
+        "id": "HW-RUN-regression-probe-transcript-for-2026-09-11",
+        "facets": {
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-11",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Four regression sessions ran against the lock of this tree, and the recorder observed every tool call each one made.",
+          "last_verified": "2026-09-11",
+          "tier": "regression",
+          "arm": "present",
+          "title": "Regression probe transcript for 2026-09-11"
         }
       },
       {
