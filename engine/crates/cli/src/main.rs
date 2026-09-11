@@ -4662,7 +4662,6 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
 /// It walks no corpus and it resolves no taxonomy. That is the whole economy of
 /// the artifact: the answer costs one hash per listed input, and it costs no
 /// run. It is also the limit of the answer, which the report states every time.
-
 fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>, json: bool) -> ExitCode {
     let Some(path) = read_set else {
         return fail(
