@@ -2,7 +2,7 @@
 
 # Obligation records
 
-192 documents on this shelf, in the reading order this corpus derives.
+195 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and the largest reading is 36 findings against a sample bar of 50.
@@ -196,3 +196,6 @@
 - [A voice regime carries a forbid list, so a normative keyword rule has no form](0190-a-voice-regime-carries-a-forbid-list-so-a-normative-keyword-rule-has-no-form.md) — A voice regime carries a forbid list and nothing else, so a rule that every requirement uses a normative keyword has no declarable form. (asserted, and no human has accepted it)
 - [An unknown discriminator value removes a document from every check and no gate reports it](0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md) — A document whose discriminator value names no kind leaves every check, the census still carries the row, and a strict run exits 0. (asserted, and no human has accepted it)
 - [Assumptions that a library entry takes where the specification does not speak](0192-assumptions-that-a-library-entry-takes-where-the-specification-does-not-speak.md) — A shelf layout, a stable volatility, an identifier scheme with no namespace and an expectation window are readings that no document covers. (asserted, and no human has accepted it)
+- [Admission criterion 5 has no reading for an entry that serves neither core purpose](0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md) — Criterion 5 escapes only a facet-only overlay, so a full entry with a third reader intent has no reading of it. (asserted, and no human has accepted it)
+- [The base ships one voice regime and a prospective document has none](0194-the-base-ships-one-voice-regime-and-a-prospective-document-has-none.md) — The base carries `voice.declarative` alone, and it forbids `future_intent`, so a corpus of requirements on the bare base reports its own tradition. (asserted, and no human has accepted it)
+- [A requirement has no identity, so a descoped requirement has no form](0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md) — A descoped requirement is a state of one line inside a document, and a line has no identity here. (asserted, and no human has accepted it)

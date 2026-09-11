@@ -307,6 +307,9 @@ nav:
       - "A voice regime carries a forbid list, so a normative keyword rule has no form": "obligations/0190-a-voice-regime-carries-a-forbid-list-so-a-normative-keyword-rule-has-no-form.md"
       - "An unknown discriminator value removes a document from every check and no gate reports it": "obligations/0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md"
       - "Assumptions that a library entry takes where the specification does not speak": "obligations/0192-assumptions-that-a-library-entry-takes-where-the-specification-does-not-speak.md"
+      - "Admission criterion 5 has no reading for an entry that serves neither core purpose": "obligations/0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md"
+      - "The base ships one voice regime and a prospective document has none": "obligations/0194-the-base-ships-one-voice-regime-and-a-prospective-document-has-none.md"
+      - "A requirement has no identity, so a descoped requirement has no form": "obligations/0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"

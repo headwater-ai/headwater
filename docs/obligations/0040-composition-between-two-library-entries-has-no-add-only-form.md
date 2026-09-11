@@ -30,6 +30,8 @@ The [decision-record entry](../taxonomies/decision-record/doctrine.md) is the se
 
 The remedies are a rename, which puts two names on one reader intent, or a dependency. The entry declares `requires: [design-spec]` for one line, and a team that keeps only decision records inherits six kinds of a tradition it does not use.
 
+**The second instance refused the dependency rather than paid it.** The [`brd-prd` entry](../taxonomies/brd-prd/doctrine.md#findings) wants an edge from `prd` to `functional_spec`. The natural spelling adds `prd` to the `relations.realizes` endpoint list that the `standards-spec` entry declared, and that is not an `add`. The alternative is a new relation and `requires: [standards-spec]`. That dependency buys three kinds, a purpose, a facet and two relations. It also buys two shelves, three identifier schemes and three obligations, for one edge. The entry refused it, so the pipeline that both entries describe is declared by neither of them. The third finding at [line 167](https://github.com/headwater-ai/headwater/blob/5fb9518/docs/taxonomies/brd-prd/doctrine.md#L167) holds the argument.
+
 The two other cases are lists rather than addresses. An endpoint list of concrete kinds closes a relation to a later kind, so no kind of the second entry cites evidence at all. A kind's list of required facets closes the same way.
 
 ## Discharge
