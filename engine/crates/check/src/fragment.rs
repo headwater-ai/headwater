@@ -109,14 +109,15 @@ pub struct Fragments;
 
 impl CorpusCheck for Fragments {
     const RULE: &'static str = self::RULE;
-    /// The third edition, and this one widened what the rule reads rather than
-    /// changing an answer. A warm cache holding an edition-2 verdict holds a
-    /// verdict about same-document fragments alone, and it would serve that
-    /// forever over a corpus whose cross-document fragments were never
-    /// examined. The second edition renumbered a repeated heading; the first
-    /// counted every earlier anchor that began with its slug and a hyphen,
-    /// which is not what a renderer does.
-    const VERSION: u32 = 3;
+    /// The fourth edition, and this one stopped case folding the citation, so
+    /// it reports links that every earlier edition passed. A warm cache holding
+    /// an edition-3 verdict holds a verdict reached by a wider comparison, and
+    /// it would serve that pass forever over the citations this edition reads
+    /// as dead. The third edition widened the rule to cross-document
+    /// fragments; the second renumbered a repeated heading; the first counted
+    /// every earlier anchor that began with its slug and a hyphen, which is not
+    /// what a renderer does.
+    const VERSION: u32 = 4;
     const NEEDS_LINKS: bool = true;
     const NEEDS_ANCHORS: bool = true;
 
@@ -259,8 +260,14 @@ impl Anchors {
             .by_path
             .binary_search_by(|(known, _)| known.as_str().cmp(path))
             .ok()?;
-        let wanted = fragment.to_lowercase();
-        Some(self.by_path[at].1.contains(&wanted))
+        // Exactly, and not folded. [`anchors`] folds the *heading text*
+        // because GitHub's slugger does, and the result is the identifier a
+        // browser is handed. The citation is then matched against it byte for
+        // byte, because "find a potential indicated element" matches an `id`
+        // exactly and falls back to an `a` element's `name` exactly. Folding
+        // here failed open in one direction: a dead link passed, and no live
+        // link was ever reported. The case table carries what Chrome did.
+        Some(self.by_path[at].1.iter().any(|it| it == fragment))
     }
 }
 
@@ -607,7 +614,7 @@ mod comment_links {
                 }
                 let Some(fragment) = fragment else { continue };
                 if resolved.extension().is_some_and(|e| e == "md")
-                    && !anchors_of(&resolved).contains(&fragment.to_lowercase())
+                    && !anchors_of(&resolved).iter().any(|it| it == fragment)
                 {
                     out.push(format!("{where_}: no such heading: {}", link.destination));
                 }
