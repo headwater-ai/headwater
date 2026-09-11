@@ -733,13 +733,9 @@ mod comment_links {
         let found = broken(&dir, &dir);
         std::fs::remove_dir_all(&dir).ok();
 
-        assert_eq!(
-            found,
-            [
-                "engine/crates/check/src/sample.rs:2: no such heading: \
-                 ../../../../docs/spec/02-taxonomy-model.md#The-Heading-That-Is-Here",
-            ]
-        );
+        let expected = "engine/crates/check/src/sample.rs:2: no such heading: \
+                        ../../../../docs/spec/02-taxonomy-model.md#The-Heading-That-Is-Here";
+        assert_eq!(found, [expected]);
     }
 
     /// The whole chain, against a tree written here, one link of each class.
