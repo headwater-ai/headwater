@@ -37,6 +37,14 @@
 //! written, and nothing reads git, so the first run and every run after it
 //! write one answer.
 //!
+//! **That claim is held by two filters rather than by the shape of the corpus.**
+//! A generated file that declares an identity is a node of the census, so a
+//! projection whose output sits on the shelf it reads finds its own last version
+//! among the documents it folds. [`incoming`] refuses the output path and so
+//! does [`documents`], and without the second one a committed date would be its
+//! own answer on every later run. Neither declaration in this repository reaches
+//! that shape, which is why a fixture taxonomy has to build it.
+//!
 //! # The roles, and never the facet names
 //!
 //! `title` means something in one taxonomy and nothing in the next, which is
@@ -126,7 +134,7 @@ pub(crate) fn members(
     let state = role_of(STATE);
     let entered = role_of(STATE_ENTERED);
     let freshness = role_of(FRESHNESS);
-    let sources = documents(surface, composed);
+    let sources = documents(surface, composed, output);
 
     let mut out = Vec::new();
     for facet in shape.required_facets(kind) {
@@ -162,10 +170,27 @@ pub(crate) fn members(
 /// A path the census holds no row for contributes nothing. That is a projection
 /// reading a file outside the corpus root, and such a file carries no facet of
 /// this taxonomy to fold.
-fn documents<'a>(surface: &Surface<'a>, composed: &Composed<'_>) -> Vec<Document<'a>> {
+///
+/// **The output is never one of them**, which is the same refusal [`incoming`]
+/// makes and for the same reason. A generated file that declares an identity is
+/// a node of the census
+/// ([`headwater_census::census::Outcome::node`]), so a projection whose output
+/// sits on the shelf it reads finds its own last version in the set. A fold over
+/// that set is a function of its own previous answer: [`stalest_of`] takes a
+/// minimum, so a committed date no source supports stays the minimum on every
+/// later run, and `generate --check` holds it because the emitter agrees with
+/// itself. Neither declaration in this repository reaches that shape, and this
+/// filter is what keeps the claim in the module comment true of the module
+/// rather than true only of its present callers.
+fn documents<'a>(
+    surface: &Surface<'a>,
+    composed: &Composed<'_>,
+    output: &str,
+) -> Vec<Document<'a>> {
     surface
         .documents()
         .into_iter()
+        .filter(|document| document.path != output)
         .filter(|document| composed.sources.contains(&document.path))
         .collect()
 }
