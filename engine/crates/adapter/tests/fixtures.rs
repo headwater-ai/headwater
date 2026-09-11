@@ -1618,8 +1618,7 @@ fn the_text_report_writes_a_record_for_an_escaped_finding() {
                 block.contains(&at) && block.contains(entry.finding.rule)
             })
             .unwrap_or_else(|| panic!("a cuttable record for {} at {at}", entry.finding.rule));
-        let after =
-            headwater_adapter::census(&ran.run, Format::Text, &without(&artifact, &[cut]));
+        let after = headwater_adapter::census(&ran.run, Format::Text, &without(&artifact, &[cut]));
         assert_eq!(
             (after.carried, after.unaccounted.len()),
             (after.findings - 1, 1),
@@ -2239,10 +2238,15 @@ fn without(artifact: &str, cut: &[(usize, usize)]) -> String {
 
 /// One `(rule, path)` pair that at least two live findings of the run share.
 ///
-/// Live, because the text report writes a block for a live finding alone, and a
-/// pair this suite drops has to be one every format wrote twice. The recorded
-/// corpus supplies four `obligation.disposition.not_one` findings on the
-/// taxonomy fixture, and this reads the pair off the run rather than naming it.
+/// Live, and no longer because the text report writes a live block alone —
+/// `#651` ended that, and every format now writes a record for every reported
+/// finding. The filter stays for the reason the probes below need: a pair this
+/// suite drops has to leave a sibling record behind in every format, so that a
+/// reader asking whether the rule and the path appear anywhere still passes and
+/// only a per-record reader fails. Restricting the pair to the live set is what
+/// guarantees that sibling. The recorded corpus supplies four
+/// `obligation.disposition.not_one` findings on the taxonomy fixture, and this
+/// reads the pair off the run rather than naming it.
 fn a_repeated_pair(ran: &Ran) -> (&'static str, String) {
     let live: Vec<(&'static str, String)> = reported(&ran.run)
         .iter()

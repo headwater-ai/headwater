@@ -490,7 +490,10 @@ fn message(entry: &Reported<'_>) -> Json {
     let finding = entry.finding;
     let mut markdown = format!("{}\n\n**Fix:** {}", finding.message, finding.remediation);
     if let Some(escape) = entry.escape {
-        markdown.push_str(&format!("\n\n_Not reported: {}._", crate::held_by(entry, escape)));
+        markdown.push_str(&format!(
+            "\n\n_Not reported: {}._",
+            crate::held_by(entry, escape)
+        ));
     }
     Json::object([
         ("text", Json::string(finding.message.clone())),
