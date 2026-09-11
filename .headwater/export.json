@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 422,
-      "carried": 422,
+      "in the graph": 423,
+      "carried": 423,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -3915,7 +3915,7 @@
           "status": "current",
           "status_since": "2026-08-13",
           "waiting_on": "ruling",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-09-11",
           "summary": "The first library entry to claim an address owns it, so a second entry cannot reuse the vocabulary that both traditions need.",
           "provenance": {
             "warrant": "accepted",
@@ -7726,6 +7726,28 @@
           "summary": "An entry the canonical library refuses is required by two entries it admits, and no criterion and no ruling reads that direction",
           "last_verified": "2026-09-11",
           "title": "Whether an admitted library entry may require a bundle that admission refuses",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0186-a-facet-only-entry-has-no-kind-and-the-entry-anatomy-asks-for-two-things-that-presume-one.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0186",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0186",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A facet-only library entry declares no concrete kind, so the worked corpus and the templates slot that the anatomy asks of every entry have no stated content.",
+          "last_verified": "2026-09-11",
+          "title": "A facet-only entry has no kind, and the entry anatomy asks for two things that presume one",
           "waiting_on": "ruling",
           "provenance": {
             "warrant": "asserted",

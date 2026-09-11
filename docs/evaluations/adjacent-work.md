@@ -1001,7 +1001,7 @@ Read against the register, the mapping is exact and it explains the order in whi
 
 ### S.7 Four documentation modes, found here before they were consulted
 
-Diátaxis names four kinds of documentation on two axes, practical against theoretical and specific against general, which yield tutorials, how-to guides, reference and explanation. Its claim is that content, style and organization all follow from a separation of the four.
+Diátaxis names four kinds of documentation on two axes, practical against theoretical and at work against at study, which yield tutorials, how-to guides, reference and explanation. Its claim is that content, style and organization all follow from a separation of the four.
 
 This reaches [Q16](../spec/09-decisions.md#q16--public-presence) through [principle 8](../spec/00-vision-and-scope.md#design-principles) rather than as advice. A site generated from the corpus has sections that are shelves, and page types that are kinds. So the four modes are a candidate kind set for a documentation-site bundle. The [first-run walkthrough](default-taxonomy-first-run.md#five-first-runs) reached one half of that split independently, and against this repository. The specification documents state a model and argue for it in one file, while `docs/evaluations/` already carries the argument. That is reference against explanation, found by measurement before anybody read the framework.
 

@@ -2,7 +2,7 @@
 
 # Obligation records
 
-185 documents on this shelf, in the reading order this corpus derives.
+186 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and the largest reading is 36 findings against a sample bar of 50.
@@ -189,3 +189,4 @@
 - [No mechanism holds a committed binary asset against a run](0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md) — Every figure check of this repository reads text. A number frozen inside a committed GIF or cast is held by nothing, and the recording bars of #601 stay open. (asserted, and no human has accepted it)
 - [Nothing states why the vendored package root is visible in an adopter tree](0184-nothing-states-why-the-vendored-package-root-is-visible-in-an-adopter-tree.md) — Issue #381 ruled where doctrine lands inside a package and gave three reasons, none about visibility. Whether the package root itself moves under `.headwater/` is open, and the first outside adopter is the measurement that settles it. (asserted, and no human has accepted it)
 - [Whether an admitted library entry may require a bundle that admission refuses](0185-whether-an-admitted-library-entry-may-require-a-bundle-that-admission-refuses.md) — An entry the canonical library refuses is required by two entries it admits, and no criterion and no ruling reads that direction (asserted, and no human has accepted it)
+- [A facet-only entry has no kind, and the entry anatomy asks for two things that presume one](0186-a-facet-only-entry-has-no-kind-and-the-entry-anatomy-asks-for-two-things-that-presume-one.md) — A facet-only library entry declares no concrete kind, so the worked corpus and the templates slot that the anatomy asks of every entry have no stated content. (asserted, and no human has accepted it)
