@@ -40,7 +40,7 @@ This file began as a list of decisions that the design phase deferred, with the 
 
 **This file is now an index, and it stopped being the place a decision lives.** Each decision is a document on [the decisions shelf](../decisions/README.md), of the base `decision` kind, and it carries the argument that settled it. Every one of the twenty-one is `current`, with a `status_since` of 2026-08-11. The evidence for each closure lives beside it in [`docs/evaluations/`](../evaluations/).
 
-**The entries below them came from the build rather than from the design phase, and this file no longer counts them.** A question that a build raises belongs on this list, because the alternative is a ruling that lives only in a module comment. The evidence for one of these is a measurement in the engine rather than an evaluation, and each section names the measurement it rests on. A count here was a second copy of what the headings already say, and it was wrong for two entries before anybody read it.
+**The entries below them came from the build rather than from the design phase, and this file counts none of them.** A question that a build raises belongs on this list, because the alternative is a ruling that lives only in a module comment. The evidence for one of these is a measurement in the engine rather than an evaluation, and each section names the measurement it rests on. A count here was a second copy of what the headings already say, and it was wrong for two entries before anybody read it.
 
 A decision was a heading in a register. Nothing could carry its state, its dates, its acceptance or its edges. A reader who cited one cited a position in a file. Now a citation names a document with an identifier, and a check reads the document that a citation reaches.
 

@@ -687,7 +687,7 @@ kinds:
       require: [owner]                 # added to what the parent already requires
 ```
 
-Two costs disappear with it, and the walkthrough measured both. To add a kind no longer edits every relation that the kind participates in, because an endpoint may name an abstract kind. That endpoint reaches every concrete kind below it. And a change to a shared facet requirement is one edit rather than one edit for each kind.
+Two costs disappear with it, and the walkthrough measured both. To add a kind edits no relation whose endpoint names an abstract kind above it. That endpoint reaches every concrete kind below it. And a change to a shared facet requirement is one edit rather than one edit for each kind.
 
 The rules are deliberately few.
 
