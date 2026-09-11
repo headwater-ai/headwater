@@ -3064,11 +3064,11 @@
         "facets": {
           "id": "HW-OBL-0010",
           "title": "The corpus descriptor exists and no probe has run against it",
-          "status": "discharged",
+          "status": "current",
           "status_since": "2026-09-11",
-          "waiting_on": "build",
+          "waiting_on": "measurement",
           "last_verified": "2026-09-11",
-          "summary": "The descriptor has a reading at last, and it says that a cold session reached neither the check layer nor the decision register.",
+          "summary": "Two recordings stand on the shelf, a confirmation refuses both, and no probe has returned a verdict against the descriptor.",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -6297,10 +6297,10 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0124",
-          "status": "discharged",
+          "status": "current",
           "status_since": "2026-09-11",
-          "waiting_on": "build",
-          "summary": "A committed transcript generates a result, regeneration holds the pair, and the result this corpus holds carries a verdict for every probe it graded.",
+          "waiting_on": "measurement",
+          "summary": "A committed transcript generates a result and regeneration holds the pair, and no result this corpus holds carries a verdict for any probe.",
           "last_verified": "2026-09-11",
           "title": "A probe result is printed and never committed, so nothing regenerates one",
           "provenance": {

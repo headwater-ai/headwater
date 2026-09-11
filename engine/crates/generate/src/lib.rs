@@ -1570,6 +1570,10 @@ mod paint_tests {
                 why: "it was planned against taxonomy sha256:a and this tree carries sha256:b"
                     .to_string(),
                 held: true,
+                // Populated for the reason every other section here is: an
+                // empty list takes the readers out of the printed line, and
+                // the cases below would then paint a line nobody writes.
+                readers: vec!["docs/obligations/0010-a-record.md".to_string()],
             }],
             orphaned: vec![Orphaned {
                 path: "docs/stale-index.md".to_string(),
