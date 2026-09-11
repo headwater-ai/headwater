@@ -127,6 +127,7 @@ declarations
       identity members
         id (required) scalar:string
         kind (required) scalar:string
+        name scalar:string
   obligations map of members
       statement (required) scalar:string
       rationale (required) scalar:string
