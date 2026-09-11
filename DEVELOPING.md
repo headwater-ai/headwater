@@ -130,6 +130,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/engine/build-declaration-fixtures.sh
     sh tools/engine/color-fixtures.sh
     sh tools/repo/developing-fixtures.sh
+    sh tools/repo/diataxis-fixtures.sh
     sh tools/engine/engine-readme-fixtures.sh
     sh tools/repo/id-store-fixtures.sh
     sh tools/repo/library-index-fixtures.sh

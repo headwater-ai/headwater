@@ -1060,9 +1060,22 @@ echo "who reads a fixture page, and where the page sends a reader"
 # Case 5c is the other half of the same claim, and it is page-wide rather than
 # paragraph-wide: every `tools/` path the index writes names a file in this
 # tree.
+#
+# Case 5d holds the last clause of the paragraph, that CI runs both readers. A
+# program is reached when a line of the workflow that is not a comment names
+# it, or when such a line names a file that names it: `tools/taxonomy/
+# drive_n8n.py` is run by a wrapper and the workflow never writes its path. One
+# level, and no more, because a second level would reach half this repository.
+# It is a weaker claim than "this step ran", which no file in this tree can
+# make about a workflow, and it is the claim that reddens when a step is
+# deleted under a paragraph that still credits it.
 
 # tools_paths FILE — every `tools/` file path written anywhere in FILE, sorted
-# and deduplicated. A match must end in an extension, so a bare `tools/`
+# and deduplicated. Every sort and every `comm` in this group is `LC_ALL=C`,
+# because a path is punctuation-heavy: the default collation of this host puts
+# `tools/repo/a-b.sh` and `tools/repo/ab.sh` in an order that `comm` then reads
+# as unsorted, and `comm` answers with a warning on standard error and a wrong
+# set. A match must end in an extension, so a bare `tools/`
 # naming the directory is not a path this judge holds. Trailing sentence
 # punctuation is stripped before the extension is read, because a path at the
 # end of a sentence outside a code span carries it.
@@ -1070,7 +1083,7 @@ tools_paths() {
     grep -oE 'tools/[A-Za-z0-9._/-]+' "$1" |
         sed 's/[.,;:)]*$//' |
         grep -E '\.[A-Za-z0-9]+$' |
-        sort -u
+        LC_ALL=C sort -u
 }
 
 # fixture_readme_readers ROOT — one path per line, relative to ROOT and
@@ -1085,7 +1098,7 @@ fixture_readme_readers() {
             frr_rel=${frr_f#"$1"/}
             echo "$frr_rel"
         done |
-        sort
+        LC_ALL=C sort
 }
 
 # fixtures_paragraph FILE — the paragraph of the anatomy section that states
@@ -1103,10 +1116,34 @@ reader_judge() {
     fixture_readme_readers "$1" >"$3/rj-readers"
     fixtures_paragraph "$2" >"$3/rj-para"
     tools_paths "$3/rj-para" >"$3/rj-named"
-    comm -23 "$3/rj-readers" "$3/rj-named" |
+    LC_ALL=C comm -23 "$3/rj-readers" "$3/rj-named" |
         sed 's|^|a program reads a fixture page and the paragraph does not name it: |'
-    comm -13 "$3/rj-readers" "$3/rj-named" |
+    LC_ALL=C comm -13 "$3/rj-readers" "$3/rj-named" |
         sed 's|^|the paragraph names a reader of a fixture page that reads none: |'
+}
+
+# ci_reached ROOT WORKFLOW WORK — every `tools/` path a non-comment line of
+# WORKFLOW names, plus every `tools/` path each of those files names. Sorted,
+# deduplicated, one per line.
+ci_reached() {
+    grep -v '^[ \t]*#' "$2" >"$3/cr-live"
+    tools_paths "$3/cr-live" >"$3/cr-direct"
+    cp "$3/cr-direct" "$3/cr-all"
+    while read -r cr_p; do
+        [ -f "$1/$cr_p" ] || continue
+        tools_paths "$1/$cr_p" >>"$3/cr-all"
+    done <"$3/cr-direct"
+    LC_ALL=C sort -u "$3/cr-all"
+}
+
+# ci_claim_judge ROOT WORKFLOW INDEX WORK — one line per program the paragraph
+# credits that no step of the workflow reaches.
+ci_claim_judge() {
+    ci_reached "$1" "$2" "$4" >"$4/cc-reached"
+    fixtures_paragraph "$3" >"$4/cc-para"
+    tools_paths "$4/cc-para" | LC_ALL=C sort >"$4/cc-named"
+    LC_ALL=C comm -23 "$4/cc-named" "$4/cc-reached" |
+        sed 's|^|the paragraph says CI runs it and no step of the workflow reaches it: |'
 }
 
 # tools_path_judge ROOT FILE — one line per `tools/` path FILE writes that
@@ -1140,7 +1177,15 @@ same "the paragraph names every program that reads a fixture page, and no other"
 same "every \`tools/\` path the index writes names a file in this tree" \
     "" "$(tools_path_judge "$root" "$index" | tr '\n' '|')"
 
-# 5d. Both refusals and the agreement, provoked over a scratch tree. The
+# 5d. The paragraph's last clause: CI reaches every program it credits.
+more_than "the workflow runs \`tools/\` programs" 0 \
+    "$(ci_reached "$root" "$root/.github/workflows/ci.yml" "$scratch/rd" |
+        wc -l | tr -d ' ')"
+same "every program the paragraph credits is reached by a step of the workflow" \
+    "" "$(ci_claim_judge "$root" "$root/.github/workflows/ci.yml" "$index" \
+            "$scratch/rd" | tr '\n' '|')"
+
+# 5e. Every refusal and every agreement, provoked over a scratch tree. The
 #     planted reader assembles its path from a variable, which is the shape the
 #     whole-literal grep missed on the real tree, so the provocation exercises
 #     the reason this judge reads a tail. `README.md` is passed to `printf`
@@ -1186,6 +1231,22 @@ write_anatomy "$scratch/rp/index.md" \
     '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` and `tools/repo/unrelated.sh` are both under `tools/`.'
 same "  the same page once every path it writes resolves" \
     "" "$(tools_path_judge "$scratch/rp" "$scratch/rp/index.md" | tr '\n' '|')"
+
+mkdir -p "$scratch/rp/.github/workflows"
+printf 'jobs:\n  one:\n    steps:\n      # run: sh tools/repo/alpha-fixtures.sh\n      - run: sh tools/repo/unrelated.sh\n' \
+    >"$scratch/rp/.github/workflows/ci.yml"
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry, and CI runs it.'
+same "  a credited program that only a comment of the workflow names" \
+    "the paragraph says CI runs it and no step of the workflow reaches it: tools/repo/alpha-fixtures.sh|" \
+    "$(ci_claim_judge "$scratch/rp" "$scratch/rp/.github/workflows/ci.yml" \
+        "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+
+printf 'exec python3 "$root/tools/repo/alpha-fixtures.sh"\n' \
+    >>"$scratch/rp/tools/repo/unrelated.sh"
+same "  the same program once a step reaches it through one wrapper" \
+    "" "$(ci_claim_judge "$scratch/rp" "$scratch/rp/.github/workflows/ci.yml" \
+        "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
 
 echo
 echo "$passed passed, $failed failed"
