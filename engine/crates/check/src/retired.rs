@@ -123,7 +123,16 @@ impl DocumentCheck for Retired {
     /// raise this: the resolved taxonomy is already part of what the cache keys
     /// on. The population is not data, and a warm cache would serve edition
     /// one's verdict over every document this rule already read.
-    const VERSION: u32 = 2;
+    ///
+    /// **Edition three, on 2026-09-11.** #783 moved the inline quotation out of
+    /// this rule's population. The parse now marks a quotation inside a
+    /// sentence as another author's, so `Sentence::authored` drops it and this
+    /// rule never receives it. No pattern here moved, and that is exactly why
+    /// the number has to: the document, the lock and the rule are all
+    /// unchanged, so a warm cache from the previous engine would serve the old
+    /// verdict on every document that quotes anybody and the change would read
+    /// as working while it did nothing.
+    const VERSION: u32 = 3;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, kind: &str) -> bool {

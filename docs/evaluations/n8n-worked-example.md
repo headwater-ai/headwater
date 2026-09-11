@@ -424,7 +424,7 @@ gh api "repos/n8n-io/n8n/contents/.agents?ref=master" --jq '[.[].name] | join(" 
 
 It prints `review-rules skills`. Any output that holds `specs` makes this defect false.
 
-**Defect 3, a count in prose that the configuration contradicts.** `.agents/review-rules/README.md:25` reads "Security and QA & DX deliberately don't link `testing/`", which names two agents. <!-- headwater allow=language.controlled.not_met scope=block until=2027-09-08 reason=false_positive note=quoting n8n's sentence verbatim, because the fix rewrites this exact line -->
+**Defect 3, a count in prose that the configuration contradicts.** `.agents/review-rules/README.md:25` reads "Security and QA & DX deliberately don't link `testing/`", which names two agents.
 
 ```bash
 gh api "repos/n8n-io/n8n/contents/cubic.yaml?ref=master" --jq .content | base64 -d | grep -c '^    - name: '

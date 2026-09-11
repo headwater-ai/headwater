@@ -301,7 +301,16 @@ impl DocumentCheck for Voice {
     /// unrepresentable here rather than merely unobserved. Raising the number
     /// would discard every cached voice verdict in every clone and assert a
     /// change that no run made.
-    const VERSION: u32 = 2;
+    ///
+    /// **Edition three, on 2026-09-11.** #783 moved the inline quotation out of
+    /// this rule's population. The parse now marks a quotation inside a
+    /// sentence as another author's, so `Sentence::authored` drops it and this
+    /// rule never receives it. No pattern here moved, and that is exactly why
+    /// the number has to: the document, the lock and the rule are all
+    /// unchanged, so a warm cache from the previous engine would serve the old
+    /// verdict on every document that quotes anybody and the change would read
+    /// as working while it did nothing.
+    const VERSION: u32 = 3;
     /// The body, because the regime is about prose. This declaration is the
     /// access: without it [`DocumentView::body`] returns nothing.
     const NEEDS_BODY: bool = true;
@@ -458,8 +467,8 @@ mod tests {
         }
     }
 
-    /// The false positives of the census of 2026-09-11, one sentence for each
-    /// of the five modes, verbatim from the corpus of `d0ef8273` and each one
+    /// The false positives of the census of 2026-09-11, verbatim from the
+    /// corpus of `d0ef8273` and each one
     /// checked against its source file there by a script that ran once. This
     /// case holds its own copies and reads no document, so a reword of any of
     /// these sentences leaves it green while its claim to quote the corpus
@@ -468,6 +477,17 @@ mod tests {
     /// comment on the tier-two set states why they are allowed to: a narrowing
     /// that excludes one of them rules on the mode rather than on the sentence,
     /// and it meets this case before it meets the corpus.
+    ///
+    /// The census named six sentences in five modes. **The inline quotation
+    /// left this set on 2026-09-11 and it left deliberately.** #783 moved it
+    /// out of the check layer altogether: the parse marks a quotation inside a
+    /// sentence as another author's, `Sentence::authored` drops it, and the
+    /// pattern below never receives it. So the mode is excluded by
+    /// construction rather than curated here, which is what spec 3 asks for,
+    /// and `an_inline_quotation_never_reaches_a_pattern` holds the property in
+    /// its place. The other five modes are unchanged and stay curated.
+    /// [HW-OBL-0002](../../../../docs/obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md)
+    /// records the census as a point-in-time measurement and is not restated.
     #[test]
     fn the_measured_false_positives_still_match() {
         let narration = &CATEGORIES[1];
@@ -476,9 +496,6 @@ mod tests {
             "A term that the corpus no longer uses, declared in the language regime with a required reason and an optional replacement.",
             // A conditional inside a hypothetical.
             "If the engine can name that thing too, the finding is relational, and the argument above no longer holds.",
-            // An inline quotation, which spec 3 puts outside every voice rule
-            // and which this engine reads because only a block quote is marked.
-            "The judgment \"we no longer describe it that way\" existed only as prose and a diff, so no mechanism could inherit it.",
             // Another system's behavior, in the present tense.
             "ESLint fails a run that carries a suppression which no longer matches, and that is the property `.ste-lint-baseline.json` lacked.",
             // A heading, which is not a sentence.
@@ -494,6 +511,44 @@ mod tests {
                 "no pattern matched `{sentence}`, and the ruling of 2026-09-11 records that one does"
             );
         }
+    }
+
+    /// The pair that replaces the inline-quotation entry above, and the reason
+    /// it could leave the curated set. It runs the real path — scan, sentence,
+    /// `authored` — rather than handing a pattern a string, because the whole
+    /// point of #783 is that the exclusion lives in the parse.
+    ///
+    /// The first half is `docs/decisions/0021-terminological-succession-and-validity-under-merge.md:32`
+    /// verbatim, which was finding 1 of 37 `voice.forbidden_construction` on
+    /// `99e1ecae` and is not a finding now.
+    ///
+    /// **The second half is what makes the first half worth anything.** A
+    /// change that dropped the whole sentence rather than the quoted span
+    /// would pass the first assertion. So the same words outside the marks
+    /// must still reach a pattern, and that is the assertion below it.
+    #[test]
+    fn an_inline_quotation_never_reaches_a_pattern() {
+        let narration = &CATEGORIES[1];
+        let matches = |source: &str| {
+            let body = headwater_doc::body::scan(source, source, 0);
+            headwater_doc::sentences::of(&body).iter().any(|sentence| {
+                narration
+                    .patterns
+                    .iter()
+                    .any(|pattern| contains_word(&sentence.authored.to_lowercase(), pattern))
+            })
+        };
+
+        assert!(
+            !matches(
+                "The judgment \"we no longer describe it that way\" existed only as prose and a diff, so no mechanism could inherit it.\n"
+            ),
+            "an inline quotation reached a voice pattern, which spec 3 puts outside every voice rule"
+        );
+        assert!(
+            matches("The corpus no longer describes it that way, and that is the change.\n"),
+            "the same words outside a quotation stopped reaching a pattern, so the exclusion is too wide"
+        );
     }
 
     /// The three candidates measured and rejected, held here so that a later
