@@ -339,6 +339,62 @@ address_judge() {
     done
 }
 
+# criteria_of INDEX-FILE — the ordinal of each entry-admission criterion, one
+# per line. Read out of the numbered bold items of the "Admission criteria"
+# section, up to that section's first subheading, because the assembly ladder
+# below the subheading numbers itself from 1 again and binds no entry. No count
+# of criteria is written here: an eighth criterion binds every refused bundle
+# on the day somebody writes it.
+criteria_of() {
+    section_of "$1" "Admission criteria" | awk '/^### /{exit} 1' |
+        sed -n 's/^\*\*\([1-9][0-9]*\)\. .*/\1/p' | sort -un
+}
+
+# refusal_block SECTION-FILE BUNDLE — the body of the `###` subsection of the
+# admission section whose heading names BUNDLE, or nothing when the section
+# carries no such subsection. A bundle the table admits is read through its
+# row; a bundle the table refuses has no row, so the subsection headed with its
+# name is where a reviewer's reading of the criteria against it lives, and a
+# sentence about it stranded in another bundle's paragraph is not that reading.
+refusal_block() {
+    awk -v want="$2" '
+        /^#### / { next }
+        /^### /  { inside = (index($0, want) > 0); next }
+        /^## /   { inside = 0 }
+        inside   { print }
+    ' "$1"
+}
+
+# criteria_judge BUNDLES-ROOT SECTION-FILE CRITERIA-FILE — one line per
+# criterion that the section never reads against a bundle WITHOUT A TABLE ROW.
+#
+# This is `address_judge` again over a second population. An admitted entry
+# asserts all seven criteria by having a row at all, and the reviewer who wrote
+# the row read them. A refused entry asserts nothing, so the only record that
+# anybody weighed criterion 3 or criterion 7 against it is prose that says so.
+# The defect this case exists for: the `evidence-and-obligation` refusal read
+# criteria 1, 4 and 5 and left 2, 3, 6 and 7 read against no bundle anywhere,
+# so a reviewer could not tell a criterion that was measured and held from one
+# that nobody had looked at.
+criteria_judge() {
+    cr_root=$1
+    cr_section=$2
+    cr_crit=$3
+    rows_of "$cr_section" | cut -f1 | sort -u >"$scratch/cr.rows"
+    bundles_of "$cr_root" | while read -r cr_b; do
+        grep -qx "$cr_b" "$scratch/cr.rows" && continue
+        refusal_block "$cr_section" "$cr_b" >"$scratch/cr.block"
+        if [ ! -s "$scratch/cr.block" ]; then
+            echo "$cr_b: the section heads no subsection that reads the criteria against it"
+            continue
+        fi
+        while read -r cr_n; do
+            grep -qiE "criterion $cr_n([^0-9]|\$)" "$scratch/cr.block" ||
+                echo "$cr_b: the section never reads criterion $cr_n against it"
+        done <"$cr_crit"
+    done
+}
+
 # carried_parts INDEX-FILE — the parts of an entry that a publish carries, one
 # per line, read out of the "What an entry ships" table. Column 2 is the path
 # in the draft and column 3 says where it lands; a destination beginning
@@ -414,6 +470,7 @@ section_of "$index" "Admission, and what is admitted" >"$scratch/section"
 bundles_of "$lib" >"$scratch/bundles"
 accounted_of "$scratch/section" >"$scratch/accounted"
 carried_parts "$index" >"$scratch/parts"
+criteria_of "$index" >"$scratch/criteria"
 
 echo "the bundles this library carries, and the entries its index accounts for"
 
@@ -465,6 +522,15 @@ same "every bundle a requires line or a recipe names is accounted for" \
 #     and omitted `shelves.evaluations`.
 same "every address a refused bundle declares is written in the section" \
     "" "$(address_judge "$lib" "$scratch/section" | tr '\n' '|')"
+
+# 1f. A bundle the table refuses is the one entry of this library that no
+#     reviewer's row stands behind, so the section owes it a reading of every
+#     criterion rather than of the ones that refuse it. The criteria population
+#     is read off the same page, so the judge cannot go stale against it.
+more_than "the admission section numbers the criteria an entry is judged against" 0 \
+    "$(wc -l <"$scratch/criteria" | tr -d ' ')"
+same "every criterion is read against every bundle the table refuses" \
+    "" "$(criteria_judge "$lib" "$scratch/section" "$scratch/criteria" | tr '\n' '|')"
 
 echo
 echo "the judges, provoked over scratch trees"
@@ -534,6 +600,84 @@ write_section "$scratch/arms.c2" \
     'The [`beta`](beta/) bundle is not an admitted entry. It declares `kinds.two` and `shelves.two`.'
 same "  and the same paragraph writing both of them is clean" \
     "" "$(address_judge "$scratch/lib" "$scratch/arms.c2" | tr '\n' '|')"
+
+# 2c3. The criteria judge over the same pair of scratch bundles, on a ladder of
+#      two criteria rather than of seven. The population comes from a file, so
+#      these arms hold whatever the page numbers and nothing here has to be
+#      rewritten when the ladder grows.
+printf '1\n2\n' >"$scratch/arms.crit"
+same "  a refused bundle with no subsection of its own is refused" \
+    "beta: the section heads no subsection that reads the criteria against it|" \
+    "$(criteria_judge "$scratch/lib" "$scratch/arms.c2" "$scratch/arms.crit" | tr '\n' '|')"
+
+# 2c4. A subsection headed with the bundle's name that reads one criterion of
+#      the two. This is the shape the `evidence-and-obligation` refusal was in:
+#      a reading of the criteria that refuse an entry, and silence on the rest.
+write_section "$scratch/arms.c3" \
+    '| Entry | Bundle | The tradition |' \
+    '|---|---|---|' \
+    '| [`alpha`](alpha/) | `alpha` | A tradition |' \
+    '' \
+    '### The bundle the table does not admit: beta' \
+    '' \
+    'The [`beta`](beta/) bundle declares `kinds.two` and `shelves.two`.' \
+    '' \
+    'Criterion 1 refuses it, because it models no tradition.'
+same "  a subsection that reads one criterion of two is refused on the other" \
+    "beta: the section never reads criterion 2 against it|" \
+    "$(criteria_judge "$scratch/lib" "$scratch/arms.c3" "$scratch/arms.crit" | tr '\n' '|')"
+
+# 2c5. Both criteria read inside the subsection, and the judge is clean. The
+#      `alpha` row is exempt throughout: no paragraph anywhere reads a
+#      criterion against it and the judge says nothing, because a row is the
+#      reviewer's assertion that all of them held.
+write_section "$scratch/arms.c4" \
+    '| Entry | Bundle | The tradition |' \
+    '|---|---|---|' \
+    '| [`alpha`](alpha/) | `alpha` | A tradition |' \
+    '' \
+    '### The bundle the table does not admit: beta' \
+    '' \
+    'The [`beta`](beta/) bundle declares `kinds.two` and `shelves.two`.' \
+    '' \
+    'Criterion 1 refuses it, because it models no tradition. Criterion 2 holds: it ships the whole anatomy.'
+same "  and a subsection that reads both of them is clean" \
+    "" "$(criteria_judge "$scratch/lib" "$scratch/arms.c4" "$scratch/arms.crit" | tr '\n' '|')"
+
+# 2c6. A criterion read against the bundle outside its subsection does not
+#      count. A sentence in another entry's paragraph that happens to name this
+#      bundle is not a reading of the criterion against it, and the first draft
+#      of this judge counted one.
+write_section "$scratch/arms.c5" \
+    '| Entry | Bundle | The tradition |' \
+    '|---|---|---|' \
+    '| [`alpha`](alpha/) | `alpha` | A tradition |' \
+    '' \
+    'Criterion 2 is what cost `alpha`, which declares `requires: [beta]`.' \
+    '' \
+    '### The bundle the table does not admit: beta' \
+    '' \
+    'The [`beta`](beta/) bundle declares `kinds.two` and `shelves.two`.' \
+    '' \
+    'Criterion 1 refuses it, because it models no tradition.'
+same "  a criterion read outside the subsection is not read against the bundle" \
+    "beta: the section never reads criterion 2 against it|" \
+    "$(criteria_judge "$scratch/lib" "$scratch/arms.c5" "$scratch/arms.crit" | tr '\n' '|')"
+
+# 2c7. Two-digit safety. A ladder that reaches criterion 10 is not satisfied by
+#      a sentence that reads criterion 1.
+printf '1\n10\n' >"$scratch/arms.crit10"
+same "  a reading of criterion 1 does not satisfy criterion 10" \
+    "beta: the section never reads criterion 10 against it|" \
+    "$(criteria_judge "$scratch/lib" "$scratch/arms.c3" "$scratch/arms.crit10" | tr '\n' '|')"
+
+# 2c8. The criteria population itself, read off a page rather than written
+#      here. A section whose entry ladder is two long yields two, and the
+#      assembly ladder below the first subheading does not add to it.
+printf '## Admission criteria\n\n**1. First.** Prose.\n\n**2. Second.** Prose.\n\n### Assembly admission\n\n**1. One.** Prose.\n\n**2. Two.** Prose.\n\n**3. Three.** Prose.\n' \
+    >"$scratch/arms.index"
+same "  the criteria population stops at the first subheading" \
+    "1 2" "$(criteria_of "$scratch/arms.index" | tr '\n' ' ' | sed 's/ $//')"
 
 # 2d. A link that carries a file name accounts for nothing, so a doctrine link
 #     cannot stand in for the paragraph that owes the reason.
