@@ -682,3 +682,37 @@ fn a_plan_that_stopped_partway_hands_a_grading_caller_no_selection() {
         "the refusal beside the selection was dropped, so nothing can say why"
     );
 }
+
+/// A transcript planned against another taxonomy fails the run, and a matching
+/// one reports nothing.
+#[test]
+fn a_transcript_planned_against_another_taxonomy_fails_the_run() {
+    let matched = copied("probe-result-lock-matches");
+    let held = write(&matched, &plan_over(&matched));
+    assert_eq!(
+        held.remedy(),
+        None,
+        "a transcript this tree's taxonomy matches does not fail the run"
+    );
+
+    let moved = copied("probe-result-lock-moved");
+    edit(
+        &moved,
+        TRANSCRIPT,
+        "lock: sha256:fixture",
+        "lock: sha256:another-taxonomy",
+    );
+    let report = write(&moved, &plan_over(&moved));
+    assert!(
+        report
+            .render(ColorMode::Plain)
+            .contains("refused transcripts"),
+        "the run prints the refusal where a reader of the run sees it, rather than only inside \
+         the generated document"
+    );
+    assert!(
+        report.remedy().is_some(),
+        "a transcript planned against another taxonomy leaves a result with no verdict in it, \
+         and the run that wrote it exits 0"
+    );
+}
