@@ -81,7 +81,7 @@ case "$path" in
     # alone. Without this arm these paths fall to `*` below, whose line says
     # "regenerate this artifact from its source" and names no command, which
     # for a file git leaves with no conflict marker in it is nothing at all.
-    remedy="sh tools/refresh-figures.sh    (CI holds it with: sh tools/refresh-figures.sh --check)"
+    remedy="sh tools/site/refresh-figures.sh    (CI holds it with: sh tools/site/refresh-figures.sh --check)"
     ;;
   .headwater/taxonomy.lock)
     remedy="headwater taxonomy resolve --write    (CI holds it with: headwater taxonomy resolve --check)"

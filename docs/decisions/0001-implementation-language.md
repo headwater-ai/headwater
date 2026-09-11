@@ -48,7 +48,7 @@ The language is **Rust**, with a WebAssembly build of the same crate for editor 
 
 The costs are real and stated in the evaluation. The YAML crate ecosystem is in poor repair, which matters less than it looks because spec 12 requires source spans that no convenient deserializer supplies. Iteration speed and the contributor pool are genuine, and the architecture shrinks the surface where anyone writes engine code at all.
 
-**The spike changed, and then it ran.** A parse-classify-graph path in two candidates would have measured the one axis on which the languages are equal. The replacement was a risk-retirement spike in Rust alone, in [`tools/language-spike/`](../../tools/language-spike/), where any item could reopen this question. All four passed ([results](../evaluations/language-spike-results.md)).
+**The spike changed, and then it ran.** A parse-classify-graph path in two candidates would have measured the one axis on which the languages are equal. The replacement was a risk-retirement spike in Rust alone, in [`tools/engine/language-spike/`](../../tools/engine/language-spike/), where any item could reopen this question. All four passed ([results](../evaluations/language-spike-results.md)).
 
 | Item | Result |
 |---|---|

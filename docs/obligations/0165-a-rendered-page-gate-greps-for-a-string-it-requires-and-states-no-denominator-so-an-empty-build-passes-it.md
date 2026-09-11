@@ -22,7 +22,7 @@ if [ -n "$missing" ]; then
 
 `grep -rL` names the files that lack the string. Over a directory with no file in it, `grep -rL` names nothing and exits 1, `|| true` absorbs the status, `missing` is empty, and the step passes. The step never states how many pages it read.
 
-`tools/check-site-fragments.py` states the opposite posture about the same served directory. Its own header says that a suite that cannot tell "nothing is wrong" from "nothing ran" is not a gate. That file exits 2 over an empty root rather than reporting a clean run.
+`tools/site/check-site-fragments.py` states the opposite posture about the same served directory. Its own header says that a suite that cannot tell "nothing is wrong" from "nothing ran" is not a gate. That file exits 2 over an empty root rather than reporting a clean run.
 
 ## Obligation
 
@@ -42,7 +42,7 @@ The first two arms are indistinguishable from the outside. Only the third arm pr
 
 ## Discharge
 
-**This record discharges when the step states a non-zero denominator and fails without one.** One line does it. Count the pages the walk reached with `grep -rl`, and refuse a count of zero, in the shape `tools/check-site-fragments.py` already uses over the same tree.
+**This record discharges when the step states a non-zero denominator and fails without one.** One line does it. Count the pages the walk reached with `grep -rl`, and refuse a count of zero, in the shape `tools/site/check-site-fragments.py` already uses over the same tree.
 
 **A stronger discharge moves the property into that file.** It already walks every served page, parses each one, refuses an empty or a missing root, and prints its own denominator. [#567](https://github.com/headwater-ai/headwater/issues/567) added a second property to it for those four reasons. A third property there costs no CI step and inherits the refusal.
 

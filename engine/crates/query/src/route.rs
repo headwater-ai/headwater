@@ -625,7 +625,7 @@ impl Route {
     /// document and the MCP tool both carry this text — and the terminal state
     /// of standard output for the one human caller. `docs/interfaces/headwater-route.md`
     /// states that the default senses the stream and colors only there, and
-    /// `tools/color-fixtures.sh` attaches a real terminal to hold it.
+    /// `tools/engine/color-fixtures.sh` attaches a real terminal to hold it.
     pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
@@ -713,7 +713,7 @@ impl Route {
 /// `headwater_check::paint::tests` and `engine/crates/cli/tests/width.rs`
 /// already set. These are necessary and not sufficient: a call site that hands
 /// `ColorMode::Plain` to a renderer forever passes every one of them, which is
-/// what `tools/color-fixtures.sh` attaches a real terminal to catch.
+/// what `tools/engine/color-fixtures.sh` attaches a real terminal to catch.
 #[cfg(test)]
 mod tests {
     use super::*;

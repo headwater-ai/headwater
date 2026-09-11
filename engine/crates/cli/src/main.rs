@@ -603,7 +603,7 @@ fn completions(shell: Option<headwater_cli::Shell>) -> ExitCode {
     // then get a tree carrying a palette. `clap_complete` writes a script out of
     // the `about` and `help` strings, which no palette touches — but a script
     // with an escape byte in it is a broken script, and this is the one line
-    // that has to be wrong for that to happen. `tools/color-fixtures.sh` runs
+    // that has to be wrong for that to happen. `tools/engine/color-fixtures.sh` runs
     // the pty case that would report it.
     let mut command = headwater_cli::paint::flattened(headwater_cli::command_in(
         headwater_cli::paint::WIDTH,

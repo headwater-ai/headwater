@@ -406,7 +406,7 @@ impl Inventory {
     /// The header line and the count line print whether or not this run read
     /// a single directive. A section that vanishes at zero is a section a
     /// reader — or a script grepping this report, which is exactly what
-    /// `tools/refresh-figures.sh` does — cannot tell from a report that never
+    /// `tools/site/refresh-figures.sh` does — cannot tell from a report that never
     /// ran. Zero suppressions is news too, and it is the news
     /// `is_empty` used to spend on printing nothing at all.
     pub fn render(&self) -> String {

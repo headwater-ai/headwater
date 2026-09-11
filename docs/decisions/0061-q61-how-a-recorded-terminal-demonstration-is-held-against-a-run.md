@@ -26,7 +26,7 @@ relations:
 
 **Principle 11 of [spec 0](../spec/00-vision-and-scope.md#design-principles) forbids a published number that no run produced, and [spec 4](../spec/04-assurance-model.md) extends it to the public surface.** A hand-written figure on the site is a finding there, in the way that a hand-edited shelf index is. [HW-DR-0039](0039-q39-how-a-figure-reaches-a-hand-built-page.md) is the clause that carries it into practice. A script writes every figure on a hand-built page from a run. A figure that no run produces stays off the page.
 
-**A recording is a figure that no script can refresh.** `tools/refresh-figures.sh` writes a number into a `data-figure` element of a text file, and it compares what it wrote against the tree. It cannot reach inside a GIF or a cast file. A recorded number is frozen at the moment of capture, and no check reads it again.
+**A recording is a figure that no script can refresh.** `tools/site/refresh-figures.sh` writes a number into a `data-figure` element of a text file, and it compares what it wrote against the tree. It cannot reach inside a GIF or a cast file. A recorded number is frozen at the moment of capture, and no check reads it again.
 
 **The numbers a cast of this corpus would freeze move in days, and this branch moved them itself.** On `origin/main` at `58f46a8d`, `headwater check --root .` printed 449 files under the corpus root. It typed and checked 318 of them, over 5757 check instances, and reported 166 findings at the default level. Adding the single document you are reading moved that to 450 seen and 319 classified over 5772 instances in one commit. Five days earlier the same command printed 397 seen and 285 checked. A cast is a claim that ages by the week.
 
@@ -46,8 +46,8 @@ relations:
 
 ## Consequences
 
-**Done-when bars 3 and 4 of #601 stay open.** No committed recording lands from this record, and no blocking step for one exists. `tools/refresh-figures.sh` structurally cannot refresh a committed binary asset, which [spec 13](../spec/13-open-obligations.md) now records.
+**Done-when bars 3 and 4 of #601 stay open.** No committed recording lands from this record, and no blocking step for one exists. `tools/site/refresh-figures.sh` structurally cannot refresh a committed binary asset, which [spec 13](../spec/13-open-obligations.md) now records.
 
 **A recording of the tutorial inherits an existing gate rather than needing a new one.** The drive script already holds each printed output against a run. What it does not do is compare the recording against the tutorial. A cast that falls behind the document is invisible to every check. Whoever lands a recording owes that comparison, and a tape file is what makes one possible.
 
-**The condition that reopens the owner's question is written here, where the next reader meets it.** A recording may carry a live number of this corpus when two things are true together. A recorder is installed on the runner that continuous integration uses. A regenerate-and-compare step for the recording runs beside `tools/refresh-figures.sh --check`. Until both hold, the answer above stands.
+**The condition that reopens the owner's question is written here, where the next reader meets it.** A recording may carry a live number of this corpus when two things are true together. A recorder is installed on the runner that continuous integration uses. A regenerate-and-compare step for the recording runs beside `tools/site/refresh-figures.sh --check`. Until both hold, the answer above stands.

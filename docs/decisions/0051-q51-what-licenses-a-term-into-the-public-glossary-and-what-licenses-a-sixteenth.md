@@ -14,7 +14,7 @@ provenance:
 relations:
   traces_to:
     - HW-DR-0037
-    - notes/website-design-brief.md
+    - .headwater/notes/website-design-brief.md
 ---
 
 # Q51 — What licenses a term into the public glossary, and what licenses a sixteenth
@@ -23,7 +23,7 @@ relations:
 
 **Two glossaries exist, and they answer to different readers.** `docs/spec/glossary.md` is scoped to a person who already files documents in this corpus. Its own text says that an author meets eight terms and a taxonomy author meets roughly thirty-five, out of about 175. Most of those belong to the engine, the check layer or the publisher. The page at `/glossary/` is scoped to a visitor who has read none of the documentation and is deciding whether to spend an hour.
 
-**The page carries fifteen terms today.** They are Census, Check, Corpus, Facet, Finding, Front matter, Governs, Graph, Kind, Obligation, Overlay, Projection, Relation, Shelf and Taxonomy. Section 9 of [the design brief](../../notes/website-design-brief.md) states the basis on which that set was drawn, and no record held it.
+**The page carries fifteen terms today.** They are Census, Check, Corpus, Facet, Finding, Front matter, Governs, Graph, Kind, Obligation, Overlay, Projection, Relation, Shelf and Taxonomy. Section 9 of [the design brief](../../.headwater/notes/website-design-brief.md) states the basis on which that set was drawn, and no record held it.
 
 **A basis matters here more than the list does.** A glossary with no rule for admission grows by feeling. The reader it serves is the one who can least afford a page of terms that the site does not use.
 
