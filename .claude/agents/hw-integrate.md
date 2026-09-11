@@ -18,6 +18,7 @@ The report ends with this block:
     MERGED: <merge commit> for #<PR>
     MAIN: <sha> at <time>
     REGENERATED: <what moved, or nothing>
+    RETIRED: <what the sweep took, and what it kept that was not an open pull request>
     WROTE BACK: <issue comments, closes, edits, one line each>
     LEFT: <anything you could not complete, with the reason>
 
@@ -42,6 +43,12 @@ Then `HEADWATER_BLESS=1 cargo test --workspace --no-fail-fast --manifest-path en
 **Write back, because it is the part that compounds.** Comment on the issue wherever the work found it wrong, through `gh api -X PATCH` and `gh api ... /comments` rather than `gh issue view`, which fails on a deprecated field. Close the issue the pull request closes and confirm the close took; an agent can state a write-back and not land it. Route a finding that sharpens a closed decision to spec 13, never to spec 9, which accepts no new question.
 
 **Release the claims.** After the merge, `sh tools/run/run-dir.sh release <run> <issue>` frees every artifact the issue held, which is what lets the next claimant through. Say in `WROTE BACK` how many it freed.
+
+**Retire what the merge finished.** The build agent made its worktree and exited when the pull request opened, and the branch was unmerged at that moment, so no earlier stage was ever able to retire it. You are the first stage that knows it merged, and the sweep is therefore yours:
+
+    sh tools/repo/retire-worktree.sh --retire
+
+It reads every tree and every branch rather than only the one you merged, so it also collects what earlier iterations left behind. It refuses a locked tree, a tree a live process is working in, a tree holding any uncommitted change, and every branch its content check does not clear, and it gives the reason for each. Merged is decided by the pull request rather than by ancestry, because this repository squash-merges and ancestry calls a finished branch unmerged forever. Copy its `RETIRED:` line into your report, and put anything it kept for a reason other than an open pull request into `LEFT`.
 
 **Write the ledger line.** `sh tools/run/run-dir.sh log <run> '<json>'` with `iter`, `issue`, `pr`, `merge`, `verdict`, `proved` (what verification proved, never what the build claimed), `opened` and `closed`. The tool refuses a missing key and a stored total, because totals are derived by whoever reads the log and never stored ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)).
 

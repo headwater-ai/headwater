@@ -30,7 +30,7 @@ The report ends with this block:
     git fetch origin
     git worktree add "$root/.claude/worktrees/verify-<N>" <branch>
 
-Build the engine there with `--profile dev-release` before any engine verb, and remove the worktree when you are done or say that it is still there.
+Build the engine there with `--profile dev-release` before any engine verb, and run `git worktree remove` on it before you exit. Removing it is not optional and it is not the integrator's to collect: your tree sits on a branch whose pull request is still open, and the sweep that retires a finished tree refuses an open one by design. A tree you leave behind is a tree nothing else will take. Say that it is still there only when the removal refused, and give the refusal.
 
 **Run the suite and the gates.** Redirect each to files and read the tail; never pipe a gate, because the pipe reports the filter's exit status. Keep stdout and stderr apart on an invariant test.
 

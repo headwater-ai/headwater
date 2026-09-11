@@ -879,6 +879,29 @@ jobs:
             exit 0
           fi
           exit "$status"
+      - name: The retirement sweep refuses a locked, dirty, open or occupied worktree
+        # `tools/repo/retire-worktree.sh` deletes directories and branches, so what
+        # this holds is mostly what it refuses. The tool exists because the
+        # agent that makes a build worktree exits while its branch is still
+        # unmerged and can never retire its own tree, and the integrator is
+        # the first stage that knows the branch merged.
+        #
+        # The case that carries the suite is the squash-merge shape: the
+        # fixture builds a branch, squashes it onto `main`, and asserts that
+        # ancestry calls the finished branch unmerged before asserting that
+        # the tool clears it from the pull request record. A suite without
+        # that arm would pass against a tool that trusted ancestry, which in
+        # this repository retires nothing at all.
+        #
+        # The in-use guard is provoked with a real process sitting in the
+        # tree, because removing such a tree pins the directory on disk and
+        # the next cargo run there exits 101 with a `NotFound` naming the
+        # binary under test, which reads as a defect in the code rather than
+        # as a directory somebody deleted.
+        #
+        # It needs nothing but git. It builds its own repository under a
+        # temporary directory and writes nothing inside this checkout.
+        run: sh tools/repo/retire-worktree-fixtures.sh
       - name: A recorder's transform drops every block the harness did not tag as a call
         # `tools/probe/probe-transform.sh` is the half of a recorder that decides
         # what reaches `docs/probe-runs/`, and the failure it exists to
