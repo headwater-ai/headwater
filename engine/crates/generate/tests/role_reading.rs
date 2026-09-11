@@ -243,8 +243,11 @@ fn sentinel_tree(corpus_root: &str, document: &str, old_title: &str, sentinel: &
          never be planned",
         path.display()
     );
-    std::fs::write(&path, source.replace(&before, &format!("title: {sentinel}\n")))
-        .expect("the retitled document");
+    std::fs::write(
+        &path,
+        source.replace(&before, &format!("title: {sentinel}\n")),
+    )
+    .expect("the retitled document");
     at
 }
 
@@ -320,7 +323,10 @@ fn every_emitter_that_labels_a_document_prints_its_declared_name() {
         SENTINEL,
     );
     let corpus = Corpus::new(at.clone(), "generate");
-    let built = Built::over(&corpus, &load_map(&fixtures_dir().join("generate.taxonomy.yml")));
+    let built = Built::over(
+        &corpus,
+        &load_map(&fixtures_dir().join("generate.taxonomy.yml")),
+    );
     let surface = built.surface();
     // One declaration per labelling kind this tree can carry. Written with
     // explicit newlines rather than a `"\` continuation, which strips the
@@ -344,7 +350,12 @@ fn every_emitter_that_labels_a_document_prints_its_declared_name() {
         &Runs::default(),
         headwater_verbs::VERBS,
     );
-    assert_sentinel_reached(&plan, SENTINEL_STEM, SENTINEL, &[Kind::ShelfIndex, Kind::ShelfSections, Kind::SiteNav]);
+    assert_sentinel_reached(
+        &plan,
+        SENTINEL_STEM,
+        SENTINEL,
+        &[Kind::ShelfIndex, Kind::ShelfSections, Kind::SiteNav],
+    );
     let _ = std::fs::remove_dir_all(&at);
 }
 
@@ -368,7 +379,10 @@ fn the_verb_index_labels_a_contract_with_its_declared_name() {
         VERB_SENTINEL,
     );
     let corpus = Corpus::new(at.clone(), "verbs");
-    let built = Built::over(&corpus, &load_map(&fixtures_dir().join("verbs.taxonomy.yml")));
+    let built = Built::over(
+        &corpus,
+        &load_map(&fixtures_dir().join("verbs.taxonomy.yml")),
+    );
     let surface = built.surface();
     let projections = projections_from(concat!(
         "projections:\n",
@@ -504,10 +518,7 @@ const CONSUMERS: [(&str, &str); 6] = [
         "`headwater query` and the front-matter check. Two consumers, so `name` is not the \
          only role with more than one",
     ),
-    (
-        "state",
-        "the lifecycle-state check and one audit reading",
-    ),
+    ("state", "the lifecycle-state check and one audit reading"),
     (
         "state_entered",
         "the shape check and one audit reading. `STATE_LEFT` in the audit reads a role the \
