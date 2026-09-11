@@ -124,6 +124,8 @@ docs/decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transc
   typed: decision
 docs/decisions/0060-the-engine-s-version-stays-one-number-and-a-build-s-exact-commit-is-a-separate-unwired-fact.md
   typed: decision
+docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -575,6 +577,8 @@ docs/obligations/0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-ty
 docs/obligations/0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md
   typed: obligation_record
 docs/obligations/0182-the-publish-crates-retry-loop-has-no-retry-ceiling.md
+  typed: obligation_record
+docs/obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md
   typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census

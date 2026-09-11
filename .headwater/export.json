@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 412,
-      "carried": 412,
+      "in the graph": 415,
+      "carried": 415,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 618,
-      "carried": 618,
+      "in the graph": 621,
+      "carried": 621,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1706,6 +1706,35 @@
           "summary": "A binary's `--version` keeps naming one number, the `Cargo.toml` version a `requires_engine` range is read against. Which commit built it is a separate fact a build script now captures, kept out of that comparison and not yet on the command line.",
           "last_verified": "2026-09-08",
           "title": "The engine's version stays one number, and a build's exact commit is a separate, unwired fact"
+        }
+      },
+      {
+        "path": "docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md",
+        "kind": "decision",
+        "id": "HW-DR-0061",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0061",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A recorded terminal demonstration is a figure under HW-DR-0039. It may show only the tutorial's scratch corpus, where a blocking step already holds every printed output against a run.",
+          "last_verified": "2026-09-11",
+          "title": "Q61 — How a recorded terminal demonstration is held against a run",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "constrains": [
+              "HW-DR-0039"
+            ],
+            "traces_to": [
+              "docs/tutorials/your-first-governed-corpus.md"
+            ]
+          }
         }
       },
       {
@@ -3957,10 +3986,10 @@
         "facets": {
           "id": "HW-OBL-0044",
           "title": "A generated index labels a document with its identifier",
-          "status": "current",
-          "status_since": "2026-08-13",
+          "status": "discharged",
+          "status_since": "2026-09-11",
           "waiting_on": "build",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-09-11",
           "summary": "The index of the specification shelf reads `HW-SPEC-vision-and-scope` where the table it replaced read \"Vision and scope\".",
           "provenance": {
             "warrant": "accepted",
@@ -7597,12 +7626,40 @@
         }
       },
       {
+        "path": "docs/obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0183",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0183",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Every figure check of this repository reads text. A number frozen inside a committed GIF or cast is held by nothing, and the recording bars of #601 stay open.",
+          "last_verified": "2026-09-11",
+          "title": "No mechanism holds a committed binary asset against a run",
+          "waiting_on": "build",
+          "relations": {
+            "traces_to": [
+              "HW-DR-0061"
+            ]
+          },
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
         "path": "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
         "kind": "probe_result",
         "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
         "facets": {
           "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
-          "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09"
+          "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
+          "title": "Probe result for regression-probe-transcript-for-2026-09-09"
         }
       },
       {
@@ -7611,6 +7668,7 @@
         "id": "HW-RUN-regression-probe-transcript-for-2026-09-09",
         "facets": {
           "id": "HW-RUN-regression-probe-transcript-for-2026-09-09",
+          "title": "Regression probe transcript for 2026-09-09",
           "status": "draft",
           "status_since": "2026-09-09",
           "summary": "Four regression sessions recorded the calls that a Claude Haiku session made while it answered the corpus probes.",
@@ -8510,6 +8568,7 @@
           "headwater:generated": "shelf_sections. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
           "id": "HW-REG-open-questions",
           "doc_type": "decision_register",
+          "title": "Open questions, closed and redirected",
           "relations": {
             "superseded_by": [
               "HW-REG-decisions",
@@ -8799,6 +8858,11 @@
         "id": "docs/taxonomies/decision-record/bundle.yml",
         "resolver": "source-tree",
         "excluded_by": "docs/taxonomies/**"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "docs/tutorials/your-first-governed-corpus.md",
+        "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
@@ -10560,6 +10624,28 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": ".claude/hooks/review.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0039",
+          "path": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "docs/tutorials/your-first-governed-corpus.md",
           "resolver": "source-tree"
         }
       },
@@ -14378,6 +14464,17 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/check/src/paint.rs",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0061",
+          "path": "docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md",
+          "kind": "decision"
         }
       },
       {

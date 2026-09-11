@@ -1,5 +1,6 @@
 ---
 id: HW-RUN-regression-probe-transcript-for-2026-09-09
+title: Regression probe transcript for 2026-09-09
 status: draft
 status_since: 2026-09-09
 summary: "Four regression sessions recorded the calls that a Claude Haiku session made while it answered the corpus probes."

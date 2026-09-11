@@ -482,16 +482,33 @@ definitions:
   # projection that takes over a path other documents already name, and this
   # block is what such a declaration adds.
   #
-  # Two scalars, and the block is closed at two on purpose. An identifier is
-  # minted once and is a declaration. A kind is a declaration. A summary, a
-  # status and a body are prose, and no member here can carry one. The earlier
-  # form of this position was a `template`, and it was refused because a taxonomy
-  # source sits outside the corpus root: prose written here would move to the one
-  # file that no census row covers and no language regime binds. A member that
-  # took an open mapping of facets would have re-admitted that prose through a
-  # different syntax, and the refusal would then have been a ruling about
-  # punctuation. This block cannot express a sentence, so the refusal stays a
-  # ruling about substance.
+  # Three scalars, and the block is closed at three. An identifier is minted
+  # once and is a declaration. A kind is a declaration. A name is a declaration:
+  # it is what the document is called, and the taxonomy already demands one from
+  # any generated document whose kind requires the facet in the `name` role.
+  # `decision_register` requires `title`, and the tombstone at
+  # `docs/spec/09-open-questions.md` is a `decision_register` that had no way to
+  # supply it, so every emitter that labels a document fell through to its
+  # identifier and a reader met `HW-REG-open-questions` in the sidebar, the
+  # browser tab and the shelf's own index (#627).
+  #
+  # A summary, a status and a body are prose, and no member here can carry one.
+  # The earlier form of this position was a `template`, and it was refused
+  # because a taxonomy source sits outside the corpus root: prose written here
+  # would move to the one file that no census row covers and no language regime
+  # binds. A member that took an open mapping of facets would have re-admitted
+  # that prose through a different syntax, and the refusal would then have been a
+  # ruling about punctuation. This block cannot express a sentence, so the
+  # refusal stays a ruling about substance.
+  #
+  # `name` does not reopen that refusal, and the reason is that it admits no new
+  # class of prose. Eight shelves of this repository already declare a free-text
+  # `title:` in a taxonomy source, and `shelf_label` renders each one into a
+  # navigation group key, a page heading and a served `<title>`. A `name` here is
+  # the same short string for a document rather than for a shelf. It is a label
+  # and never a sentence, and the member is the facet's *role* rather than its
+  # name, so the engine writes it under whichever facet this taxonomy puts in the
+  # `name` role.
   #
   # `kind` names a kind and never a facet. The engine reads the shelf that claims
   # the output path and writes whatever that shelf needs to resolve the kind: the
@@ -507,6 +524,7 @@ definitions:
     members:
       id: {scalar: string, required: true}
       kind: {scalar: string, required: true}
+      name: {scalar: string}
 
   projection_filter:
     members:
