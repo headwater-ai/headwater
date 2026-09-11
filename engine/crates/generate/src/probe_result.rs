@@ -66,6 +66,7 @@
 use crate::{Declaration, DeclaredIdentity, Identity, Kind, Output, Plan, Runs, Unwritten};
 use headwater_census::census::{Census, Outcome};
 use headwater_check::lifecycle_state::{Standing, StateFacet, Stood};
+use headwater_graph::links::Binding;
 use headwater_probe::grade::Results;
 use headwater_probe::intake::{Record, Tree};
 use headwater_query::Surface;
@@ -95,6 +96,17 @@ pub(crate) fn emit(
         .iter()
         .filter(|row| matches!(&row.outcome, Outcome::Typed { kind, .. } if kind == TRANSCRIPT))
         .map(|row| (row.path.as_str(), holds_a_refusal(&state, row)))
+        .collect();
+
+    // Every file this engine writes, which is the population `readers` takes
+    // out of the link set. A generated index links every document of its shelf
+    // by construction, so it claims nothing and naming it would put a shelf
+    // index in the list under every refusal.
+    let generated: Vec<&str> = census
+        .rows
+        .iter()
+        .filter(|row| matches!(&row.outcome, Outcome::Generated { .. }))
+        .map(|row| row.path.as_str())
         .collect();
 
     // The first of the three inputs a result is a function of. This is the arm
@@ -224,6 +236,15 @@ pub(crate) fn emit(
 
         let record = Record::read(&transcript.source, &tree);
         let results = Results::over(&record, &runs.selected);
+        // Who reads a refusal, which the state of the recording does not
+        // answer. Taken for a refused transcript alone: a result that carries
+        // verdicts costs a reader nothing, and a list of readers on every
+        // result would move the bytes of a healthy one whenever a document
+        // cited it.
+        let read_by = match record.refusal {
+            Some(_) => readers(surface, &generated, path, &output),
+            None => Vec::new(),
+        };
         // The file below still says this, and saying it there is not enough:
         // the refusal text is the derived output, so `generate --check`
         // regenerates it faithfully and every gate this repository has stays
@@ -235,13 +256,84 @@ pub(crate) fn emit(
                 confirmation: refusal.confirmation(),
                 why: refusal.to_string(),
                 held: promoted,
+                readers: read_by.clone(),
             });
         }
         plan.outputs.push(Output {
             path: output,
             kind: Kind::ProbeResult,
-            bytes: body(&front, path, &record, &results, &runs.selection),
+            bytes: body(&front, path, &record, &results, &runs.selection, &read_by),
         });
+    }
+}
+
+/// Every document of this corpus that links a refused recording or the result
+/// derived from it, in path order, once each.
+///
+/// # The state of a recording says nothing about who reads it
+///
+/// [HW-DR-0062](../../../../docs/decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md)
+/// releases the gate where the state a recording stands in says that no reader
+/// relies on it, and that reading is about one document: the recording. The
+/// documents that cite it are other documents, and retiring the recording
+/// leaves every sentence in them where it was. `0149a92c` is the measurement:
+/// it moved a refused transcript to `deprecated`, the run went green, and
+/// [HW-OBL-0010](../../../../docs/obligations/0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md)
+/// and
+/// [HW-OBL-0124](../../../../docs/obligations/0124-a-probe-result-is-printed-and-never-committed-so-nothing-regenerates-one.md)
+/// went on standing at `discharged` over a rate the result does not carry.
+///
+/// So this is reported and it fails nothing, which is that ruling's posture one
+/// hop out. The remedy is a rewrite of a sentence a person has to read, and a
+/// gate over it would be a gate on prose that the run cannot repair.
+///
+/// # It reads the links the graph build already bound
+///
+/// [`headwater_graph::links`] resolves every prose link of every document the
+/// census read, against the directory of the document that wrote it. A second
+/// reading here would be a second definition of what a prose link is, which is
+/// the argument `headwater_check::link_path` already makes about the same set.
+/// A link into a result that no run has written yet binds as `Missing` and a
+/// link into one that exists binds as `Corpus`, so both bindings are read: a
+/// reader of a result is a reader whether or not the file is on disk.
+///
+/// Two paths are dropped from the population. A generated file links what its
+/// declaration tells it to, so a shelf index would appear under every refusal
+/// and mean nothing. The transcript and the result themselves are not their own
+/// readers.
+fn readers(
+    surface: &Surface<'_>,
+    generated: &[&str],
+    transcript: &str,
+    output: &str,
+) -> Vec<String> {
+    let mut found: Vec<String> = surface
+        .graph()
+        .links
+        .iter()
+        .filter(|link| points_at(&link.binding, transcript) || points_at(&link.binding, output))
+        .map(|link| link.source_path.clone())
+        .filter(|from| from != transcript && from != output && !generated.contains(&from.as_str()))
+        .collect();
+    found.sort();
+    found.dedup();
+    found
+}
+
+/// Whether a bound link resolved to this path.
+///
+/// Three of the six bindings carry a path and each of the three is a reader.
+/// `Repository` is a file outside the corpus root, which no result or
+/// transcript is, and it is matched rather than dropped because a binding that
+/// names the path is the same claim wherever the census drew its boundary.
+fn points_at(binding: &Binding, path: &str) -> bool {
+    match binding {
+        Binding::Corpus {
+            path: destination, ..
+        }
+        | Binding::Repository { path: destination }
+        | Binding::Missing { path: destination } => destination == path,
+        Binding::Unnormalizable { .. } | Binding::SameDocument | Binding::External => false,
     }
 }
 
@@ -308,6 +400,7 @@ fn body(
     record: &Record,
     results: &Results,
     selection: &str,
+    read_by: &[String],
 ) -> String {
     use std::fmt::Write;
     let mut out = String::new();
@@ -344,6 +437,71 @@ fn body(
     let _ = writeln!(out);
 
     out.push_str(&results.render());
+    if record.refusal.is_some() {
+        let _ = writeln!(out);
+        out.push_str(&read_set_of_this_result(read_by));
+    }
+    out
+}
+
+/// The section a refused result carries: where a reader of this file would meet
+/// a measurement that does not exist.
+///
+/// # This is a comparison against the tree, and it is the second one that earns
+/// its place
+///
+/// [`READ_SET`] rules that a comparison against the tree in front of a reader
+/// does not go into a derived document, because the bytes would move on every
+/// prose edit and the staleness of a measurement would stop a merge. The
+/// `selection` comparison stands beside that rule for a stated reason: it moves
+/// only when somebody adds, removes or renames a probe, which is a deliberate
+/// act and a rare one.
+///
+/// This list is the same shape and the same reason. It moves when a document
+/// starts or stops linking this result or the transcript it graded, which is an
+/// act somebody takes on purpose. It does not move when the prose of a citing
+/// document is edited. And the merge it stops is the merge that should stop: a
+/// document that starts citing a result with no verdict in it changes these
+/// bytes, `generate --check` asks for a regeneration, and the list a reader
+/// meets is the list this corpus holds.
+///
+/// A result that carries verdicts has no such section, so nothing here moves
+/// the bytes of a healthy result.
+fn read_set_of_this_result(read_by: &[String]) -> String {
+    use std::fmt::Write;
+    let mut out = String::new();
+    let _ = writeln!(out, "## What reads this result");
+    let _ = writeln!(out);
+    match read_by {
+        [] => {
+            let _ = writeln!(
+                out,
+                "This result carries no verdict, so a rate taken off it is a rate over \
+                 none. No document of this corpus links this result or the transcript it \
+                 graded, so no sentence of this corpus rests on it."
+            );
+        }
+        readers => {
+            let _ = writeln!(
+                out,
+                "This result carries no verdict, so a rate taken off it is a rate over \
+                 none. {} of this corpus link this result or the transcript it graded, and \
+                 each one is where a reader meets a measurement this corpus does not hold:",
+                count(readers.len(), "document")
+            );
+            let _ = writeln!(out);
+            for reader in readers {
+                let _ = writeln!(out, "- `{reader}`");
+            }
+            let _ = writeln!(out);
+            let _ = writeln!(
+                out,
+                "The state this recording stands in decides whether the refusal fails a \
+                 run, and it says nothing about the list above: those are other documents, \
+                 and retiring the recording leaves every sentence in them where it was."
+            );
+        }
+    }
     out
 }
 
