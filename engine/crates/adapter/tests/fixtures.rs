@@ -1589,6 +1589,45 @@ fn the_text_report_writes_a_record_for_an_escaped_finding() {
             entry.finding.rule
         );
     }
+
+    // **And the census counts them.** The denominator stated relatively, never
+    // as the literal it is today: this corpus was 47 findings at #644 and it
+    // will move again, and a literal here would be a second copy of a count
+    // that lives in `fixture.text`.
+    let audited = headwater_adapter::census(&ran.run, Format::Text, &artifact);
+    assert_eq!(
+        (audited.findings, audited.carried),
+        (all.len(), all.len()),
+        "the text denominator is every reported finding, and every one is carried"
+    );
+
+    // **And the deletion probe can reach them.** The trap this case is written
+    // against: both readers of this report are bounded, so an emitter that
+    // wrote the records where neither looks would raise the denominator and
+    // leave the probes below deleting nothing. Deleting one escaped record has
+    // to cost exactly one finding, the same way deleting a live one does.
+    for entry in &escaped {
+        let at = match entry.finding.line {
+            0 => entry.finding.path.clone(),
+            line => format!("{}:{line}:{}", entry.finding.path, entry.finding.column),
+        };
+        let cut = spans(Format::Text, &lines)
+            .into_iter()
+            .find(|(from, to)| {
+                let block = uncolored(&lines[*from..*to].join("\n"));
+                block.contains(&at) && block.contains(entry.finding.rule)
+            })
+            .unwrap_or_else(|| panic!("a cuttable record for {} at {at}", entry.finding.rule));
+        let after =
+            headwater_adapter::census(&ran.run, Format::Text, &without(&artifact, &[cut]));
+        assert_eq!(
+            (after.carried, after.unaccounted.len()),
+            (after.findings - 1, 1),
+            "one escaped record dropped: {} at {at}",
+            entry.finding.rule
+        );
+        assert!(after.is_defective(), "{} at {at}", entry.finding.rule);
+    }
 }
 
 /// `level` is the check's severity, and the obligation's is the other member.

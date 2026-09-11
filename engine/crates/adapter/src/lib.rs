@@ -796,22 +796,62 @@ fn blocks(artifact: &str) -> Vec<Record> {
     found
 }
 
+/// Why this finding is not among the ones a reader sees, as one sentence.
+///
+/// Two formats write it: SARIF as the `justification` of a suppression, and the
+/// text report as the second line of an escaped finding's record. One sentence
+/// rather than two, because a reader who compares the two artifacts of one run
+/// is comparing the reason each gives, and two spellings of one reason is the
+/// drift spec 6 makes the library API the answer to.
+pub(crate) fn held_by(entry: &Reported<'_>, escape: Escape) -> String {
+    match escape {
+        Escape::MigrationPending => match entry.task {
+            Some(task) => format!(
+                "held by the adoption task {}, owned by {}, until {}",
+                task.id,
+                task.owner,
+                task.until.render()
+            ),
+            None => "held by the adoption payload".to_string(),
+        },
+        Escape::Suppression => match entry.directive {
+            Some(directive) => {
+                let note = match directive.note.is_empty() {
+                    true => String::new(),
+                    false => format!(" ({})", directive.note),
+                };
+                format!(
+                    "suppressed at {}:{} as {}, until {}{note}",
+                    directive.path,
+                    directive.line,
+                    directive.reason.name(),
+                    directive.until.render()
+                )
+            }
+            None => "suppressed by a directive".to_string(),
+        },
+    }
+}
+
 /// Which of a run's reported findings a format writes a record for.
 ///
-/// Three of the four write one per reported finding, escape class included:
-/// SARIF and `json` write every one into their record list, and Markdown writes
-/// the escaped ones into a second table. The text report writes a block for a
-/// live finding alone — `headwater_check::Run::render` walks `run.findings` —
-/// and it accounts for the escaped ones by count, in its adoption block and its
-/// suppression block.
+/// All four of them write one per reported finding, escape class included:
+/// SARIF and `json` write every one into their record list, Markdown writes the
+/// escaped ones into a second table, and the text report writes a record for
+/// each under its own heading. So this function holds every format to the whole
+/// reported set and the parameter is a hook for the format that stops doing so.
 ///
-/// That is a measurement of that emitter and not a permission granted to it.
-/// The reading this replaced graded all 47 findings of the recorded fixture as
-/// carried by a text artifact that holds 44 blocks, and this states the 44.
-fn recorded<'a, 'b>(format: Format, all: &'a [Reported<'b>]) -> Vec<&'a Reported<'b>> {
-    all.iter()
-        .filter(|entry| format != Format::Text || entry.is_live())
-        .collect()
+/// It has not always been four, and this function is where the exception lived.
+/// The text report used to write a block for a live finding alone, so this took
+/// a `Format` and subtracted the escaped findings from that one format's
+/// denominator — which is what made an emitter that dropped three findings
+/// audit clean over all of them. `#651` made the emitter write them, so the
+/// subtraction went rather than the denominator, and the parameter went with
+/// it. A format that has to drop a class again declares the loss in its own
+/// `LOSS` set, which is where a reader looks, rather than lowering its own bar
+/// here where no reader does.
+fn recorded<'a, 'b>(all: &'a [Reported<'b>]) -> Vec<&'a Reported<'b>> {
+    all.iter().collect()
 }
 
 /// Audit one rendered artifact against the run it came from.
@@ -872,7 +912,7 @@ pub fn census(run: &Run, format: Format, artifact: &str) -> Census {
 /// audit" is to hand the audit a wrong declaration.
 pub fn census_with(run: &Run, format: Format, artifact: &str, loss: &[Loss]) -> Census {
     let all = reported(run);
-    let held_to = recorded(format, &all);
+    let held_to = recorded(&all);
     let written = records(format, artifact);
     let mut spent = vec![false; written.len()];
     let mut unaccounted = Vec::new();
