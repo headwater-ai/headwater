@@ -20,6 +20,14 @@ facets:
     values:
       - {value: draft, role: initial}
       - {value: current, role: live}
+      # The four answers a role gives a refused transcript, which is what
+      # `only_the_role_on_a_state_decides_whether_a_refusal_fails_the_run`
+      # reads. `deprecated` is the retirement that #814 made reachable, and
+      # `filed` declares no role, so it stands for every value a taxonomy may
+      # write and this engine cannot fold. The fourth answer is a value this
+      # list does not hold at all, and the case writes one.
+      - {value: deprecated, role: terminal-retained}
+      - {value: filed}
 
   status_since:
     role: state_entered

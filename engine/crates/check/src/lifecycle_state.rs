@@ -79,7 +79,7 @@ pub const RULE: &str = "lifecycle.state.not_admitted";
 /// would make a document that declares no state and a document whose state
 /// nothing declares one value, and they are answered by two different rules.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Stood<'a> {
+pub enum Stood<'a> {
     /// A state the vocabulary holds.
     At(&'a str),
     /// The document writes no value for the state facet. `facet.required.missing`
@@ -92,10 +92,13 @@ pub(crate) enum Stood<'a> {
 
 /// The facet in the `state` role, resolved once, with the values it admits.
 ///
-/// One reader for two rules. The alternative was a second copy of the three-way
-/// reading below inside [`crate::transition`], and a copy of an invariant is
-/// what a test suite cannot see.
-pub(crate) struct StateFacet {
+/// One reader for two rules, and now for a reader outside this crate as well:
+/// `headwater-generate` asks the same question of a transcript. The alternative
+/// was a second copy of the reading below inside [`crate::transition`], and a
+/// copy of an invariant is what a test suite cannot see. It is public for that
+/// reason and for no other, so the fold stays in one place as the taxonomy
+/// moves.
+pub struct StateFacet {
     /// The name of the facet in the `state` role. A taxonomy that declares none
     /// generates no instance of either rule that reads this.
     pub(crate) name: Option<String>,
@@ -115,28 +118,45 @@ pub(crate) struct StateFacet {
 /// roles, and this reading moves with it — which is spec 2's worked overlay
 /// holding at the check layer.
 ///
-/// Three arms, and the third is the one that keeps the rule honest. `draft`
-/// carries the role `initial`: a document being argued over is not live, so
-/// nothing it points at is spec 3's finding, and it is not terminal either.
-/// A role this engine does not know lands here too, and deciding nothing about
-/// it is the same posture the rest of the check layer takes toward a value the
+/// Four arms, and the last two are what keeps the rule honest. `draft` carries
+/// the role `initial`: a document being argued over is not live, so nothing it
+/// points at is spec 3's finding, and it is not terminal either. A role this
+/// engine does not know is the fourth, and deciding nothing about it is the
+/// same posture the rest of the check layer takes toward a value the
 /// meta-schema owns.
+///
+/// **`Initial` and `Neither` are two facts, and a reader outside this crate
+/// needs both.** Spec 3's rule reads each of them as "not live", so the rules
+/// here could fold the pair. `headwater-generate` cannot: it decides whether a
+/// refused recording fails a run, and its answers for the two are opposite. A
+/// document at the initial state is one somebody is still working on, and a
+/// document whose state this engine cannot read is one that would otherwise
+/// escape the decision. One arm for both would hand that caller a single answer
+/// for two questions.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Standing {
+pub enum Standing {
     /// `role: live`. A reader may rely on this document.
     Live,
     /// A `terminal-` role. The document is kept as a record and nothing new
     /// may rest on it.
     Terminal,
-    /// Neither, including a state whose value declares no role at all.
+    /// `role: initial`. Nothing has promoted this document, so nothing relies
+    /// on it and nothing is kept by it.
+    Initial,
+    /// None of the three, including a state whose value declares no role at
+    /// all.
     Neither,
 }
 
 /// The role that names a state a reader may rely on.
 const LIVE: &str = "live";
 
+/// The role that names the state a document is authored at, before anything
+/// promotes it.
+const INITIAL: &str = "initial";
+
 impl StateFacet {
-    pub(crate) fn of(shape: &Shape) -> Self {
+    pub fn of(shape: &Shape) -> Self {
         let facet = shape.facet_in_role("state");
         StateFacet {
             name: facet.map(|facet| facet.name.clone()),
@@ -164,7 +184,7 @@ impl StateFacet {
     /// [Q26](../../../../docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md)
     /// is the ruling, and it carries the survey of published traditions behind
     /// it.
-    pub(crate) fn standing(&self, state: &str) -> Standing {
+    pub fn standing(&self, state: &str) -> Standing {
         match self
             .values
             .iter()
@@ -173,12 +193,13 @@ impl StateFacet {
         {
             Some(role) if headwater_resolve::core::role_is_terminal(role) => Standing::Terminal,
             Some(LIVE) => Standing::Live,
+            Some(INITIAL) => Standing::Initial,
             _ => Standing::Neither,
         }
     }
 
     /// What one version of a document reads as.
-    pub(crate) fn stood<'b>(&self, facets: &'b Mapping) -> Stood<'b> {
+    pub fn stood<'b>(&self, facets: &'b Mapping) -> Stood<'b> {
         let Some(name) = self.name.as_deref() else {
             return Stood::Undeclared;
         };
@@ -389,7 +410,7 @@ mod tests {
         assert_eq!(facet.standing("superseded"), Standing::Terminal);
         assert_eq!(facet.standing("deprecated"), Standing::Terminal);
         assert_eq!(facet.standing("discharged"), Standing::Terminal);
-        assert_eq!(facet.standing("draft"), Standing::Neither);
+        assert_eq!(facet.standing("draft"), Standing::Initial);
         // A value the facet does not admit has no role, and a value with no
         // role decides nothing either.
         assert_eq!(facet.standing("retired"), Standing::Neither);

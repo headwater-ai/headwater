@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 420,
-      "carried": 420,
+      "in the graph": 421,
+      "carried": 421,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1734,6 +1734,27 @@
             "traces_to": [
               "docs/tutorials/your-first-governed-corpus.md"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md",
+        "kind": "decision",
+        "id": "HW-DR-0062",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0062",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A refused transcript fails the run where its state carries the `live` role. A role that says nobody relies on the document leaves the run green.",
+          "last_verified": "2026-09-11",
+          "title": "A refused recording is held by the reliance its state claims, and not by promotion",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
           }
         }
       },
@@ -7734,9 +7755,9 @@
         "id": "HW-RUN-regression-probe-transcript-for-2026-09-11",
         "facets": {
           "id": "HW-RUN-regression-probe-transcript-for-2026-09-11",
-          "status": "current",
+          "status": "deprecated",
           "status_since": "2026-09-11",
-          "summary": "Four regression sessions ran against the lock of this tree, and the recorder observed every tool call each one made.",
+          "summary": "Four regression sessions ran against the lock of 2026-09-11, and the recorder observed every tool call each one made. The recording is retired, because a later change moved the lock it pins.",
           "last_verified": "2026-09-11",
           "tier": "regression",
           "arm": "present",
