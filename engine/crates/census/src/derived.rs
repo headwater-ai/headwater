@@ -43,7 +43,26 @@
 //! `fixtures/` component. The recorded-fold rule reaches into `fixtures/` on
 //! purpose, because a recorded fixture is an output of *this* repository's test
 //! run rather than a document of a nested corpus.
+//!
+//! # Why the report takes a [`ColorMode`]
+//!
+//! `docs/interfaces/headwater-derived.md` states the promise every interface
+//! contract of this binary states: the default senses whether each stream is a
+//! terminal, and renders color only there. This verb broke that promise from
+//! the day it shipped, and not by an oversight at a call site — the palette was
+//! a module of `headwater-check`, which depends on this crate, so naming it
+//! from here was a cycle cargo refuses. [#479](https://github.com/headwater-ai/headwater/issues/479)
+//! moved the primitives to `headwater-paint`, a leaf, and this is the first
+//! renderer below `headwater-check` to reach them.
+//!
+//! [`Population::render`] stays pure: the mode is a parameter, so the whole
+//! report is a case table with no terminal in it. That purity is also what
+//! [HW-OBL-0180](../../../../docs/obligations/0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-type-forbids-from-being-wrong.md)
+//! records, because nothing in the type says a call site handed it the mode a
+//! stream is actually in. `tools/engine/color-fixtures.sh` is what reads that,
+//! by attaching a pseudo-terminal and counting escape bytes.
 
+use headwater_paint::{paint, ColorMode, Role};
 use std::path::{Path, PathBuf};
 
 /// A thing that writes files of this repository, and the command that reruns it.
@@ -110,14 +129,30 @@ impl Population {
         self.undeclared.is_empty() && self.unproduced.is_empty()
     }
 
-    /// The report a caller reads.
-    pub fn render(&self) -> String {
+    /// The report a caller reads, painted for `mode`.
+    ///
+    /// Four roles, each chosen for what the reader does with the token rather
+    /// than for how the line reads. The opening count is a [`Role::Heading`],
+    /// the one line that says what the whole report is about. Each
+    /// [`Producer::command`] is a [`Role::Verb`], because it is the command a
+    /// reader retypes to rewrite that producer's outputs. Every path is a
+    /// [`Role::Path`], on both sides of the disagreement, because a path is
+    /// what a reader takes to an editor. The two disagreement headings are
+    /// [`Role::Error`] and their agreement counterparts are plain: the verb
+    /// exits non-zero on exactly those two conditions, so the color says the
+    /// same thing the exit status does.
+    pub fn render(&self, mode: ColorMode) -> String {
         let mut out = String::new();
-        out.push_str(&format!(
-            "{} derived artifacts, computed from {} producers\n",
-            self.outputs.len(),
-            PRODUCERS.len()
+        out.push_str(&paint(
+            Role::Heading,
+            &format!(
+                "{} derived artifacts, computed from {} producers",
+                self.outputs.len(),
+                PRODUCERS.len()
+            ),
+            mode,
         ));
+        out.push('\n');
         for producer in PRODUCERS {
             let mine: Vec<&Output> = self
                 .outputs
@@ -126,7 +161,7 @@ impl Population {
                 .collect();
             out.push_str(&format!(
                 "\n  {} — {}, {}\n",
-                producer.command(),
+                paint(Role::Verb, producer.command(), mode),
                 producer.rule(),
                 match mine.len() {
                     1 => "1 output".to_string(),
@@ -134,23 +169,26 @@ impl Population {
                 }
             ));
             for output in mine {
-                out.push_str(&format!("    {}\n", output.path));
+                out.push_str(&format!("    {}\n", paint(Role::Path, &output.path, mode)));
             }
         }
         out.push('\n');
         match self.undeclared.is_empty() {
             true => out.push_str("no producer output merges as an ordinary file\n"),
             false => {
-                out.push_str(
+                out.push_str(&paint(
+                    Role::Error,
                     "these are written by a producer and carry no `merge=headwater-regenerate`, \
-                     so two branches that move one to the same value merge it silently:\n",
-                );
+                     so two branches that move one to the same value merge it silently:",
+                    mode,
+                ));
+                out.push('\n');
                 for output in &self.undeclared {
                     out.push_str(&format!(
                         "    {} — {}, rerun with `{}`\n",
-                        output.path,
+                        paint(Role::Path, &output.path, mode),
                         output.producer.rule(),
-                        output.producer.command()
+                        paint(Role::Verb, output.producer.command(), mode)
                     ));
                 }
             }
@@ -158,12 +196,15 @@ impl Population {
         match self.unproduced.is_empty() {
             true => out.push_str("no declared path is without a producer\n"),
             false => {
-                out.push_str(
+                out.push_str(&paint(
+                    Role::Error,
                     "these declare `merge=headwater-regenerate` and no producer writes them, \
-                     so the declaration now refuses a merge of hand-written text:\n",
-                );
+                     so the declaration now refuses a merge of hand-written text:",
+                    mode,
+                ));
+                out.push('\n');
                 for path in &self.unproduced {
-                    out.push_str(&format!("    {path}\n"));
+                    out.push_str(&format!("    {}\n", paint(Role::Path, path, mode)));
                 }
             }
         }
@@ -328,5 +369,126 @@ pub fn root_of(start: &Path) -> Option<PathBuf> {
         if !here.pop() {
             return None;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Output, Population, Producer};
+    use headwater_paint::ColorMode;
+
+    /// One population that reaches every branch of the renderer: outputs under
+    /// two different producers, and both directions of disagreement non-empty.
+    ///
+    /// A population that agrees would render two plain sentences where the two
+    /// `Role::Error` headings go, so it could not tell a renderer that paints
+    /// them from one that does not.
+    fn disagreeing() -> Population {
+        let generated = Output {
+            path: "docs/spec/06-engine-architecture.md".to_string(),
+            producer: Producer::Generate,
+        };
+        let lock = Output {
+            path: ".headwater/taxonomy.lock".to_string(),
+            producer: Producer::TaxonomyResolve,
+        };
+        Population {
+            outputs: vec![lock, generated.clone()],
+            declared: vec![
+                ".headwater/taxonomy.lock".to_string(),
+                "docs/handbook.md".to_string(),
+            ],
+            undeclared: vec![generated],
+            unproduced: vec!["docs/handbook.md".to_string()],
+        }
+    }
+
+    /// `Plain` writes the whole report and not one escape byte.
+    ///
+    /// This is the arm every headless test of this repository already had, and
+    /// on its own it passed a renderer that emitted no color under any
+    /// condition — which is what `headwater derived` did until #479. It is here
+    /// for the other direction: that turning the palette on moved no text.
+    #[test]
+    fn plain_writes_the_whole_report_and_no_escape_sequence() {
+        let rendered = disagreeing().render(ColorMode::Plain);
+        assert!(!rendered.contains('\x1b'), "{rendered:?}");
+        assert!(rendered.starts_with("2 derived artifacts, computed from 4 producers\n"));
+        assert!(rendered.contains("  headwater generate — carries the generated-file marker"));
+        assert!(rendered.contains("    docs/spec/06-engine-architecture.md\n"));
+        assert!(rendered.contains("these are written by a producer and carry no"));
+        assert!(rendered.contains("these declare `merge=headwater-regenerate` and no producer"));
+        assert!(rendered.contains("    docs/handbook.md\n"));
+    }
+
+    /// `Ansi` paints the four roles the report uses, and changes no text.
+    ///
+    /// The assertion is per role rather than a count of escape bytes: a count
+    /// passes when one token is painted and three are not, which is the
+    /// half-wired renderer this case exists to refuse.
+    #[test]
+    fn ansi_paints_the_heading_the_verbs_the_paths_and_the_two_refusals() {
+        let rendered = disagreeing().render(ColorMode::Ansi);
+        for (role, expected) in [
+            (
+                "heading",
+                "\x1b[1m2 derived artifacts, computed from 4 producers\x1b[0m",
+            ),
+            ("verb", "\x1b[1;32mheadwater generate\x1b[0m"),
+            ("path", "\x1b[36mdocs/spec/06-engine-architecture.md\x1b[0m"),
+            ("unproduced path", "\x1b[36mdocs/handbook.md\x1b[0m"),
+            (
+                "undeclared refusal",
+                "\x1b[1;31mthese are written by a producer and carry no",
+            ),
+            (
+                "unproduced refusal",
+                "\x1b[1;31mthese declare `merge=headwater-regenerate`",
+            ),
+        ] {
+            assert!(
+                rendered.contains(expected),
+                "the {role} is unpainted under Ansi:\n{rendered}"
+            );
+        }
+    }
+
+    /// The two modes differ by escape sequences alone.
+    ///
+    /// Stripping every SGR sequence out of the painted report gives the plain
+    /// report back, byte for byte. This is the unit-level half of what
+    /// `strips_to_the_plain_bytes` asserts in `tools/engine/color-fixtures.sh`
+    /// for the surfaces that fold, and it is what says a painted token did not
+    /// gain or lose a byte beside it.
+    #[test]
+    fn stripping_the_escapes_gives_the_plain_report_back() {
+        let population = disagreeing();
+        let painted = population.render(ColorMode::Ansi);
+        let mut stripped = String::with_capacity(painted.len());
+        let mut rest = painted.as_str();
+        while let Some(start) = rest.find('\x1b') {
+            stripped.push_str(&rest[..start]);
+            let after = &rest[start..];
+            let end = after
+                .find('m')
+                .expect("every escape this renderer writes is an SGR sequence ending in m");
+            rest = &after[end + 1..];
+        }
+        stripped.push_str(rest);
+        assert_eq!(stripped, population.render(ColorMode::Plain));
+    }
+
+    /// A population that agrees prints its two agreement sentences plain under
+    /// `Ansi`, because the verb exits zero on it.
+    ///
+    /// `Role::Error` says what the exit status says. A renderer that painted
+    /// both branches red would tell a reader that an agreeing tree is a
+    /// disagreeing one, and the two cases above cannot see that.
+    #[test]
+    fn an_agreeing_population_paints_no_refusal() {
+        let rendered = Population::default().render(ColorMode::Ansi);
+        assert!(rendered.contains("\nno producer output merges as an ordinary file\n"));
+        assert!(rendered.contains("no declared path is without a producer\n"));
+        assert!(!rendered.contains("\x1b[1;31m"), "{rendered:?}");
     }
 }

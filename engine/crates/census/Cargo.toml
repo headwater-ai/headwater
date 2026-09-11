@@ -44,6 +44,11 @@ headwater-yaml = { workspace = true }
 # because `taxonomy validate` reads it with no corpus in hand.
 headwater-meta = { workspace = true }
 
+# `Population::render` colors its report, and the palette is a leaf crate for
+# exactly this: `headwater-check` depends on this crate, so a palette inside
+# `headwater-check` is a cycle from here and not a dependency.
+headwater-paint = { workspace = true }
+
 [dev-dependencies]
 # The census of this repository needs this repository's taxonomy resolved. The
 # library takes an already-resolved taxonomy and knows nothing about where one
