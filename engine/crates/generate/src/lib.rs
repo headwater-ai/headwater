@@ -606,13 +606,17 @@ pub struct RefusedTranscript {
     pub why: String,
     /// Whether this refusal fails the run.
     ///
-    /// A transcript a corpus has promoted past `draft` is evidence, and a
-    /// refused one is evidence of nothing, so the run fails. A transcript still
-    /// at `draft` is a recording somebody is working on: the run reports it and
-    /// does not fail, because the remedy is a fresh recording rather than an
-    /// edit anybody can make, and a gate a contributor cannot clear is a gate
-    /// that gets removed. Promoting a refused transcript is what fails, which
-    /// is the moment a reader would otherwise start citing it.
+    /// A transcript the corpus says a reader may rely on is evidence, and a
+    /// refused one is evidence of nothing, so the run fails. Every other
+    /// transcript is reported and does not fail, because the remedy for a
+    /// refusal is a fresh recording rather than an edit anybody can make, and a
+    /// gate a contributor cannot clear is a gate that gets removed. Claiming
+    /// reliance on a refused transcript is what fails, which is the moment a
+    /// reader would otherwise start citing it.
+    ///
+    /// Reliance is the `live` role on the state the document declares, and
+    /// `headwater_generate::probe_result::claims_reliance` is where the
+    /// taxonomy answers it.
     pub held: bool,
 }
 
@@ -620,10 +624,11 @@ impl RefusedTranscript {
     /// The line a run prints under the transcript's path.
     pub fn line(&self) -> String {
         let posture = match self.held {
-            true => "it is not a draft, so this run fails",
+            true => "nothing in this corpus says that no reader relies on it, so this run fails",
             false => {
-                "it is still a draft, so this run reports it and does not fail. Promoting it \
-                 without a fresh recording is what fails"
+                "the state it stands in says that no reader relies on it, so this run reports it \
+                 and does not fail. Moving it to a state that claims reliance, without a fresh \
+                 recording, is what fails"
             }
         };
         format!(
@@ -1101,7 +1106,8 @@ impl Report {
             return Some(format!(
                 "`{}` is refused by {}, so the result this run wrote for it holds no verdict. \
                  Regenerating writes the refusal again. Record the session again against this \
-                 tree, or return the transcript to `draft` until somebody does",
+                 tree, or retire the transcript to a state whose role is terminal until \
+                 somebody does",
                 refused.transcript, refused.confirmation
             ));
         }

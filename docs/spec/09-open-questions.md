@@ -11,7 +11,7 @@ relations:
 
 # Decision records
 
-61 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+62 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -256,3 +256,7 @@ relations:
 ## The engine's version stays one number, and a build's exact commit is a separate, unwired fact
 
 [HW-DR-0060](../decisions/0060-the-engine-s-version-stays-one-number-and-a-build-s-exact-commit-is-a-separate-unwired-fact.md) — A binary's `--version` keeps naming one number, the `Cargo.toml` version a `requires_engine` range is read against. Which commit built it is a separate fact a build script now captures, kept out of that comparison and not yet on the command line.
+
+## A refused recording is held by the reliance its state claims, and not by promotion
+
+[HW-DR-0062](../decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md) — A refused transcript fails the run where its state carries the `live` role. A role that says nobody relies on the document leaves the run green. (asserted, and no human has accepted it)

@@ -1,8 +1,8 @@
 ---
 id: HW-RUN-regression-probe-transcript-for-2026-09-11
-status: current
+status: deprecated
 status_since: 2026-09-11
-summary: "Four regression sessions ran against the lock of this tree, and the recorder observed every tool call each one made."
+summary: "Four regression sessions ran against the lock of 2026-09-11, and the recorder observed every tool call each one made. The recording is retired, because a later change moved the lock it pins."
 last_verified: 2026-09-11
 tier: regression
 arm: present
@@ -30,7 +30,9 @@ cost_cents: 43
 
 `tools/probe/probe-record.sh` drove four sessions, one for each probe `headwater probe plan --tier regression` selected, and each one ran in its own copy of this corpus outside this checkout. Claude Code 2.1.268 wrote each stream to the recorder's standard-output pipe. The harness wrote this log and the model did not. The identity above is the identity the plan fixed before the first session started, and the four members that belong to the run are the model, the served version, the date and the realized cost. The cost is the sum over the four sessions, which spent 28, 7, 4 and 4 cents against a declared 25 cents each.
 
-This transcript stands at `current` and not at `draft`. A refused transcript at `draft` is reported by `headwater generate` and does not fail the run, which is how the recording of 2026-09-09 sat unread for twenty-eight days. A transcript at `current` fails the run the moment a confirmation refuses it, so a lock that moves under this file is audible on the next run rather than on the next reader.
+**This transcript stands at `deprecated`, and the reason is the lock it pins.** The digest above is the lock of the tree these four sessions met. Any change to the taxonomy moves that lock, and the first of the five confirmations then refuses this recording. The result derived from it carries no verdict on such a tree. Nobody has recorded four fresh sessions since 2026-09-11, and this file waits for whoever records the next four. A reader may take no rate from it as a measurement of a tree whose lock differs from the digest above.
+
+The retirement is what keeps that staleness off the build. [HW-DR-0062](../decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md) is the ruling, and [spec 15](../spec/15-the-recorder-contract.md) states what a run does about a refusal. A refused recording at this state is reported by `headwater generate` and does not fail the run. A recording that claims reliance fails it, which is the toll this file paid at `current`.
 
 ## Events
 

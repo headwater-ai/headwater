@@ -126,6 +126,8 @@ docs/decisions/0060-the-engine-s-version-stays-one-number-and-a-build-s-exact-co
   typed: decision
 docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md
   typed: decision
+docs/decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md

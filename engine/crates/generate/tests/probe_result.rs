@@ -778,3 +778,162 @@ fn a_transcript_planned_against_another_taxonomy_fails_the_run() {
          and the run that wrote it exits 0"
     );
 }
+
+/// One tree whose transcript is refused, standing at the state named.
+///
+/// The lock edit is the one
+/// [`a_transcript_planned_against_another_taxonomy_fails_the_run`] makes, so
+/// every tree below is refused by the first of the five confirmations and the
+/// state is the only thing that differs between them.
+fn refused_at(scratch: &str, state: &str) -> (PathBuf, headwater_generate::Report) {
+    let at = copied(scratch);
+    edit(
+        &at,
+        TRANSCRIPT,
+        "lock: sha256:fixture",
+        "lock: sha256:another-taxonomy",
+    );
+    if state != "current" {
+        edit(
+            &at,
+            TRANSCRIPT,
+            "status: current",
+            &format!("status: {state}"),
+        );
+    }
+    let plan = plan_over(&at);
+    let report = write(&at, &plan);
+    (at, report)
+}
+
+/// The refusal this run reported over the fixture transcript, and nothing else.
+fn only_refusal(report: &headwater_generate::Report) -> &headwater_generate::RefusedTranscript {
+    match report.refused.as_slice() {
+        [one] => one,
+        other => panic!(
+            "the run reported {} refused transcripts, not one",
+            other.len()
+        ),
+    }
+}
+
+/// What the state a refused transcript stands in decides, over every answer a
+/// role can give.
+///
+/// [#814](https://github.com/headwater-ai/headwater/issues/814) is the report.
+/// The predicate used to be "this document is not a draft", and the two are not
+/// the same question: the standard lifecycle has no transition back to `draft`,
+/// so a promoted recording could never be allowed to go stale and every change
+/// that moved the lock owed four fresh sessions before it could merge. Two
+/// verified branches were blocked on it the day this was filed.
+///
+/// The table is the whole rule. A role that says nothing relies on the document
+/// releases the refusal, and everything else holds it — including the two
+/// readings where this engine cannot tell what the document claims, which is
+/// the silent pass `probe_result` exists to close. Nothing here names a state
+/// value that the engine reads; the values are the fixture taxonomy's and the
+/// decision is over the role beside each one.
+#[test]
+fn only_the_role_on_a_state_decides_whether_a_refusal_fails_the_run() {
+    for (state, holds, why) in [
+        (
+            "current",
+            true,
+            "`live` is the role that says a reader may rely on the document, and a refused \
+             recording relied on is the case this gate exists for",
+        ),
+        (
+            "draft",
+            false,
+            "`initial` is a recording somebody is still working on, and the remedy for a \
+             refusal is a fresh recording rather than an edit",
+        ),
+        (
+            "deprecated",
+            false,
+            "a `terminal-` role keeps the document as a record and lets nothing new rest on \
+             it, so a stale recording contradicts nothing this corpus asserts",
+        ),
+        (
+            "filed",
+            true,
+            "a value the vocabulary declares with no role says nothing about reliance, and a \
+             recording may not be released by a state this engine cannot read",
+        ),
+        (
+            "retired",
+            true,
+            "a value the vocabulary does not admit is no state at all, and a recording may not \
+             escape the gate by declaring one",
+        ),
+    ] {
+        let (at, report) = refused_at(&format!("refused-at-{state}"), state);
+        let refused = only_refusal(&report);
+        assert_eq!(
+            refused.transcript, TRANSCRIPT,
+            "the run reported a refusal over some other file at `{state}`"
+        );
+        assert_eq!(
+            refused.held, holds,
+            "a transcript at `{state}` holds the refusal {holds}: {why}"
+        );
+        assert_eq!(
+            report.remedy().is_some(),
+            holds,
+            "the run over a transcript at `{state}` fails {holds}: {why}. It printed:\n{}",
+            report.render(ColorMode::Plain)
+        );
+
+        // The result is written either way, and it carries the refusal and no
+        // verdict. A state that released the refusal by writing no file would
+        // take the measurement out of the corpus rather than mark it stale.
+        let written = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+        assert!(
+            written.contains("sha256:another-taxonomy"),
+            "the result written for a transcript at `{state}` does not carry the refusal:\n\
+             {written}"
+        );
+        assert!(
+            !written.contains("## The verdicts"),
+            "the result written for a transcript at `{state}` carries verdicts, and a refused \
+             transcript reaches no grader:\n{written}"
+        );
+        assert!(
+            report
+                .render(ColorMode::Plain)
+                .contains("refused transcripts"),
+            "the run over a transcript at `{state}` did not report the refusal to a reader"
+        );
+    }
+}
+
+/// Promotion is what fails, and it fails on the promotion alone.
+///
+/// The table above reads five trees that differ in their state. This reads one
+/// tree twice, so that nothing but the promotion can account for the change:
+/// green at `draft`, red at `current`, over the same refused recording.
+#[test]
+fn promoting_a_refused_transcript_turns_a_green_run_red() {
+    let (at, report) = refused_at("refused-then-promoted", "draft");
+    assert_eq!(
+        report.remedy(),
+        None,
+        "a refused transcript at `draft` failed the run before anything promoted it:\n{}",
+        report.render(ColorMode::Plain)
+    );
+
+    edit(&at, TRANSCRIPT, "status: draft", "status: current");
+    let promoted = write(&at, &plan_over(&at));
+    assert!(
+        only_refusal(&promoted).held,
+        "promoting a refused transcript to a state a reader may rely on left the refusal \
+         released"
+    );
+    let remedy = promoted
+        .remedy()
+        .expect("promoting a refused transcript fails the run");
+    assert!(
+        remedy.contains(TRANSCRIPT) && remedy.contains("Record the session again"),
+        "the remedy for a promoted refusal names the transcript and the recording: {remedy}"
+    );
+}

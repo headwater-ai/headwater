@@ -65,6 +65,7 @@
 
 use crate::{Declaration, DeclaredIdentity, Identity, Kind, Output, Plan, Runs, Unwritten};
 use headwater_census::census::{Census, Outcome};
+use headwater_check::lifecycle_state::{Standing, StateFacet, Stood};
 use headwater_probe::grade::Results;
 use headwater_probe::intake::{Record, Tree};
 use headwater_query::Surface;
@@ -86,13 +87,14 @@ pub(crate) fn emit(
     plan: &mut Plan,
 ) {
     // Every committed transcript, in census order, which is path order, with
-    // the lifecycle state it declares. The state decides whether a refusal
-    // fails the run: see `RefusedTranscript::held`.
+    // what the state it declares claims about it. The claim decides whether a
+    // refusal fails the run: see `RefusedTranscript::held`.
+    let state = StateFacet::of(surface.shape());
     let committed: Vec<(&str, bool)> = census
         .rows
         .iter()
         .filter(|row| matches!(&row.outcome, Outcome::Typed { kind, .. } if kind == TRANSCRIPT))
-        .map(|row| (row.path.as_str(), !is_draft(row)))
+        .map(|row| (row.path.as_str(), holds_a_refusal(&state, row)))
         .collect();
 
     // The first of the three inputs a result is a function of. This is the arm
@@ -243,27 +245,60 @@ pub(crate) fn emit(
     }
 }
 
-/// Whether this transcript is still a draft.
+/// Whether a refusal over this transcript fails the run.
 ///
-/// Read from the row the census already parsed rather than from the file again,
-/// for the reason [`headwater_census::census::Row::document`] states: a second
-/// read is a second account of one file, and the two can differ.
+/// The question is whether the corpus claims a reader may rely on the
+/// recording, and the taxonomy answers it rather than this crate. Every value
+/// of a state vocabulary carries a role, and
+/// `packages/headwater-standard/taxonomy.yml` gives the roles in its own words:
+/// `current` is "the document states what holds now, and a reader may rely on
+/// it", and `deprecated` is "the document is no longer to be relied on". So the
+/// reading is [`headwater_check::lifecycle_state::StateFacet::standing`], which
+/// is the fold spec 3's dependency rule already takes, and a sixth state added
+/// to the vocabulary is classified here by the role it declares and by no edit
+/// to this crate.
 ///
-/// A facet this engine cannot read is not a draft. The alternative is a
-/// transcript that escapes the report by carrying a `status` nobody declared,
-/// which is the silent pass this whole module exists to close.
-fn is_draft(row: &headwater_census::census::Row) -> bool {
-    row.document
-        .as_ref()
-        .and_then(|document| document.facets.get(DRAFT_FACET))
-        .and_then(|entry| entry.value.as_scalar())
-        .is_some_and(|status| status.text == DRAFT)
+/// **A run fails unless a role this engine can read says nothing relies on the
+/// document.** Two roles say it, and each releases the refusal for its own
+/// reason:
+///
+/// - `initial` is a recording somebody is still working on. The remedy for a
+///   refusal is a fresh recording rather than an edit anybody can make, and a
+///   gate a contributor cannot clear is a gate that gets removed.
+/// - a `terminal-` role is a recording the corpus has retired. It is kept as a
+///   record and nothing new may rest on it, so a refusal over it contradicts
+///   nothing the corpus asserts. This arm is
+///   [#814](https://github.com/headwater-ai/headwater/issues/814). The standard
+///   lifecycle has no transition back to the initial state, so until it landed
+///   there was no legal state in which a recording could go stale, and every
+///   change that moved the lock was tolled four fresh sessions.
+///
+/// Everything else fails, and that is the silent pass this module exists to
+/// close. A row that parsed no document, a document that declares no state, a
+/// value the vocabulary does not admit and a value whose role this engine
+/// cannot fold are four ways of saying that nothing has stated where this
+/// recording stands. A transcript that escaped the gate by declaring nothing is
+/// the shape `f615fb86` landed, and the reading that deciding nothing about a
+/// state means deciding nothing about the run would reopen it. The rules that
+/// own the middle two are `facet.required.missing` and
+/// `facet.value.not_permitted`, and this holds the refusal until one of them is
+/// answered.
+///
+/// It reads the row the census already parsed rather than opening the file
+/// again, for the reason [`headwater_census::census::Row::document`] states: a
+/// second read is a second account of one file, and the two can differ.
+fn holds_a_refusal(state: &StateFacet, row: &headwater_census::census::Row) -> bool {
+    let Some(document) = row.document.as_ref() else {
+        return true;
+    };
+    match state.stood(&document.facets) {
+        Stood::At(value) => !matches!(
+            state.standing(value),
+            Standing::Initial | Standing::Terminal
+        ),
+        Stood::Undeclared | Stood::NotAState(_) => true,
+    }
 }
-
-/// The facet a lifecycle state is declared in, and the one value of it that
-/// says a recording is not yet evidence.
-const DRAFT_FACET: &str = "status";
-const DRAFT: &str = "draft";
 
 /// The whole file: the front matter, the marker where there is no front matter,
 /// and the report.
