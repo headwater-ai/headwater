@@ -10,7 +10,7 @@ relations:
 
 # Decision records
 
-60 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+61 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -71,6 +71,10 @@ relations:
 ## Q15 — A synthesized content tier
 
 [HW-DR-0015](../decisions/0015-a-synthesized-content-tier.md) — Every document carries a warrant from a closed set of four, and `asserted` content is admitted with limits.
+
+## Q61 — How a recorded terminal demonstration is held against a run
+
+[HW-DR-0061](../decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md) — A recorded terminal demonstration is a figure under HW-DR-0039. It may show only the tutorial's scratch corpus, where a blocking step already holds every printed output against a run. (asserted, and no human has accepted it)
 
 ## Q39 — How a figure reaches a hand-built page
 

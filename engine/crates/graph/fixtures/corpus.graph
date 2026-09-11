@@ -47,6 +47,8 @@ anchors
   code_path `docs/taxonomies/decision-record/bundle.yml` via source-tree
     cited by HW-DR-0030
     inside `docs/taxonomies/**`, which this corpus declares is not corpus content
+  code_path `docs/tutorials/your-first-governed-corpus.md` via source-tree
+    cited by HW-DR-0061
   code_path `engine/Cargo.lock` via source-tree
     cited by HW-REQ-0001
   code_path `engine/Cargo.toml` via source-tree

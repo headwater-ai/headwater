@@ -231,7 +231,7 @@ This paragraph read eighteen for sixteen iterations, and the number is nineteen.
 
 ## What the engine found about itself
 
-Forty-eight items: HW-OBL-0131 through HW-OBL-0159, HW-OBL-0161 through HW-OBL-0169, and HW-OBL-0172 through HW-OBL-0181. HW-OBL-0167 and HW-OBL-0177 name a decision and the other forty-six name none, because nothing else here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
+Forty-nine items: HW-OBL-0131 through HW-OBL-0159, HW-OBL-0161 through HW-OBL-0169, HW-OBL-0172 through HW-OBL-0181, and HW-OBL-0183. HW-OBL-0167, HW-OBL-0177 and HW-OBL-0183 name a decision and the other forty-six name none, because nothing else here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
 
 This class did not exist before 2026-08-26. Before that date, such a finding was filed as a GitHub issue labeled `self-audit` and left open. The theory was that a defect nobody outside this repository can reach costs nothing to hold. The theory was half right. The label did keep such work out of an iteration's hands, but it never closed anything. Of 24 issues so labeled, three ever closed. The issue board as a whole ran net-positive on all but one of the eleven days that followed. [The value rule](../../.claude/commands/next-run.md#the-value-rule) now routes a self-audit finding here directly. These 21 are the backlog that rule found already sitting on the tracker, migrated in the same change that rewrote it.
 
@@ -283,6 +283,7 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0179](../obligations/0179-the-commit-gate-checks-prose-with-a-binary-it-never-compares-against-the-engine-sources.md) — The commit gate checks prose with a binary it never compares against the engine sources
 - [HW-OBL-0180](../obligations/0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-type-forbids-from-being-wrong.md) — A renderer's color mode is wired at a call site that no type forbids from being wrong
 - [HW-OBL-0181](../obligations/0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md) — An unresolved prose link reaches a run as a graph fact and no rule turns it into a finding
+- [HW-OBL-0183](../obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md) — No mechanism holds a committed binary asset against a run
 
 ## What the first typing of this corpus found
 
@@ -329,7 +330,9 @@ Two of those numbers correct the hand count that this paragraph carried before t
 
 The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md#five-first-runs) found the defect that this file demonstrated. Each item above is really a document with a state, a date, edges to other items, and citations to its evidence. One file could not carry that, so a human kept the four lists aligned by hand. [Principle 2](00-vision-and-scope.md#design-principles) calls that a defect, and this file inherited the register index's position as the most-edited artifact in the repository.
 
-The remedy was ordinary corpus work rather than a design change, and the corpus work has run. The four lists above are 122 documents, and each list is a set of things the graph holds. What no projection kind writes is the file that this one is, and the rest of this section states why.
+The remedy was ordinary corpus work rather than a design change, and the corpus work has run. Each list above is a set of things the graph holds. This page states no total over them. A total kept by hand goes stale, and it contradicts nothing on the page that carries it. What no projection kind writes is the file that this one is, and the rest of this section states why.
+
+**What the lists above do not reach, enumerated from the shelf rather than from the lists.** The obligations shelf holds 183 records, numbered without a gap. Three of them are in no list and no range here: HW-OBL-0170, HW-OBL-0171 and HW-OBL-0182. Five absences are deliberate, because each record discharged and this page says so of each: HW-OBL-0102, HW-OBL-0116, HW-OBL-0117, HW-OBL-0130 and HW-OBL-0160. Two more discharged records sit inside a stated range and in no list. They are HW-OBL-0087 and HW-OBL-0122, and they are why a range above expands past the list under it. HW-OBL-0108 sits inside a range, in no list, and no sentence here accounts for it.
 
 The verb that derives them now exists. `headwater generate` writes a declared projection, `generate --check` holds it, and CI runs the gate. The census now reports a generated file under an outcome of its own. So a list written into `docs/` is no longer read as an untyped document of the shelf it landed on.
 
