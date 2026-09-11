@@ -475,8 +475,9 @@ fn the_run_carries_all_three_classes() {
 ///
 /// The audit of the loss-set claim, in the shape spec 6 fixes for the graph
 /// emitters. It reads the rendered bytes rather than the emitter. All four
-/// formats are held to it, `text` among them: that format declares an empty
-/// loss set, and an empty loss set is the strongest claim any of them makes.
+/// formats are held to it at the same denominator: every finding the run
+/// reported, escaped ones included. `text` used to be held to the live subset
+/// alone, which is the exemption `#651` removed.
 ///
 /// Both scopings, because a scoped run is a run whose artifact carries a block
 /// the other does not, and an emitter that dropped a finding while writing it
@@ -1525,6 +1526,69 @@ fn the_two_escape_classes_reach_the_two_sarif_kinds() {
         "external".to_string(),
         Escape::MigrationPending.name().to_string()
     )));
+}
+
+/// **The decisive case.** The text report writes a record for an escaped
+/// finding too, and each record says what holds it.
+///
+/// The sibling of `a_suppressed_finding_is_marked_and_a_live_one_is_not`, over
+/// the one format that wrote a block for a live finding alone.
+/// [Spec 6](../../../../docs/spec/06-engine-architecture.md#ci-adapters) rules
+/// it: "A suppressed finding is in the output, and it is marked. A live
+/// finding, a `migration-pending` finding and a suppressed one are three
+/// different things."
+///
+/// Asserted per escaped finding out of `reported`, never by a count and never
+/// by a substring over the whole artifact: a whole-document reading is what
+/// graded 47 of 47 findings as carried by a text artifact that held 44 blocks.
+/// The blocks are cut with the suite's own `spans(Format::Text, …)`, which is
+/// bounded to the region between the findings tally and the read-set heading,
+/// so a record this case can see is a record the deletion probes below can
+/// delete.
+#[test]
+fn the_text_report_writes_a_record_for_an_escaped_finding() {
+    let ran = fixture_run();
+    let artifact = render(&ran, Format::Text);
+    let lines: Vec<&str> = artifact.lines().collect();
+    let blocks: Vec<String> = spans(Format::Text, &lines)
+        .into_iter()
+        .map(|(from, to)| uncolored(&lines[from..to].join("\n")))
+        .collect();
+
+    let all = reported(&ran.run);
+    let escaped: Vec<_> = all.iter().filter(|entry| !entry.is_live()).collect();
+    assert!(!escaped.is_empty(), "the fixture tree escapes something");
+    // Both classes, so an emitter that marked one and dropped the other fails
+    // here rather than passing on the class it happens to write.
+    for escape in [Escape::MigrationPending, Escape::Suppression] {
+        assert!(
+            escaped.iter().any(|entry| entry.escape == Some(escape)),
+            "the fixture tree carries a {} finding",
+            escape.name()
+        );
+    }
+
+    for entry in &escaped {
+        let escape = entry.escape.expect("an escaped finding carries its class");
+        let at = match entry.finding.line {
+            0 => entry.finding.path.clone(),
+            line => format!("{}:{line}:{}", entry.finding.path, entry.finding.column),
+        };
+        let record = blocks
+            .iter()
+            .find(|block| block.contains(&at) && block.contains(entry.finding.rule))
+            .unwrap_or_else(|| {
+                panic!(
+                    "no record of the text report names {} at {at}",
+                    entry.finding.rule
+                )
+            });
+        assert!(
+            record.contains(escape.name()),
+            "the record of {} at {at} does not say which escape holds it: {record}",
+            entry.finding.rule
+        );
+    }
 }
 
 /// `level` is the check's severity, and the obligation's is the other member.
