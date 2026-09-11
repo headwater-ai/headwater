@@ -35,10 +35,15 @@
 # measurement rather than repairing it. A fixture corpus edited until it passes
 # is a fixture corpus that has stopped being external.
 #
-# The one property that is asserted rather than recorded is byte identity: the
-# assembled document below its front-matter block is the pinned file, byte for
-# byte. A body touched to make a section contract pass would void the whole
-# measurement, and case group 4 is what notices.
+# Two properties are asserted rather than recorded, and each holds half of the
+# pinning. Byte identity: the assembled document below its front-matter block
+# is the pinned file, byte for byte, so a body touched to make a section
+# contract pass voids nothing quietly. That case cannot fail on the CONTENT of
+# a source, because the runner assembles out of the same file it compares back
+# to. The digest case is the half that can: every pinned file is sealed against
+# the SHA-256 the source table records, so an edit to a vendored source reddens
+# rather than re-measuring the denominators against different bytes. Neither
+# case reaches the upstream commit, and nothing in this repository does.
 #
 # # WHAT EACH JUDGE READS
 #
@@ -90,8 +95,8 @@ if [ -z "$engine" ]; then
     echo "no engine at engine/target/{release,dev-release}/headwater, and every" >&2
     echo "  case below runs one. This suite states that and stops rather than" >&2
     echo "  reporting a row of passes over a binary that is not there." >&2
-    echo "  Build one: cargo build --profile dev-release -p headwater-cli \\" >&2
-    echo "      --manifest-path engine/Cargo.toml --locked" >&2
+    echo "  Build one:" >&2
+    echo "  cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
     exit 1
 fi
 
@@ -149,9 +154,9 @@ bundle_kinds() {
 mode_rows() {
     awk -F'|' '
         /^\|/ {
-            k = $2; s = $4; d = $5
-            gsub(/[ `]/, "", k); gsub(/[ `]/, "", s); gsub(/[ `]/, "", d)
-            if (s ~ /^sources\//) { print k "\t" s "\t" d }
+            k = $2; s = $4; d = $5; g = $6
+            gsub(/[ `]/, "", k); gsub(/[ `]/, "", s); gsub(/[ `]/, "", d); gsub(/[ `]/, "", g)
+            if (s ~ /^sources\//) { print k "\t" s "\t" d "\t" g }
         }
     ' "$fixtures/README.md"
 }
@@ -345,12 +350,44 @@ else
 fi
 
 echo
-echo "case group 5 — the external corpus of criterion 4"
+echo "case group 5 — the pinned sources are the bytes the table records"
+# The byte-identity case below cannot fail on the content of a pinned source:
+# the runner assembles the document out of the same file it compares back to,
+# so it holds the front-matter stripper and nothing else. This is the other
+# half. An edit to a vendored source moves the recorded denominators without
+# moving any assertion, and measured on 2026-09-11 one appended broken link
+# took the run from 47 findings to 48 and from 16 errors to 17 at exit 0. A
+# digest recorded beside the file it was computed from is a seal against that
+# and not a proof of provenance; nothing here reaches the upstream commit.
+printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k src dest digest; do
+    [ -n "$k" ] || continue
+    if [ -z "$digest" ]; then
+        echo "  FAIL  $k: the source table records no digest for $src"
+        echo fail >> "$scratch/digests"
+        continue
+    fi
+    read_digest=$(sha256sum "$fixtures/$src" | cut -d' ' -f1)
+    if [ "$read_digest" = "$digest" ]; then
+        echo "  ok    $k: $src is the file the table seals"
+        echo ok >> "$scratch/digests"
+    else
+        echo "  FAIL  $k: $src is not the file the table seals"
+        echo "          recorded [$digest], read [$read_digest]"
+        echo fail >> "$scratch/digests"
+    fi
+done
+digests_ok=$(grep -c '^ok$' "$scratch/digests" 2>/dev/null | head -n 1)
+digests_bad=$(grep -c '^fail$' "$scratch/digests" 2>/dev/null | head -n 1)
+passed=$((passed + ${digests_ok:-0}))
+failed=$((failed + ${digests_bad:-0}))
+
+echo
+echo "case group 6 — the external corpus of criterion 4"
 external="$scratch/external"
 make_root "$external" "diataxis-site"
 rm -rf "$external/docs"
 mkdir -p "$external/docs"
-printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k src dest; do
+printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k src dest digest; do
     [ -n "$k" ] || continue
     pattern=$(scheme_pattern "${k}_id")
     slug=$(basename "$dest" .md)
@@ -372,7 +409,7 @@ done
 # Byte identity, which is the assertion the whole group rests on: strip the
 # assembled document's first front-matter block and the blank line after it,
 # and compare what is left against the pinned file.
-printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k src dest; do
+printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k src dest digest; do
     [ -n "$k" ] || continue
     awk 'NR == 1 && $0 == "---" { infm = 1; next }
          infm && $0 == "---" { infm = 0; skipblank = 1; next }

@@ -27,14 +27,18 @@ The collision is with this repository's own adopter overlay and not with an entr
 
 The runner reads this table. Each row names a concrete kind, the shelf its documents stand on, the pinned file the runner assembles, and the path the assembled document takes. A kind the bundle declares with no row here fails the run, and a row naming a kind the bundle does not declare fails it too.
 
-| Kind | Shelf | Pinned source | Assembled path |
-|---|---|---|---|
-| `explanation` | `docs/explanations/**` | `sources/cockroach/life_of_a_query.md` | `docs/explanations/life-of-a-query.md` |
-| `how_to` | `docs/how-to/**` | `sources/sysl/best-practices-intro.md` | `docs/how-to/best-practices-intro.md` |
-| `reference` | `docs/reference/**` | `sources/sysl/lang-spec.md` | `docs/reference/lang-spec.md` |
-| `tutorial` | `docs/tutorials/**` | `sources/sysl/tutorial.md` | `docs/tutorials/tutorial.md` |
+| Kind | Shelf | Pinned source | Assembled path | SHA-256 of the pinned file |
+|---|---|---|---|---|
+| `explanation` | `docs/explanations/**` | `sources/cockroach/life_of_a_query.md` | `docs/explanations/life-of-a-query.md` | `d34dc409343a38e6234cd3f2fa45452a57f5124d3c03f47ed04212b14d23ed27` |
+| `how_to` | `docs/how-to/**` | `sources/sysl/best-practices-intro.md` | `docs/how-to/best-practices-intro.md` | `52e91d22214a6c94e8ea8472433396dacfd623cb9745e90d8970ec1f17fc97ef` |
+| `reference` | `docs/reference/**` | `sources/sysl/lang-spec.md` | `docs/reference/lang-spec.md` | `2d96f55d9897a2af9f8b3b10aa3bb368d56ae476b14cce68a28751aebc286ee0` |
+| `tutorial` | `docs/tutorials/**` | `sources/sysl/tutorial.md` | `docs/tutorials/tutorial.md` | `8b1d338dd4a99310724860042c37f11bc7e0e259ec2e5dafa31047c32705bf69` |
 
-`sysl` commit `d34f35389ac019db7c37300ac62c2306bfa766b2` supplies `docs/docs/tutorial.md`, `docs/docs/best-practices/intro.md` and `docs/docs/lang-spec.md`. `cockroach` commit `8812064a015d2faf99d3fc7e15880f94042954b0` supplies `docs/tech-notes/life_of_a_query.md`. No source body was edited, and the byte-identity case is what holds that: it strips the front matter the runner wrote and compares what is left against the pinned file with `cmp`.
+`sysl` commit `d34f35389ac019db7c37300ac62c2306bfa766b2` supplies `docs/docs/tutorial.md`, `docs/docs/best-practices/intro.md` and `docs/docs/lang-spec.md`. `cockroach` commit `8812064a015d2faf99d3fc7e15880f94042954b0` supplies `docs/tech-notes/life_of_a_query.md`.
+
+**Two cases hold the pinning, and each one holds only half of it.** The byte-identity case strips the front matter the runner wrote and compares what is left against the pinned file with `cmp`. That case cannot fail on the content of a pinned source, because the runner assembled the document from the same file it compares back to: it holds the stripper and it says nothing about whether the vendored file is still what the cited commit holds. The digest case is the other half. Each digest above is asserted against the file on disk, so an edit to any vendored source reddens the run and the recorded denominators below are never quietly re-measured against different bytes.
+
+**Neither case reaches the upstream commit, and nothing in this repository does.** A digest recorded beside a file it was computed from is a seal against local drift and not a proof of provenance. Confirming that `d34f3538` and `8812064a` still hold these bytes takes a network fetch, which no fixture runner here performs. That gap is real and it is stated rather than papered over.
 
 The identifier of each assembled document comes from the `pattern` of `identifier_schemes.<kind>_id` in `bundle.yml`, with the namespace `DX` and the file name as the slug. No identifier is written into the runner.
 
@@ -66,4 +70,6 @@ The planted input is `kind: reference` on the document standing on the `tutorial
 
 ## What the runner enumerates rather than lists
 
-No kind name, shelf path, source path or expected count is written into `tools/diataxis-fixtures.sh`. The concrete kinds come from the `add:` block of `bundle.yml`, the mode map comes from the source table above, and the identifier patterns come from the same bundle. The finding denominators are printed by each run and asserted by nothing, because a warning count is a property of somebody else's prose and a run that asserted it would redden the day a source repository was re-pinned.
+No kind name, shelf path, source path or expected count is written into `tools/diataxis-fixtures.sh`. The concrete kinds come from the `add:` block of `bundle.yml`, the mode map and the digests come from the source table above, and the identifier patterns come from the same bundle. The finding denominators are printed by each run and asserted by nothing, because a finding count is a property of somebody else's prose and a run that asserted it would redden the day a source repository was re-pinned, or the day a rule of the engine was widened.
+
+**What catches a stale denominator, then.** The table above is a snapshot that no gate re-derives, so on its own it can drift: appending one broken link to a pinned source moves the run from 47 findings to 48 and from 16 errors to 17, and a runner that only printed the new figures would exit 0 over the change. The digest case is what closes that particular route, because the only way to move a denominator by editing this repository is to edit a pinned source, and every pinned source is sealed. The two routes the digest case leaves open are an engine whose rules changed and a re-pin to a newer upstream commit. Both are deliberate acts by a person who is already editing this page, and both should update the table in the same change. A run that asserted the counts would turn each of them into a red suite with a number to copy, which teaches a reader to copy numbers.
