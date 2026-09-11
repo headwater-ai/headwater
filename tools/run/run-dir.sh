@@ -15,6 +15,7 @@
 #         findings.jsonl   one object per finding handed forward
 #         lessons.md       prose, seeded from the previous run
 #         decisions.md     prose, seeded from the previous run
+#         parent.session   the parent's session id prefix, for the review hook
 #
 # Under the common dir rather than under a worktree, so every worktree of the
 # clone reaches it and none of them commits it. `git rev-parse
@@ -94,6 +95,13 @@ start() {
         exit 1
     fi
     cp "$root/.claude/run/doctrine.md" "$dir/doctrine.md"
+    # The session that is this run's parent, so that the review-time hook
+    # (.claude/hooks/review.sh) can end that session's turns without the commit
+    # gate. The harness names the job directory after the session id's first
+    # segment; outside the harness nothing is written and the hook runs as before.
+    if [ -n "${CLAUDE_JOB_DIR:-}" ]; then
+        printf '%s\n' "${CLAUDE_JOB_DIR##*/}" > "$dir/parent.session"
+    fi
     : > "$dir/log.jsonl"
     : > "$dir/findings.jsonl"
     # Seed the prose from the most recent run that has any, so a lesson

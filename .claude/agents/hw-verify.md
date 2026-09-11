@@ -11,7 +11,7 @@ Invoke the `hw-verification-bar` skill before you begin; it is the list of attac
 
 ## What you produce
 
-A report of under 400 tokens and no file. You have no `Edit` and no `Write`, by design: a verifier that can repair a branch verifies its own repair. Your verdict is your report, and the parent carries it into the integrate dispatch or back to the build agent.
+The fixed block and nothing before it. Your narrative goes to `<scratch>/verify-report.md` by shell redirect, which touches no tree; you have no `Edit` and no `Write`, by design: a verifier that can repair a branch verifies its own repair. Your verdict is your report, and the parent carries it into the integrate dispatch or back to the build agent.
 
 The report ends with this block:
 

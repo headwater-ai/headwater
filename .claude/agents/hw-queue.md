@@ -11,7 +11,7 @@ Invoke the `hw-run-policy` skill before you begin. It carries the environment an
 
 ## What you produce
 
-One file, `queue.md`, in the run directory the dispatch names, and a report of under 400 tokens.
+One file, `queue.md`, in the run directory the dispatch names, and a report that is the block and the lines for `headwater-product-owner`, nothing more.
 
 The file is an ordered list, one line per eligible issue: number, title, milestone, the reader outside this repository it serves, and the artifacts it will most likely regenerate. A candidate that would touch a corpus-wide recorded artifact (a document under `docs/`, the census, the graph export) is marked `wide`, and an engine-only change is marked `narrow`, so the parent can prefer issues that do not collide when it runs more than one at once.
 

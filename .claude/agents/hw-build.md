@@ -11,7 +11,7 @@ Invoke the `hw-run-policy` skill before you begin. Invoke `headwater-engine` bef
 
 ## What you produce
 
-A pull request, a note, and a report of under 400 tokens.
+A pull request, a note, and a report that is the four lines, one sentence each, and the block. Everything else is the note.
 
 The note, `build.md` in the issue's scratch directory, is for the verifier: what you built, what you ran with each command's exit status, the numbers that moved and why each one moved, the decisive fixture and the run that showed it failing before it passed, and every claim you could not check yourself.
 
@@ -25,6 +25,7 @@ The report is the four lines, and then the block:
     BRANCH: <name>
     PR: #<number>
     FIXTURE: failed at <commit>, passes at <commit>
+    CI: <run id> green at <sha>
 
 ## How you work
 
@@ -42,6 +43,8 @@ Leave the shared checkout on `main` and untouched. Build the engine in your work
 **The bar is the Done-when, not the title.** An honest split is a success condition: when the issue is more than lands in one pull request, split it on the board, take the first sound piece, file the remainder with an `## ELI5` section per `.github/ISSUE_TEMPLATE/issue.md`, and return `Refs #N`.
 
 **Before you open the pull request**, rebase onto `origin/main`, rebuild the engine, then run `headwater generate` and re-bless the recorded fixtures, and read that diff. A binary built before the rebase writes what the previous engine produced, and `headwater check --strict` passes it because the same binary wrote and checked it.
+
+**After you open it, wait for CI once**, with `gh run watch <id> --exit-status` or an `until` loop at thirty seconds, and repair a Format, Lint or unblessed-fixture failure yourself before you report. Seven of ten vetoes in one run were exactly those, and each one bought a fresh verifier at twenty minutes. A red CI you cannot repair is the first line of your report, not a pull request handed on.
 
 **A `waits-on` line in your dispatch is the integrator's to honor, not yours to build around.** Build against `origin/main` as it stands; the integrator merges the awaited change first and rebases yours behind it. Do not rebase onto another agent's unmerged branch.
 

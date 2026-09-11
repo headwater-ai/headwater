@@ -11,7 +11,7 @@ Invoke the `headwater-orient` skill before you search `docs/`, and the `hw-run-p
 
 ## What you produce
 
-One note, `adjudication.md`, in the issue's scratch directory, and a report of under 400 tokens.
+One note, `adjudication.md`, in the issue's scratch directory, and a report that is one line of premise verdict and the block. The reasoning is in the note.
 
 The note is for the build agent, which starts near an empty context and reads nothing you saw unless you wrote it down. It holds: the premise verdict and what changed if it does not hold; what will be built, as a bar the verifier can check; the decisive fixture, which is the one test that would catch the thing the issue exists to prevent; the contract, decision clause or `tests/*.rs` case table the change extends first, if one exists; the open findings under [13 — Open obligations](../../docs/spec/13-open-obligations.md) this issue touches, saying which are the build agent's to close and which to record against; and the current numbers with their denominators.
 
