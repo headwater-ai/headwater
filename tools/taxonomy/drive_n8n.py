@@ -103,35 +103,68 @@ def stated_figures(readme_text):
 
 
 def measured_figures(report, strict_status):
-    """Read the same figures out of what `headwater check` printed."""
+    """Read the same figures out of what `headwater check` printed.
 
-    def one(pattern, default=None):
+    **A pattern that misses is an error and never a zero.** Two lines of this
+    report are genuinely absent when their value is zero: the census omits
+    `excluded` and the findings block omits a severity nobody hit. Every other
+    line is printed whatever the count, `  0 findings` included, which
+    `engine/crates/cli/tests/interface_contract.rs` holds. So `absent` is a
+    reading only where the engine really omits, and each of the two is then
+    held by arithmetic below rather than trusted. A report whose layout moved
+    under this parser fails the job; it does not read as a corpus with nothing
+    in it, which would be a suite reporting green on an input it never found.
+    """
+
+    def one(pattern, absent=None):
         m = re.search(pattern, report, re.M)
         if m is None:
-            if default is None:
-                raise Mismatch("the run printed no `%s`" % pattern)
-            return default
+            if absent is None:
+                raise Mismatch("the run printed no line matching `%s`, so this suite cannot read that figure. "
+                               "The report layout moved, or the run is not the run this parser was written for." % pattern)
+            return absent
         return m.group(1)
+
+    def total(pattern):
+        return sum(int(m) for m in re.findall(pattern, report, re.M))
 
     kind = re.search(r"^\s+\d+ typed (\w+)$", report, re.M)
     if kind is None:
         raise Mismatch("the census named no typed kind")
-    return {
+    measured = {
         "files under the corpus root": one(r"^\s+(\d+) files under the corpus root$"),
         "typed": one(r"^\s+(\d+) typed$"),
+        # Omitted when zero, and held by the census arithmetic below.
         "excluded": one(r"^\s+(\d+) excluded$", "0"),
         "checked": one(r"^\s+\d+ seen, \d+ classified, (\d+) checked, \d+ check instances$"),
         "check instances": one(r"^\s+\d+ seen, \d+ classified, \d+ checked, (\d+) check instances$"),
-        "findings": one(r"^\s+(\d+) findings$", "0"),
+        "findings": one(r"^\s+(\d+) findings$"),
+        # Omitted when zero, and held by the severity arithmetic below.
         "errors": one(r"^\s+(\d+) . error$", "0"),
         "warnings": one(r"^\s+(\d+) . warn$", "0"),
-        "census kind count": re.search(r"^\s+(\d+) typed \w+$", report, re.M).group(1),
+        "census kind count": one(r"^\s+(\d+) typed \w+$"),
         "census kind": kind.group(1),
-        "graph nodes": one(r"^\s+(\d+) nodes, \d+ declared edge halves$", "0"),
-        "declared edge halves": one(r"^\s+\d+ nodes, (\d+) declared edge halves$", "0"),
-        "unresolved prose links": one(r"^\s+(\d+) prose links that did not resolve$", "0"),
+        "graph nodes": one(r"^\s+(\d+) nodes, \d+ declared edge halves$"),
+        "declared edge halves": one(r"^\s+\d+ nodes, (\d+) declared edge halves$"),
+        "unresolved prose links": one(r"^\s+(\d+) prose links? that did not resolve$"),
         "strict exit status": str(strict_status),
     }
+
+    # The two omitted-when-zero readings, checked against a line that is always
+    # printed. A layout change that silences `excluded` or a severity does not
+    # reach a README comparison as a zero; it fails here naming both sides.
+    untyped = total(r"^\s+(\d+) untyped$")
+    parts = int(measured["typed"]) + int(measured["excluded"]) + untyped
+    if parts != int(measured["files under the corpus root"]):
+        raise Mismatch("the census reports %s files under the corpus root and %d typed, excluded and untyped between them, "
+                       "so this suite did not read every census line"
+                       % (measured["files under the corpus root"], parts))
+    by_severity = total(r"^\s+(\d+) . (?:error|warn|advice)$")
+    if by_severity != int(measured["findings"]):
+        raise Mismatch("the run reports %s findings and %d of them by severity, "
+                       "so this suite did not read every severity line"
+                       % (measured["findings"], by_severity))
+    return measured
 
 
 def run_recipe(root, readme_path, binary, scratch):
