@@ -3,25 +3,25 @@ description: Run N iterations of the Headwater build order as a resumable run ov
 argument-hint: "[iteration count, default 20] [--parallel N]"
 ---
 
-Run `$ARGUMENTS` iterations (default 20) of the Headwater build order. You are the parent, and your job is judgment: what to merge, what a stale premise means, which surprise is a lesson. Every stage of the work is an agent definition under `.claude/agents/`, dispatched by `subagent_type`, and each one carries its own instructions, so you paste nothing into a prompt that a definition already says.
+Run `$ARGUMENTS` iterations (default 20) of the Headwater build order. You are the parent, and your job is judgment: what to merge, what a stale premise means, which surprise is a lesson. Every stage is an agent definition under `.claude/agents/`, dispatched by `subagent_type`, each carrying its own instructions, so you paste nothing into a prompt a definition already says.
 
-**Width.** Without `--parallel N` the run is sequential: one issue in flight, merged before the next starts. With it, N issues build at once and the merge is still one at a time through the slot below. Wider is not better: a run that went from five to eight saw concurrency fall and an idle fleet appear ([the evaluation](../../docs/evaluations/the-build-order-as-a-multi-agent-system.md)). Raise it only on the numbers that record names.
+**Width.** Without `--parallel N` one issue is in flight, merged before the next starts; with it N build at once and merges stay one at a time through the slot below. Wider is not better: five to eight lost concurrency ([the evaluation](../../docs/evaluations/the-build-order-as-a-multi-agent-system.md)). Raise it only on the numbers that record names.
 
 ## The value rule
 
 This is the canonical statement. Every other file cites it rather than restating it, and so do `.claude/commands/next.md` and `.claude/agents/headwater-product-owner.md`.
 
-**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration and not eligible for the tracker: it is scaffolded as an obligation record under [13 — Open obligations](../../docs/spec/13-open-obligations.md) and left there. `adopter-blocking` means work an outside adopter cannot proceed without, and it sorts above everything else. This command is an issue generator by construction, and the evaluation records the day it took 45 issues and closed 16.
+**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration and not eligible for the tracker: it is scaffolded as an obligation record under [13 — Open obligations](../../docs/spec/13-open-obligations.md) and left there. `adopter-blocking` means work an outside adopter cannot proceed without, and it sorts above everything else. This command generates issues by construction: the evaluation records a day of 45 filed and 16 closed.
 
 ## The doctrine
 
 <!-- doctrine -->
 # The doctrine
 
-Ten lines the parent of a build-order run obeys on every turn. `.claude/commands/next-run.md` carries a byte-identical copy of this file, `sh .claude/agents/fixtures.sh` holds the two together, and a run copies it into its run directory so that a parent which has compacted can act from it alone ([HW-PD-0006](../../docs/process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md)). Every line is a rule the parent itself must keep; a rule one stage keeps lives in that stage's agent definition, and a rule two stages keep lives in a skill ([HW-PD-0001](../../docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md)).
+Ten lines the parent of a build-order run obeys on every turn. `.claude/commands/next-run.md` carries a byte-identical copy of this file, `sh .claude/agents/fixtures.sh` holds the two together, and a run copies it into its run directory so a compacted parent can act from it alone ([HW-PD-0006](../../docs/process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md)). Every line is the parent's own rule; a rule one stage keeps lives in that stage's agent definition, and a rule two stages keep lives in a skill ([HW-PD-0001](../../docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md)).
 
 1. **Name the reader who is not this repository before any work starts.** Work whose only beneficiary is this corpus goes to spec 13 as an obligation record, never to the tracker and never to a slot.
-2. **Do not stop between iterations.** On any completion, act in the same turn: dispatch the next stage or the next issue before you write a word of narration. A merged pull request is the middle of the run.
+2. **Do not stop between iterations, and never poll.** On any completion, act in the same turn: dispatch before you narrate, then end the turn. With agents in flight an ended turn is the blocking wait and their reports wake you; a shell `true` is a poll.
 3. **Wait by blocking, never by polling.** You never read a pull request's `mergeable`; the agent that owns the pull request does, and its report is your notification.
 4. **The merge decision never leaves you, and the mechanics never stay with you.** Rule, then hand the merge to a fresh `hw-integrate`, one in flight at a time and never two.
 5. **Read a verdict, never a build output.** Ask every agent for under 400 tokens back, and open the file it wrote only when you are ruling on it.
@@ -34,7 +34,7 @@ Ten lines the parent of a build-order run obeys on every turn. `.claude/commands
 
 ## The loop
 
-`sh tools/run/run-dir.sh start` makes the run directory under the git common dir, reachable from every worktree, with the doctrine copied in and the last run's lessons and decisions seeded; it prints the path, and every dispatch carries it. That directory is the ledger ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)): `run-dir.sh log` takes one line per iteration, `run-dir.sh tail` is what you read, `run-dir.sh net` derives opened minus closed, and `lessons.md` and `decisions.md` are yours to append with `Edit`. Read `lessons.md` once at the top and never again.
+`sh tools/run/run-dir.sh start` makes the run directory under the git common dir, doctrine copied in and the last run's lessons and decisions seeded; it prints the path, and every dispatch carries it. That directory is the ledger ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)): `run-dir.sh log` takes one line per iteration, `run-dir.sh tail` is what you read, `run-dir.sh net` derives opened minus closed, and `lessons.md` and `decisions.md` are yours to append with `Edit`. Read `lessons.md` by heading, only the parent's sections, never whole. Append to the integrator queue; never rewrite it. Ask an agent one line by `SendMessage`, never `ListAgents`.
 
 1. **Top of the run.** Dispatch `headwater-product-owner` and `hw-queue` in one turn. The queue agent writes the ordered eligible issues into the run directory; read its report and nothing else.
 2. **Fill.** While fewer than N issues are in flight and the queue holds one, dispatch `hw-adjudicate` for the next issue with the template below.
@@ -50,7 +50,7 @@ A `FAIL` goes back to the `hw-build` agent that wrote the branch, by `SendMessag
 
 ## The dispatch
 
-Composed with `Write` into the issue's scratch directory and passed as a path. Nothing else goes in the prompt.
+Composed with `Write` into the issue's scratch directory and passed as a path. Nothing else goes in the prompt: an environment fact goes to `hw-run-policy`, not into text you re-read all run.
 
     issue:        #<N> <title>
     run:          <run directory>
@@ -60,10 +60,10 @@ Composed with `Write` into the issue's scratch directory and passed as a path. N
     footprint:    <artifacts>       (from the adjudication; integrate)
     waits-on:     #<N> or none      (from the claim; build, integrate)
     ruling:       <your ruling>     (integrate)
-    attacks:      <chosen headings from hw-verification-bar>  (verify)
+    attacks:      <headings from hw-verification-bar, nothing more>  (verify)
     deadline:     <minutes>
-    report:       under 400 tokens, ending in the fixed block your definition names
+    report:       the fixed block your definition names and nothing before it
 
 ## Stop
 
-Report only at the end of the run, when a decision needs an owner, or when a human asks. A table of issue, pull request and result; what your verification caught that a report did not, and what it caught that was your own error; anything you would not merge again without a ruling; the run directory's path.
+Report at the end of the run, when a decision needs an owner, or when a human asks: a table of issue, pull request and result; what verification caught that a report did not, and what was your own error; anything you would not merge again without a ruling; the run directory's path.

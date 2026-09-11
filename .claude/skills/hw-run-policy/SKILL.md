@@ -43,13 +43,15 @@ Each entry cost somebody an hour.
 - `cargo` runs a target's cases as threads of one process, so a temp-dir helper keyed on the pid alone races, and the symptom is `NotFound` out of `std::fs::copy`.
 - A cargo failure quoting a dead worktree's path is an `sccache` hit rather than a defect; `cargo clean -p <crate>` clears it. A fresh worktree has no engine, so the commit gate fails open there until you build one.
 - Never navigate from rust-analyzer's `documentSymbol` line numbers; `grep -n 'fn <name>'` first.
+- `tools/hw-cargo`, as of 2026-09-11, waits on slot 1 alone when all three are busy and leaks its lock descriptor into the `sccache` daemon, which then holds that slot past its parent's death; one integrator waited forty minutes on it. Probe the three lock files with `(flock -n 9; ...) 9>>file` and take a free one with the same pool path, target dir, job cap and nice level. The bare `flock -n 9 -c ... 9>>file` form treats `9` as a filename. Delete this line when `tools/hw-cargo` is fixed.
 - Commit and push in small steps. A transport error costs everything unbanked.
 
 ## The same list, read for cost
 
 A tool result costs its own size times the turns that follow it, so position is worth as much as size ([HW-PD-0003](../../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
 
-- **Wait by blocking, never by polling.** One call that blocks, `until [ -f "$T/x.status" ]; do sleep 30; done`, or `Monitor` with an until-condition; never a sleep under thirty seconds, never a bare re-check. One agent checked a status file 85 times in five minutes and burned 29% of a whole run.
+- **Wait by blocking, never by polling.** One call that blocks, `until [ -f "$T/x.status" ]; do sleep 30; done`, or `Monitor` with an until-condition; never a sleep under thirty seconds, never a bare re-check. One agent checked a status file 85 times in five minutes and burned 29% of a whole run; the parent of run 20260911-1331 ran a bare `true` 193 times and burned 55%. The harness refuses a command that opens with a bare `sleep N;` and runs the `until` form. The parent alone waits differently: it dispatches, then ends its turn, and each report wakes it at no cost.
+- **A report is the fixed block and nothing before it.** Every stage writes its narrative to `<scratch>/<stage>-report.md` by shell redirect and returns the block its definition names; the parent opens the file only when ruling. Forty of forty-one reports in one run ran two to four times the 400-token line, and the parent re-read every one on every later turn.
 - **Backgrounding a job is half a decision; the other half is how you wait for it.** Decide both in the same breath, and end every wait you started before you exit.
 - **Redirect a build or a check to files and read the tail**, stdout and stderr to separate files.
 - **Ask an API for the field, never the record.** `gh api ... --jq .body` is the same fact at a fraction of `gh issue view`.

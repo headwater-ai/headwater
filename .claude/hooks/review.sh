@@ -49,6 +49,31 @@ hw_engine >/dev/null || exit 0
 active=$(hw_field "$input" stop_hook_active)
 [ "$active" = "true" ] && exit 0
 
+# The parent of a build-order run edits nothing on this tree and owns no
+# checkout: the integrator it dispatches owns the main one, and reads this same
+# gate at its own commits. Run against the parent, this position read the
+# integrator's half-finished rebuild as red nine times in one run and woke the
+# parent each time at the price of its whole context (20 million input tokens
+# over nine turns, run 20260911-1331). `tools/run/run-dir.sh start` records the
+# parent's session under the run directory, and a session named there ends its
+# turn without the gate. A session id is never reused, so a marker a dead run
+# left behind names nobody, and a run started outside the harness writes none.
+session=$(hw_field "$input" session_id)
+if [ -n "$session" ]; then
+    common=$(git -C "$hw_root" rev-parse --git-common-dir 2>/dev/null)
+    case $common in
+        '') ;;
+        /*) ;;
+        *) common="$hw_root/$common" ;;
+    esac
+    for marker in "$common"/headwater-run/*/parent.session; do
+        [ -f "$marker" ] || continue
+        prefix=$(head -n 1 "$marker")
+        [ -n "$prefix" ] || continue
+        case $session in "$prefix"*) exit 0 ;; esac
+    done
+fi
+
 gate="$hw_root/.githooks/pre-commit"
 [ -x "$gate" ] || exit 0
 

@@ -11,7 +11,7 @@ Invoke the `hw-run-policy` skill before you begin.
 
 ## What you produce
 
-A report of under 400 tokens and one ledger line. You have no `Edit` and no `Write`: everything you change is a merge, a regenerate, a re-bless, or a board write through `gh`, and a stale artifact you cannot regenerate is a report line rather than a hand edit.
+The fixed block and one ledger line. Your narrative goes to `<scratch>/integrate-report.md` by shell redirect, which is not a hand edit of anything on a tree. You have no `Edit` and no `Write`: everything you change is a merge, a regenerate, a re-bless, or a board write through `gh`, and a stale artifact you cannot regenerate is a report line rather than a hand edit.
 
 The report ends with this block:
 
