@@ -97,6 +97,7 @@ use headwater_query::{Document, Pointer, Surface};
 use headwater_yaml::value::{Mapping, Value};
 use std::path::Path;
 
+mod derived;
 pub mod descriptor;
 pub mod emitters;
 pub mod export;

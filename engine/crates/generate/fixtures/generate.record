@@ -40,6 +40,9 @@ the plan
 "headwater:generated": "shelf_sections. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file."
 id: GD-FIX-archive
 doc_type: guide
+status: current
+status_since: 2026-02-01
+summary: "One heading for each of the 2 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
 relations:
   governed_by:
     - DR-FIX-0002

@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 422,
-      "carried": 422,
+      "in the graph": 424,
+      "carried": 424,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 624,
-      "carried": 624,
+      "in the graph": 626,
+      "carried": 626,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1755,6 +1755,35 @@
             "drafted_by": "claude-opus-5",
             "activity": "measure+draft",
             "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md",
+        "kind": "decision",
+        "id": "HW-DR-0063",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0063",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars.",
+          "last_verified": "2026-09-11",
+          "title": "Every required facet of a generated document is derived, and the emitter composes the summary",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-SPEC-engine-architecture"
+            ],
+            "governs": [
+              "engine/crates/generate/src/derived.rs"
+            ]
           }
         }
       },
@@ -7743,7 +7772,11 @@
         "facets": {
           "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
           "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
-          "title": "Probe result for regression-probe-transcript-for-2026-09-09"
+          "title": "Probe result for regression-probe-transcript-for-2026-09-09",
+          "status": "current",
+          "status_since": "2026-09-09",
+          "summary": "The grade of the transcript `regression-probe-transcript-for-2026-09-09`, taken over the probes this corpus declares and the version of the grader that evaluated them.",
+          "last_verified": "2026-09-09"
         }
       },
       {
@@ -7753,7 +7786,11 @@
         "facets": {
           "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
           "id": "HW-RESULT-regression-probe-transcript-for-2026-09-11",
-          "title": "Probe result for regression-probe-transcript-for-2026-09-11"
+          "title": "Probe result for regression-probe-transcript-for-2026-09-11",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "The grade of the transcript `regression-probe-transcript-for-2026-09-11`, taken over the probes this corpus declares and the version of the grader that evaluated them.",
+          "last_verified": "2026-09-11"
         }
       },
       {
@@ -8678,6 +8715,11 @@
           "id": "HW-REG-open-questions",
           "doc_type": "decision_register",
           "title": "Open questions, closed and redirected",
+          "status": "superseded",
+          "status_since": "2026-08-11",
+          "summary": "One heading for each of the 63 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "last_verified": "2026-08-11",
+          "sequence": "9",
           "relations": {
             "superseded_by": [
               "HW-REG-decisions",
@@ -9131,6 +9173,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/doc/src/sentences.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/generate/src/derived.rs",
         "resolver": "source-tree"
       },
       {
@@ -10760,6 +10807,28 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "docs/tutorials/your-first-governed-corpus.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-engine-architecture",
+          "path": "docs/spec/06-engine-architecture.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/generate/src/derived.rs",
           "resolver": "source-tree"
         }
       },

@@ -21,30 +21,49 @@
 //! all. The requirement was unmet for the whole life of the projection and
 //! nothing reported it.
 //!
-//! # What the refusal reads, and what it deliberately does not
+//! # What the refusal reads
 //!
-//! It reads the facets the `identity` block is the writer of: the identifier
-//! facet, the discriminator of a heterogeneous shelf, and the facet in the
-//! `name` role. It does not read every facet the kind requires.
+//! The whole required set of the kind, against everything written into the
+//! file: the three members of the `identity` block, and every facet
+//! [`headwater_generate`] derives.
 //!
-//! That line is measured rather than chosen for convenience. Over this
-//! repository's own lock, `governed_document` requires `status`,
-//! `status_since`, `last_verified` and `summary`, and all four are inherited by
-//! both kinds this corpus generates. A refusal over the whole required set
-//! would name 5 facets on `docs/spec/09-open-questions.md` and 4 on
-//! `docs/probe-results/regression-probe-transcript-for-2026-09-09.md`, and it
-//! would refuse both of the two identity declarations this repository makes,
-//! with no member of the block able to answer any of the nine. Whether a
-//! generated document should be excused from `status` and `summary` is a
-//! question about the census exemption and about spec 6's stated position, not
-//! about this block, and #780 stays open holding it.
+//! It used to read three facets only, and the nine it left out were the
+//! remainder this file held #780 open for. Over this repository's own lock
+//! `governed_document` requires `status`, `status_since`, `last_verified` and
+//! `summary`, both generated kinds inherit all four, and `decision_register`
+//! adds `doc_type`, `sequence` and `title`. The owner ruled on 2026-09-11 that
+//! the engine derives the state, the two dates and the layout facet and that the
+//! emitter composes the summary, so all nine are written and the refusal reads
+//! the whole set with nothing left over.
 //!
-//! # The fixture
+//! What it guards now is a taxonomy that requires a facet in no role this
+//! engine reads and in no shelf layout. Such a facet is one no author can add,
+//! because a generated document's only writer is this engine, and one no check
+//! reads, because the census excuses a marked file from every document rule.
+//!
+//! # The three fixture taxonomies
 //!
 //! `fixtures/unsuppliable.taxonomy.yml` is `generate.taxonomy.yml` with one
 //! difference: the `guide` kind requires `title`, the facet in the `name` role.
 //! The `shelf_sections` declaration that writes `generate/archive/RETIRED.md` as
-//! a `guide` states no `name`, so the block cannot supply `title`.
+//! a `guide` states no `name`, so the block cannot supply `title`. The repair is
+//! a declaration, and the refusal says so.
+//!
+//! `fixtures/unrolled.taxonomy.yml` is the other half of the guard. It declares
+//! a facet with no role at all and requires it of the same kind, so no member of
+//! the block writes it and no derivation computes it. There the repair is a
+//! change to the taxonomy rather than to the declaration.
+//!
+//! `fixtures/selfread.taxonomy.yml` is about a value rather than a refusal. It
+//! is the one shape in this tree where a projection's output sits on the shelf
+//! that the projection reads, which makes the output one of its own sources. The
+//! committed `selfread/decisions/INDEX.md` carries a `status_since` older than
+//! either source document, so a fold that reads it answers a date no source
+//! supports. That file carries a `title` for a reason worth knowing: once the
+//! output is a document of the shelf, the sections emitter owes it a heading, and
+//! without a name the whole declaration is declined before the fold runs. An
+//! index that lists itself is a separate question about what an index is for,
+//! and nothing in this repository declares one.
 //!
 //! # Watched failing
 //!
@@ -53,6 +72,23 @@
 //! failed with the file planned and `plan.unwritten` empty: the emitter wrote
 //! `generate/archive/RETIRED.md` with a front-matter block missing `title` and
 //! said nothing.
+//!
+//! At `9cd6846e`, with the refusal narrowed back to the facet in the `name`
+//! role, `a_required_facet_in_no_role_is_refused_because_nothing_can_write_it`
+//! failed the same way and on the same path: `generate/archive/RETIRED.md` was
+//! written with no value for `tier` and the plan declined nothing. The two
+//! cases fail identically and for opposite reasons, which is why both are here.
+//!
+//! At `4e1767d8`, with `selfread.taxonomy.yml` in the tree and the output filter
+//! removed from `derived::documents`,
+//! `a_generated_document_on_the_shelf_it_reads_does_not_fold_its_own_date`
+//! failed on the value rather than on the refusal: the emitter wrote
+//! `status_since: 2020-01-01` into `selfread/decisions/INDEX.md`, which is the
+//! date the committed file already carried and a date neither source document
+//! supports. That failure is the one this file was missing, because the emitter
+//! and the gate agree on it. This case was written after a review of
+//! [#816](https://github.com/headwater-ai/headwater/pull/816) read the filter in
+//! `incoming` and asked why the fold had no equivalent.
 
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
@@ -300,5 +336,176 @@ fn every_identity_this_repository_declares_supplies_what_this_refusal_reads() {
          kind requires: {refused:?}. This branch must take that count to zero, or it reddens \
          `main` for every branch cut after it.",
         refused.len()
+    );
+}
+
+/// The other half of the guard: a required facet that carries no role.
+///
+/// `unsuppliable.taxonomy.yml` covers the facet a declaration could have
+/// supplied and did not. This covers the one nothing writing the file can
+/// supply at all, which is what the refusal reads for now that the engine
+/// derives the state, the two dates and the summary. Without this case the
+/// refusal would be exercised only where a repair exists, and a taxonomy that
+/// asks for the impossible would be the shape that reaches a corpus unreported.
+#[test]
+fn a_required_facet_in_no_role_is_refused_because_nothing_can_write_it() {
+    let plan = plan_over("unrolled.taxonomy.yml");
+
+    assert!(
+        !plan.outputs.iter().any(|output| output.path == OUTPUT),
+        "`{OUTPUT}` was written by a declaration whose kind requires `tier`, a facet in no role \
+         that no layout names. The outputs were: {:?}",
+        plan.outputs
+            .iter()
+            .map(|output| output.path.as_str())
+            .collect::<Vec<_>>()
+    );
+
+    let refusal = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == OUTPUT)
+        .unwrap_or_else(|| {
+            panic!(
+                "nothing reported the declaration that writes `{OUTPUT}`. The plan declined {} \
+                 outputs: {:?}",
+                plan.unwritten.len(),
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| unwritten.at.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    assert!(
+        refusal.reason.contains("tier"),
+        "the refusal of `{OUTPUT}` does not name the facet nothing can write. It reads: {}",
+        refusal.reason
+    );
+}
+
+/// The derived facets reach the file, and not only the refusal.
+///
+/// Every other assertion in this file is about a declaration that produces
+/// nothing. This one reads the bytes, because a derivation that computed the
+/// right values and wrote none of them would pass every case above. The values
+/// themselves are the fixture record's business; what this holds is that each
+/// facet the kind requires is present exactly once.
+#[test]
+fn the_derived_facets_are_written_into_the_block() {
+    let plan = plan_over("generate.taxonomy.yml");
+    let output = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == OUTPUT)
+        .unwrap_or_else(|| panic!("`{OUTPUT}` was not written at all"));
+    let bytes = &output.bytes;
+    let block = bytes
+        .split("---")
+        .nth(1)
+        .unwrap_or_else(|| panic!("`{OUTPUT}` carries no front-matter block. It reads: {bytes}"));
+
+    // `guide` inherits these three from `governed_document` in this fixture, and
+    // the `identity` block writes a member for none of them.
+    for facet in ["status", "status_since", "summary"] {
+        let prefix = format!("{facet}:");
+        let written = block
+            .lines()
+            .filter(|line| line.starts_with(&prefix))
+            .count();
+        assert_eq!(
+            written, 1,
+            "`{facet}` is written {written} times in the block of `{OUTPUT}`, and a facet is \
+             stated once. The block reads: {block}"
+        );
+    }
+}
+
+/// A generated document on the shelf it reads does not fold its own last value.
+///
+/// `incoming` already refuses the output path, and the comment there states the
+/// reason: an edge an earlier run of this emitter wrote would make the output a
+/// function of its own last version. The date fold owes the same refusal and did
+/// not make it. `documents` filtered the source set by path alone, and a
+/// `shelf_sections` or `shelf_index` whose output sits on the shelf it reads is
+/// in that set, because a generated file that declares an identity is a node of
+/// the census ([`headwater_census::census::Outcome::node`]).
+///
+/// The failure is a value that never moves. `stalest_of` takes a minimum, so
+/// once the file is committed with a date no source supports, that date is the
+/// minimum on every later run and `generate --check` holds it as the right
+/// answer. Nothing would report it: the emitter agrees with itself, which is the
+/// whole of what the census exemption assumes a second reader for.
+///
+/// Neither declaration in this repository reaches the shape, so this is a guard
+/// rather than a repair. `selfread.taxonomy.yml` is the smallest taxonomy that
+/// does reach it, and the committed `INDEX.md` carries 2020-01-01 against
+/// sources at 2026-05-01 and 2026-06-01.
+#[test]
+fn a_generated_document_on_the_shelf_it_reads_does_not_fold_its_own_date() {
+    const SELF_READ: &str = "selfread/decisions/INDEX.md";
+
+    let corpus = Corpus::new(fixtures_dir(), "selfread");
+    let root = load_map(&fixtures_dir().join("selfread.taxonomy.yml"));
+    let built = Built::over(&corpus, &root);
+    let projections = Projections::read(&root).expect("the projections read");
+    let plan = plan(
+        &built.surface(),
+        &built.census,
+        &projections,
+        &identity(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+
+    let output = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == SELF_READ)
+        .unwrap_or_else(|| {
+            panic!(
+                "`{SELF_READ}` was not written, so the fold under test never ran. The plan wrote \
+                 {:?} and declined {:?}",
+                plan.outputs
+                    .iter()
+                    .map(|output| output.path.as_str())
+                    .collect::<Vec<_>>(),
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| (unwritten.at.as_str(), unwritten.reason.as_str()))
+                    .collect::<Vec<_>>()
+            )
+        });
+
+    // The instrument before the measurement. A fixture whose committed output
+    // stopped being a node would make the assertion below pass for the wrong
+    // reason, and this is the one shape in the tree that holds it.
+    let surface = built.surface();
+    let held: Vec<String> = surface
+        .documents()
+        .into_iter()
+        .map(|document| document.path.to_string())
+        .collect();
+    assert!(
+        held.iter().any(|path| path == SELF_READ),
+        "`{SELF_READ}` is not a document of this corpus, so it cannot be in its own source set \
+         and this case tests nothing. The census holds: {held:?}"
+    );
+
+    let written = output
+        .bytes
+        .lines()
+        .find(|line| line.starts_with("status_since:"))
+        .unwrap_or_else(|| {
+            panic!(
+                "`{SELF_READ}` carries no `status_since`, which its kind requires. It reads:\n{}",
+                output.bytes
+            )
+        });
+    assert!(
+        written.contains("2026-05-01"),
+        "`{SELF_READ}` folds its own committed date rather than the stalest of its sources. The \
+         sources carry 2026-05-01 and 2026-06-01, the committed file carries 2020-01-01, and the \
+         emitter wrote `{written}`. A minimum that includes the output's own last value never \
+         moves again."
     );
 }

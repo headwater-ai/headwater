@@ -287,6 +287,7 @@ dependencies = [
  "headwater-probe",
  "headwater-query",
  "headwater-resolve",
+ "headwater-scaffold",
  "headwater-verbs",
  "headwater-yaml",
  "saphyr",
