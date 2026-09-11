@@ -1020,5 +1020,173 @@ same "  a comment naming the purpose declares nothing" \
         "$scratch/pd/index.md" | tr '\n' '|')"
 
 echo
+echo "who reads a fixture page, and where the page sends a reader"
+
+# 5. What the index says about the programs that read a fixture page.
+#
+# The defect this group exists for. The anatomy section said "No runner reads
+# these files yet" while `tools/repo/diataxis-fixtures.sh` required one of them
+# and parsed its source table for a mode map and a digest, and while
+# `tools/taxonomy/drive_n8n.py` read three more and ran the commands out of
+# each as a blocking CI step. A hundred lines further down the same page said
+# of the same entry that "The runner exists, the denominators are recorded, and
+# the row stands", so the page carried both halves of a contradiction. Nothing
+# reported it: this page classifies to no kind, no language rule of the engine
+# reads it, and no rule of any engine reads a claim about a script (#813).
+#
+# In the same claim, three places named `tools/diataxis-fixtures.sh`, and no
+# such file has ever been in this tree. The script is under `tools/repo/`.
+#
+# THE READERS are enumerated out of the tree. A program under `tools/` is a
+# reader when it is shell or Python source that writes a path whose tail is the
+# `README.md` of a `fixtures` directory. The judge matches a TAIL and not a
+# resolved path, which is the whole of why it finds both. Measured on
+# 2026-09-11: `tools/taxonomy/drive_n8n.py` writes its path whole, and
+# `tools/repo/diataxis-fixtures.sh` assembles its own in three pieces across
+# twenty-one lines, so a grep for a whole literal path reports one reader where
+# there are two and goes green on a page that names one.
+#
+# THE NAMED READERS come from the one paragraph of the anatomy section that
+# states what a `fixtures` directory holds. Case 5b asserts SET EQUALITY
+# between the two populations, in both directions: a program that starts
+# reading a fixture page reddens until that paragraph names it, and a path the
+# paragraph names that reads no fixture page reddens too.
+#
+# No count of readers and no count of fixture pages is written down here, and
+# the paragraph is written so that it carries none either. It names WHICH pages
+# a runner reads and says the rest are prose. That is a set, and an eighth
+# entry added tomorrow moves neither the paragraph nor this group.
+#
+# Case 5c is the other half of the same claim, and it is page-wide rather than
+# paragraph-wide: every `tools/` path the index writes names a file in this
+# tree.
+
+# tools_paths FILE — every `tools/` file path written anywhere in FILE, sorted
+# and deduplicated. A match must end in an extension, so a bare `tools/`
+# naming the directory is not a path this judge holds. Trailing sentence
+# punctuation is stripped before the extension is read, because a path at the
+# end of a sentence outside a code span carries it.
+tools_paths() {
+    grep -oE 'tools/[A-Za-z0-9._/-]+' "$1" |
+        sed 's/[.,;:)]*$//' |
+        grep -E '\.[A-Za-z0-9]+$' |
+        sort -u
+}
+
+# fixture_readme_readers ROOT — one path per line, relative to ROOT and
+# sorted: a shell or Python source under `tools/` that writes a path reaching a
+# fixture page. See the note on tails above; the pattern deliberately allows a
+# shell or Python variable inside the path.
+fixture_readme_readers() {
+    find "$1/tools" -type f \( -name '*.sh' -o -name '*.py' \) 2>/dev/null |
+        sort |
+        while read -r frr_f; do
+            grep -Eq 'fixtures(/[A-Za-z0-9._${}-]+)*/README\.md' "$frr_f" || continue
+            frr_rel=${frr_f#"$1"/}
+            echo "$frr_rel"
+        done |
+        sort
+}
+
+# fixtures_paragraph FILE — the paragraph of the anatomy section that states
+# what a `fixtures` directory holds. One logical line, because this repository
+# hard-wraps no Markdown. Empty when the bolded lead is gone, which the floor
+# in case 5a reports rather than passing over an unread paragraph.
+fixtures_paragraph() {
+    section_of "$1" "What an entry ships" | grep '^\*\*`fixtures/`'
+}
+
+# reader_judge ROOT INDEX WORK — one line per disagreement, nothing when the
+# paragraph names exactly the programs that read a fixture page. WORK is a
+# directory the judge writes three files into.
+reader_judge() {
+    fixture_readme_readers "$1" >"$3/rj-readers"
+    fixtures_paragraph "$2" >"$3/rj-para"
+    tools_paths "$3/rj-para" >"$3/rj-named"
+    comm -23 "$3/rj-readers" "$3/rj-named" |
+        sed 's|^|a program reads a fixture page and the paragraph does not name it: |'
+    comm -13 "$3/rj-readers" "$3/rj-named" |
+        sed 's|^|the paragraph names a reader of a fixture page that reads none: |'
+}
+
+# tools_path_judge ROOT FILE — one line per `tools/` path FILE writes that
+# names no file under ROOT.
+tools_path_judge() {
+    tools_paths "$2" | while read -r tpj_p; do
+        [ -f "$1/$tpj_p" ] ||
+            echo "the page names \`$tpj_p\` and no such file is in the tree"
+    done
+}
+
+mkdir -p "$scratch/rd"
+fixture_readme_readers "$root" >"$scratch/rd/readers"
+fixtures_paragraph "$index" >"$scratch/rd/para"
+
+# 5a. Floors. A reader population that came back empty, or a paragraph the
+#     selector no longer finds, would pass 5b for the wrong reason.
+more_than "programs under \`tools/\` read a fixture page" 0 \
+    "$(wc -l <"$scratch/rd/readers" | tr -d ' ')"
+more_than "the anatomy section carries the paragraph that says who reads one" 0 \
+    "$(wc -l <"$scratch/rd/para" | tr -d ' ')"
+more_than "the index writes \`tools/\` paths" 0 \
+    "$(tools_paths "$index" | wc -l | tr -d ' ')"
+
+# 5b. Set equality, both directions. This is the case #813 was filed for.
+same "the paragraph names every program that reads a fixture page, and no other" \
+    "" "$(reader_judge "$root" "$index" "$scratch/rd" | tr '\n' '|')"
+
+# 5c. Every `tools/` path the page writes resolves. `tools/diataxis-fixtures.sh`
+#     did not, in the same claim, and the vendored copy carried the same line.
+same "every \`tools/\` path the index writes names a file in this tree" \
+    "" "$(tools_path_judge "$root" "$index" | tr '\n' '|')"
+
+# 5d. Both refusals and the agreement, provoked over a scratch tree. The
+#     planted reader assembles its path from a variable, which is the shape the
+#     whole-literal grep missed on the real tree, so the provocation exercises
+#     the reason this judge reads a tail. `README.md` is passed to `printf`
+#     rather than written into the format string, so that this file is not
+#     itself a member of the reader population it enumerates.
+mkdir -p "$scratch/rp/tools/repo" "$scratch/rp/work"
+printf '#!/bin/sh\nentry=docs/taxonomies/alpha\nfixtures="$root/$entry/fixtures"\ncat "$fixtures/%s"\n' \
+    'README.md' >"$scratch/rp/tools/repo/alpha-fixtures.sh"
+printf '#!/bin/sh\necho this one opens nothing\n' \
+    >"$scratch/rp/tools/repo/unrelated.sh"
+
+write_anatomy() {
+    printf '## What an entry ships\n\n' >"$1"
+    printf '%s\n' "$2" >>"$1"
+}
+
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** Nothing runs any of it.'
+same "  a reader the paragraph does not name" \
+    "a program reads a fixture page and the paragraph does not name it: tools/repo/alpha-fixtures.sh|" \
+    "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry, and every other page here is prose.'
+same "  the same tree once the paragraph names it" \
+    "" "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` and `tools/repo/unrelated.sh` both read a page here.'
+same "  a program the paragraph credits that reads no fixture page" \
+    "the paragraph names a reader of a fixture page that reads none: tools/repo/unrelated.sh|" \
+    "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry.'
+printf 'And `tools/alpha-fixtures.sh` measures the addresses, from `tools/` itself.\n' \
+    >>"$scratch/rp/index.md"
+same "  a \`tools/\` path the page writes that names no file" \
+    "the page names \`tools/alpha-fixtures.sh\` and no such file is in the tree|" \
+    "$(tools_path_judge "$scratch/rp" "$scratch/rp/index.md" | tr '\n' '|')"
+
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` and `tools/repo/unrelated.sh` are both under `tools/`.'
+same "  the same page once every path it writes resolves" \
+    "" "$(tools_path_judge "$scratch/rp" "$scratch/rp/index.md" | tr '\n' '|')"
+
+echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]
