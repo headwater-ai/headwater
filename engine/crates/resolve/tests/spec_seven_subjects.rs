@@ -249,3 +249,153 @@ fn the_facet_required_absence_names_its_route_and_the_condition_that_reopens_it(
         path.display()
     );
 }
+
+/// The sentence the 4.0.0 paragraph of the package's own record opens with.
+///
+/// An anchor rather than a line number, because the record grows a paragraph at
+/// the top on every publish and every number below it moves.
+const RECORD_ANCHOR: &str = "The artifact ships no migration payload";
+
+/// The two copies of the package's authored record: the source a publish reads,
+/// and the vendored artifact a consumer of this repository resolves against.
+const RECORDS: [&str; 2] = [
+    "taxonomy-source/headwater-standard/taxonomy.yml",
+    "packages/headwater-standard/taxonomy.yml",
+];
+
+fn repo_root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")
+}
+
+/// The comment paragraph of `path` that states what 4.0.0 ships for the facet
+/// that became required, as one line.
+///
+/// The record wraps its prose at the width of the file, so the paragraph is
+/// joined with single spaces before anything reads it. A case that read the
+/// raw lines would redden on a reflow that changed no word.
+fn facet_required_paragraph(path: &Path) -> String {
+    let text =
+        std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let mut paragraph: Vec<String> = Vec::new();
+    let mut found = false;
+    for line in text.lines() {
+        let trimmed = line.trim_start();
+        match trimmed.strip_prefix('#') {
+            Some(rest) if !rest.trim().is_empty() => {
+                let rest = rest.trim();
+                paragraph.push(rest.to_string());
+                if rest.contains(RECORD_ANCHOR) {
+                    found = true;
+                }
+            }
+            _ => {
+                if found {
+                    break;
+                }
+                paragraph.clear();
+            }
+        }
+    }
+    assert!(
+        found,
+        "{}: no comment paragraph names {RECORD_ANCHOR:?}, so the record no longer states what \
+         4.0.0 ships for a facet that became required",
+        path.display()
+    );
+    paragraph.join(" ")
+}
+
+/// The package's own record of 4.0.0 states the facet-required absence the way
+/// spec 7 rules it, and names the route instead of a mechanism to wait for.
+///
+/// The decisive case for Done-when 4 of
+/// [#543](https://github.com/headwater-ai/headwater/issues/543). Spec 7 rules
+/// the absence deliberate and sends a publisher whose whole break is
+/// `facet.required.missing` to `headwater infer --owner <name> --write`, after
+/// which `headwater check` reports each pair as `migration-pending`. Until this
+/// case, the record of the release that caused exactly that break closed by
+/// calling the absence a finding against spec 7, so a publisher who read the
+/// package rather than the specification was told to wait for a mechanism that
+/// has been ruled will not come.
+///
+/// Both copies are read, because a publish carries the source into the vendored
+/// artifact and nothing else holds the two together.
+///
+/// # Watched failing
+///
+/// Restoring "which is a finding against spec 7 rather than an omission of this
+/// release" reddens the first assertion, printing the paragraph. Deleting the
+/// `headwater infer` sentence reddens the second, naming the route the record
+/// lost.
+#[test]
+fn the_package_record_of_the_facet_required_absence_follows_the_spec_7_ruling() {
+    for relative in RECORDS {
+        let path = repo_root().join(relative);
+        let paragraph = facet_required_paragraph(&path);
+        let lowered = paragraph.to_lowercase();
+
+        for deferring in ["finding against spec 7", "an open question"] {
+            assert!(
+                !lowered.contains(deferring),
+                "{}: the 4.0.0 paragraph calls the facet-required absence {deferring:?}. \
+                 docs/spec/07-distribution-and-federation.md rules it \"a ruling rather than an \
+                 omission\", so this record tells a publisher to wait for a mechanism that will \
+                 not come. The paragraph is:\n\n{paragraph}",
+                path.display()
+            );
+        }
+
+        for route in [
+            "headwater infer --owner <name> --write",
+            "migration-pending",
+        ] {
+            assert!(
+                paragraph.contains(route),
+                "{}: the 4.0.0 paragraph does not name `{route}`, which is what `headwater \
+                 taxonomy diff` and spec 7 both send a publisher whose whole break is \
+                 `facet.required.missing` to. The paragraph is:\n\n{paragraph}",
+                path.display()
+            );
+        }
+
+        assert!(
+            lowered.contains("spec 7"),
+            "{}: the 4.0.0 paragraph names no specification part for the absence it states, so a \
+             reader cannot reach the ruling it obeys. The paragraph is:\n\n{paragraph}",
+            path.display()
+        );
+    }
+}
+
+/// The vendored artifact carries the same record as the source it was published
+/// from.
+///
+/// `headwater taxonomy publish` copies the authored taxonomy into the artifact,
+/// and a member digest is over the file bytes, so the two agree after a publish
+/// and drift the moment one is edited alone. Nothing else in this repository
+/// reads both paths. The case is over this one paragraph rather than the whole
+/// file, because the paragraph is what a publisher reads and a future publish
+/// step is free to add a member the source does not carry.
+///
+/// # Watched failing
+///
+/// Editing `taxonomy-source/headwater-standard/taxonomy.yml` without running
+/// `headwater taxonomy publish` and `headwater taxonomy vendor` reddens this,
+/// printing both paragraphs.
+#[test]
+fn the_vendored_record_matches_the_source_it_was_published_from() {
+    let source = repo_root().join(RECORDS[0]);
+    let vendored = repo_root().join(RECORDS[1]);
+    let authored = facet_required_paragraph(&source);
+    let shipped = facet_required_paragraph(&vendored);
+    assert_eq!(
+        authored,
+        shipped,
+        "{} and {} state 4.0.0 differently, so a consumer reads one record and the publisher \
+         edits another. The chain that keeps them together is `headwater taxonomy publish \
+         --from taxonomy-source/headwater-standard`, then the pin in `.headwater/taxonomy.yml`, \
+         then `headwater taxonomy vendor`, then `headwater taxonomy resolve`.",
+        source.display(),
+        vendored.display()
+    );
+}
