@@ -2,7 +2,7 @@
 
 # Obligation records
 
-183 documents on this shelf, in the reading order this corpus derives.
+184 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and the largest reading is 36 findings against a sample bar of 50.
@@ -187,3 +187,4 @@
 - [An unresolved prose link reaches a run as a graph fact and no rule turns it into a finding](0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md) — A link in prose whose target path is absent is counted in the graph section of a run and reaches no rule, so it never becomes a finding and never fails a strict run. (asserted, and no human has accepted it)
 - [The publish-crates retry loop has no retry ceiling](0182-the-publish-crates-retry-loop-has-no-retry-ceiling.md) — publish_with_retry retries a 429 forever, so GitHub Actions' unstated default timeout is its only ceiling, and nobody has measured it. (asserted, and no human has accepted it)
 - [No mechanism holds a committed binary asset against a run](0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md) — Every figure check of this repository reads text. A number frozen inside a committed GIF or cast is held by nothing, and the recording bars of #601 stay open. (asserted, and no human has accepted it)
+- [Nothing states why the vendored package root is visible in an adopter tree](0184-nothing-states-why-the-vendored-package-root-is-visible-in-an-adopter-tree.md) — Issue #381 ruled where doctrine lands inside a package and gave three reasons, none about visibility. Whether the package root itself moves under `.headwater/` is open, and the first outside adopter is the measurement that settles it. (asserted, and no human has accepted it)
