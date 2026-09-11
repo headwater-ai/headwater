@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.2.0
+version: 4.3.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1000,6 +1000,12 @@ obligations:
     class: cohesion
     prevents: process.traceability
     severity: medium
+  OB-WARRANT-2:
+    statement: "A document that claims `evidence_basis: evidenced` does not rest that claim on a document whose warrant is `asserted`"
+    rationale: "Spec 3 rules that a pointer to an `asserted` document does not support `evidenced`, because such a document is neither external nor auditable. A fabricated reason with a file name beside it reads from outside exactly like a reason somebody can check, and the corpus that carries it reports the same three honest states as a corpus where every pointer resolves to real evidence. The claim is at one end of the pointer and the reading that would support it is at the other, so no document-grained reading can see the pair at all"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-LIFE-1:
     statement: "A document moves between states only along an edge the lifecycle regime of its kind declares"
     rationale: "One state value cannot say how it was reached, so a corpus run sees a document that skipped every state between where it was and where it is as one that walked there. A machine that admits every movement is a vocabulary with an arrow drawn on it, and the states that a taxonomy went to the trouble of ordering then order nothing"
@@ -1266,6 +1272,16 @@ controls:
     promotion:
       permanently_advisory:
         reasoning: "Spec 3 rules the posture directly. \"Forty in one change is a finding about the review rather than about the documents. The posture is advisory permanently, for the reason that the shift ratio is advisory permanently. A threshold teaches people to promote in smaller batches, and nothing declares one.\" A promotion is a legitimate act, so the rule reports a count and never a defect, and there is nothing for a gate to block on until a taxonomy states how many is too many"
+  CT-WARRANT-2:
+    mechanism: "check:warrant.evidence.unsupported"
+    discharges:
+      - OB-WARRANT-2
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: "The reading CT-LIFE-3 takes, over two declared values instead of two declared states. The rule sees the pair and cannot say what to do about it. An evidenced claim resting on an unread document is repaired by pointing at an artifact somebody can audit, by a person reading the target and setting its warrant, or by the author writing `reconstructed` and saying what the account was reconstructed from. There is no fourth answer and the engine cannot pick among the three, so a posture that stopped a merge would stop it on a question only an author can settle"
   CT-LIFE-1:
     mechanism: "check:lifecycle.transition.not_permitted"
     discharges:

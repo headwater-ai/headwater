@@ -53,6 +53,25 @@
 //! that implementation. The other half is a human campaign, and no code
 //! discharges it: an adjudicated sample of at least 50 findings per category,
 //! under the two labels spec 4 declares.
+//!
+//! # Two of the three categories report zero, and the zero is saturation
+//!
+//! Read on `58f46a8d` on 2026-09-11, by a word-boundary count of every pattern:
+//! **`future_intent` matches on 0 of its 14 patterns over the 291 documents
+//! whose kind binds `declarative`, and `phased_rollout` on 0 of its 13 over the
+//! 293 that bind `declarative` or `prospective`.** The two denominators are the
+//! kind-to-regime binding of `.headwater/taxonomy.lock` applied to the 320
+//! documents of `.headwater/export.json`, of which 27 bind `narrative`.
+//!
+//! The count itself ran over a wider file list, and that is how it found the
+//! three occurrences there are: one `will become` and two of
+//! `in the first release`, all under `docs/reviews/` or `docs/evaluations/`,
+//! whose kinds bind `narrative` and forbid nothing.
+//!
+//! So neither zero reports a clean corpus. Both sets stand where edition one of
+//! `change_narration` stood, and no run separates the two readings:
+//! [HW-OBL-0168](../../../../docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md)
+//! holds the coverage line that would, and it is open.
 
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
@@ -118,10 +137,39 @@ const CATEGORIES: [Category; 3] = [
         //
         // Tier one was measured against this corpus and every instance of each
         // entry was change narration. Tier two plainly means a change in
-        // general English and has one false-positive mode here: a sentence that
-        // *defines* a change rather than narrating one, as in "a term that the
-        // corpus no longer uses". That is what the `false_positive` directive
-        // is for.
+        // general English, which is Q5's test for membership, and it is where
+        // every false positive of this category sits.
+        //
+        // **The measured rate of `no longer`, read on `58f46a8d` on
+        // 2026-09-11.** The category reports 36 findings over this corpus and
+        // 24 of them are `no longer`. All 36 were adjudicated one at a time:
+        // 13 are genuine, 5 stand where narration is the content a reader
+        // wants, and 18 are false in a way that no rewrite repairs. So
+        // `no longer` is 9 genuine of 24, which is 37.5 per cent, and the
+        // category is 13 of 36.
+        //
+        // **`no longer` stays, and the argument is the absolute count rather
+        // than the rate.** Removing it removes 9 of the 13 genuine findings of
+        // the whole category and leaves 4. The rate moves in both directions
+        // and settles nothing on its own: over genuine findings alone it falls
+        // from 13 of 36 to 4 of 12, and over the findings that are not
+        // permanently false it rises from 18 of 36 to 9 of 12. What does not
+        // move is the yield, because 9 genuine findings go and no numerator
+        // returns them. Q5 sets membership at a phrase that plainly means a
+        // change in general English, and this one meets it. Spec 3 rules that
+        // posture comes from fixability and never from precision, this
+        // category is advisory already, and nothing in the corpus states a
+        // precision floor for membership. What reopens the ruling is the trend and not the
+        // rate: each rewrite that clears a genuine finding leaves the false
+        // residual in place, so a later reading that finds the genuine count
+        // at zero with the false count unmoved is the reading that retires the
+        // pattern.
+        //
+        // The 18 false positives are five ways that English states something
+        // other than a change, and `the_measured_false_positives_still_match`
+        // holds one sentence of each. None of them carries a `headwater allow`
+        // directive: a directive requires an `until`, and none of these
+        // sentences becomes wrong.
         //
         // Three candidates were measured and rejected, and the reason each one
         // failed is why this set is curated against a corpus and not from
@@ -243,6 +291,16 @@ impl DocumentCheck for Voice {
     /// this corpus on 258 instances, and not one of its forty patterns occurred
     /// in a declarative document, so the set was saturated rather than
     /// satisfied.
+    ///
+    /// **The measurement of 2026-09-11 moved no pattern, so this number stands
+    /// at 2, and the evidence is the source rather than a run.** The 209 lines
+    /// above the test module that are neither blank nor a comment are
+    /// identical to those of `58f46a8d`: no pattern, no category entry and no
+    /// line of the check body moved. So a cached verdict cannot differ from a
+    /// fresh one, and the divergence this constant guards against is
+    /// unrepresentable here rather than merely unobserved. Raising the number
+    /// would discard every cached voice verdict in every clone and assert a
+    /// change that no run made.
     const VERSION: u32 = 2;
     /// The body, because the regime is about prose. This declaration is the
     /// access: without it [`DocumentView::body`] returns nothing.
@@ -396,6 +454,44 @@ mod tests {
                     .iter()
                     .any(|pattern| contains_word(sentence, pattern)),
                 "no pattern matched `{sentence}`"
+            );
+        }
+    }
+
+    /// The false positives of the census of 2026-09-11, one sentence for each
+    /// of the five modes, verbatim from the corpus of `d0ef8273` and each one
+    /// checked against its source file there by a script that ran once. This
+    /// case holds its own copies and reads no document, so a reword of any of
+    /// these sentences leaves it green while its claim to quote the corpus
+    /// goes false. Nothing gates the six against that drift, and a script that
+    /// ran once is not a gate. They match, and the
+    /// comment on the tier-two set states why they are allowed to: a narrowing
+    /// that excludes one of them rules on the mode rather than on the sentence,
+    /// and it meets this case before it meets the corpus.
+    #[test]
+    fn the_measured_false_positives_still_match() {
+        let narration = &CATEGORIES[1];
+        for sentence in [
+            // A definition of a change, rather than a narration of one.
+            "A term that the corpus no longer uses, declared in the language regime with a required reason and an optional replacement.",
+            // A conditional inside a hypothetical.
+            "If the engine can name that thing too, the finding is relational, and the argument above no longer holds.",
+            // An inline quotation, which spec 3 puts outside every voice rule
+            // and which this engine reads because only a block quote is marked.
+            "The judgment \"we no longer describe it that way\" existed only as prose and a diff, so no mechanism could inherit it.",
+            // Another system's behavior, in the present tense.
+            "ESLint fails a run that carries a suppression which no longer matches, and that is the property `.ste-lint-baseline.json` lacked.",
+            // A heading, which is not a sentence.
+            "Terms that used to collide",
+            // An adjectival compound that names an input rather than a change.
+            "A document-scoped check that declares `needs_prior` receives the previously committed version of the changed document.",
+        ] {
+            assert!(
+                narration
+                    .patterns
+                    .iter()
+                    .any(|pattern| contains_word(sentence, pattern)),
+                "no pattern matched `{sentence}`, and the ruling of 2026-09-11 records that one does"
             );
         }
     }

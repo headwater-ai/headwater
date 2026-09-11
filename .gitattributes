@@ -88,7 +88,7 @@
 # for: a fold "answers to a check on the merged state", and refusal by driver "is
 # a fallback and never the rule". Whenever a merge is in progress it runs
 # `.githooks/merged-fold-check`, which runs `headwater generate --check`,
-# `headwater taxonomy resolve --check` and `sh tools/refresh-figures.sh --check`
+# `headwater taxonomy resolve --check` and `sh tools/site/refresh-figures.sh --check`
 # over the tree the merge produced. Those are the three CI already runs against
 # `refs/pull/N/merge`. It needs no `git config` beyond the `core.hooksPath` every
 # hook here needs, and the hook file says why that position and not
@@ -157,7 +157,7 @@ docs/probe-results/README.md merge=headwater-regenerate
 docs/probe-runs/README.md merge=headwater-regenerate
 docs/probe-results/regression-probe-transcript-for-2026-09-09.md merge=headwater-regenerate
 
-# The hand-built pages that carry a measured figure. `tools/refresh-figures.sh`
+# The hand-built pages that carry a measured figure. `tools/site/refresh-figures.sh`
 # substitutes 34 measured keys into every element marked `data-figure` on every
 # page under `site/`, 107 occurrences across these three, and
 # `.githooks/pre-commit` refuses a commit that leaves one stale. So every branch
@@ -194,7 +194,7 @@ docs/probe-results/regression-probe-transcript-for-2026-09-09.md merge=headwater
 # this block, in both directions.
 #
 # One cost, which is intended rather than a regression:
-# `tools/refresh-site-tokens.sh` also writes into these three pages, copying one
+# `tools/site/refresh-site-tokens.sh` also writes into these three pages, copying one
 # identical block into every page under `site/`. Two branches that both
 # refreshed the tokens wrote the same bytes and used to merge, and now they stop
 # and ask. The remedy the driver names rewrites the figures and leaves the token

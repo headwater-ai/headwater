@@ -2000,7 +2000,7 @@ fn a_descriptor_that_records_no_emitter_set_is_not_a_producer_difference() {
 ///
 /// The nav leaves of `.headwater/nav.yml` and the rows of every generated
 /// `shelf_index` page. Both are read out of the plan rather than out of the
-/// served HTML, for two measured reasons. `tools/check-site-fragments.py` does
+/// served HTML, for two measured reasons. `tools/site/check-site-fragments.py` does
 /// not capture anchor text, so a served-HTML property would be new state on the
 /// parser that the fragment pass shares; and 881 of 100,337 served anchors
 /// carry identifier link text, every one a legitimate prose citation, so the

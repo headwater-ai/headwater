@@ -25,9 +25,9 @@ provenance:
     ./engine/target/release/headwater check --root . --json \
       | python3 -c "import json,sys; print(json.load(sys.stdin)['coverage']['unaccounted'])"
 
-`tools/refresh-figures.sh` writes the length of that list into the `census.unaccounted` figure, and three pages carry it. So the self-assessment page publishes `2` under the label "of those silently unaccounted for". The landing page publishes the same `2` in a tile and in a ticker. The number a visitor reads is the length of a list rather than a count of files.
+`tools/site/refresh-figures.sh` writes the length of that list into the `census.unaccounted` figure, and three pages carry it. So the self-assessment page publishes `2` under the label "of those silently unaccounted for". The landing page publishes the same `2` in a tile and in a ticker. The number a visitor reads is the length of a list rather than a count of files.
 
-**The census partition is unaffected.** `typed`, `generated`, `untyped`, `excluded` and `not a document` still add to `seen`, and `tools/refresh-figures.sh` exits when they do not. `unaccounted` is a separate list, so a repeated entry in it moves no other figure.
+**The census partition is unaffected.** `typed`, `generated`, `untyped`, `excluded` and `not a document` still add to `seen`, and `tools/site/refresh-figures.sh` exits when they do not. `unaccounted` is a separate list, so a repeated entry in it moves no other figure.
 
 **One sentence outside every figure goes false with it.** `site/glossary/index.html` defines a census as a reading where "nothing is silently unaccounted for". That sentence carries no `data-figure` element, so neither a script nor a rule reads it.
 

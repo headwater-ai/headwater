@@ -33,7 +33,7 @@
 //! claimant path is therefore not documentation. It is the only thing that
 //! makes the two sides differ, and so the only thing that makes the conflict
 //! fire. A zero-byte claim store is the watermark form's silent failure at file
-//! granularity. `tools/id-store-fixtures.sh` pins both outcomes, and its
+//! granularity. `tools/repo/id-store-fixtures.sh` pins both outcomes, and its
 //! header carries the same argument.
 //!
 //! # Why a rule has to name the store

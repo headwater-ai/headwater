@@ -33,11 +33,11 @@ Each one is a decision procedure written in the workflow, and each one reddens a
 
 Line 376 is the sharpest of them. It runs `grep -rL 'rel="describedby"'` over `.headwater/site-build`, filters `404.html` out, and exits 1 on a non-empty result. The comment above it explains that `|| true` is required. `grep -L` exits 1 when it finds nothing, so the success case would otherwise end the job. That reasoning is correct and nothing provokes either arm of it. A build that wrote no HTML at all produces an empty result and the same exit 0.
 
-Thirteen fixture suites ship under `tools/`, `.githooks/` and `.claude/`. Four of them read `ci.yml`, measured by a `grep -c 'ci\.yml'` over each file: `tools/build-declaration-fixtures.sh`, `.claude/skills/fixtures.sh`, `tools/developing-fixtures.sh` and `tools/readme-fixtures.sh`. Nine read it not at all. Not one of the thirteen drives an inline gate of the workflow over a scratch input.
+Thirteen fixture suites ship under `tools/`, `.githooks/` and `.claude/`. Four of them read `ci.yml`, measured by a `grep -c 'ci\.yml'` over each file: `tools/engine/build-declaration-fixtures.sh`, `.claude/skills/fixtures.sh`, `tools/repo/developing-fixtures.sh` and `tools/repo/readme-fixtures.sh`. Nine read it not at all. Not one of the thirteen drives an inline gate of the workflow over a scratch input.
 
-The two suites that do read `ci.yml` read it two different ways. `tools/build-declaration-fixtures.sh` parses every `run:` value, which is what lets it judge a cargo step written behind a `cd` or inside a block scalar. `.claude/skills/fixtures.sh` calls `grep -q 'headwater sweep\|sweep report\|sweep plan'` over the whole file at lines 674 and 728. A comment naming the verb is a false red there, and a step invoking it through a variable is a false green.
+The two suites that do read `ci.yml` read it two different ways. `tools/engine/build-declaration-fixtures.sh` parses every `run:` value, which is what lets it judge a cargo step written behind a `cd` or inside a block scalar. `.claude/skills/fixtures.sh` calls `grep -q 'headwater sweep\|sweep report\|sweep plan'` over the whole file at lines 674 and 728. A comment naming the verb is a false red there, and a step invoking it through a variable is a false green.
 
-No mechanism in this repository parses or lints a shell script. `sh -n` appears nowhere, `shellcheck` runs nowhere, and the one occurrence of the string is a `# shellcheck disable=SC2086` directive at `tools/engine-readme-fixtures.sh:270` that no linter reads.
+No mechanism in this repository parses or lints a shell script. `sh -n` appears nowhere, `shellcheck` runs nowhere, and the one occurrence of the string is a `# shellcheck disable=SC2086` directive at `tools/engine/engine-readme-fixtures.sh:270` that no linter reads.
 
 ## Obligation
 
@@ -47,4 +47,4 @@ The gates that hold this repository are held by nothing themselves. A gate that 
 
 Each inline gate is discharged when a scratch-driven case runs its refusal and asserts the words of it. A second case runs its success arm over an input that must pass. The site gates need a scratch build directory rather than a real `mkdocs build`, which is what makes them affordable.
 
-The reader half is discharged when every suite that judges `ci.yml` reads a parsed `run:` value, the way `tools/build-declaration-fixtures.sh` already does. A shell parse over every script of this repository, by `sh -n` or by a linter, is a separate and smaller remedy that no gate carries.
+The reader half is discharged when every suite that judges `ci.yml` reads a parsed `run:` value, the way `tools/engine/build-declaration-fixtures.sh` already does. A shell parse over every script of this repository, by `sh -n` or by a linter, is a separate and smaller remedy that no gate carries.

@@ -52,10 +52,18 @@
 # breaking change.
 
 package: headwater/standard
-# This number appears twice, here and at the root of `taxonomy.yml`, and both
-# declarations are required: spec 7 gives a manifest a `version` key and the
-# meta-schema requires a `version` on a taxonomy source. So one value stands in
-# two files, and a bump moves both or neither.
+# This number appears twice inside this package, here and at the root of
+# `taxonomy.yml`, and both declarations are required: spec 7 gives a manifest a
+# `version` key and the meta-schema requires a `version` on a taxonomy source.
+# So one value stands in two files, and a bump moves both or neither.
+#
+# A third authored file pins it, outside the package rather than inside it:
+# `assemblies/starter/assembly.yml` writes `from.package:
+# headwater/standard@<version>`, and `assembly::read` refuses a recipe whose pin
+# does not name the version this file declares. The refusal arrives from
+# `publish`, so a bump that misses it fails the publish step of the loop above
+# rather than the resolve step. Every recipe under `contents.assemblies` moves
+# with a bump, and this one is the only one shipped.
 #
 # This file is the one that decides. Every consumer-facing reader takes the
 # number from here: the pin comparison in `resolve::package::sources`, the
@@ -70,7 +78,7 @@ package: headwater/standard
 # on load and before any comparison a consumer's pin makes, and the refusal
 # names both files and both numbers. Whether a taxonomy source should carry a
 # version at all is a meta-schema question that #212 leaves open.
-version: 4.2.0
+version: 4.3.0
 requires_engine: ">=0.1 <2"
 
 contents:

@@ -69,6 +69,8 @@ use headwater_probe::grade::Results;
 use headwater_probe::intake::{Record, Tree};
 use headwater_query::Surface;
 
+use crate::RefusedTranscript;
+
 /// The placeholder an output path and a declared identity may carry.
 const RUN: &str = "{run}";
 
@@ -83,12 +85,14 @@ pub(crate) fn emit(
     identity: &Identity,
     plan: &mut Plan,
 ) {
-    // Every committed transcript, in census order, which is path order.
-    let committed: Vec<&str> = census
+    // Every committed transcript, in census order, which is path order, with
+    // the lifecycle state it declares. The state decides whether a refusal
+    // fails the run: see `RefusedTranscript::held`.
+    let committed: Vec<(&str, bool)> = census
         .rows
         .iter()
         .filter(|row| matches!(&row.outcome, Outcome::Typed { kind, .. } if kind == TRANSCRIPT))
-        .map(|row| row.path.as_str())
+        .map(|row| (row.path.as_str(), !is_draft(row)))
         .collect();
 
     // The first of the three inputs a result is a function of. This is the arm
@@ -115,7 +119,7 @@ pub(crate) fn emit(
     // written rather than against the pattern, so that the run names the file
     // whose bytes are now what an earlier corpus derived.
     if let Some(refusal) = &runs.refusal {
-        for path in &committed {
+        for (path, _) in &committed {
             plan.unwritten.push(Unwritten {
                 at: declaration.output.replace(RUN, &stem(path)),
                 kind: Kind::ProbeResult,
@@ -171,7 +175,7 @@ pub(crate) fn emit(
         config: surface.config(),
         lock: &identity.lock,
     };
-    for path in committed {
+    for (path, promoted) in committed {
         let stem = stem(path);
         let output = declaration.output.replace(RUN, &stem);
         let Some(transcript) = runs
@@ -218,6 +222,19 @@ pub(crate) fn emit(
 
         let record = Record::read(&transcript.source, &tree);
         let results = Results::over(&record, &runs.selected);
+        // The file below still says this, and saying it there is not enough:
+        // the refusal text is the derived output, so `generate --check`
+        // regenerates it faithfully and every gate this repository has stays
+        // green over a result that carries no verdict. The run says it too.
+        if let Some(refusal) = &record.refusal {
+            plan.refused.push(RefusedTranscript {
+                transcript: path.to_string(),
+                output: output.clone(),
+                confirmation: refusal.confirmation(),
+                why: refusal.to_string(),
+                held: promoted,
+            });
+        }
         plan.outputs.push(Output {
             path: output,
             kind: Kind::ProbeResult,
@@ -225,6 +242,28 @@ pub(crate) fn emit(
         });
     }
 }
+
+/// Whether this transcript is still a draft.
+///
+/// Read from the row the census already parsed rather than from the file again,
+/// for the reason [`headwater_census::census::Row::document`] states: a second
+/// read is a second account of one file, and the two can differ.
+///
+/// A facet this engine cannot read is not a draft. The alternative is a
+/// transcript that escapes the report by carrying a `status` nobody declared,
+/// which is the silent pass this whole module exists to close.
+fn is_draft(row: &headwater_census::census::Row) -> bool {
+    row.document
+        .as_ref()
+        .and_then(|document| document.facets.get(DRAFT_FACET))
+        .and_then(|entry| entry.value.as_scalar())
+        .is_some_and(|status| status.text == DRAFT)
+}
+
+/// The facet a lifecycle state is declared in, and the one value of it that
+/// says a recording is not yet evidence.
+const DRAFT_FACET: &str = "status";
+const DRAFT: &str = "draft";
 
 /// The whole file: the front matter, the marker where there is no front matter,
 /// and the report.

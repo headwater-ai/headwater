@@ -2,7 +2,7 @@
 #
 # `engine/Cargo.toml` declares the same number as `rust-version` under
 # `[workspace.package]`, which is the copy cargo reads; this is the copy clippy
-# reads, and `tools/engine-readme-fixtures.sh` holds the two to each other and
+# reads, and `tools/engine/engine-readme-fixtures.sh` holds the two to each other and
 # to the image the container commands pin.
 #
 # A floor here is not decoration. Before there was one, clippy suggested APIs

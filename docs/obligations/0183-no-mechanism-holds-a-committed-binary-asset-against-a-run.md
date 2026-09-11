@@ -23,7 +23,7 @@ provenance:
 
 [HW-DR-0061](../decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md) rules that a recorded terminal demonstration is a figure under principle 11, so it may show no output that a live run would move. The ruling is enforceable only where something compares the artifact against a run.
 
-`tools/refresh-figures.sh` is the comparison HW-DR-0039 built, and it reads text. It writes a measured number into a `data-figure` element of an HTML file, and `--check` compares what it would write against what the tree carries. Nothing in that path opens a GIF, a cast file or a PNG. So a number frozen inside a binary asset is invisible to the one instrument that holds a figure to a run.
+`tools/site/refresh-figures.sh` is the comparison HW-DR-0039 built, and it reads text. It writes a measured number into a `data-figure` element of an HTML file, and `--check` compares what it would write against what the tree carries. Nothing in that path opens a GIF, a cast file or a PNG. So a number frozen inside a binary asset is invisible to the one instrument that holds a figure to a run.
 
 ## Obligation
 

@@ -1,0 +1,111 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the evidence-basis tree is checked against. It is the smallest
+# shape the question needs, and nothing here declares a warrant or an evidence
+# basis, because nothing can: the provenance block belongs to the engine, which
+# is why `warrant.evidence.unsupported` reads both values through
+# `headwater_doc` and never through a declaration.
+#
+# The eight relation names below are the `evidence` family of this repository's
+# own lock, taken from `.headwater/taxonomy.lock` rather than from the one name
+# the report happened to quote. The rule reads the family and never a name, so
+# the eight are here to prove which reading it makes: a rule holding `traces_to`
+# alone reports one of these and is silent about seven.
+#
+# `mentions` is `association`, and it is the relation that proves the family
+# filter runs at all. `traces_to` also reaches an anchor kind, which is the far
+# end `EdgeUnit::Pair` never groups and which nothing else asserts.
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+  status_since:
+    role: state_entered
+  summary:
+    role: scent
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+anchors:
+  code_path: {resolver: source-tree}
+
+relations:
+  traces_to:
+    family: evidence
+    from: [record]
+    to: [record, code_path]
+    cardinality: many
+    created_by: author
+  applied_in:
+    family: evidence
+    from: [record]
+    to: [record]
+    cardinality: many
+    created_by: author
+  assesses:
+    family: evidence
+    from: [record]
+    to: [record]
+    cardinality: many
+    created_by: author
+  cites_evidence:
+    family: evidence
+    from: [record]
+    to: [record]
+    cardinality: many
+    created_by: author
+  discharges:
+    family: evidence
+    from: [record]
+    to: [record]
+    cardinality: many
+    created_by: author
+  examines:
+    family: evidence
+    from: [record]
+    to: [record]
+    cardinality: many
+    created_by: author
+  records:
+    family: evidence
+    from: [record]
+    to: [record]
+    cardinality: many
+    created_by: author
+  verified_by:
+    family: evidence
+    from: [record]
+    to: [record]
+    cardinality: many
+    created_by: author
+  mentions:
+    family: association
+    from: [record]
+    to: [record]
+    cardinality: many
+    created_by: author
+
+core:
+  requires:
+    - facet_role: state
+    - relation_family: evidence
+    - relation_family: association
+
+kinds:
+  record:
+    identifier: {scheme: note_id}
+    facets: {require: [status]}
+
+shelves:
+  claims:
+    path: evidence-basis/claims/**
+    homogeneous: true
+    kind: record
+  targets:
+    path: evidence-basis/targets/**
+    homogeneous: true
+    kind: record

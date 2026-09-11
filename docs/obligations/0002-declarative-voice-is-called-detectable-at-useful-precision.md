@@ -4,8 +4,8 @@ title: "Declarative voice is called detectable at useful precision, and the samp
 status: current
 status_since: 2026-08-11
 waiting_on: adopter
-last_verified: 2026-09-06
-summary: "The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for."
+last_verified: 2026-09-11
+summary: "The three voice categories run over this corpus, and the largest reading is 36 findings against a sample bar of 50."
 provenance:
   warrant: accepted
   agency: mixed
@@ -39,6 +39,10 @@ The instrument is a run of the three categories over this corpus, with an adjudi
 
 `voice.forbidden_construction` implements `future_intent`, `change_narration` and `phased_rollout`, which are the categories that the declarative regime forbids. So the implementation exists, and what this record holds open is the sample.
 
-Edition two of the `change_narration` set reports 60 findings over this corpus, which clears the bar of 50 for one category of the three. `future_intent` and `phased_rollout` report nothing. [HW-OBL-0168](0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md) states why a zero from a pattern set carries two readings rather than one.
+**The reading of 2026-09-11, on commit `58f46a8d`.** `change_narration` reports 36 findings, and the other two categories report none. So no category reaches the bar of 50. Edition two of the `change_narration` set reported 60 findings on the day it landed. This record then carried that figure through two merged rewrites that removed most of them. Write a count here as a dated reading that names the commit. A bare count goes stale on the next rewrite, and nothing reports it.
 
-So this claim is short by two categories rather than by three. A wider corpus is one way to reach the other two. A pattern set curated against the prose those two categories are written in is the second way, and it asks nothing of an adopter.
+**All 36 findings were adjudicated one at a time, under the two labels spec 4 declares.** 13 are genuine. 5 stand in a section where the narration is the content a reader wants, such as the `## Context` of a decision record. 18 are false for good, and each one is a way that English states something other than a change. The five modes are a definition, a conditional inside a hypothetical, an inline quotation, another system's behavior, and a heading. The loosest pattern of the set carries 24 of the 36 findings, and 9 of those 24 are genuine. That pattern stays, and the argument is the absolute count rather than the rate. The rate moves in both directions. Over genuine findings alone it falls from 13 of 36 to 4 of 12. Over the findings that are not permanently false it rises from 18 of 36 to 9 of 12. The yield does not move, because 9 genuine findings go and no numerator returns them. `engine/crates/check/src/voice.rs` holds the ruling, one sentence for each of the five modes, and the trend that would retire the pattern. None of the 18 carries a `headwater allow` directive, because a directive requires an `until` and none of these sentences becomes wrong.
+
+**The zero from the other two categories is saturation rather than a clean corpus.** On that same commit, of the patterns that `future_intent` declares, 0 of 14 occur in the 291 documents whose kind binds the declarative regime. `phased_rollout` stands at 0 of 13 over the 293 documents that bind the declarative or the prospective regime. Both denominators come from the kind-to-regime binding of the lock, applied to the 320 documents of the graph. The corpus holds one occurrence of `will become` and two of `in the first release`, and all three sit under `docs/reviews/` or `docs/evaluations/`, which bind `narrative` and forbid nothing. [HW-OBL-0168](0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md) states why a zero from a pattern set carries two readings rather than one.
+
+So this claim is short for all three categories rather than for two, and the reading above is the measurement that says so. A wider corpus is one way to reach the sample, and this record waits on one. A pattern set curated against the prose that the two silent categories are written in is the second way. It asks nothing of an adopter. Neither route is taken here.
