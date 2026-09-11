@@ -71,7 +71,7 @@ The design-spec and standards-spec fixtures each add a Headwater front-matter bl
     headwater taxonomy resolve --root "$ROOT"
     headwater check --root "$ROOT" --no-cache --now 2026-09-01
 
-The entry sits outside the corpus root on purpose, the same reason the other fixtures of this entry give. Nothing in CI runs this corpus.
+The entry sits outside the corpus root on purpose, the same reason the other fixtures of this entry give. `sh tools/taxonomy/n8n-fixtures.sh` runs this corpus in CI, as a blocking step, and holds every figure of *What a run reports* against the run. [The design-spec README](../../../design-spec/fixtures/n8n/README.md#what-that-job-holds-and-what-it-does-not) says which figures that job holds and which it does not.
 
 ## What the taxonomy needed before it could read one file
 
@@ -101,7 +101,7 @@ The entry sits outside the corpus root on purpose, the same reason the other fix
 
 **`headwater check --fix` writes nothing here.** The `--fix` arm over the assembled root printed `no finding of this run carries a patch` and changed no file. That is 0 of 139. A missing heading, an unresolved link and a forbidden voice construction all need a rewrite.
 
-**The version scalar is 4.2.0 and not 4.0.0.** `.headwater/taxonomy.yml` here takes `headwater/standard` at `4.2.0`, which is the version in this repository. The two earlier n8n fixtures still take `4.0.0`, and `headwater taxonomy resolve` refuses that mismatch and names both versions, so the commands those two files state no longer run as written. No check reads either scalar, because `docs/taxonomies/**` is outside this repository's corpus.
+**All three n8n fixtures take one version now, and a job holds it.** `.headwater/taxonomy.yml` here takes `headwater/standard` at `4.3.0`, which is the version `packages/` carries. This fixture took `4.2.0` and the two earlier ones took `4.0.0`, and `headwater taxonomy resolve` refuses that mismatch and names both versions, so for a time every one of the three pages printed a command that did not run. `docs/taxonomies/**` is outside this repository's corpus, so no check read any of the three scalars. `sh tools/taxonomy/n8n-fixtures.sh` now does: it runs the block above verbatim in CI, it fails on that refusal, and it holds every figure of this section against the run.
 
 ## What this corpus cannot see
 

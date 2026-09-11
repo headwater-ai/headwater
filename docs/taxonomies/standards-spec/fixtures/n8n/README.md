@@ -57,7 +57,7 @@ Every one of the seven is a `standard`. Five of the six directories are represen
     headwater check --root "$ROOT" --no-cache --now 2026-09-01
     headwater sweep plan --root "$ROOT" --under .agents/review-rules
 
-The entry sits outside the corpus root on purpose, the same reason the Beacon fixtures give. Nothing in CI runs this corpus.
+The entry sits outside the corpus root on purpose, the same reason the Beacon fixtures give. `sh tools/taxonomy/n8n-fixtures.sh` runs this corpus in CI, as a blocking step, and holds every figure of *What a run reports* against the run. [The design-spec README](../../../design-spec/fixtures/n8n/README.md#what-that-job-holds-and-what-it-does-not) says which figures that job holds and which it does not.
 
 ## What the taxonomy needed before it could read one file
 
@@ -65,7 +65,7 @@ The entry sits outside the corpus root on purpose, the same reason the Beacon fi
 
 **A leading-dot corpus root walks like any other.** `corpus.root: .agents` was the one plausible blocker before the run and it is not one: the census walker uses a plain directory read with no hidden-directory filter. Shelf patterns are matched against paths that carry the corpus root segment, so the shelf writes `.agents/review-rules/**` and not `review-rules/**`.
 
-**No exclusion is needed, and the design-spec fixture's exclusion was forced.** That fixture roots at `packages`, which is also where a vendored taxonomy package is found, so it had to declare `exclude: packages/headwater-standard/**` and its census reports 101 excluded files that are not corpus content. With `root: .agents` the package sits outside the corpus root entirely. The exclusion was a property of where that kind's prose lives, not of scattered corpora in general.
+**No exclusion is needed, and the design-spec fixture's exclusion was forced.** That fixture roots at `packages`, which is also where a vendored taxonomy package is found, so it had to declare `exclude: packages/headwater-standard/**` and its census reports 38 excluded files that are not corpus content. With `root: .agents` the package sits outside the corpus root entirely. The exclusion was a property of where that kind's prose lives, not of scattered corpora in general.
 
 **The shelf can be homogeneous here, and it could not there.** `kinds.design_spec` requires the facet `doc_type`, and a homogeneous shelf refuses a document that restates the kind its placement already states, so the design-spec fixture reports an error whichever way the front matter is written and settles for a heterogeneous shelf with one admitted kind — a shape its own README calls a contradiction. `kinds.standard` requires no facet and forbids `spec_layer`, so `homogeneous: true, kind: standard` resolves with nothing to declare. All three arms were run:
 
@@ -83,9 +83,9 @@ The entry sits outside the corpus root on purpose, the same reason the Beacon fi
 
 ## What a run reports
 
-`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **7 files under the corpus root, 7 typed, 0 excluded, 7 checked, 93 check instances, 21 findings, all 21 of them errors.** The census reads 7 `standard`. The graph reads 7 nodes, 0 declared edge halves, and 0 prose links that did not resolve. `headwater check --strict` exits 1.
+`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **7 files under the corpus root, 7 typed, 0 excluded, 7 checked, 97 check instances, 21 findings, all 21 of them errors.** The census reads 7 `standard`. The graph reads 7 nodes, 0 declared edge halves, and 0 prose links that did not resolve. `headwater check --strict` exits 1.
 
-Every count moves only when this corpus moves. There is no excluded count to drift with the vendored package.
+Every count but one moves only when this corpus moves, and there is no excluded count to drift with the vendored package. The exception is the check instance count, which says how many rules the resolved taxonomy had to run rather than anything about these seven files: it read 93 at `headwater/standard` 4.0.0 and 97 at 4.3.0, and no finding moved with it.
 
 **Three findings per document, and the same three on every one.** `section.required.missing`, an error, under `OB-SECT-1`, once for each of `Scope`, `Requirements` and `Conformance`:
 

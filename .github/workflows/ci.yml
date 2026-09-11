@@ -1315,3 +1315,25 @@ jobs:
         # temporary directory, `HOME` is redirected into it, and it is removed
         # at the end.
         run: sh .claude/tutorial/fixtures.sh
+      - name: The n8n fixture READMEs print a recipe and state its figures, and this runs it
+        # `docs/taxonomies/*/fixtures/n8n/README.md`, three of them, each type a
+        # real corpus of the n8n monorepo at one pin, print the commands that
+        # assemble it, and then state what the run reports. Every one of those
+        # numbers is a claim about this engine copied into prose, and prose does
+        # not re-derive.
+        #
+        # It went stale unseen, which is why this step exists. All three recipes
+        # refused at `headwater taxonomy resolve` across four minor versions of
+        # the vendored package, because each pinned `headwater/standard` at a
+        # version `packages/` no longer carried. `docs/taxonomies/**` is outside
+        # this repository's own corpus, so no check read either scalar and the
+        # published pages named commands a reader could not run.
+        #
+        # It blocks, and it carries three arms a green run cannot show you: it
+        # fails if it does not find three corpora, it fails if an edited figure
+        # would not have been caught, and it fails if a pin the vendored package
+        # does not carry would have run green.
+        #
+        # It writes nothing inside the checkout: every scratch root is under a
+        # temporary directory, removed at the end.
+        run: sh tools/taxonomy/n8n-fixtures.sh
