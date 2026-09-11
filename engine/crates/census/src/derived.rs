@@ -232,10 +232,7 @@ fn claimed_by(root: &Path, path: &str) -> Option<Producer> {
         return Some(Producer::TaxonomyResolve);
     }
     let text = std::fs::read_to_string(root.join(path)).ok()?;
-    if path.starts_with("site/")
-        && path.ends_with(".html")
-        && text.contains(FIGURE)
-    {
+    if path.starts_with("site/") && path.ends_with(".html") && text.contains(FIGURE) {
         return Some(Producer::FigureRefresh);
     }
     if is_recorded_fixture(path) {

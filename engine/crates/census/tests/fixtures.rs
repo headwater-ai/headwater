@@ -497,6 +497,22 @@ fn the_figure_refresh_still_writes_the_set_the_population_enumerates() {
 /// twenty-one, and `.gitattributes` held twenty-four. A count restated by hand
 /// is the defect, so the remedy is that no hand states one: each of the three
 /// sentences names the verb that computes it instead.
+///
+/// # The vocabulary is generated, and the first draft of this case was the
+/// # defect one level up
+///
+/// That draft held a hand-written list of number words. It carried `six`,
+/// `seven`, `twenty-one` and thirteen others, and it was missing `four`,
+/// `eight`, `nine`, `twenty-two` and `twenty-six`. So a case written to forbid
+/// a hand-maintained count was keyed on a hand-maintained list, and a later
+/// writer who chose an unlisted word would have passed it. That is the shape of
+/// [#676](https://github.com/headwater-ai/headwater/issues/676) itself.
+///
+/// [`cardinals`] generates the vocabulary from the morphemes of English rather
+/// than listing the words. Nine units, ten teens, eight tens and the compounds
+/// of the last two give every cardinal below one hundred, plus the scale words
+/// above it. A digit is caught by its own rule, so no spelling of a number gets
+/// through by being written the other way.
 #[test]
 fn no_statement_of_the_population_carries_a_count() {
     let root = repository_root();
@@ -509,9 +525,10 @@ fn no_statement_of_the_population_carries_a_count() {
         (".githooks/merged-fold-check", "declares"),
         (".gitattributes", "Measured rather than assumed"),
     ];
+    let vocabulary = cardinals();
     for (path, locator) in statements {
-        let text = std::fs::read_to_string(root.join(path))
-            .unwrap_or_else(|e| panic!("{path}: {e}"));
+        let text =
+            std::fs::read_to_string(root.join(path)).unwrap_or_else(|e| panic!("{path}: {e}"));
         let sentence = text
             .lines()
             .find(|line| line.contains(locator))
@@ -521,10 +538,9 @@ fn no_statement_of_the_population_carries_a_count() {
                      case no longer reads the sentence it was written for"
                 )
             });
-        let counted: Vec<&str> = COUNT_WORDS
-            .iter()
-            .filter(|word| holds_word(sentence, word))
-            .copied()
+        let counted: Vec<String> = words_of(sentence)
+            .into_iter()
+            .filter(|word| vocabulary.contains(word) || word.chars().all(|c| c.is_ascii_digit()))
             .collect();
         assert!(
             counted.is_empty(),
@@ -540,18 +556,83 @@ fn no_statement_of_the_population_carries_a_count() {
     }
 }
 
-/// The words a hand count of this population has been written in.
-const COUNT_WORDS: &[&str] = &[
-    "six", "seven", "ten", "seventeen", "eighteen", "twenty-one", "twenty-four", "3", "5", "6",
-    "7", "10", "17", "18", "21", "23", "24", "25",
-];
+/// Every cardinal number word of English below one hundred, and the scale words.
+///
+/// Generated from the morphemes rather than listed, because a list of number
+/// words is the defect this file is about. The three words that were actually
+/// wrong in this tree are asserted present below, so a generator that stopped
+/// generating reddens rather than passing everything.
+fn cardinals() -> std::collections::BTreeSet<String> {
+    const UNITS: [&str; 9] = [
+        "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    ];
+    const TEENS: [&str; 10] = [
+        "ten",
+        "eleven",
+        "twelve",
+        "thirteen",
+        "fourteen",
+        "fifteen",
+        "sixteen",
+        "seventeen",
+        "eighteen",
+        "nineteen",
+    ];
+    const TENS: [&str; 8] = [
+        "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+    ];
+    const SCALES: [&str; 4] = ["zero", "hundred", "thousand", "million"];
 
-/// Whether a sentence holds a word, rather than holding it inside another word.
-fn holds_word(sentence: &str, word: &str) -> bool {
-    sentence
+    let mut words: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    for word in UNITS.iter().chain(TEENS.iter()).chain(SCALES.iter()) {
+        words.insert((*word).to_string());
+    }
+    for ten in TENS {
+        words.insert(ten.to_string());
+        for unit in UNITS {
+            words.insert(format!("{ten}-{unit}"));
+        }
+    }
+    assert_eq!(
+        words.len(),
+        9 + 10 + 4 + 8 + 8 * 9,
+        "the generator no longer produces every cardinal below one hundred"
+    );
+    for wrong in ["six", "twenty-one", "twenty-four", "four", "eight", "nine"] {
+        assert!(
+            words.contains(wrong),
+            "the generated vocabulary is missing {wrong}, which is a form a hand \
+             count of this population has been or could be written in"
+        );
+    }
+    words
+}
+
+/// The prose words of a line, with the spans that hold no prose removed.
+///
+/// A code span quotes a path or a command and a Markdown link target holds an
+/// identifier, and neither is a statement about the population. `#676` inside a
+/// link is a name rather than a count, and reading it as one would force every
+/// sentence here to cite nothing.
+fn words_of(line: &str) -> Vec<String> {
+    let mut prose = String::new();
+    let mut in_code = false;
+    let mut in_link = false;
+    for c in line.chars() {
+        match c {
+            '`' => in_code = !in_code,
+            '[' => in_link = true,
+            ')' if in_link => in_link = false,
+            _ if in_code || in_link => {}
+            _ => prose.push(c),
+        }
+    }
+    prose
         .to_ascii_lowercase()
         .split(|c: char| !c.is_ascii_alphanumeric() && c != '-')
-        .any(|found| found == word)
+        .filter(|word| !word.is_empty())
+        .map(str::to_string)
+        .collect()
 }
 
 /// A planted producer output is found by a producer's rule, not by a list.
@@ -673,10 +754,8 @@ struct TempTree(PathBuf);
 
 impl TempTree {
     fn new(label: &str) -> TempTree {
-        let path = std::env::temp_dir().join(format!(
-            "headwater-derived-{}-{label}",
-            std::process::id()
-        ));
+        let path =
+            std::env::temp_dir().join(format!("headwater-derived-{}-{label}", std::process::id()));
         let _ = std::fs::remove_dir_all(&path);
         std::fs::create_dir_all(&path).expect("a temporary tree");
         TempTree(path)
