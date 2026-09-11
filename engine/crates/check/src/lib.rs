@@ -709,7 +709,9 @@ pub fn run(
         ctx,
         cache,
     ));
-    instances.extend(scope::over_edges(&basis, census, graph, &digests, ctx, cache));
+    instances.extend(scope::over_edges(
+        &basis, census, graph, &digests, ctx, cache,
+    ));
     instances.extend(scope::over_neighbourhoods(
         &participation,
         census,

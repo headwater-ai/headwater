@@ -165,7 +165,10 @@ fn an_evidenced_document_resting_on_an_asserted_one_is_reported() {
     let reported = about(&run, "NOTE-FIX-rests-on-asserted");
     assert_eq!(reported.len(), 1, "the decisive finding: {reported:?}");
     let message = reported[0];
-    assert!(message.contains("NOTE-FIX-asserted"), "the target: {message}");
+    assert!(
+        message.contains("NOTE-FIX-asserted"),
+        "the target: {message}"
+    );
     assert!(message.contains("`traces_to`"), "the relation: {message}");
     assert!(message.contains("`asserted`"), "the warrant: {message}");
     assert!(
