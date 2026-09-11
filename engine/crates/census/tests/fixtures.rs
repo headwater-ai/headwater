@@ -504,7 +504,7 @@ fn no_statement_of_the_population_carries_a_count() {
     let statements = [
         (
             "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
-            "keep their folds and declare the driver",
+            "keep their folds",
         ),
         (".githooks/merged-fold-check", "declares"),
         (".gitattributes", "Measured rather than assumed"),
@@ -552,4 +552,149 @@ fn holds_word(sentence: &str, word: &str) -> bool {
         .to_ascii_lowercase()
         .split(|c: char| !c.is_ascii_alphanumeric() && c != '-')
         .any(|found| found == word)
+}
+
+/// A planted producer output is found by a producer's rule, not by a list.
+///
+/// The tree of this repository agrees in both directions, which is the correct
+/// answer and is why it is not evidence. The original witness the issue named
+/// is gone too: `site/index.html` and `site/proof/index.html` carried no
+/// attribute when [#676](https://github.com/headwater-ai/headwater/issues/676)
+/// was filed, and #720 declared them. So the disagreement is provoked here, in
+/// both directions at once.
+///
+/// The load of this case is the unedited verb. Nothing in
+/// `headwater_census::derived` names `site/planted/index.html`. The figure
+/// refresh writes every page under `site/` that carries a `data-figure`
+/// element, the planted page carries one, and that is the whole reason it is
+/// reported. A rule that read a list would report nothing here.
+#[test]
+fn a_planted_producer_output_and_a_planted_orphan_are_both_reported() {
+    let root = TempTree::new("planted");
+    root.write(
+        ".gitattributes",
+        "# a comment naming merge=headwater-regenerate, which is not a declaration\n\
+         docs/shelf/README.md merge=headwater-regenerate\n\
+         docs/nobody/README.md merge=headwater-regenerate\n",
+    );
+    // Produced and declared: neither direction reports it.
+    root.write(
+        "docs/shelf/README.md",
+        "<!-- headwater:generated shelf_index. -->\n\n# A shelf\n",
+    );
+    // Produced by the figure refresh and declared by nothing.
+    root.write(
+        "site/planted/index.html",
+        "<p><span data-figure=\"census.seen\">426</span></p>\n",
+    );
+    // Declared and written by no producer.
+    // (no file at docs/nobody/README.md, and a file there with no marker would
+    // read the same way)
+
+    let population = headwater_census::derived::population(root.path());
+
+    assert_eq!(
+        population
+            .undeclared
+            .iter()
+            .map(|output| (output.path.as_str(), output.producer))
+            .collect::<Vec<_>>(),
+        vec![(
+            "site/planted/index.html",
+            headwater_census::derived::Producer::FigureRefresh
+        )],
+        "a page the figure refresh writes carries no attribute and the report \
+         missed it, or it named the wrong producer"
+    );
+    assert_eq!(
+        population.unproduced,
+        vec!["docs/nobody/README.md".to_string()],
+        "a declared path that no producer writes was not reported"
+    );
+    assert!(!population.agrees(), "the report claims the tree agrees");
+
+    let rendered = population.render();
+    for expected in [
+        "site/planted/index.html",
+        "docs/nobody/README.md",
+        "sh tools/site/refresh-figures.sh",
+    ] {
+        assert!(
+            rendered.contains(expected),
+            "the report does not name {expected}:\n{rendered}"
+        );
+    }
+}
+
+/// A recorded fixture is a member only where its opening states a fold.
+///
+/// This is the rule that separates `corpus.checks` from `corpus.census`.
+/// HW-DR-0049 decomposed the second so that it merges, and a decomposed
+/// artifact that declared the driver would refuse a merge it is built to take.
+#[test]
+fn a_decomposed_recorded_fixture_is_not_a_member_and_a_folded_one_is() {
+    let root = TempTree::new("folds");
+    root.write(".gitattributes", "");
+    root.write(
+        "engine/crates/check/fixtures/corpus.checks",
+        "491 seen, 321 classified\n  a finding\n",
+    );
+    root.write(
+        "engine/crates/lock/fixtures/corpus.lock",
+        "headwater/standard 4.3.0\nsha256:abcdef\n",
+    );
+    root.write(
+        "engine/crates/census/fixtures/corpus.census",
+        "docs/LICENSE\n  not a document\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+    let claimed: Vec<&str> = population
+        .outputs
+        .iter()
+        .map(|output| output.path.as_str())
+        .collect();
+    assert_eq!(
+        claimed,
+        vec![
+            "engine/crates/check/fixtures/corpus.checks",
+            "engine/crates/lock/fixtures/corpus.lock"
+        ],
+        "the fold rule claimed the wrong recorded fixtures"
+    );
+}
+
+/// A tree under a directory this process owns, removed when the case ends.
+///
+/// Keyed on the process identifier and a label, because `cargo` runs the cases
+/// of one target as threads of one process and a helper keyed on the pid alone
+/// races with its siblings.
+struct TempTree(PathBuf);
+
+impl TempTree {
+    fn new(label: &str) -> TempTree {
+        let path = std::env::temp_dir().join(format!(
+            "headwater-derived-{}-{label}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&path);
+        std::fs::create_dir_all(&path).expect("a temporary tree");
+        TempTree(path)
+    }
+
+    fn path(&self) -> &Path {
+        &self.0
+    }
+
+    fn write(&self, relative: &str, text: &str) {
+        let at = self.0.join(relative);
+        std::fs::create_dir_all(at.parent().expect("a parent")).expect("a directory");
+        std::fs::write(&at, text).expect("a file");
+    }
+}
+
+impl Drop for TempTree {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
 }

@@ -49,7 +49,7 @@ relations:
 
 **Two artifacts changed shape.** The recorded census holds one record per file and no total. The recorded graph holds one line per citation rather than a count for each anchor. It drops the count of prose links that did not resolve, because the exceptions section already names each broken link.
 
-**Six artifacts keep their folds and declare the driver.** They are the recorded checks, the two locks, and the three artifacts that `headwater generate` writes. `.gitattributes` names each one and says why it is on the list.
+**The artifacts that keep their folds declare the driver, and `headwater derived` is what says which they are.** Every count of them written by hand has been wrong, including the count this clause stated until [#676](https://github.com/headwater-ai/headwater/issues/676) removed it. The verb asks each producer for its own output set and takes the union, so the answer moves when the tree moves. `.gitattributes` names each path and says why it is on the list, and the verb holds that file against the computed set in both directions.
 
 **The driver needs one command for each clone, and the commit gate reports a clone that has not run it.** Git takes no merge driver from a repository, because a driver is an executable. So the attribute alone leaves an ordinary merge in place, and that failure is silent by construction.
 

@@ -95,6 +95,7 @@ nav:
       - "headwater check": "interfaces/headwater-check.md"
       - "headwater completions": "interfaces/headwater-completions.md"
       - "headwater conformance": "interfaces/headwater-conformance.md"
+      - "headwater derived": "interfaces/headwater-derived.md"
       - "headwater explain": "interfaces/headwater-explain.md"
       - "headwater export": "interfaces/headwater-export.md"
       - "headwater gate": "interfaces/headwater-gate.md"
@@ -300,11 +301,9 @@ nav:
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"
-      - "Probe result for regression-probe-transcript-for-2026-09-11": "probe-results/regression-probe-transcript-for-2026-09-11.md"
   - "Probe runs":
       - "Probe runs": "probe-runs/README.md"
       - "Regression probe transcript for 2026-09-09": "probe-runs/regression-probe-transcript-for-2026-09-09.md"
-      - "Regression probe transcript for 2026-09-11": "probe-runs/regression-probe-transcript-for-2026-09-11.md"
   - "Probes":
       - "Probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
