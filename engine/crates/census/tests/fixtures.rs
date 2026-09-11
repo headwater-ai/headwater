@@ -407,3 +407,149 @@ fn corpus_of(root: &Path) -> Corpus {
     let consumer = repository(root).consumer;
     Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions)
 }
+
+// --- the whole derived-artifact population ------------------------------------
+//
+// The two cases above hold two halves of one population against `.gitattributes`,
+// each half enumerated from one producer. They are the right shape and they
+// cover 15 of the 24 paths that carry the attribute. The three cases below hold
+// the whole of it, from `headwater_census::derived`, which enumerates every
+// producer by that producer's own rule.
+//
+// [#676](https://github.com/headwater-ai/headwater/issues/676) is the reason
+// they exist, and the reason is not that the two above were wrong. It is that
+// three separate hand-written statements of this one population disagreed in
+// one tree at one commit, by 18 and by 3.
+
+/// The computed population and `.gitattributes` agree, in both directions.
+///
+/// This generalizes `the_generated_documents_are_declared_unmergeable` and
+/// `every_page_carrying_a_figure_is_declared_unmergeable` over all four
+/// producers rather than replacing either. Those two hold a producer's rule
+/// against the attribute; this holds the union, so a producer output that
+/// belongs to neither of their two rules can no longer be missed.
+#[test]
+fn every_producer_output_is_declared_and_every_declared_path_has_a_producer() {
+    let root = repository_root();
+    let population = headwater_census::derived::population(&root);
+
+    assert!(
+        population.outputs.len() > 5,
+        "only {} producer outputs, so this proves nothing: a rule has stopped \
+         matching and the report would be silently short",
+        population.outputs.len()
+    );
+    for producer in headwater_census::derived::PRODUCERS {
+        assert!(
+            population
+                .outputs
+                .iter()
+                .any(|output| output.producer == *producer),
+            "`{}` claims no file of this tree, so its rule ({}) no longer \
+             matches and this case proves nothing about it",
+            producer.command(),
+            producer.rule()
+        );
+    }
+
+    assert!(
+        population.undeclared.is_empty(),
+        "a producer writes these and no `merge=headwater-regenerate` covers \
+         them, so two branches that move one to the same value merge it \
+         silently: {:#?}",
+        population.undeclared
+    );
+    assert!(
+        population.unproduced.is_empty(),
+        "these declare `merge=headwater-regenerate` and no producer writes \
+         them, so the declaration refuses a merge of hand-written text: {:#?}",
+        population.unproduced
+    );
+}
+
+/// The producer's own two literals, held against the copy this crate enumerates by.
+///
+/// `every_page_carrying_a_figure_is_declared_unmergeable` already holds them
+/// for its own copy of the rule. `headwater_census::derived` is a second reader
+/// of the same script, so it needs the same guard: a copy of a rule goes stale
+/// in silence.
+#[test]
+fn the_figure_refresh_still_writes_the_set_the_population_enumerates() {
+    let root = repository_root();
+    let producer =
+        std::fs::read_to_string(root.join("tools/site/refresh-figures.sh")).expect("the refresh");
+    for literal in ["site/**/*.html", headwater_census::derived::FIGURE] {
+        assert!(
+            producer.contains(literal),
+            "tools/site/refresh-figures.sh no longer says {literal}, so \
+             `headwater_census::derived` enumerates a set the producer has \
+             stopped writing"
+        );
+    }
+}
+
+/// No prose of this repository states the size of the population as a number.
+///
+/// This is the case the issue is actually about. Every hand statement of this
+/// population has been wrong, and at the commit this case was written three of
+/// them disagreed at once: [HW-DR-0049](../../../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)'s
+/// consequence clause said six, `.githooks/merged-fold-check`'s header said
+/// twenty-one, and `.gitattributes` held twenty-four. A count restated by hand
+/// is the defect, so the remedy is that no hand states one: each of the three
+/// sentences names the verb that computes it instead.
+#[test]
+fn no_statement_of_the_population_carries_a_count() {
+    let root = repository_root();
+    // (file, the words that locate the sentence stating the population)
+    let statements = [
+        (
+            "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+            "keep their folds and declare the driver",
+        ),
+        (".githooks/merged-fold-check", "declares"),
+        (".gitattributes", "Measured rather than assumed"),
+    ];
+    for (path, locator) in statements {
+        let text = std::fs::read_to_string(root.join(path))
+            .unwrap_or_else(|e| panic!("{path}: {e}"));
+        let sentence = text
+            .lines()
+            .find(|line| line.contains(locator))
+            .unwrap_or_else(|| {
+                panic!(
+                    "{path} no longer carries a line saying {locator:?}, so this \
+                     case no longer reads the sentence it was written for"
+                )
+            });
+        let counted: Vec<&str> = COUNT_WORDS
+            .iter()
+            .filter(|word| holds_word(sentence, word))
+            .copied()
+            .collect();
+        assert!(
+            counted.is_empty(),
+            "{path} states the size of the derived-artifact population by hand, \
+             as {counted:?}. Every hand statement of it has been wrong. Name \
+             `headwater derived` instead:\n  {sentence}"
+        );
+        assert!(
+            sentence.contains("headwater derived"),
+            "{path} states the population and does not name the verb that \
+             computes it, so a reader has nothing to check it against:\n  {sentence}"
+        );
+    }
+}
+
+/// The words a hand count of this population has been written in.
+const COUNT_WORDS: &[&str] = &[
+    "six", "seven", "ten", "seventeen", "eighteen", "twenty-one", "twenty-four", "3", "5", "6",
+    "7", "10", "17", "18", "21", "23", "24", "25",
+];
+
+/// Whether a sentence holds a word, rather than holding it inside another word.
+fn holds_word(sentence: &str, word: &str) -> bool {
+    sentence
+        .to_ascii_lowercase()
+        .split(|c: char| !c.is_ascii_alphanumeric() && c != '-')
+        .any(|found| found == word)
+}
