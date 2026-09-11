@@ -9,3 +9,11 @@ This answers HW-OBL-0097 as package data, not as a permanent decision: an adopte
 The bundle writes `purposes.procedure`, `kinds.tutorial`, `identifier_schemes.tutorial_id`, and `shelves.tutorials`, which this repository's overlay also writes. It therefore cannot resolve beside that overlay, and the collision fixture records the first shared address. The product-suite profile tier also reserves `purposes.procedure`; this bundle claims that address only for a documentation-site package. A site selecting this bundle must not declare an adopter kind at these addresses.
 
 The relationship to #509 is that this bundle supplies the new-entry form of procedure-shaped kinds. It does not decide the composition demonstration or HW-OBL-0040; an add-only connection between this kind set and another entry remains separate work.
+
+## Worked instances
+
+Criterion 4 asks for at least one real or realistic corpus that the entry types. This entry carries two.
+
+**[The shape fixtures](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/diataxis-site/fixtures/README.md), a realistic corpus.** One short document of each concrete kind under `fixtures/corpus/`, beside byte-identical source pages from `sysl` and `cockroach` under `fixtures/sources/`. The case table in that README is the contract, and it records the isolated run, the three-entry run, the constructor sweep, the overlay collision and the planted defect.
+
+**[n8n](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/diataxis-site/fixtures/n8n/README.md), a real one.** The 35 files of `.agents/skills/` from `n8n-io/n8n`, pinned at `b0550cb3cb4d1752546a69056c55eccfb9111a12` on `master`, every body byte-identical below its front matter. All 35 are typed as `how_to` on one homogeneous shelf, which is the answer to the question #509 held open. It is the third corpus of one repository in this library and the first that already carried front matter of its own. [HW-EVAL-n8n-worked-example](https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/n8n-worked-example.md) is the report.
