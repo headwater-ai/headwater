@@ -202,6 +202,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             now,
             json,
         } => gate(root, read_set, now, json),
+        Verb::Derived {} => derived(root),
         Verb::Route { task, budget, json } => match task.is_empty() {
             true => fail("`route` takes a task description. Try `headwater route \"add rate limiting to the ingest API\"`"),
             false => route(root, &task.join(" "), budget, json),
@@ -4727,6 +4728,25 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>, json: bool) -
         // Spec 12: "a false invalidation costs one run. A false survival ships
         // an invalid corpus with a green report." A non-zero exit is the signal
         // to run the checks again, and it is the cheaper of the two errors.
+        false => ExitCode::FAILURE,
+    }
+}
+
+/// Which files a producer of this repository writes, computed from the producers.
+///
+/// It walks the tree and asks each producer's rule which files are its own, so
+/// the population is a union of rules rather than a list anybody maintains.
+/// [#676](https://github.com/headwater-ai/headwater/issues/676) is why that
+/// matters: every hand-written statement of this population has been wrong, and
+/// three of them disagreed in one tree at one commit.
+///
+/// It reads no lock and no taxonomy, so it answers on a tree whose lock is
+/// stale and on a tree mid-merge, which are the two moments a caller asks.
+fn derived(root: &Path) -> ExitCode {
+    let population = headwater_census::derived::population(root);
+    print!("{}", population.render());
+    match population.agrees() {
+        true => ExitCode::SUCCESS,
         false => ExitCode::FAILURE,
     }
 }

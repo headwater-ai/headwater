@@ -95,6 +95,7 @@ nav:
       - "headwater check": "interfaces/headwater-check.md"
       - "headwater completions": "interfaces/headwater-completions.md"
       - "headwater conformance": "interfaces/headwater-conformance.md"
+      - "headwater derived": "interfaces/headwater-derived.md"
       - "headwater explain": "interfaces/headwater-explain.md"
       - "headwater export": "interfaces/headwater-export.md"
       - "headwater gate": "interfaces/headwater-gate.md"

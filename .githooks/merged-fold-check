@@ -2,7 +2,7 @@
 # The gate on a merged tree, which is the half of the derived-artifact mechanism
 # that a merge driver cannot be.
 #
-# `.gitattributes` declares 21 paths `merge=headwater-regenerate`, and
+# `.gitattributes` declares each path `merge=headwater-regenerate`, and `headwater derived` computes that set from the producers rather than restating its size, and
 # `.githooks/merge-regenerate` refuses a merge of any of them. A merge driver is
 # a *content* merge: git compares the two blobs first, and where both branches
 # wrote one byte string it resolves the path at the tree level and consults no

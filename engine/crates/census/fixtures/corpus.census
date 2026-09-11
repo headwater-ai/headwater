@@ -182,6 +182,8 @@ docs/interfaces/headwater-completions.md
   typed: interface_contract
 docs/interfaces/headwater-conformance.md
   typed: interface_contract
+docs/interfaces/headwater-derived.md
+  typed: interface_contract
 docs/interfaces/headwater-explain.md
   typed: interface_contract
 docs/interfaces/headwater-export.md

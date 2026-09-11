@@ -503,6 +503,9 @@ pub enum Verb {
         #[arg(long, help = JSON_ALONE)]
         json: bool,
     },
+    // No flag at all. The verb computes one answer about the tree in front of
+    // it, and every input it has is the tree.
+    Derived {},
     Route {
         #[arg(
             value_name = "task description",

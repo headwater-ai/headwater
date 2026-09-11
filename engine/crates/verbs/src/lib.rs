@@ -167,6 +167,13 @@ pub const VERBS: &[Verb] = &[
         words: &[],
     },
     Verb {
+        name: "derived",
+        group: "Checking a corpus",
+        summary: "which files a producer writes, computed rather than listed",
+        description: "Compute which files of this repository a producer writes, by asking each producer for its own output set, and report both directions of its disagreement with `.gitattributes`. A producer output that carries no `merge=headwater-regenerate` merges silently when two branches move it to one value; a path that declares the attribute and no producer writes refuses a merge of hand-written text. It holds no list of the population, so a producer output added to a tree changes its answer with no edit to the engine. It exits non-zero on a disagreement in either direction.",
+        words: &[],
+    },
+    Verb {
         name: "route",
         group: "Reading a corpus",
         summary: "resolve a task description to the documents that govern it",

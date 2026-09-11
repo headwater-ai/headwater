@@ -407,3 +407,373 @@ fn corpus_of(root: &Path) -> Corpus {
     let consumer = repository(root).consumer;
     Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions)
 }
+
+// --- the whole derived-artifact population ------------------------------------
+//
+// The two cases above hold two halves of one population against `.gitattributes`,
+// each half enumerated from one producer. They are the right shape and they
+// cover 15 of the 24 paths that carry the attribute. The three cases below hold
+// the whole of it, from `headwater_census::derived`, which enumerates every
+// producer by that producer's own rule.
+//
+// [#676](https://github.com/headwater-ai/headwater/issues/676) is the reason
+// they exist, and the reason is not that the two above were wrong. It is that
+// three separate hand-written statements of this one population disagreed in
+// one tree at one commit, by 18 and by 3.
+
+/// The computed population and `.gitattributes` agree, in both directions.
+///
+/// This generalizes `the_generated_documents_are_declared_unmergeable` and
+/// `every_page_carrying_a_figure_is_declared_unmergeable` over all four
+/// producers rather than replacing either. Those two hold a producer's rule
+/// against the attribute; this holds the union, so a producer output that
+/// belongs to neither of their two rules can no longer be missed.
+#[test]
+fn every_producer_output_is_declared_and_every_declared_path_has_a_producer() {
+    let root = repository_root();
+    let population = headwater_census::derived::population(&root);
+
+    assert!(
+        population.outputs.len() > 5,
+        "only {} producer outputs, so this proves nothing: a rule has stopped \
+         matching and the report would be silently short",
+        population.outputs.len()
+    );
+    for producer in headwater_census::derived::PRODUCERS {
+        assert!(
+            population
+                .outputs
+                .iter()
+                .any(|output| output.producer == *producer),
+            "`{}` claims no file of this tree, so its rule ({}) no longer \
+             matches and this case proves nothing about it",
+            producer.command(),
+            producer.rule()
+        );
+    }
+
+    assert!(
+        population.undeclared.is_empty(),
+        "a producer writes these and no `merge=headwater-regenerate` covers \
+         them, so two branches that move one to the same value merge it \
+         silently: {:#?}",
+        population.undeclared
+    );
+    assert!(
+        population.unproduced.is_empty(),
+        "these declare `merge=headwater-regenerate` and no producer writes \
+         them, so the declaration refuses a merge of hand-written text: {:#?}",
+        population.unproduced
+    );
+}
+
+/// The producer's own two literals, held against the copy this crate enumerates by.
+///
+/// `every_page_carrying_a_figure_is_declared_unmergeable` already holds them
+/// for its own copy of the rule. `headwater_census::derived` is a second reader
+/// of the same script, so it needs the same guard: a copy of a rule goes stale
+/// in silence.
+#[test]
+fn the_figure_refresh_still_writes_the_set_the_population_enumerates() {
+    let root = repository_root();
+    let producer =
+        std::fs::read_to_string(root.join("tools/site/refresh-figures.sh")).expect("the refresh");
+    for literal in ["site/**/*.html", headwater_census::derived::FIGURE] {
+        assert!(
+            producer.contains(literal),
+            "tools/site/refresh-figures.sh no longer says {literal}, so \
+             `headwater_census::derived` enumerates a set the producer has \
+             stopped writing"
+        );
+    }
+}
+
+/// No prose of this repository states the size of the population as a number.
+///
+/// This is the case the issue is actually about. Every hand statement of this
+/// population has been wrong, and at the commit this case was written three of
+/// them disagreed at once: [HW-DR-0049](../../../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)'s
+/// consequence clause said six, `.githooks/merged-fold-check`'s header said
+/// twenty-one, and `.gitattributes` held twenty-four. A count restated by hand
+/// is the defect, so the remedy is that no hand states one: each of the three
+/// sentences names the verb that computes it instead.
+///
+/// # The vocabulary is generated, and the first draft of this case was the
+/// # defect one level up
+///
+/// That draft held a hand-written list of number words. It carried `six`,
+/// `seven`, `twenty-one` and thirteen others, and it was missing `four`,
+/// `eight`, `nine`, `twenty-two` and `twenty-six`. So a case written to forbid
+/// a hand-maintained count was keyed on a hand-maintained list, and a later
+/// writer who chose an unlisted word would have passed it. That is the shape of
+/// [#676](https://github.com/headwater-ai/headwater/issues/676) itself.
+///
+/// [`cardinals`] generates the vocabulary from the morphemes of English rather
+/// than listing the words. Nine units, ten teens, eight tens and the compounds
+/// of the last two give every cardinal below one hundred, plus the scale words
+/// above it. A digit is caught by its own rule, so no spelling of a number gets
+/// through by being written the other way.
+#[test]
+fn no_statement_of_the_population_carries_a_count() {
+    let root = repository_root();
+    // (file, the words that locate the sentence stating the population)
+    let statements = [
+        (
+            "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+            "keep their folds",
+        ),
+        (".githooks/merged-fold-check", "declares"),
+        (".gitattributes", "Measured rather than assumed"),
+    ];
+    let vocabulary = cardinals();
+    for (path, locator) in statements {
+        let text =
+            std::fs::read_to_string(root.join(path)).unwrap_or_else(|e| panic!("{path}: {e}"));
+        let sentence = text
+            .lines()
+            .find(|line| line.contains(locator))
+            .unwrap_or_else(|| {
+                panic!(
+                    "{path} no longer carries a line saying {locator:?}, so this \
+                     case no longer reads the sentence it was written for"
+                )
+            });
+        let counted: Vec<String> = words_of(sentence)
+            .into_iter()
+            .filter(|word| vocabulary.contains(word) || word.chars().all(|c| c.is_ascii_digit()))
+            .collect();
+        assert!(
+            counted.is_empty(),
+            "{path} states the size of the derived-artifact population by hand, \
+             as {counted:?}. Every hand statement of it has been wrong. Name \
+             `headwater derived` instead:\n  {sentence}"
+        );
+        assert!(
+            sentence.contains("headwater derived"),
+            "{path} states the population and does not name the verb that \
+             computes it, so a reader has nothing to check it against:\n  {sentence}"
+        );
+    }
+}
+
+/// Every cardinal number word of English below one hundred, and the scale words.
+///
+/// Generated from the morphemes rather than listed, because a list of number
+/// words is the defect this file is about. The three words that were actually
+/// wrong in this tree are asserted present below, so a generator that stopped
+/// generating reddens rather than passing everything.
+fn cardinals() -> std::collections::BTreeSet<String> {
+    const UNITS: [&str; 9] = [
+        "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    ];
+    const TEENS: [&str; 10] = [
+        "ten",
+        "eleven",
+        "twelve",
+        "thirteen",
+        "fourteen",
+        "fifteen",
+        "sixteen",
+        "seventeen",
+        "eighteen",
+        "nineteen",
+    ];
+    const TENS: [&str; 8] = [
+        "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+    ];
+    const SCALES: [&str; 4] = ["zero", "hundred", "thousand", "million"];
+
+    let mut words: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    for word in UNITS.iter().chain(TEENS.iter()).chain(SCALES.iter()) {
+        words.insert((*word).to_string());
+    }
+    for ten in TENS {
+        words.insert(ten.to_string());
+        for unit in UNITS {
+            words.insert(format!("{ten}-{unit}"));
+        }
+    }
+    assert_eq!(
+        words.len(),
+        9 + 10 + 4 + 8 + 8 * 9,
+        "the generator no longer produces every cardinal below one hundred"
+    );
+    for wrong in ["six", "twenty-one", "twenty-four", "four", "eight", "nine"] {
+        assert!(
+            words.contains(wrong),
+            "the generated vocabulary is missing {wrong}, which is a form a hand \
+             count of this population has been or could be written in"
+        );
+    }
+    words
+}
+
+/// The prose words of a line, with the spans that hold no prose removed.
+///
+/// A code span quotes a path or a command and a Markdown link target holds an
+/// identifier, and neither is a statement about the population. `#676` inside a
+/// link is a name rather than a count, and reading it as one would force every
+/// sentence here to cite nothing.
+fn words_of(line: &str) -> Vec<String> {
+    let mut prose = String::new();
+    let mut in_code = false;
+    let mut in_link = false;
+    for c in line.chars() {
+        match c {
+            '`' => in_code = !in_code,
+            '[' => in_link = true,
+            ')' if in_link => in_link = false,
+            _ if in_code || in_link => {}
+            _ => prose.push(c),
+        }
+    }
+    prose
+        .to_ascii_lowercase()
+        .split(|c: char| !c.is_ascii_alphanumeric() && c != '-')
+        .filter(|word| !word.is_empty())
+        .map(str::to_string)
+        .collect()
+}
+
+/// A planted producer output is found by a producer's rule, not by a list.
+///
+/// The tree of this repository agrees in both directions, which is the correct
+/// answer and is why it is not evidence. The original witness the issue named
+/// is gone too: `site/index.html` and `site/proof/index.html` carried no
+/// attribute when [#676](https://github.com/headwater-ai/headwater/issues/676)
+/// was filed, and #720 declared them. So the disagreement is provoked here, in
+/// both directions at once.
+///
+/// The load of this case is the unedited verb. Nothing in
+/// `headwater_census::derived` names `site/planted/index.html`. The figure
+/// refresh writes every page under `site/` that carries a `data-figure`
+/// element, the planted page carries one, and that is the whole reason it is
+/// reported. A rule that read a list would report nothing here.
+#[test]
+fn a_planted_producer_output_and_a_planted_orphan_are_both_reported() {
+    let root = TempTree::new("planted");
+    root.write(
+        ".gitattributes",
+        "# a comment naming merge=headwater-regenerate, which is not a declaration\n\
+         docs/shelf/README.md merge=headwater-regenerate\n\
+         docs/nobody/README.md merge=headwater-regenerate\n",
+    );
+    // Produced and declared: neither direction reports it.
+    root.write(
+        "docs/shelf/README.md",
+        "<!-- headwater:generated shelf_index. -->\n\n# A shelf\n",
+    );
+    // Produced by the figure refresh and declared by nothing.
+    root.write(
+        "site/planted/index.html",
+        "<p><span data-figure=\"census.seen\">426</span></p>\n",
+    );
+    // Declared and written by no producer.
+    // (no file at docs/nobody/README.md, and a file there with no marker would
+    // read the same way)
+
+    let population = headwater_census::derived::population(root.path());
+
+    assert_eq!(
+        population
+            .undeclared
+            .iter()
+            .map(|output| (output.path.as_str(), output.producer))
+            .collect::<Vec<_>>(),
+        vec![(
+            "site/planted/index.html",
+            headwater_census::derived::Producer::FigureRefresh
+        )],
+        "a page the figure refresh writes carries no attribute and the report \
+         missed it, or it named the wrong producer"
+    );
+    assert_eq!(
+        population.unproduced,
+        vec!["docs/nobody/README.md".to_string()],
+        "a declared path that no producer writes was not reported"
+    );
+    assert!(!population.agrees(), "the report claims the tree agrees");
+
+    let rendered = population.render();
+    for expected in [
+        "site/planted/index.html",
+        "docs/nobody/README.md",
+        "sh tools/site/refresh-figures.sh",
+    ] {
+        assert!(
+            rendered.contains(expected),
+            "the report does not name {expected}:\n{rendered}"
+        );
+    }
+}
+
+/// A recorded fixture is a member only where its opening states a fold.
+///
+/// This is the rule that separates `corpus.checks` from `corpus.census`.
+/// HW-DR-0049 decomposed the second so that it merges, and a decomposed
+/// artifact that declared the driver would refuse a merge it is built to take.
+#[test]
+fn a_decomposed_recorded_fixture_is_not_a_member_and_a_folded_one_is() {
+    let root = TempTree::new("folds");
+    root.write(".gitattributes", "");
+    root.write(
+        "engine/crates/check/fixtures/corpus.checks",
+        "491 seen, 321 classified\n  a finding\n",
+    );
+    root.write(
+        "engine/crates/lock/fixtures/corpus.lock",
+        "headwater/standard 4.3.0\nsha256:abcdef\n",
+    );
+    root.write(
+        "engine/crates/census/fixtures/corpus.census",
+        "docs/LICENSE\n  not a document\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+    let claimed: Vec<&str> = population
+        .outputs
+        .iter()
+        .map(|output| output.path.as_str())
+        .collect();
+    assert_eq!(
+        claimed,
+        vec![
+            "engine/crates/check/fixtures/corpus.checks",
+            "engine/crates/lock/fixtures/corpus.lock"
+        ],
+        "the fold rule claimed the wrong recorded fixtures"
+    );
+}
+
+/// A tree under a directory this process owns, removed when the case ends.
+///
+/// Keyed on the process identifier and a label, because `cargo` runs the cases
+/// of one target as threads of one process and a helper keyed on the pid alone
+/// races with its siblings.
+struct TempTree(PathBuf);
+
+impl TempTree {
+    fn new(label: &str) -> TempTree {
+        let path =
+            std::env::temp_dir().join(format!("headwater-derived-{}-{label}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&path);
+        std::fs::create_dir_all(&path).expect("a temporary tree");
+        TempTree(path)
+    }
+
+    fn path(&self) -> &Path {
+        &self.0
+    }
+
+    fn write(&self, relative: &str, text: &str) {
+        let at = self.0.join(relative);
+        std::fs::create_dir_all(at.parent().expect("a parent")).expect("a directory");
+        std::fs::write(&at, text).expect("a file");
+    }
+}
+
+impl Drop for TempTree {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}

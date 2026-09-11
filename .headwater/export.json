@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 418,
-      "carried": 418,
+      "in the graph": 420,
+      "carried": 420,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 621,
-      "carried": 621,
+      "in the graph": 624,
+      "carried": 624,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2425,6 +2425,26 @@
               "engine/crates/conformance/src/lib.rs",
               "engine/crates/conformance/src/render.rs",
               "engine/crates/conformance/src/json.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/interfaces/headwater-derived.md",
+        "kind": "interface_contract",
+        "id": "HW-IFACE-headwater-derived",
+        "facets": {
+          "id": "HW-IFACE-headwater-derived",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "How the set of derived artifacts is computed from the producers that write them, and why no file of this repository holds that set as a list.",
+          "last_verified": "2026-09-11",
+          "title": "headwater derived",
+          "relations": {
+            "governs": [
+              "engine/crates/census/src/derived.rs",
+              "engine/crates/cli/src/lib.rs",
+              "engine/crates/cli/src/main.rs"
             ]
           }
         }
@@ -8952,6 +8972,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/census/src/derived.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/census/src/walk.rs",
         "resolver": "source-tree"
       },
@@ -11759,6 +11784,39 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/conformance/src/json.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-derived.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/census/src/derived.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-derived.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-derived.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },

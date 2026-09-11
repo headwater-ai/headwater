@@ -282,6 +282,7 @@ headwater check       [--strict] [--fix] [--no-cache] [--now <date>]
                       [--read-set <path>] [--register <path>]
                       [--format text|json|sarif|markdown | --json]
 headwater gate        --read-set <path> [--now <date>] [--json]
+headwater derived
 headwater generate    [--check]
 headwater new         <kind> --title <text> [--summary <text>]
                       [--relates <relation>=<identifier>] [--facet <facet>=<value>]
