@@ -28,7 +28,12 @@
 //! index page ([#627](https://github.com/headwater-ai/headwater/issues/627)).
 //!
 //! A summary, a status, a date and a body are prose, and no member here can
-//! carry one. `name` is not that: it is a label, it cannot be a sentence, and
+//! carry one. That is a rule about this block and never an exemption for the
+//! document: [`crate::derived`] writes every other facet the kind requires, and
+//! [HW-DR-0062](../../../../docs/decisions/0062-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md)
+//! is why the values are computed rather than declared here.
+//!
+//! `name` is not prose either: it is a label, it cannot be a sentence, and
 //! eight shelves of this repository already declare a free-text `title:` in a
 //! taxonomy source that `crate::shelf_label` renders into a navigation key, a
 //! heading and a served `<title>`. Admitting the same short string for a

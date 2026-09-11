@@ -995,11 +995,22 @@ add_to:
       for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, probes, probe_results, probe_runs, reviews, tutorials, process_decisions]
       output: "{shelf}/README.md"
 
-    # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: all
-    # twenty-one questions closed, each one is a document on the decisions shelf
-    # now, and 136 citations in this corpus name an anchor in this file. An
-    # anchor exists because a heading does, so the file has to keep writing one
-    # heading for each decision, which is what `shelf_sections` does.
+    # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: the
+    # twenty-one original questions all closed, each one is a document on the
+    # decisions shelf now, and citations in this corpus name an anchor in this
+    # file. An anchor exists because a heading does, so the file has to keep
+    # writing one heading for each decision, which is what `shelf_sections`
+    # does.
+    #
+    # **No count here is authoritative, and one that was is why.** This comment
+    # read "all twenty-one questions closed" on a day the file wrote 61
+    # headings over 61 decision records, so it was stale by forty and nothing
+    # reported it. A comment in this file is prose in a taxonomy source, which
+    # sits outside the corpus root: no census row covers it, no language regime
+    # binds it, and no rule reads it. The count that is held is the one the
+    # emitter composes into the `summary` of the file it writes, because
+    # `generate --check` compares those bytes
+    # ([HW-DR-0062](../docs/decisions/0062-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md)).
     #
     # The `identity` block is why a projection may take this path at all. Three
     # documents name `HW-REG-open-questions`, and a generated file with no front

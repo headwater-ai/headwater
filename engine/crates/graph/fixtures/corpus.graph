@@ -211,6 +211,8 @@ anchors
     cited by HW-OBL-0176
   code_path `engine/crates/doc/src/sentences.rs` via source-tree
     cited by HW-OBL-0159
+  code_path `engine/crates/generate/src/derived.rs` via source-tree
+    cited by HW-DR-0062
   code_path `engine/crates/generate/src/export.rs` via source-tree
     cited by HW-IFACE-headwater-export
   code_path `engine/crates/generate/src/lib.rs` via source-tree
