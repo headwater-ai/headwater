@@ -2,7 +2,7 @@
 
 # Decision records
 
-60 documents on this shelf, in the reading order this corpus derives.
+61 documents on this shelf, in the reading order this corpus derives.
 
 - [Q1 — Implementation language](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [Q2 — Schema format](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -19,6 +19,7 @@
 - [Q13 — LinkML and SHACL as substrate](0013-linkml-and-shacl-as-substrate.md) — Headwater owns the language, emitters never chain, and LinkML is the last of six siblings.
 - [Q14 — Discovery surface](0014-discovery-surface.md) — The corpus descriptor is a generated projection at `.headwater/corpus.json`, and registration went to Q16.
 - [Q15 — A synthesized content tier](0015-a-synthesized-content-tier.md) — Every document carries a warrant from a closed set of four, and `asserted` content is admitted with limits.
+- [Q61 — How a recorded terminal demonstration is held against a run](0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md) — A recorded terminal demonstration is a figure under HW-DR-0039. It may show only the tutorial's scratch corpus, where a blocking step already holds every printed output against a run. (asserted, and no human has accepted it)
 - [Q39 — How a figure reaches a hand-built page](0039-q39-how-a-figure-reaches-a-hand-built-page.md) — The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.
 - [Q50 — Where the visual register of the hand-built pages lives](0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md) — The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each hand-built page before the commit, because the content policy of those pages admits no linked stylesheet, and the generated half links the same file because its own policy admits one. (asserted, and no human has accepted it)
 - [Q37 — Which parts of the site are hand-built and which are a projection of this corpus](0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md) — Everything under `site/` is hand-built and the corpus is the generated projection. A hand-built page states no figure a person typed, and nothing checks that.
