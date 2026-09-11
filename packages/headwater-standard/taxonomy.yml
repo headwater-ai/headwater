@@ -55,8 +55,14 @@ taxonomy: headwater/standard
 # run of this transition. Spec 7 (The migration payload) gives a step three
 # subjects, `facet_value`, `kind` and `overlay_address`, and a facet that became
 # required is none of the three: there is no old value for a `facet_value` step
-# to move. So the payload vocabulary cannot state this move at all, which is a
-# finding against spec 7 rather than an omission of this release.
+# to move. So the payload vocabulary cannot state this move at all. Spec 7 rules
+# what that means, in its own words: "The vocabulary holds no fourth subject for
+# this class, and that is a ruling rather than an omission." A consumer of 4.0.0
+# therefore waits for no fourth subject, and no later release of this package
+# supplies one. `headwater infer --owner <name> --write` records the pair set as
+# adoption debt, and `headwater check` then reports each pair as
+# `migration-pending` until an author supplies the value under an open task. Two
+# measurements reopen the ruling, and spec 7 holds both.
 #
 # 3.4.0 adds `OB-MIG-1` and `CT-MIG-1`, which are the obligation and the
 # control behind `adoption.task.expired`. Nothing is removed and nothing
