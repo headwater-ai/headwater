@@ -52,7 +52,7 @@ fn copy(from: &Path, to: &Path) {
 /// tells the two matchers apart.
 ///
 /// The maintained source (`taxonomy-source/headwater-standard`) rather than
-/// the vendored artifact under `packages/`, so this case runs at whatever
+/// the vendored artifact under `.headwater/packages/`, so this case runs at whatever
 /// version this repository is at rather than pinning one and going stale
 /// under it, the same choice `diff.rs` and `migration.rs` make for the same
 /// reason.
@@ -76,8 +76,9 @@ impl Root {
         let repository = repository();
         copy(
             &repository.join("taxonomy-source/headwater-standard"),
-            &at.join("packages/headwater-standard"),
+            &at.join(".headwater/packages/headwater-standard"),
         );
+        repoint_bundles(&at.join(".headwater/packages/headwater-standard"));
         copy(
             &repository.join("docs/taxonomies"),
             &at.join("docs/taxonomies"),
@@ -189,4 +190,22 @@ fn a_path_one_segment_deep_is_excluded_under_either_matcher() {
             .contains("is excluded by `docs/excluded/*.md`"),
         "both matchers exclude a path this shallow: {explained:?}"
     );
+}
+
+/// Repoint `contents.bundles` in a scratch copy of the authored manifest.
+///
+/// The scalar is relative to the package directory, and
+/// [`package::PACKAGES`] put that directory one level deeper in #792. The
+/// prefix is computed from the constant rather than written out, so a root
+/// that moves again moves this with it. `taxonomy publish` rewrites this same
+/// scalar on every artifact it writes, so a fixture that does it here is not
+/// inventing a mechanism.
+fn repoint_bundles(package: &std::path::Path) {
+    let up = "../".repeat(headwater_resolve::package::PACKAGES.split('/').count() + 1);
+    let manifest = package.join(headwater_resolve::package::MANIFEST);
+    let text = std::fs::read_to_string(&manifest).expect("the scratch manifest reads");
+    let from = "  bundles: ../../docs/taxonomies";
+    assert!(text.contains(from), "the authored manifest states `{from}`");
+    let to = format!("  bundles: {up}docs/taxonomies");
+    std::fs::write(&manifest, text.replace(from, &to)).expect("the scratch manifest writes");
 }

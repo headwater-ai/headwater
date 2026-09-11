@@ -1227,13 +1227,13 @@ mod tests {
     /// independent of the contradiction, so a report can carry both.
     #[test]
     fn a_lock_whose_sources_moved_says_so_beside_any_other_caveat() {
-        let moved = vec!["packages/acme/taxonomy.yml".to_string()];
+        let moved = vec![".headwater/packages/acme/taxonomy.yml".to_string()];
         let report = reported(Base::Moved, Outcome::Preserved, moved.clone());
         assert_eq!(report.caveats(), vec![Caveat::SourcesMoved(moved.clone())]);
         let rendered = report.render();
         assert!(rendered.contains("whose sources have moved"), "{rendered}");
         assert!(
-            rendered.contains("packages/acme/taxonomy.yml"),
+            rendered.contains(".headwater/packages/acme/taxonomy.yml"),
             "{rendered}"
         );
         assert!(rendered.contains("1 source the lock records"), "{rendered}");

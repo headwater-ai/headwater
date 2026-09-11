@@ -1001,7 +1001,10 @@ fn a_payload_this_verb_writes_loads_whatever_a_path_or_an_owner_holds() {
     // before it writes and the lock it produces is this case's evidence.
     // `Root::over` copies the two declarations every other case needs, and a
     // resolution needs the sources behind them as well.
-    copy(&repository().join("packages"), &root.path("packages"));
+    copy(
+        &repository().join(headwater_resolve::package::PACKAGES),
+        &root.path(headwater_resolve::package::PACKAGES),
+    );
     std::fs::copy(
         repository().join(".headwater/overlay.yml"),
         root.path(".headwater/overlay.yml"),

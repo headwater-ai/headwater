@@ -266,7 +266,7 @@ pub(crate) fn emit(
 /// The question is whether the corpus claims a reader may rely on the
 /// recording, and the taxonomy answers it rather than this crate. Every value
 /// of a state vocabulary carries a role, and
-/// `packages/headwater-standard/taxonomy.yml` gives the roles in its own words:
+/// `.headwater/packages/headwater-standard/taxonomy.yml` gives the roles in its own words:
 /// `current` is "the document states what holds now, and a reader may rely on
 /// it", and `deprecated` is "the document is no longer to be relied on". So the
 /// reading is [`headwater_check::lifecycle_state::StateFacet::standing`], which

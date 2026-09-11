@@ -56,7 +56,7 @@ relations:
 
 ## Consequences
 
-**This record declares no kind, no shelf and no facet.** A page under `site/` is on no shelf because it sits outside the corpus root, and not because a kind was chosen for it. Nothing under `packages/`, `taxonomy-source/`, `.headwater/overlay.yml` or `docs/taxonomies/` moves for this ruling.
+**This record declares no kind, no shelf and no facet.** A page under `site/` is on no shelf because it sits outside the corpus root, and not because a kind was chosen for it. Nothing under `.headwater/packages/`, `taxonomy-source/`, `.headwater/overlay.yml` or `docs/taxonomies/` moves for this ruling.
 
 **[HW-OBL-0097](../obligations/0097-whether-the-four-modes-of-di-taxis-are-the-kind-set.md) is untouched.** It asks whether the four modes of Diátaxis are the kind set for a documentation-site bundle, and it waits on an adopter. That question is about what ships to an adopter in a bundle. This record is about two halves of one repository's own site, so it neither answers that question nor prejudges it.
 

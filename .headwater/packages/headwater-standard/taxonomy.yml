@@ -21,7 +21,7 @@
 # So this name appears twice, here and as `package:` in `package.yml` beside it,
 # under two different keys for the one thing. The manifest is the file that
 # decides. Every consumer-facing reader takes the name from there: the lookup
-# under `packages/`, the release record, the directory `taxonomy vendor` writes
+# under `.headwater/packages/`, the release record, the directory `taxonomy vendor` writes
 # into, and the corpus descriptor a served host publishes. The copy here reached
 # the lock and the published artifact and decided nothing, so until #267 the two
 # could name different things through a resolve, through a publish and into the
@@ -138,7 +138,7 @@ taxonomy: headwater/standard
 # The two are required to agree: `resolve::package::agrees` refuses the package
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
-version: 4.3.0
+version: 4.3.1
 
 purposes:
   rationale:

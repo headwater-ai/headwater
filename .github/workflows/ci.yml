@@ -264,10 +264,12 @@ jobs:
           fetch-depth: 0
           # The tags too, which `fetch-depth: 0` does NOT bring: this action
           # passes `--no-tags` unless this input is set, whatever the depth.
-          # `tools/repo/readme-fixtures.sh` reads `packages/headwater-standard/
-          # release.yml` out of the tree a taxonomy release tag names, to hold
+          # `tools/repo/readme-fixtures.sh` reads the release record of the
+          # base package out of the tree a taxonomy release tag names, to hold
           # that the digest the front page sends a reader to belongs to the
-          # tree that page's own route fetches (#775). Without the tag object
+          # tree that page's own route fetches (#775). It reads both roots,
+          # newest first, because a tag cut before #792 carries the record at
+          # `packages/` and a tag's tree does not move. Without the tag object
           # that case is RED here and green on a developer's clone, which is
           # the worst of both.
           fetch-tags: true
@@ -1020,7 +1022,7 @@ jobs:
         # to carry was a count in disguise and it went stale the same way.
         #
         # The second is that `docs/taxonomies/README.md` and
-        # `packages/headwater-standard/bundles/README.md` are byte-identical,
+        # `.headwater/packages/headwater-standard/bundles/README.md` are byte-identical,
         # along with every doctrine and template the anatomy table declares as
         # carried. Measured on 2026-09-07: one line appended to either copy
         # alone leaves `taxonomy resolve --check` and `headwater check
@@ -1103,7 +1105,7 @@ jobs:
         # the package it publishes from source under `packages/`, which carried
         # no release record. #336 moved the authored source to
         # `taxonomy-source/headwater-standard/` and vendored a real artifact
-        # into `packages/headwater-standard/` in its place, so `pin.current` is
+        # into `.headwater/packages/headwater-standard/` in its place, so `pin.current` is
         # met against a real digest now and the waiver this comment used to
         # describe is gone from `.headwater/taxonomy.yml`.
         #

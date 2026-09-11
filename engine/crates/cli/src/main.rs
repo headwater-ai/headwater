@@ -1361,7 +1361,7 @@ fn publish(
     if package.is_some() && from.is_some() {
         return fail(
             "`--package <name>` and `--from <dir>` name the same thing two ways: the first finds \
-             a directory under `packages/` by the name its manifest declares, and the second \
+             a directory under `.headwater/packages/` by the name its manifest declares, and the second \
              reads a directory the caller names directly. Pass one or the other",
         );
     }
@@ -2275,7 +2275,7 @@ fn migrate(
             };
         let block = migrated(committed_lock.adoption.as_ref(), &fresh);
         // Not `headwater_resolve::repository(root)`: that resolves
-        // `packages/<name>` fresh, and a migration is run exactly when that
+        // `.headwater/packages/<name>` fresh, and a migration is run exactly when that
         // directory can already disagree with what this lock committed to.
         // `rewrite_adoption` stands on the resolution the lock already carries
         // and changes only the block this run computed.
@@ -5896,9 +5896,9 @@ taxonomy:
         // a declaration that pins nothing and meet the same refusal on the next
         // clone.
         None => declaration_text.push_str(
-            "  # INTERVIEW: no package of this name is under `packages/`, and nothing in this\n\
+            "  # INTERVIEW: no package of this name is under `.headwater/packages/`, and nothing in this\n\
              \x20 # engine fetches one. Two routes reach a lock, and each one needs a different\n\
-             \x20 # field below. Copy a package directory into `packages/`, and pin `version` at\n\
+             \x20 # field below. Copy a package directory into `.headwater/packages/`, and pin `version` at\n\
              \x20 # the version that package declares. Or run `headwater taxonomy vendor <dir>`\n\
              \x20 # on a published artifact: that verb reads `digest` and refuses until it holds\n\
              \x20 # the digest the publisher printed, and `headwater taxonomy resolve` reads\n\
@@ -5994,7 +5994,7 @@ add: {{}}
     println!("\nwhat this read off the tree");
     println!("  corpus root {corpus_root}");
     match &found {
-        Some(version) => println!("  package {package} {version}, under `packages/`"),
+        Some(version) => println!("  package {package} {version}, under `.headwater/packages/`"),
         // **Two routes, because this verb cannot know which one the reader
         // holds.** The line said "Vendor it before resolving" until
         // [#276](https://github.com/headwater-ai/headwater/issues/276) ruled on
@@ -6011,9 +6011,9 @@ add: {{}}
         // written comment carries and for the same reason. See the arm above,
         // and [#641](https://github.com/headwater-ai/headwater/issues/641).
         None => println!(
-            "  package {package} is not under `packages/`, and nothing here fetches one. Two \
+            "  package {package} is not under `.headwater/packages/`, and nothing here fetches one. Two \
              routes reach a lock, and each one needs a different field of \
-             `.headwater/taxonomy.yml`. Copy a package directory into `packages/`, and pin \
+             `.headwater/taxonomy.yml`. Copy a package directory into `.headwater/packages/`, and pin \
              `taxonomy.version` at the version that package declares. Or run `headwater taxonomy \
              vendor <dir>` on a published artifact: that verb reads `taxonomy.digest` and refuses \
              until it holds the digest the publisher printed, and `headwater taxonomy resolve` \

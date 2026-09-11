@@ -208,7 +208,7 @@ fn documents() -> Vec<(&'static str, Ran)> {
             ]),
         ),
         // The publisher's half of the handoff #353 is about. `--from` names the
-        // maintained source rather than `--package`: the copy under `packages/`
+        // maintained source rather than `--package`: the copy under `.headwater/packages/`
         // carries a release record, so it was vendored, and publish refuses it.
         (
             "taxonomy publish --json",

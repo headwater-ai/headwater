@@ -24,7 +24,7 @@
 #   HW-REQ-0001 uses that word ("a harness that runs the engine may reach a
 #   network for its own reasons, and this requirement says nothing about the
 #   harness"), and `vendor` is still the only thing that writes into
-#   `packages/`.
+#   `.headwater/packages/`.
 #
 # WHAT IT DOES
 #
@@ -45,7 +45,13 @@
 set -eu
 
 repo="headwater-ai/headwater"
-package="packages/headwater-standard"
+# Two roots, newest first, and this is a path INSIDE THE TAG'S TREE rather than
+# inside the consumer's. #792 moved the vendored package root to
+# `.headwater/packages/`, and a tag's tree does not move, so every tag cut
+# before that carries the package at `packages/` and always will. A `--package`
+# given on the command line is the only path tried.
+package=""
+package_default=".headwater/packages/headwater-standard packages/headwater-standard"
 tag=""
 digest=""
 root="."
@@ -60,7 +66,9 @@ Usage: headwater-bootstrap.sh --expect <digest> [--tag <tag>] [--package <path>]
   --tag <tag>          the release tag to fetch, e.g. v0.1.0. Defaults to the
                        repository's latest release.
   --package <path>     the package's path inside the repository at that tag.
-                       Defaults to packages/headwater-standard.
+                       With none given, .headwater/packages/headwater-standard
+                       is tried and then packages/headwater-standard, which is
+                       where every tag cut before #792 carries it.
   --root <dir>         the consumer repository to vendor into. Passed to
                        `headwater taxonomy vendor --root`. Defaults to the
                        current directory.
@@ -119,17 +127,39 @@ if [ -z "$tag" ]; then
 fi
 
 archive_url="https://codeload.github.com/$repo/tar.gz/refs/tags/$tag"
-echo "headwater-bootstrap: fetching $package at $tag" >&2
+candidates=${package:-$package_default}
 
-curl -fsSL "$archive_url" | tar -xz -C "$scratch" --wildcards "*/$package/*" || {
-    echo "headwater-bootstrap: fetch of $archive_url failed, or it holds no $package" >&2
+# One fetch, then one extraction attempt for each candidate root. The archive
+# goes to a file rather than through a pipe because a second candidate cannot
+# read a stream that the first one consumed, and the scratch directory this
+# writes into is removed on exit either way.
+archive="$scratch/archive.tar.gz"
+curl -fsSL "$archive_url" -o "$archive" || {
+    echo "headwater-bootstrap: fetch of $archive_url failed" >&2
     exit 1
 }
 
-fetched=$(find "$scratch" -type d -path "*/$package" -print -quit)
-if [ -z "$fetched" ] || [ -z "$(ls -A "$fetched" 2>/dev/null)" ]; then
-    echo "headwater-bootstrap: $tag carries no $package" >&2
+# The probe is quiet and the report comes after it. A line printed for each
+# candidate would say "fetching" about a root the archive does not carry, and
+# the reader cannot tell that from the one it does.
+fetched=""
+for candidate in $candidates; do
+    tar -xzf "$archive" -C "$scratch" --wildcards "*/$candidate/*" 2>/dev/null || continue
+    found=$(find "$scratch" -type d -path "*/$candidate" -print -quit)
+    if [ -n "$found" ] && [ -n "$(ls -A "$found" 2>/dev/null)" ]; then
+        fetched=$found
+        package=$candidate
+        break
+    fi
+done
+
+if [ -z "$fetched" ]; then
+    # Name every root that was tried. One sentence that says only "no package"
+    # cannot tell an unpublished tag from a root that moved again.
+    echo "headwater-bootstrap: $tag carries the package at none of: $candidates" >&2
     exit 1
 fi
+
+echo "headwater-bootstrap: fetching $package at $tag" >&2
 
 "$bin" taxonomy vendor "$fetched" --expect "$digest" --root "$root"

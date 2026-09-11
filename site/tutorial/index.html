@@ -272,7 +272,7 @@ wrote .headwater/overlay.yml
 
 what this read off the tree
   corpus root docs
-  package headwater/standard is not under `packages/`, and nothing here fetches one. Two routes reach a lock, and each one needs a different field of `.headwater/taxonomy.yml`. Copy a package directory into `packages/`, and pin `taxonomy.version` at the version that package declares. Or run `headwater taxonomy vendor &lt;dir&gt;` on a published artifact: that verb reads `taxonomy.digest` and refuses until it holds the digest the publisher printed, and `headwater taxonomy resolve` reads `taxonomy.version` after it, so the vendor route needs the digest first and the version as well
+  package headwater/standard is not under `.headwater/packages/`, and nothing here fetches one. Two routes reach a lock, and each one needs a different field of `.headwater/taxonomy.yml`. Copy a package directory into `.headwater/packages/`, and pin `taxonomy.version` at the version that package declares. Or run `headwater taxonomy vendor &lt;dir&gt;` on a published artifact: that verb reads `taxonomy.digest` and refuses until it holds the digest the publisher printed, and `headwater taxonomy resolve` reads `taxonomy.version` after it, so the vendor route needs the digest first and the version as well
 
 what it cannot read off a tree, and asked instead
   the phrases each purpose answers, which decide what a task routes to
@@ -295,11 +295,12 @@ Answer them in .headwater/overlay.yml, then run `headwater taxonomy resolve` and
     <div class="stepgrid">
       <div>
         <h2><span class="n">03</span>Fetch the package into your tree</h2>
+        <p class="prose">The two paths in that account are two different trees. <code>packages/headwater-standard</code> is where the package sits inside the release tag the script fetched, and a tag's tree never moves. <code>.headwater/packages/headwater-standard</code> is where <code>vendor</code> installed it in yours (HW-DR-0064).</p>
         <p class="prose">A <strong>package</strong> carries a taxonomy: the kinds, the facets, the shelves and the rules. <code>headwater/standard</code> is the base package, and the taxonomy it declares is deliberately small. Four of the seven entries are not taxonomy at all. <code>assemblies/</code> holds the publisher recipes this package ships. <code>bundles/</code> holds optional traditions nothing here selects. <code>doctrine/</code> holds the prose that explains them to a person. <code>release.yml</code> is the publish record that carries the digest this fetch just checked. Nothing you run in this tutorial reads any of the four.</p>
         <p class="prose">Step 2 named two routes, and this step took the second. <code>headwater taxonomy vendor</code> installs a <strong>published artifact</strong>, which is what <code>headwater taxonomy publish</code> writes. This fetch just checked it, file by file, against the digest you passed. <code>headwater-bootstrap.sh</code> is the harness around that verb, and not a part of this engine. It fetches a tagged release into a scratch directory nothing here keeps, extracts one package, and hands the result to <code>vendor</code>. Nothing under <code>engine/</code> opened a socket to get it. <code>vendor</code> itself takes a path and never a location. The script is what reached the network on <code>vendor</code>'s behalf.</p>
         <p class="prose"><code>taxonomy/headwater-standard/v&lt;version&gt;</code> is the taxonomy-only route. It publishes <code>headwater/standard</code> alone, with no engine release. <code>.github/workflows/release-taxonomy.yml</code> cuts a tag of this form whenever the package authors choose to. It needs no new engine version.</p>
         <p class="prose">A second route pins an engine build and this package to the same commit. The README's <em>Obtaining a named version</em> section names both. Step 5 pins the version this pulled, <code>4.2.0</code>, and the digest this block already printed. Step 16 reads back what the second pin buys.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>ls packages/headwater-standard</code> prints seven lines:</span></p>
+        <p class="check"><span class="checkword">Check</span> <span><code>ls .headwater/packages/headwater-standard</code> prints seven lines:</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/main/tools/headwater-bootstrap.sh | sh -s -- --tag taxonomy/headwater-standard/v4.2.0 --expect sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5</pre>
@@ -308,7 +309,7 @@ Answer them in .headwater/overlay.yml, then run `headwater taxonomy resolve` and
 vendored headwater/standard 4.2.0
   31 files, all of them the pinned bytes
   digest sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
-  doctrine at packages/headwater-standard/doctrine/</pre>
+  doctrine at .headwater/packages/headwater-standard/doctrine/</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
           <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">assemblies
@@ -396,7 +397,7 @@ taxonomy.yml</pre>
           <pre class="cmd verbatim">headwater taxonomy resolve</pre>
           <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">wrote .headwater/taxonomy.lock
-  from packages/headwater-standard/taxonomy.yml
+  from .headwater/packages/headwater-standard/taxonomy.yml
   from .headwater/overlay.yml
   no lock was there, so there was no adoption block to carry</pre>
       </div>
@@ -729,7 +730,7 @@ headwater check</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">16</span>Ask what you have not wired up</h2>
-        <p class="prose">Your corpus already stands on the first two rungs, which a package copied by hand never reaches. <code>pin.current</code> is what carried you there. It reads the digest step 5 pinned against the record <code>packages/headwater-standard/release.yml</code> carries, and step 3 already gave you both. A package you copy from a source directory has no digest to pin, because nobody has published it. That route never reaches this rung: it stays off the ladder for the whole life of a corpus built that way. One gap is left, and it closes with a command:</p>
+        <p class="prose">Your corpus already stands on the first two rungs, which a package copied by hand never reaches. <code>pin.current</code> is what carried you there. It reads the digest step 5 pinned against the record <code>.headwater/packages/headwater-standard/release.yml</code> carries, and step 3 already gave you both. A package you copy from a source directory has no digest to pin, because nobody has published it. That route never reaches this rung: it stays off the ladder for the whole life of a corpus built that way. One gap is left, and it closes with a command:</p>
         <p class="prose"><code>headwater generate</code> wrote the two projections that were missing, <code>docs/decisions/README.md</code> and <code>.headwater/corpus.json</code>, and that closed <code>projections.current</code>, the last rule L2 asks for. Every rung this ladder has is reached. A level still measures what you wired up rather than what your documents say. Climbing it here took one pin and two commands, not a better decision record.</p>
         <p class="check"><span class="checkword">Check</span> <span>The last line of the levels block reads <code>L1 reached, against headwater/standard 4.2.0</code>. <code>headwater conformance 2&gt;/dev/null | grep 'L2'</code> prints <code>  L2 Regenerated — reached, 4 of 4 rules met</code> and, further down, <code>L2 reached, against headwater/standard 4.2.0</code>.</span></p>
       </div>

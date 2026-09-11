@@ -58,8 +58,8 @@ impl Root {
 
         let repository = repository();
         copy(
-            &repository.join("packages/headwater-standard"),
-            &at.join("packages/headwater-standard"),
+            &repository.join(".headwater/packages/headwater-standard"),
+            &at.join(".headwater/packages/headwater-standard"),
         );
         copy(
             &repository.join("docs/taxonomies"),
@@ -516,7 +516,7 @@ fn a_selection_whose_closure_is_complete_is_told_nothing_about_bundles() {
 
 /// Every bundle the copied package ships, read off the package.
 fn shipped_bundles() -> Vec<String> {
-    let at = repository().join("packages/headwater-standard/bundles");
+    let at = repository().join(".headwater/packages/headwater-standard/bundles");
     let mut names: Vec<String> = std::fs::read_dir(&at)
         .expect("the bundle root reads")
         .filter_map(|entry| entry.ok())

@@ -294,8 +294,8 @@ def main():
         # again.
         result = run(blocks[5].strip())
         cut('step 3: the account of what the script fetched', result.stdout + result.stderr, 6)
-        whole('step 3: ls packages/headwater-standard',
-              run('ls packages/headwater-standard').stdout, 7)
+        whole('step 3: ls .headwater/packages/headwater-standard',
+              run('ls .headwater/packages/headwater-standard').stdout, 7)
 
         # Step 4.
         result = run(blocks[8].strip())
@@ -314,7 +314,7 @@ def main():
         # and because a drift between the page and the file is what #276 was.
         declaration = open(os.path.join(cwd['at'], '.headwater/taxonomy.yml')).read()
         for claim, token in [
-                ('the copy route', 'Copy a package directory into `packages/`'),
+                ('the copy route', 'Copy a package directory into `.headwater/packages/`'),
                 ('the vendor route', '`headwater taxonomy vendor <dir>`'),
                 ('where the version comes from',
                  'the version that package declares'),

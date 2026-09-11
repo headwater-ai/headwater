@@ -15,7 +15,7 @@ Four sources resolve into one lock, in this order.
 
 | source | what belongs there |
 |---|---|
-| `taxonomy-source/headwater-standard/taxonomy.yml` | the invariant core, and what every adopter of the package gets. `packages/headwater-standard/` is the vendored copy of it. Edit here and republish. Never edit there |
+| `taxonomy-source/headwater-standard/taxonomy.yml` | the invariant core, and what every adopter of the package gets. `.headwater/packages/headwater-standard/` is the vendored copy of it. Edit here and republish. Never edit there |
 | `docs/taxonomies/design-spec/bundle.yml` | the specification tradition: numbered parts, registers, reviews |
 | `docs/taxonomies/decision-record/bundle.yml` | the decision-record tradition: one decision per document, obligation records |
 | `.headwater/overlay.yml` | what is true of this repository and of no adopter |

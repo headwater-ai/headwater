@@ -691,7 +691,7 @@ fn every_waiver_this_repository_declares_names_a_shipped_rule() {
 // #366's follow-up: a diverged installed package is not a rule set to trust
 // ---------------------------------------------------------------------------
 
-/// A scratch package under `packages/`, with a manifest, a taxonomy source and
+/// A scratch package under `.headwater/packages/`, with a manifest, a taxonomy source and
 /// a conformance rule set naming two rules on one level — `lock.current` and
 /// `corpus.classified`, both real readings — and a real release record over
 /// all three files, computed the way `taxonomy publish` computes one.
@@ -701,7 +701,7 @@ fn diverged_package_root(label: &str) -> (PathBuf, PathBuf) {
         std::process::id()
     ));
     let _ = std::fs::remove_dir_all(&root);
-    let dir = root.join("packages/acme-taxonomy");
+    let dir = root.join(".headwater/packages/acme-taxonomy");
     std::fs::create_dir_all(&dir).expect("the package directory");
     std::fs::write(
         dir.join("package.yml"),

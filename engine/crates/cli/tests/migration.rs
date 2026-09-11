@@ -281,7 +281,7 @@ impl Root {
         std::fs::create_dir_all(&at).expect("the root is made");
 
         let repository = repository();
-        // `packages/headwater-standard/` is a vendored artifact since #366
+        // `.headwater/packages/headwater-standard/` is a vendored artifact since #366
         // (a real `release.yml`), and `taxonomy publish` now refuses to
         // publish a directory in that state — every case here calls it by
         // name, with no `--from`. The maintained source is
@@ -289,8 +289,9 @@ impl Root {
         // by-name lookup expects.
         copy(
             &repository.join("taxonomy-source/headwater-standard"),
-            &at.join("packages/headwater-standard"),
+            &at.join(".headwater/packages/headwater-standard"),
         );
+        repoint_bundles(&at.join(".headwater/packages/headwater-standard"));
         copy(
             &repository.join("docs/taxonomies"),
             &at.join("docs/taxonomies"),
@@ -358,7 +359,7 @@ impl Root {
     }
 
     fn candidate_of(&self, edits: &[(&[&str], &[&str])], payload: Option<&str>) {
-        let taxonomy = self.at.join("packages/headwater-standard/taxonomy.yml");
+        let taxonomy = self.at.join(".headwater/packages/headwater-standard/taxonomy.yml");
         let mut text = std::fs::read_to_string(&taxonomy).expect("the taxonomy reads");
         for (from, to) in edits {
             let (from, to) = (from.join("\n"), to.join("\n"));
@@ -372,16 +373,17 @@ impl Root {
         )
         .expect("the taxonomy writes");
 
-        let manifest = self.at.join("packages/headwater-standard/package.yml");
+        let manifest = self.at.join(".headwater/packages/headwater-standard/package.yml");
         let mut text = std::fs::read_to_string(&manifest).expect("the manifest reads");
         text = text.replacen("version: 1.0.0", "version: 2.0.0", 1);
         if let Some(payload) = payload {
-            text = text.replacen(
-                "  bundles: ../../docs/taxonomies",
-                "  bundles: ../../docs/taxonomies\n  migrations: migrations",
-                1,
+            let bundles = bundles_line();
+            assert!(
+                text.contains(&bundles),
+                "the scratch manifest states `{bundles}`, which `repoint_bundles` wrote"
             );
-            let directory = self.at.join("packages/headwater-standard/migrations");
+            text = text.replacen(&bundles, &format!("{bundles}\n  migrations: migrations"), 1);
+            let directory = self.at.join(".headwater/packages/headwater-standard/migrations");
             std::fs::create_dir_all(&directory).expect("the payload directory is there");
             std::fs::write(directory.join("1-to-2.yml"), payload).expect("the payload writes");
         }
@@ -391,9 +393,11 @@ impl Root {
     /// Rewrite one bundle of the package in place.
     ///
     /// [`Root::candidate_of`] rewrites the base taxonomy, and the cases about
-    /// bundle-declared content need the other file. The package declares
-    /// `contents.bundles: ../../docs/taxonomies`, so the bundles of this scratch
-    /// root are the copied `docs/taxonomies` tree.
+    /// bundle-declared content need the other file. The authored package
+    /// declares `contents.bundles: ../../docs/taxonomies` and
+    /// [`repoint_bundles`] climbs it one further for the root #792 moved it
+    /// to, so the bundles of this scratch root are the copied
+    /// `docs/taxonomies` tree either way.
     fn in_bundle(&self, bundle: &str, edits: &[(&str, &str)]) {
         let at = self
             .at
@@ -1268,14 +1272,14 @@ fn apply_with_no_pinned_digest_writes_no_migration_state() {
     // sentence below a measurement rather than a restatement of the source.
     //
     // The maintained source moves aside first and comes back after. `taxonomy
-    // vendor` refuses to write over a `packages/<name>` that carries no release
+    // vendor` refuses to write over a `.headwater/packages/<name>` that carries no release
     // record — "a package somebody maintains rather than one that was
     // vendored" — and this fixture root is exactly that case. The move is the
-    // remedy that verb names, and it moves out of `packages/` entirely
+    // remedy that verb names, and it moves out of `.headwater/packages/` entirely
     // because the refusal is by declared package name and not by directory
     // name. The restore leaves the tree the later assertions read byte for
     // byte what it was.
-    let maintained = root.at.join("packages/headwater-standard");
+    let maintained = root.at.join(".headwater/packages/headwater-standard");
     let aside = root.at.join("maintained-source");
     std::fs::rename(&maintained, &aside).expect("the maintained source moves aside");
     let vendored = root.run(&[
@@ -2150,4 +2154,28 @@ fn an_artifact_below_the_locked_version_is_refused() {
         "and why that is not a migration: {ran:?}"
     );
     assert!(!ran.err.contains("headwater infer"), "{ran:?}");
+}
+
+/// Repoint `contents.bundles` in a scratch copy of the authored manifest.
+///
+/// The scalar is relative to the package directory, and
+/// [`package::PACKAGES`] put that directory one level deeper in #792. The
+/// prefix is computed from the constant rather than written out, so a root
+/// that moves again moves this with it. `taxonomy publish` rewrites this same
+/// scalar on every artifact it writes, so a fixture that does it here is not
+/// inventing a mechanism.
+fn repoint_bundles(package: &std::path::Path) {
+    let manifest = package.join(headwater_resolve::package::MANIFEST);
+    let text = std::fs::read_to_string(&manifest).expect("the scratch manifest reads");
+    let from = "  bundles: ../../docs/taxonomies";
+    assert!(text.contains(from), "the authored manifest states `{from}`");
+    std::fs::write(&manifest, text.replace(from, &bundles_line()))
+        .expect("the scratch manifest writes");
+}
+
+/// The `contents.bundles` line a scratch manifest carries once
+/// [`repoint_bundles`] has run.
+fn bundles_line() -> String {
+    let up = "../".repeat(headwater_resolve::package::PACKAGES.split('/').count() + 1);
+    format!("  bundles: {up}docs/taxonomies")
 }

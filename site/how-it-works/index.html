@@ -242,7 +242,7 @@
       <p style="max-width: 34rem;">The split has a standard name. Description logic calls the terminology a TBox and the assertions an ABox. A taxonomy is the terminology, and a corpus is the assertions. That is why the validation of a taxonomy and the check of a corpus are two different operations.</p>
       <p class="quiet">Resolution merges the base package with the overlays above it, validates the result against a meta-schema, and writes a content-hashed lock. Everything downstream reads the lock and never the sources. Your <strong>overlay</strong> adds what a package cannot know: your namespace, your phrases, your extra kinds. Customizing the taxonomy never means forking the tooling.</p>
     </div>
-    <pre class="block"><span class="dim"># packages/headwater-standard/taxonomy.yml</span>
+    <pre class="block"><span class="dim"># .headwater/packages/headwater-standard/taxonomy.yml</span>
 shelves:
   decisions: docs/decisions/**
 kinds:

@@ -58,7 +58,7 @@ Nothing makes a skill load. A harness reads a description and a model picks, whi
 |---|---|
 | `headwater-orient` | you search `docs/` or open a specification part to find out what this repository already says |
 | `headwater-authoring` | you add or revise any document under `docs/`, and whenever `headwater new` refuses |
-| `headwater-taxonomy` | you touch `packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` |
+| `headwater-taxonomy` | you touch `.headwater/packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` |
 | `ste-editor` | you rewrite prose under the governed shelves above |
 | `headwater-engine` | the first cargo or CLI command of a session, and whenever a build fails on the toolchain |
 | `repo-cleanup` | you retire a worktree, a local branch or a remote branch that a merged change left behind |

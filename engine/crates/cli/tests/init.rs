@@ -79,9 +79,9 @@ taxonomy:
 /// nothing but itself is what #641 cost. The last case in this file runs the
 /// route these bytes name, so the bytes have a reader that is not another copy
 /// of them.
-const NO_PACKAGE_VERSION: &str = r"  # INTERVIEW: no package of this name is under `packages/`, and nothing in this
+const NO_PACKAGE_VERSION: &str = r"  # INTERVIEW: no package of this name is under `.headwater/packages/`, and nothing in this
   # engine fetches one. Two routes reach a lock, and each one needs a different
-  # field below. Copy a package directory into `packages/`, and pin `version` at
+  # field below. Copy a package directory into `.headwater/packages/`, and pin `version` at
   # the version that package declares. Or run `headwater taxonomy vendor <dir>`
   # on a published artifact: that verb reads `digest` and refuses until it holds
   # the digest the publisher printed, and `headwater taxonomy resolve` reads
@@ -191,10 +191,10 @@ impl Root {
     /// the version the repository actually ships.
     fn with_package(label: &str) -> Root {
         let root = Root::over(label);
-        let directory = root.at.join("packages/headwater-standard");
+        let directory = root.at.join(".headwater/packages/headwater-standard");
         std::fs::create_dir_all(&directory).expect("the package directory is there");
         std::fs::copy(
-            repository().join("packages/headwater-standard/package.yml"),
+            repository().join(".headwater/packages/headwater-standard/package.yml"),
             directory.join("package.yml"),
         )
         .expect("the manifest copies");
@@ -230,7 +230,7 @@ impl Root {
     /// here and names what it found, rather than silently answering with the
     /// wrong line.
     fn declared_version(&self) -> String {
-        declared_version_at(&self.at.join("packages/headwater-standard/package.yml"))
+        declared_version_at(&self.at.join(".headwater/packages/headwater-standard/package.yml"))
     }
 
     /// A scratch directory beside this root, for something that is not part of
@@ -314,7 +314,7 @@ fn maintained_version() -> String {
 /// the package moves this case with it. `publish.rs` holds what the verb writes
 /// to disk; this reads the one line the report tells a consumer to pin, and it
 /// names `taxonomy-source/headwater-standard/` for the reason that target
-/// states: it is the maintained source, and `packages/headwater-standard/` is a
+/// states: it is the maintained source, and `.headwater/packages/headwater-standard/` is a
 /// vendored artifact that `publish` refuses.
 fn publish_maintained_source_into(out: &Path) -> String {
     let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
@@ -348,7 +348,7 @@ fn publish_maintained_source_into(out: &Path) -> String {
     stated[0].to_string()
 }
 
-/// The declaration of a tree with no package under `packages/`.
+/// The declaration of a tree with no package under `.headwater/packages/`.
 ///
 /// This is the first-run state that spec 7 calls the surface `init` is for,
 /// and it is the state the tutorial runs its step 2 in. Every byte of it is a
@@ -513,7 +513,7 @@ fn a_root_the_vendor_route_reached(label: &str) -> Root {
         "`headwater taxonomy vendor` accepts the artifact the declaration pins:\n{stderr}"
     );
     assert_eq!(
-        declared_version_at(&root.at.join("packages/headwater-standard/package.yml")),
+        declared_version_at(&root.at.join(".headwater/packages/headwater-standard/package.yml")),
         version,
         "the vendored package is the one the declaration pins"
     );

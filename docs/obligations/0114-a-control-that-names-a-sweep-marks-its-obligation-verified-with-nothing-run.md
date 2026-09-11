@@ -41,4 +41,4 @@ Measured on 2026-08-14, from the code and from a fixture that runs. `Register::m
 
 `engine/crates/sweep/fixtures/sweep.taxonomy.yml` declares `OB-SWP-1` with `class: coherence` and one control whose mechanism is `sweep:undeclared_conflict`. The test `a_control_that_names_a_sweep_verifies_its_obligation_with_nothing_run` asserts that the obligation reads discharged and that no control under it is unimplemented. No sweep ran in that test, and no run of the checks can run one.
 
-The count of 25 obligations, all of class `cohesion`, is over `packages/headwater-standard/taxonomy.yml` and `.headwater/overlay.yml` on the same day. The engine's own report gives the same total under `obligations`.
+The count of 25 obligations, all of class `cohesion`, is over `.headwater/packages/headwater-standard/taxonomy.yml` and `.headwater/overlay.yml` on the same day. The engine's own report gives the same total under `obligations`.

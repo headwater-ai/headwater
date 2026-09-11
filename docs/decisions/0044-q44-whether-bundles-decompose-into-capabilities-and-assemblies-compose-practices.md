@@ -47,7 +47,7 @@ relations:
 
 ## Consequences
 
-**`packages/headwater-standard` moves to 3.5.0.** The move adds nothing for a consumer that already selects both bundles together. `design-spec` and `decision-record` resolve to the declarations the draft of this decision found. They reach `evaluation`, `purposes.evidence`, `purposes.obligation`, and the narrative regime through one hop of `requires`, rather than by co-location. A consumer of `decision-record` alone stops resolving `design_spec`, `decision_register`, `obligation_register`, `review_prompt`, `review_record`, and the three shelves it never used.
+**`.headwater/packages/headwater-standard` moves to 3.5.0.** The move adds nothing for a consumer that already selects both bundles together. `design-spec` and `decision-record` resolve to the declarations the draft of this decision found. They reach `evaluation`, `purposes.evidence`, `purposes.obligation`, and the narrative regime through one hop of `requires`, rather than by co-location. A consumer of `decision-record` alone stops resolving `design_spec`, `decision_register`, `obligation_register`, `review_prompt`, `review_record`, and the three shelves it never used.
 
 **One participation expectation does not survive the split, and the loss is documented rather than silent.** `evaluation`'s `evidence-cited` expectation named `decision_register` as its target kind, and `decision_register` stays in `design-spec`. Declaring the expectation in the new bundle would need the cycle the Decision section states. `design-spec`'s own doctrine already called the expectation too narrow. `decision-record`'s fixture already measured it as unfixable for a corpus that keeps no register. This decision removes a declaration that finding 4 had already found wanting.
 
