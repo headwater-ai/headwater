@@ -93,13 +93,13 @@ A run that asserted the counts would turn every one of these into a red suite wi
 | Files under the corpus root | 35 |
 | Typed | 35 of 35, all `how_to` |
 | Excluded, and untyped | 0 and 0 |
-| Findings | 139 |
+| Findings | 136 |
 | Errors | 118 |
-| Warnings | 21 |
+| Warnings | 18 |
 | Exit status | 0 from `headwater check`, 1 from `headwater check --strict` |
 
 **`tools/diataxis-fixtures.sh` does not run it, and `sh tools/taxonomy/n8n-fixtures.sh` does.** The runner above assembles its four documents from `sources/` at each run, and this corpus is 425,316 bytes of vendored prose that no runner reassembles. A second job does: it reads the commands out of [the n8n README](n8n/README.md), runs them in CI as a blocking step, and holds every figure that page states. It holds the [design-spec](../../design-spec/fixtures/n8n/README.md) and [standards-spec](../../standards-spec/fixtures/n8n/README.md) n8n corpora the same way. [What that job holds and what it does not](../../design-spec/fixtures/n8n/README.md#what-that-job-holds-and-what-it-does-not) is stated once, on the design-spec page.
 
 **The table above is not one of the figures it holds.** That job reads `n8n/README.md`, and this is a second copy of the same seven readings on a different page. So is [the evaluation](../../../evaluations/n8n-worked-example.md). Each one can go stale while CI stays green, and the remedy when a number moves is to correct every copy rather than the one that failed. The assembled four-document corpus above is held by no job at all, and its denominators carry the drift the paragraphs above measure.
 
-**One result belongs beside the run record above, because it is the same finding from a second corpus.** 104 of the 139 are `section.required.missing`, which is 104 of a possible 105 over 35 documents and three required headings. The assembled corpus reports 11 section errors over 4 documents. Two unrelated real corpora, one written for a documentation site and one written for an AI agent, and neither carries the headings this entry's kinds require. That is the entry's report against itself a second time, and #349 carries the remedy.
+**One result belongs beside the run record above, because it is the same finding from a second corpus.** 104 of the 136 are `section.required.missing`, which is 104 of a possible 105 over 35 documents and three required headings. The assembled corpus reports 11 section errors over 4 documents. Two unrelated real corpora, one written for a documentation site and one written for an AI agent, and neither carries the headings this entry's kinds require. That is the entry's report against itself a second time, and #349 carries the remedy.

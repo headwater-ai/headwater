@@ -91,7 +91,7 @@ The entry sits outside the corpus root on purpose, the same reason the other fix
 |---|---|---|
 | `section.required.missing` | 104 | error |
 | `link.path.unresolved` | 14 | error |
-| `voice.forbidden_construction` | 21 | warn |
+| `voice.forbidden_construction` | 18 | warn |
 
 **104 of a possible 105.** `kinds.how_to` requires `Goal`, `Steps` and `Verification`. Thirty-five documents times three headings is 105. The run reports `Goal` 35 times, `Steps` 34 times and `Verification` 35 times. One file writes a `Steps` heading by name, `.agents/skills/create-pr/SKILL.md`, and that is the only heading of the three this corpus supplies anywhere. The [review-rules fixture](../../../standards-spec/fixtures/n8n/README.md) recorded the same shape from a different kind and a different heading set.
 
