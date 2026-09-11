@@ -183,8 +183,8 @@ fn executable(repo: &Path, path: &str, body: &str) {
 /// Plant the engine and the four scripts the gates run, each of them recording
 /// that it ran.
 ///
-/// `tools/refresh-crawler-files.sh`, `tools/refresh-site-tokens.sh` and
-/// `tools/render-tutorial.py` are here for a reason worth stating.
+/// `tools/site/refresh-crawler-files.sh`, `tools/site/refresh-site-tokens.sh` and
+/// `tools/site/render-tutorial.py` are here for a reason worth stating.
 /// `.githooks/pre-commit` runs all three, and it runs before `commit-msg` on a
 /// `git commit` that finishes a merge. Absent, they exit 127 (the two shell
 /// scripts) or make `pre-commit`'s own `python3 ... --check` fail with no such
@@ -212,9 +212,9 @@ fn plant_producers(repo: &Path, generate_exit: i32) {
         ),
     );
     for script in [
-        "tools/refresh-figures.sh",
-        "tools/refresh-crawler-files.sh",
-        "tools/refresh-site-tokens.sh",
+        "tools/site/refresh-figures.sh",
+        "tools/site/refresh-crawler-files.sh",
+        "tools/site/refresh-site-tokens.sh",
     ] {
         executable(
             repo,
@@ -222,17 +222,17 @@ fn plant_producers(repo: &Path, generate_exit: i32) {
             &format!("#!/bin/sh\nprintf '%s\\n' \"{script} $*\" >> \"{calls}\"\nexit 0\n"),
         );
     }
-    // `render-tutorial.py` is called as `python3 tools/render-tutorial.py
+    // `render-tutorial.py` is called as `python3 tools/site/render-tutorial.py
     // --check` rather than executed directly, so its planted body has to be
     // valid Python and not the shell the three scripts above take.
     executable(
         repo,
-        "tools/render-tutorial.py",
+        "tools/site/render-tutorial.py",
         &format!(
             "#!/usr/bin/env python3\n\
              import sys\n\
              with open({calls:?}, 'a') as f:\n\
-             \x20\x20\x20\x20f.write('tools/render-tutorial.py ' + ' '.join(sys.argv[1:]) + '\\n')\n\
+             \x20\x20\x20\x20f.write('tools/site/render-tutorial.py ' + ' '.join(sys.argv[1:]) + '\\n')\n\
              sys.exit(0)\n"
         ),
     );
@@ -514,7 +514,7 @@ fn a_declared_page_refuses_the_merge_and_names_the_command() {
         "the driver ran but said nothing a reader could act on: {said}"
     );
     assert!(
-        said.contains("tools/refresh-figures.sh"),
+        said.contains("tools/site/refresh-figures.sh"),
         "the refusal must name the command that rebuilds the page, because git \
          writes no conflict marker for a custom driver and the file left in the \
          tree says nothing: {said}"
@@ -700,7 +700,7 @@ fn the_merged_tree_gate_is_silent_when_every_producer_agrees() {
     );
     assert!(
         ran.iter()
-            .any(|c| c.starts_with("tools/refresh-figures.sh")),
+            .any(|c| c.starts_with("tools/site/refresh-figures.sh")),
         "the figures' producer did not run, which is the one that writes the two \
          pages this whole file is about: {ran:?}"
     );

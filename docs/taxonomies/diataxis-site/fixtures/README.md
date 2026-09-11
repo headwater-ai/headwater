@@ -1,6 +1,6 @@
 # Fixtures for the Diátaxis documentation-site bundle
 
-`tools/diataxis-fixtures.sh` runs every case below. Until 2026-09-11 this page was prose and nothing executed it, and the cost of that is recorded under *What the runner caught on its first run*.
+`tools/repo/diataxis-fixtures.sh` runs every case below. Until 2026-09-11 this page was prose and nothing executed it, and the cost of that is recorded under *What the runner caught on its first run*.
 
 The worked shape corpus under `corpus/` holds one document of each concrete kind. The external corpus of admission criterion 4 is not in the tree: the runner assembles it from the pinned files under `sources/` at each run, adding front matter and nothing else.
 
@@ -58,7 +58,7 @@ Criterion 4 asks for an external corpus "typed by the entry and recorded with it
 | `link.path.unresolved` and `link.fragment.unresolved` | 5 of the 16 errors, 3 and 2 |
 | `voice.forbidden_construction` | 31 of the 31 warnings |
 
-**The kind assignment holds and the section contracts do not.** Every one of the four real documents types at the kind the entry gives its shelf, with no edit to any body. Not one of them carries the headings that the kind requires: the `tutorial` kind asks for Goal, Prerequisites, Steps and Result, and `sources/sysl/tutorial.md` opens at "Hello World". That is 11 errors across the four documents, and it is the entry's own report against itself. A section contract written beside a kind set is a Headwater invention, and the tradition it models constrains the reader's purpose rather than the writer's headings. The remedy is a ruling on whether a kind of a library entry may declare no section contract at all, and it is not an edit to somebody else's prose. The entry's [doctrine](../doctrine.md) does not carry this as a finding yet, and the library index does not yet read criteria 3, 6 and 7 against this entry, because both files are vendored into `headwater/standard` and moving them republishes the package. [#349](https://github.com/headwater-ai/headwater/issues/349) carries the remainder.
+**The kind assignment holds and the section contracts do not.** Every one of the four real documents types at the kind the entry gives its shelf, with no edit to any body. Not one of them carries the headings that the kind requires: the `tutorial` kind asks for Goal, Prerequisites, Steps and Result, and `sources/sysl/tutorial.md` opens at "Hello World". That is 11 errors across the four documents, and it is the entry's own report against itself. A section contract written beside a kind set is a Headwater invention, and the tradition it models constrains the reader's purpose rather than the writer's headings. The remedy is a ruling on whether a kind of a library entry may declare no section contract at all, and it is not an edit to somebody else's prose. The entry's [doctrine](../doctrine.md#findings) carries that remedy as finding 1, and the [library index](../../README.md) reads criteria 3, 6 and 7 against this entry.
 
 The other five errors are relative links inside the pinned sources that resolve against their own site layouts and not against a Headwater corpus root. They are a property of lifting a file out of its repository, and they are recorded rather than repaired for the same reason.
 
@@ -70,16 +70,34 @@ The planted input is `kind: reference` on the document standing on the `tutorial
 
 ## What the runner enumerates rather than lists
 
-No kind name, shelf path, source path or expected count is written into `tools/diataxis-fixtures.sh`. The concrete kinds come from the `add:` block of `bundle.yml`, the mode map and the digests come from the source table above, and the identifier patterns come from the same bundle. The finding denominators are printed by each run and asserted by nothing, because a finding count is a property of somebody else's prose and a run that asserted it would redden the day a source repository was re-pinned, or the day a rule of the engine was widened.
+No kind name, shelf path, source path or expected count is written into `tools/repo/diataxis-fixtures.sh`. The concrete kinds come from the `add:` block of `bundle.yml`, the mode map and the digests come from the source table above, and the identifier patterns come from the same bundle. The finding denominators are printed by each run and asserted by nothing, because a finding count is a property of somebody else's prose and a run that asserted it would redden the day a source repository was re-pinned, or the day a rule of the engine was widened.
 
 **What catches a stale denominator, then.** The table above is a snapshot that no gate re-derives, so on its own it can drift. **Two edits inside this repository move a denominator, and they are held by different things and to different degrees.**
 
 *Editing a pinned source.* Appending one broken link to a pinned source moves the run from 47 findings to 48 and from 16 errors to 17, and a runner that only printed the new figures would exit 0 over it. The digest case closes that route: every pinned file is sealed against the table above, so the edit reddens this suite.
 
-*Editing the bundle declaration.* The kinds' section contracts produce 11 of the 16 errors, so the declaration moves the denominators as readily as a source does and no seal here reads it. Measured on 2026-09-11, emptying `sections.require` on `kinds.reference` in the vendored copy alone moves the run from 47 findings to 46 and from 16 errors to 15, leaves all four digest cases green, and exits this suite at 0. What catches it is `tools/library-index-fixtures.sh`, whose byte-identity case between the authored library entry and the vendored copy fails at 31 passed and 1 failed. That protection is one-sided by construction: it holds the two copies against each other and neither against the table above.
+*Editing the bundle declaration.* The kinds' section contracts produce 11 of the 16 errors, so the declaration moves the denominators as readily as a source does and no seal here reads it. Measured on 2026-09-11, emptying `sections.require` on `kinds.reference` in the vendored copy alone moves the run from 47 findings to 46 and from 16 errors to 15, leaves all four digest cases green, and exits this suite at 0. What catches it is `tools/repo/library-index-fixtures.sh`, whose byte-identity case between the authored library entry and the vendored copy fails at 31 passed and 1 failed. That protection is one-sided by construction: it holds the two copies against each other and neither against the table above.
 
-*The gap, measured rather than assumed.* Making the same edit to **both** copies is caught by nothing on this tree. `tools/library-index-fixtures.sh` returns to 32 passed and 0 failed, this suite stays at 36 passed and 0 failed, `headwater check --strict` exits 0, `headwater taxonomy resolve --check` exits 0, and the denominators above stand at 47 and 16 while the tree produces 46 and 15. A reviewer reading a bundle diff is the only thing between that edit and this page.
+*The gap, measured rather than assumed.* Making the same edit to **both** copies is caught by nothing on this tree. `tools/repo/library-index-fixtures.sh` returns to 32 passed and 0 failed, this suite stays at 36 passed and 0 failed, `headwater check --strict` exits 0, `headwater taxonomy resolve --check` exits 0, and the denominators above stand at 47 and 16 while the tree produces 46 and 15. A reviewer reading a bundle diff is the only thing between that edit and this page.
 
 *Two more routes leave the table stale without any edit here.* An engine whose rules widened, and a re-pin to a newer upstream commit. Both are deliberate acts by a person already editing this page.
 
 A run that asserted the counts would turn every one of these into a red suite with a number to copy, which teaches a reader to copy numbers rather than re-read the run. So the counts stay recorded, and this paragraph is the statement of what that costs.
+
+## A second external corpus: n8n's skills
+
+[`n8n/`](n8n/README.md) holds a second external corpus, vendored into the tree rather than assembled at run time. It is the 35 files of `.agents/skills/` from `n8n-io/n8n` at `b0550cb3cb4d1752546a69056c55eccfb9111a12` on `master`, every body byte-identical below its front matter, typed by one homogeneous shelf at `.agents/skills/**` carrying `how_to`. That corpus is what #509 was open for, and its README records the assembly commands and every denominator.
+
+| Denominator | Reading |
+|---|---|
+| Files under the corpus root | 35 |
+| Typed | 35 of 35, all `how_to` |
+| Excluded, and untyped | 0 and 0 |
+| Findings | 139 |
+| Errors | 118 |
+| Warnings | 21 |
+| Exit status | 0 from `headwater check`, 1 from `headwater check --strict` |
+
+**`tools/diataxis-fixtures.sh` does not run it, and neither does CI.** The runner above assembles its four documents from `sources/` at each run, and this corpus is 425,316 bytes of vendored prose that no runner reassembles. So its denominators are a recorded run in exactly the sense criterion 4 asks for, and they carry the same exposure to drift that the paragraphs above measure for the assembled corpus. The same is true of the [design-spec](../../design-spec/fixtures/n8n/README.md) and [standards-spec](../../standards-spec/fixtures/n8n/README.md) n8n corpora, which nothing runs either.
+
+**One result belongs beside the run record above, because it is the same finding from a second corpus.** 104 of the 139 are `section.required.missing`, which is 104 of a possible 105 over 35 documents and three required headings. The assembled corpus reports 11 section errors over 4 documents. Two unrelated real corpora, one written for a documentation site and one written for an AI agent, and neither carries the headings this entry's kinds require. That is the entry's report against itself a second time, and #349 carries the remedy.

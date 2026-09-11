@@ -61,7 +61,7 @@ publish = true
 #
 # The number is the highest `rust-version` in the resolved graph rather than a
 # floor this code needs on its own: a dependency's floor is the workspace's
-# floor. `tools/engine-readme-fixtures.sh` compares the two and reddens when the
+# floor. `tools/engine/engine-readme-fixtures.sh` compares the two and reddens when the
 # lock moves above the pin, which is the reading nothing performed before.
 #
 # Like `license` below, this key is an inheritance SOURCE and not an inheritance
@@ -83,7 +83,7 @@ rust-version = "1.90"
 # delete this line and every cargo command fails with
 # `error inheriting 'license' from workspace root manifest`, before it compiles
 # anything. The other direction, a crate added later that forgets the member
-# line, is what `tools/build-declaration-fixtures.sh` holds, along with the
+# line, is what `tools/engine/build-declaration-fixtures.sh` holds, along with the
 # SPDX headers the sentence above claims.
 license = "Apache-2.0"
 

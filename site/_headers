@@ -1,6 +1,6 @@
 # Response headers for https://headwater.tools/, which serves two halves out of
 # one directory: the hand-built pages committed under `site/`, and the pages
-# `mkdocs build` renders from this corpus. `tools/assemble-site.sh` composes
+# `mkdocs build` renders from this corpus. `tools/site/assemble-site.sh` composes
 # them, and HW-DR-0047 rules how they share the host.
 #
 # WHY THE POLICY IS WRITTEN LOOSE FIRST AND STRICT SECOND
@@ -38,7 +38,7 @@
 #   highlight.js and its two stylesheets from that origin on every generated
 #   page — third-party code with no subresource integrity, on a site whose own
 #   subject is provenance — and HW-OBL-0160 recorded it as a debt. #566 paid
-#   it: `mkdocs.yml` sets `highlightjs: false`, and `mkdocs-overrides/js/darkmode.js`
+#   it: `mkdocs.yml` sets `highlightjs: false`, and `mkdocs/overrides/js/darkmode.js`
 #   shadows the theme's file, which dereferences the two `hljs-*` link elements
 #   with no null guard and threw on all 325 generated pages the moment they
 #   stopped being emitted. Measured over the assembled directory: no served

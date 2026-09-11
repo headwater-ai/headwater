@@ -22,7 +22,7 @@
 # told to ask for are all invisible until a tag is cut, and a tag is cut once.
 #
 # Two things answer that rather than hoping. Group 7 of
-# `tools/readme-fixtures.sh` runs on every push: it reads the asset name out of
+# `tools/repo/readme-fixtures.sh` runs on every push: it reads the asset name out of
 # this file and the asset name out of `README.md` and requires them to be the
 # same string, and it reads the tag pattern below against the tag the first
 # screen pins. And `workflow_dispatch` below takes a tag by hand, so a tag that
@@ -84,7 +84,7 @@ jobs:
           rustup update --no-self-update stable
           rustup default stable
       - name: Build the engine
-        # `--locked` for the reason `tools/build-declaration-fixtures.sh` states
+        # `--locked` for the reason `tools/engine/build-declaration-fixtures.sh` states
         # and holds: a copy of the release build that a stranger is handed must
         # resolve the committed lock rather than whatever resolves today.
         run: cargo build --release -p headwater-cli --locked
@@ -117,7 +117,7 @@ jobs:
           esac
       - name: The archive and the checksum beside it
         # Both names are spelled out in full rather than the second being built
-        # from the first. `tools/readme-fixtures.sh` compares the names in this
+        # from the first. `tools/repo/readme-fixtures.sh` compares the names in this
         # file with the names on the first screen, and a name assembled by shell
         # concatenation is a name no judge can read — which is the whole defect
         # this workflow is guarded against.
@@ -145,7 +145,7 @@ jobs:
         #
         # Nothing here reaches the network, and that is why it is a step of its
         # own rather than three more lines inside the `gh release create` step.
-        # `tools/readme-fixtures.sh` extracts this `run:` block by the name
+        # `tools/repo/readme-fixtures.sh` extracts this `run:` block by the name
         # above and RUNS it against the checkout, asserting what it writes
         # against the digest of that checkout's own record. A workflow that
         # only ever runs on a pushed tag gets no other run before the day

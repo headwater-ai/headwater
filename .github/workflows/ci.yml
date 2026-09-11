@@ -124,7 +124,7 @@ jobs:
           restore-keys: cargo-${{ runner.os }}-engine-
       - name: The toolchain this build needs
         # Rust 1.90 or later, which `[workspace.package]` in `engine/Cargo.toml`
-        # declares and `tools/engine-readme-fixtures.sh` holds against the lock.
+        # declares and `tools/engine/engine-readme-fixtures.sh` holds against the lock.
         # This step installs current stable, which is above that floor, so the
         # floor is never exercised here — the container commands in
         # `engine/README.md` are the only place it is, and they are the place it
@@ -140,7 +140,7 @@ jobs:
         # to rewrite. `cargo --version` above is exempt for the same underlying
         # reason and a different surface one: it ACCEPTS `--locked` and exits 0,
         # ignoring it. Every cargo step in this file that resolves a manifest
-        # carries the flag, and `tools/build-declaration-fixtures.sh` reads that
+        # carries the flag, and `tools/engine/build-declaration-fixtures.sh` reads that
         # population by parsing every `run:` value rather than by matching a
         # line shape, so a step added below answers for itself whether it is
         # written plainly, behind a `cd`, behind an environment assignment, in a
@@ -264,7 +264,7 @@ jobs:
           fetch-depth: 0
           # The tags too, which `fetch-depth: 0` does NOT bring: this action
           # passes `--no-tags` unless this input is set, whatever the depth.
-          # `tools/readme-fixtures.sh` reads `packages/headwater-standard/
+          # `tools/repo/readme-fixtures.sh` reads `packages/headwater-standard/
           # release.yml` out of the tree a taxonomy release tag names, to hold
           # that the digest the front page sends a reader to belongs to the
           # tree that page's own route fetches (#775). Without the tag object
@@ -337,7 +337,7 @@ jobs:
         # this runner has. A host without one prints a skip and exits 0, so read
         # the step's output rather than its status when the question is whether
         # the cases ran.
-        run: sh tools/color-fixtures.sh
+        run: sh tools/engine/color-fixtures.sh
       - name: The committed lock is what the sources resolve to
         # This one blocks, and it is the only step here that does. It is not a
         # finding about the corpus: a stale lock means the verdict below was
@@ -500,17 +500,17 @@ jobs:
         # exempt for the structural reason the tool's header states, and an
         # empty population exits 2 rather than passing. The step below provokes
         # each of those.
-        run: python3 tools/check-site-canonical.py .headwater/site-build
+        run: python3 tools/site/check-site-canonical.py .headwater/site-build
       - name: The canonical URL checker refuses what it claims to refuse
         # Spec 12 refuses a check that ships with no failing fixture, and
-        # `tools/site-fragments-fixtures.sh` is the shape this follows. Two of
+        # `tools/site/site-fragments-fixtures.sh` is the shape this follows. Two of
         # its cases run over a scratch copy of the real build: one deletes a
         # page's canonical element, the other points it at another URL, and the
         # second is the one a presence grep would pass. It writes only under a
         # temporary directory.
-        run: sh tools/site-canonical-fixtures.sh
+        run: sh tools/site/site-canonical-fixtures.sh
       - name: The crawler files are what the committed pages say
-        # `tools/refresh-crawler-files.sh` derives `site/llms.txt`,
+        # `tools/site/refresh-crawler-files.sh` derives `site/llms.txt`,
         # `site/robots.txt` and `site/sitemap.xml` from the `<title>`, the
         # `<meta name="description">` and the path of every page committed
         # under `site/`. Nothing in the three is typed by a person, so a page
@@ -532,9 +532,9 @@ jobs:
         # #546 staled `llms.txt`, and the only thing that caught it was a
         # person remembering to run the script. `--check` writes nothing and
         # prints a diff of committed against measured.
-        run: sh tools/refresh-crawler-files.sh --check
+        run: sh tools/site/refresh-crawler-files.sh --check
       - name: Every hand-built page carries the same visual register
-        # `tools/site-tokens.css` is the one copy of the color tokens and the
+        # `tools/site/site-tokens.css` is the one copy of the color tokens and the
         # three type stacks that the hand-built pages share, and HW-DR-0050
         # rules it. Each page carries that block verbatim between its two
         # `headwater:tokens` markers, written by the script and never by hand.
@@ -553,11 +553,11 @@ jobs:
         # A page under `site/` with no marker pair fails this step too. That is
         # deliberate: a ninth page opting out of the shared register would do it
         # by carrying no marker, and a silent skip is what would let it.
-        run: sh tools/refresh-site-tokens.sh --check
+        run: sh tools/site/refresh-site-tokens.sh --check
       - name: The figures on the hand-built pages came from a run
         # HW-DR-0039 rules that a number on a hand-built page is interpolated
         # from a run of this engine rather than typed by a person, and
-        # `tools/refresh-figures.sh` is that build. It writes 34 measured
+        # `tools/site/refresh-figures.sh` is that build. It writes 34 measured
         # figures into `data-figure` elements, and it holds the 44 verbatim
         # blocks of `site/tutorial/index.html` against the tutorial document
         # that `.claude/tutorial/fixtures.sh` runs.
@@ -578,7 +578,7 @@ jobs:
         # reaching no page fails it too, for the same reason a page with no
         # marker pair fails the step above: an empty `site/`, a renamed marker
         # or a moved page otherwise passes over a check that ran on nothing.
-        run: sh tools/refresh-figures.sh --check
+        run: sh tools/site/refresh-figures.sh --check
       - name: The tutorial page came from the document
         # `site/tutorial/index.html` used to be a second copy of the tutorial,
         # typed by hand and independent of
@@ -591,17 +591,17 @@ jobs:
         # `tools/headwater-bootstrap.sh` landed in the document and never
         # reached the page.
         #
-        # `tools/render-tutorial.py` closes the other direction by removing
+        # `tools/site/render-tutorial.py` closes the other direction by removing
         # the second copy: the page is this script's output, read from the
         # document and nothing else, checked into git the same way
-        # `tools/refresh-figures.sh` and `tools/refresh-site-tokens.sh`
+        # `tools/site/refresh-figures.sh` and `tools/site/refresh-site-tokens.sh`
         # already check theirs in. `--check` writes nothing and exits 1 when
         # the committed page disagrees with what the script would write.
         #
         # This is the fourth step that reads `site/`, and it belongs beside
         # the other three and before the assembly, for the same reason each
         # of them does.
-        run: python3 tools/render-tutorial.py --check
+        run: python3 tools/site/render-tutorial.py --check
       - name: The two halves of the site compose into one served directory
         # This is the input the deploy serves, and this step is the only place
         # that runs the composition where a person reads the result. The
@@ -648,7 +648,7 @@ jobs:
         #   invisible until 2026-09-06, and a status code is therefore not
         #   evidence this step will accept.
         run: |
-          sh tools/assemble-site.sh --check
+          sh tools/site/assemble-site.sh --check
           for path in tutorials/your-first-governed-corpus/index.html \
                       css/base.css js/base.js search/search_index.json corpus.json \
                       index.html ns/index.html tutorial/index.html; do
@@ -705,8 +705,8 @@ jobs:
         env:
           HEADWATER_SITE_FOOTER_MINIMUM_PAGES: 300
         run: |
-          sh tools/check-site-footer.sh .headwater/site-deploy
-          sh tools/site-footer-fixtures.sh
+          sh tools/site/check-site-footer.sh .headwater/site-deploy
+          sh tools/site/site-footer-fixtures.sh
       - name: Every hand-built page carries the narrow content policy
         # `site/_headers` sets the wide policy under `/*`, because a generated
         # page links its stylesheet, its script, its fonts and its search
@@ -779,16 +779,16 @@ jobs:
         #
         # It fails on a dead fragment and reports a dead path without failing.
         # The tool's own header states why, and #406 owns the path half.
-        # `sh tools/site-fragments-fixtures.sh` provokes every one of those
+        # `sh tools/site/site-fragments-fixtures.sh` provokes every one of those
         # outcomes, including each refusal, and runs in the step below.
-        run: python3 tools/check-site-fragments.py
+        run: python3 tools/site/check-site-fragments.py
       - name: The fragment checker refuses what it claims to refuse
         # Spec 12 refuses a check that ships with no failing fixture, and
         # `.githooks/fixtures.sh` is the shape this follows: every refusal is
         # provoked on purpose and so is every pass, because a gate that
         # refuses everything is as useless as one that refuses nothing. It
         # writes only under a temporary directory.
-        run: sh tools/site-fragments-fixtures.sh
+        run: sh tools/site/site-fragments-fixtures.sh
       - name: Every served page loads in a browser with an empty console
         # THE READER THAT RUNS THE PAGE RATHER THAN PARSING IT
         #
@@ -824,7 +824,7 @@ jobs:
         #   by writing one here and watching the job fail.
         run: |
           status=0
-          python3 tools/check-site-console.py || status=$?
+          python3 tools/site/check-site-console.py || status=$?
           if [ "$status" = 3 ]; then
             echo "::warning title=Browser console check skipped::No Chrome or Chromium on this runner, so no page was loaded and this step checked nothing. Install one, or set HEADWATER_CHROME."
             exit 0
@@ -840,7 +840,7 @@ jobs:
         # on a host with no browser for the reason the step above does.
         run: |
           status=0
-          sh tools/site-console-fixtures.sh || status=$?
+          sh tools/site/site-console-fixtures.sh || status=$?
           if [ "$status" = 3 ]; then
             echo "::warning title=Browser console fixtures skipped::No Chrome or Chromium on this runner, so none of these cases ran."
             exit 0
@@ -855,9 +855,9 @@ jobs:
         # failure on purpose, and refuses an empty claim anywhere in the
         # shipped store. It builds no engine and writes only under a temporary
         # directory.
-        run: sh tools/id-store-fixtures.sh
+        run: sh tools/repo/id-store-fixtures.sh
       - name: The run directory refuses a reused id, a short line, a stored total and a second claimant
-        # `tools/run-dir.sh` is the ledger of a build-order run: a directory
+        # `tools/run/run-dir.sh` is the ledger of a build-order run: a directory
         # under the git common dir, its tabular parts as JSON lines, and every
         # total derived by the reader and never stored, which is HW-DR-0049
         # applied to a ledger and HW-PD-0005 is why. The tool refuses a
@@ -873,14 +873,14 @@ jobs:
         # under a temporary directory.
         run: |
           status=0
-          sh tools/run-dir-fixtures.sh || status=$?
+          sh tools/run/run-dir-fixtures.sh || status=$?
           if [ "$status" = 3 ]; then
             echo "::warning title=Run directory fixtures skipped::No jq on this runner, so none of these cases ran."
             exit 0
           fi
           exit "$status"
       - name: A recorder's transform drops every block the harness did not tag as a call
-        # `tools/probe-transform.sh` is the half of a recorder that decides
+        # `tools/probe/probe-transform.sh` is the half of a recorder that decides
         # what reaches `docs/probe-runs/`, and the failure it exists to
         # prevent is silent: a model's account of its own process arriving as
         # an observation. This suite feeds it a harness log whose `thinking`
@@ -892,14 +892,14 @@ jobs:
         # It needs `jq` and skips with a warning without it.
         run: |
           status=0
-          sh tools/probe-record-fixtures.sh || status=$?
+          sh tools/probe/probe-record-fixtures.sh || status=$?
           if [ "$status" = 3 ]; then
             echo "::warning title=Recorder fixtures skipped::No jq on this runner, so none of these cases ran."
             exit 0
           fi
           exit "$status"
       - name: The run census counts a turn once per message and a call by what it is for
-        # `tools/run-census.sh` is the measurement behind HW-PD-0003 as a
+        # `tools/run/run-census.sh` is the measurement behind HW-PD-0003 as a
         # tool: one usage record per message id, because a response is
         # written to the log as several lines that each carry the same record,
         # and a Bash call grouped by its leading verb, because the cost that
@@ -909,7 +909,7 @@ jobs:
         # `jq` and skips with a warning without it.
         run: |
           status=0
-          sh tools/run-census-fixtures.sh || status=$?
+          sh tools/run/run-census-fixtures.sh || status=$?
           if [ "$status" = 3 ]; then
             echo "::warning title=Run census fixtures skipped::No jq on this runner, so none of these cases ran."
             exit 0
@@ -931,7 +931,7 @@ jobs:
         # comes back empty, and provokes every one of its judges against a
         # planted defect so that an empty offender list means something. It
         # builds nothing: its one cargo call is `metadata --no-deps --locked`.
-        run: sh tools/build-declaration-fixtures.sh
+        run: sh tools/engine/build-declaration-fixtures.sh
       - name: The first screen resolves, and says one true thing about its own tag
         # Two properties of the root `README.md`, and NOT its prose. Nothing
         # else here reads that file at all: `docs/` is the corpus root, so no
@@ -978,7 +978,7 @@ jobs:
         # unreadable remote is. It writes only under a temporary directory, and
         # the arm that succeeds installs a package over a copy of this checkout
         # made there rather than over the checkout.
-        run: sh tools/readme-fixtures.sh
+        run: sh tools/repo/readme-fixtures.sh
       - name: The library index accounts for every bundle, and the vendored copy has not drifted
         # Two properties of `docs/taxonomies/README.md`, and NOT its prose.
         #
@@ -1013,7 +1013,7 @@ jobs:
         #
         # It runs `awk`, `sed` and `cmp`, builds no engine, opens no socket,
         # and writes only under a temporary directory.
-        run: sh tools/library-index-fixtures.sh
+        run: sh tools/repo/library-index-fixtures.sh
       - name: The command an outsider runs still runs
         # `engine/README.md` carries two `docker run` recipes, and on 2026-09-07
         # both exited 101 before compiling a line: `ordered-float 5.5.0` had
@@ -1040,8 +1040,8 @@ jobs:
         # a blank line alone would render as one `<pre>`, and the absence of
         # `-D warnings` — and it holds the nine files that state the floor to
         # one another. `--locked` on those recipes belongs to
-        # `tools/build-declaration-fixtures.sh` and is not read twice here.
-        run: sh tools/engine-readme-fixtures.sh
+        # `tools/engine/build-declaration-fixtures.sh` and is not read twice here.
+        run: sh tools/engine/engine-readme-fixtures.sh
       - name: The contributor loop still lists what this job runs
         # `DEVELOPING.md` is the contributor loop, and one section of it is a
         # copy of this file: the list of what CI runs. A hand-kept list of that
@@ -1055,11 +1055,11 @@ jobs:
         # without a line on the page fails the day it lands, and a gate the page
         # names that no job runs fails too. It is the second `run:` walk under
         # `tools/`; the header of the script says why it is not shared with
-        # `tools/build-declaration-fixtures.sh`.
+        # `tools/engine/build-declaration-fixtures.sh`.
         #
         # This step is therefore a member of its own population, and the page
         # names it. It builds nothing, runs no container and opens no socket.
-        run: sh tools/developing-fixtures.sh
+        run: sh tools/repo/developing-fixtures.sh
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every

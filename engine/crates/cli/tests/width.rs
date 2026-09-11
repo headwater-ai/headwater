@@ -599,7 +599,7 @@ fn no_escape_byte_reaches_a_refusal_that_is_not_fail_or_the_bare_invocation() {
 /// The second is that the painted page is painted at all. The strip property
 /// alone is satisfied by a palette that emits nothing anywhere — which is the
 /// defect [#479](https://github.com/headwater-ai/headwater/issues/479) was
-/// filed about and the reason `tools/color-fixtures.sh` exists — so the count
+/// filed about and the reason `tools/engine/color-fixtures.sh` exists — so the count
 /// of painted pages is compared against the count of pages.
 #[test]
 fn stripping_the_painted_help_gives_the_plain_help_byte_for_byte() {
