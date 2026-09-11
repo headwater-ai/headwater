@@ -350,6 +350,48 @@ criteria_of() {
         sed -n 's/^\*\*\([1-9][0-9]*\)\. .*/\1/p' | sort -un
 }
 
+# stated_criteria INDEX-FILE — the count the admission-criteria prose states in
+# words, as a number. Prints the word itself when the table below does not know
+# it, and nothing when the prose states no count.
+stated_criteria() {
+    section_of "$1" "Admission criteria" | awk '/^### /{exit} 1' |
+        sed -n 's/^\([A-Za-z][a-z]*\) criteria\..*/\1/p' | head -1 |
+        tr 'A-Z' 'a-z' |
+        awk '
+            BEGIN {
+                split("one two three four five six seven eight nine ten eleven twelve", w, " ")
+                for (i in w) n[w[i]] = i
+            }
+            NF { print (($0 in n) ? n[$0] : $0) }
+        '
+}
+
+# count_judge INDEX-FILE CRITERIA-FILE — one line when the count the prose
+# states and the count the page numbers disagree, naming both numbers.
+#
+# `criteria_judge` reads its population off the page it polices, which keeps it
+# from going stale and leaves it open the other way: delete the line
+# `**7. It resolves, and it declares its dependency closure.**` and criterion 7
+# leaves the population, the suite returns green, and the bar on every refused
+# bundle silently shrinks. `check --strict` and `taxonomy resolve --check` both
+# stay at exit 0 over that deletion. Line 15's "Seven criteria" was held by
+# nothing.
+#
+# That is the defect this whole suite exists for, one level up: a stated count
+# and a real population that drift, with every gate green. A bar that a
+# deletion can meet is the bar the next reader meets that way. So the two are
+# held against each other here, and neither number is written down in this
+# file: both are read off the page, and the failure names both.
+count_judge() {
+    ct_stated=$(stated_criteria "$1")
+    ct_numbered=$(wc -l <"$2" | tr -d ' ')
+    if [ -z "$ct_stated" ]; then
+        echo "the admission-criteria prose states no count, and the page numbers $ct_numbered"
+    elif [ "$ct_stated" != "$ct_numbered" ]; then
+        echo "the prose states $ct_stated criteria and the page numbers $ct_numbered"
+    fi
+}
+
 # refusal_block SECTION-FILE BUNDLE — the body of the `###` subsection of the
 # admission section whose heading names BUNDLE, or nothing when the section
 # carries no such subsection. A bundle the table admits is read through its
@@ -532,6 +574,13 @@ more_than "the admission section numbers the criteria an entry is judged against
 same "every criterion is read against every bundle the table refuses" \
     "" "$(criteria_judge "$lib" "$scratch/section" "$scratch/criteria" | tr '\n' '|')"
 
+# 1g. The count the prose states and the count the page numbers, against each
+#     other. Case 1f reads its bar off the page, so a deleted criterion shrinks
+#     the bar rather than breaking it. This is what makes the deletion loud,
+#     and it is case 1b's own defect one level up.
+same "the criteria the prose counts and the criteria the page numbers agree" \
+    "" "$(count_judge "$index" "$scratch/criteria" | tr '\n' '|')"
+
 echo
 echo "the judges, provoked over scratch trees"
 
@@ -678,6 +727,54 @@ printf '## Admission criteria\n\n**1. First.** Prose.\n\n**2. Second.** Prose.\n
     >"$scratch/arms.index"
 same "  the criteria population stops at the first subheading" \
     "1 2" "$(criteria_of "$scratch/arms.index" | tr '\n' ' ' | sed 's/ $//')"
+
+# 2c9. The stated count against the numbered items, over the same scratch page.
+#      A page that states its count in words and numbers that many is clean,
+#      and the count word is read rather than assumed: the arm below states
+#      "Two" and the assembly ladder under the subheading states "Three".
+printf '## Admission criteria\n\nTwo criteria. Prose about them.\n\n**1. First.** Prose.\n\n**2. Second.** Prose.\n\n### Assembly admission\n\nThree criteria.\n\n**1. One.** Prose.\n\n**2. Two.** Prose.\n\n**3. Three.** Prose.\n' \
+    >"$scratch/arms.count.ok"
+criteria_of "$scratch/arms.count.ok" >"$scratch/arms.count.ok.crit"
+same "  a page that states its count and numbers that many is clean" \
+    "" "$(count_judge "$scratch/arms.count.ok" "$scratch/arms.count.ok.crit" | tr '\n' '|')"
+
+# 2c10. The deletion this case exists for: the last numbered item removed and
+#       the stated count left standing. The population shrinks to two, case 1f
+#       would still report green over it, and this judge names both numbers.
+printf '## Admission criteria\n\nThree criteria. Prose about them.\n\n**1. First.** Prose.\n\n**2. Second.** Prose.\n' \
+    >"$scratch/arms.count.gone"
+criteria_of "$scratch/arms.count.gone" >"$scratch/arms.count.gone.crit"
+same "  a deleted criterion with the stated count left standing is refused" \
+    "the prose states 3 criteria and the page numbers 2|" \
+    "$(count_judge "$scratch/arms.count.gone" "$scratch/arms.count.gone.crit" | tr '\n' '|')"
+
+# 2c11. The other direction: an eighth criterion written and the stated count
+#       not raised. The bar grew and the sentence above it did not.
+printf '## Admission criteria\n\nTwo criteria. Prose about them.\n\n**1. First.** Prose.\n\n**2. Second.** Prose.\n\n**3. Third.** Prose.\n' \
+    >"$scratch/arms.count.extra"
+criteria_of "$scratch/arms.count.extra" >"$scratch/arms.count.extra.crit"
+same "  a criterion added without raising the stated count is refused" \
+    "the prose states 2 criteria and the page numbers 3|" \
+    "$(count_judge "$scratch/arms.count.extra" "$scratch/arms.count.extra.crit" | tr '\n' '|')"
+
+# 2c12. The sentence deleted instead of the item. A page that numbers items and
+#       states no count at all leaves the population held by nothing, which is
+#       the same silence by a different route.
+printf '## Admission criteria\n\nProse that counts nothing.\n\n**1. First.** Prose.\n\n**2. Second.** Prose.\n' \
+    >"$scratch/arms.count.none"
+criteria_of "$scratch/arms.count.none" >"$scratch/arms.count.none.crit"
+same "  a page that states no count at all is refused" \
+    "the admission-criteria prose states no count, and the page numbers 2|" \
+    "$(count_judge "$scratch/arms.count.none" "$scratch/arms.count.none.crit" | tr '\n' '|')"
+
+# 2c13. A count word this table does not map is refused rather than read as
+#       zero, so renaming "Seven" to something vague does not silence the case.
+printf '## Admission criteria\n\nSeveral criteria. Prose about them.\n\n**1. First.** Prose.\n\n**2. Second.** Prose.\n' \
+    >"$scratch/arms.count.vague"
+criteria_of "$scratch/arms.count.vague" >"$scratch/arms.count.vague.crit"
+same "  a count word that names no number is refused" \
+    "the prose states several criteria and the page numbers 2|" \
+    "$(count_judge "$scratch/arms.count.vague" "$scratch/arms.count.vague.crit" | tr '\n' '|')"
 
 # 2d. A link that carries a file name accounts for nothing, so a doctrine link
 #     cannot stand in for the paragraph that owes the reason.
