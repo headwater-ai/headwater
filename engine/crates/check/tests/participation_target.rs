@@ -9,10 +9,10 @@
 //! this file pins reached a merged branch unseen.
 //!
 //! `Expectation.to_kind` is an `Option<String>` and a relation's `to:` is a
-//! list. So an expectation over a relation that admits two kinds can name only
-//! one of them, and a document verified by the other is reported as reaching
-//! nothing. The remediation text then tells an author to declare an edge they
-//! have already correctly declared.
+//! list. So an expectation over a relation that admits two kinds either names
+//! one of them or names none. Where it names one, a document verified by the
+//! other is reported as reaching nothing, and the remediation text tells an
+//! author to declare an edge they have already correctly declared.
 //!
 //! The tree under `fixtures/participation-target/` holds two arms that differ
 //! in one clause. `requirement_narrow` declares `to_kind: acceptance_criterion`
@@ -21,23 +21,25 @@
 //! five documents, so a difference between the two columns below can come from
 //! nothing else.
 //!
-//! **The broad arm is a shape no taxonomy can currently declare, and that is
-//! the point of writing it here.** `engine/crates/meta/meta-schema.yml` makes
-//! `to_kind` a required member, so `Participation::satisfied`'s `None => true`
-//! branch and `evaluate`'s second message format are both reachable from this
-//! crate and from no `.headwater/overlay.yml` anywhere.
+//! **Both arms are shapes a taxonomy can declare.** `to_kind` became optional
+//! in `engine/crates/meta/meta-schema.yml` on 2026-09-11, and
+//! [spec 2](../../../../docs/spec/02-taxonomy-model.md#participation-expectations)
+//! states what the absence means: any target document the relation admits
+//! satisfies the expectation.
 //! [HW-OBL-0039](../../../../docs/obligations/0039-a-participation-expectation-names-one-target-kind.md)
-//! holds the obligation and
+//! is discharged by that change and records why the abstract kind it proposed
+//! instead does not run.
 //! [HW-OBL-0128](../../../../docs/obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md)
-//! records the same measurement from the other side. That record proposes an
-//! abstract kind over the target kinds as the remedy; it does not run, because
-//! expectation well-formedness refuses a `to_kind` that no shelf reaches.
+//! records the same measurement from the other side and stays open, because its
+//! subject is the crate root rather than this member.
 //!
-//! So this file is two things at once. It is the passing-and-failing pair that
-//! spec 12 requires for a branch the engine implements, and it is the measured
-//! cost of the member the meta-schema has not yet made optional. When that
-//! member yields, the broad arm becomes declarable and this file already says
-//! what changes.
+//! **This file holds the behavior and not the declarability.** `run` below
+//! builds `Declarations` straight from a fixture taxonomy, so it never reaches
+//! the meta-schema, and a change that marked `to_kind` required again would
+//! leave every test here green. `the_meta_schema_admits_an_expectation_that_
+//! names_no_target_kind` is the guard against that, and
+//! `engine/crates/resolve/fixtures/validate/valid/` carries the same case
+//! through resolution and `taxonomy validate`. Read the three together.
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
@@ -207,4 +209,83 @@ fn the_broad_arm_still_reports_a_document_that_reaches_nothing_and_still_respect
         instances, 10,
         "every document of a kind that declares an expectation gets an instance"
     );
+}
+
+/// The declarability half, because nothing else in this file reads it.
+///
+/// `run` above builds `Declarations` from a fixture taxonomy through
+/// `headwater_yaml::load`, which is not the path a real taxonomy takes. A real
+/// one is validated against the shipped meta-schema first, and that member was
+/// `required: true` until 2026-09-11. So the broad arm ran here for a month
+/// against a shape no `.headwater/overlay.yml` anywhere could declare.
+///
+/// The two sources below differ in one line. Both must validate, because
+/// making the member optional has to stay backward compatible for every
+/// expectation in the corpus that still names a target kind.
+#[test]
+fn the_meta_schema_admits_an_expectation_that_names_no_target_kind() {
+    use headwater_meta::MetaSchema;
+    use headwater_resolve::{render_errors, Role, Source};
+
+    const WITH: &str = "to_kind: probe\n          ";
+    let package = |names_a_target_kind: &str| {
+        format!(
+            "taxonomy: acme/participation-target
+version: 1.0.0
+purposes:
+  requirement: {{intent: state what the system has to do}}
+facets:
+  status:
+    role: state
+    values: [{{value: draft, role: initial}}, {{value: current, role: live}}]
+    required: true
+    volatility: mutable
+  status_since:
+    role: state_entered
+    type: date
+    required: true
+    volatility: mutable
+kinds:
+  requirement:
+    purpose: requirement
+    facets: {{require: [status, status_since]}}
+    relations:
+      expect:
+        - id: requirement-verified
+          relation: verified_by
+          {names_a_target_kind}when: {{status: current}}
+          within: 90d
+          since: state_entered
+          severity: warn
+          rationale: a requirement that nothing verifies is a claim nobody can settle
+  probe:
+    purpose: requirement
+    facets: {{require: [status, status_since]}}
+relations:
+  verified_by:
+    family: evidence
+    from: [requirement]
+    to: [probe]
+    created_by: agent
+shelves:
+  requirements: {{path: \"docs/requirements/**\", homogeneous: true, kind: requirement}}
+  probes: {{path: \"docs/probes/**\", homogeneous: true, kind: probe}}
+core:
+  requires:
+    - facet_role: state
+"
+        )
+    };
+
+    let schema = MetaSchema::shipped().expect("the shipped meta-schema loads");
+    for (label, clause) in [("no to_kind", ""), ("a to_kind", WITH)] {
+        let source = Source::from_text("package.yml", Role::Taxonomy, &package(clause))
+            .unwrap_or_else(|errors| panic!("{label}: the source loads, {}", errors.len()));
+        let refusals = source.validate(&schema);
+        assert!(
+            refusals.is_empty(),
+            "{label}: the meta-schema refuses it\n{}",
+            render_errors(&refusals)
+        );
+    }
 }

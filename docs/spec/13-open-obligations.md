@@ -143,7 +143,6 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0036](../obligations/0036-identity-below-the-grain-of-a-document.md) — Identity below the grain of a document
 - [HW-OBL-0037](../obligations/0037-the-register-is-not-a-projection-of-the-lock-alone-so-generate.md) — The register is not a projection of the lock alone, so `generate --check` cannot hold it
 - [HW-OBL-0038](../obligations/0038-a-corpus-that-never-runs-generate-check-has-no-test.md) — A corpus that never runs `generate --check` has no test of a generated-file marker
-- [HW-OBL-0039](../obligations/0039-a-participation-expectation-names-one-target-kind.md) — A participation expectation names one target kind
 - [HW-OBL-0040](../obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md) — Composition between two library entries has no add-only form
 - [HW-OBL-0041](../obligations/0041-no-declaration-expresses-a-rule-about-content-or-state-over.md) — No declaration expresses a rule about content or state over time
 - [HW-OBL-0042](../obligations/0042-a-declared-invalid-when-reaches-no-check-and-two-live.md) — A declared `invalid_when` reaches no check, and two live contradictory decisions pass in silence

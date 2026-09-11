@@ -7,6 +7,12 @@
 #
 # It is deliberately the smallest taxonomy that passes rather than the smallest
 # that resolves. The difference between the two is the whole of this directory.
+#
+# The expectation on `decision` declares no `to_kind`. That is the passing side
+# of an optional member: the meta-schema admits the omission, and every
+# expectation well-formedness rule that does not read `to_kind` still runs. An
+# expectation with no `to_kind` is satisfied by any kind the named relation
+# admits at its target end.
 
 taxonomy: acme/fixture
 version: 1.0.0
@@ -34,6 +40,11 @@ facets:
     type: integer
     required: true
     volatility: stable
+  status_since:
+    role: state_entered
+    type: date
+    required: true
+    volatility: mutable
 
 regimes:
   lifecycle:
@@ -50,7 +61,14 @@ kinds:
     is_a: governed_document
     purpose: rationale
     lifecycle: standard
-    facets: {require: [sequence]}
+    facets: {require: [sequence, status_since]}
+    relations:
+      expect:
+        - id: decision-superseded
+          relation: supersedes
+          within: 180d
+          since: state_entered
+          rationale: an expectation that names no target kind is satisfied by any kind the relation admits at its target end
 
 relations:
   supersedes:

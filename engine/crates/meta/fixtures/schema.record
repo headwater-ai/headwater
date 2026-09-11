@@ -87,7 +87,7 @@ declarations
         expect seq of members
             id (required) scalar:string
             relation (required) scalar:string
-            to_kind (required) scalar:string
+            to_kind scalar:string
             when map of scalar:string
             within (required) scalar:duration
             since (required) enum[created state_entered]

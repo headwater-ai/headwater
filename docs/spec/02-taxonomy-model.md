@@ -527,7 +527,7 @@ Sidecars are optional. A component with nothing mechanically checkable carries n
 
 ## Participation expectations
 
-A kind may declare that its documents are **expected to participate** in a relation. A document of this kind, in a given state, should acquire the named relation to a document of another kind within a window.
+A kind may declare that its documents are **expected to participate** in a relation. A document of this kind, in a given state, should acquire the named relation to another document within a window.
 
 ```yaml
 kinds:
@@ -543,6 +543,10 @@ kinds:
           severity: warn
           rationale: a decision nothing implements is either not a decision or not done
 ```
+
+**`to_kind` is optional, and its absence widens the expectation.** Where an expectation names a `to_kind`, only a target document of that kind satisfies it. Where it names none, any edge over that relation satisfies it, whether or not the relation admits the kind at its far end. The expectation reads the relation and never the `to:` list. So an expectation over a relation with two target kinds either names one of the two or names neither. The finding text follows the declaration: it names the target kind where the expectation named one, and the relation alone where it did not.
+
+**Admissibility at the target end is a different rule, and an absent `to_kind` does not take it over.** `relation.endpoint.not_permitted` reports an edge to a kind the relation's `to:` list does not name, and it reports it as an error. So a corpus that declares an edge the relation does not admit already fails a strict run, and the expectation stays silent about it. Read the pair together: one rule asks whether the edge is there, and the other asks whether it was allowed.
 
 An earlier draft declared these as a separate top-level concept, `sequences`, sold as chains. Every declared chain was in fact a single hop: *kind + state ⇒ expected relation, within window*. A chain is three expectations that share endpoints. A single hop is a state-conditional, windowed, detective-posture participation constraint — the `required` end of the cardinality spectrum that a relation already has, plus a clock. So it is declared on the kind, beside the other obligations that a kind carries, and the separate concept is gone. What it models is unchanged: genre theory's *genre system* — proposal → decision → specification → evidence, and incident → postmortem → standard change.
 
