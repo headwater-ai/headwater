@@ -274,8 +274,7 @@ fn repo_root() -> PathBuf {
 /// joined with single spaces before anything reads it. A case that read the
 /// raw lines would redden on a reflow that changed no word.
 fn facet_required_paragraph(path: &Path) -> String {
-    let text =
-        std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let text = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let mut paragraph: Vec<String> = Vec::new();
     let mut found = false;
     for line in text.lines() {
@@ -305,6 +304,59 @@ fn facet_required_paragraph(path: &Path) -> String {
     paragraph.join(" ")
 }
 
+/// The clause of spec 7 that the ruling sentence opens with, which is what the
+/// extractor anchors on.
+const RULING_OPENS: &str = "The vocabulary holds no fourth subject";
+
+/// Spec 7's own ruling sentence, read out of the specification at run time.
+///
+/// Typing the sentence here would be a second copy of it, and a reword of
+/// spec 7 would leave the copy standing. Reading it means the package record is
+/// held against whatever spec 7 says today: a reword of the ruling reddens the
+/// record until the record follows.
+fn spec_seven_ruling() -> String {
+    let (path, section) = migration_payload_section();
+    let start = section.find(RULING_OPENS).unwrap_or_else(|| {
+        panic!(
+            "{}: `{SECTION}` no longer holds a sentence opening {RULING_OPENS:?}, so nothing \
+             states the ruling the package record has to carry",
+            path.display()
+        )
+    });
+    let rest = &section[start..];
+    let end = rest.find(". ").unwrap_or_else(|| {
+        panic!(
+            "{}: the ruling sentence of `{SECTION}` does not end, so the extractor cannot bound \
+             it. It reads:\n\n{rest}",
+            path.display()
+        )
+    });
+    rest[..=end].to_string()
+}
+
+/// Wordings that put the answer on the specification rather than take it.
+///
+/// A curated family and not a complete one. Each member says the same thing:
+/// that this project owes a mechanism it has not built. `facet.required.missing`
+/// is the break every one of them was written about, and spec 7 has ruled it.
+/// The list is the second line of this case rather than the first, because a
+/// blocklist over prose saturates: a phrasing nobody listed passes it. What
+/// holds the record is the positive assertion below, which reads spec 7's own
+/// sentence and requires the record to carry it.
+///
+/// `pending a decision` rather than `pending`, because the paragraph has to name
+/// `migration-pending` and a bare stem would refuse the route it is asking for.
+const DEFERRALS: [&str; 8] = [
+    "finding against spec 7",
+    "an open question",
+    "yet to answer",
+    "yet to be answered",
+    "unanswered",
+    "not yet decided",
+    "pending a decision",
+    "a gap in spec 7",
+];
+
 /// The package's own record of 4.0.0 states the facet-required absence the way
 /// spec 7 rules it, and names the route instead of a mechanism to wait for.
 ///
@@ -321,20 +373,46 @@ fn facet_required_paragraph(path: &Path) -> String {
 /// Both copies are read, because a publish carries the source into the vendored
 /// artifact and nothing else holds the two together.
 ///
+/// # What this holds, and what it does not
+///
+/// The first assertion is the one that holds the ruling. It reads spec 7's own
+/// ruling sentence out of the specification and requires the record to carry it
+/// word for word, so the record cannot state the absence in its own terms at
+/// all, and a reword of spec 7 reddens the record rather than passing it.
+///
+/// The second is a curated family of deferring phrasings. It is a blocklist and
+/// it saturates: a paraphrase nobody listed passes it. The residual hole is a
+/// paragraph that carries the ruling and contradicts it in a neighboring
+/// sentence, which reads as agreement to every lexical case and as nonsense to a
+/// person. Nothing here closes that, and no engine value exists to bind it to.
+///
 /// # Watched failing
 ///
 /// Restoring "which is a finding against spec 7 rather than an omission of this
-/// release" reddens the first assertion, printing the paragraph. Deleting the
-/// `headwater infer` sentence reddens the second, naming the route the record
-/// lost.
+/// release" reddens the deferral assertion, printing the paragraph. Deleting the
+/// quoted ruling reddens the first, printing the sentence spec 7 holds and the
+/// record does not. Rewording that sentence in spec 7 reddens the first too,
+/// which is what proves it reads the specification rather than a list typed
+/// here. Deleting the `headwater infer` sentence reddens the route assertion.
 #[test]
 fn the_package_record_of_the_facet_required_absence_follows_the_spec_7_ruling() {
+    let ruling = spec_seven_ruling();
+
     for relative in RECORDS {
         let path = repo_root().join(relative);
         let paragraph = facet_required_paragraph(&path);
         let lowered = paragraph.to_lowercase();
 
-        for deferring in ["finding against spec 7", "an open question"] {
+        assert!(
+            paragraph.contains(&ruling),
+            "{}: the 4.0.0 paragraph does not carry the ruling that \
+             docs/spec/07-distribution-and-federation.md states, so the record says what the \
+             absence means in its own words rather than in the words of the part that ruled it. \
+             Spec 7 says:\n\n{ruling}\n\nThe paragraph says:\n\n{paragraph}",
+            path.display()
+        );
+
+        for deferring in DEFERRALS {
             assert!(
                 !lowered.contains(deferring),
                 "{}: the 4.0.0 paragraph calls the facet-required absence {deferring:?}. \
@@ -370,31 +448,63 @@ fn the_package_record_of_the_facet_required_absence_follows_the_spec_7_ruling() 
 /// The vendored artifact carries the same record as the source it was published
 /// from.
 ///
-/// `headwater taxonomy publish` copies the authored taxonomy into the artifact,
-/// and a member digest is over the file bytes, so the two agree after a publish
-/// and drift the moment one is edited alone. Nothing else in this repository
-/// reads both paths. The case is over this one paragraph rather than the whole
-/// file, because the paragraph is what a publisher reads and a future publish
-/// step is free to add a member the source does not carry.
+/// `headwater taxonomy publish` stages every member by reading the file whole,
+/// and it transforms exactly one of them, the package manifest, through a single
+/// splice. The taxonomy is carried byte for byte, so the two paths agree after a
+/// publish and drift the moment one is edited alone. A member digest is over
+/// those bytes, so a drift here is also a pin that no longer names what the
+/// publisher edits. Nothing else in this repository reads both paths.
+///
+/// The assertion is over the whole file rather than over one paragraph, because
+/// byte equality is what publish actually gives for this member. A comparison of
+/// a fresh publish into a scratch directory against `packages/headwater-standard`
+/// returns no differences across all 37 members, which is the measurement behind
+/// this sentence.
 ///
 /// # Watched failing
 ///
 /// Editing `taxonomy-source/headwater-standard/taxonomy.yml` without running
 /// `headwater taxonomy publish` and `headwater taxonomy vendor` reddens this,
-/// printing both paragraphs.
+/// naming the first line that differs.
 #[test]
 fn the_vendored_record_matches_the_source_it_was_published_from() {
     let source = repo_root().join(RECORDS[0]);
     let vendored = repo_root().join(RECORDS[1]);
-    let authored = facet_required_paragraph(&source);
-    let shipped = facet_required_paragraph(&vendored);
+    let authored =
+        std::fs::read_to_string(&source).unwrap_or_else(|e| panic!("{}: {e}", source.display()));
+    let shipped = std::fs::read_to_string(&vendored)
+        .unwrap_or_else(|e| panic!("{}: {e}", vendored.display()));
+
+    let divergence = authored
+        .lines()
+        .zip(shipped.lines())
+        .position(|(a, b)| a != b)
+        .map(|index| {
+            let (a, b) = (
+                authored.lines().nth(index).unwrap_or_default(),
+                shipped.lines().nth(index).unwrap_or_default(),
+            );
+            format!(
+                "first at line {}:\n  source   {a}\n  vendored {b}",
+                index + 1
+            )
+        })
+        .unwrap_or_else(|| {
+            format!(
+                "same on every shared line, and the lengths differ: {} against {}",
+                authored.lines().count(),
+                shipped.lines().count()
+            )
+        });
+
     assert_eq!(
         authored,
         shipped,
-        "{} and {} state 4.0.0 differently, so a consumer reads one record and the publisher \
-         edits another. The chain that keeps them together is `headwater taxonomy publish \
-         --from taxonomy-source/headwater-standard`, then the pin in `.headwater/taxonomy.yml`, \
-         then `headwater taxonomy vendor`, then `headwater taxonomy resolve`.",
+        "{} and {} are not the same bytes, so a consumer reads one record and the publisher edits \
+         another, and the pinned digest names neither one of them alone. {divergence}\n\nThe chain \
+         that keeps them together is `headwater taxonomy publish --from \
+         taxonomy-source/headwater-standard`, then the pin in `.headwater/taxonomy.yml`, then \
+         `headwater taxonomy vendor`, then `headwater taxonomy resolve`.",
         source.display(),
         vendored.display()
     );

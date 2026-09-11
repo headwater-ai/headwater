@@ -56,8 +56,9 @@ taxonomy: headwater/standard
 # subjects, `facet_value`, `kind` and `overlay_address`, and a facet that became
 # required is none of the three: there is no old value for a `facet_value` step
 # to move. So the payload vocabulary cannot state this move at all. Spec 7 rules
-# that absence deliberate and names what an adopter does instead, so a consumer
-# of 4.0.0 waits for no fourth subject and no later release of this package
+# what that means, in its own words: "The vocabulary holds no fourth subject for
+# this class, and that is a ruling rather than an omission." A consumer of 4.0.0
+# therefore waits for no fourth subject, and no later release of this package
 # supplies one. `headwater infer --owner <name> --write` records the pair set as
 # adoption debt, and `headwater check` then reports each pair as
 # `migration-pending` until an author supplies the value under an open task. Two
