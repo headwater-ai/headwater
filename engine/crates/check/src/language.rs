@@ -243,7 +243,16 @@ impl DocumentCheck for Language {
     /// serves its own earlier text out of `.headwater/cache/`, and the run says
     /// `0 evaluated` rather than anything that reads as stale. Raise it once per
     /// landed change rather than once per edit, and clear the cache in between.
-    const VERSION: u32 = 2;
+    ///
+    /// **Edition three, on 2026-09-11.** #783 moved the inline quotation out of
+    /// this rule's population. The parse now marks a quotation inside a
+    /// sentence as another author's, so `Sentence::authored` drops it and this
+    /// rule never receives it. No pattern here moved, and that is exactly why
+    /// the number has to: the document, the lock and the rule are all
+    /// unchanged, so a warm cache from the previous engine would serve the old
+    /// verdict on every document that quotes anybody and the change would read
+    /// as working while it did nothing.
+    const VERSION: u32 = 3;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, kind: &str) -> bool {

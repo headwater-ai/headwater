@@ -604,9 +604,9 @@ read set
   version identifier.claimed_twice 1
   version identifier.claim.missing 2
   version identifier.claim.stale 1
-  version voice.forbidden_construction 2
-  version language.controlled.not_met 2
-  version language.retired_term.used 2
+  version voice.forbidden_construction 3
+  version language.controlled.not_met 3
+  version language.retired_term.used 3
   version language.source_form.not_met 1
   version section.required.missing 1
   version link.fragment.unresolved 4

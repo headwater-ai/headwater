@@ -85,13 +85,13 @@ The entry sits outside the corpus root on purpose, the same reason the other fix
 
 ## What a run reports
 
-`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **35 files under the corpus root, 35 typed, 0 excluded, 35 checked, 426 check instances, 139 findings, 118 of them errors and 21 warnings.** The census reads 35 `how_to`. The graph reads 35 nodes, 0 declared edge halves, and 14 prose links that did not resolve. `headwater check --strict` exits 1. Nothing under the corpus root is untyped, which is the case this fixture was vendored to record.
+`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **35 files under the corpus root, 35 typed, 0 excluded, 35 checked, 426 check instances, 136 findings, 118 of them errors and 18 warnings.** The warning count was 21 until [#783](https://github.com/headwater-ai/headwater/issues/783) put an inline quotation outside every prose rule. Three of these warnings read quoted words as n8n's own prose, and the check instances did not move. The census reads 35 `how_to`. The graph reads 35 nodes, 0 declared edge halves, and 14 prose links that did not resolve. `headwater check --strict` exits 1. Nothing under the corpus root is untyped, which is the case this fixture was vendored to record.
 
 | Rule | Count | Severity |
 |---|---|---|
 | `section.required.missing` | 104 | error |
 | `link.path.unresolved` | 14 | error |
-| `voice.forbidden_construction` | 21 | warn |
+| `voice.forbidden_construction` | 18 | warn |
 
 **104 of a possible 105.** `kinds.how_to` requires `Goal`, `Steps` and `Verification`. Thirty-five documents times three headings is 105. The run reports `Goal` 35 times, `Steps` 34 times and `Verification` 35 times. One file writes a `Steps` heading by name, `.agents/skills/create-pr/SKILL.md`, and that is the only heading of the three this corpus supplies anywhere. The [review-rules fixture](../../../standards-spec/fixtures/n8n/README.md) recorded the same shape from a different kind and a different heading set.
 
@@ -99,7 +99,7 @@ The entry sits outside the corpus root on purpose, the same reason the other fix
 
 **The fourteenth is a real dangling link.** `.agents/skills/design-system/rules/web-animation-guidelines.md:84` links `PRACTICAL-TIPS.md`, and no such path is under `.agents/skills/design-system/rules/` at the pin.
 
-**`headwater check --fix` writes nothing here.** The `--fix` arm over the assembled root printed `no finding of this run carries a patch` and changed no file. That is 0 of 139. A missing heading, an unresolved link and a forbidden voice construction all need a rewrite.
+**`headwater check --fix` writes nothing here.** The `--fix` arm over the assembled root printed `no finding of this run carries a patch` and changed no file. That is 0 of 136. A missing heading, an unresolved link and a forbidden voice construction all need a rewrite.
 
 **All three n8n fixtures take one version now, and a job holds it.** `.headwater/taxonomy.yml` here takes `headwater/standard` at `4.3.0`, which is the version `packages/` carries. This fixture took `4.2.0` and the two earlier ones took `4.0.0`, and `headwater taxonomy resolve` refuses that mismatch and names both versions, so for a time every one of the three pages printed a command that did not run. `docs/taxonomies/**` is outside this repository's corpus, so no check read any of the three scalars. `sh tools/taxonomy/n8n-fixtures.sh` now does: it runs the block above verbatim in CI, it fails on that refusal, and it holds every figure of this section against the run.
 

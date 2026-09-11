@@ -21,7 +21,7 @@
 //!   quote. The parser can.
 
 use crate::lines::Lines;
-use headwater_yaml::Span;
+use headwater_yaml::{Position, Span};
 use pulldown_cmark::{Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd};
 
 /// Who wrote a run of text.
@@ -364,11 +364,209 @@ fn block(kind: BlockKind, span: Span, quote_depth: usize) -> Block {
 /// prose in it, and every count over the corpus a denominator that depends on
 /// which list style an author used.
 fn close(open: &mut Vec<Block>, out: &mut Body) {
-    if let Some(block) = open.pop() {
+    if let Some(mut block) = open.pop() {
         if !block.runs.is_empty() {
+            mark_inline_quotations(&mut block);
             out.blocks.push(block);
         }
     }
+}
+
+/// Mark the inline quotations inside one closed block.
+///
+/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
+/// rules that a quotation is outside every voice rule "by construction", and
+/// that this is "not an exemption that a rule declares". A block quotation
+/// already arrives marked, because CommonMark has a token for it. A quotation
+/// inside a sentence has no token, so this pass reads the quotation marks out
+/// of the text the parse produced and splits the runs at them. No rule in the
+/// check layer learns what a quotation mark is.
+///
+/// It runs over a closed block rather than inside the event loop, because a
+/// quotation opens and closes across events. A quotation that holds a code
+/// span arrives as three events, and this corpus has one.
+///
+/// **The rules. Each is a case in `mod tests` below, and together they are the
+/// open half of HW-OBL-0086.**
+///
+/// - A pair marks the text between its two marks, and the marks with it.
+/// - Straight `"` pairs in order of appearance. Nothing in the source says
+///   which of two straight marks opens, so a straight quotation does not nest:
+///   the second mark closes the first.
+/// - Curly `“` and `”` pair by direction, and they do nest.
+/// - An apostrophe marks nothing, straight or curly. `'` is a possessive at
+///   least as often as a quotation here and the parse cannot tell the two
+///   apart.
+/// - A quotation may open in one run and close in a later run of the same
+///   block, so a code span, a soft break and a wrapped source line are all
+///   inside it. A code span between the marks stays `Code`, because a code
+///   span is not prose whoever wrote it.
+/// - **An unclosed mark suppresses nothing.** At the end of the block every
+///   run marked since the last unmatched opening goes back to `Authored`, and
+///   the runs it split are put back together. A stray mark therefore leaves
+///   the block exactly as the parse produced it.
+/// - A quotation never crosses a block boundary, because the state is per
+///   block and is dropped with it.
+///
+/// A run whose span does not measure one line of the same length as its text
+/// is left alone. That is the entity reference case: `&amp;` is five source
+/// columns and one character, so no offset inside it can be derived by
+/// counting characters, and marking nothing is the safe answer.
+fn mark_inline_quotations(block: &mut Block) {
+    /// A quotation that has opened and not yet closed.
+    struct Open {
+        /// `None` for a straight mark, which does not nest. `Some(depth)` for
+        /// a curly one, which does.
+        curly: Option<usize>,
+        /// Where in `out` the marked runs of this quotation begin.
+        from: usize,
+    }
+
+    const STRAIGHT: char = '"';
+    const CURLY_OPEN: char = '\u{201C}';
+    const CURLY_CLOSE: char = '\u{201D}';
+
+    if !block
+        .runs
+        .iter()
+        .any(|run| run.ownership == Ownership::Authored && run.text.contains(marks))
+    {
+        return;
+    }
+
+    // Each entry is the run it came from, so that sub-runs of one original run
+    // can be put back together and sub-runs of two never are. Merging two runs
+    // the parse emitted separately would change what every recorded parse says
+    // about a soft break.
+    let mut out: Vec<(usize, Run)> = Vec::new();
+    let mut open: Option<Open> = None;
+
+    for (origin, run) in block.runs.iter().enumerate() {
+        if run.ownership != Ownership::Authored {
+            out.push((origin, run.clone()));
+            continue;
+        }
+        // A run with no mark in it needs no offset, so it takes the state
+        // whole. This is the soft break and the wrapped source line: the run
+        // between two marks carries no mark of its own.
+        if !run.text.contains(marks) {
+            let mut run = run.clone();
+            if open.is_some() {
+                run.ownership = Ownership::Quoted;
+            }
+            out.push((origin, run));
+            continue;
+        }
+        // A run that holds a mark and cannot be measured is left alone, which
+        // marks nothing rather than marking the wrong span.
+        if !splittable(run) {
+            out.push((origin, run.clone()));
+            continue;
+        }
+        let chars: Vec<char> = run.text.chars().collect();
+        let mut cut = 0usize;
+        let push = |out: &mut Vec<(usize, Run)>, from: usize, to: usize, quoted: bool| {
+            if from < to {
+                out.push((origin, sub_run(run, &chars, from, to, quoted)));
+            }
+        };
+        for (index, &c) in chars.iter().enumerate() {
+            match open.as_mut() {
+                None if c == STRAIGHT || c == CURLY_OPEN => {
+                    push(&mut out, cut, index, false);
+                    cut = index;
+                    open = Some(Open {
+                        curly: (c == CURLY_OPEN).then_some(1),
+                        from: out.len(),
+                    });
+                }
+                None => {}
+                Some(state) => match state.curly.as_mut() {
+                    None if c == STRAIGHT => {
+                        push(&mut out, cut, index + 1, true);
+                        cut = index + 1;
+                        open = None;
+                    }
+                    Some(depth) if c == CURLY_OPEN => *depth += 1,
+                    Some(depth) if c == CURLY_CLOSE => {
+                        *depth -= 1;
+                        if *depth == 0 {
+                            push(&mut out, cut, index + 1, true);
+                            cut = index + 1;
+                            open = None;
+                        }
+                    }
+                    _ => {}
+                },
+            }
+        }
+        push(&mut out, cut, chars.len(), open.is_some());
+    }
+
+    // An unclosed mark suppresses nothing.
+    if let Some(state) = open {
+        for (_, run) in out.iter_mut().skip(state.from) {
+            if run.ownership == Ownership::Quoted {
+                run.ownership = Ownership::Authored;
+            }
+        }
+    }
+
+    block.runs = coalesce(out);
+}
+
+/// Whether a character can open or close an inline quotation.
+fn marks(c: char) -> bool {
+    matches!(c, '"' | '\u{201C}' | '\u{201D}')
+}
+
+/// Whether an offset inside a run can be turned into a position by counting
+/// characters. A `Text` event never spans a line, so a run that does, or one
+/// whose text is shorter than the columns it covers, is a decoded entity
+/// reference and no character count locates anything inside it.
+fn splittable(run: &Run) -> bool {
+    run.span.start.line == run.span.end.line
+        && run.span.end.col.saturating_sub(run.span.start.col) == run.text.chars().count()
+}
+
+fn sub_run(run: &Run, chars: &[char], from: usize, to: usize, quoted: bool) -> Run {
+    Run {
+        text: chars[from..to].iter().collect(),
+        span: Span::new(advanced(run, chars, from), advanced(run, chars, to)),
+        ownership: if quoted {
+            Ownership::Quoted
+        } else {
+            run.ownership
+        },
+    }
+}
+
+fn advanced(run: &Run, chars: &[char], characters: usize) -> Position {
+    let bytes: usize = chars[..characters].iter().map(|c| c.len_utf8()).sum();
+    Position::new(
+        run.span.start.line,
+        run.span.start.col + characters,
+        run.span.start.offset + bytes,
+    )
+}
+
+/// Put back together the sub-runs of one original run that ended up with the
+/// same ownership, so that a block this pass changed nothing in comes out
+/// byte for byte as the parse produced it.
+fn coalesce(parts: Vec<(usize, Run)>) -> Vec<Run> {
+    let mut out: Vec<(usize, Run)> = Vec::with_capacity(parts.len());
+    for (origin, run) in parts {
+        match out.last_mut() {
+            Some((last_origin, last))
+                if *last_origin == origin && last.ownership == run.ownership =>
+            {
+                last.text.push_str(&run.text);
+                last.span.end = run.span.end;
+            }
+            _ => out.push((origin, run)),
+        }
+    }
+    out.into_iter().map(|(_, run)| run).collect()
 }
 
 fn ownership(open: &[Block], quote_depth: usize) -> Ownership {
@@ -407,6 +605,157 @@ fn form_of(link_type: LinkType) -> LinkForm {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Every run of the first block, as `ownership:text`. The shape the
+    /// inline-quotation rules are stated in.
+    fn marked(source: &str) -> Vec<String> {
+        body_of(source).blocks[0]
+            .runs
+            .iter()
+            .map(|run| format!("{}:{}", run.ownership.name(), run.text))
+            .collect()
+    }
+
+    /// The case the issue exists for. The words between the marks are another
+    /// author's, and `Sentence::authored` drops a `Quoted` run, so no voice
+    /// rule and no lexical rule reads them.
+    #[test]
+    fn a_pair_of_straight_marks_marks_what_is_between_them() {
+        assert_eq!(
+            marked("The judgment \"we no longer describe it\" was prose.\n"),
+            [
+                "authored:The judgment ",
+                "quoted:\"we no longer describe it\"",
+                "authored: was prose."
+            ]
+        );
+    }
+
+    /// The other half of the pair. A fix that dropped the whole sentence would
+    /// pass the case above and fail this one.
+    #[test]
+    fn the_same_words_outside_the_marks_stay_this_authors() {
+        assert_eq!(
+            marked("We no longer describe it that way, and \"so\" is short.\n"),
+            [
+                "authored:We no longer describe it that way, and ",
+                "quoted:\"so\"",
+                "authored: is short."
+            ]
+        );
+    }
+
+    /// An unclosed mark suppresses nothing, and it leaves the block exactly as
+    /// the parse produced it rather than split at the mark. This is the rule
+    /// HW-OBL-0086 asked for by name, and the conservative half of it: a stray
+    /// mark can never hide prose from a rule.
+    #[test]
+    fn an_unclosed_mark_suppresses_nothing() {
+        assert_eq!(
+            marked("The width is 3\" and nothing closes it here.\n"),
+            ["authored:The width is 3\" and nothing closes it here."]
+        );
+    }
+
+    /// A straight mark does not nest, because nothing in the source says which
+    /// of two straight marks opens. The second mark closes the first, and the
+    /// third opens again.
+    #[test]
+    fn straight_marks_pair_in_order_and_do_not_nest() {
+        assert_eq!(
+            marked("He said \"she said \"yes\" to it\" once.\n"),
+            [
+                "authored:He said ",
+                "quoted:\"she said \"",
+                "authored:yes",
+                "quoted:\" to it\"",
+                "authored: once."
+            ]
+        );
+    }
+
+    /// A curly mark says which end it is, so a curly quotation nests and the
+    /// whole of it is marked once.
+    #[test]
+    fn curly_marks_nest_by_direction() {
+        assert_eq!(
+            marked("He said \u{201C}she said \u{201C}yes\u{201D} to it\u{201D} once.\n"),
+            [
+                "authored:He said ",
+                "quoted:\u{201C}she said \u{201C}yes\u{201D} to it\u{201D}",
+                "authored: once."
+            ]
+        );
+    }
+
+    /// An apostrophe marks nothing. `'` is a possessive here at least as often
+    /// as it is a quotation, and the parse cannot tell the two apart, so a rule
+    /// that read it would suppress the rest of every sentence that owns
+    /// something.
+    #[test]
+    fn an_apostrophe_marks_nothing() {
+        assert_eq!(
+            marked("The author's own sentence, and 'this' as well.\n"),
+            ["authored:The author's own sentence, and 'this' as well."]
+        );
+    }
+
+    /// A quotation opens in one run and closes in another. A code span inside
+    /// it stays code, because a code span is not prose whoever wrote it, and
+    /// the text on either side of the span is the quoted author's.
+    ///
+    /// This is not hypothetical. `docs/evaluations/n8n-worked-example.md:427`
+    /// quotes a sentence of another project that holds a code span, and it
+    /// carried a `language.controlled.not_met` suppression for that reason.
+    #[test]
+    fn a_quotation_closes_in_a_later_run_and_keeps_a_code_span_as_code() {
+        assert_eq!(
+            marked("It reads \"do not link `testing/`\", which is wrong.\n"),
+            [
+                "authored:It reads ",
+                "quoted:\"do not link ",
+                "code:testing/",
+                "quoted:\"",
+                "authored:, which is wrong."
+            ]
+        );
+    }
+
+    /// A `Text` event never spans a line, so a quotation over a wrapped source
+    /// line arrives as three runs and the soft break between them is inside the
+    /// quotation.
+    #[test]
+    fn a_quotation_survives_a_wrapped_source_line() {
+        assert_eq!(
+            marked("It reads \"one phrase\nand another\" here.\n"),
+            [
+                "authored:It reads ",
+                "quoted:\"one phrase",
+                "quoted: ",
+                "quoted:and another\"",
+                "authored: here."
+            ]
+        );
+    }
+
+    /// A quotation never crosses a block boundary. The state is per block, so
+    /// an unclosed mark in one paragraph cannot reach into the next.
+    #[test]
+    fn a_mark_does_not_reach_the_next_block() {
+        let body = body_of("An open \" mark here.\n\nAnd the next paragraph.\n");
+        assert_eq!(body.blocks[1].runs[0].ownership, Ownership::Authored);
+        assert_eq!(body.blocks[1].runs[0].text, "And the next paragraph.");
+    }
+
+    /// Inside a block quotation every run is already another author's, so this
+    /// pass has nothing to mark and does not split the block at a mark.
+    #[test]
+    fn a_mark_inside_a_block_quotation_splits_nothing() {
+        assert_eq!(
+            marked("> He said \"yes\" to it.\n"),
+            ["quoted:He said \"yes\" to it."]
+        );
+    }
 
     fn body_of(source: &str) -> Body {
         scan(source, source, 0)

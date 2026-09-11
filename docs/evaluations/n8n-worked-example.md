@@ -290,7 +290,7 @@ The tree at the pin holds no such path. `.agents/` holds two entries, `review-ru
 
 Two relations in the resolved taxonomy have the shape this needs. `governs` runs from a `governed_document` to a `code_path`, and `traces_to` runs from a `governed_document` to a `governed_document` or a `code_path`. Either one could carry the claim that a stated practice makes, and a check could then ask whether the target exists. Neither relation is required on any kind, and no rule asks a document to declare one.
 
-So this taxonomy has the vocabulary for the claim and no obligation to state it. This document already records the near case. The unresolved link at `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` reaches `headwater check` as [a fact in the graph section, and from 4.3.0 as a finding too](#the-broken-link-that-no-rule-reported-until-430). The `.agents/specs/` claim does not reach the engine at all, and typing the corpus does not change that. The run in the next section types every file of `.agents/skills/` and reports 139 findings, and not one of them is this claim. A stated practice that no artifact backs is invisible to a check whether or not the document carrying it has a kind.
+So this taxonomy has the vocabulary for the claim and no obligation to state it. This document already records the near case. The unresolved link at `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` reaches `headwater check` as [a fact in the graph section, and from 4.3.0 as a finding too](#the-broken-link-that-no-rule-reported-until-430). The `.agents/specs/` claim does not reach the engine at all, and typing the corpus does not change that. The run in the next section types every file of `.agents/skills/` and reports 136 findings, and not one of them is this claim. A stated practice that no artifact backs is invisible to a check whether or not the document carrying it has a kind.
 
 Whether a rule should report a stated practice that no artifact backs is [#496](https://github.com/headwater-ai/headwater/issues/496), and this section decides nothing about it.
 
@@ -333,13 +333,13 @@ The section above reports one finding in `.agents/skills/` and types none of it.
 
 **What the pin holds, re-measured.** `.agents/skills/` holds 22 skill directories, 34 files inside them, and one top-level `AGENTS.md` of 1,952 bytes. That is 35 files and 425,316 bytes of upstream body. #492 and #509 each write "22 skill directories and 35 files". Neither one names `AGENTS.md`, so a reader of either issue puts all 35 files inside the 22 directories. The files that are not a `SKILL.md` number 12 and not the ten that #509 enumerates.
 
-**Every file is typed, and that is the result this corpus was vendored for.** One homogeneous shelf at `.agents/skills/**` carries `how_to`. The run reports **35 files under the corpus root, 35 typed, 0 excluded, 35 checked, 426 check instances, 139 findings**. The census reads 35 `how_to`. The graph reads 35 nodes and 0 declared edge halves. Nothing is untyped, and `headwater check --strict` exits 1.
+**Every file is typed, and that is the result this corpus was vendored for.** One homogeneous shelf at `.agents/skills/**` carries `how_to`. The run reports **35 files under the corpus root, 35 typed, 0 excluded, 35 checked, 426 check instances, 136 findings**. The census reads 35 `how_to`. The graph reads 35 nodes and 0 declared edge halves. Nothing is untyped, and `headwater check --strict` exits 1.
 
 | Rule | Count | Severity |
 |---|---|---|
 | `section.required.missing` | 104 | error |
 | `link.path.unresolved` | 14 | error |
-| `voice.forbidden_construction` | 21 | warn |
+| `voice.forbidden_construction` | 18 | warn |
 
 **104 of a possible 105, and the missing one is the interesting number.** `kinds.how_to` requires `Goal`, `Steps` and `Verification`. Thirty-five documents times three headings is 105. The run reports `Goal` 35 times, `Steps` 34 times and `Verification` 35 times. One file writes a `Steps` heading by name, `.agents/skills/create-pr/SKILL.md`. That is the only heading of the three the corpus supplies anywhere. The review-rules corpus reported this shape from a different kind. A section contract reads headings, and the tradition writes the same content as an imperative paragraph.
 
@@ -361,13 +361,13 @@ The terms are #492's. #511 recorded 8 findings for the architecture documents an
 
 | | Findings |
 |---|---|
-| Raised by `headwater check` over the typed slice | 139 |
+| Raised by `headwater check` over the typed slice | 136 |
 | Also caught by `prettier` | 0 |
 | Also caught by `cubic` | 0 |
 | Also caught by `sync-agent-skill-links.mjs --check` | 0 |
-| Caught by none of the three | 139 |
+| Caught by none of the three | 136 |
 | Of those, written by `headwater check --fix` | 0 |
-| Of those, needing a rewrite | 139 |
+| Of those, needing a rewrite | 136 |
 
 **`prettier` reaches nothing here, and for two independent reasons.** `.prettierignore` at the pin ignores `**/*.md` under a comment that reads "Ignored for now", so no markdown file anywhere in the repository reaches prettier. And `lefthook.yml` scopes its `prettier_check` command to a glob of `packages/**`, which `.agents/` is not under. Either reason alone gives zero, which is the same answer the architecture corpus got for a different reason.
 
@@ -375,7 +375,7 @@ The terms are #492's. #511 recorded 8 findings for the architecture documents an
 
 **`sync-agent-skill-links.mjs --check` reaches all 35 and reads none of them.** `lefthook.yml` runs it at pre-commit on a glob of `.agents/skills/**`, so its reach over this slice is total where the other two tools have none. It compares the plugin symlinks against the shared tree and reads no prose. Total reach and zero overlap is the sharpest version of the result #492 asks for.
 
-**Nothing here is mechanically fixable, and the engine states that rather than writing nothing quietly.** A `--fix` arm over the assembled root printed `no finding of this run carries a patch` and changed no file. That is 0 of 139. The review-rules corpus recorded 6 fixable of 143 under this repository's house regime. The difference is the regime rather than the corpus. A contraction and a British spelling carry a patch, and a missing heading, a broken link and a forbidden voice construction do not.
+**Nothing here is mechanically fixable, and the engine states that rather than writing nothing quietly.** A `--fix` arm over the assembled root printed `no finding of this run carries a patch` and changed no file. That is 0 of 136. The review-rules corpus recorded 6 fixable of 143 under this repository's house regime. The difference is the regime rather than the corpus. A contraction and a British spelling carry a patch, and a missing heading, a broken link and a forbidden voice construction do not.
 
 **What ages here.** Every count above is of the 35 blobs at `b0550cb`, and a later commit of `master` is a different measurement. The `last_verified` date in the front matter of this document covers neither this section nor the one above it. Both were measured at the pin on 2026-09-11 and neither moves when the rest of this document is re-verified.
 
@@ -424,7 +424,7 @@ gh api "repos/n8n-io/n8n/contents/.agents?ref=master" --jq '[.[].name] | join(" 
 
 It prints `review-rules skills`. Any output that holds `specs` makes this defect false.
 
-**Defect 3, a count in prose that the configuration contradicts.** `.agents/review-rules/README.md:25` reads "Security and QA & DX deliberately don't link `testing/`", which names two agents. <!-- headwater allow=language.controlled.not_met scope=block until=2027-09-08 reason=false_positive note=quoting n8n's sentence verbatim, because the fix rewrites this exact line -->
+**Defect 3, a count in prose that the configuration contradicts.** `.agents/review-rules/README.md:25` reads "Security and QA & DX deliberately don't link `testing/`", which names two agents.
 
 ```bash
 gh api "repos/n8n-io/n8n/contents/cubic.yaml?ref=master" --jq .content | base64 -d | grep -c '^    - name: '
