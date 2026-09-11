@@ -569,7 +569,107 @@ fn vendoring_over_a_maintained_package_is_refused() {
     let consumer_root = scratch.path().join("consumer");
     consumer(&scratch, &record.digest);
     package::vendor(&consumer_root, &out, &record.digest).expect("the first vendor lands");
-    package::vendor(&consumer_root, &out, &record.digest).expect("the second replaces it");
+    let again =
+        package::vendor(&consumer_root, &out, &record.digest).expect("the second replaces it");
+    assert!(
+        again.divergence.is_none(),
+        "one artifact installed twice is one set of bytes, and there is nothing to report"
+    );
+}
+
+/// A second artifact published under the version already installed is named
+/// before it replaces it.
+///
+/// **Nothing in this engine refuses a republish under a published version, and
+/// nothing compared the two records either.** `publish` cannot see a prior
+/// record at all: it calls `found::observe`, which refuses a non-empty `--out`,
+/// so every publish writes into a directory that holds nothing. `vendor` is the
+/// one run that has both records on disk at once — the `release.yml` of the
+/// package already installed, and the `release.yml` inside the artifact — and
+/// [`package::vendor`]'s own guard, `holds_the_same_package`, compares the
+/// package name alone. So one version number named two sets of bytes and the
+/// adopter was told nothing.
+///
+/// **[`vendoring_over_a_maintained_package_is_refused`] is why nothing caught
+/// it.** Its second vendor installs the same artifact twice, so the record that
+/// is there and the record that arrives carry one digest, and a comparison that
+/// never ran would satisfy it. The two artifacts here differ by one member and
+/// the version does not move, which is the pair that case cannot make.
+///
+/// **The second digest is pinned, and that is not decoration.**
+/// `release::verify` runs above every read `vendor` performs, so a run that
+/// pinned the first digest refuses for the pin and proves nothing about the
+/// comparison below it.
+///
+/// Both version keys stay where they are. A package that states two versions of
+/// itself is refused at publish, per
+/// [`a_package_that_states_two_versions_is_refused`], so the bytes move through
+/// the doctrine directory rather than through a version key.
+///
+/// [`a_later_version_of_the_installed_package_still_replaces_it`] holds the
+/// other side: a version that moves reports no divergence at all.
+#[test]
+fn a_second_artifact_of_the_installed_version_is_named_before_it_replaces_it() {
+    let scratch = Scratch::new("one-version-two-artifacts");
+    let root = publisher_with_doctrine(&scratch, "doctrine/");
+
+    let first_out = scratch.path().join("artifact-1");
+    let first = package::publish(&root, "acme/fixture", &first_out).expect("the first publishes");
+
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    let landed =
+        package::vendor(&adopter, &first_out, &first.digest).expect("the first vendor lands");
+    assert!(
+        landed.divergence.is_none(),
+        "a first install has no record to diverge from"
+    );
+
+    // One more member of the maintained source, and neither version key moves.
+    scratch.write(
+        "publisher/packages/acme-fixture/doctrine/second.md",
+        "# Second
+
+One more file, and the version stays where it is.
+",
+    );
+    let second_out = scratch.path().join("artifact-2");
+    let second =
+        package::publish(&root, "acme/fixture", &second_out).expect("the second publishes");
+
+    assert_eq!(
+        first.version, second.version,
+        "the version moved, so this is an upgrade rather than the pair under test"
+    );
+    assert_ne!(
+        first.digest, second.digest,
+        "the two artifacts are the same bytes, so there is no divergence to report"
+    );
+    assert_eq!(
+        second.members.len(),
+        first.members.len() + 1,
+        "the second artifact does not carry the extra member"
+    );
+
+    let replaced = package::vendor(&adopter, &second_out, &second.digest)
+        .expect("the second artifact installs, because this reports and does not refuse");
+
+    let divergence = replaced
+        .divergence
+        .expect("two artifacts of one version were installed in silence");
+    assert_eq!(divergence.version, second.version);
+    assert_eq!(divergence.installed_digest, first.digest);
+    assert_eq!(divergence.installed_members, first.members.len());
+    assert_eq!(
+        replaced.release.digest, second.digest,
+        "the incoming half of the pair is the artifact that was installed"
+    );
+
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some(second.version.clone()),
+        "the report replaced the install rather than accompanying it"
+    );
 }
 
 /// A publisher whose package directory is named `source` and whose manifest
@@ -1126,8 +1226,12 @@ fn a_later_version_of_the_installed_package_still_replaces_it() {
         "the two artifacts are the same bytes, so a vendor that did nothing would pass"
     );
 
-    package::vendor(&adopter, &later_out, &later.digest)
+    let upgraded = package::vendor(&adopter, &later_out, &later.digest)
         .expect("a later version of the same package replaces the one that is installed");
+    assert!(
+        upgraded.divergence.is_none(),
+        "a version that moves is an upgrade, and the divergence report must stay silent for it"
+    );
     assert_eq!(
         package::find_version(&adopter, "acme/fixture"),
         Some("2.0.0".to_string()),

@@ -1572,14 +1572,15 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
         );
     };
 
-    let record = match headwater_resolve::package::vendor(root, fetched, &pinned) {
-        Ok(record) => record,
+    let vendored = match headwater_resolve::package::vendor(root, fetched, &pinned) {
+        Ok(vendored) => vendored,
         Err(errors) => {
             eprintln!("headwater: {}", err("nothing was vendored"));
             eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
+    let record = &vendored.release;
 
     println!("vendored {} {}", record.package, record.version);
     println!("  from {}", fetched.display());
@@ -1619,6 +1620,33 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
          so it says nothing about who published them. Run `headwater taxonomy resolve` to write \
          the lock this package produces."
     );
+
+    // The one fact this run can see that no other run of this engine can, so it
+    // is said last, where a reader who read nothing else still meets it.
+    // `package::vendor` decided it and carried it out; nothing here re-reads the
+    // record to re-derive it.
+    if let Some(divergence) = &vendored.divergence {
+        println!(
+            "\nVersion {} of {} now names two sets of bytes.",
+            divergence.version, record.package
+        );
+        println!(
+            "  the artifact that was installed  {}  {} files",
+            divergence.installed_digest, divergence.installed_members
+        );
+        println!(
+            "  the artifact installed just now  {}  {} files",
+            record.digest,
+            record.members.len()
+        );
+        println!(
+            "\nA pin names bytes and a version number does not name an artifact. Nothing refuses \
+             a second publication of different bytes under a version already published, so this \
+             run installed the artifact you pinned and reports the pair rather than refusing it. \
+             Hold the digest, not the version, wherever a consumer states which artifact it \
+             received."
+        );
+    }
     ExitCode::SUCCESS
 }
 
