@@ -1038,13 +1038,32 @@ echo "who reads a fixture page, and where the page sends a reader"
 # such file has ever been in this tree. The script is under `tools/repo/`.
 #
 # THE READERS are enumerated out of the tree. A program under `tools/` is a
-# reader when it is shell or Python source that writes a path whose tail is the
-# `README.md` of a `fixtures` directory. The judge matches a TAIL and not a
-# resolved path, which is the whole of why it finds both. Measured on
-# 2026-09-11: `tools/taxonomy/drive_n8n.py` writes its path whole, and
-# `tools/repo/diataxis-fixtures.sh` assembles its own in three pieces across
-# twenty-one lines, so a grep for a whole literal path reports one reader where
-# there are two and goes green on a page that names one.
+# reader when it is shell or Python source whose lines, with whole-line
+# comments removed, name `docs/taxonomies`, name a `/fixtures` path segment and
+# name a `README`. Three signals anywhere in one file, and not one pattern
+# across one line, because the two readers in this tree write their paths in
+# different shapes: `tools/taxonomy/drive_n8n.py` globs
+# `docs/taxonomies/*/fixtures/n8n/README.md` whole, and
+# `tools/repo/diataxis-fixtures.sh` assembles its own out of three variables
+# set twenty-one lines apart.
+#
+# THIS IS A FLOOR AND NOT A PROOF, and the first draft of it was neither.
+# That draft matched the tail of an assembled path, which made completeness
+# rest on the second reader having named its variable `fixtures`; three reader
+# shapes were planted against it and two went green — a two-line assembly
+# through a variable named `fx`, and a Python glob whose `*` the pattern's
+# character class did not admit. Three loose signals err the other way. They
+# will name a program that walks a fixture corpus without opening a page, and
+# the remedy for that is a line in the paragraph, which is cheap. They cannot
+# find a program that names none of the three, and nothing that reads source
+# text can.
+#
+# The suite excludes ITSELF from the population, by the path it was invoked as
+# and not by a name written down here. It carries all three signals — it reads
+# `docs/taxonomies/README.md`, and case group 3 and case 5e both build scratch
+# trees with a `fixtures` directory in them — and a file cannot be a member of
+# the population it enumerates. Case 5a holds both halves of that: the suite is
+# absent from the population, and it would be in it without the exclusion.
 #
 # THE NAMED READERS come from the one paragraph of the anatomy section that
 # states what a `fixtures` directory holds. Case 5b asserts SET EQUALITY
@@ -1063,12 +1082,22 @@ echo "who reads a fixture page, and where the page sends a reader"
 #
 # Case 5d holds the last clause of the paragraph, that CI runs both readers. A
 # program is reached when a line of the workflow that is not a comment names
-# it, or when such a line names a file that names it: `tools/taxonomy/
-# drive_n8n.py` is run by a wrapper and the workflow never writes its path. One
-# level, and no more, because a second level would reach half this repository.
+# it, or when such a line names a file that names it ON A LINE THAT IS NOT A
+# COMMENT EITHER: `tools/taxonomy/drive_n8n.py` is run by a wrapper and the
+# workflow never writes its path. One level, and no more, because a second
+# level would reach half this repository.
+#
+# The second comment strip is the whole of whether this case holds anything.
+# Without it, deleting the CI step that runs `tools/repo/diataxis-fixtures.sh`
+# left the suite at 60 passed and 0 failed, because THIS FILE is run by the
+# workflow and names that script in the prose above. A judge that reads a
+# comment as a call reports a gate that is gone as a gate that runs. Case 5e
+# provokes exactly that.
+#
 # It is a weaker claim than "this step ran", which no file in this tree can
-# make about a workflow, and it is the claim that reddens when a step is
-# deleted under a paragraph that still credits it.
+# make about a workflow. It is the claim that reddens when the step is deleted
+# under a paragraph that still credits it, and that has been measured by
+# deleting the step rather than assumed.
 
 # tools_paths FILE — every `tools/` file path written anywhere in FILE, sorted
 # and deduplicated. Every sort and every `comm` in this group is `LC_ALL=C`,
@@ -1086,19 +1115,29 @@ tools_paths() {
         LC_ALL=C sort -u
 }
 
-# fixture_readme_readers ROOT — one path per line, relative to ROOT and
-# sorted: a shell or Python source under `tools/` that writes a path reaching a
-# fixture page. See the note on tails above; the pattern deliberately allows a
-# shell or Python variable inside the path.
+# live_lines FILE OUT — FILE with every whole-line comment removed. `#` opens
+# one in shell, in Python and in YAML, which is every language this judge
+# reads. A trailing comment on a line of code is left alone: the line is code.
+live_lines() {
+    grep -v '^[[:space:]]*#' "$1" >"$2" || :
+}
+
+# fixture_readme_readers ROOT SELF WORK — one path per line, relative to ROOT
+# and sorted: a shell or Python source under `tools/`, other than SELF, whose
+# live lines carry all three signals named in the header. WORK is a directory
+# the judge writes one file into.
 fixture_readme_readers() {
     find "$1/tools" -type f \( -name '*.sh' -o -name '*.py' \) 2>/dev/null |
-        sort |
+        LC_ALL=C sort |
         while read -r frr_f; do
-            grep -Eq 'fixtures(/[A-Za-z0-9._${}-]+)*/README\.md' "$frr_f" || continue
             frr_rel=${frr_f#"$1"/}
+            [ "$frr_rel" = "$2" ] && continue
+            live_lines "$frr_f" "$3/frr-live"
+            grep -q 'docs/taxonomies' "$3/frr-live" || continue
+            grep -q '/fixtures' "$3/frr-live" || continue
+            grep -q 'README' "$3/frr-live" || continue
             echo "$frr_rel"
-        done |
-        LC_ALL=C sort
+        done
 }
 
 # fixtures_paragraph FILE — the paragraph of the anatomy section that states
@@ -1109,11 +1148,11 @@ fixtures_paragraph() {
     section_of "$1" "What an entry ships" | grep '^\*\*`fixtures/`'
 }
 
-# reader_judge ROOT INDEX WORK — one line per disagreement, nothing when the
-# paragraph names exactly the programs that read a fixture page. WORK is a
-# directory the judge writes three files into.
+# reader_judge ROOT INDEX WORK SELF — one line per disagreement, nothing when
+# the paragraph names exactly the programs that read a fixture page. WORK is a
+# directory the judge writes four files into.
 reader_judge() {
-    fixture_readme_readers "$1" >"$3/rj-readers"
+    fixture_readme_readers "$1" "$4" "$3" >"$3/rj-readers"
     fixtures_paragraph "$2" >"$3/rj-para"
     tools_paths "$3/rj-para" >"$3/rj-named"
     LC_ALL=C comm -23 "$3/rj-readers" "$3/rj-named" |
@@ -1123,15 +1162,17 @@ reader_judge() {
 }
 
 # ci_reached ROOT WORKFLOW WORK — every `tools/` path a non-comment line of
-# WORKFLOW names, plus every `tools/` path each of those files names. Sorted,
-# deduplicated, one per line.
+# WORKFLOW names, plus every `tools/` path a non-comment line of each of those
+# files names. Sorted, deduplicated, one per line. The second strip is not
+# symmetry: without it this suite's own prose reaches everything it discusses.
 ci_reached() {
-    grep -v '^[ \t]*#' "$2" >"$3/cr-live"
+    live_lines "$2" "$3/cr-live"
     tools_paths "$3/cr-live" >"$3/cr-direct"
     cp "$3/cr-direct" "$3/cr-all"
     while read -r cr_p; do
         [ -f "$1/$cr_p" ] || continue
-        tools_paths "$1/$cr_p" >>"$3/cr-all"
+        live_lines "$1/$cr_p" "$3/cr-inner"
+        tools_paths "$3/cr-inner" >>"$3/cr-all"
     done <"$3/cr-direct"
     LC_ALL=C sort -u "$3/cr-all"
 }
@@ -1156,7 +1197,10 @@ tools_path_judge() {
 }
 
 mkdir -p "$scratch/rd"
-fixture_readme_readers "$root" >"$scratch/rd/readers"
+self=$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
+self=${self#"$root"/}
+fixture_readme_readers "$root" "$self" "$scratch/rd" >"$scratch/rd/readers"
+fixture_readme_readers "$root" "" "$scratch/rd" >"$scratch/rd/readers-unfiltered"
 fixtures_paragraph "$index" >"$scratch/rd/para"
 
 # 5a. Floors. A reader population that came back empty, or a paragraph the
@@ -1167,10 +1211,14 @@ more_than "the anatomy section carries the paragraph that says who reads one" 0 
     "$(wc -l <"$scratch/rd/para" | tr -d ' ')"
 more_than "the index writes \`tools/\` paths" 0 \
     "$(tools_paths "$index" | wc -l | tr -d ' ')"
+same "this suite is not in the population it enumerates" \
+    "" "$(grep -c "^$self\$" "$scratch/rd/readers" | sed 's/^0$//')"
+same "  and it would be, which is what the exclusion is for" \
+    "1" "$(grep -c "^$self\$" "$scratch/rd/readers-unfiltered")"
 
 # 5b. Set equality, both directions. This is the case #813 was filed for.
 same "the paragraph names every program that reads a fixture page, and no other" \
-    "" "$(reader_judge "$root" "$index" "$scratch/rd" | tr '\n' '|')"
+    "" "$(reader_judge "$root" "$index" "$scratch/rd" "$self" | tr '\n' '|')"
 
 # 5c. Every `tools/` path the page writes resolves. `tools/diataxis-fixtures.sh`
 #     did not, in the same claim, and the vendored copy carried the same line.
@@ -1185,12 +1233,13 @@ same "every program the paragraph credits is reached by a step of the workflow" 
     "" "$(ci_claim_judge "$root" "$root/.github/workflows/ci.yml" "$index" \
             "$scratch/rd" | tr '\n' '|')"
 
-# 5e. Every refusal and every agreement, provoked over a scratch tree. The
-#     planted reader assembles its path from a variable, which is the shape the
-#     whole-literal grep missed on the real tree, so the provocation exercises
-#     the reason this judge reads a tail. `README.md` is passed to `printf`
-#     rather than written into the format string, so that this file is not
-#     itself a member of the reader population it enumerates.
+# 5e. Every refusal and every agreement, provoked over a scratch tree. Four
+#     reader shapes are planted, because three signals in one file is a rule
+#     that has to be shown finding each of them: the whole-literal path, the
+#     two-line assembly through a variable named `fixtures`, the two-line
+#     assembly through a variable named `fx`, and a glob with a `*` in the
+#     middle of the path. The first draft of this judge found only the first
+#     two, and the run that measured that is in the header.
 mkdir -p "$scratch/rp/tools/repo" "$scratch/rp/work"
 printf '#!/bin/sh\nentry=docs/taxonomies/alpha\nfixtures="$root/$entry/fixtures"\ncat "$fixtures/%s"\n' \
     'README.md' >"$scratch/rp/tools/repo/alpha-fixtures.sh"
@@ -1206,18 +1255,18 @@ write_anatomy "$scratch/rp/index.md" \
     '**`fixtures/` holds the worked corpus.** Nothing runs any of it.'
 same "  a reader the paragraph does not name" \
     "a program reads a fixture page and the paragraph does not name it: tools/repo/alpha-fixtures.sh|" \
-    "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+    "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" "" | tr '\n' '|')"
 
 write_anatomy "$scratch/rp/index.md" \
     '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry, and every other page here is prose.'
 same "  the same tree once the paragraph names it" \
-    "" "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+    "" "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" "" | tr '\n' '|')"
 
 write_anatomy "$scratch/rp/index.md" \
     '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` and `tools/repo/unrelated.sh` both read a page here.'
 same "  a program the paragraph credits that reads no fixture page" \
     "the paragraph names a reader of a fixture page that reads none: tools/repo/unrelated.sh|" \
-    "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+    "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" "" | tr '\n' '|')"
 
 write_anatomy "$scratch/rp/index.md" \
     '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry.'
@@ -1245,6 +1294,57 @@ same "  a credited program that only a comment of the workflow names" \
 printf 'exec python3 "$root/tools/repo/alpha-fixtures.sh"\n' \
     >>"$scratch/rp/tools/repo/unrelated.sh"
 same "  the same program once a step reaches it through one wrapper" \
+    "" "$(ci_claim_judge "$scratch/rp" "$scratch/rp/.github/workflows/ci.yml" \
+        "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+
+# 5f. The reader shapes this judge was rewritten to find. Each one is planted
+#     alone, under a paragraph that names only the first reader, so the line it
+#     produces is its own.
+plant_reader() {
+    printf '%s' "$2" >"$scratch/rp/tools/repo/second.sh"
+    write_anatomy "$scratch/rp/index.md" \
+        '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry.'
+    same "  $1" \
+        "a program reads a fixture page and the paragraph does not name it: tools/repo/second.sh|" \
+        "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" "" |
+            tr '\n' '|')"
+    rm -f "$scratch/rp/tools/repo/second.sh"
+}
+
+plant_reader "a whole literal path on one line" \
+    "$(printf '#!/bin/sh\ncat docs/taxonomies/beta/fixtures/%s\n' 'README.md')"
+plant_reader "an assembly through a variable named \`fx\`" \
+    "$(printf '#!/bin/sh\nfx=docs/taxonomies/beta/fixtures\ncat "$fx/%s"\n' 'README.md')"
+plant_reader "a glob with a \`*\` in the middle of the path" \
+    "$(printf 'import glob\nfor p in glob.glob("docs/taxonomies/*/fixtures/*/%s"):\n    print(p)\n' 'README.md')"
+
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry.'
+same "  a program that names a fixture corpus and no README is not a reader" \
+    "" "$(printf '#!/bin/sh\nls docs/taxonomies/beta/fixtures/corpus\n' \
+            >"$scratch/rp/tools/repo/second.sh"
+          reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" "" |
+            tr '\n' '|')"
+rm -f "$scratch/rp/tools/repo/second.sh"
+
+# 5g. The false positive that made case 5d hold nothing until 2026-09-12: a
+#     file the workflow runs that names the program in a COMMENT. Before the
+#     second comment strip, this suite was that file and the deleted step still
+#     read as reached.
+printf 'jobs:\n  one:\n    steps:\n      - run: sh tools/repo/unrelated.sh\n' \
+    >"$scratch/rp/.github/workflows/ci.yml"
+printf '# tools/repo/alpha-fixtures.sh is discussed here and never run\necho nothing\n' \
+    >"$scratch/rp/tools/repo/unrelated.sh"
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry, and CI runs it.'
+same "  a wrapper that names the program only in a comment reaches nothing" \
+    "the paragraph says CI runs it and no step of the workflow reaches it: tools/repo/alpha-fixtures.sh|" \
+    "$(ci_claim_judge "$scratch/rp" "$scratch/rp/.github/workflows/ci.yml" \
+        "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+
+printf '# tools/repo/alpha-fixtures.sh is discussed here\nsh tools/repo/alpha-fixtures.sh\n' \
+    >"$scratch/rp/tools/repo/unrelated.sh"
+same "  and the same wrapper once a live line runs it" \
     "" "$(ci_claim_judge "$scratch/rp" "$scratch/rp/.github/workflows/ci.yml" \
         "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
 
