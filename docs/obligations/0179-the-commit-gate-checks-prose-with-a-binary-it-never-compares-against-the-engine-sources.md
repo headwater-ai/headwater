@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-[HW-DR-0039](../decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md) gives `tools/refresh-figures.sh` a third outcome. The script establishes that no file under `engine/` is newer than the binary it measures with. It exits `3` when one is. That guard closes one case. A stale engine calls a correct page stale, and the gate then names a command that writes the wrong number over the right one.
+[HW-DR-0039](../decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md) gives `tools/site/refresh-figures.sh` a third outcome. The script establishes that no file under `engine/` is newer than the binary it measures with. It exits `3` when one is. That guard closes one case. A stale engine calls a correct page stale, and the gate then names a command that writes the wrong number over the right one.
 
 `.githooks/pre-commit` selects the same binary for its own prose clause, at lines 145 to 151. It runs `check --strict --change` with that binary at line 175. That clause runs on every commit, and the figures clause runs only after it passes. Nothing between the two asks whether the binary is behind the tree. So one clause of this gate holds the question and the clause above it does not.
 

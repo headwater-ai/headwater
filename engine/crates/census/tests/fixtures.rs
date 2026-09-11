@@ -210,7 +210,7 @@ fn the_generated_documents_are_declared_unmergeable() {
 /// Every page the figure refresh writes is declared unmergeable, enumerated.
 ///
 /// The test above holds the documents `headwater generate` writes. This holds
-/// the other producer of a fold in this repository. `tools/refresh-figures.sh`
+/// the other producer of a fold in this repository. `tools/site/refresh-figures.sh`
 /// substitutes a measured number into every element carrying `data-figure` on
 /// every page under `site/`, so a page that carries one holds a fold in its
 /// markup exactly the way a generated index holds one in its opening line.
@@ -236,14 +236,14 @@ fn every_page_carrying_a_figure_is_declared_unmergeable() {
     let root = repository_root();
 
     // The producer's own two literals. This test enumerates the same way
-    // `tools/refresh-figures.sh` does, and a copy of a rule goes stale in
+    // `tools/site/refresh-figures.sh` does, and a copy of a rule goes stale in
     // silence, so the copy is held against the original rather than trusted.
-    let producer =
-        std::fs::read_to_string(root.join("tools/refresh-figures.sh")).expect("the figure refresh");
+    let producer = std::fs::read_to_string(root.join("tools/site/refresh-figures.sh"))
+        .expect("the figure refresh");
     for literal in ["site/**/*.html", "data-figure="] {
         assert!(
             producer.contains(literal),
-            "tools/refresh-figures.sh no longer says {literal}, so this test \
+            "tools/site/refresh-figures.sh no longer says {literal}, so this test \
              enumerates a set the producer has stopped writing"
         );
     }

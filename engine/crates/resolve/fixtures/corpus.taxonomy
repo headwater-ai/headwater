@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.2.0
+version: 4.2.1
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
