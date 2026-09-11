@@ -35,6 +35,8 @@ The suite reports a surface it was told to look at. The general shape stays open
 
 The count is 29 `.render(` sites in `engine/crates/cli/src/main.rs` on 2026-09-08. Six of them pass a mode that reads the stream. The other 23 render text that no case of this repository has ever seen under a terminal. The check runner reads the stream too, and it does not render through that method. So the two counts do not add up to the surfaces the suite covers.
 
+On 2026-09-11 the count is still 29, and nine of them pass a mode that reads the stream. Three of the 23 moved, under #726, #727 and #479. The suite now names 14 surfaces, and the two that #479 added are `taxonomy audit` and `probe plan`. Each change of this shape wires one more call site by hand. So this record is further from discharge than it was, and the decision it asks for is no nearer.
+
 The corpus owes a decision on which of two remedies it wants, and the decision needs somebody to price them.
 
 The first remedy is a type. A mode that only a stream reader can produce moves the defect from a call site to a compile error. A renderer could not then receive one by hand. It costs a change to every renderer and to every test that calls one.
