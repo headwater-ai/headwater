@@ -57,7 +57,7 @@ Every one of the seven is a `standard`. Five of the six directories are represen
     headwater check --root "$ROOT" --no-cache --now 2026-09-01
     headwater sweep plan --root "$ROOT" --under .agents/review-rules
 
-The entry sits outside the corpus root on purpose, the same reason the Beacon fixtures give. Nothing in CI runs this corpus.
+The entry sits outside the corpus root on purpose, the same reason the Beacon fixtures give. `sh tools/taxonomy/n8n-fixtures.sh` runs this corpus in CI, as a blocking step, and holds every figure of *What a run reports* against the run. [The design-spec README](../../../design-spec/fixtures/n8n/README.md#what-that-job-holds-and-what-it-does-not) says which figures that job holds and which it does not.
 
 ## What the taxonomy needed before it could read one file
 

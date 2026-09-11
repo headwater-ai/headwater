@@ -103,7 +103,7 @@ This is the third Done-when bullet of [#492](https://github.com/headwater-ai/hea
 
 **The design-spec entry as it ships types none of these documents.** Its one shelf is `spec_series` at `docs/spec/**`, and not one file of this corpus is under `docs/`. Run the same assembly with that shelf alone and the run reports **42 files, 4 untyped, 38 excluded, 0 checked, 6 check instances, 1 finding**. `headwater check --strict` exits **1**, and the one finding is a broken prose link rather than anything about the four documents going unread.
 
-A green strict run over four real governing documents that no rule read is what the census crate calls *systematically green*. The engine is honest about it in the census, which carries four rows saying `no shelf pattern claims this path`. Nothing else says the corpus went unchecked.
+That arm reported 0 findings and exited 0 until headwater/standard 4.3.0. A green strict run over four real governing documents that no rule read is what the census crate calls *systematically green*. That was the result this arm recorded. At 4.3.0 the one finding is `link.path.unresolved`. That rule reads the corpus rather than the typed set, and it catches a broken prose link in one of the four. Nothing about the four going unread changed. The engine is honest about that in the census, which carries four rows saying `no shelf pattern claims this path`. No finding anywhere says the corpus went unchecked.
 
 ### What shape the shelf declaration had to take
 
@@ -477,4 +477,6 @@ A census of every architecture document in the monorepo. Four is the sample, and
 
 ## Reproducing this
 
-The [design-spec fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#how-to-run-this-corpus) carries the five commands for the architecture corpus. The [standards-spec fixture README](../taxonomies/standards-spec/fixtures/n8n/README.md#how-to-run-this-corpus) carries six for the review rules, and the sixth is the sweep. Nothing in CI runs either corpus, which is the same posture the earlier fixture corpora of this library have.
+The [design-spec fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#how-to-run-this-corpus) carries the five commands for the architecture corpus. The [standards-spec fixture README](../taxonomies/standards-spec/fixtures/n8n/README.md#how-to-run-this-corpus) carries six for the review rules, and the sixth is the sweep. `sh tools/taxonomy/n8n-fixtures.sh` runs all three n8n corpora in CI as a blocking step, by the commands those pages print, and holds the figures those pages state.
+
+**No job holds a figure of this document.** Every total above is restated here in prose. The job reads the three fixture READMEs rather than this page, so a number here can go stale while CI stays green. [The design-spec README says the same thing from the other side](../taxonomies/design-spec/fixtures/n8n/README.md#what-that-job-holds-and-what-it-does-not), and it also names the probe arms that no job holds. Re-run a figure before you cite it, and correct both copies when one moves.

@@ -71,7 +71,7 @@ The design-spec and standards-spec fixtures each add a Headwater front-matter bl
     headwater taxonomy resolve --root "$ROOT"
     headwater check --root "$ROOT" --no-cache --now 2026-09-01
 
-The entry sits outside the corpus root on purpose, the same reason the other fixtures of this entry give. Nothing in CI runs this corpus.
+The entry sits outside the corpus root on purpose, the same reason the other fixtures of this entry give. `sh tools/taxonomy/n8n-fixtures.sh` runs this corpus in CI, as a blocking step, and holds every figure of *What a run reports* against the run. [The design-spec README](../../../design-spec/fixtures/n8n/README.md#what-that-job-holds-and-what-it-does-not) says which figures that job holds and which it does not.
 
 ## What the taxonomy needed before it could read one file
 
