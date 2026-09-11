@@ -26,7 +26,7 @@ release:
   package: headwater/standard
   version: 4.3.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:f4b7933aa8f8a1eb5fb5844913a65955873f6e30f1dc662d17a0ce8e7918a3bb
+  digest: sha256:2a2b6c8666a253424de147a9b085f1690fba1b6d9aa9661df40d67560bc4b47f
   members:
     - path: assemblies/starter/assembly.yml
       digest: sha256:a31fc170c7e398feb01c0cc2d5f684744b24b8df4ce86a896d5ee64963567d2e
@@ -51,7 +51,7 @@ release:
     - path: bundles/design-spec/bundle.yml
       digest: sha256:39b514b8d5c971d291f2c662500a2c0d384f7446bf5bc0661a120ff4283f001c
     - path: bundles/design-spec/doctrine.md
-      digest: sha256:ea9a0784f598a37d03e9d337658eaf8a4e54f001df14610e98df31f588fd83fd
+      digest: sha256:3e914cb326d56ae921982b125abcf16872abc91fb053ccd0f727053ca0943883
     - path: bundles/design-spec/templates/decision_register.md
       digest: sha256:7c03d20afbd116798b8d20150efac3a5ca94173f74510421abeb9602aed01e57
     - path: bundles/design-spec/templates/design_spec.md
