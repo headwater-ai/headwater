@@ -35,6 +35,12 @@ The suite reports a surface it was told to look at. The general shape stays open
 
 The count is 29 `.render(` sites in `engine/crates/cli/src/main.rs` on 2026-09-08. Six of them pass a mode that reads the stream. The other 23 render text that no case of this repository has ever seen under a terminal. The check runner reads the stream too, and it does not render through that method. So the two counts do not add up to the surfaces the suite covers.
 
+On 2026-09-11 the count is still 29 occurrences of `.render(` in that one file, and the 29 is not 29 report surfaces. Twelve of them are not a report on standard output at all. They are two prints to standard error, two digest inputs, two file writes and two date fields. The last four are one JSON value, one refusal message, one appended store line and one cache statistic. Of the 17 that remain, seven passed a mode that reads the stream at `58f46a8d` and nine do after #479. The other eight still print a report that no case of this repository has seen under a terminal.
+
+The 2026-09-08 figure above says six. Seven is the measurement at `58f46a8d`, so the move #479 makes is seven to nine and not six to nine. `tools/color-fixtures.sh` names 14 surfaces, from 12.
+
+Each change of this shape wires one more call site by hand. So this record is further from discharge than it was, and the decision it asks for is no nearer.
+
 The corpus owes a decision on which of two remedies it wants, and the decision needs somebody to price them.
 
 The first remedy is a type. A mode that only a stream reader can produce moves the defect from a call site to a compile error. A renderer could not then receive one by hand. It costs a change to every renderer and to every test that calls one.

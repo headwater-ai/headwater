@@ -1152,7 +1152,7 @@ fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
             unreadable,
         },
     );
-    print!("{}", audit.render());
+    print!("{}", audit.render(headwater_cli::paint::stdout_color()));
     ExitCode::SUCCESS
 }
 
@@ -3991,7 +3991,7 @@ fn probe_plan(
         tier,
         &narrowing,
     );
-    print!("{}", plan.render());
+    print!("{}", plan.render(headwater_cli::paint::stdout_color()));
     ExitCode::SUCCESS
 }
 
