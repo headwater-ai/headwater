@@ -125,6 +125,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh .claude/skills/fixtures.sh
     sh .claude/agents/fixtures.sh
     sh .claude/tutorial/fixtures.sh
+    sh tools/taxonomy/n8n-fixtures.sh
     sh tools/site/assemble-site.sh --check
     sh tools/engine/build-declaration-fixtures.sh
     sh tools/engine/color-fixtures.sh
@@ -200,6 +201,8 @@ The `adoption` block of `.headwater/taxonomy.lock` holds `(document, rule)` pair
 ### The on-ramp, and the suite that holds it
 
 `docs/tutorials/your-first-governed-corpus.md` takes a reader from an empty directory to a passing strict run, and it states after every step what the reader should now see. Each of those is a claim about this engine copied into prose, so `sh .claude/tutorial/fixtures.sh` is the verb that produces them: it reads the commands out of the document, runs them against a scratch repository under the temporary directory, and diffs each result against the block the document prints. It blocks in CI, and it writes nothing inside this checkout. Edit an output block only by running the command and taking what it printed.
+
+`sh tools/taxonomy/n8n-fixtures.sh` does the same for the three n8n fixture corpora under `docs/taxonomies/*/fixtures/n8n/`. Each README prints the commands that assemble its corpus and then states what the run reports, and the suite reads both out of the page: it runs the recipe verbatim and diffs every figure against the paragraph that states it. It carries no second copy of a number. It blocks in CI, it writes nothing inside this checkout, and it fails unless it finds three corpora, unless an edited figure would have been caught, and unless a version pin the vendored package does not carry would have failed. Those pages went stale unseen for four minor versions of `headwater/standard`, because `docs/taxonomies/**` is outside this repository's own corpus and no check read either scalar.
 
 `sh .claude/agents/fixtures.sh` holds the build-order agents under `.claude/agents/hw-*.md`, the two commands that dispatch them and the doctrine both carry: every `subagent_type` a command names is a definition, every skill an agent invokes exists, every ruling cited under `.claude/` is on the graph and not superseded, the two agents that must not write carry neither `Edit` nor `Write`, each check of the verification bar is stated once, `CLAUDE.md`, `.claude/commands/next-run.md` and `.claude/run/doctrine.md` hold the byte ceilings the suite declares, and the doctrine block in the command is byte-identical to the file. [HW-PD-0001](docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md) is why each of those files holds what it holds.
 
