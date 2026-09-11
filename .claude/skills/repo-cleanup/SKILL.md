@@ -92,6 +92,12 @@ The last two are separate findings. A `gone` upstream has more than one cause, a
 
 A sweep that reports nothing surviving has usually not fetched with `--prune`. A sweep that reports nothing deleted has usually trusted ancestry in a repository that squash merges.
 
+## The sweep that runs without being asked
+
+`sh tools/repo/retire-worktree.sh` is this procedure as a tool, and `hw-integrate` runs it with `--retire` after every merge. It decides merged the way this document does, by the pull request rather than by ancestry, and it refuses a locked tree, a tree a live process is working in, a tree holding any uncommitted change, and every branch its content check does not clear. Reporting is its default, so a run with no flag is the read-the-state step above in one command.
+
+Run it first. What it reports as kept is the list this skill exists to work through by hand, and it is a shorter list than the one a fetch and six `git` commands produce. It reaches nothing outside this repository, it never removes the tree it is running in, and it decides nothing about an unmerged branch beyond naming it.
+
 ## What this skill does not touch
 
 `main` is never a candidate. Neither is a remote branch under a repository this session does not own, and neither is a tag. A branch that carries an open pull request stays, whatever its merge state says: check with `gh pr list --state open` before a sweep that deletes more than one branch.

@@ -8,7 +8,7 @@ One directory per subject, because the thing a script acts on is what a reader i
 |---|---|
 | `site/` | the website: the two halves, the assembly that composes them, the checkers CI runs over the served pages, and the refreshers that write a measured figure into a hand-built page |
 | `engine/` | the Rust workspace under `engine/`: the declarations its build makes about itself, the terminal-sensing promise of the command line, the container recipe an outsider runs, and the local build speedup |
-| `repo/` | this repository's own artifacts: the root `README.md`, `DEVELOPING.md`, the library index, the `diataxis-site` entry, and the identifier claim store under `.headwater/ids/` |
+| `repo/` | this repository's own artifacts: the root `README.md`, `DEVELOPING.md`, the library index, the `diataxis-site` entry, the identifier claim store under `.headwater/ids/`, and the worktrees and branches a finished change leaves behind |
 | `run/` | a build-order run: its run directory, the census of what a parent's turns were spent on, and the dispatch of a run to another harness |
 | `probe/` | the recorder that turns a harness session log into probe events, and the blessed input it is held against |
 
