@@ -52,3 +52,13 @@ That is the measurement this record holds. The rule that would catch it at commi
 **The second one did not become a facet, and the reason names a shape this record does not carry.** A closed set of answers is a list, and no facet of this language holds a list. It goes in a fenced block under the `Expectation` section, which the `probe` kind already requires. `headwater probe plan` enforces the pairing in both directions, as it does for the oracle. **A required section carries a per-document declaration where a facet cannot.** That is a third candidate beside `required_when` and the kind-per-form, and it is cheaper than either. It costs the four other forms nothing, and no sentinel is written anywhere.
 
 It is not free, and the price is what keeps this record open. A facet is what a check reads, and a fenced block under a heading is read by the harness alone. So the pairing for `answers` is enforced in one place and by one component, exactly as the pairing for `oracle` is. Whether `oracle` should move to the same section is a question for whoever discharges this. The move would trade a sentinel on every probe for a declaration that no check can see.
+
+## A third instance, and a subject the taxonomy cannot name at all
+
+**The shape recurred a third time, and this one is harder than the two above.** [#809](https://github.com/headwater-ai/headwater/issues/809) asked for a facet that holds the shape of a derived artifact, closed to the rows of [*The shapes a record takes*](../evaluations/what-a-check-can-know.md#the-shapes-a-record-takes). No member of that population can carry one. Most members are generated documents, which carry no front matter at all. The rest are a lock, some site pages, some recorded fixtures and two append-only stores, and none of those is a document.
+
+**So the subject of the fact is a path that no shelf claims.** [Spec 2](../spec/02-taxonomy-model.md) states that `facets` declares what a document carries. The nearest root to a fact about a path is `anchors`, which declares a resolver and no facets. Spec 2 also rules that a new declaration root is a change to the meta-schema, so the cost of the alternative is real.
+
+**What #809 did instead was to compute the fact rather than declare it.** `headwater derived` reads the shape from the structure of the artifact and from the rule of the producer that writes it. That works here because a shape is observable. It answers nothing for a fact that only an author knows, which is the gap the rest of this record holds open.
+
+**This does not discharge the record. It raises the count.** Three conditional or path-scoped declarations now exist in one repository, and each one was answered by a different mechanism outside the facet layer.
