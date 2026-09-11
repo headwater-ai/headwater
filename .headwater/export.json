@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 422,
-      "carried": 422,
+      "in the graph": 420,
+      "carried": 420,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1738,27 +1738,6 @@
         }
       },
       {
-        "path": "docs/decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md",
-        "kind": "decision",
-        "id": "HW-DR-0062",
-        "warrant": "asserted",
-        "facets": {
-          "id": "HW-DR-0062",
-          "status": "current",
-          "status_since": "2026-09-11",
-          "summary": "A refused transcript fails the run where its state carries the `live` role. A role that says nobody relies on the document leaves the run green.",
-          "last_verified": "2026-09-11",
-          "title": "A refused recording is held by the reliance its state claims, and not by promotion",
-          "provenance": {
-            "warrant": "asserted",
-            "agency": "agent",
-            "drafted_by": "claude-opus-5",
-            "activity": "measure+draft",
-            "evidence_basis": "evidenced"
-          }
-        }
-      },
-      {
         "path": "docs/evaluations/adjacent-work.md",
         "kind": "evaluation",
         "id": "HW-EVAL-adjacent-work",
@@ -2843,7 +2822,7 @@
           "status_since": "2026-08-11",
           "waiting_on": "adopter",
           "last_verified": "2026-09-11",
-          "summary": "The three voice categories run over this corpus, and no category reaches the adjudicated sample bar of 50 findings.",
+          "summary": "The three voice categories run over this corpus, and the largest reading is 36 findings against a sample bar of 50.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -3884,11 +3863,11 @@
         "facets": {
           "id": "HW-OBL-0039",
           "title": "A participation expectation names one target kind",
-          "status": "discharged",
-          "status_since": "2026-09-11",
+          "status": "current",
+          "status_since": "2026-08-12",
           "waiting_on": "build",
-          "last_verified": "2026-09-11",
-          "summary": "The declaration carried one required `to_kind`, and the member is optional now. An expectation that names none admits every target kind of its relation.",
+          "last_verified": "2026-08-13",
+          "summary": "The declaration carries one `to_kind`, so a corpus that expects a citation from any of several register kinds cannot state it.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -6409,7 +6388,7 @@
           "status_since": "2026-09-06",
           "waiting_on": "ruling",
           "summary": "Q29 keeps the engine outside the corpus root, so a contract may name a crate and nothing names a crate that has no contract. A participation expectation runs between documents, and an anchor target is no node with a kind.",
-          "last_verified": "2026-09-11",
+          "last_verified": "2026-08-17",
           "title": "Nothing holds a crate to having a contract under a root that excludes it",
           "provenance": {
             "warrant": "asserted",
@@ -7715,35 +7694,17 @@
         }
       },
       {
-        "path": "docs/obligations/0185-whether-an-admitted-library-entry-may-require-a-bundle-that-admission-refuses.md",
-        "kind": "obligation_record",
-        "id": "HW-OBL-0185",
-        "warrant": "asserted",
-        "facets": {
-          "id": "HW-OBL-0185",
-          "status": "current",
-          "status_since": "2026-09-11",
-          "summary": "An entry the canonical library refuses is required by two entries it admits, and no criterion and no ruling reads that direction",
-          "last_verified": "2026-09-11",
-          "title": "Whether an admitted library entry may require a bundle that admission refuses",
-          "waiting_on": "ruling",
-          "provenance": {
-            "warrant": "asserted",
-            "agency": "agent",
-            "drafted_by": "claude-opus-5",
-            "activity": "measure+draft",
-            "evidence_basis": "evidenced"
-          }
-        }
-      },
-      {
         "path": "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
         "kind": "probe_result",
         "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
         "facets": {
           "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
           "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
-          "title": "Probe result for regression-probe-transcript-for-2026-09-09"
+          "title": "Probe result for regression-probe-transcript-for-2026-09-09",
+          "status": "current",
+          "status_since": "2026-09-09",
+          "summary": "The grade of the transcript `regression-probe-transcript-for-2026-09-09`, taken over the probes this corpus declares and the version of the grader that evaluated them.",
+          "last_verified": "2026-09-09"
         }
       },
       {
@@ -7753,7 +7714,11 @@
         "facets": {
           "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
           "id": "HW-RESULT-regression-probe-transcript-for-2026-09-11",
-          "title": "Probe result for regression-probe-transcript-for-2026-09-11"
+          "title": "Probe result for regression-probe-transcript-for-2026-09-11",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "The grade of the transcript `regression-probe-transcript-for-2026-09-11`, taken over the probes this corpus declares and the version of the grader that evaluated them.",
+          "last_verified": "2026-09-11"
         }
       },
       {
@@ -7777,9 +7742,9 @@
         "id": "HW-RUN-regression-probe-transcript-for-2026-09-11",
         "facets": {
           "id": "HW-RUN-regression-probe-transcript-for-2026-09-11",
-          "status": "deprecated",
+          "status": "current",
           "status_since": "2026-09-11",
-          "summary": "Four regression sessions ran against the lock of 2026-09-11, and the recorder observed every tool call each one made. The recording is retired, because a later change moved the lock it pins.",
+          "summary": "Four regression sessions ran against the lock of this tree, and the recorder observed every tool call each one made.",
           "last_verified": "2026-09-11",
           "tier": "regression",
           "arm": "present",
@@ -8678,6 +8643,11 @@
           "id": "HW-REG-open-questions",
           "doc_type": "decision_register",
           "title": "Open questions, closed and redirected",
+          "status": "superseded",
+          "status_since": "2026-08-11",
+          "summary": "One heading for each of the 61 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "last_verified": "2026-08-11",
+          "sequence": "9",
           "relations": {
             "superseded_by": [
               "HW-REG-decisions",

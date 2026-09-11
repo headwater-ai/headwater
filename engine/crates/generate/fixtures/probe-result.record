@@ -1,6 +1,9 @@
 ---
 "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file."
 id: RESULT-FIX-first-regression
+status: current
+status_since: 2026-08-14
+summary: "The grade of the transcript `first-regression`, taken over the probes this corpus declares and the version of the grader that evaluated them."
 ---
 
 # The result of runs/probe-runs/first-regression.md

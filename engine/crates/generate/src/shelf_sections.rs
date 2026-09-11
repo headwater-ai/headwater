@@ -196,7 +196,24 @@ pub(crate) fn emit(
         let front = match &declaration.identity {
             None => None,
             Some(identity) => {
-                match crate::identity::front_matter(surface, identity, &path, Kind::ShelfSections) {
+                // The one required facet nothing derives. A count written here
+                // regenerates with the shelf, where the same claim in a
+                // taxonomy source drifts and no check reads it.
+                let composed = crate::derived::Composed {
+                    summary: format!(
+                        "One heading for each of the {} documents on the `{name}` shelf, so that \
+                         a citation naming one of them resolves in this file.",
+                        sections.len()
+                    ),
+                    sources: on_shelf.iter().map(|document| document.path).collect(),
+                };
+                match crate::identity::front_matter(
+                    surface,
+                    identity,
+                    &path,
+                    Kind::ShelfSections,
+                    &composed,
+                ) {
                     Ok(block) => Some(block),
                     Err(reason) => {
                         plan.unwritten.push(Unwritten {

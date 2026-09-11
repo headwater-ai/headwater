@@ -86,6 +86,7 @@
 //! run that first writes it. Reading the raw target gives the same answer on the
 //! first run and on every run after it.
 
+use crate::derived::Composed;
 use crate::{DeclaredIdentity, Kind};
 use headwater_census::shelves::{DeclarationError, ShelfBody};
 use headwater_graph::declarations::Direction;
@@ -204,16 +205,20 @@ pub(crate) fn front_matter(
     identity: &DeclaredIdentity,
     output: &str,
     projection: Kind,
+    composed: &Composed<'_>,
 ) -> Result<String, String> {
     let discriminator = placement(surface, identity, output)?;
-    unwritable(surface, identity, discriminator.as_ref())?;
     let config = surface.config();
     let mut out = String::from("---\n");
     out.push_str(&headwater_mark::marker_member(projection.name()));
     out.push('\n');
     out.push_str(&format!("{}: {}\n", config.identifier_facet, identity.id));
+    // Every facet the block itself writes, so that the derivation below states
+    // a facet once and the refusal after it names only what neither answers.
+    let mut written = vec![config.identifier_facet.clone()];
     if let Some((facet, value)) = discriminator {
         out.push_str(&format!("{facet}: {value}\n"));
+        written.push(facet);
     }
     if let Some(name) = &identity.name {
         let Some(facet) = surface.name_facet() else {
@@ -222,7 +227,13 @@ pub(crate) fn front_matter(
             ));
         };
         out.push_str(&format!("{facet}: {name}\n"));
+        written.push(facet.to_string());
     }
+    for (facet, value) in crate::derived::members(surface, identity, output, composed, &written) {
+        out.push_str(&format!("{facet}: {value}\n"));
+        written.push(facet);
+    }
+    unwritable(surface, identity, &written)?;
     let owed = reciprocals(surface, identity, output);
     if !owed.is_empty() {
         out.push_str(&format!("{}:\n", config.relations_facet));
@@ -239,28 +250,27 @@ pub(crate) fn front_matter(
     Ok(out)
 }
 
-/// The reason no block can be written when the kind requires a facet that this
-/// block is the writer of and the declaration does not state it.
+/// The reason no block can be written when the kind requires a facet that
+/// nothing writing this file can answer.
 ///
-/// # What this reads, and what it deliberately does not
+/// # What this reads
 ///
-/// Three facets, and only three: the identifier facet, the discriminator of a
-/// heterogeneous shelf, and the facet in the `name` role. Those are the ones a
-/// member of this block writes, so a requirement on one of them is a
-/// requirement the declaration can meet and did not
-/// ([#780](https://github.com/headwater-ai/headwater/issues/780)).
+/// The whole required set of the kind, against everything the file actually
+/// carries: the three members of this block, and every facet
+/// [`crate::derived`] computed. A facet left in the gap is one no author can
+/// add, because a generated document's only writer is this engine, and one no
+/// check reads, because the census excuses a marked file from every document
+/// rule. So it would be silently absent forever, which is what
+/// [#780](https://github.com/headwater-ai/headwater/issues/780) reported.
 ///
-/// It is not the whole set the kind requires, and the line is measured. Over
-/// this repository's own lock, `governed_document` requires `status`,
-/// `status_since`, `last_verified` and `summary`, and both kinds this corpus
-/// generates inherit all four. A refusal over the whole required set would name
-/// 5 facets on `docs/spec/09-open-questions.md` and 4 on the probe result,
-/// refusing both of the two identity declarations this repository makes, and no
-/// member of this block could answer any of the nine. Whether a generated
-/// document should be excused from `status` and `summary` is a question about
-/// the census exemption and about the position
-/// [spec 6](../../../../docs/spec/06-engine-architecture.md) states, rather than
-/// a question about this block, and #780 stays open holding it.
+/// **The gap is empty over this repository.** `governed_document` requires
+/// `status`, `status_since`, `last_verified` and `summary`, both generated kinds
+/// inherit all four, and `decision_register` adds `doc_type`, `sequence` and
+/// `title`. The block writes three of those, the derivation writes the rest, and
+/// the two declarations this corpus makes are written whole. What this refusal
+/// now guards is a taxonomy that requires a facet in no role this engine reads
+/// and in no shelf layout: `tier` and `arm` on a probe transcript are that
+/// shape, and no projection writes one.
 ///
 /// # Why the refusal is here and not at the read
 ///
@@ -273,32 +283,13 @@ pub(crate) fn front_matter(
 fn unwritable(
     surface: &Surface<'_>,
     identity: &DeclaredIdentity,
-    discriminator: Option<&(String, String)>,
+    written: &[String],
 ) -> Result<(), String> {
-    let config = surface.config();
     let missing: Vec<String> = surface
         .shape()
         .required_facets(&identity.kind)
         .into_iter()
-        .filter(|facet| {
-            // The identifier is a required member of the block, so this never
-            // fires; it is written rather than assumed, because a block that
-            // stopped writing the identifier would be the same defect.
-            if facet == &config.identifier_facet {
-                return false;
-            }
-            // A heterogeneous shelf gets its discriminator from `kind`. A
-            // homogeneous one gets no facet at all, and spec 2 forbids
-            // restating the kind there, so a requirement on it is outside what
-            // this block answers for.
-            if discriminator.is_some_and(|(written, _)| written == facet) {
-                return false;
-            }
-            match surface.name_facet() {
-                Some(name) if name == facet => identity.name.is_none(),
-                _ => false,
-            }
-        })
+        .filter(|facet| !written.contains(facet))
         .collect();
     if missing.is_empty() {
         return Ok(());
@@ -310,10 +301,12 @@ fn unwritable(
         .collect::<Vec<_>>()
         .join(", ");
     Err(format!(
-        "declares the kind `{kind}`, and `{kind}` requires the facet {facets}. This block writes \
-         that facet from its `name` member and the declaration states none. A generated document \
-         is the one document whose only writer is a declaration, so a facet the declaration \
-         leaves out is a facet no author can add and no check reads"
+        "declares the kind `{kind}`, and `{kind}` requires the facet {facets}, which nothing \
+         writing this file can supply. This block writes the identifier, the discriminator of a \
+         heterogeneous shelf and the facet in the `name` role, and the engine derives a state, \
+         the two dates and the summary. A facet outside all of those carries no role this engine \
+         reads and no shelf layout names it. A generated document is the one document whose only \
+         writer is this engine, so such a facet is one no author can add and no check reads"
     ))
 }
 

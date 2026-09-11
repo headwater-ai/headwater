@@ -165,7 +165,21 @@ pub(crate) fn emit(
         let front = match &declaration.identity {
             None => None,
             Some(identity) => {
-                match crate::identity::front_matter(surface, identity, &path, Kind::ShelfIndex) {
+                let composed = crate::derived::Composed {
+                    summary: format!(
+                        "One row for each of the {} documents on the `{name}` shelf, with the cue \
+                         that each of them states.",
+                        on_shelf.len()
+                    ),
+                    sources: on_shelf.iter().map(|document| document.path).collect(),
+                };
+                match crate::identity::front_matter(
+                    surface,
+                    identity,
+                    &path,
+                    Kind::ShelfIndex,
+                    &composed,
+                ) {
                     Ok(block) => Some(block),
                     Err(reason) => {
                         plan.unwritten.push(Unwritten {
