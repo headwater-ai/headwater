@@ -574,14 +574,14 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its eighteen artifacts, and it says why for
+/// This repository generates its nineteen artifacts, and it says why for
 /// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Twelve of the eighteen are shelf indexes, one per shelf that holds a
+/// **Twelve of the nineteen are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
 /// file until #124 filled that shelf. The other eleven are the overlay's own
@@ -591,13 +591,18 @@ fn every_output_carries_its_own_marker() {
 /// 404 on the served site while every record under it was served, because a
 /// shelf with no index declaration writes no page for MkDocs to render.
 ///
-/// The other six are one each. The redirect map that the open-questions
+/// **Five of the other seven are one each, and two are one per committed
+/// transcript.** The count in the name of this test therefore moves when a
+/// transcript lands on `docs/probe-runs/`, and this paragraph is the only
+/// thing that says so. The redirect map that the open-questions
 /// tombstone carries. The verb index #257 asked for, which reads the binary
 /// rather than the `interfaces` shelf and is why that shelf is absent from the
 /// index list above. The graph export #414 names: the whole graph, for the
 /// reader Q16 draws with no principal to filter for. The site navigation
 /// HW-DR-0036 and #418 name: MkDocs's `nav:` over the reading order
-/// `by_precedence` derives. And the descriptor, at the path Q14 fixes.
+/// `by_precedence` derives. The descriptor, at the path Q14 fixes. And one
+/// probe result for each transcript the corpus holds, which is the pair
+/// recorded on 2026-09-09 and on 2026-09-11.
 ///
 /// Two declarations produce a reason rather than a file. The package declares
 /// an index for one shelf this tree holds no document on, and the register is a
@@ -612,7 +617,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_eighteen_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_nineteen_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -687,6 +692,7 @@ fn this_repository_generates_its_eighteen_artifacts_and_accounts_for_the_rest() 
             "docs/process/decisions/README.md",
             "docs/spec/09-open-questions.md",
             "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
+            "docs/probe-results/regression-probe-transcript-for-2026-09-11.md",
             "docs/interfaces/README.md",
             ".headwater/export.json",
             ".headwater/nav.yml",

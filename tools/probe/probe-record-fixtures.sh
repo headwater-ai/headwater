@@ -487,6 +487,31 @@ if [ -f "$live" ]; then
     same "the cost is whole cents, rounded from the dollars the harness reports" \
         "cost_cents: 1" \
         "$(printf '%s\n' "$provider" | grep '^cost_cents:')"
+
+    # `answer` is the key that says what a closed-set session concluded, and
+    # this script wrote `null` for every session it drove until #803, because
+    # the driver called the transform with no `--answer`. The real session
+    # below ends with one word, so it is the log that holds the derivation to
+    # its rule in all three directions at once.
+    #
+    # The word this log ends with is `headwater`. It is not an answer any probe
+    # of this repository declares, which is what makes the third case here a
+    # real one rather than a constructed one.
+    said=$(jq -s -r '([.[] | select(.type == "result")] | last | .result // "")' < "$live")
+    same "the real session ends with one word and not with prose" \
+        "headwater" "$(printf '%s' "$said" | tr -d '[:space:]')"
+    same "a probe that declares the word gets the word" \
+        "headwater" \
+        "$(sh "$driver" --answer-only "$live" --answers "headwater, other" 2>/dev/null)"
+    same "the comparison folds case, because a harness may capitalize a sentence" \
+        "headwater" \
+        "$(sh "$driver" --answer-only "$live" --answers "Headwater" 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+    same "a probe that declares no such answer gets nothing, and never a substring" \
+        "" \
+        "$(sh "$driver" --answer-only "$live" --answers "present, absent, withheld" 2>/dev/null)"
+    same "a probe that declares no answer set at all gets nothing" \
+        "" \
+        "$(sh "$driver" --answer-only "$live" 2>/dev/null)"
 else
     fail "a stream recorded from the channel is on disk" "no file at $live"
 fi

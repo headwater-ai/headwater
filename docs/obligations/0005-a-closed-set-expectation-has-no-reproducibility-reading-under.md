@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-11
 waiting_on: build
 last_verified: 2026-08-13
-summary: "Q8 claims that a closed-set expectation makes a probe verdict reproducible, and no probe has run."
+summary: "Q8 claims that a closed-set expectation makes a probe verdict reproducible, and the one closed-set probe this corpus declares has now returned a verdict."
 provenance:
   warrant: accepted
   agency: mixed
@@ -30,4 +30,6 @@ relations:
 
 ## Discharge
 
-`headwater generate --check` exists and holds three artifacts of this repository. No probe kind is declared here, so no result document exists for it to hold, and the instrument has nothing to read.
+`headwater generate --check` exists and it now holds a result document of this repository. [The result of 2026-09-11](../probe-results/regression-probe-transcript-for-2026-09-11.md) carries four verdicts of four, and one of the four probes declares a closed answer set. So the instrument has a reading at last.
+
+**The reading does not support the claim, and it does not refute it either.** The closed-set session ended with the word `present`, the transcript records that word, and the verdict is `satisfied`. One verdict is not a reproducibility reading: reproducibility is a comparison of two verdicts over one expectation under one grader, and this corpus holds one. What this record waits on is a second run of the same probe.

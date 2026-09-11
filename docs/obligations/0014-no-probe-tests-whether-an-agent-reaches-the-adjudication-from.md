@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-10
 waiting_on: build
 last_verified: 2026-08-13
-summary: "Q18 claims that an agent meeting the losing document first reaches the adjudication, and no probe has run."
+summary: "Q18 claims that an agent meeting the losing document first reaches the adjudication, and one run says that it did not."
 provenance:
   warrant: accepted
   agency: mixed
@@ -30,4 +30,4 @@ A probe over a settled pair is the instrument.
 
 ## Discharge
 
-The harness exists and this corpus still holds no adjudicated pair. [HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it](../probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md) runs over a supersession instead: the tombstone at `docs/spec/09-open-questions.md` still writes a heading for every decision, and 136 citations reach it. A run of that probe narrows this record and closes none of it. [Q18](../spec/09-decisions.md#q18--recording-adjudicated-disagreements) is about two documents that disagreed and were settled. One recording was taken on 2026-09-09 and a confirmation refuses it whole, so no run has returned a verdict either way.
+The harness exists and this corpus still holds no adjudicated pair. [HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it](../probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md) runs over a supersession instead: the tombstone at `docs/spec/09-open-questions.md` still writes a heading for every decision, and 136 citations reach it. A run of that probe narrows this record and closes none of it. [Q18](../spec/09-decisions.md#q18--recording-adjudicated-disagreements) is about two documents that disagreed and were settled. [The run of 2026-09-11](../probe-results/regression-probe-transcript-for-2026-09-11.md) returned the first verdict. The session read `docs/spec/09-open-questions.md`, made no second call, and answered from the tombstone, so the verdict is `not satisfied` over one session. That is a reading of the supersession and not of Q18: this corpus still holds no adjudicated pair, and one session is one session.
