@@ -5,7 +5,7 @@
 183 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
-- [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for.
+- [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and the largest reading is 36 findings against a sample bar of 50.
 - [The rebuild-and-cache design is measured at spike scale alone](0003-the-rebuild-and-cache-design-is-measured-at-spike-scale-alone.md) — Q6 rules that the graph never rests, and the only evidence is a spike over generated documents.
 - [Working-tree write tools have no measured effect on the assisted fraction](0004-working-tree-write-tools-have-no-measured-effect.md) — Q7 claims that write tools raise the assisted fraction, and the treatment has never been applied.
 - [A closed-set expectation has no reproducibility reading under grading](0005-a-closed-set-expectation-has-no-reproducibility-reading-under.md) — Q8 claims that a closed-set expectation makes a probe verdict reproducible, and no probe has run.
