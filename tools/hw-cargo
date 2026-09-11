@@ -1,0 +1,139 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+#
+# Optional, machine-local build throttle for a host that runs several sessions
+# at once. It takes one of a fixed number of slots, points cargo at that slot's
+# own target directory, and runs the cargo command you gave it. Nothing in this
+# repository and nothing in CI requires it.
+#
+# It solves two problems, both measured on this eight core host on 2026-09-11
+# while fifteen worktrees were live:
+#
+#   Oversubscription. Nine cargo invocations were running at once, the run
+#   queue sat at 34 against 8 cores, and CPU pressure `some avg300` read 75%.
+#   The throttle that existed then wrapped `cargo build` alone, so `cargo
+#   test`, `cargo check` and `cargo clippy` each took as many jobs as they
+#   liked. This script wraps every cargo subcommand, which is what makes the
+#   cap real.
+#
+#   Duplicated compilation. One target directory per worktree means every
+#   worktree compiles the same dependency graph again. There were 1441
+#   dependency rlibs on disk under 621 distinct names, so 57 percent of that
+#   output repeated work already done elsewhere on the same disk, including 34
+#   separate copies of `syn`. sccache cannot close this gap: it declines a
+#   proc-macro on `crate-type` and it declines an incremental build, and those
+#   two reasons covered 1621 of 2961 compile requests. Pooling the target
+#   directory by slot is what shares the work instead.
+#
+# The slot and the pool fit each other. Cargo already takes an exclusive lock
+# on a target directory for the length of a build, so callers that share a
+# pooled directory serialize on cargo's own lock; taking the slot first turns
+# that into an orderly queue rather than a surprise.
+#
+# This changes where intermediate output lives and how many compilers run at
+# once. It changes nothing about what a build produces.
+#
+#   tools/hw-cargo build --profile dev-release -p headwater-cli --locked
+#   tools/hw-cargo test --workspace
+#   tools/hw-cargo --prune     # remove every pooled target directory
+#   tools/hw-cargo --status    # print the pool, its slots and their sizes
+#
+# Environment:
+#   HW_CARGO_SLOTS  concurrent slots, default 3
+#   HW_CARGO_JOBS   cargo jobs per slot, default 2 (an explicit -j still wins)
+#   HW_CARGO_POOL   pool root, default ${XDG_CACHE_HOME:-$HOME/.cache}/headwater/cargo-pool
+#   HW_CARGO_NICE   nice increment, default 5
+
+set -e
+
+slots=${HW_CARGO_SLOTS:-3}
+jobs=${HW_CARGO_JOBS:-2}
+nice_by=${HW_CARGO_NICE:-5}
+pool=${HW_CARGO_POOL:-${XDG_CACHE_HOME:-$HOME/.cache}/headwater/cargo-pool}
+
+mkdir -p "$pool"
+
+case "${1:-}" in
+--prune)
+    rm -rf "$pool"
+    echo "hw-cargo: removed $pool" >&2
+    exit 0
+    ;;
+--status)
+    echo "hw-cargo: pool $pool, $slots slots, $jobs jobs each" >&2
+    # Order matters: send du's stdout to the real stderr first, then silence
+    # du's own stderr. The other order points stdout at /dev/null too.
+    du -sh "$pool"/target-* 1>&2 2>/dev/null || echo "hw-cargo: no slot has built yet" >&2
+    exit 0
+    ;;
+"")
+    sed -n '3,46p' "$0" | sed 's/^# \{0,1\}//' >&2
+    exit 2
+    ;;
+esac
+
+# The worktree this was invoked from, so the built binary can be copied back to
+# where every hook and every script under tools/ looks for it.
+root=$(git rev-parse --show-toplevel 2>/dev/null) || root=
+
+# Take the first free slot. A caller that finds none queues on slot 1 rather
+# than adding a compiler to a machine that already has too many.
+slot=
+if command -v flock >/dev/null 2>&1; then
+    i=1
+    while [ "$i" -le "$slots" ]; do
+        exec 9>>"$pool/slot.$i.lock"
+        if flock -n 9; then
+            slot=$i
+            break
+        fi
+        i=$((i + 1))
+    done
+    if [ -z "$slot" ]; then
+        echo "hw-cargo: all $slots slots busy, queueing on slot 1" >&2
+        exec 9>>"$pool/slot.1.lock"
+        flock 9
+        slot=1
+    fi
+else
+    # Without flock there is no throttle to take. Still pool the target
+    # directory, because that half needs no lock of ours.
+    echo "hw-cargo: no flock on this host, so the slot cap is not enforced" >&2
+    slot=1
+fi
+
+CARGO_TARGET_DIR="$pool/target-$slot"
+CARGO_BUILD_JOBS=$jobs
+export CARGO_TARGET_DIR CARGO_BUILD_JOBS
+
+echo "hw-cargo: slot $slot, target $CARGO_TARGET_DIR, $(date -u +%H:%M:%S)Z" >&2
+
+status=0
+nice -n "$nice_by" cargo "$@" || status=$?
+
+# Copy the engine back into the worktree. `.githooks/pre-commit`, every hook
+# under `.claude/hooks/` and several scripts under `tools/` resolve the engine
+# from `engine/target/<profile>/headwater` relative to the checkout, and a
+# pooled target directory is not on any of those paths. Copy into the profile
+# the caller actually built and no other: the gate takes the newer of
+# `release` and `dev-release`, so writing a second path would let a build of
+# one profile answer as the other.
+if [ "$status" -eq 0 ] && [ -n "$root" ]; then
+    profile=debug
+    prev=
+    for arg in "$@"; do
+        case "$prev" in --profile) profile=$arg ;; esac
+        case "$arg" in --release) profile=release ;; esac
+        prev=$arg
+    done
+    case "$profile" in dev | test) profile=debug ;; esac
+
+    built="$CARGO_TARGET_DIR/$profile/headwater"
+    if [ -x "$built" ]; then
+        mkdir -p "$root/engine/target/$profile"
+        cp -f "$built" "$root/engine/target/$profile/headwater"
+        echo "hw-cargo: engine at engine/target/$profile/headwater" >&2
+    fi
+fi
+
+exit "$status"

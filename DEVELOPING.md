@@ -83,6 +83,15 @@ Then run the test again. Because `cargo test` stops at the first failing target,
 
 **`-p <crate>` is the whole command, and the bare `cargo clean` is not a stronger version of it.** The bare form removes the build output of every crate in the workspace and every dependency under it, so the next `cargo test` recompiles from nothing and the next `--release` build pays the link again. One session here ran it three times in an afternoon, once immediately before a `cargo test`, and bought a full rebuild each time to clear one crate's stale object. Name the crate. Reach for the bare form when the question is whether the build directory itself is corrupt, which is rare enough that it has not happened here yet.
 
+**A host that runs several sessions at once wants `tools/hw-cargo` too.** It is optional and machine-local in the same way, and nothing in this repository or in CI calls it. It takes one of three slots, points cargo at that slot's own pooled target directory, and then runs the cargo command you handed it:
+
+    sh tools/hw-cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked
+    sh tools/hw-cargo test --workspace
+
+Two measurements set both halves, taken here on 2026-09-11 while a build-order run held fifteen worktrees. Nine cargo invocations were running at once and the run queue sat at 34 against 8 cores, because the throttle in use then wrapped `cargo build` and nothing else. Separately, 1441 dependency rlibs sat on disk under 621 distinct names. So 57 percent of that output repeated a compilation already finished in another worktree, including 34 separate copies of `syn`. Pooling the target directory is what shares that work. sccache cannot, because it declines a proc-macro and declines an incremental build, and those two reasons covered 1621 of 2961 compile requests.
+
+After a build it copies the engine back to `engine/target/<profile>/headwater` inside your checkout, which is where the commit gate, every hook under `.claude/hooks/` and several scripts under `tools/` look for it. It writes only the profile you built, because the gate takes the newer of `release` and `dev-release`. `--status` prints the pool and the size of each slot, and `--prune` removes all of it.
+
 ## What CI runs
 
 `.github/workflows/ci.yml` defines two jobs, `engine` and `headwater`, and a pull request triggers both. Everything below is blocking. This list is checked against the workflow by `sh tools/developing-fixtures.sh`, in both directions, so a gate added to CI and not written here fails, and a gate written here that CI does not run fails too.
