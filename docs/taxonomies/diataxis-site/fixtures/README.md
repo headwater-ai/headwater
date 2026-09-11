@@ -9,6 +9,8 @@ The worked corpus contains one document of each concrete kind. The fixture case 
 | Constructor sweep | `headwater new tutorial`, `how_to`, `reference`, and `explanation` succeed |
 | Overlay collision | resolution exits 1 and first names `purposes.procedure.intent` |
 | Planted defect | a document under `docs/tutorials/` with `kind: reference` reports a kind or shelf finding |
+| n8n skills corpus, vendored | `fixtures/n8n/corpus/.agents/skills/` holds every file the pin holds under `.agents/skills/`, each body byte-identical below an added front-matter block |
+| n8n skills corpus, typed | `headwater check --root` over the assembled scratch root types every one of those files, reports 0 untyped, and prints typed and excluded denominators that sum to the file count under the root |
 
 The isolated run on 2026-09-09 validated and resolved successfully, then constructed all four kinds successfully. The collision run exited 1 and named four collisions: `purposes.procedure.intent`, `identifier_schemes.tutorial_id.pattern`, `kinds.tutorial.is_a`, and `shelves.tutorials.title`. The first one is the discriminator.
 
