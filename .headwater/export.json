@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 415,
-      "carried": 415,
+      "in the graph": 416,
+      "carried": 416,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -7642,6 +7642,28 @@
               "HW-DR-0061"
             ]
           },
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0184-nothing-states-why-the-vendored-package-root-is-visible-in-an-adopter-tree.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0184",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0184",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Issue #381 ruled where doctrine lands inside a package and gave three reasons, none about visibility. Whether the package root itself moves under `.headwater/` is open, and the first outside adopter is the measurement that settles it.",
+          "last_verified": "2026-09-11",
+          "title": "Nothing states why the vendored package root is visible in an adopter tree",
+          "waiting_on": "adopter",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",

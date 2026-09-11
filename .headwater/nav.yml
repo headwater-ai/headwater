@@ -296,6 +296,7 @@ nav:
       - "An unresolved prose link reaches a run as a graph fact and no rule turns it into a finding": "obligations/0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md"
       - "The publish-crates retry loop has no retry ceiling": "obligations/0182-the-publish-crates-retry-loop-has-no-retry-ceiling.md"
       - "No mechanism holds a committed binary asset against a run": "obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md"
+      - "Nothing states why the vendored package root is visible in an adopter tree": "obligations/0184-nothing-states-why-the-vendored-package-root-is-visible-in-an-adopter-tree.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"

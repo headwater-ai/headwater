@@ -580,6 +580,8 @@ docs/obligations/0182-the-publish-crates-retry-loop-has-no-retry-ceiling.md
   typed: obligation_record
 docs/obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md
   typed: obligation_record
+docs/obligations/0184-nothing-states-why-the-vendored-package-root-is-visible-in-an-adopter-tree.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
