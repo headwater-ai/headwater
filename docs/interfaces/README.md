@@ -2,7 +2,7 @@
 
 # The command surface
 
-`headwater` dispatches 20 verbs. 20 of them have a contract on this shelf, and 0 have none.
+`headwater` dispatches 21 verbs. 20 of them have a contract on this shelf, and 1 has none.
 
 A verb with no contract carries a mark in the last column, and that cell is what this file is for. An index of the contracts that exist would say nothing about the verbs nobody has described yet.
 
@@ -15,6 +15,7 @@ The headings and the second column are the groups and the summaries that `headwa
 | `check` | run the pipeline over the corpus, against the committed lock | `headwater check` | [headwater check](headwater-check.md) |
 | `gate` | hold an earlier run's read set against the tree in front of it | `headwater gate` | [headwater gate](headwater-gate.md) |
 | `conformance` | evaluate this repository against a package's conformance rules | `headwater conformance` | [headwater conformance](headwater-conformance.md) |
+| `derived` | which files a producer writes, computed rather than listed | `headwater derived` | **no contract** |
 
 ## Reading a corpus
 
