@@ -682,3 +682,99 @@ fn a_plan_that_stopped_partway_hands_a_grading_caller_no_selection() {
         "the refusal beside the selection was dropped, so nothing can say why"
     );
 }
+
+/// A transcript planned against another taxonomy fails the run, and a matching
+/// one reports nothing.
+///
+/// The pair, because neither half is a test on its own. An absence assertion is
+/// satisfied by a walk that reached no transcript at all, and a presence
+/// assertion is satisfied by a rule that fires on every transcript forever.
+///
+/// The defect this holds is the one `f615fb86` landed in the repository above:
+/// a transcript whose `lock` member names a taxonomy this tree no longer
+/// carries is refused whole by the first of the five confirmations
+/// [spec 15](../../../../docs/spec/15-the-recorder-contract.md#what-the-engine-confirms-and-what-it-records-without-confirming)
+/// states, the refusal text *is* the derived output, so `generate --check`
+/// regenerates it faithfully and stays green, and no check rule reads a probe
+/// result. The corpus then published three measurements taken off a result
+/// that carries zero verdicts of four, and nothing anywhere reported it.
+///
+/// So the assertion is on the run and not on the bytes. The bytes were already
+/// right.
+#[test]
+fn a_transcript_planned_against_another_taxonomy_fails_the_run() {
+    let matched = copied("probe-result-lock-matches");
+    let held = write(&matched, &plan_over(&matched));
+    // The walk reached a transcript, before anything is asserted about what it
+    // did not find. An empty refusal list is what a run over a corpus with no
+    // transcript in it also produces, and a negative arm that cannot tell the
+    // two apart tests the subject and not the instrument.
+    let wrote = held
+        .wrote
+        .iter()
+        .find(|wrote| wrote.path == RESULT)
+        .expect("the run wrote a result, so it reached the transcript that result comes from");
+    assert!(
+        !wrote.verdict.is_error(),
+        "the run reached the transcript and then failed over it: {:?}",
+        wrote.verdict
+    );
+    assert!(
+        std::fs::read_to_string(matched.join(RESULT))
+            .expect("the result reads")
+            .contains("## The verdicts"),
+        "the matching arm grades: a result with no verdicts section would satisfy every \
+         assertion below and measure nothing"
+    );
+    assert!(
+        held.refused.is_empty(),
+        "a transcript this tree's taxonomy matches is refused by nothing"
+    );
+    assert_eq!(
+        held.remedy(),
+        None,
+        "a transcript this tree's taxonomy matches does not fail the run"
+    );
+
+    let moved = copied("probe-result-lock-moved");
+    edit(
+        &moved,
+        TRANSCRIPT,
+        "lock: sha256:fixture",
+        "lock: sha256:another-taxonomy",
+    );
+    let plan = plan_over(&moved);
+    let report = write(&moved, &plan);
+
+    let refused = match report.refused.as_slice() {
+        [one] => one,
+        other => panic!(
+            "the run reported {} refused transcripts, not one",
+            other.len()
+        ),
+    };
+    assert_eq!(refused.transcript, TRANSCRIPT);
+    assert_eq!(refused.output, RESULT);
+    assert_eq!(
+        refused.confirmation,
+        headwater_probe::intake::CONFIRMATIONS[0],
+        "the report names the confirmation that failed, from the closed set rather than a literal"
+    );
+    assert!(
+        refused.why.contains("sha256:another-taxonomy") && refused.why.contains("sha256:fixture"),
+        "the report names both digests, and it names neither: {}",
+        refused.why
+    );
+    assert!(
+        report
+            .render(ColorMode::Plain)
+            .contains("refused transcripts"),
+        "the run prints the refusal where a reader of the run sees it, rather than only inside \
+         the generated document"
+    );
+    assert!(
+        report.remedy().is_some(),
+        "a transcript planned against another taxonomy leaves a result with no verdict in it, \
+         and the run that wrote it exits 0"
+    );
+}

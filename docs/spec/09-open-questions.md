@@ -2,6 +2,7 @@
 "headwater:generated": "shelf_sections. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file."
 id: HW-REG-open-questions
 doc_type: decision_register
+title: Open questions, closed and redirected
 relations:
   superseded_by:
     - HW-REG-decisions
@@ -10,7 +11,7 @@ relations:
 
 # Decision records
 
-60 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+61 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -71,6 +72,10 @@ relations:
 ## Q15 — A synthesized content tier
 
 [HW-DR-0015](../decisions/0015-a-synthesized-content-tier.md) — Every document carries a warrant from a closed set of four, and `asserted` content is admitted with limits.
+
+## Q61 — How a recorded terminal demonstration is held against a run
+
+[HW-DR-0061](../decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md) — A recorded terminal demonstration is a figure under HW-DR-0039. It may show only the tutorial's scratch corpus, where a blocking step already holds every printed output against a run. (asserted, and no human has accepted it)
 
 ## Q39 — How a figure reaches a hand-built page
 
@@ -206,7 +211,7 @@ relations:
 
 ## How the two halves of the site share one host
 
-[HW-DR-0047](../decisions/0047-how-the-two-halves-of-the-site-share-one-host.md) — One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time. (asserted, and no human has accepted it)
+[HW-DR-0047](../decisions/0047-how-the-two-halves-of-the-site-share-one-host.md) — One directory holds both halves of the site, composed by `tools/site/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time. (asserted, and no human has accepted it)
 
 ## A corpus-wide fold is derived and never stored
 

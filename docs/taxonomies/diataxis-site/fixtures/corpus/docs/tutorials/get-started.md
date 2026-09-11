@@ -5,7 +5,6 @@ status: current
 status_since: 2026-09-09
 last_verified: 2026-09-09
 summary: Build a working example before changing it.
-kind: reference
 ---
 
 # Get started

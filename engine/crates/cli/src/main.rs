@@ -603,7 +603,7 @@ fn completions(shell: Option<headwater_cli::Shell>) -> ExitCode {
     // then get a tree carrying a palette. `clap_complete` writes a script out of
     // the `about` and `help` strings, which no palette touches — but a script
     // with an escape byte in it is a broken script, and this is the one line
-    // that has to be wrong for that to happen. `tools/color-fixtures.sh` runs
+    // that has to be wrong for that to happen. `tools/engine/color-fixtures.sh` runs
     // the pty case that would report it.
     let mut command = headwater_cli::paint::flattened(headwater_cli::command_in(
         headwater_cli::paint::WIDTH,
@@ -3063,7 +3063,8 @@ impl Loaded {
     /// declaration composes no selection, because the selection a transcript is
     /// graded against is the one the plan composed. A transcript this walk
     /// cannot read supplies no source. A corpus that holds no transcript
-    /// supplies nothing at all, which is this repository today.
+    /// supplies nothing at all, which this repository was until 2026-09-09 and
+    /// is no longer: it holds one transcript, which a confirmation refuses.
     ///
     /// # The tier below prices a run that already happened, so it reaches
     /// nothing

@@ -61,7 +61,7 @@ publish = true
 #
 # The number is the highest `rust-version` in the resolved graph rather than a
 # floor this code needs on its own: a dependency's floor is the workspace's
-# floor. `tools/engine-readme-fixtures.sh` compares the two and reddens when the
+# floor. `tools/engine/engine-readme-fixtures.sh` compares the two and reddens when the
 # lock moves above the pin, which is the reading nothing performed before.
 #
 # Like `license` below, this key is an inheritance SOURCE and not an inheritance
@@ -83,7 +83,7 @@ rust-version = "1.90"
 # delete this line and every cargo command fails with
 # `error inheriting 'license' from workspace root manifest`, before it compiles
 # anything. The other direction, a crate added later that forgets the member
-# line, is what `tools/build-declaration-fixtures.sh` holds, along with the
+# line, is what `tools/engine/build-declaration-fixtures.sh` holds, along with the
 # SPDX headers the sentence above claims.
 license = "Apache-2.0"
 
@@ -220,8 +220,17 @@ strip = true
 # that cost, and never for CI or a release artifact: it inherits `release`'s
 # `opt-level` and drops only the two settings LTO and single-codegen-unit
 # controls, so the binary is close to release speed and far cheaper to link.
+#
+# `codegen-units = 4` rather than the 16 this profile carried until 2026-09-11.
+# Codegen units are threads inside one rustc, so they multiply against cargo's
+# own job count and against every other build on the machine. Measured here
+# while a build-order run held fifteen worktrees: the run queue sat at 34
+# against 8 cores with 38,000 context switches a second, and no core was idle.
+# Codegen units past the number of cores a build can actually get buy queueing
+# rather than throughput, and each one costs a little optimization. Four is
+# still far from the shipped profile's 1, so the link stays cheap.
 [profile.dev-release]
 inherits = "release"
 lto = false
-codegen-units = 16
+codegen-units = 4
 strip = false

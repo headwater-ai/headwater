@@ -1,4 +1,4 @@
-28 seen, 26 classified, 25 checked, 306 check instances
+28 seen, 26 classified, 25 checked, 313 check instances
       1 generated, held to regeneration by `headwater generate --check`
       1 skipped: no `id` facet, which is the key this engine reads an identifier from and which no declaration states
       1 skipped: the `id` facet is a sequence, and an identifier is a word
@@ -17,6 +17,7 @@
      10 instances of relation.target.unresolved
       4 instances of relation.reciprocity.missing
       7 instances of relation.endpoint.not_permitted
+      7 instances of warrant.evidence.unsupported
       7 instances of relation.participation.overdue
      25 instances of relation.declaration.unusable
      25 instances of identifier.unusable
@@ -62,6 +63,8 @@ rules, and for each the scope that binds it
   relation.endpoint.not_permitted
     edge scope, one relation instance and both endpoints
   lifecycle.dependency.on_terminal
+    edge scope, one relation instance and both endpoints
+  warrant.evidence.unsupported
     edge scope, one relation instance and both endpoints
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
@@ -134,6 +137,7 @@ register
   facet.value.blank reaches no obligation, so it names none
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
   lifecycle.dependency.on_terminal reaches no obligation, so it names none
+  warrant.evidence.unsupported reaches no obligation, so it names none
   identifier.claimed_twice reaches no obligation, so it names none
   identifier.claim.missing reaches no obligation, so it names none
   identifier.claim.stale reaches no obligation, so it names none
@@ -442,6 +446,20 @@ instances
   relation.endpoint.not_permitted check/spec/01-one-half.md + check/evaluations/alpha.md
     passed
   relation.endpoint.not_permitted check/spec/15-unusable-entries.md + check/evaluations/alpha.md
+    passed
+  warrant.evidence.unsupported check/spec/00-both-halves.md + check/evaluations/alpha.md
+    passed
+  warrant.evidence.unsupported check/evaluations/delta.md + check/spec/02-cited-only.md
+    passed
+  warrant.evidence.unsupported check/evaluations/eta.md + check/evaluations/alpha.md
+    passed
+  warrant.evidence.unsupported check/evaluations/gamma.md + check/spec/00-both-halves.md
+    passed
+  warrant.evidence.unsupported check/spec/01-one-half.md + check/evaluations/beta.md
+    passed
+  warrant.evidence.unsupported check/spec/01-one-half.md + check/evaluations/alpha.md
+    passed
+  warrant.evidence.unsupported check/spec/15-unusable-entries.md + check/evaluations/alpha.md
     passed
   relation.participation.overdue check/evaluations/alpha.md + check/spec/00-both-halves.md + check/evaluations/eta.md + check/spec/01-one-half.md + check/spec/15-unusable-entries.md
     passed

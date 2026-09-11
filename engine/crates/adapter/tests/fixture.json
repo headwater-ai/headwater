@@ -12,7 +12,7 @@
     "classified": 26,
     "checked": 25,
     "generated": 1,
-    "instances": 307,
+    "instances": 314,
     "skipped": 53,
     "skips": [
       {
@@ -515,6 +515,12 @@
     },
     {
       "rule": "lifecycle.dependency.on_terminal",
+      "scope": "edge",
+      "version": 1,
+      "obligations": []
+    },
+    {
+      "rule": "warrant.evidence.unsupported",
       "scope": "edge",
       "version": 1,
       "obligations": []

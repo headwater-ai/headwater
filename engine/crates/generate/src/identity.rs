@@ -15,11 +15,29 @@
 //! carries the marker inside its front-matter block, and this block is what
 //! makes an emitter able to write one.
 //!
-//! # The block is closed at two scalars
+//! # The block is closed at three scalars
 //!
-//! `id` and `kind`. An identifier is minted once and is a declaration. A kind is
-//! a declaration. A summary, a status, a date and a body are prose, and no
-//! member here can carry one.
+//! `id`, `kind` and `name`. An identifier is minted once and is a declaration. A
+//! kind is a declaration. A name is a declaration too: it is what the document
+//! is called, and a taxonomy that requires the facet in the `name` role of a
+//! generated document's kind is already asking for one. `decision_register`
+//! requires `title`, and the tombstone at `docs/spec/09-open-questions.md` is a
+//! `decision_register` that had no way to supply it, so
+//! [`crate::label`] fell through to the identifier and a reader met
+//! `HW-REG-open-questions` in the sidebar, the browser tab and the shelf's own
+//! index page ([#627](https://github.com/headwater-ai/headwater/issues/627)).
+//!
+//! A summary, a status, a date and a body are prose, and no member here can
+//! carry one. `name` is not that: it is a label, it cannot be a sentence, and
+//! eight shelves of this repository already declare a free-text `title:` in a
+//! taxonomy source that `crate::shelf_label` renders into a navigation key, a
+//! heading and a served `<title>`. Admitting the same short string for a
+//! document rather than for a shelf adds no class of prose that the taxonomy
+//! source did not already hold.
+//!
+//! The member names the *role* and never the facet, for the reason
+//! [`crate::label`] gives: `title` means something in one taxonomy and nothing
+//! in the next.
 //!
 //! The refusal that this shape holds is the one the shelf-sections emitter
 //! already made against a `template`: a taxonomy source sits outside the corpus
@@ -113,9 +131,11 @@ pub(crate) fn read(
     };
     let id = scalar(block, "id", index, node.span, errors);
     let kind = scalar(block, "kind", index, node.span, errors);
+    let name = optional_scalar(block, "name");
     Some(DeclaredIdentity {
         id: id?,
         kind: kind?,
+        name,
     })
 }
 
@@ -135,6 +155,22 @@ fn writes_a_document(kind: Kind) -> bool {
         kind,
         Kind::ShelfIndex | Kind::ShelfSections | Kind::ProbeResult
     )
+}
+
+/// A member the block may state and need not.
+///
+/// A missing `name` is the shape every declaration had before the member
+/// existed, so it is not an error. An empty one is: a declaration that wrote
+/// `name: ""` asked for a label and would get the identifier, which is the
+/// defect rather than the fix. It is reported as absent so that the required
+/// facet reports missing where a check reads it, rather than the block writing
+/// a blank facet that resolves to nothing.
+fn optional_scalar(block: &Mapping, member: &str) -> Option<String> {
+    block
+        .get(member)
+        .and_then(|node| node.value.as_scalar())
+        .map(|scalar| scalar.text.trim().to_string())
+        .filter(|text| !text.is_empty())
 }
 
 fn scalar(
@@ -170,6 +206,7 @@ pub(crate) fn front_matter(
     projection: Kind,
 ) -> Result<String, String> {
     let discriminator = placement(surface, identity, output)?;
+    unwritable(surface, identity, discriminator.as_ref())?;
     let config = surface.config();
     let mut out = String::from("---\n");
     out.push_str(&headwater_mark::marker_member(projection.name()));
@@ -177,6 +214,14 @@ pub(crate) fn front_matter(
     out.push_str(&format!("{}: {}\n", config.identifier_facet, identity.id));
     if let Some((facet, value)) = discriminator {
         out.push_str(&format!("{facet}: {value}\n"));
+    }
+    if let Some(name) = &identity.name {
+        let Some(facet) = surface.name_facet() else {
+            return Err(format!(
+                "declares the name `{name}`, and this taxonomy puts no facet in the `name` role.                  A name is written under the facet that carries one, and a taxonomy that                  declares none names no document at all"
+            ));
+        };
+        out.push_str(&format!("{facet}: {name}\n"));
     }
     let owed = reciprocals(surface, identity, output);
     if !owed.is_empty() {
@@ -192,6 +237,84 @@ pub(crate) fn front_matter(
     }
     out.push_str("---\n\n");
     Ok(out)
+}
+
+/// The reason no block can be written when the kind requires a facet that this
+/// block is the writer of and the declaration does not state it.
+///
+/// # What this reads, and what it deliberately does not
+///
+/// Three facets, and only three: the identifier facet, the discriminator of a
+/// heterogeneous shelf, and the facet in the `name` role. Those are the ones a
+/// member of this block writes, so a requirement on one of them is a
+/// requirement the declaration can meet and did not
+/// ([#780](https://github.com/headwater-ai/headwater/issues/780)).
+///
+/// It is not the whole set the kind requires, and the line is measured. Over
+/// this repository's own lock, `governed_document` requires `status`,
+/// `status_since`, `last_verified` and `summary`, and both kinds this corpus
+/// generates inherit all four. A refusal over the whole required set would name
+/// 5 facets on `docs/spec/09-open-questions.md` and 4 on the probe result,
+/// refusing both of the two identity declarations this repository makes, and no
+/// member of this block could answer any of the nine. Whether a generated
+/// document should be excused from `status` and `summary` is a question about
+/// the census exemption and about the position
+/// [spec 6](../../../../docs/spec/06-engine-architecture.md) states, rather than
+/// a question about this block, and #780 stays open holding it.
+///
+/// # Why the refusal is here and not at the read
+///
+/// The declaration is read by [`crate::Projections::read`], which takes the
+/// resolved taxonomy as a `&Mapping` and holds no shape, so it can resolve no
+/// kind against the facets that kind requires. This function has a
+/// [`Surface`], and [`Surface::shape`] carries `required_facets`. It also has
+/// the shelf that claims the output path, which is what decides whether the
+/// discriminator is a facet the block writes at all.
+fn unwritable(
+    surface: &Surface<'_>,
+    identity: &DeclaredIdentity,
+    discriminator: Option<&(String, String)>,
+) -> Result<(), String> {
+    let config = surface.config();
+    let missing: Vec<String> = surface
+        .shape()
+        .required_facets(&identity.kind)
+        .into_iter()
+        .filter(|facet| {
+            // The identifier is a required member of the block, so this never
+            // fires; it is written rather than assumed, because a block that
+            // stopped writing the identifier would be the same defect.
+            if facet == &config.identifier_facet {
+                return false;
+            }
+            // A heterogeneous shelf gets its discriminator from `kind`. A
+            // homogeneous one gets no facet at all, and spec 2 forbids
+            // restating the kind there, so a requirement on it is outside what
+            // this block answers for.
+            if discriminator.is_some_and(|(written, _)| written == facet) {
+                return false;
+            }
+            match surface.name_facet() {
+                Some(name) if name == facet => identity.name.is_none(),
+                _ => false,
+            }
+        })
+        .collect();
+    if missing.is_empty() {
+        return Ok(());
+    }
+    let kind = &identity.kind;
+    let facets = missing
+        .iter()
+        .map(|facet| format!("`{facet}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    Err(format!(
+        "declares the kind `{kind}`, and `{kind}` requires the facet {facets}. This block writes \
+         that facet from its `name` member and the declaration states none. A generated document \
+         is the one document whose only writer is a declaration, so a facet the declaration \
+         leaves out is a facet no author can add and no check reads"
+    ))
 }
 
 /// The discriminator the shelf that claims this path needs, and the reason no

@@ -1984,3 +1984,149 @@ fn a_descriptor_that_records_no_emitter_set_is_not_a_producer_difference() {
         "an ordinary stale projection lost its remedy: {remedy}"
     );
 }
+
+/// No label a generating emitter writes is identifier-shaped.
+///
+/// This is the property [#627](https://github.com/headwater-ai/headwater/issues/627)
+/// exists to hold. A projection that takes over the path of a document declares
+/// an `identity`, and until that block could carry the `name`-role facet the
+/// document's own kind requires, every emitter that labels a document fell
+/// through to its identifier. A visitor to `/spec/` was then offered a row
+/// reading `HW-REG-open-questions`, and the same string reached the sidebar and
+/// the browser tab, because `crate::label` reads `pointer.name` first and there
+/// was no name to read.
+///
+/// # Two surfaces, one property, derived from the plan
+///
+/// The nav leaves of `.headwater/nav.yml` and the rows of every generated
+/// `shelf_index` page. Both are read out of the plan rather than out of the
+/// served HTML, for two measured reasons. `tools/site/check-site-fragments.py` does
+/// not capture anchor text, so a served-HTML property would be new state on the
+/// parser that the fragment pass shares; and 881 of 100,337 served anchors
+/// carry identifier link text, every one a legitimate prose citation, so the
+/// same property over served anchors fires on 881 true anchors on a clean tree.
+/// A generated artifact holds emitter output alone, so the property is exact
+/// here and needs no parser.
+///
+/// # Both denominators are printed
+///
+/// A property over an empty set reports as a pass, and this one is written over
+/// two sets that a refactor could empty. The assertion names the population it
+/// read, and a lower bound on each one fails the day an extractor stops
+/// matching.
+///
+/// # Watched failing
+///
+/// At `origin/main` before this change it failed at 3 identifier-shaped nav
+/// leaves of 333 (`HW-RESULT-…`, `HW-RUN-…`, `HW-REG-open-questions`) and 3
+/// identifier-shaped shelf-index rows of 300 across 12 generated index pages.
+#[test]
+fn no_label_a_generating_emitter_writes_is_identifier_shaped() {
+    let root = repository_root();
+    let resolved = headwater_resolve::repository(&root)
+        .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
+    let corpus = Corpus::declared(
+        &root,
+        &resolved.consumer.corpus_root,
+        &resolved.consumer.exclusions,
+    );
+    let built = Built::over(&corpus, &resolved.resolution.taxonomy);
+    let projections =
+        Projections::read(&resolved.resolution.taxonomy).expect("the projections read");
+    let plan: Plan = plan(
+        &built.surface(),
+        &built.census,
+        &projections,
+        &Identity::default(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+
+    // The navigation. A leaf is `- "<label>": "<path>.md"`; a group key carries
+    // no path and labels a shelf rather than a document.
+    let nav = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == ".headwater/nav.yml")
+        .map(|output| output.bytes.clone())
+        .expect("the navigation is planned");
+    let mut nav_leaves = Vec::new();
+    for line in nav.lines() {
+        let line = line.trim();
+        let Some(rest) = line.strip_prefix("- \"") else {
+            continue;
+        };
+        let Some((label, path)) = rest.split_once("\": \"") else {
+            continue;
+        };
+        if path.ends_with(".md\"") {
+            nav_leaves.push(label.to_string());
+        }
+    }
+    let nav_identifiers: Vec<&String> = nav_leaves
+        .iter()
+        .filter(|label| is_identifier_shaped(label))
+        .collect();
+
+    // Every generated shelf index. A row is `- [<label>](<path>)`.
+    let mut index_pages = 0usize;
+    let mut index_rows: Vec<String> = Vec::new();
+    for output in &plan.outputs {
+        if output.kind != Kind::ShelfIndex {
+            continue;
+        }
+        index_pages += 1;
+        for line in output.bytes.lines() {
+            let Some(rest) = line.trim().strip_prefix("- [") else {
+                continue;
+            };
+            let Some((label, _)) = rest.split_once("](") else {
+                continue;
+            };
+            index_rows.push(label.to_string());
+        }
+    }
+    let index_identifiers: Vec<&String> = index_rows
+        .iter()
+        .filter(|label| is_identifier_shaped(label))
+        .collect();
+
+    assert!(
+        nav_leaves.len() > 300 && index_pages > 5 && index_rows.len() > 150,
+        "this case read {} nav leaves and {} rows across {index_pages} generated index pages, \
+         which is too few to be this corpus. The extractor is reading the wrong shape.",
+        nav_leaves.len(),
+        index_rows.len()
+    );
+    assert!(
+        nav_identifiers.is_empty(),
+        "{} of {} nav leaves are labelled with an identifier: {:?}. A generated label falls \
+         through to the identifier when the document declares no `name`-role facet.",
+        nav_identifiers.len(),
+        nav_leaves.len(),
+        nav_identifiers
+    );
+    assert!(
+        index_identifiers.is_empty(),
+        "{} of {} shelf-index rows across {index_pages} generated index pages are labelled with \
+         an identifier: {:?}.",
+        index_identifiers.len(),
+        index_rows.len(),
+        index_identifiers
+    );
+}
+
+/// Whether a label is an identifier of this corpus rather than a name.
+///
+/// Every identifier scheme of this repository mints `HW-<SCHEME>-<rest>`, and
+/// no name a person writes opens that way. The test above quotes the labels it
+/// rejects, so a false positive names itself.
+fn is_identifier_shaped(label: &str) -> bool {
+    let Some(rest) = label.strip_prefix("HW-") else {
+        return false;
+    };
+    let Some((scheme, _)) = rest.split_once('-') else {
+        return false;
+    };
+    !scheme.is_empty() && scheme.chars().all(|c| c.is_ascii_uppercase())
+}

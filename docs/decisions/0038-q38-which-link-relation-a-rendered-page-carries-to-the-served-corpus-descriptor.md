@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   governs:
-    - mkdocs-overrides/main.html
+    - mkdocs/overrides/main.html
   traces_to:
     - HW-SPEC-distribution-and-federation
     - HW-DR-0014
@@ -34,7 +34,7 @@ relations:
 
 ## Decision
 
-**A rendered page carries one element, and the relation on it is `describedby`.** `mkdocs-overrides/main.html` emits it once, inside the `extrahead` block that the theme's `base.html` declares:
+**A rendered page carries one element, and the relation on it is `describedby`.** `mkdocs/overrides/main.html` emits it once, inside the `extrahead` block that the theme's `base.html` declares:
 
 ```html
 <link rel="describedby" type="application/json" href="{{ 'corpus.json'|url }}">
@@ -77,4 +77,4 @@ Every page that MkDocs renders through `main.html` carries it. The `url` filter 
 
 **Two things sit outside this record.** The visual design of the rendered half is one. The hand-built pages under `site/` are the other, and Q37 governs those. No page under `site/` carries this pointer.
 
-**This record governs one file.** `mkdocs-overrides/main.html` is the whole of the mechanism, and it is the only reason that the theme has a custom directory at all. A `governs` edge reaches the path it names and no path under it, which [HW-OBL-0104](../obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) prices.
+**This record governs one file.** `mkdocs/overrides/main.html` is the whole of the mechanism, and it is the only reason that the theme has a custom directory at all. A `governs` edge reaches the path it names and no path under it, which [HW-OBL-0104](../obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) prices.

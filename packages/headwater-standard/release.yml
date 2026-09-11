@@ -24,14 +24,14 @@
 release:
   format: 1
   package: headwater/standard
-  version: 4.2.0
+  version: 4.3.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:61e834384b5ec733ae861f8a5c3deebbcac6c0be692939bcd33bc0697d562115
+  digest: sha256:f4b7933aa8f8a1eb5fb5844913a65955873f6e30f1dc662d17a0ce8e7918a3bb
   members:
     - path: assemblies/starter/assembly.yml
-      digest: sha256:3b0f720e55119084f76aa51d178b833ae0311e61477a383298f0fb36f5e0d436
+      digest: sha256:a31fc170c7e398feb01c0cc2d5f684744b24b8df4ce86a896d5ee64963567d2e
     - path: bundles/README.md
-      digest: sha256:5d996f2e730a7ef7397dfab3dc78665e210ad8c151b58d1aceb223a7ddc89442
+      digest: sha256:b8336ea59f77d2c067e7bdebb154f90ec3838379de06cbf5f11e146b8495916f
     - path: bundles/brd-prd/bundle.yml
       digest: sha256:af0637e7fd79d135b52d6eeca56eeeae9f3d1c1d0790669df0469fb13ca604a8
     - path: bundles/brd-prd/doctrine.md
@@ -65,7 +65,7 @@ release:
     - path: bundles/diataxis-site/bundle.yml
       digest: sha256:d1d729c52c81b6e53cda7f7333f49155d583ca1f9fceb07737b309be6f15132d
     - path: bundles/diataxis-site/doctrine.md
-      digest: sha256:7872748398023a8fc1d0598fc3198abfc6feffaa4f8ef94dd043719284efe0b7
+      digest: sha256:b20d68c6dfb85f52a45b8a3ebff7649a968e0da1adad56e3691d3d6bd3b32ebb
     - path: bundles/diataxis-site/templates/explanation.md
       digest: sha256:7f7dbb08f3eec987eab3996cfd987e18760d2aeb76b59f044e22b5d6fe9b7925
     - path: bundles/diataxis-site/templates/how_to.md
@@ -99,6 +99,6 @@ release:
     - path: doctrine/starter.md
       digest: sha256:6f080e8de172fd15b5cf398475076f281ca5872abd41458e68260f46aa3e9c00
     - path: package.yml
-      digest: sha256:dfc620d63c3826aab6e20668caf0957780566eca0a0ecbeb71c033f01f5bbdef
+      digest: sha256:f0cb3452fec1c21859e40fee19c8ea32875ec12e922ea4ded92100082c0bfbac
     - path: taxonomy.yml
-      digest: sha256:8882db567f528108a83e6b424893cdaea67703b8bc2462c08188d8aa4cecd8b7
+      digest: sha256:f8404c347cbf6760c27b52fd5d14678186f42285451f83acfc36ad851abcdb65

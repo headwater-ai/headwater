@@ -35,7 +35,7 @@ use std::path::{Path, PathBuf};
 ///
 /// A recorded fixture is bytes on disk and a failure message is read out of a
 /// captured stream, so both are the piped case, where `paint` is the identity.
-/// The color a terminal sees is asserted by `tools/color-fixtures.sh`, which
+/// The color a terminal sees is asserted by `tools/engine/color-fixtures.sh`, which
 /// attaches a real one; nothing in this file could, and a recorded fixture that
 /// held escape sequences would be re-blessed against whatever terminal last ran
 /// the suite.

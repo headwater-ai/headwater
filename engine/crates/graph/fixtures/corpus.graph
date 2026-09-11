@@ -35,6 +35,14 @@ anchors
     cited by HW-OBL-0179
   code_path `.github/workflows/ci.yml` via source-tree
     cited by HW-OBL-0173
+  code_path `.headwater/notes/website-design-brief.md` via source-tree
+    cited by HW-DR-0037
+  code_path `.headwater/notes/website-design-brief.md` via source-tree
+    cited by HW-DR-0039
+  code_path `.headwater/notes/website-design-brief.md` via source-tree
+    cited by HW-DR-0050
+  code_path `.headwater/notes/website-design-brief.md` via source-tree
+    cited by HW-DR-0051
   code_path `.headwater/overlay.yml` via source-tree
     cited by HW-DR-0027
   code_path `.headwater/overlay.yml` via source-tree
@@ -47,6 +55,8 @@ anchors
   code_path `docs/taxonomies/decision-record/bundle.yml` via source-tree
     cited by HW-DR-0030
     inside `docs/taxonomies/**`, which this corpus declares is not corpus content
+  code_path `docs/tutorials/your-first-governed-corpus.md` via source-tree
+    cited by HW-DR-0061
   code_path `engine/Cargo.lock` via source-tree
     cited by HW-REQ-0001
   code_path `engine/Cargo.toml` via source-tree
@@ -253,20 +263,12 @@ anchors
     cited by HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary
   code_path `engine/crates/yaml/src/json.rs` via source-tree
     cited by HW-IFACE-headwater-json
-  code_path `mkdocs-hooks/site_tokens.py` via source-tree
+  code_path `mkdocs/hooks/site_tokens.py` via source-tree
     cited by HW-DR-0050
-  code_path `mkdocs-overrides/css/headwater.css` via source-tree
+  code_path `mkdocs/overrides/css/headwater.css` via source-tree
     cited by HW-DR-0050
-  code_path `mkdocs-overrides/main.html` via source-tree
+  code_path `mkdocs/overrides/main.html` via source-tree
     cited by HW-DR-0038
-  code_path `notes/website-design-brief.md` via source-tree
-    cited by HW-DR-0037
-  code_path `notes/website-design-brief.md` via source-tree
-    cited by HW-DR-0039
-  code_path `notes/website-design-brief.md` via source-tree
-    cited by HW-DR-0050
-  code_path `notes/website-design-brief.md` via source-tree
-    cited by HW-DR-0051
   code_path `packages/headwater-standard/taxonomy.yml` via source-tree
     cited by HW-DR-0025
   code_path `site/_headers` via source-tree
@@ -289,23 +291,23 @@ anchors
     cited by HW-DR-0037
   code_path `taxonomy-source/headwater-standard/package.yml` via source-tree
     cited by HW-OBL-0174
-  code_path `tools/assemble-site.sh` via source-tree
-    cited by HW-DR-0047
-  code_path `tools/cloudflare-build.sh` via source-tree
-    cited by HW-DR-0047
-  code_path `tools/language-spike/build.sh` via source-tree
+  code_path `tools/engine/language-spike/build.sh` via source-tree
     cited by HW-EVAL-language-spike-results
-  code_path `tools/rdf-probe/emit.py` via source-tree
+  code_path `tools/probe/rdf-probe/emit.py` via source-tree
     cited by HW-EVAL-owl-skos-worked-example
-  code_path `tools/refresh-crawler-files.sh` via source-tree
+  code_path `tools/site/assemble-site.sh` via source-tree
+    cited by HW-DR-0047
+  code_path `tools/site/cloudflare-build.sh` via source-tree
+    cited by HW-DR-0047
+  code_path `tools/site/refresh-crawler-files.sh` via source-tree
     cited by HW-DR-0048
-  code_path `tools/refresh-figures.sh` via source-tree
+  code_path `tools/site/refresh-figures.sh` via source-tree
     cited by HW-DR-0039
-  code_path `tools/refresh-site-tokens.sh` via source-tree
+  code_path `tools/site/refresh-site-tokens.sh` via source-tree
     cited by HW-DR-0050
-  code_path `tools/site-tokens.css` via source-tree
+  code_path `tools/site/site-tokens.css` via source-tree
     cited by HW-DR-0050
-  code_path `tools/sitemap.py` via source-tree
+  code_path `tools/site/sitemap.py` via source-tree
     cited by HW-DR-0048
   code_path `wrangler.jsonc` via source-tree
     cited by HW-DR-0047

@@ -16,9 +16,9 @@ relations:
   constrains:
     - HW-DR-0037
   governs:
-    - tools/refresh-figures.sh
+    - tools/site/refresh-figures.sh
   traces_to:
-    - notes/website-design-brief.md
+    - .headwater/notes/website-design-brief.md
 ---
 
 # Q39 — How a figure reaches a hand-built page
@@ -33,13 +33,13 @@ relations:
 
 **Both admitted forms were therefore closed, and a page of figures had nowhere to stand.** The self-assessment page waited behind that, and the landing page carried figures from a run that nobody could name.
 
-**The cost of the gap is measured rather than argued.** `notes/website-design-brief.md` section 3 states a table of run figures typed by hand on 2026-08-23. It reports 245 files under the corpus root, 523 findings, and taxonomy `headwater/standard 3.2.0`. A run of this engine on 2026-08-26 reports 332 files, 524 findings, and `headwater/standard 3.3.0`. Three days moved every figure in the one document that states why a hand-typed figure is a defect.
+**The cost of the gap is measured rather than argued.** `.headwater/notes/website-design-brief.md` section 3 states a table of run figures typed by hand on 2026-08-23. It reports 245 files under the corpus root, 523 findings, and taxonomy `headwater/standard 3.2.0`. A run of this engine on 2026-08-26 reports 332 files, 524 findings, and `headwater/standard 3.3.0`. Three days moved every figure in the one document that states why a hand-typed figure is a defect.
 
 ## Decision
 
 **The interpolating form runs before the commit rather than after it.** HW-DR-0037 forecloses a build between the commit and the served bytes. It forecloses nothing on the machine of the person who writes the page. So the interpolation happens there, and the interpolated figure is in the bytes that the commit carries.
 
-**`tools/refresh-figures.sh` is that build.** It runs the engine over this repository, reads the result, and rewrites the text of every element under `site/` that carries a `data-figure` attribute. A key with no measurement fails the run, and so does a measurement that reaches no page.
+**`tools/site/refresh-figures.sh` is that build.** It runs the engine over this repository, reads the result, and rewrites the text of every element under `site/` that carries a `data-figure` attribute. A key with no measurement fails the run, and so does a measurement that reaches no page.
 
 **Five sources supply every figure, and each one is a run.** `headwater check --json` gives the census, the findings, the rules wired, the taxonomy and the clock. The text output of the same verb gives the census lines that the JSON omits, and the obligation register. `docs/interfaces/README.md` gives the verb count and the group count, and `headwater generate --check` holds that file. `engine/crates/generate/src/profile.rs` gives the emitter split, read off the `Emitter` values and the arms of `is_built`. `headwater conformance` gives the level this repository reaches.
 

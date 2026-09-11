@@ -191,6 +191,12 @@ add:
     sections:
       require: [Task, Expectation]
 
+  # `title` is required for the reason every other shelf of this corpus requires
+  # it: the facet in the `name` role is what a generated index, the navigation
+  # and the browser tab read, and a kind that requires none leaves every one of
+  # them printing the identifier
+  # ([#627](https://github.com/headwater-ai/headwater/issues/627)). A run
+  # identifier is a timestamp and a tier, which names the file and not the run.
   kinds.probe_transcript:
     is_a: governed_document
     purpose: evidence
@@ -198,7 +204,7 @@ add:
     lifecycle: standard
     identifier: {scheme: run_id}
     facets:
-      require: [tier, arm]
+      require: [tier, arm, title]
     sections:
       require: [Run identity, Events]
 
@@ -207,17 +213,28 @@ add:
   # grader version. It carries the `regenerated` warrant, and `generate --check`
   # proves it."
   #
-  # It requires no section and no facet of its own, and the reason is the one
-  # spec 6 gives for every projection: a generated file is excused from the
-  # document checks, because its content is a function of the emitter rather than
-  # of an author. A required section here would be a rule that nothing reads, and
-  # the emitter is what holds the shape.
+  # It requires no section of its own, and the reason is the one spec 6 gives for
+  # every projection: a generated file is excused from the document checks,
+  # because its content is a function of the emitter rather than of an author. A
+  # required section here would be a rule that nothing reads, and the emitter is
+  # what holds the shape.
+  #
+  # `title` is the one facet it requires, and it is not that rule. The facet in
+  # the `name` role is read by the emitters that *label* this document rather
+  # than by a check over its body: the shelf index, the navigation and the served
+  # `<title>` all fall through to the identifier without it, which is what a
+  # reader met before
+  # [#627](https://github.com/headwater-ai/headwater/issues/627). The projection
+  # supplies it from its `identity` block, so the requirement names something the
+  # emitter can meet rather than something an author must type.
   kinds.probe_result:
     is_a: governed_document
     purpose: evidence
     voice: declarative
     lifecycle: standard
     identifier: {scheme: result_id}
+    facets:
+      require: [title]
 
   # What an `opened`, `not_opened` or `cited` expectation names. A separate
   # relation and not `traces_to`, because a grader has to tell the targets of
@@ -984,16 +1001,28 @@ add_to:
     # The `identity` block is why a projection may take this path at all. Three
     # documents name `HW-REG-open-questions`, and a generated file with no front
     # matter holds no identifier, so all three edges would resolve to nothing.
-    # The block declares the identifier and the kind, and the engine derives the
-    # rest: `doc_type` because the `spec_series` shelf is heterogeneous, and the
-    # `superseded_by` half of each `supersedes` that another document declares
-    # into this one.
+    # The block declares the identifier, the kind and the name, and the engine
+    # derives the rest: `doc_type` because the `spec_series` shelf is
+    # heterogeneous, and the `superseded_by` half of each `supersedes` that
+    # another document declares into this one.
+    #
+    # **The name is what the kind already requires.** `decision_register`
+    # requires `title`, and until the block could carry it this document supplied
+    # none, so the navigation sidebar, the browser tab and the row on
+    # `docs/spec/README.md` all read `HW-REG-open-questions`
+    # ([#627](https://github.com/headwater-ai/headwater/issues/627)). The value
+    # says the page is a tombstone rather than a live register, because a reader
+    # who follows a five-year-old citation lands here and needs to be told that
+    # before reading. It has to differ from every other served title, and
+    # `tools/site/check-site-fragments.py` exits 1 on a repeat, so nothing here has to
+    # guard it a second time.
     - kind: shelf_sections
       for: [decisions]
       output: docs/spec/09-open-questions.md
       identity:
         id: HW-REG-open-questions
         kind: decision_register
+        name: Open questions, closed and redirected
 
     # The standing test of the grader, which spec 12 asks a correctness root for
     # and which nothing could run while a result was something a verb printed.
@@ -1001,16 +1030,19 @@ add_to:
     # file stem and one declaration writes as many files as this corpus holds
     # transcripts.
     #
-    # It writes none today. `docs/probe-runs/` holds no file, a transcript is
-    # written by a recorder that observes a session from outside it, and no verb
-    # of this engine writes one. `headwater generate` prints that reason on every
-    # run, which is where an empty arm belongs rather than in a register a reader
-    # has to go and look up.
+    # It writes one today, from the one transcript `docs/probe-runs/` holds. A
+    # transcript is written by a recorder that observes a session from outside
+    # it, and no verb of this engine writes one. That transcript is refused by
+    # the first of the five confirmations, so the file this declaration writes
+    # carries the refusal and no verdict. `headwater generate` reports the
+    # refusal as a refusal of the run, which is where it belongs rather than
+    # inside a document only its own reader opens.
     - kind: probe_result
       output: "docs/probe-results/{run}.md"
       identity:
         id: "HW-RESULT-{run}"
         kind: probe_result
+        name: "Probe result for {run}"
 
     # The verb index, and the shelf above is the one end of it. Every verb the
     # binary dispatches gets a row, and a verb that no contract describes gets a

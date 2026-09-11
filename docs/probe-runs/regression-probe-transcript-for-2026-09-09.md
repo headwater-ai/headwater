@@ -1,5 +1,6 @@
 ---
 id: HW-RUN-regression-probe-transcript-for-2026-09-09
+title: Regression probe transcript for 2026-09-09
 status: draft
 status_since: 2026-09-09
 summary: "Four regression sessions recorded the calls that a Claude Haiku session made while it answered the corpus probes."
@@ -27,7 +28,7 @@ at: 2026-09-09
 cost_cents: 28
 ```
 
-The recorder ran `tools/probe-record.sh` from Headwater at `c18fa0df`. Claude Code 2.1.266 wrote its stream to the recorder's standard-output pipe. The harness, and not the model, wrote this log.
+The recorder ran `tools/probe/probe-record.sh` from Headwater at `c18fa0df`. Claude Code 2.1.266 wrote its stream to the recorder's standard-output pipe. The harness, and not the model, wrote this log.
 
 ## Events
 

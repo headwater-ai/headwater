@@ -4,7 +4,7 @@ touched corpus/spec/02-the-second-part.md
 touched corpus/decisions/a-second-successor.md
 touched corpus/decisions/an-earlier-decision.md
 
-9 seen, 9 classified, 9 checked, 123 check instances
+9 seen, 9 classified, 9 checked, 124 check instances
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
      19 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   a check read .headwater/ids, which the census never walked
@@ -18,6 +18,7 @@ touched corpus/decisions/an-earlier-decision.md
       7 instances of relation.target.unresolved
       3 instances of relation.reciprocity.missing
       4 instances of relation.endpoint.not_permitted
+      1 instances of warrant.evidence.unsupported
       9 instances of relation.declaration.unusable
       9 instances of identifier.unusable
       1 instances of identifier.claimed_twice
@@ -53,6 +54,8 @@ rules, and for each the scope that binds it
   relation.endpoint.not_permitted
     edge scope, one relation instance and both endpoints
   lifecycle.dependency.on_terminal
+    edge scope, one relation instance and both endpoints
+  warrant.evidence.unsupported
     edge scope, one relation instance and both endpoints
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
@@ -115,6 +118,7 @@ register
   relation.reciprocity.missing reaches no obligation, so it names none
   relation.endpoint.not_permitted reaches no obligation, so it names none
   lifecycle.dependency.on_terminal reaches no obligation, so it names none
+  warrant.evidence.unsupported reaches no obligation, so it names none
   relation.participation.overdue reaches no obligation, so it names none
   relation.declaration.unusable reaches no obligation, so it names none
   identifier.claimed_twice reaches no obligation, so it names none
@@ -254,6 +258,8 @@ instances
   relation.endpoint.not_permitted corpus/spec/02-the-second-part.md + corpus/spec/01-the-first-part.md
     passed
   relation.endpoint.not_permitted corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md
+    passed
+  warrant.evidence.unsupported corpus/spec/02-the-second-part.md + corpus/spec/01-the-first-part.md
     passed
   relation.declaration.unusable corpus/decisions/a-scaffolded-successor.md
     passed

@@ -27,7 +27,7 @@ It also makes the color unobservable from inside the repository. Every recorded 
 
 The shape is not hypothetical. From #475 and #478 until 2026-09-08, `check`, `sweep` and `explain` colored their reports and nothing asserted it. Over the same period `route`, `infer` and `generate --check` rendered zero escape sequences under a real terminal. Seventeen interface contracts said that the default senses the stream and colors only there. Three of those verbs kept a published promise, three broke it, and no run of this repository could tell the two groups apart.
 
-`tools/color-fixtures.sh` closes one half of the gap. It attaches a pseudo-terminal with util-linux `script` and counts the escape bytes a verb's own report writes. HW-DR-0045 forbids a flag rather than a test, so the suite needs no amendment and no new dependency. It covers `route`, `generate --check`, `check`, `explain` and `sweep plan` on 2026-09-08.
+`tools/engine/color-fixtures.sh` closes one half of the gap. It attaches a pseudo-terminal with util-linux `script` and counts the escape bytes a verb's own report writes. HW-DR-0045 forbids a flag rather than a test, so the suite needs no amendment and no new dependency. It covers `route`, `generate --check`, `check`, `explain` and `sweep plan` on 2026-09-08.
 
 ## Obligation
 
@@ -45,7 +45,7 @@ The corpus owes a decision on which of two remedies it wants, and the decision n
 
 The first remedy is a type. A mode that only a stream reader can produce moves the defect from a call site to a compile error. A renderer could not then receive one by hand. It costs a change to every renderer and to every test that calls one.
 
-The second remedy is coverage. The verb list in `tools/color-fixtures.sh` becomes a set the engine derives, rather than five lines an author wrote. A verb that grows a human report is then covered on the day it lands. It costs a way to name every human report a verb writes, and no declaration of this repository holds one today.
+The second remedy is coverage. The verb list in `tools/engine/color-fixtures.sh` becomes a set the engine derives, rather than five lines an author wrote. A verb that grows a human report is then covered on the day it lands. It costs a way to name every human report a verb writes, and no declaration of this repository holds one today.
 
 Neither remedy is free and one of them has to be chosen. A third position is legitimate, and it has to be stated rather than reached by default. That position is that a person who runs the binary is what catches a color defect.
 
@@ -55,6 +55,6 @@ A decision record that names the remedy, and the build that carries it.
 
 For the first remedy, the discharge is a type that a call site cannot supply by hand. Beside it goes the case that shows a hand-written mode failing to compile.
 
-For the second, the discharge is a run of `tools/color-fixtures.sh` whose verb list comes from a declaration. Beside it goes the case that shows a new human report entering the list with no edit to the suite.
+For the second, the discharge is a run of `tools/engine/color-fixtures.sh` whose verb list comes from a declaration. Beside it goes the case that shows a new human report entering the list with no edit to the suite.
 
 For the third, the discharge is the decision record alone, and this obligation closes against it.
