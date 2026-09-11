@@ -106,7 +106,7 @@ def measured_figures(report, strict_status):
     """Read the same figures out of what `headwater check` printed."""
 
     def one(pattern, default=None):
-        m = re.search(pattern, report)
+        m = re.search(pattern, report, re.M)
         if m is None:
             if default is None:
                 raise Mismatch("the run printed no `%s`" % pattern)

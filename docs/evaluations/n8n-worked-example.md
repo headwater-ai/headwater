@@ -67,7 +67,7 @@ The entry assumed that a design specification belongs to a numbered series. A mo
 
 The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full, with the assembly that reproduces it. The summary:
 
-**105 files under the corpus root, 4 typed, 101 excluded, 4 checked, 42 check instances, 12 findings, all 12 of them errors.** `headwater check --strict` exits 1. The 101 excluded files are the vendored taxonomy package.
+**42 files under the corpus root, 4 typed, 38 excluded, 4 checked, 46 check instances, 13 findings, all 13 of them errors.** `headwater check --strict` exits 1. The 38 excluded files are the vendored taxonomy package.
 
 Three findings per document, and the same three on each one.
 
@@ -87,13 +87,13 @@ The base package declares `language: default: {tag: en-US, controlled: none}`. S
 
 **The canonical library, pointed at four real governing documents, says nothing at all about the prose in them.** That is worth stating before any count, because a large finding total over somebody else's corpus is easy to mistake for a result.
 
-### The broken link that no rule reports
+### The broken link that no rule reported until 4.3.0
 
 `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` writes the link `[n8n workflow package]` with the target `../workflow/`. From that directory the target is `packages/@n8n/workflow/`, and the tree at the pin holds no such path. The package it means is `packages/workflow/`, which holds 244 files. This was checked against the whole tree at the pin and not against the four-file slice.
 
-`headwater check` sees it and reports it in the graph section as `1 prose links that did not resolve`, with the file, the line and the reason. **No rule turns it into a finding.** `link.fragment.unresolved` reads a fragment inside a document, ran four instances, and reported nothing.
+`headwater check` sees it and reports it in the graph section as `1 prose links that did not resolve`, with the file, the line and the reason. **Until headwater/standard 4.3.0 no rule turned it into a finding.** From 4.3.0 `link.path.unresolved` reports it as an error under `OB-LINK-2`. The near rule is `link.fragment.unresolved`, which reads a fragment inside a document rather than a path. It ran four instances here and reported nothing, then and now.
 
-So the one defect here that a reader would call a defect appears as a fact and not as a finding. Neither of n8n's own two tools reports it either.
+So the one defect here that a reader would call a defect was a fact and not a finding at 4.0.0. It is now both. That move is the single change in this document's result. Everything the evaluation concluded from the silence is a claim about 4.0.0 rather than about the library today. Neither of n8n's own two tools reports it.
 
 ## The scattered-corpus question
 
@@ -101,7 +101,7 @@ This is the third Done-when bullet of [#492](https://github.com/headwater-ai/hea
 
 **First, a correction to how the issue states it.** n8n does have a root `docs/` directory, and it holds 272 files at the pin. 271 of them sit under `docs/generated/` and are `tbls` output produced from the database migrations. The 272nd is `docs/db.md`. It is an authored page, and its subject is how that output is generated and where to read it. No architecture document, no review rule and no skill is under `docs/`. The issue's claim is right in substance and wrong as literally written. The accurate statement is narrower. n8n has a `docs/` directory that carries generated output and one index page for it. Its governed prose lives elsewhere, scattered.
 
-**The design-spec entry as it ships types none of these documents.** Its one shelf is `spec_series` at `docs/spec/**`, and not one file of this corpus is under `docs/`. Run the same assembly with that shelf alone and the run reports **105 files, 4 untyped, 101 excluded, 0 checked, 2 check instances, 0 findings**. `headwater check --strict` exits **0**.
+**The design-spec entry as it ships types none of these documents.** Its one shelf is `spec_series` at `docs/spec/**`, and not one file of this corpus is under `docs/`. Run the same assembly with that shelf alone and the run reports **42 files, 4 untyped, 38 excluded, 0 checked, 6 check instances, 1 finding**. `headwater check --strict` exits **1**, and the one finding is a broken prose link rather than anything about the four documents going unread.
 
 A green strict run over four real governing documents that no rule read is what the census crate calls *systematically green*. The engine is honest about it in the census, which carries four rows saying `no shelf pattern claims this path`. Nothing else says the corpus went unchecked.
 
@@ -137,7 +137,7 @@ The issue states that `lefthook.yml` runs `prettier --write` on every staged `.m
 
 That was verified rather than reasoned. A scratch directory with a `.prettierignore` of `**/*.md` and one badly formatted Markdown file: `prettier --check` reports `All matched files use Prettier code style` and exits 0. Remove the ignore file and change nothing else, and the same command reports a style issue on the same file.
 
-**So prettier catches 0 of the 12 findings, and 0 of anything else in these four files.**
+**So prettier catches 0 of the 13 findings, and 0 of anything else in these four files.**
 
 The counterfactual is worth one line, because it bounds the overlap. Run prettier over the four files with the ignore lifted and it rewrites three of them. Every change is blank lines around fenced blocks, table column alignment, and indentation inside a fenced block. None of it touches a heading, a facet, a link, a spelling or a sentence. **Even with the ignore lifted the overlap would be zero.**
 
@@ -202,7 +202,7 @@ The [fixture directory](../taxonomies/standards-spec/fixtures/n8n/) carries its 
 
 The [fixture README](../taxonomies/standards-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full. The summary:
 
-**7 files under the corpus root, 7 typed, 0 excluded, 7 checked, 93 check instances, 21 findings, all 21 of them errors.** `headwater check --strict` exits 1. The graph reads 7 nodes and 0 declared edge halves.
+**7 files under the corpus root, 7 typed, 0 excluded, 7 checked, 97 check instances, 21 findings, all 21 of them errors.** `headwater check --strict` exits 1. The graph reads 7 nodes and 0 declared edge halves.
 
 Three findings per document, and the same three on every one. `section.required.missing`, an error, under `OB-SECT-1`, once each for `Scope`, `Requirements` and `Conformance`.
 
@@ -290,7 +290,7 @@ The tree at the pin holds no such path. `.agents/` holds two entries, `review-ru
 
 Two relations in the resolved taxonomy have the shape this needs. `governs` runs from a `governed_document` to a `code_path`, and `traces_to` runs from a `governed_document` to a `governed_document` or a `code_path`. Either one could carry the claim that a stated practice makes, and a check could then ask whether the target exists. Neither relation is required on any kind, and no rule asks a document to declare one.
 
-So this taxonomy has the vocabulary for the claim and no obligation to state it. This document already records the near case. The unresolved link at `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` reaches `headwater check` as [a fact in the graph section, and never as a finding](#the-broken-link-that-no-rule-reports). The `.agents/specs/` claim does not reach the engine at all, and typing the corpus does not change that. The run in the next section types every file of `.agents/skills/` and reports 139 findings, and not one of them is this claim. A stated practice that no artifact backs is invisible to a check whether or not the document carrying it has a kind.
+So this taxonomy has the vocabulary for the claim and no obligation to state it. This document already records the near case. The unresolved link at `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` reaches `headwater check` as [a fact in the graph section, and from 4.3.0 as a finding too](#the-broken-link-that-no-rule-reported-until-430). The `.agents/specs/` claim does not reach the engine at all, and typing the corpus does not change that. The run in the next section types every file of `.agents/skills/` and reports 139 findings, and not one of them is this claim. A stated practice that no artifact backs is invisible to a check whether or not the document carrying it has a kind.
 
 Whether a rule should report a stated practice that no artifact backs is [#496](https://github.com/headwater-ai/headwater/issues/496), and this section decides nothing about it.
 
@@ -395,11 +395,11 @@ The two runs and the sweep put 38 findings and facts into this document. This is
 | An artifact of this library's vocabulary | 33 | 87% |
 | Contestable, and this document adjudicates neither | 2 | 5% |
 
-**The 33 are every finding that either `headwater check` run reported.** 12 came from the design-spec corpus, out of 42 check instances over 4 typed documents of 105 files under that root. 21 came from the standards-spec corpus, out of 93 check instances over 7 typed documents of 7 files. All 33 are errors. All 33 are about the distance between an admitted entry and n8n's shape: a `sequence` facet that a package has no number for, a `title` facet that upstream does not write, an identifier scheme that the entry never declares, and three headings that this tradition writes as labeled paragraphs. Not one is about n8n's prose, [for the reason recorded above](#not-one-finding-is-about-n8ns-writing).
+**34 of the 38 were reported by one of the two `headwater check` runs, and 33 of those 34 are in the artifact bucket.** 13 came from the design-spec corpus, out of 46 check instances over 4 typed documents of 42 files under that root. 21 came from the standards-spec corpus, out of 97 check instances over 7 typed documents of 7 files. All 34 are errors. The 34th is the broken link. It sits in the genuine-defect bucket, and a rule started to report it at headwater/standard 4.3.0. The other 33 are about the distance between an admitted entry and n8n's shape: a `sequence` facet that a package has no number for, a `title` facet that upstream does not write, an identifier scheme that the entry never declares, and three headings that this tradition writes as labeled paragraphs. Not one is about n8n's prose, [for the reason recorded above](#not-one-finding-is-about-n8ns-writing).
 
 The 143-finding run under this repository's own house regime stays out of the denominator on purpose. A house regime is not an admitted library entry, and holding somebody else's corpus to this repository's line breaks and contractions produces nothing that n8n would call a defect.
 
-**0 of the 3 genuine defects is reported by any `headwater check` rule.** One reaches a run as [a fact in the graph section](#the-broken-link-that-no-rule-reports) and never as a finding. One [reaches no run at all](#what-this-taxonomy-would-report-and-what-it-does-not), because no admitted entry declares a procedure-shaped kind and no run reads `.agents/skills/`. One came out of `headwater sweep`, which is a sampler and not a check. That inversion is the sharpest result here. The library, pointed at eleven real governing documents, raised 33 errors that say nothing n8n would act on, and stayed silent on the 3 things n8n would fix.
+**1 of the 3 genuine defects is reported by a `headwater check` rule, and 0 of them were when this evaluation was recorded.** [The broken link](#the-broken-link-that-no-rule-reported-until-430) reached the 4.0.0 run as a fact in the graph section and never as a finding, and `link.path.unresolved` reports it from 4.3.0. One [reaches no run at all](#what-this-taxonomy-would-report-and-what-it-does-not), because no admitted entry declares a procedure-shaped kind and no run reads `.agents/skills/`. One came out of `headwater sweep`, which is a sampler and not a check. That inversion was the sharpest result here, and it is one third smaller than it was. The library, pointed at eleven real governing documents, raised 33 errors that say nothing n8n would act on. It stays silent on 2 of the 3 things n8n would fix.
 
 The 2 contestable findings are the coverage-policy duplication reading and the undefined term "level of reach", [both recorded above](#whether-the-three-level-reach-model-holds). Neither is fixed and neither goes upstream. They are counted here rather than dropped, because a partition that quietly loses its awkward members is not a partition.
 

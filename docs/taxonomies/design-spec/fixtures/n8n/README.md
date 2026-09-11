@@ -53,37 +53,39 @@ The byte counts are of the upstream body, and the copies carry that many bytes p
 
 Unlike the [Beacon fixtures](../../../brd-prd/fixtures/README.md#how-to-run-this-corpus), this one commits its own `.headwater/taxonomy.yml` and `.headwater/overlay.yml` rather than describing them in prose, because the shelf declaration is the measurement rather than a detail of the harness.
 
-The entry sits outside the corpus root on purpose, the same reason the Beacon fixtures give. Nothing in CI runs this corpus.
+`sh tools/taxonomy/n8n-fixtures.sh` runs that block verbatim in CI and diffs the *What a run reports* section against what it prints. The entry sits outside the corpus root on purpose, the same reason the Beacon fixtures give.
+
+**What that job holds, and what it does not.** It holds the fourteen figures of *What a run reports* on all three n8n corpora, and it holds the version pin, which is the scalar that broke every one of these recipes for four minor versions of `headwater/standard`. It holds none of the probe arms below: the shelf-removed run, the narrow-pattern run, the three homogeneity rows and the house-regime probe each change a declaration before running, and no job reassembles them. Those figures are hand-measured, they are stated with the release that produced them, and a reader should re-run them rather than cite them.
 
 ## What the taxonomy needed before it could read one file
 
-**The design-spec entry, exactly as it ships, types none of these documents.** Its one shelf is `spec_series` at `docs/spec/**`. Not one file of this corpus is under `docs/`. Run the assembly above with the shelf removed from `overlay.yml` and the run reports **105 files under the corpus root, 4 untyped, 101 excluded, 0 checked, 2 check instances, 0 findings**, and `headwater check --strict` exits **0**.
+**The design-spec entry, exactly as it ships, types none of these documents.** Its one shelf is `spec_series` at `docs/spec/**`. Not one file of this corpus is under `docs/`. Run the assembly above with the shelf removed from `overlay.yml` and the run reports **42 files under the corpus root, 4 untyped, 38 excluded, 0 checked, 6 check instances, 1 finding**, and `headwater check --strict` exits **1**.
 
-A green strict run over four real governing documents that no rule read is the shape of failure the census crate names *systematically green*. The engine reports it honestly in the census, as four rows saying `no shelf pattern claims this path`, and no finding anywhere says the corpus went unchecked.
+**That arm was green until 4.3.0, and the one finding that ends it is not about the four documents being unread.** Until 4.2.0 the arm reported 0 findings and exited 0, which is the shape of failure the census crate names *systematically green*: four real governing documents that no rule read, and a passing run. At 4.3.0 `link.path.unresolved` runs over the corpus rather than over the typed set, so the broken prose link below is reported whether or not a shelf claims the file that carries it. The strict exit is now 1 for a reason that has nothing to do with the four documents going unchecked, and the original point stands undiminished: the engine still reports the four as rows saying `no shelf pattern claims this path`, and no finding anywhere says the corpus went unchecked.
 
 **n8n does have a `docs/` directory, and it is not a counter-example.** It holds 272 files at the pin. 271 of them sit under `docs/generated/` and are `tbls` output produced from the database migrations. The 272nd is `docs/db.md`, an authored page whose subject is how that output is generated and where to read it. No architecture document, no review rule and no skill is under `docs/`. The governed prose is elsewhere, one document per package, which is the claim this fixture tests.
 
-**A path pattern is the wrong instrument for a corpus that carries its signal in the filename.** The four documents share no directory. What they share is a name: `architecture.md`, `ARCHITECTURE.md`, `ARCHITECTURE.md`, `ARCHITECTURE_CONNECTION_VS_SETTINGS.md`. The pattern language admits `**` as a whole segment, so `packages/**/ARCHITECTURE.md` is legal. It claims **2 of the 4**: the run reports 2 typed, 2 untyped, 22 check instances and 6 findings, and the two it misses report nothing at all. The pattern that reaches all four is `packages/**`, which fixes one segment out of a corpus of 27,688 files and would claim every Markdown file in the monorepo if the corpus held them.
+**A path pattern is the wrong instrument for a corpus that carries its signal in the filename.** The four documents share no directory. What they share is a name: `architecture.md`, `ARCHITECTURE.md`, `ARCHITECTURE.md`, `ARCHITECTURE_CONNECTION_VS_SETTINGS.md`. The pattern language admits `**` as a whole segment, so `packages/**/ARCHITECTURE.md` is legal. It claims **2 of the 4**: the run reports 2 typed, 2 untyped, 26 check instances and 7 findings, and the two it misses report nothing a rule of the entry can see. The pattern that reaches all four is `packages/**`, which fixes one segment out of a corpus of 27,688 files and would claim every Markdown file in the monorepo if the corpus held them.
 
 **The shelf has to be heterogeneous with one admitted kind, and that reads as a contradiction.** `kinds.design_spec` requires the facet `doc_type`, because this entry's own shelf is heterogeneous and needs a discriminator. A homogeneous shelf refuses a document that restates the kind its placement already states. So a `design_spec` on a homogeneous shelf reports an error whichever way the front matter is written, and both arms were run:
 
 | The shelf, and the front matter | Findings |
 |---|---|
-| `homogeneous: true`, `doc_type: design_spec` declared | 16: `shelf.placement_is_primary` on all four, plus the twelve below |
-| `homogeneous: true`, `doc_type` removed | 16: `facet.required.missing` for `doc_type` on all four, plus the twelve below |
-| `homogeneous: false`, `discriminator: doc_type`, `kinds: [design_spec]` | 12 |
+| `homogeneous: true`, `doc_type: design_spec` declared | 17: `shelf.placement_is_primary` on all four, plus the thirteen below |
+| `homogeneous: true`, `doc_type` removed | 17: `facet.required.missing` for `doc_type` on all four, plus the thirteen below |
+| `homogeneous: false`, `discriminator: doc_type`, `kinds: [design_spec]` | 13 |
 
 The third row is what this fixture commits. A one-kind heterogeneous shelf makes the discriminator carry no information: every document writes the one value the shelf admits, and the front-matter key exists to satisfy a facet requirement rather than to tell two kinds apart.
 
 ## What a run reports
 
-`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **105 files under the corpus root, 4 typed, 101 excluded, 4 checked, 42 check instances, 12 findings, all 12 of them errors.** The census reads 4 `design_spec`. The graph reads 0 nodes, 0 declared edge halves, and 1 prose link that did not resolve. `headwater check --strict` exits 1.
+`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **42 files under the corpus root, 4 typed, 38 excluded, 4 checked, 46 check instances, 13 findings, all 13 of them errors.** The census reads 4 `design_spec`. The graph reads 0 nodes, 0 declared edge halves, and 1 prose link that did not resolve. `headwater check --strict` exits 1.
 
-The 101 excluded files are the vendored taxonomy package, and that count moves when the package does. The other counts move only when this corpus moves.
+The 38 excluded files are the vendored taxonomy package, and that count moves when the package does. It read 101 at `headwater/standard` 4.0.0 and 38 at 4.3.0, which is the package losing files rather than this corpus gaining any. The other counts move only when this corpus moves.
 
-**This run reported 8 findings until headwater/standard 4.0.0, and the four new ones are the fixture doing its job.** That release requires the facet `title` on `design_spec`, and none of these four upstream files declares one. Giving them titles would falsify the corpus, because the value of this fixture is that nobody here wrote a word of it, so the four errors stand and the number moved.
+**This run reported 8 findings until headwater/standard 4.0.0 and 12 from it, and it reports 13 at 4.3.0. Each move is the fixture doing its job.** That release requires the facet `title` on `design_spec`, and none of these four upstream files declares one. Giving them titles would falsify the corpus, because the value of this fixture is that nobody here wrote a word of it, so the four errors stand and the number moved.
 
-Three findings per document, and the same three on every one.
+Three findings on every document, and a fourth on one of them.
 
 **Finding 1, four times.** `facet.required.missing`, an error, under `OB-FACET-1`:
 
@@ -103,25 +105,29 @@ Three findings per document, and the same three on every one.
 
 The design-spec entry declares five kinds and no identifier scheme for any of them. This repository's own overlay mints `spec_id` for its own use, and an overlay is not an admitted library entry. So a corpus that takes the entry alone gets four documents that cannot stand at either end of a relation. The `diataxis` fixture reported the same rule six times for the same reason, and the two together are one finding about the library rather than two about two corpora.
 
-## The prose link that no rule reports
+## The prose link that no rule reported until 4.3.0
 
 `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` writes the link `[n8n workflow package]` with the target `../workflow/`. From that document's directory that resolves to `packages/@n8n/workflow/`, and the tree at the pin holds no such path. The package it means is `packages/workflow/`, which holds 244 files, and the link would have to be `../../workflow/`. **The link is broken upstream, and this was checked against the whole tree at the pin rather than against the four-file slice.**
 
-`headwater check` sees it. It appears in the graph section as `1 prose links that did not resolve`, with the file, the line and the reason. **No rule turns it into a finding.** `link.fragment.unresolved` reads a fragment inside a document, ran four instances, and reported nothing. So the run states the fact and the report says 12 findings, none of which is this one.
+`headwater check` sees it twice now. It appears in the graph section as `1 prose links that did not resolve`, with the file, the line and the reason, and **from headwater/standard 4.3.0 `link.path.unresolved` also turns it into an error** under `OB-LINK-2`:
 
-Neither of n8n's own two tools reports it either. This is the one defect in these four files that a reader would call a defect, and three tools looked at it and none of them said so.
+    `../workflow/` names no file of this repository: nothing stands at `packages/@n8n/workflow`
+
+**Until 4.3.0 no rule did.** This section used to record that the run stated the fact and the report said 12 findings, none of which was this one, and that `link.fragment.unresolved` reads a fragment inside a document rather than a path. That is still true of `link.fragment.unresolved`, which ran four instances here and reported nothing. What changed is that a second rule reads the path. The count moved 12 to 13, and the thirteenth is this link.
+
+**Neither of n8n's own two tools reports it.** This is the one defect in these four files that a reader would call a defect, and it went unreported by three tools when this fixture was first recorded. One of the three now reports it, which is the thing a fixture is for.
 
 ## What the entry reports nothing about
 
 **Not one finding is about n8n's writing.** The base package declares `language: default: {tag: en-US, controlled: none}`, so no admitted entry of this library holds prose to a controlled language, a source form, a sentence length or a retired term. `voice.forbidden_construction` ran four instances and reported nothing: no sentence in these four documents states a future intent, narrates a change, or announces a phase. `section.required.missing` never instantiated, because this entry's `design_spec` declares no required sections.
 
-The twelve findings are about the metadata the typing added and the metadata it could not add. That is worth stating plainly, because a large finding count over somebody else's corpus is easy to mistake for a result.
+Twelve of the thirteen findings are about the metadata the typing added and the metadata it could not add, and the thirteenth is the broken link below. That is worth stating plainly, because a large finding count over somebody else's corpus is easy to mistake for a result.
 
 ## What this repository's own house regime would have reported
 
 The measurement below is a probe and not a declaration, on the precedent the [brd-prd fixtures](../../../brd-prd/fixtures/README.md#what-the-bases-voice-regime-would-have-reported) set. Append `regimes.language.ste_house` from `.headwater/overlay.yml` of this repository to the fixture overlay, add `kinds.design_spec.language: ste_house`, and change nothing else. That is one regime and one line, and no line of any document.
 
-The run reports **166 findings, 149 error and 17 warn**, against 12 findings and 12 errors before it. The 154 extra findings are:
+The run reports **167 findings, 150 error and 17 warn**, against 13 findings and 13 errors before it. The 154 extra findings are:
 
 | Rule | Count | Severity |
 |---|---|---|
@@ -137,7 +143,7 @@ Per document:
 |---|---|---|
 | `packages/@n8n/instance-ai/docs/architecture.md` | 3 | 123 |
 | `packages/@n8n/instance-ai/evaluations/ARCHITECTURE.md` | 3 | 34 |
-| `packages/@n8n/expression-runtime/ARCHITECTURE.md` | 3 | 4 |
+| `packages/@n8n/expression-runtime/ARCHITECTURE.md` | 4 | 5 |
 | `packages/@n8n/local-gateway/docs/ARCHITECTURE_CONNECTION_VS_SETTINGS.md` | 3 | 5 |
 
 **Three things in that table are worth more than the total.**
@@ -146,12 +152,12 @@ Per document:
 
 **There is no British spelling anywhere in the four documents.** The rule that catches one ran on every document and found nothing. n8n writes `organisation` and `behavioural` elsewhere in the repository, and not here. **The [standards-spec corpus](../../../standards-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) at the same pin carries four of them, and the rule reports one of the four**, because the engine's spelling table is closed at 24 words. Read the two together: this sentence is a fact about four documents, and that one separates a corpus count from a rule count.
 
-**One finding of 166 is mechanically fixable, and it is the contraction.** `headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. Of the 166, exactly one is in that set, and the report marks it: it is the only line that reads `fix (mechanical)`. The 136 hard wraps are mechanical to a reader and carry no patch, and `engine/crates/check/src/source_form.rs` states why in its own comment. Nothing here was ever run with `--fix`.
+**One finding of 167 is mechanically fixable, and it is the contraction.** `headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. Of the 167, exactly one is in that set, and the report marks it: it is the only line that reads `fix (mechanical)`. The 136 hard wraps are mechanical to a reader and carry no patch, and `engine/crates/check/src/source_form.rs` states why in its own comment. Nothing here was ever run with `--fix`.
 
 ## What ages, and what does not
 
 **The pin does not move and the upstream does.** Every count above is of the four blobs at `b0550cb`. Re-run the assembly at a later commit of `master` and every number is a different measurement.
 
-**The excluded count moves with the vendored package.** It is 101 today and it counts files of `packages/headwater-standard/`, which this corpus does not describe. The four typed rows are the corpus.
+**The excluded count moves with the vendored package.** It is 38 today, it was 101 at 4.0.0, and it counts files of `packages/headwater-standard/`, which this corpus does not describe. The four typed rows are the corpus.
 
-**All three findings are about declarations rather than about documents.** `facet.required.missing` on `sequence` stops the day the entry stops requiring it or the day somebody writes a number, and neither is a change to n8n. The same rule on `title` stops on the same two conditions, and the second of them is the one this fixture refuses. `identifier.unusable` stops the day the entry mints a scheme. All three are recorded in [the evaluation](../../../../evaluations/n8n-worked-example.md) as findings against the library.
+**Three of the four findings are about declarations rather than about documents.** `facet.required.missing` on `sequence` stops the day the entry stops requiring it or the day somebody writes a number, and neither is a change to n8n. The same rule on `title` stops on the same two conditions, and the second of them is the one this fixture refuses. `identifier.unusable` stops the day the entry mints a scheme. All three are recorded in [the evaluation](../../../../evaluations/n8n-worked-example.md) as findings against the library. The fourth, `link.path.unresolved`, is about the document and moves the day somebody fixes the link upstream.

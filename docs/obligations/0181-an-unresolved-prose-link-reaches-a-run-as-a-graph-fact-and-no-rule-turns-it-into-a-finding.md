@@ -22,7 +22,9 @@ provenance:
 
 The near rule is `link.fragment.unresolved`, and it is a different rule. It reads a fragment inside a document, which is the part after the hash. A link whose path does not exist at all is outside what it asks.
 
-[The n8n evaluation](../evaluations/n8n-worked-example.md#the-broken-link-that-no-rule-reports) measured one instance in somebody else's corpus. `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` points one directory too high, the run printed `1 prose links that did not resolve`, and the same run reported 12 findings, none of which was this one. A person reading the graph section found it. Nothing in the report would have raised it.
+[The n8n evaluation](../evaluations/n8n-worked-example.md#the-broken-link-that-no-rule-reported-until-430) measured one instance in somebody else's corpus. `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` points one directory too high, the run printed `1 prose links that did not resolve`, and the same run reported 12 findings, none of which was this one. A person reading the graph section found it. Nothing in the report would have raised it.
+
+**That instance is now also a finding, and this obligation is not answered by it.** The same fixture re-run at `headwater/standard` 4.3.0 reports 13 findings, and the thirteenth is `link.path.unresolved` on that link. So one rule does read an unresolved path in that fixture's bundle. The graph statistic is unchanged: `headwater check` still prints `1 prose links that did not resolve` as a count that no rule reads, `--strict` still does not fail on the count, and `headwater infer` still cannot record it. A rule that happens to cover the same link in one bundle is not the decision this record asks for.
 
 Three obligations already in the register look like this one and are not. HW-OBL-0116 and HW-OBL-0117 are about anchors in imported documents. HW-OBL-0136 is about rustdoc links inside comments. None of the three asks what happens to a link in prose whose target path is absent.
 
