@@ -21,30 +21,38 @@
 //! all. The requirement was unmet for the whole life of the projection and
 //! nothing reported it.
 //!
-//! # What the refusal reads, and what it deliberately does not
+//! # What the refusal reads
 //!
-//! It reads the facets the `identity` block is the writer of: the identifier
-//! facet, the discriminator of a heterogeneous shelf, and the facet in the
-//! `name` role. It does not read every facet the kind requires.
+//! The whole required set of the kind, against everything written into the
+//! file: the three members of the `identity` block, and every facet
+//! [`headwater_generate`] derives.
 //!
-//! That line is measured rather than chosen for convenience. Over this
-//! repository's own lock, `governed_document` requires `status`,
-//! `status_since`, `last_verified` and `summary`, and all four are inherited by
-//! both kinds this corpus generates. A refusal over the whole required set
-//! would name 5 facets on `docs/spec/09-open-questions.md` and 4 on
-//! `docs/probe-results/regression-probe-transcript-for-2026-09-09.md`, and it
-//! would refuse both of the two identity declarations this repository makes,
-//! with no member of the block able to answer any of the nine. Whether a
-//! generated document should be excused from `status` and `summary` is a
-//! question about the census exemption and about spec 6's stated position, not
-//! about this block, and #780 stays open holding it.
+//! It used to read three facets only, and the nine it left out were the
+//! remainder this file held #780 open for. Over this repository's own lock
+//! `governed_document` requires `status`, `status_since`, `last_verified` and
+//! `summary`, both generated kinds inherit all four, and `decision_register`
+//! adds `doc_type`, `sequence` and `title`. The owner ruled on 2026-09-11 that
+//! the engine derives the state, the two dates and the layout facet and that the
+//! emitter composes the summary, so all nine are written and the refusal reads
+//! the whole set with nothing left over.
 //!
-//! # The fixture
+//! What it guards now is a taxonomy that requires a facet in no role this
+//! engine reads and in no shelf layout. Such a facet is one no author can add,
+//! because a generated document's only writer is this engine, and one no check
+//! reads, because the census excuses a marked file from every document rule.
+//!
+//! # The two fixtures
 //!
 //! `fixtures/unsuppliable.taxonomy.yml` is `generate.taxonomy.yml` with one
 //! difference: the `guide` kind requires `title`, the facet in the `name` role.
 //! The `shelf_sections` declaration that writes `generate/archive/RETIRED.md` as
-//! a `guide` states no `name`, so the block cannot supply `title`.
+//! a `guide` states no `name`, so the block cannot supply `title`. The repair is
+//! a declaration, and the refusal says so.
+//!
+//! `fixtures/unrolled.taxonomy.yml` is the other half of the guard. It declares
+//! a facet with no role at all and requires it of the same kind, so no member of
+//! the block writes it and no derivation computes it. There the repair is a
+//! change to the taxonomy rather than to the declaration.
 //!
 //! # Watched failing
 //!
@@ -53,6 +61,12 @@
 //! failed with the file planned and `plan.unwritten` empty: the emitter wrote
 //! `generate/archive/RETIRED.md` with a front-matter block missing `title` and
 //! said nothing.
+//!
+//! At `9cd6846e`, with the refusal narrowed back to the facet in the `name`
+//! role, `a_required_facet_in_no_role_is_refused_because_nothing_can_write_it`
+//! failed the same way and on the same path: `generate/archive/RETIRED.md` was
+//! written with no value for `tier` and the plan declined nothing. The two
+//! cases fail identically and for opposite reasons, which is why both are here.
 
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
@@ -301,4 +315,85 @@ fn every_identity_this_repository_declares_supplies_what_this_refusal_reads() {
          `main` for every branch cut after it.",
         refused.len()
     );
+}
+
+/// The other half of the guard: a required facet that carries no role.
+///
+/// `unsuppliable.taxonomy.yml` covers the facet a declaration could have
+/// supplied and did not. This covers the one nothing writing the file can
+/// supply at all, which is what the refusal reads for now that the engine
+/// derives the state, the two dates and the summary. Without this case the
+/// refusal would be exercised only where a repair exists, and a taxonomy that
+/// asks for the impossible would be the shape that reaches a corpus unreported.
+#[test]
+fn a_required_facet_in_no_role_is_refused_because_nothing_can_write_it() {
+    let plan = plan_over("unrolled.taxonomy.yml");
+
+    assert!(
+        !plan.outputs.iter().any(|output| output.path == OUTPUT),
+        "`{OUTPUT}` was written by a declaration whose kind requires `tier`, a facet in no role \
+         that no layout names. The outputs were: {:?}",
+        plan.outputs
+            .iter()
+            .map(|output| output.path.as_str())
+            .collect::<Vec<_>>()
+    );
+
+    let refusal = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == OUTPUT)
+        .unwrap_or_else(|| {
+            panic!(
+                "nothing reported the declaration that writes `{OUTPUT}`. The plan declined {} \
+                 outputs: {:?}",
+                plan.unwritten.len(),
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| unwritten.at.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    assert!(
+        refusal.reason.contains("tier"),
+        "the refusal of `{OUTPUT}` does not name the facet nothing can write. It reads: {}",
+        refusal.reason
+    );
+}
+
+/// The derived facets reach the file, and not only the refusal.
+///
+/// Every other assertion in this file is about a declaration that produces
+/// nothing. This one reads the bytes, because a derivation that computed the
+/// right values and wrote none of them would pass every case above. The values
+/// themselves are the fixture record's business; what this holds is that each
+/// facet the kind requires is present exactly once.
+#[test]
+fn the_derived_facets_are_written_into_the_block() {
+    let plan = plan_over("generate.taxonomy.yml");
+    let output = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == OUTPUT)
+        .unwrap_or_else(|| panic!("`{OUTPUT}` was not written at all"));
+    let bytes = &output.bytes;
+    let block = bytes
+        .split("---")
+        .nth(1)
+        .unwrap_or_else(|| panic!("`{OUTPUT}` carries no front-matter block. It reads: {bytes}"));
+
+    // `guide` inherits these three from `governed_document` in this fixture, and
+    // the `identity` block writes a member for none of them.
+    for facet in ["status", "status_since", "summary"] {
+        let prefix = format!("{facet}:");
+        let written = block
+            .lines()
+            .filter(|line| line.starts_with(&prefix))
+            .count();
+        assert_eq!(
+            written, 1,
+            "`{facet}` is written {written} times in the block of `{OUTPUT}`, and a facet is \
+             stated once. The block reads: {block}"
+        );
+    }
 }
