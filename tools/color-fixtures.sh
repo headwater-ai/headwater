@@ -205,6 +205,15 @@ senses_its_terminal 'infer' "$engine infer --owner 'a color fixture' --root ."
 senses_its_terminal 'capture' "$engine capture --root ."
 senses_its_terminal 'conformance' "$engine conformance --root ."
 
+# The two this change wired, and the reason it exists. Both rendered zero
+# escapes under a terminal before it, measured on the parent commit `58f46a8d`,
+# where every other surface on this page was already green. Both carry the
+# sensing row in their interface contract, `docs/interfaces/headwater-taxonomy.md`
+# and `docs/interfaces/headwater-probe.md`, and neither needs an argument this
+# suite would have to invent.
+senses_its_terminal 'taxonomy audit' "$engine taxonomy audit --root ."
+senses_its_terminal 'probe plan' "$engine probe plan --root ."
+
 # The help family, which is four templates rather than one. The root screen is
 # written by `first_screen`, a verb page is `clap`'s own `{options}` renderer, a
 # verb with second words is `second_words`, and `headwater help <verb>` reaches
@@ -223,7 +232,11 @@ senses_its_terminal 'help check' "$engine help check"
 senses_its_terminal 'taxonomy --help' "$engine taxonomy --help"
 
 # The fifth arm. Every surface here composes a report or a page and folds it,
-# and the fold is where a paint that ran too early shows up.
+# and the fold is where a paint that ran too early shows up. `taxonomy audit`
+# folds at two call sites through `headwater_check::filled`, so it belongs here.
+# `probe plan` calls no fold, writes one line per fact and is absent for that
+# reason rather than by oversight.
+strips_to_the_plain_bytes 'taxonomy audit' "$engine taxonomy audit --root ."
 strips_to_the_plain_bytes 'infer' "$engine infer --owner 'a color fixture' --root ."
 strips_to_the_plain_bytes 'capture' "$engine capture --root ."
 strips_to_the_plain_bytes 'conformance' "$engine conformance --root ."
