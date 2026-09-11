@@ -56,13 +56,17 @@
 //!
 //! # Two of the three categories report zero, and the zero is saturation
 //!
-//! Read on `58f46a8d` on 2026-09-11, by a word-boundary count of every pattern
-//! over the 306 documents of this corpus whose kind binds a regime that forbids
-//! the category: **`future_intent` matches on 0 of its 14 patterns, and
-//! `phased_rollout` on 0 of its 13.** The corpus holds one occurrence of
-//! `will become` and two of `in the first release`, and all three are under
-//! `docs/reviews/` or `docs/evaluations/`, which bind `narrative` and forbid
-//! nothing.
+//! Read on `58f46a8d` on 2026-09-11, by a word-boundary count of every pattern:
+//! **`future_intent` matches on 0 of its 14 patterns over the 291 documents
+//! whose kind binds `declarative`, and `phased_rollout` on 0 of its 13 over the
+//! 293 that bind `declarative` or `prospective`.** The two denominators are the
+//! kind-to-regime binding of `.headwater/taxonomy.lock` applied to the 320
+//! documents of `.headwater/export.json`, of which 27 bind `narrative`.
+//!
+//! The count itself ran over a wider file list, and that is how it found the
+//! three occurrences there are: one `will become` and two of
+//! `in the first release`, all under `docs/reviews/` or `docs/evaluations/`,
+//! whose kinds bind `narrative` and forbid nothing.
 //!
 //! So neither zero reports a clean corpus. Both sets stand where edition one of
 //! `change_narration` stood, and no run separates the two readings:
@@ -144,13 +148,18 @@ const CATEGORIES: [Category; 3] = [
         // `no longer` is 9 genuine of 24, which is 37.5 per cent, and the
         // category is 13 of 36.
         //
-        // **`no longer` stays, and the reason is arithmetic rather than
-        // tolerance.** Removing it removes 9 of the 13 genuine findings of the
-        // whole category and leaves 4 genuine of 12, so the rate a reader
-        // receives falls from 13 of 36 to 4 of 12. Spec 3 rules that posture
-        // comes from fixability and never from precision, this category is
-        // advisory already, and nothing in the corpus states a precision floor
-        // for membership. What reopens the ruling is the trend and not the
+        // **`no longer` stays, and the argument is the absolute count rather
+        // than the rate.** Removing it removes 9 of the 13 genuine findings of
+        // the whole category and leaves 4. The rate moves in both directions
+        // and settles nothing on its own: over genuine findings alone it falls
+        // from 13 of 36 to 4 of 12, and over the findings that are not
+        // permanently false it rises from 18 of 36 to 9 of 12. What does not
+        // move is the yield, because 9 genuine findings go and no numerator
+        // returns them. Q5 sets membership at a phrase that plainly means a
+        // change in general English, and this one meets it. Spec 3 rules that
+        // posture comes from fixability and never from precision, this
+        // category is advisory already, and nothing in the corpus states a
+        // precision floor for membership. What reopens the ruling is the trend and not the
         // rate: each rewrite that clears a genuine finding leaves the false
         // residual in place, so a later reading that finds the genuine count
         // at zero with the false count unmoved is the reading that retires the
@@ -284,11 +293,14 @@ impl DocumentCheck for Voice {
     /// satisfied.
     ///
     /// **The measurement of 2026-09-11 moved no pattern, so this number stands
-    /// at 2.** The ruling on `no longer` keeps the set that edition two
-    /// shipped, no verdict changes, and a cached verdict is still the current
-    /// one. Raising the number with no pattern moved would discard every
-    /// cached voice verdict in every clone and assert a change that no run
-    /// made.
+    /// at 2, and the evidence is the source rather than a run.** The 209 lines
+    /// above the test module that are neither blank nor a comment are
+    /// identical to those of `58f46a8d`: no pattern, no category entry and no
+    /// line of the check body moved. So a cached verdict cannot differ from a
+    /// fresh one, and the divergence this constant guards against is
+    /// unrepresentable here rather than merely unobserved. Raising the number
+    /// would discard every cached voice verdict in every clone and assert a
+    /// change that no run made.
     const VERSION: u32 = 2;
     /// The body, because the regime is about prose. This declaration is the
     /// access: without it [`DocumentView::body`] returns nothing.
