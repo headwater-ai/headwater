@@ -22,9 +22,12 @@
 //!
 //! `Kind::ALL` is hand-kept and its own doc-comment says a thirteenth variant
 //! added without a line there compiles. [`labelling`] is an exhaustive `match`
-//! for the same reason `Kind::unbuilt` is one: a thirteenth emitter is `E0004`
-//! in this file before it is anything else, so its author has to state whether
-//! it labels a document. `ALL` would leave the new kind merely untested.
+//! for the same reason `Kind::name` and `Kind::unbuilt` are: a thirteenth
+//! emitter is `E0004` rather than a silent omission. Those two are `E0004`
+//! first, because they are in the crate the new variant is declared in and
+//! this file is a test of it. What this file adds is a third question the
+//! author has to answer in the same sitting — whether the new kind labels a
+//! document. `ALL` would leave that merely untested.
 //!
 //! # What is not here
 //!
@@ -84,10 +87,28 @@ fn labelling(kind: Kind) -> Labelling {
              `name`-role value travels under its own facet key with no loss. A role reading \
              here would be a second, lossier copy of a value the consumer already holds",
         ),
+        // THIS ARM IS A JUDGMENT AND NOT A MEASUREMENT
+        //
+        // `probe_result` is not role-blind: `probe_result.rs` reads the
+        // declaration's own `name` when it mints an identifier per run. What is
+        // undecided is the heading `# The result of {transcript}`, which is
+        // reader-facing and names a governed document — the transcript — by its
+        // path. On the reading taken here that path is an address rather than a
+        // label, because the sentence under it repeats the path as one of the
+        // three committed inputs a reader fetches to reproduce the file, and a
+        // name would not be fetchable. On the other reading it is a label that
+        // falls through to the path, and this arm should be
+        // `ReadsTheNameRole`, which would fail until the emitter changed.
+        //
+        // Nothing here decides between the two. The `runs` fixture declares no
+        // facet in the `name` role, so no case in this crate can tell them
+        // apart, and that is a property of the fixture rather than of the
+        // emitter. #539's verifier read this as a disclosed judgment. Whoever
+        // settles it changes one word and the suite answers.
         Kind::ProbeResult => Labelling::NoDocumentLabel(
-            "it addresses the transcript and the probes by the path a reader re-fetches, \
-             because the file is a statement about three committed inputs. A path is the \
-             address, not a label a reader is offered in place of one",
+            "it names the transcript and the probes by the path a reader re-fetches, which \
+             this table reads as an address rather than as a label. See the comment above: \
+             the question is open and this is the reading taken",
         ),
         Kind::CorpusDescriptor => Labelling::NoDocumentLabel(
             "an entry point is `{shelf, path, id}` for a machine, and the `id` member is \
@@ -478,8 +499,8 @@ fn the_three_copies_of_the_closed_role_registry_agree() {
     assert_eq!(
         copies.len(),
         2,
-        "the meta-schema no longer declares the facet-role registry twice. It declared {:?}",
-        copies
+        "the meta-schema no longer declares the facet-role registry twice. It declared \
+         {copies:?}"
     );
     for (block, roles) in copies {
         assert_eq!(
