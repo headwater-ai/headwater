@@ -116,6 +116,23 @@ pub struct Identity {
     pub cost: Cents,
 }
 
+/// The five things `headwater probe record` confirms, in the order
+/// [spec 15](../../../../docs/spec/15-the-recorder-contract.md#what-the-engine-confirms-and-what-it-records-without-confirming)
+/// numbers them.
+///
+/// A closed array for the reason [`IDENTITY_KEYS`] is one: a report that names
+/// the confirmation a transcript failed has to name it from the same place the
+/// contract test derives the list from, or the name in a run and the name in
+/// the specification are two strings that drift apart. [`Refusal::confirmation`]
+/// is the only mapping into it.
+pub const CONFIRMATIONS: [&str; 5] = [
+    "the taxonomy",
+    "the identity is complete",
+    "membership",
+    "no prose",
+    "a realized cost",
+];
+
 /// Why a whole transcript reported nothing.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Refusal {
@@ -188,6 +205,37 @@ impl std::fmt::Display for Refusal {
                 "`cost_cents` is `{found}`, and the realized cost has to be a whole number of \
                  cents. A run that recorded no cost leaves the cost of the instrument to a guess"
             ),
+        }
+    }
+}
+
+impl Refusal {
+    /// Which of the five confirmations this refusal failed.
+    ///
+    /// Every variant maps, because a transcript is refused by a confirmation or
+    /// it is not refused at all. `Malformed` and the three block failures are
+    /// the fourth confirmation, which is what "every key of every block is a
+    /// member of one of the four sets" refuses a block for. A tier or an arm
+    /// this engine does not know is the second: the key is there and the
+    /// identity still does not read, which is the same failure as an absent
+    /// one for a reader who wants to locate the run again.
+    ///
+    /// The third confirmation reaches no variant here, and that is the
+    /// contract rather than a gap. Membership is decided one event at a time
+    /// and [`Reason::NotAProbe`] carries it, so a probe this corpus does not
+    /// classify drops its own event and leaves the rest of the transcript
+    /// gradable.
+    pub fn confirmation(&self) -> &'static str {
+        match self {
+            Refusal::TaxonomyMoved { .. } => CONFIRMATIONS[0],
+            Refusal::Missing(_) | Refusal::UnknownTier(_) | Refusal::UnknownArm(_) => {
+                CONFIRMATIONS[1]
+            }
+            Refusal::NoBlock(_)
+            | Refusal::Unparsed { .. }
+            | Refusal::Malformed(_)
+            | Refusal::KeyNotPermitted { .. } => CONFIRMATIONS[3],
+            Refusal::CostNotACount(_) => CONFIRMATIONS[4],
         }
     }
 }

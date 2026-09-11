@@ -44,6 +44,7 @@ suppressions
       1 false_positive
       1 of language.controlled.not_met
       1 on the shelf evaluations
+      2 matched no finding
 rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter

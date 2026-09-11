@@ -576,11 +576,73 @@ impl Orphaned {
     }
 }
 
+/// A committed transcript that one of the five confirmations refused, and the
+/// result this run wrote for it therefore carries no verdict at all.
+///
+/// **This is reported by the run and not only by the file.** The refusal text
+/// *is* the derived output, so `generate --check` regenerates it faithfully and
+/// a corpus can hold a result with zero verdicts through every gate it has. One
+/// did: `f615fb86` landed a transcript and moved `.headwater/taxonomy.lock` in
+/// the same commit, so the first confirmation refused the recording on the day
+/// it merged, and three governed documents then stated measurements taken off a
+/// result that held none. Nothing anywhere printed a word about it.
+///
+/// A recording that pins an identity, landing in the same commit that moves
+/// that identity, invalidates itself atomically. That is what this type exists
+/// to make audible.
+#[derive(Clone, Debug)]
+pub struct RefusedTranscript {
+    /// The transcript, relative to the corpus root, in census order.
+    pub transcript: String,
+    /// The result this run wrote for it, which holds the refusal and no
+    /// verdict.
+    pub output: String,
+    /// Which of the five confirmations refused it, from
+    /// [`headwater_probe::intake::CONFIRMATIONS`] rather than from a literal
+    /// here.
+    pub confirmation: &'static str,
+    /// The refusal in the words the probe crate already uses, which names both
+    /// digests where the confirmation is the taxonomy.
+    pub why: String,
+    /// Whether this refusal fails the run.
+    ///
+    /// A transcript a corpus has promoted past `draft` is evidence, and a
+    /// refused one is evidence of nothing, so the run fails. A transcript still
+    /// at `draft` is a recording somebody is working on: the run reports it and
+    /// does not fail, because the remedy is a fresh recording rather than an
+    /// edit anybody can make, and a gate a contributor cannot clear is a gate
+    /// that gets removed. Promoting a refused transcript is what fails, which
+    /// is the moment a reader would otherwise start citing it.
+    pub held: bool,
+}
+
+impl RefusedTranscript {
+    /// The line a run prints under the transcript's path.
+    pub fn line(&self) -> String {
+        let posture = match self.held {
+            true => "it is not a draft, so this run fails",
+            false => {
+                "it is still a draft, so this run reports it and does not fail. Promoting it \
+                 without a fresh recording is what fails"
+            }
+        };
+        format!(
+            "{} refused it: {}. The result at `{}` therefore carries no verdict, and any rate \
+             taken off it is a rate over none. {posture}",
+            self.confirmation, self.why, self.output
+        )
+    }
+}
+
 /// Everything one run would write, and everything it would not.
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
     pub outputs: Vec<Output>,
     pub unwritten: Vec<Unwritten>,
+    /// Committed transcripts a confirmation refused. The file is still written,
+    /// because the refusal is what the file says; this is the run saying it
+    /// too.
+    pub refused: Vec<RefusedTranscript>,
     /// Marked files inside the corpus root that no output claims. Empty for a
     /// plan that covers a subset of the declarations, because a subset cannot
     /// tell a file it does not write from a file nobody writes: see
@@ -990,6 +1052,9 @@ pub struct Wrote {
 pub struct Report {
     pub wrote: Vec<Wrote>,
     pub unwritten: Vec<Unwritten>,
+    /// Carried from the plan, because a reader of a run reads a report and
+    /// never a plan.
+    pub refused: Vec<RefusedTranscript>,
     /// Marked files no declaration writes. An error in both directions of the
     /// verb: `generate` does not delete files, so writing the plan does not
     /// clear one.
@@ -1008,6 +1073,7 @@ impl Report {
         self.producer.is_some()
             || self.wrote.iter().any(|wrote| wrote.verdict.is_error())
             || !self.orphaned.is_empty()
+            || self.refused.iter().any(|refused| refused.held)
     }
 
     /// The one sentence a failing run ends with, or `None` where it did not
@@ -1026,6 +1092,18 @@ impl Report {
         }
         if !self.has_errors() {
             return None;
+        }
+        // Before the two below, because a refused transcript is a failure of
+        // the corpus rather than of the regeneration, and the remedy for it is
+        // the one thing regenerating cannot supply. A run that told a reader to
+        // regenerate here would be telling them to rewrite the refusal.
+        if let Some(refused) = self.refused.iter().find(|refused| refused.held) {
+            return Some(format!(
+                "`{}` is refused by {}, so the result this run wrote for it holds no verdict. \
+                 Regenerating writes the refusal again. Record the session again against this \
+                 tree, or return the transcript to `draft` until somebody does",
+                refused.transcript, refused.confirmation
+            ));
         }
         // A projection that drifted and a marked file this run did not write
         // are two failures with two remedies, and printing the first remedy
@@ -1098,6 +1176,22 @@ impl Report {
                     out.push_str(&dim(&format!("    {}", wrote.verdict.line()), mode));
                     out.push('\n');
                 }
+            }
+        }
+        // Before the two sections below. A result whose transcript was refused
+        // is not drift and it is not an unwritten projection: the file is
+        // exactly what this corpus derives, and what is wrong is the corpus.
+        if !self.refused.is_empty() {
+            out.push('\n');
+            out.push_str(&paint(Role::Heading, "refused transcripts", mode));
+            out.push('\n');
+            for refused in &self.refused {
+                out.push_str(&format!(
+                    "  {}\n",
+                    paint(Role::Path, &refused.transcript, mode)
+                ));
+                out.push_str(&dim(&format!("    {}", refused.line()), mode));
+                out.push('\n');
             }
         }
         if !self.orphaned.is_empty() {
@@ -1174,6 +1268,7 @@ fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
         checked: checking,
         unwritten: plan.unwritten.clone(),
         orphaned: plan.orphaned.clone(),
+        refused: plan.refused.clone(),
         producer,
         ..Report::default()
     };
@@ -1419,6 +1514,14 @@ mod paint_tests {
                 at: "docs/probes/".to_string(),
                 kind: Kind::ProbeResult,
                 reason: "no run composed a selection to grade".to_string(),
+            }],
+            refused: vec![RefusedTranscript {
+                transcript: "docs/probe-runs/one.md".to_string(),
+                output: "docs/probe-results/one.md".to_string(),
+                confirmation: headwater_probe::intake::CONFIRMATIONS[0],
+                why: "it was planned against taxonomy sha256:a and this tree carries sha256:b"
+                    .to_string(),
+                held: true,
             }],
             orphaned: vec![Orphaned {
                 path: "docs/stale-index.md".to_string(),
