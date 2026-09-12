@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The one shape in which a generated document is on the shelf it reads.
+#
+# Every other fixture here keeps the two apart: `generate.taxonomy.yml` writes
+# `generate/archive/RETIRED.md` from the `decisions` shelf, so the output sits on
+# `archive` and the documents it folds sit on `decisions`. This taxonomy removes
+# that separation and nothing else. The declaration writes
+# `selfread/decisions/INDEX.md`, the shelf glob is `selfread/decisions/**`, and a
+# generated file that declares an identity is a node of the census, so the output
+# is one of the documents its own emitter reads.
+#
+# That is the case a date fold must exclude. `INDEX.md` is committed here with a
+# `status_since` far older than either source document, so a fold that reads its
+# own last version answers 2020-01-01 forever and a fold that does not answers
+# the stalest source. The two answers differ, which is what makes the assertion
+# in `identity_required_facets.rs` decisive rather than decorative.
+
+purposes:
+  rationale:
+    intent: explain why a choice was made and what it forecloses
+    answers: ["why is it this way", "what was rejected"]
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: superseded, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+  title:
+    role: name
+    required: false
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: decision_id}
+
+identifier_schemes:
+  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: FIX, allocation: minted-once}
+
+shelves:
+  decisions: {path: "selfread/decisions/**", homogeneous: true, kind: decision}
+
+projections:
+  # The output is on the shelf it reads. Nothing else in this file differs from
+  # `generate.taxonomy.yml` in any way that bears on the fold.
+  - kind: shelf_sections
+    for: [decisions]
+    output: selfread/decisions/INDEX.md
+    identity:
+      id: DR-FIX-9999
+      kind: decision

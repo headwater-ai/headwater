@@ -2,6 +2,10 @@
 "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file."
 id: HW-RESULT-regression-probe-transcript-for-2026-09-09
 title: Probe result for regression-probe-transcript-for-2026-09-09
+status: current
+status_since: 2026-09-09
+summary: "The grade of the transcript `regression-probe-transcript-for-2026-09-09`, taken over the probes this corpus declares and the version of the grader that evaluated them."
+last_verified: 2026-09-09
 ---
 
 # The result of docs/probe-runs/regression-probe-transcript-for-2026-09-09.md

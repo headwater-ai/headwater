@@ -48,13 +48,23 @@ headwater-probe = { workspace = true }
 # emitter and the arms. See `crates/verbs` for why it is not a module of either.
 headwater-verbs = { workspace = true }
 
-[dev-dependencies]
-# A fixture corpus needs a taxonomy resolved from sources, in the way every
-# other crate's fixture tree does.
+# `render::quoted` writes a YAML scalar that a sentence is safe inside. A
+# generated document carries a summary now, and the one hardened escaper in this
+# workspace is the one that had four escape routes found by running the binary
+# against it. A second copy here would be the fifth.
 headwater-resolve = { workspace = true }
+
+# `segments` tokenizes a shelf `layout`, which is how a path written from one is
+# read back for the facet that the file name carries. A second copy of that
+# grammar here would let this engine disagree with itself about a path it wrote
+# ([principle 2](../../../docs/spec/00-vision-and-scope.md#design-principles)).
+headwater-scaffold = { workspace = true }
+
+[dev-dependencies]
 # The dogfood test states this repository's own identity, and it reads the lock
 # for it rather than re-resolving, because the lock is what the binary reads.
 headwater-lock = { workspace = true }
+
 # A YAML parser this engine did not write, to check `site_nav`'s output
 # against something other than this engine's own `headwater-yaml` crate.
 # `saphyr-parser` is already resolved (`headwater-yaml` depends on it), and

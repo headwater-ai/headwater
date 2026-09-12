@@ -208,7 +208,23 @@ pub(crate) fn emit(
                     // label every result of the shelf the same.
                     name: declared.name.as_ref().map(|name| name.replace(RUN, &stem)),
                 };
-                match crate::identity::front_matter(surface, &minted, &output, Kind::ProbeResult) {
+                // The result names what it is rather than what it found. A
+                // verdict is the body's business, and a refused run would
+                // otherwise put a rate in the cue a reader scans.
+                let composed = crate::derived::Composed {
+                    summary: format!(
+                        "The grade of the transcript `{stem}`, taken over the probes this corpus \
+                         declares and the version of the grader that evaluated them."
+                    ),
+                    sources: vec![path],
+                };
+                match crate::identity::front_matter(
+                    surface,
+                    &minted,
+                    &output,
+                    Kind::ProbeResult,
+                    &composed,
+                ) {
                     Ok(block) => block,
                     Err(why) => {
                         plan.unwritten.push(Unwritten {

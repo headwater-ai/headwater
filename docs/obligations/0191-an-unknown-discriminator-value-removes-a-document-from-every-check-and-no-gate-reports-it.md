@@ -26,7 +26,7 @@ This one was measured rather than reasoned. The [`standards-spec` fixture corpus
 
 A typo in one metadata value is indistinguishable from a clean document at the gate. An adopter meets it directly and silently, on any shelf that resolves a kind from a value.
 
-[#378](https://github.com/headwater-ai/headwater/issues/378) tracks the missing check, so this record cites that issue rather than asks for a second one. What this record adds is a place in the register where a reader who plans work meets the gap. An issue is read by whoever opens it, and this list is read by whoever asks what the corpus owes.
+**Nothing tracks the missing check.** [#378](https://github.com/headwater-ai/headwater/issues/378) is the nearest issue and it closed as completed on 2026-09-01. It asked why nothing reads a template's front matter, so that a package could ship an example that resolves to no kind. Its remedy reads a template at publish, in `engine/crates/resolve/src/template.rs`. A template is not a corpus document, and the case this record states is still unread by any rule. So this record is the only place the gap is written down, and whoever takes the work opens the issue for it.
 
 ## Discharge
 
