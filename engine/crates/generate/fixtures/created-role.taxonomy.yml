@@ -1,0 +1,86 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the `created-role` tree is checked against, and the smallest
+# shape that answers one question: does a facet declared in the `created` role
+# reach a reader?
+#
+# `engine/crates/generate/tests/role_reading.rs` is the only reader of this
+# file. It lives here rather than under `crates/check/fixtures/` so that the
+# case and the tree it needs sit beside the record they hold.
+#
+# Two facets carry a date, and they carry different ones on purpose. `filed` is
+# in the `created` role and `entered` is in the `state_entered` role. The
+# expectation declares `since: created`, so a window measured from the role the
+# expectation names reports `overdue.md` and never `inside-the-window.md`, and
+# a window measured from a literal `state_entered` reports the other one. The
+# two documents swap their dates, so the two readings cannot both be right and
+# no third reading produces either answer.
+#
+# `reviewed_by` declares no `inverse` and no `reciprocal`, so no instance of
+# the reciprocity rule is generated over it. The subject here is which facet
+# starts a window.
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft,   role: initial}
+      - {value: current, role: live}
+      - {value: retired, role: terminal-retained}
+  entered:
+    role: state_entered
+    required: true
+  filed:
+    role: created
+    required: true
+  summary:
+    role: scent
+    required: true
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [retired]}
+
+identifier_schemes:
+  fixture_id: {pattern: "CR-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+kinds:
+  record:
+    identifier: {scheme: fixture_id}
+    lifecycle: standard
+    facets: {require: [status, entered, filed, summary]}
+    relations:
+      expect:
+        - id: filed-then-reviewed
+          relation: reviewed_by
+          to_kind: review
+          within: 30d
+          since: created
+          severity: warn
+          rationale: a record nobody reviewed inside a month of filing is a claim nobody checked
+
+  review:
+    identifier: {scheme: fixture_id}
+    lifecycle: standard
+    facets: {require: [status, entered, filed, summary]}
+
+relations:
+  reviewed_by:
+    family: evidence
+    from: [record]
+    to:   [review]
+    cardinality: many
+    created_by: author
+
+shelves:
+  records:
+    path: created-role/records/**
+    homogeneous: true
+    kind: record
+  reviews:
+    path: created-role/reviews/**
+    homogeneous: true
+    kind: review
