@@ -222,6 +222,28 @@ fn a_relation_no_core_requirement_marks_generates_no_instance() {
     );
 }
 
+/// A relation that declares the flag for itself reaches the rule, and its
+/// neighbor of an unmarked family stays silent in the same run.
+///
+/// `cites` is `evidence`, a family no `core.requires` entry of this fixture
+/// names at all, and it carries `lifecycle_sensitive: true` on its own body.
+/// The two readings are a union: a requirement over a family marks every
+/// relation of it, and a relation marks itself, and either one is enough. A
+/// reader that took the family join as the whole answer overwrites the
+/// declaration and reports nothing here.
+#[test]
+fn a_relation_that_declares_the_flag_for_itself_reaches_the_rule() {
+    let run = run();
+    let message = about(&run, "NOTE-FIX-cites-retired").expect("the self-declared finding");
+    assert!(message.contains("`cites`"), "{message}");
+    assert!(message.contains("`deprecated`"), "{message}");
+    assert!(
+        about(&run, "NOTE-FIX-mentions-retired").is_none(),
+        "the unmarked neighbor was reported in the same run: {:?}",
+        refusals(&run)
+    );
+}
+
 /// The edge that wrote the state it points at is not resting on it.
 ///
 /// `supersedes` declares `on_target: {set_state: superseded}` and the target
