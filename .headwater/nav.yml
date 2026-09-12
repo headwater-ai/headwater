@@ -76,6 +76,7 @@ nav:
       - "What ships in the box — a first-run walkthrough": "evaluations/default-taxonomy-first-run.md"
       - "First contact — the Q11, Q12 and Q16 evaluation": "evaluations/first-contact.md"
       - "The graph, its export, and the tier above it": "evaluations/graph-export-and-federation.md"
+      - "inspect_evals as a worked instance — the first ADR log this project did not write": "evaluations/inspect-evals-worked-example.md"
       - "The implementation language — the evidence for Q1": "evaluations/language-choice.md"
       - "The Q1 spike — results": "evaluations/language-spike-results.md"
       - "The Headwater taxonomy in LinkML — a worked example": "evaluations/linkml-worked-example.md"

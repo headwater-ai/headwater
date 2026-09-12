@@ -146,6 +146,8 @@ docs/evaluations/first-contact.md
   typed: evaluation
 docs/evaluations/graph-export-and-federation.md
   typed: evaluation
+docs/evaluations/inspect-evals-worked-example.md
+  typed: evaluation
 docs/evaluations/language-choice.md
   typed: evaluation
 docs/evaluations/language-spike-results.md
@@ -733,6 +735,28 @@ docs/taxonomies/decision-record/fixtures/corpus/docs/obligations/0001-window-len
 docs/taxonomies/decision-record/fixtures/corpus/docs/obligations/0002-redis-durability-waits-on-an-operator.md
   excluded: docs/taxonomies/**
 docs/taxonomies/decision-record/fixtures/corpus/docs/obligations/0003-integration-guide-states-the-old-guarantee.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/LICENSE
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0001-eval-metadata-location.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0002-versioning-metadata.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0003-use-huggingface-hub-for-asset-hosting.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0004-no-floating-refs-for-external-assets.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0005-asset-manifest-in-per-eval-config.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0006-manual-upload-workflow-before-automation.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0007-dataset-hosting-escalation-policy.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0008-task-configurability-uses-standard-inspect-layers.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0009-dependency-isolation-for-conflict-heavy-evals.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0010-hardened-cross-repo-ci-for-fork-pr-tests.md
   excluded: docs/taxonomies/**
 docs/taxonomies/decision-record/templates/decision.md
   excluded: docs/taxonomies/**

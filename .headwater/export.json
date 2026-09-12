@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 424,
-      "carried": 424,
+      "in the graph": 425,
+      "carried": 425,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1938,6 +1938,27 @@
               "HW-SPEC-check-layer",
               "HW-SPEC-glossary"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/evaluations/inspect-evals-worked-example.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-inspect-evals-worked-example",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-inspect-evals-worked-example",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Ten real architecture decision records from a UK government project, typed against the decision-record entry, and what the run found that their own linters cannot.",
+          "last_verified": "2026-09-11",
+          "title": "inspect_evals as a worked instance — the first ADR log this project did not write",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
           }
         }
       },
