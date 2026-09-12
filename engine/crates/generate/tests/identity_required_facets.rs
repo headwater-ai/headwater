@@ -54,6 +54,14 @@
 //! the block writes it and no derivation computes it. There the repair is a
 //! change to the taxonomy rather than to the declaration.
 //!
+//! `fixtures/unheld.taxonomy.yml` is the third refusal, and it is the only one
+//! about the body rather than the block. The `guide` kind requires the section
+//! `Consequences`, and the `shelf_sections` declaration that writes
+//! `generate/archive/RETIRED.md` composes a body out of the shelf label and the
+//! name of each document under it. No emitter of this engine reads a section
+//! contract, so the repair is the taxonomy: a kind whose population a
+//! projection writes states the section contract its emitter can keep.
+//!
 //! `fixtures/selfread.taxonomy.yml` is about a value rather than a refusal. It
 //! is the one shape in this tree where a projection's output sits on the shelf
 //! that the projection reads, which makes the output one of its own sources. The
@@ -78,6 +86,13 @@
 //! failed the same way and on the same path: `generate/archive/RETIRED.md` was
 //! written with no value for `tier` and the plan declined nothing. The two
 //! cases fail identically and for opposite reasons, which is why both are here.
+//!
+//! At `484ff613`, with `unheld.taxonomy.yml` in the tree and the refusal reading
+//! `facets.require` alone, `a_required_section_no_emitter_writes_is_refused`
+//! failed with the file planned and nothing declined: the emitter wrote
+//! `generate/archive/RETIRED.md` under the headings `Decisions`, `Rebuild the
+//! graph on every run` and `Store the graph on disk`, none of them
+//! `Consequences`, and said nothing.
 //!
 //! At `4e1767d8`, with `selfread.taxonomy.yml` in the tree and the output filter
 //! removed from `derived::documents`,
@@ -379,6 +394,70 @@ fn a_required_facet_in_no_role_is_refused_because_nothing_can_write_it() {
     assert!(
         refusal.reason.contains("tier"),
         "the refusal of `{OUTPUT}` does not name the facet nothing can write. It reads: {}",
+        refusal.reason
+    );
+}
+
+/// The body half: a section the kind requires and no emitter writes.
+///
+/// The two cases above are about the front-matter block, and a block is a set
+/// of facets this engine either writes or does not. A section contract is about
+/// the body, and the body of a generated document is composed out of the corpus
+/// rather than out of the contract: a `shelf_sections` writes the shelf label
+/// and the name of each document on the shelf, and nothing anywhere reads
+/// `sections.require` on the way. So a heading that satisfies such a contract is
+/// a coincidence, and it stops being true when a document is renamed.
+///
+/// The silence is the same silence [#780](https://github.com/headwater-ai/headwater/issues/780)
+/// reported for a facet, one clause over. `over_documents` creates an instance
+/// only for a `Typed` census row, so `section.required.missing` reads no
+/// generated file; and `generate --check` compares the body against the emitter
+/// that composed it, so it cannot report that the emitter composes a body the
+/// taxonomy refuses.
+///
+/// Ten of the eighteen kinds in this repository's own lock declare
+/// `sections.require`, and neither kind this repository generates is one of
+/// them. So this fixture is the whole of the evidence, and the case is a guard
+/// against a shape no corpus here reaches rather than a repair of one it does.
+#[test]
+fn a_required_section_no_emitter_writes_is_refused() {
+    let plan = plan_over("unheld.taxonomy.yml");
+
+    assert!(
+        !plan.outputs.iter().any(|output| output.path == OUTPUT),
+        "`{OUTPUT}` was written by a declaration whose kind requires the section \
+         `Consequences`, which the body of a generated document never carries. The outputs \
+         were: {:?}",
+        plan.outputs
+            .iter()
+            .map(|output| output.path.as_str())
+            .collect::<Vec<_>>()
+    );
+
+    let refusal = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == OUTPUT)
+        .unwrap_or_else(|| {
+            panic!(
+                "nothing reported the declaration that writes `{OUTPUT}`. The plan declined {} \
+                 outputs: {:?}",
+                plan.unwritten.len(),
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| unwritten.at.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    assert!(
+        refusal.reason.contains("Consequences"),
+        "the refusal of `{OUTPUT}` does not name the section the body does not carry. It reads: \
+         {}",
+        refusal.reason
+    );
+    assert!(
+        refusal.reason.contains("guide"),
+        "the refusal of `{OUTPUT}` does not name the kind that requires the section. It reads: {}",
         refusal.reason
     );
 }
