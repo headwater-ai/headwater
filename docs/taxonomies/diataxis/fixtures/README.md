@@ -16,7 +16,7 @@ A tutorial does not naturally take those two headings. That is [finding 3](../do
 
 The entry sits outside the corpus root on purpose. A run that walked it would count this file and the doctrine in its census, and the recorded numbers below would then move every time the entry gained a page.
 
-**That a fixture corpus needs assembling is a finding rather than an inconvenience**, and the [decision-record fixtures](../../decision-record/fixtures/README.md#a-runner-reads-these-files-now-and-that-changes-what-this-file-is) already record it. Nothing in CI runs this corpus. Nothing declares where a reference corpus sits or how a run reaches one.
+**That a fixture corpus needs assembling is a finding rather than an inconvenience**, and the [decision-record fixtures](../../decision-record/fixtures/README.md#a-runner-reads-these-files-now-and-that-changes-what-this-file-is) already record it. Nothing in CI runs the Beacon corpus above, and the composition run below is the one thing here that a blocking step performs. Nothing declares where a reference corpus sits or how a run reaches one.
 
 ## What each document exercises
 

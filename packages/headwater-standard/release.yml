@@ -26,12 +26,12 @@ release:
   package: headwater/standard
   version: 4.3.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:9912ab56ebd471754c09af9ce994437a2f4d1da6892a378f77d9afb899a0758d
+  digest: sha256:c074181658a56fa251fe70807ae226a1b85df49def86940abcafe7ecbb7488e2
   members:
     - path: assemblies/starter/assembly.yml
       digest: sha256:a31fc170c7e398feb01c0cc2d5f684744b24b8df4ce86a896d5ee64963567d2e
     - path: bundles/README.md
-      digest: sha256:c0a554bb66b2a79ce3ec6108b87bc06c90a84b716d46c080abdc3a69e6a2e00a
+      digest: sha256:f71c843ffcd6f3191fb941739499fa511855a88ca37bc60360dbbc0c24887762
     - path: bundles/brd-prd/bundle.yml
       digest: sha256:af0637e7fd79d135b52d6eeca56eeeae9f3d1c1d0790669df0469fb13ca604a8
     - path: bundles/brd-prd/doctrine.md
@@ -77,7 +77,7 @@ release:
     - path: bundles/diataxis/bundle.yml
       digest: sha256:4afe5c3405d8a17afcb3635ff00ebbcd276b411fd2cd59ba0215ef6206350feb
     - path: bundles/diataxis/doctrine.md
-      digest: sha256:215943aeda88ce5f209ee9b7ffd13718b217ee7b399fe51a63af76570f407065
+      digest: sha256:13ae11940d675be5210c8ca6b8de177a82d2c29b656d6a93ce1c4119f2843acb
     - path: bundles/evidence-and-obligation/bundle.yml
       digest: sha256:1092c56eb53e4f4d439e6e15c932087ee84b256eb0fd27cc3edbafb1abb3202f
     - path: bundles/evidence-and-obligation/doctrine.md
