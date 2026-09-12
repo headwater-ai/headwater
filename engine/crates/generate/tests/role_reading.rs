@@ -736,13 +736,21 @@ const LOOKUPS: [(&str, &str, bool); 4] = [
     ("engine/crates/generate/src/derived.rs", "role_of", true),
     // The second lookup function, over a resolver view rather than a `Shape`.
     // It is the one the first audit's stated method could not have found.
-    ("engine/crates/resolve/src/rules.rs", "facet_with_role", true),
+    (
+        "engine/crates/resolve/src/rules.rs",
+        "facet_with_role",
+        true,
+    ),
     // NOT a facet-role lookup. Its `role` is a *lifecycle* role — `initial`,
     // `live`, `terminal-retained` — which is the other registry, the one
     // `the_three_copies_of_the_closed_role_registry_agree` separates by the
     // block it sits in. Counting its call sites would report readers for roles
     // that are not in the closed registry at all.
-    ("engine/crates/resolve/src/core.rs", "role_is_terminal", false),
+    (
+        "engine/crates/resolve/src/core.rs",
+        "role_is_terminal",
+        false,
+    ),
 ];
 
 /// The set of role lookups is the declared one.
@@ -1131,9 +1139,7 @@ fn the_created_role_is_read_by_the_expectation_window() {
     let message = run
         .findings
         .iter()
-        .find(|finding| {
-            finding.rule == RULE && finding.path == "created-role/records/overdue.md"
-        })
+        .find(|finding| finding.rule == RULE && finding.path == "created-role/records/overdue.md")
         .map(|finding| finding.message.clone())
         .expect("overdue.md is reported");
     assert!(
