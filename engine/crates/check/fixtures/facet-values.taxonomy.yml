@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the facet-values tree is checked against. It is the smallest
+# shape the question needs: one enumerated facet with no machine behind it, and
+# four kinds that narrow it four different ways.
+#
+# `evidence_basis` is the case this fixture exists for. It has no order, no
+# initial value and no transitions, so no lifecycle regime can name a subset of
+# it, and it is the discriminator of no shelf. `kinds.<name>.facets.values` is
+# the only declaration that can say which of its four values a kind means.
+#
+# `record` is abstract and narrows to two. `ruling` descends from it and
+# narrows nothing of its own, so it admits what its parent admits. `note`
+# descends from it and narrows to two more, one of which the parent already
+# excluded, so it admits the intersection and that is one value. `open` stands
+# outside the chain and narrows nothing, so it admits the whole set and still
+# generates an instance.
+
+facets:
+  evidence_basis:
+    required: true
+    values: [measured, cited, asserted, observed]
+  summary:
+    role: scent
+    required: true
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+kinds:
+  record:
+    abstract: true
+    purpose: hold_evidence
+    identifier: {scheme: note_id}
+    facets:
+      require: [evidence_basis, summary]
+      values:
+        evidence_basis: [measured, cited]
+  ruling:
+    is_a: record
+    identifier: {scheme: note_id}
+  note:
+    is_a: record
+    identifier: {scheme: note_id}
+    facets:
+      values:
+        evidence_basis: [cited, asserted]
+  open:
+    purpose: hold_evidence
+    identifier: {scheme: note_id}
+    facets:
+      require: [evidence_basis, summary]
+
+purposes:
+  hold_evidence: {question: what stands behind this}
+
+shelves:
+  rulings:
+    path: facet-values/rulings/**
+    homogeneous: true
+    kind: ruling
+  notes:
+    path: facet-values/notes/**
+    homogeneous: true
+    kind: note
+  opens:
+    path: facet-values/opens/**
+    homogeneous: true
+    kind: open
