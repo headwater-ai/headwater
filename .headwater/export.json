@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 424,
-      "carried": 424,
+      "in the graph": 428,
+      "carried": 428,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 626,
-      "carried": 626,
+      "in the graph": 630,
+      "carried": 630,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -49,6 +49,36 @@
           "relations": {
             "verifies": [
               "HW-REQ-0001"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/acceptance-criteria/0002-every-required-section-of-every-governed-document-has-a-heading.md",
+        "kind": "acceptance_criterion",
+        "id": "HW-AC-0002",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-AC-0002",
+          "status": "current",
+          "status_since": "2026-09-12",
+          "summary": "The rule reports one finding for each required section a document does not carry, and it reads the heading and never the prose under it.",
+          "last_verified": "2026-09-12",
+          "title": "Every required section of every governed document has a heading",
+          "verification_method": "test",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "verifies": [
+              "HW-REQ-0002"
+            ],
+            "traces_to": [
+              "engine/crates/check/src/sections.rs"
             ]
           }
         }
@@ -8105,6 +8135,33 @@
         }
       },
       {
+        "path": "docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md",
+        "kind": "requirement",
+        "id": "HW-REQ-0002",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-REQ-0002",
+          "status": "current",
+          "status_since": "2026-09-12",
+          "summary": "A document of a kind that declares required sections carries a heading for every one of them, and `section.required.missing` settles it.",
+          "last_verified": "2026-09-12",
+          "title": "Every document of a kind that requires sections carries all of them",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "verified_by": [
+              "HW-AC-0002",
+              "section.required.missing"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/reviews/core-concepts-findings-assessment.md",
         "kind": "review_record",
         "id": "HW-REV-core-concepts-assessment",
@@ -9102,6 +9159,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/check/src/sections.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/check/src/voice.rs",
         "resolver": "source-tree"
       },
@@ -9301,6 +9363,11 @@
         "resolver": "source-tree"
       },
       {
+        "anchor_kind": "check_rule",
+        "id": "section.required.missing",
+        "resolver": "check-rule"
+      },
+      {
         "anchor_kind": "code_path",
         "id": "site/_headers",
         "resolver": "source-tree"
@@ -9411,6 +9478,28 @@
           "id": "HW-REQ-0001",
           "path": "docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md",
           "kind": "requirement"
+        }
+      },
+      {
+        "source": "docs/acceptance-criteria/0002-every-required-section-of-every-governed-document-has-a-heading.md",
+        "relation": "verified_by",
+        "written_as": "verifies",
+        "target": {
+          "bound": "document",
+          "id": "HW-REQ-0002",
+          "path": "docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md",
+          "kind": "requirement"
+        }
+      },
+      {
+        "source": "docs/acceptance-criteria/0002-every-required-section-of-every-governed-document-has-a-heading.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/sections.rs",
+          "resolver": "source-tree"
         }
       },
       {
@@ -14801,6 +14890,28 @@
           "anchor_kind": "code_path",
           "id": "engine/Cargo.lock",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md",
+        "relation": "verified_by",
+        "written_as": "verified_by",
+        "target": {
+          "bound": "document",
+          "id": "HW-AC-0002",
+          "path": "docs/acceptance-criteria/0002-every-required-section-of-every-governed-document-has-a-heading.md",
+          "kind": "acceptance_criterion"
+        }
+      },
+      {
+        "source": "docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md",
+        "relation": "verified_by",
+        "written_as": "verified_by",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "check_rule",
+          "id": "section.required.missing",
+          "resolver": "check-rule"
         }
       },
       {
