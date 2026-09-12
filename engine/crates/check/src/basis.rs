@@ -69,6 +69,31 @@
 //! skips. A rule that collapsed the absence into "not `asserted`" would return
 //! green over a corpus that had lost every warrant it declares.
 //!
+//! # A generated target declares no warrant and has one
+//!
+//! Spec 3 again: "The engine derives `regenerated` from the marker, and never
+//! from a declaration. A generated file that declares no front matter has no
+//! block in which to state a warrant. A generated document that declares an
+//! identity has one, and a declared warrant there would be a fact that a hand
+//! edit can falsify." So the absence at such a target is a property of how the
+//! value is derived rather than a gap in the corpus, and skipping there
+//! declines to judge a pair whose answer is already known.
+//!
+//! This rule therefore reads [`headwater_doc::warrant_of`] rather than
+//! [`headwater_doc::warrant`], and it hands over the census's own answer to
+//! whether this engine wrote the file, which [`crate::scope::EdgeEnd::generated`]
+//! carries. It never opens the marker itself: the predicate over
+//! `headwater:generated` is `headwater_mark`'s, the census is its one caller
+//! over a corpus, and a second reading here is how a rule and a census would
+//! come to disagree about one file.
+//!
+//! `regenerated` is not `asserted`, so the pair passes. That is a pass and not
+//! an exemption: the same document standing at `asserted` would be reported,
+//! and a generated document cannot state `asserted` because it states nothing.
+//! [#818](https://github.com/headwater-ai/headwater/issues/818) is the report,
+//! and `tests/evidence_basis.rs` holds the ungenerated target beside it so that
+//! the two absences keep their separate answers.
+//!
 //! On the source side, a value that is not `evidenced` passes rather than
 //! skips: `unevidenced`, `reconstructed`, and the unfilled
 //! `"{{evidenced | reconstructed | unevidenced}}"` placeholder that three
@@ -151,8 +176,11 @@ impl<'a> Basis<'a> {
 
 impl EdgeCheck for Basis<'_> {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`].
-    const VERSION: u32 = 1;
+    /// See [`crate::placement::Placement::VERSION`]. Version 2 reads the
+    /// derived warrant of a generated target, so the verdict over a pair that
+    /// version 1 skipped is now a pass and a warm cache would serve the skip
+    /// forever at the version it was written under.
+    const VERSION: u32 = 2;
     /// The Q4 pair. See the module comment: both ends have to be documents,
     /// because the rule reads a provenance member at each of them.
     const UNIT: EdgeUnit = EdgeUnit::Pair;
@@ -199,7 +227,9 @@ impl EdgeCheck for Basis<'_> {
 
         // An absent warrant is not a warrant read as supporting. A rule that
         // collapsed the two returns green over a corpus that lost every one.
-        let Some(warrant) = headwater_doc::warrant(target_facets) else {
+        // A generated target is the one absence that is not one: the engine
+        // derives its warrant from the marker, and the census already read it.
+        let Some(warrant) = headwater_doc::warrant_of(target_facets, target.generated()) else {
             return Outcome::Skipped(format!(
                 "the document at the target end, `{}`, declares no warrant, so there is nothing \
                  there to say whether it supports an evidenced claim",

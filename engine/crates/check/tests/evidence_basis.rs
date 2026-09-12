@@ -390,7 +390,11 @@ fn deriving_a_warrant_for_a_generated_target_does_not_answer_for_an_ungenerated_
         .iter()
         .filter(|(reads, _)| reads.contains(&"evidence-basis/targets/quiet.md"))
         .collect();
-    assert_eq!(quiet.len(), 1, "the ungenerated target stopped skipping: {skips:?}");
+    assert_eq!(
+        quiet.len(),
+        1,
+        "the ungenerated target stopped skipping: {skips:?}"
+    );
     assert_eq!(
         about(&run, "NOTE-FIX-rests-on-asserted").len(),
         1,
