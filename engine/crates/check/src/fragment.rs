@@ -958,7 +958,7 @@ sys.stdout.buffer.write("\0".join(fn(text, "-") for text in texts).encode("utf-8
     /// A pattern that ends in `/` names a directory and excludes everything
     /// under a directory of that name at any depth, which is the gitignore
     /// shape MkDocs matches these with. Anything else names a file.
-    fn excluded(relative: &str, patterns: &[String]) -> bool {
+    fn is_excluded(relative: &str, patterns: &[String]) -> bool {
         patterns.iter().any(|pattern| {
             match pattern.strip_suffix('/') {
                 Some(directory) => relative
@@ -1013,7 +1013,7 @@ sys.stdout.buffer.write("\0".join(fn(text, "-") for text in texts).encode("utf-8
                 .expect("a file this walk found under `docs_dir`")
                 .to_string_lossy()
                 .replace('\\', "/");
-            if excluded(&relative, &patterns) {
+            if is_excluded(&relative, &patterns) {
                 excluded += 1;
                 continue;
             }
