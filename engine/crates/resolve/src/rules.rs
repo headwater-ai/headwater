@@ -1083,7 +1083,9 @@ fn narrowed_value_sets(view: &View, out: &mut Vec<ResolveError>) {
                     RULE,
                     &at,
                     format!(
-                        "narrows `{facet}`, which declares no value set. A narrowing names                          values of a closed set, and a facet that enumerates nothing has none                          to name"
+                        "narrows `{facet}`, which declares no value set. A narrowing names \
+                         values of a closed set, and a facet that enumerates nothing has \
+                         none to name"
                     ),
                 ));
                 continue;
@@ -1093,7 +1095,9 @@ fn narrowed_value_sets(view: &View, out: &mut Vec<ResolveError>) {
                     RULE,
                     &at,
                     format!(
-                        "narrows `{facet}` to no value at all, so no document of this kind                          could ever be valid. `facets.forbid` is how a kind takes a facet away"
+                        "narrows `{facet}` to no value at all, so no document of this kind \
+                         could ever be valid. `facets.forbid` is how a kind takes a facet \
+                         away"
                     ),
                 ));
                 continue;
@@ -1103,7 +1107,8 @@ fn narrowed_value_sets(view: &View, out: &mut Vec<ResolveError>) {
                     RULE,
                     &at,
                     format!(
-                        "narrows `{facet}`, and this kind or one above it forbids the same                          facet. A forbidden facet has no values on this kind to narrow"
+                        "narrows `{facet}`, and this kind or one above it forbids the same \
+                         facet. A forbidden facet has no values on this kind to narrow"
                     ),
                 ));
             }
@@ -1113,7 +1118,8 @@ fn narrowed_value_sets(view: &View, out: &mut Vec<ResolveError>) {
                         RULE,
                         &at,
                         format!(
-                            "narrows `{facet}` to `{value}`, which `facets.{facet}.values` does                              not hold. A narrowing takes values away and it adds none"
+                            "narrows `{facet}` to `{value}`, which `facets.{facet}.values` \
+                             does not hold. A narrowing takes values away and it adds none"
                         ),
                     ));
                 }
@@ -1137,7 +1143,9 @@ fn narrowed_value_sets(view: &View, out: &mut Vec<ResolveError>) {
                             RULE,
                             &at,
                             format!(
-                                "narrows `{facet}` to `{value}`, and `{step}` above it does not                                  admit that value. A child may not void a contract that a reader                                  of the parent trusts"
+                                "narrows `{facet}` to `{value}`, and `{step}` above it does \
+                                 not admit that value. A child may not void a contract that \
+                                 a reader of the parent trusts"
                             ),
                         ));
                     }

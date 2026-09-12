@@ -351,7 +351,7 @@ definitions:
       # Optional. One key per enumerated facet this kind narrows, and the
       # values of that facet it means. A kind that names none admits the whole
       # declared set, and a narrowing is intersected with every narrowing above
-      # it in the chain (HW-DR-0064). `forbid` takes the facet away and this
+      # it in the chain (HW-DR-0066). `forbid` takes the facet away and this
       # takes values away, so a facet may not appear under both.
       values: {map: {seq: {scalar: string}}}
 

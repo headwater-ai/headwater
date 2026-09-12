@@ -1,11 +1,11 @@
 ---
 id: NOTE-FIX-ruling-admitted
 evidence_basis: measured
-summary: a document whose kind admits the value it declares
+summary: a document at a value the narrowing it inherits admits
 ---
 
 # The ruling at an admitted basis
 
-Its front matter is the front matter of `notes/excluded.md`, down to the value.
-Only the shelf differs, and the shelf is what says which kind, and the kind is
-what narrows `evidence_basis`.
+`measured` is one of the two values `record` names. A rule that read an
+inherited narrowing as a prohibition on every value would report this document
+as well as `rulings/excluded.md`.

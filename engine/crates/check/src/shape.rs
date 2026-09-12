@@ -626,9 +626,14 @@ impl Shape {
     /// intersection here reports a taxonomy that never resolved rather than
     /// deciding anything of its own.
     ///
-    /// Nothing for a facet this taxonomy does not declare. An empty list for a
-    /// facet that declares no value set, which is the same answer
-    /// [`Facet::admitted`] gives and means "this facet enumerates nothing".
+    /// Three absences, and they are three different answers. Nothing for a
+    /// facet this taxonomy does not declare. An empty list for a facet that
+    /// declares no value set, which is the same answer [`Facet::admitted`]
+    /// gives and means "this facet enumerates nothing". The whole declared set
+    /// for a kind this taxonomy does not declare, because a kind nothing
+    /// declares narrows nothing, exactly as a declared kind that names no
+    /// narrowing does; no caller here produces one, since both readers iterate
+    /// `Shape::kinds`.
     pub fn admitted_values(&self, kind: &str, facet: &str) -> Option<Vec<&str>> {
         let declared = self.facet(facet)?.admitted();
         let mut admitted = declared;

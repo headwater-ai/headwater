@@ -57,6 +57,8 @@ So subset narrowing, on a facet with no machine and no shelf that discriminates 
 
 **A narrowed kind still generates an instance.** `facets.forbid` stops the generation step and a narrowing must not. A kind that narrows nothing is the common case. A rule that instantiated only over a declared narrowing would count no document of most corpora as checked. `crate::coverage`'s OB-COV-2 finding rests on that count.
 
+**On a taxonomy that resolves, the deepest narrowing in a chain is the set.** That follows from the refusal above and it decides what a fixture can prove. A child's values are a subset of every set above it, so the intersection equals the innermost narrowing, and no corpus separates "intersect the chain" from "take the nearest narrowing". The intersection in `Shape::admitted_values` therefore reports a taxonomy that never resolved, and it decides nothing of its own. What a corpus does separate is "walk the chain" from "read this kind alone", which is a kind that declares no narrowing and stands under one that does.
+
 **The exported JSON Schema narrows with it.** `headwater generate` emits one schema per kind, and the `enum` it writes for an enumerated facet now comes from that kind's admitted set. A schema wider than the check it claims to carry is a wrong answer and not less coverage. A loss set records less coverage only.
 
 **This repository's own taxonomy declares no narrowing, and that is deliberate.** The measurement above shows that one would move no verdict here. Narrowing a value set to demonstrate the member would move the lock and every artifact below it, for no reader. The mechanism ships with a fixture corpus at `engine/crates/check/fixtures/facet-values/`, and the first adopter who needs it is the first reader of it.

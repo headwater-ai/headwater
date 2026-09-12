@@ -1,11 +1,11 @@
 ---
 id: NOTE-FIX-open-any
-evidence_basis: observed
-summary: a document of a kind that narrows nothing and inherits no narrowing
+evidence_basis: asserted
+summary: a document at a value that no narrowing on its own kind excludes
 ---
 
 # The open document
 
-`observed` is a value no narrowing in this taxonomy names. Its kind declares
-none and stands under no kind that declares one, so the whole declared set of
-`evidence_basis` is what it admits, and an instance still stands over it.
+`open` narrows nothing and stands under no kind that narrows anything, so the
+whole declared set of `evidence_basis` is what it admits. `asserted` is a
+member of it, and an instance still stands over this document.

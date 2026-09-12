@@ -9,17 +9,16 @@
 //! to be wrong under the three mistakes this reading is easiest to make.
 //!
 //! The first is a reading that reads the value and not the kind.
-//! `rulings/admitted.md` and `notes/excluded.md` carry the same front matter,
-//! down to the value of `evidence_basis`. Only the shelf differs, and the shelf
-//! is what says which kind, and the kind is what narrows the facet. A rule that
-//! read `measured` as wrong wherever it found it reports both.
+//! `rulings/excluded.md` and `opens/any.md` carry the same front matter, down
+//! to `evidence_basis: asserted`. Only the shelf differs, and the shelf is what
+//! says which kind, and the kind is what narrows the facet. A rule that read
+//! `asserted` as wrong wherever it found it reports both.
 //!
-//! The second is a reading that takes the narrowing nearest the document.
-//! `note` narrows to `cited` and `asserted`, and `record` above it narrows to
-//! `measured` and `cited`. A rule that read the child alone would admit
-//! `asserted` on a note, and a rule that read the topmost would admit
-//! `measured`. The one value the chain admits is `cited`, and the message on
-//! the single finding is where that intersection is legible.
+//! The second is a reading that stops at the kind's own declaration. `ruling`
+//! declares no narrowing, so the set `rulings/excluded.md` is read against can
+//! only come from walking to `record`. A rule that read `kind.narrows` and not
+//! `Shape::ancestry` reports nothing there and still passes every other case in
+//! this file.
 //!
 //! The third is a reading that stops instantiating where no narrowing is
 //! declared. `opens/any.md` stands at a value no narrowing in this taxonomy
@@ -27,6 +26,25 @@
 //! and an instance must still stand over it — [`headwater_check::coverage`]'s
 //! OB-COV-2 finding is unreachable for any corpus once a rule stops counting
 //! the documents it could only ever pass.
+//!
+//! # Why this taxonomy is one `taxonomy validate` accepts, and why that matters
+//!
+//! A narrowing takes values away and adds none, so a child's set is a subset of
+//! every set above it and `kind inheritance` refuses a declaration for which
+//! that is false. The first draft of this fixture had `note` name a value
+//! `record` excluded: the check layer read it as an intersection and reported
+//! the answer this file asserted, while the resolver would have refused the
+//! taxonomy outright. Two enforcement paths disagreeing about one file is worse
+//! than either being wrong, so every narrowing here resolves, and
+//! `engine/crates/resolve/tests/facet_narrowing.rs` is where the refusals live.
+//!
+//! One consequence is worth stating, because it decides what this file can
+//! prove. Under a taxonomy that resolves, the deepest narrowing in a chain
+//! *is* the intersection, so no corpus can separate "intersect the chain" from
+//! "take the innermost narrowing". What a corpus can separate is "walk the
+//! chain" from "read this kind only", and `rulings/excluded.md` is that case.
+//! [`headwater_check::Shape::admitted_values`] is asserted directly for the
+//! rest.
 //!
 //! No lifecycle regime is bound anywhere below, and that is the property rather
 //! than an omission. `evidence_basis` has no initial value and no transitions,
@@ -51,16 +69,20 @@ fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
 
-fn run() -> Run {
-    let corpus = Corpus::new(fixtures_dir(), "facet-values");
-    let source = std::fs::read_to_string(fixtures_dir().join("facet-values.taxonomy.yml"))
+fn source() -> headwater_yaml::Mapping {
+    let text = std::fs::read_to_string(fixtures_dir().join("facet-values.taxonomy.yml"))
         .expect("the fixture taxonomy");
-    let root = headwater_yaml::load(&source)
+    headwater_yaml::load(&text)
         .expect("the fixture taxonomy loads")
         .value
         .as_map()
         .expect("a mapping")
-        .clone();
+        .clone()
+}
+
+fn run() -> Run {
+    let corpus = Corpus::new(fixtures_dir(), "facet-values");
+    let root = source();
 
     let taxonomy = Taxonomy::read(&root).expect("the taxonomy reads");
     let declarations = Declarations::read(&root).expect("the declarations read");
@@ -103,6 +125,20 @@ fn refusals(run: &Run) -> Vec<(&str, &str)> {
         .collect()
 }
 
+fn reported(run: &Run) -> Vec<&str> {
+    let mut paths: Vec<&str> = refusals(run).into_iter().map(|(path, _)| path).collect();
+    paths.sort_unstable();
+    paths
+}
+
+fn message_over<'a>(run: &'a Run, path: &str) -> &'a str {
+    refusals(run)
+        .into_iter()
+        .find(|(found, _)| *found == path)
+        .unwrap_or_else(|| panic!("no finding over {path}: {:?}", reported(run)))
+        .1
+}
+
 /// The skip reasons this rule recorded, against the document each instance was
 /// created over.
 fn skips(run: &Run) -> Vec<(&str, &String)> {
@@ -124,117 +160,151 @@ fn over_document(instance: &headwater_check::Instance) -> &str {
         .expect("a document instance reads the document it stands over")
 }
 
-/// A document of a kind that does not admit a value carries that value and is a
-/// finding, and the document of the kind that does admit it is silent.
+/// The decisive pair: one value, two kinds, one finding.
 ///
-/// The decisive fixture, and the one no existing mechanism reaches. There is no
-/// machine over `evidence_basis` for a lifecycle regime to name a subset of,
-/// and no shelf discriminates on it, so neither of the two declarations that
-/// narrow a value set today can express the difference between these two
-/// documents.
+/// `rulings/excluded.md` and `opens/any.md` differ in no front-matter field but
+/// the identifier, and the document whose kind's chain excludes the value is
+/// reported while the document whose kind admits it is silent. Neither of the
+/// two declarations that narrow a value set today reaches this: `evidence_basis`
+/// has no machine for a lifecycle regime to name a subset of, and no shelf
+/// discriminates on it.
 #[test]
-fn a_document_of_a_kind_that_does_not_admit_a_value_is_the_only_finding() {
+fn one_value_on_two_kinds_reports_the_kind_that_does_not_admit_it() {
     let run = run();
-    let refusals = refusals(&run);
-    assert_eq!(
-        refusals.len(),
-        1,
-        "the value is not the defect and the kind is: {refusals:?}"
-    );
-    assert_eq!(refusals[0].0, "facet-values/notes/excluded.md");
-}
-
-/// The same value, on the kind whose chain admits it, is silent and not
-/// skipped.
-///
-/// `rulings/admitted.md` is `notes/excluded.md` with one thing changed, and the
-/// thing is not in the front matter. Silence has two causes and only one of
-/// them is a pass, so the skip set is read as well as the finding set.
-#[test]
-fn the_same_value_on_a_kind_whose_chain_admits_it_is_silent() {
-    let run = run();
-    let reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
+    let reported = reported(&run);
     assert!(
-        !reported.contains(&"facet-values/rulings/admitted.md"),
+        reported.contains(&"facet-values/rulings/excluded.md"),
+        "the kind whose chain excludes the value was not reported: {reported:?}"
+    );
+    assert!(
+        !reported.contains(&"facet-values/opens/any.md"),
         "the rule read the value rather than the kind: {reported:?}"
     );
     assert_eq!(
         skips(&run)
             .iter()
-            .filter(|(path, _)| *path == "facet-values/rulings/admitted.md")
+            .filter(|(path, _)| *path == "facet-values/opens/any.md")
             .count(),
         0,
-        "the ruling passed rather than declined to decide"
+        "the open document passed rather than declining to decide"
     );
 }
 
-/// The message names the narrowed set and not the facet's whole list.
+/// Exactly two documents are reported, and each one is reported by a different
+/// narrowing.
+///
+/// The denominator for the pair above. `rulings/excluded.md` is excluded by a
+/// narrowing its kind does not declare, and `notes/excluded.md` is excluded by
+/// one its kind does declare while the kind above it admits the value. A rule
+/// that read only the kind reports the first and not the second; a rule that
+/// read only the chain's top reports the second and not the first.
+#[test]
+fn each_of_the_two_narrowings_reports_its_own_document_and_no_other() {
+    let run = run();
+    assert_eq!(
+        reported(&run),
+        vec![
+            "facet-values/notes/excluded.md",
+            "facet-values/rulings/excluded.md",
+        ],
+        "the reported set is not the two documents the two narrowings exclude"
+    );
+}
+
+/// Each message names the set that kind admits, and not the facet's list.
 ///
 /// The remediation is the only place an author learns what to write instead. A
 /// message that quoted the declaration would send them to a value their kind
-/// refuses, which is worse than no message.
+/// refuses, which is worse than no message. The two messages differ, which is
+/// what says the admitted set is per kind rather than per corpus.
 #[test]
-fn the_message_names_the_narrowed_set_and_not_the_declared_one() {
+fn each_message_names_the_set_its_own_kind_admits() {
     let run = run();
-    let refusals = refusals(&run);
-    let (_, message) = refusals[0];
+
+    // `ruling` declares no narrowing and inherits `record`'s two.
+    let inherited = message_over(&run, "facet-values/rulings/excluded.md");
     assert!(
-        message.contains("admits cited,"),
-        "the admitted value: {message}"
+        inherited.contains("admits measured, cited,"),
+        "the inherited set: {inherited}"
     );
+    assert!(!inherited.contains("observed"), "{inherited}");
+
+    // `note` narrows to one of those two.
+    let own = message_over(&run, "facet-values/notes/excluded.md");
+    assert!(own.contains("admits cited,"), "the narrowed set: {own}");
     for excluded in ["asserted", "observed"] {
         assert!(
-            !message.contains(excluded),
-            "the message offers `{excluded}`, which the chain does not admit: {message}"
+            !own.contains(excluded),
+            "the message offers `{excluded}`, which the kind does not admit: {own}"
         );
     }
+
     let remediation = &run
         .findings
         .iter()
-        .find(|finding| finding.rule == RULE)
+        .find(|finding| finding.path == "facet-values/notes/excluded.md")
         .expect("the finding")
         .remediation;
     assert!(remediation.contains("cited"), "{remediation}");
     assert!(!remediation.contains("asserted"), "{remediation}");
 }
 
-/// A narrowing an ancestor declares is intersected with the child's own.
+/// The admitted set of every kind, read off the shape the check reads.
 ///
-/// `notes/intersected.md` stands at the one value both narrowings name. A rule
-/// that read the child alone and a rule that read the parent alone both admit
-/// it, so this document alone proves nothing; it is the pair of it and the
-/// message above that does.
+/// The corpus cannot separate an intersection from the innermost narrowing on a
+/// taxonomy that resolves, so the function both the check and the schema
+/// emitter call is asserted here directly, over all four kinds and both
+/// absences.
 #[test]
-fn a_child_inherits_the_intersection_of_every_narrowing_above_it() {
-    let run = run();
-    let reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
-    assert!(
-        !reported.contains(&"facet-values/notes/intersected.md"),
-        "{reported:?}"
+fn the_admitted_set_of_each_kind_is_the_chain_narrowed() {
+    let shape = Shape::read(&source()).expect("the shape reads");
+    let admitted = |kind: &str| shape.admitted_values(kind, "evidence_basis");
+
+    assert_eq!(admitted("record"), Some(vec!["measured", "cited"]));
+    assert_eq!(
+        admitted("ruling"),
+        Some(vec!["measured", "cited"]),
+        "a kind that declares no narrowing lost its ancestor's"
     );
-    assert!(
-        !reported.contains(&"facet-values/rulings/inherited.md"),
-        "a kind that declares no narrowing of its own lost its ancestor's: {reported:?}"
+    assert_eq!(
+        admitted("note"),
+        Some(vec!["cited"]),
+        "a kind that narrows further did not narrow"
+    );
+    assert_eq!(
+        admitted("open"),
+        Some(vec!["measured", "cited", "asserted", "observed"]),
+        "a kind outside the chain did not admit the whole declared set"
+    );
+
+    // The three absences, which are three different answers.
+    assert_eq!(
+        shape.admitted_values("ruling", "no_such_facet"),
+        None,
+        "a facet this taxonomy does not declare answered a set"
+    );
+    assert_eq!(
+        shape.admitted_values("ruling", "summary"),
+        Some(Vec::new()),
+        "a facet that enumerates nothing is an empty set and not an absence"
+    );
+    assert_eq!(
+        admitted("no_such_kind"),
+        Some(vec!["measured", "cited", "asserted", "observed"]),
+        "a kind nothing declares narrows nothing, which is the declared set"
     );
 }
 
-/// A kind that narrows nothing admits the whole declared set, and still
-/// generates an instance over every document of it.
+/// A kind that narrows nothing still generates an instance over every document
+/// of it.
 ///
 /// The trap [`headwater_check::facet_value`]'s module comment names, met from
-/// this change's side. `opens/any.md` stands at a value no narrowing here
-/// admits and its kind narrows nothing, so it passes; a narrowing member that
-/// made `instantiates` depend on a declared narrowing would stop counting it as
-/// checked at all.
+/// this change's side. A narrowing member that made `instantiates` depend on a
+/// declared narrowing would stop counting the kinds that declare none, which is
+/// every kind of most taxonomies.
 #[test]
-fn a_kind_that_narrows_nothing_admits_the_whole_set_and_still_instantiates() {
+fn a_kind_that_narrows_nothing_still_instantiates() {
     let run = run();
-    let reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
-    assert!(
-        !reported.contains(&"facet-values/opens/any.md"),
-        "{reported:?}"
-    );
-
     let targets: Vec<&str> = run
         .instances
         .iter()
