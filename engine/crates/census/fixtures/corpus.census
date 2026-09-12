@@ -590,6 +590,8 @@ docs/obligations/0184-nothing-states-why-the-vendored-package-root-is-visible-in
   typed: obligation_record
 docs/obligations/0185-whether-an-admitted-library-entry-may-require-a-bundle-that-admission-refuses.md
   typed: obligation_record
+docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
