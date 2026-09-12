@@ -357,7 +357,7 @@ pub fn write(
 /// digest can vouch for. This is for a caller — `taxonomy migrate` — that
 /// changes nothing about the resolution and only has a new `adoption` block to
 /// carry. It does not re-validate and it does not re-resolve, because the
-/// package a name under `packages/` resolves to can already disagree with
+/// package a name under `.headwater/packages/` resolves to can already disagree with
 /// `lock.version` by the time a migration runs — that disagreement is the
 /// ordinary state a migration exists to be run inside of, and re-resolving here
 /// would fetch whichever one currently sits there instead of standing on the

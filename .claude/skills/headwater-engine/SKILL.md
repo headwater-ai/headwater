@@ -68,4 +68,4 @@ Two things about it are worth knowing before you run it, and [DEVELOPING.md](../
 
 ## What this skill does not decide
 
-A change to `packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` is a taxonomy change, and [headwater-taxonomy](../headwater-taxonomy/SKILL.md) carries it. A new rule is declared there and implemented in `engine/crates/check/`, and the bar that a check without a failing fixture does not ship is stated there rather than here.
+A change to `.headwater/packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` is a taxonomy change, and [headwater-taxonomy](../headwater-taxonomy/SKILL.md) carries it. A new rule is declared there and implemented in `engine/crates/check/`, and the bar that a check without a failing fixture does not ship is stated there rather than here.

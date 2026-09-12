@@ -1104,9 +1104,9 @@ release_tags_in() {
     '
 }
 
-# digest_of_tag TAG — the `release.digest` of `packages/headwater-standard/` in
-# the tree THAT TAG names, or the empty string when the tag object is not in
-# this clone. This is the value a reader following the page's route actually
+# digest_of_tag TAG — the `release.digest` of the vendored base package in the
+# tree THAT TAG names, or the empty string when the tag object is not in this
+# clone. This is the value a reader following the page's route actually
 # receives, and reading it out of the tag rather than out of the working tree is
 # the whole point: a digest read from the checkout a reader is verifying
 # authenticates the pin and never the publisher (HW-OBL-0115).
@@ -1120,15 +1120,37 @@ digest_of_tag() {
 # answers whether it could be read at all. The judge needs this apart from the
 # digest, because an absent TAG and a record stating no top-level digest are two
 # different findings with two different remedies, and one empty string cannot
-# say which happened.
+# say which happened. A tag that is in this clone and carries the record at
+# neither root is a third, and `tag_object_present` is what tells it from the
+# first.
 tag_record_readable() {
     git_show_tag_release "$1" >"$scratch/tag-release.yml" 2>/dev/null
 }
 
-# git_show_tag_release TAG — one `git show`, kept in its own function so that
-# the redirection above reads a file this suite wrote under `mktemp -d`.
+# tag_object_present TAG — whether the tag itself is in this clone.
+#
+# `tag_record_readable` answers false under two conditions that ask for
+# opposite remedies: the tag was never fetched, and the tag is here and holds
+# the release record at neither root. Fetching fixes the first and nothing
+# fetches away the second. Without this function the judge reported both as
+# "not in this clone", which is a check that cannot run reading as one that
+# passes the moment a path moves.
+tag_object_present() {
+    git -C "$root" rev-parse -q --verify "$1^{tree}" >/dev/null 2>&1
+}
+
+# git_show_tag_release TAG — one `git show` of the release record in TAG's own
+# tree, kept in its own function so that the redirection above reads a file
+# this suite wrote under `mktemp -d`.
+#
+# Two roots, newest read first. #792 moved the vendored package root to
+# `.headwater/packages/`, and every tag cut before that carries the record at
+# `packages/` and always will, because a tag's tree does not move. A reader
+# verifying an older release follows the older path, so this reads both rather
+# than declaring half the published tags unreadable.
 git_show_tag_release() {
-    git -C "$root" show "$1:packages/headwater-standard/release.yml"
+    git -C "$root" show "$1:.headwater/packages/headwater-standard/release.yml" 2>/dev/null ||
+        git -C "$root" show "$1:packages/headwater-standard/release.yml"
 }
 
 # digest_route_judge FILE PINNED_TAG — `ok`, or the sentence that says how the
@@ -1167,8 +1189,10 @@ digest_route_judge() {
                 else
                     drj_want=
                 fi
-                if ! tag_record_readable "$drj_tag"; then
+                if ! tag_record_readable "$drj_tag" && ! tag_object_present "$drj_tag"; then
                     drj_sentence="$drj_sentence; the tag $drj_tag is not in this clone, so the digest it publishes cannot be read. Fetch it, or set \`fetch-tags: true\` on the checkout"
+                elif ! tag_record_readable "$drj_tag"; then
+                    drj_sentence="$drj_sentence; the tag $drj_tag is in this clone and its tree carries a release record at neither \`.headwater/packages/headwater-standard/\` nor \`packages/headwater-standard/\`, so the vendored package root moved again and this reader has not been told where. Fetching changes nothing here"
                 elif [ -z "$drj_want" ]; then
                     drj_sentence="$drj_sentence; the record at $drj_tag states no top-level \`release.digest\`, so nothing there can authorize the literal this paragraph quotes"
                 elif ! printf '%s' "$drj_para" | grep -q -- "$drj_want"; then
@@ -1657,7 +1681,7 @@ fi
 
 vendor_cmd=$(printf '%s\n' "$vendor_cmds" | head -1)
 operand=$(vendor_operand_of "$vendor_cmd")
-good_digest=$(release_digest_of "$root/packages/headwater-standard/release.yml")
+good_digest=$(release_digest_of "$root/.headwater/packages/headwater-standard/release.yml")
 bad_digest="${good_digest%%:*}:$(printf '%064d' 0)"
 
 # 6c. The grammar the interface contract publishes. This is the syntactic half,
@@ -1720,16 +1744,16 @@ fi
 #        be told from a judge that stopped working.
 mkdir -p "$scratch/vendor-arms"
 if [ -n "$engine" ] && [ -n "$good_digest" ]; then
-    vendor_corpus "$scratch/vendor-arms/corpus" packages/headwater-standard || exit 1
+    vendor_corpus "$scratch/vendor-arms/corpus" .headwater/packages/headwater-standard || exit 1
     same "  an invocation with no directory refuses both digests in the same words" \
         "the digest the release states is refused; the two reports are byte-identical" \
         "$(vendor_judge "$scratch/vendor-arms/corpus" "headwater taxonomy vendor --expect <digest>" "$good_digest")"
     same "  an invocation with a directory and no \`--expect\` checks no digest at all" \
         "a wrong digest is accepted; the two reports are byte-identical" \
-        "$(vendor_judge "$scratch/vendor-arms/corpus" "headwater taxonomy vendor packages/headwater-standard" "$good_digest")"
+        "$(vendor_judge "$scratch/vendor-arms/corpus" "headwater taxonomy vendor .headwater/packages/headwater-standard" "$good_digest")"
     same "  an invocation naming a directory that is not there never reaches the digest" \
         "the digest the release states is refused; the two reports are byte-identical" \
-        "$(vendor_judge "$scratch/vendor-arms/corpus" "headwater taxonomy vendor packages/not-a-package --expect <digest>" "$good_digest")"
+        "$(vendor_judge "$scratch/vendor-arms/corpus" "headwater taxonomy vendor .headwater/packages/not-a-package --expect <digest>" "$good_digest")"
 else
     fail "  the judge is provoked in both shapes it refuses" \
         "the arms did not run: engine \`${engine:-none}\`, digest \`${good_digest:-none}\`"
@@ -2011,9 +2035,9 @@ if [ -f "$release_wf" ]; then
     workflow_step_run "$release_wf" "$notes_step" >"$scratch/release/notes-step.sh"
     if [ -s "$scratch/release/notes-step.sh" ]; then
         pass "  and the step that builds those notes can be read out by name"
-        mkdir -p "$scratch/release/tree/packages/headwater-standard"
-        cp "$root/packages/headwater-standard/release.yml" \
-            "$scratch/release/tree/packages/headwater-standard/release.yml"
+        mkdir -p "$scratch/release/tree/.headwater/packages/headwater-standard"
+        cp "$root/.headwater/packages/headwater-standard/release.yml" \
+            "$scratch/release/tree/.headwater/packages/headwater-standard/release.yml"
         notes_status=$(cd "$scratch/release/tree" && sh "$scratch/release/notes-step.sh" >notes.log 2>&1; echo $?)
         same "  and running it against this checkout exits 0" 0 "$notes_status"
         same "  and it writes the \`release.digest\` of the record in the tree it ran in" \
@@ -2022,8 +2046,8 @@ if [ -f "$release_wf" ]; then
 
         # The mutation arm. A record with no `release.digest` must stop the
         # release rather than cut one whose notes open with an empty value.
-        grep -v '^  digest:' "$root/packages/headwater-standard/release.yml" \
-            >"$scratch/release/tree/packages/headwater-standard/release.yml"
+        grep -v '^  digest:' "$root/.headwater/packages/headwater-standard/release.yml" \
+            >"$scratch/release/tree/.headwater/packages/headwater-standard/release.yml"
         rm -f "$scratch/release/tree/release-notes.md"
         blank_status=$(cd "$scratch/release/tree" && sh "$scratch/release/notes-step.sh" >notes.log 2>&1; echo $?)
         if [ "$blank_status" = 0 ]; then

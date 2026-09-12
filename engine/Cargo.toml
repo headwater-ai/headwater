@@ -39,7 +39,7 @@ resolver = "2"
 # A tag is fixed once published — `v0.1.0` already has a GitHub release with
 # a binary built from its exact tree — so the fix is a new version rather
 # than a moved tag. `v0.1.0` stays as it was cut.
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 
 # #735: every member is now free to reach crates.io, once the workflow that
@@ -106,28 +106,28 @@ repository = "https://github.com/headwater-ai/headwater"
 # because every member of this workspace has always moved as one number; nothing
 # here reads that field to derive this one, so a bump has both to change.
 [workspace.dependencies]
-headwater-adapter = { path = "crates/adapter", version = "0.1.2" }
-headwater-audit = { path = "crates/audit", version = "0.1.2" }
-headwater-census = { path = "crates/census", version = "0.1.2" }
-headwater-check = { path = "crates/check", version = "0.1.2" }
-headwater-compat = { path = "crates/compat", version = "0.1.2" }
-headwater-conformance = { path = "crates/conformance", version = "0.1.2" }
-headwater-doc = { path = "crates/doc", version = "0.1.2" }
-headwater-generate = { path = "crates/generate", version = "0.1.2" }
-headwater-graph = { path = "crates/graph", version = "0.1.2" }
-headwater-hash = { path = "crates/hash", version = "0.1.2" }
-headwater-import = { path = "crates/import", version = "0.1.2" }
-headwater-lock = { path = "crates/lock", version = "0.1.2" }
-headwater-mark = { path = "crates/mark", version = "0.1.2" }
-headwater-meta = { path = "crates/meta", version = "0.1.2" }
-headwater-probe = { path = "crates/probe", version = "0.1.2" }
-headwater-query = { path = "crates/query", version = "0.1.2" }
-headwater-ref = { path = "crates/ref", version = "0.1.2" }
-headwater-resolve = { path = "crates/resolve", version = "0.1.2" }
-headwater-scaffold = { path = "crates/scaffold", version = "0.1.2" }
-headwater-sweep = { path = "crates/sweep", version = "0.1.2" }
-headwater-verbs = { path = "crates/verbs", version = "0.1.2" }
-headwater-yaml = { path = "crates/yaml", version = "0.1.2" }
+headwater-adapter = { path = "crates/adapter", version = "0.2.0" }
+headwater-audit = { path = "crates/audit", version = "0.2.0" }
+headwater-census = { path = "crates/census", version = "0.2.0" }
+headwater-check = { path = "crates/check", version = "0.2.0" }
+headwater-compat = { path = "crates/compat", version = "0.2.0" }
+headwater-conformance = { path = "crates/conformance", version = "0.2.0" }
+headwater-doc = { path = "crates/doc", version = "0.2.0" }
+headwater-generate = { path = "crates/generate", version = "0.2.0" }
+headwater-graph = { path = "crates/graph", version = "0.2.0" }
+headwater-hash = { path = "crates/hash", version = "0.2.0" }
+headwater-import = { path = "crates/import", version = "0.2.0" }
+headwater-lock = { path = "crates/lock", version = "0.2.0" }
+headwater-mark = { path = "crates/mark", version = "0.2.0" }
+headwater-meta = { path = "crates/meta", version = "0.2.0" }
+headwater-probe = { path = "crates/probe", version = "0.2.0" }
+headwater-query = { path = "crates/query", version = "0.2.0" }
+headwater-ref = { path = "crates/ref", version = "0.2.0" }
+headwater-resolve = { path = "crates/resolve", version = "0.2.0" }
+headwater-scaffold = { path = "crates/scaffold", version = "0.2.0" }
+headwater-sweep = { path = "crates/sweep", version = "0.2.0" }
+headwater-verbs = { path = "crates/verbs", version = "0.2.0" }
+headwater-yaml = { path = "crates/yaml", version = "0.2.0" }
 
 # The lint floor. Every crate inherits it with `[lints] workspace = true`, so a
 # rule is declared once here rather than repeated in twenty-two manifests or

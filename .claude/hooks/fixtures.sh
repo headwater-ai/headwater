@@ -271,9 +271,14 @@ printf '\n# write.sh, on PreToolUse: one matcher decides an exclusion\n'
 # first case below wrong.
 if [ -x "$engine" ]; then
     classify_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-classify-XXXXXX")
-    mkdir -p "$classify_root/packages" "$classify_root/docs" "$classify_root/.headwater" \
+    mkdir -p "$classify_root/.headwater/packages" "$classify_root/docs" "$classify_root/.headwater" \
         "$classify_root/engine/target/release"
-    cp -r "$root/taxonomy-source/headwater-standard" "$classify_root/packages/headwater-standard"
+    cp -r "$root/taxonomy-source/headwater-standard" "$classify_root/.headwater/packages/headwater-standard"
+    # `contents.bundles` is relative to the package directory, and #792 put
+    # that directory one level deeper, so the scratch copy is repointed. It is
+    # the one scalar `taxonomy publish` rewrites on every artifact it writes.
+    sed -i 's|bundles: \.\./\.\./docs/taxonomies|bundles: ../../../docs/taxonomies|' \
+        "$classify_root/.headwater/packages/headwater-standard/package.yml"
     cp -r "$root/docs/taxonomies" "$classify_root/docs/taxonomies"
     cp "$root/.headwater/overlay.yml" "$classify_root/.headwater/overlay.yml"
     awk '{print} /^  exclude:$/{

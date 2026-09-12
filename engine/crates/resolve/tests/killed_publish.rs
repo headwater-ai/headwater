@@ -91,14 +91,17 @@ const ATTEMPTS: usize = 60;
 /// case is about takes measurable time.
 fn wide_publisher(scratch: &Scratch) -> PathBuf {
     scratch.write(
-        "publisher/packages/acme-fixture/package.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
-    scratch.write("publisher/packages/acme-fixture/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/taxonomy.yml",
+        TAXONOMY,
+    );
     let body = "x".repeat(512);
     for index in 0..FILLER {
         scratch.write(
-            &format!("publisher/packages/acme-fixture/filler/{index:04}.txt"),
+            &format!("publisher/.headwater/packages/acme-fixture/filler/{index:04}.txt"),
             &body,
         );
     }
@@ -243,7 +246,7 @@ const MARKER: &str = ".headwater-publish-staging";
 /// into the artifact.
 ///
 /// The deterministic half of the sweep's last assertion. `vendor` holds the same
-/// property over `packages/~staging` and found it the same way: a staging path
+/// property over `.headwater/packages/~staging` and found it the same way: a staging path
 /// that is written into rather than made is a staging path that publishes
 /// whatever an earlier run left in it.
 ///

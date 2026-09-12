@@ -1030,7 +1030,7 @@ pub enum TaxonomyWord {
             long,
             value_name = "dir",
             help = "read the manifest at this directory directly, bypassing the lookup by name \
-                    under `packages/` that `--package` drives. For a repository that both \
+                    under `.headwater/packages/` that `--package` drives. For a repository that both \
                     publishes a package and consumes it: `taxonomy vendor` refuses to install over \
                     a directory that carries no release record, so a maintained source cannot sit \
                     where its own artifact would be installed. This reads it from wherever it \

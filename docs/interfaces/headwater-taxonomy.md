@@ -73,7 +73,8 @@ The command reads the system date when a subcommand has `--now` and no date is s
 | `.headwater/taxonomy.yml`, package sources and overlay | Read by validation and resolution. |
 | `.headwater/taxonomy.lock` | Written by `resolve` without `--check`. Read by `diff`, which also re-hashes the source files it records. |
 | `.headwater/adoption.jsonl` | Read by `audit`, and appended to by `audit --record`. |
-| Package and artifact directories | `publish` and `migrate --apply` write a package directory, and `diff` and `migrate` read one. `vendor` reads the artifact it installs, and it writes `packages/<name>`, `packages/~staging/<name>` and `packages/<name>~aside`. It writes no other path in the consumer tree. |
+| Package and artifact directories | `publish` and `migrate --apply` write a package directory, and `diff` and `migrate` read one. `vendor` reads the artifact it installs, and it writes `.headwater/packages/<name>`, `.headwater/packages/~staging/<name>` and `.headwater/packages/<name>~aside`. It writes no other path in the consumer tree. |
+| `packages/`, the root before engine 0.2.0 | Read by no verb. A lookup that finds no package, on a tree that carries a directory there, names that directory and says to move what is under it. |
 
 ## See also
 

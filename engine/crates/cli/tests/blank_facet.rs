@@ -52,7 +52,10 @@ impl Root {
         std::fs::create_dir_all(&at).expect("the root is made");
 
         let repository = repository();
-        copy(&repository.join("packages"), &at.join("packages"));
+        copy(
+            &repository.join(headwater_resolve::package::PACKAGES),
+            &at.join(headwater_resolve::package::PACKAGES),
+        );
         copy(
             &repository.join("docs/taxonomies"),
             &at.join("docs/taxonomies"),

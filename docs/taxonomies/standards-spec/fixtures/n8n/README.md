@@ -52,7 +52,7 @@ Every one of the seven is a `standard`. Five of the six directories are represen
     ROOT=$(mktemp -d)
     cp -R docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents "$ROOT/.agents"
     cp -R docs/taxonomies/standards-spec/fixtures/n8n/.headwater "$ROOT/.headwater"
-    cp -R packages "$ROOT/packages"
+    cp -R .headwater/packages "$ROOT/.headwater/packages"
     headwater taxonomy resolve --root "$ROOT"
     headwater check --root "$ROOT" --no-cache --now 2026-09-01
     headwater sweep plan --root "$ROOT" --under .agents/review-rules
@@ -65,7 +65,7 @@ The entry sits outside the corpus root on purpose, the same reason the Beacon fi
 
 **A leading-dot corpus root walks like any other.** `corpus.root: .agents` was the one plausible blocker before the run and it is not one: the census walker uses a plain directory read with no hidden-directory filter. Shelf patterns are matched against paths that carry the corpus root segment, so the shelf writes `.agents/review-rules/**` and not `review-rules/**`.
 
-**No exclusion is needed, and the design-spec fixture's exclusion was forced.** That fixture roots at `packages`, which is also where a vendored taxonomy package is found, so it had to declare `exclude: packages/headwater-standard/**` and its census reports 38 excluded files that are not corpus content. With `root: .agents` the package sits outside the corpus root entirely. The exclusion was a property of where that kind's prose lives, not of scattered corpora in general.
+**No exclusion is needed here, and the design-spec fixture needed one until the package root moved.** That fixture roots at `packages`, which was also where a vendored taxonomy package was found, so it declared `exclude: packages/headwater-standard/**` and its census reported 38 excluded files that were not corpus content. [HW-DR-0064](../../../../decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) moved the package under `.headwater/`, the exclusion went with it, and that census now reports 0 excluded. This entry never needed one, because `root: .agents` put the package outside the corpus root whichever place it sat. The design-spec exclusion was a property of where that kind's prose lives meeting where a package lived, not of scattered corpora in general.
 
 **The shelf can be homogeneous here, and it could not there.** `kinds.design_spec` requires the facet `doc_type`, and a homogeneous shelf refuses a document that restates the kind its placement already states, so the design-spec fixture reports an error whichever way the front matter is written and settles for a heterogeneous shelf with one admitted kind — a shape its own README calls a contradiction. `kinds.standard` requires no facet and forbids `spec_layer`, so `homogeneous: true, kind: standard` resolves with nothing to declare. All three arms were run:
 

@@ -23,7 +23,7 @@
 //!
 //! # Finding a package by name, and where it came from
 //!
-//! A package is a directory under `packages/` whose manifest declares the name
+//! A package is a directory under `.headwater/packages/` whose manifest declares the name
 //! the consumer asked for, and the lookup refuses a version the consumer did not
 //! pin. How the directory got there is [`publish`] and [`vendor`]: a publisher
 //! writes an artifact with a digest over every file in it, a caller moves that
@@ -42,7 +42,35 @@ use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
 /// The directory a package is looked up in, relative to the repository root.
-pub const PACKAGES: &str = "packages";
+///
+/// It sits under `.headwater/` with every other piece of consumer state this
+/// engine writes ([HW-DR-0064](../../../../docs/decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)).
+/// Engines before 0.2.0 read [`LEGACY_PACKAGES`] instead.
+pub const PACKAGES: &str = ".headwater/packages";
+
+/// The root engines before 0.2.0 looked a package up in.
+///
+/// Nothing reads it. It is named here because a tree vendored before the move
+/// still carries a directory there, and a lookup that found nothing while that
+/// directory stood would tell the adopter their taxonomy does not exist. The
+/// two refusals [`find`] can reach when it finds no package say so instead.
+pub const LEGACY_PACKAGES: &str = "packages";
+
+/// The sentence a refusal carries when a directory stands at
+/// [`LEGACY_PACKAGES`], and nothing when none does.
+///
+/// It is computed from the tree under refusal rather than printed always, so
+/// that the sentence is a report about *this* tree. An advisory printed on
+/// every tree would say nothing about the one in front of the reader.
+fn stale_root_note(root: &Path) -> Option<String> {
+    root.join(LEGACY_PACKAGES).is_dir().then(|| {
+        format!(
+            "a directory stands at `{LEGACY_PACKAGES}/`, which is where engines before 0.2.0 \
+             installed packages and which this engine does not read. Move what is under it to \
+             `{PACKAGES}/`, or vendor the package again, and then delete it"
+        )
+    })
+}
 
 /// The file that carries a package manifest, inside the package directory.
 pub const MANIFEST: &str = "package.yml";
@@ -734,7 +762,7 @@ impl Adopted {
 }
 
 /// The version a package on disk declares, or `None` where no package under
-/// `packages/` carries that name.
+/// `.headwater/packages/` carries that name.
 ///
 /// `headwater init` writes a consumer declaration that pins a version, and a
 /// version it invented would be refused by `sources` two commands later with a
@@ -761,7 +789,7 @@ pub fn located(root: &Path, name: &str) -> Option<(PathBuf, Mapping)> {
 
 /// The manifest of a package directory the caller already holds.
 ///
-/// [`find`] locates a package by the name it declares, under `packages/`. An
+/// [`find`] locates a package by the name it declares, under `.headwater/packages/`. An
 /// artifact somebody fetched is neither: it sits wherever the caller put it and
 /// its name is what the comparison is about rather than what finds it. So this
 /// is the same read from the other end, and it is the only one this crate
@@ -781,14 +809,14 @@ pub fn manifest_at(directory: &Path) -> Result<Mapping, Vec<ResolveError>> {
 ///
 /// # A manifest that is not a mapping is reported, and does not stop the search
 ///
-/// `packages/` holds nothing anybody hand-edits — spec 7: only `taxonomy
+/// `.headwater/packages/` holds nothing anybody hand-edits — spec 7: only `taxonomy
 /// vendor` and `taxonomy publish --from` write under it — so a manifest that
 /// parses into something that is not a mapping is always an anomaly, never a
 /// scratch file this walk should quietly step around. But the anomaly belongs
 /// to the directory it sits in, not to the name being searched for, and the
 /// name asked for may still sit in a different, well-formed directory: a
-/// residue `vendor` already tolerates (`packages/<name>~aside`,
-/// `packages/~staging`), or simply a different package that happens to be
+/// residue `vendor` already tolerates (`.headwater/packages/<name>~aside`,
+/// `.headwater/packages/~staging`), or simply a different package that happens to be
 /// broken while the one being resolved is not. [`sources`], [`publish`],
 /// [`find_version`], [`located`] and `vendor`'s own collision guard all want
 /// the package that resolves over a report about the first thing that went
@@ -806,7 +834,7 @@ pub fn manifest_at(directory: &Path) -> Result<Mapping, Vec<ResolveError>> {
 ///
 /// # Two directories that declare the same name are both named, not resolved silently
 ///
-/// The walk never stops at the first match. `packages/` holds nothing anybody
+/// The walk never stops at the first match. `.headwater/packages/` holds nothing anybody
 /// hand-edits, but a person can still put a second directory there by hand —
 /// following `headwater init`'s own suggestion to copy a package directory in,
 /// beside one `vendor` already installed — and two directories that each
@@ -819,7 +847,7 @@ pub fn manifest_at(directory: &Path) -> Result<Mapping, Vec<ResolveError>> {
 /// **A directory's name alone does not prove what made it.** The grammar
 /// refuses `~` in a *package* name, but nothing refuses it in a *directory*
 /// name a person chooses by hand, and copying a package directory into
-/// `packages/` under any name at all — including one that happens to end in
+/// `.headwater/packages/` under any name at all — including one that happens to end in
 /// `~aside` — is exactly the `headwater init`-suggested workflow this
 /// function exists to stop from resolving silently. So a directory counts as
 /// residue only when its name carries the suffix **and** it carries a release
@@ -843,10 +871,15 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
     let packages = root.join(PACKAGES);
     let mut entries: Vec<PathBuf> = std::fs::read_dir(&packages)
         .map_err(|error| {
-            refusal(
+            let mut errors = refusal(
                 PACKAGES,
                 &format!("cannot read {}: {error}", packages.display()),
-            )
+            );
+            // The commonest reason this directory cannot be read is that the
+            // tree was vendored before the root moved, so the answer to "where
+            // is it then" belongs beside the failure rather than nowhere.
+            errors.extend(stale_root_note(root).map(|note| refusal_at(PACKAGES, &note)));
+            errors
         })?
         .filter_map(|entry| entry.ok().map(|entry| entry.path()))
         .collect();
@@ -913,6 +946,7 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
                     PACKAGES,
                     &format!("no package under `{PACKAGES}/` declares `{name}`"),
                 ));
+                broken.extend(stale_root_note(root).map(|note| refusal_at(PACKAGES, &note)));
                 Err(broken)
             }
         },
@@ -1050,7 +1084,7 @@ pub fn publish_delivered(
 /// already holds, bypassing [`find`].
 ///
 /// [`find`] locates a package by the name its own manifest declares, under
-/// `packages/`, and that lookup is what [`publish`] and `taxonomy resolve`
+/// `.headwater/packages/`, and that lookup is what [`publish`] and `taxonomy resolve`
 /// share. A repository that both publishes a package and consumes it cannot
 /// use that lookup for both roles over one directory: `taxonomy vendor`
 /// refuses to install over a directory that carries no release record, so it
@@ -1069,7 +1103,7 @@ pub fn publish_delivered(
 /// a new publish, which is why it is one line different from [`publish`]
 /// rather than a second copy of the function.
 ///
-/// `directory` need not sit under `packages/` at all, and ordinarily does
+/// `directory` need not sit under `.headwater/packages/` at all, and ordinarily does
 /// not: it is the caller's own maintained source, wherever that source lives
 /// in the repository.
 pub fn publish_from(
@@ -1092,7 +1126,7 @@ pub fn publish_from_delivered(
 }
 
 /// Write the flattened artifact a named assembly derives from a package found
-/// under `packages/`.
+/// under `.headwater/packages/`.
 pub fn publish_assembly(
     root: &Path,
     name: &str,
@@ -1318,7 +1352,7 @@ fn publish_at(
     // one runs. `taxonomy_source` reads `contents.taxonomy` for the resolver,
     // and while this ran inside `stage` that one key never reached the refusal
     // below: a missing taxonomy source came back as `cannot read
-    // …/packages/x/../../elsewhere/taxonomy.yml: No such file or directory`,
+    // …/.headwater/packages/x/../../elsewhere/taxonomy.yml: No such file or directory`,
     // which names neither the manifest nor the key and carries the `..` that
     // publication exists to remove. One position for one rule, and `stage` no
     // longer holds a second copy of the call.
@@ -2619,7 +2653,7 @@ fn read_tree(
 /// artifact in before it moves that artifact into place.
 ///
 /// It is the free-path analogue of [`STAGING`], and it needs a guard that
-/// [`STAGING`] does not. A `vendor` target is a directory under `packages/` whose
+/// [`STAGING`] does not. A `vendor` target is a directory under `.headwater/packages/` whose
 /// name a manifest declares, and `~` is 0x7E, above every byte
 /// `names_a_package` admits, so no package can be named into that path. `--out`
 /// has no grammar at all, so the reservation has to be stated: [`found::observe`]
@@ -3113,7 +3147,7 @@ fn empty(at: &Path) -> Result<(), String> {
 /// a path a publisher named, and `<out>~staging`
 /// is a path this verb derived from it — but the verb derives it from **every**
 /// path anybody ever passes to `--out`, on a machine where it owns none of them.
-/// `vendor`'s clear of `packages/~staging` is not the same act: that is one fixed
+/// `vendor`'s clear of `.headwater/packages/~staging` is not the same act: that is one fixed
 /// path inside a directory this tool owns.
 ///
 /// So a publish writes [`MARKER`] into the directory before it writes a byte of
@@ -3366,7 +3400,7 @@ pub fn doctrine(manifest: &Mapping) -> Option<PathBuf> {
 ///
 /// **It reads, and it writes nothing.** It runs in `vendor`'s reading phase,
 /// above the first [`clear`], so an artifact whose manifest names prose it does
-/// not carry is refused before `packages/~staging/<flattened>` exists and
+/// not carry is refused before `.headwater/packages/~staging/<flattened>` exists and
 /// before the installed package is renamed aside. The all-or-nothing install
 /// that [#312](https://github.com/headwater-ai/headwater/issues/312) and
 /// [#357](https://github.com/headwater-ai/headwater/issues/357) built is
@@ -3389,7 +3423,7 @@ pub fn doctrine(manifest: &Mapping) -> Option<PathBuf> {
 /// opens it.
 ///
 /// The result is relative to the artifact, because what a reader wants is
-/// `packages/<flattened>/<doctrine>` and the flattened name belongs to the
+/// `.headwater/packages/<flattened>/<doctrine>` and the flattened name belongs to the
 /// caller.
 fn doctrine_at(
     fetched: &Path,
@@ -3450,7 +3484,7 @@ fn doctrine_at(
 }
 
 /// Check a fetched artifact against the digest this repository pinned, and
-/// install it under `packages/`.
+/// install it under `.headwater/packages/`.
 ///
 /// The caller fetched it. This engine has no idea where from and cannot ask:
 /// no crate of it depends on the network, and a verb that took a location
@@ -3468,13 +3502,13 @@ fn doctrine_at(
 /// [`identity`] states why, and it runs before the target directory is named,
 /// because that name is what steers the removal below. It now also refuses a
 /// name that is not a name, by [`names_a_package`], so the target below is
-/// always one segment under `packages/` rather than a path that reaches out of
+/// always one segment under `.headwater/packages/` rather than a path that reaches out of
 /// it.
 ///
 /// **The substitution is still not injective, and the segment is the package's
 /// own because this verb refuses a directory that a different package holds.**
 /// `acme/my-taxonomy` and `acme-my/taxonomy` are two names inside the grammar
-/// that flatten to one directory, `packages/acme-my-taxonomy`. Vendoring the
+/// that flatten to one directory, `.headwater/packages/acme-my-taxonomy`. Vendoring the
 /// second over the first took the replace arm, because the first left a release
 /// record there, so it deleted a package the adopter held and exited 0 — two
 /// honest publishers and no adversary. Measured, with `find_version` for the
@@ -3486,11 +3520,11 @@ fn doctrine_at(
 ///
 /// **The cost is that two colliding packages cannot both sit under their derived
 /// names, and the refusal names a rename that works once.** [`find`] matches the
-/// `package:` of each manifest under `packages/` and never the name of the
+/// `package:` of each manifest under `.headwater/packages/` and never the name of the
 /// directory that carries it, so a package moved out of the way keeps resolving
 /// from wherever it lands, and every downstream verb reads it there. Measured,
 /// through `taxonomy resolve` and `headwater check`. It is the same move the
-/// `pin.current` remediation of `packages/headwater-standard/conformance.yml`
+/// `pin.current` remediation of `.headwater/packages/headwater-standard/conformance.yml`
 /// already asks an adopter to make, and the refusal says it because nothing else
 /// the adopter reads does.
 ///
@@ -3513,12 +3547,12 @@ fn doctrine_at(
 ///
 /// **A remapping was the other repair and the grammar closes it, not this
 /// verb.** [`names_a_package`] admits any number of segments, so `a/b` and
-/// `a/b/c` are both names and a nested `packages/a/b/c` would sit inside
-/// `packages/a/b`: upgrading `a/b` removes the installed `a/b/c` with it, which
+/// `a/b/c` are both names and a nested `.headwater/packages/a/b/c` would sit inside
+/// `.headwater/packages/a/b`: upgrading `a/b` removes the installed `a/b/c` with it, which
 /// is #320's defect in a new shape. A flat percent-encoded name is injective and
 /// unreadable. Both move every directory an adopter already vendored, and this
 /// moves none. A later change that bounds a name to two segments would make
-/// `packages/<org>/<name>` injective by construction and would reopen the
+/// `.headwater/packages/<org>/<name>` injective by construction and would reopen the
 /// question.
 ///
 /// **The comparison is over two declared names and never over two derived
@@ -3530,7 +3564,7 @@ fn doctrine_at(
 /// **One refusal below became unreachable, and no issue is filed for it.** The
 /// maintained-package arm composes its message from `display(root, &target)`,
 /// and [`display`] flattens a `..` lexically, so on a package named `..` the
-/// target `<root>/packages/..` rendered as the empty string: an adopter was
+/// target `<root>/.headwater/packages/..` rendered as the empty string: an adopter was
 /// told that "a directory is there and it carries no release record, so it is a
 /// package somebody maintains" about their whole repository, with nothing
 /// named. The predicate was right at its own level and the sentence was false
@@ -3541,14 +3575,14 @@ fn doctrine_at(
 /// which is why none of them can go false the same way.
 ///
 /// **Both of the arms that survived now compose from `under` rather than from
-/// [`display`].** `under` is `packages/` and the flattened declared name, and
+/// [`display`].** `under` is `.headwater/packages/` and the flattened declared name, and
 /// [`identity`] has already held that name to the grammar, so there is no state
 /// in which it renders a path the sentence is not about. `display(root, &target)`
 /// was safe there too, but safe by an invariant one function away rather than by
 /// construction. The two render the same string for every name the grammar
 /// admits, so no message moved and no fixture changed.
 ///
-/// # `packages/<name>` is complete or it is absent, and it is never partial
+/// # `.headwater/packages/<name>` is complete or it is absent, and it is never partial
 ///
 /// That holds under a copy that returns an error and under a process killed at
 /// any point in the run. The old tree is destroyed only after the new one
@@ -3558,8 +3592,8 @@ fn doctrine_at(
 /// [#312](https://github.com/headwater-ai/headwater/issues/312) asked for.
 ///
 /// The sequence is: clear this verb's own scratch, copy the artifact into
-/// `packages/~staging/<name>`, rename the installed package to
-/// `packages/<name>~aside`, rename the staged tree onto `packages/<name>`, and
+/// `.headwater/packages/~staging/<name>`, rename the installed package to
+/// `.headwater/packages/<name>~aside`, rename the staged tree onto `.headwater/packages/<name>`, and
 /// remove the aside tree last. Every refusal after the reading phase leaves one
 /// state, which is why each of them can say what it says: the package that was
 /// installed is untouched, or nothing is installed.
@@ -3567,7 +3601,7 @@ fn doctrine_at(
 /// **The one thing it does not buy is a single-instant swap.** `rename(2)`
 /// refuses a destination directory that is not empty — `ENOTEMPTY`, measured on
 /// this file system — and `std` offers no atomic exchange, so there is a window
-/// one `rename(2)` wide in which `packages/<name>` does not exist. A kill inside
+/// one `rename(2)` wide in which `.headwater/packages/<name>` does not exist. A kill inside
 /// that window leaves the old tree complete under the aside name, where [`find`]
 /// still reaches it.
 ///
@@ -3595,23 +3629,23 @@ fn doctrine_at(
 /// including the release record.
 ///
 /// **A copy that fails part-way stopped being a case of its own.** The staging
-/// copy never touches `packages/<name>`, so every failure of the copy — at the
+/// copy never touches `.headwater/packages/<name>`, so every failure of the copy — at the
 /// first file or at the last — leaves the target exactly as it was. A fresh
-/// install whose copy fails now leaves nothing under `packages/`, where it used
+/// install whose copy fails now leaves nothing under `.headwater/packages/`, where it used
 /// to leave the part it had written.
 ///
 /// **Why the suffix is `~` and not a dot.** [`find`] sorts the entries of
-/// `packages/` and returns the first whose manifest declares the name, with no
+/// `.headwater/packages/` and returns the first whose manifest declares the name, with no
 /// filter on the name of the entry itself, and it is the only listing of
-/// `packages/` in this engine that reads what it finds as a package.
+/// `.headwater/packages/` in this engine that reads what it finds as a package.
 /// `markdown_under`, in the CLI, walks every directory under the root while
-/// `init` counts markdown, and `packages/` is one of them; it interprets
+/// `init` counts markdown, and `.headwater/packages/` is one of them; it interprets
 /// nothing it finds there. A dot-prefixed staging directory
 /// therefore sorts *before* the real package and wins the lookup — measured,
 /// with `taxonomy resolve` reporting the staged version. `~` is 0x7E, and the
 /// highest byte [`names_a_package`] admits is `z` at 0x7A, so no package the
-/// grammar accepts can derive `packages/<name>~aside` or the shared
-/// `packages/~staging`, and both sort after every flattened name.
+/// grammar accepts can derive `.headwater/packages/<name>~aside` or the shared
+/// `.headwater/packages/~staging`, and both sort after every flattened name.
 /// `<name>~aside` sorts before `~staging` too, because the flattened name's own
 /// first byte is always less than `~`, so a run killed in the one-rename window
 /// leaves [`find`] returning the old complete tree rather than the new one.
@@ -3657,33 +3691,33 @@ fn doctrine_at(
 /// lock anywhere in this engine to hang a repair on.
 ///
 /// **A kill inside the one-rename window leaves the package that was installed
-/// under `packages/<name>~aside`, and nothing tells the adopter.** The next
+/// under `.headwater/packages/<name>~aside`, and nothing tells the adopter.** The next
 /// `vendor` of that package clears it, and [`find`] answers from it in the
 /// meantime, so the adopter still resolves.
 ///
 /// **A kill inside the staging copy leaves a partial tree under
-/// `packages/~staging/<name>`, and [`find`] never answers from it.** Before
+/// `.headwater/packages/~staging/<name>`, and [`find`] never answers from it.** Before
 /// [#357](https://github.com/headwater-ai/headwater/issues/357), the staging
-/// copy sat flat at `packages/<name>~staged`: where a package was installed,
+/// copy sat flat at `.headwater/packages/<name>~staged`: where a package was installed,
 /// `find` answered from the installed one, which sorted first, and never
 /// reached the staging directory, but where none was — a first install —
 /// `find` had nothing else to answer from and read the partial tree. Measured,
 /// over an artifact of 4003 files laid out so the manifest and the taxonomy
 /// source copy before the rest: a run killed at 103 of 4003 files resolved
 /// exactly as the complete package does. Staging one level down closes that:
-/// `find` reads one level of `packages/` and skips a directory with no
-/// manifest beside it, so `packages/~staging` is never a candidate, on a first
+/// `find` reads one level of `.headwater/packages/` and skips a directory with no
+/// manifest beside it, so `.headwater/packages/~staging` is never a candidate, on a first
 /// install or an upgrade. What this does not touch is the state #312 and #356
-/// already hold: `find` still reads `packages/<name>` itself whether or not
+/// already hold: `find` still reads `.headwater/packages/<name>` itself whether or not
 /// anything else is installed, and this staging path is never that
 /// directory.
 ///
 /// **Neither residue is inert to the rest of the engine, and whether it is
 /// depends on the adopter's configuration rather than on the residue.**
 /// [`headwater_census::walk`] walks the corpus root and every directory under
-/// it. This repository declares `corpus.root: docs`, so `packages/` is outside
+/// it. This repository declares `corpus.root: docs`, so `.headwater/packages/` is outside
 /// the walk and a residue changes no census number here. An adopter whose root
-/// includes `packages/` counts every file of one: measured by an independent
+/// includes `.headwater/packages/` counts every file of one: measured by an independent
 /// verification pass on such an adopter, a `~staged` residue took the census
 /// from 55 files and 38 untyped to 107 and 76. Say which of the two
 /// configurations a claim about a residue is about.
@@ -3908,7 +3942,7 @@ pub struct Vendored {
 ///
 /// **This reports and it does not refuse**, and the cost of the other choice is
 /// what decided it: across the last 14 commits to this repository's own
-/// `packages/headwater-standard/release.yml` the digest moved 14 times and the
+/// `.headwater/packages/headwater-standard/release.yml` the digest moved 14 times and the
 /// version moved 3, so 11 of those 14 maintenance loops republished different
 /// bytes under a version already published. A refusal is a version policy and
 /// an owner decision, tracked on
@@ -3948,15 +3982,15 @@ fn diverged(resident: &Release, incoming: &Release) -> Option<Divergence> {
 }
 
 /// The name of the directory [`vendor`] copies a new package into, one level
-/// below `packages/`, before the swap onto the package's own name.
+/// below `.headwater/packages/`, before the swap onto the package's own name.
 ///
 /// **It is public because it is an assertion rather than a detail.** The byte
 /// `~` is one [`names_a_package`] refuses and it sorts after every byte that
 /// grammar admits, so no package can derive this name, and [`find`] reads one
-/// level of `packages/` and skips a directory with no manifest beside it — so a
+/// level of `.headwater/packages/` and skips a directory with no manifest beside it — so a
 /// directory named `STAGING` never answers a lookup in place of a package being
 /// staged inside it, on a first install or an upgrade. [`staging_path`] is the
-/// one construction that joins this to `packages/` and to a package's own
+/// one construction that joins this to `.headwater/packages/` and to a package's own
 /// flattened name; [`vendor`] and every test that plants a staging residue by
 /// hand share it, rather than hand-joining the same three pieces independently.
 pub const STAGING: &str = "~staging";
@@ -3973,8 +4007,8 @@ pub const ASIDE: &str = "~aside";
 
 /// Where [`vendor`] copies a package while it is not yet complete.
 ///
-/// One level below `packages/`, under [`STAGING`], so [`find`] — which reads
-/// one level of `packages/` and skips a directory with no manifest beside it —
+/// One level below `.headwater/packages/`, under [`STAGING`], so [`find`] — which reads
+/// one level of `.headwater/packages/` and skips a directory with no manifest beside it —
 /// never descends into it. A copy killed mid-stage sits under a name `find`
 /// cannot reach, whether or not anything else answers the package's name; that
 /// is [#357](https://github.com/headwater-ai/headwater/issues/357).
@@ -4011,7 +4045,7 @@ fn tidy(staging_root: &Path) {
 /// not there yet appended as it was written.
 ///
 /// [`inside`] compares two paths and a lexical comparison answers the wrong
-/// question: `packages/` may be reached through a symlink, and the artifact
+/// question: `.headwater/packages/` may be reached through a symlink, and the artifact
 /// path a caller hands in may be relative where the root is absolute. This
 /// climbs to the deepest ancestor that exists, canonicalizes that, and puts the
 /// rest back. It is not [`display`], which flattens a `..` for a person to read
@@ -4050,7 +4084,7 @@ fn inside(ancestor: &Path, path: &Path) -> bool {
 /// Whether `path` is `ancestor` or sits under it.
 ///
 /// **The two sibling names need the equality that [`inside`] excludes, and the
-/// exclusion was wrong for them.** `packages/<name>` may be handed to
+/// exclusion was wrong for them.** `.headwater/packages/<name>` may be handed to
 /// [`vendor`] as the artifact, because a package vendors over itself. The two
 /// directories `vendor` stages through may not, because the first thing the
 /// write phase does is remove them: handed one of them, the verb deletes the
@@ -4142,7 +4176,7 @@ fn holds_the_same_package(
 /// **This is not a new rule, and no digest moves.**
 /// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
 /// already says "every consumer-facing reader takes the name from the manifest:
-/// the lookup under `packages/`, the release record, the vendor target directory
+/// the lookup under `.headwater/packages/`, the release record, the vendor target directory
 /// and the corpus descriptor", and the vendor target was the one reader in that
 /// list that did not. Covering the header with the digest would be the other
 /// repair and it is a different change: the digest field lives inside the file
@@ -4155,7 +4189,7 @@ fn holds_the_same_package(
 /// digest says a publisher wrote this name and that nobody has changed it since
 /// the pin. It says nothing at all about the name being usable as a directory
 /// name, and for a while nothing here checked that: `/` was turned into `-`, so
-/// a name with a slash could not leave `packages/`, and `..` has no slash and
+/// a name with a slash could not leave `.headwater/packages/`, and `..` has no slash and
 /// survived, which made the target of a package named `..` the adopter's own
 /// root. [#314](https://github.com/headwater-ai/headwater/issues/314) records
 /// what that cost — an artifact scattered over an adopter's repository on the
@@ -4209,18 +4243,18 @@ fn holds_the_same_package(
 /// YAML null are all refused outright rather than compared. Two blanks compared
 /// equal is [#298](https://github.com/headwater-ai/headwater/issues/298)'s
 /// defect in [`agrees`], and here it would name the target directory
-/// `packages/`. The guard is [`names_a_package`] and it reaches all three
+/// `.headwater/packages/`. The guard is [`names_a_package`] and it reaches all three
 /// spellings, because it asks what a name is rather than listing what a name is
 /// not.
 ///
 /// **The null case is a symptom of #298 closed here, and #298 itself stays
 /// open.** This engine hands back a scalar's source text, and the source text
 /// of a null is the literal `~`. So `is_empty()` is false, both sides compare
-/// equal at `~`, and the artifact used to vendor into `packages/~`. The grammar
+/// equal at `~`, and the artifact used to vendor into `.headwater/packages/~`. The grammar
 /// refuses `~` as a name, so no adopter gets that directory — and it teaches
 /// [`agrees`] nothing about absent versus null, which is where the ambiguity is
 /// born and what #298 holds. Read this as *the route into an adopter's
-/// `packages/` is closed*, never as *the parse was fixed*.
+/// `.headwater/packages/` is closed*, never as *the parse was fixed*.
 ///
 /// The engine range is the opposite case and is compared as an [`Option`]: absent on
 /// both sides is a publisher that states no floor, which spec 7 gives a meaning
@@ -4249,10 +4283,10 @@ fn identity(root: &Path, fetched: &Path, record: &Release) -> Result<String, Vec
                 "{states}, which is not a package name. A package name is one or more segments \
                  separated by `/`, and every segment opens and closes with a letter or a digit \
                  and otherwise holds letters, digits, `.`, `-` and `_`. It is the name a \
-                 directory under `packages/` is created under and replaced under, so a value \
+                 directory under `.headwater/packages/` is created under and replaced under, so a value \
                  outside that grammar names a directory that belongs to somebody else: `..` \
-                 names the adopter's own root, `.` names `packages/` itself, and an absent \
-                 value would name `packages/`. The name in the record is not a substitute, \
+                 names the adopter's own root, `.` names `.headwater/packages/` itself, and an absent \
+                 value would name `.headwater/packages/`. The name in the record is not a substitute, \
                  because the record is the one file the release digest does not cover"
             ),
         ));
@@ -4266,7 +4300,7 @@ fn identity(root: &Path, fetched: &Path, record: &Release) -> Result<String, Vec
                 "this declares `package: {}` and {beside}, which the release digest covers, \
                  declares `package: {declared}`. One artifact states two names of itself, and \
                  the record's is the one a consumer reads without opening the artifact. The \
-                 manifest decides, so `{}` is the directory under `packages/` this would have \
+                 manifest decides, so `{}` is the directory under `.headwater/packages/` this would have \
                  replaced",
                 record.package,
                 declared.replace('/', "-"),
@@ -4336,7 +4370,7 @@ fn stated(range: Option<&str>) -> String {
 /// symlink walking past it, because a lexical reading of a declared path cannot
 /// see the file system. A package name is a single scalar with no such
 /// indirection in the question — measured on this path,
-/// `std::fs::remove_dir_all` removes a symlink standing at `packages/<name>`
+/// `std::fs::remove_dir_all` removes a symlink standing at `.headwater/packages/<name>`
 /// rather than following it, so a link there escapes nothing — which is what
 /// lets a lexical rule be the whole guard here. Reusing `leaves`'s
 /// [`std::path::Component`] scan would inherit an argument that has already
@@ -4418,7 +4452,7 @@ fn manifest_name(root: &Path, directory: &Path) -> String {
 /// A path as a reader of the repository would write it.
 ///
 /// The `..` is resolved lexically rather than by the file system, because the
-/// name in a message is for a person and `packages/x/../../docs/y` names a file
+/// name in a message is for a person and `.headwater/packages/x/../../docs/y` names a file
 /// that nobody can find in a tree view.
 pub(crate) fn display(root: &Path, path: &Path) -> String {
     let mut parts: Vec<std::ffi::OsString> = Vec::new();
@@ -4534,7 +4568,7 @@ mod tests {
     ///
     /// The grammar has no registry behind it and so no migration path, which
     /// makes "nothing in this tree moves" a claim worth holding rather than
-    /// asserting. `packages/headwater-standard/package.yml` declares the first
+    /// asserting. `.headwater/packages/headwater-standard/package.yml` declares the first
     /// one and the fixtures of `tests/publish.rs` and the conformance suite
     /// declare the rest.
     #[test]
@@ -4554,7 +4588,7 @@ mod tests {
         }
     }
 
-    /// The values that reached a directory under an adopter's `packages/`, and
+    /// The values that reached a directory under an adopter's `.headwater/packages/`, and
     /// the one that was already closed.
     ///
     /// Each of these was measured landing somewhere before

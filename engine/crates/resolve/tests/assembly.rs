@@ -23,7 +23,7 @@ impl Scratch {
     }
 
     fn package(&self) -> PathBuf {
-        self.0.join("packages/acme-fixture")
+        self.0.join(".headwater/packages/acme-fixture")
     }
 }
 
@@ -95,21 +95,30 @@ overlay: overlay.yml
 ";
 
 fn publisher(scratch: &Scratch) {
-    scratch.write("packages/acme-fixture/package.yml", PACKAGE);
-    scratch.write("packages/acme-fixture/taxonomy.yml", TAXONOMY);
-    scratch.write("packages/acme-fixture/bundles/alpha/bundle.yml", ALPHA);
-    scratch.write("packages/acme-fixture/bundles/beta/bundle.yml", BETA);
+    scratch.write(".headwater/packages/acme-fixture/package.yml", PACKAGE);
+    scratch.write(".headwater/packages/acme-fixture/taxonomy.yml", TAXONOMY);
     scratch.write(
-        "packages/acme-fixture/assemblies/starter/assembly.yml",
+        ".headwater/packages/acme-fixture/bundles/alpha/bundle.yml",
+        ALPHA,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/beta/bundle.yml",
+        BETA,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/assemblies/starter/assembly.yml",
         ASSEMBLY,
     );
-    scratch.write("packages/acme-fixture/assemblies/starter/overlay.yml", GLUE);
     scratch.write(
-        "packages/acme-fixture/doctrine/guide.md",
+        ".headwater/packages/acme-fixture/assemblies/starter/overlay.yml",
+        GLUE,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/doctrine/guide.md",
         "# Fixture doctrine\n",
     );
     scratch.write(
-        "packages/acme-fixture/templates/decision.md",
+        ".headwater/packages/acme-fixture/templates/decision.md",
         "# Decision\n",
     );
 }
@@ -228,7 +237,7 @@ fn an_assembly_overlay_cannot_restate_a_source_declaration() {
     let scratch = Scratch::new("restate");
     publisher(&scratch);
     scratch.write(
-        "packages/acme-fixture/assemblies/starter/overlay.yml",
+        ".headwater/packages/acme-fixture/assemblies/starter/overlay.yml",
         "add:\n  purposes.behavior: {intent: a second statement}\n",
     );
     let directory = scratch.package();
@@ -250,7 +259,7 @@ fn an_assembly_relation_must_connect_two_selected_bundle_owners() {
     let scratch = Scratch::new("one-owner");
     publisher(&scratch);
     scratch.write(
-        "packages/acme-fixture/assemblies/starter/overlay.yml",
+        ".headwater/packages/acme-fixture/assemblies/starter/overlay.yml",
         GLUE.replace("to: [beta]", "to: [alpha]").as_str(),
     );
     let directory = scratch.package();
@@ -357,7 +366,7 @@ fn an_assemblies_directory_must_stay_inside_its_source_package() {
     let package = scratch.package().join("package.yml");
     std::fs::write(
         &package,
-        PACKAGE.replace("assemblies: assemblies", "assemblies: ../../outside"),
+        PACKAGE.replace("assemblies: assemblies", "assemblies: ../../../outside"),
     )
     .expect("the manifest changes");
 

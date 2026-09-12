@@ -130,6 +130,8 @@ docs/decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims
   typed: decision
 docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md
   typed: decision
+docs/decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md

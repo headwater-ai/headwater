@@ -47,6 +47,8 @@ anchors
     cited by HW-DR-0027
   code_path `.headwater/overlay.yml` via source-tree
     cited by HW-DR-0028
+  code_path `.headwater/packages/headwater-standard/taxonomy.yml` via source-tree
+    cited by HW-DR-0025
   code_path `.headwater/taxonomy.yml` via source-tree
     cited by HW-DR-0029
   code_path `docs/taxonomies/decision-record/bundle.yml` via source-tree
@@ -249,6 +251,8 @@ anchors
     cited by HW-IFACE-headwater-route
   code_path `engine/crates/resolve/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-taxonomy
+  code_path `engine/crates/resolve/src/package.rs` via source-tree
+    cited by HW-DR-0064
   code_path `engine/crates/resolve/src/rules.rs` via source-tree
     cited by HW-DR-0025
   code_path `engine/crates/resolve/src/rules.rs` via source-tree
@@ -277,8 +281,6 @@ anchors
     cited by HW-DR-0050
   code_path `mkdocs/overrides/main.html` via source-tree
     cited by HW-DR-0038
-  code_path `packages/headwater-standard/taxonomy.yml` via source-tree
-    cited by HW-DR-0025
   code_path `site/_headers` via source-tree
     cited by HW-DR-0047
   code_path `site/changelog/index.html` via source-tree

@@ -7,10 +7,10 @@
 # THIS PACKAGE HAS TWO COPIES IN THIS REPOSITORY, AND THEY ARE NOT
 # INTERCHANGEABLE, WHICHEVER ONE YOU HAVE OPEN. `taxonomy-source/headwater-standard/`
 # is the authored source: a person edits these three files there.
-# `packages/headwater-standard/` is the vendored target: only `taxonomy vendor`
+# `.headwater/packages/headwater-standard/` is the vendored target: only `taxonomy vendor`
 # writes there, over an artifact `taxonomy publish --from` wrote from the
 # source, and nobody edits it by hand. #336 split the two apart, because a
-# package this repository both publishes and consumes made `packages/<name>`
+# package this repository both publishes and consumes made `.headwater/packages/<name>`
 # two things at once: the directory `headwater_resolve::package::find` reads
 # as the hand-maintained source, and the directory the same lookup names as
 # the vendor target. `taxonomy vendor` refuses to install over a directory
@@ -78,7 +78,7 @@ package: headwater/standard
 # on load and before any comparison a consumer's pin makes, and the refusal
 # names both files and both numbers. Whether a taxonomy source should carry a
 # version at all is a meta-schema question that #212 leaves open.
-version: 4.3.0
+version: 4.3.1
 requires_engine: ">=0.1 <2"
 
 contents:
@@ -96,7 +96,7 @@ contents:
   # scalar to point there, so a `..` reaching outside the package is a
   # property of the authored source alone: this scalar reads
   # `../../docs/taxonomies` here and `bundles` in every published artifact,
-  # including the vendored copy under `packages/`.
+  # including the vendored copy under `.headwater/packages/`.
   bundles: ../../docs/taxonomies
   # The publisher recipes this package ships. `assembly::read` reads
   # `<assemblies>/<name>/assembly.yml`, and `headwater taxonomy publish

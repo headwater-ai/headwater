@@ -16,8 +16,8 @@
 
 taxonomy:
   package: headwater/standard
-  version: 4.3.0
-  digest: sha256:1a751eccdf4151ea807489978d7fa5ff9800cf09dd278e6ee407e13649e41d4a
+  version: 4.3.1
+  digest: sha256:bbf183c78927223cb5bff1c916c45b1941a841143bb428271a24df8e09c93007
   bundles: [design-spec, evidence-and-obligation, decision-record]
   overlay: .headwater/overlay.yml
 
@@ -26,8 +26,9 @@ taxonomy:
 # carried no release record for the digest above to name. #336 moved the
 # authored source to `taxonomy-source/headwater-standard/` and ran `taxonomy
 # publish --from` it, `taxonomy vendor` and `taxonomy resolve` once, by hand,
-# so `packages/headwater-standard/` now holds a real vendored artifact with a
-# real `release.yml`, and the digest above is the one that run printed.
+# so the vendored artifact stands with a real `release.yml`, and the digest
+# above is the one that run printed. #792 then moved the root it stands in to
+# `.headwater/packages/headwater-standard/`, which changed no byte of it.
 # `headwater conformance` reads `pin.current` as met against it, and the
 # `conformance:` key this file used to carry is gone with the waiver: absent
 # is how a consumer declaration says it takes no deviation.
