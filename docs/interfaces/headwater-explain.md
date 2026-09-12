@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-explain
 status: current
 status_since: 2026-09-06
 summary: "How a path or identifier yields the taxonomy derivation, requirements, relations, and graph edges."
-last_verified: 2026-08-25
+last_verified: 2026-09-12
 title: "headwater explain"
 relations:
   governs:
@@ -67,6 +67,8 @@ An identifier resolves through the graph index. A target that matches neither a 
 | Not a path this repository can classify | "is not a path this repository can classify" |
 
 One matcher decides all four: `headwater_census::walk::Corpus::classify`, which the walk also uses for an existing file. `.claude/hooks/write.sh` reads the first row and refuses a raw write there.
+
+**The four states classify a path, and an identifier falls through them.** The matcher reads every target as a path. An identifier that no document carries therefore lands in the third row, where the refusal says nothing true about it. `headwater explain HW-DR-9999` and `headwater explain HW-DR-004` both write "is outside every corpus root this repository declares" (measured 2026-09-12). A typo and an invention read the same way here. The `resolve_identifier` tool of [`headwater mcp`](headwater-mcp.md) is the read that separates them. It reports an identifier that no document carries at all, and it reports one that an untyped document carries as a near miss. A caller that has to tell the two apart asks that tool rather than this verb.
 
 ## Environment
 
