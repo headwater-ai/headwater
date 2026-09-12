@@ -397,13 +397,14 @@ fn the_direction_comes_from_the_relation_and_never_from_the_file_that_wrote_it()
 /// The whole corpus, in one assertion, so a case that stops being reported
 /// cannot hide behind a test that names only its own document.
 #[test]
-fn the_tree_reports_four_pairs_and_no_others() {
+fn the_tree_reports_five_pairs_and_no_others() {
     let run = run();
     let mut reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
     reported.sort_unstable();
     assert_eq!(
         reported,
         [
+            "terminal-dependency/live/cites-retired.md",
             "terminal-dependency/live/rests-on-receipt.md",
             "terminal-dependency/live/rests-on-retired.md",
             "terminal-dependency/live/succeeds-retired.md",
