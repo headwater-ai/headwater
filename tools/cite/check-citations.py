@@ -260,13 +260,43 @@ SKIP_DIRS = {".git", "target", "node_modules", ".headwater"}
 
 
 def files_under(paths, root):
-    """Every readable file under the paths given, as corpus-relative paths."""
+    """Every file under the paths given, as corpus-relative paths.
+
+    # EVERY REFUSAL HERE EXISTS BECAUSE ITS ABSENCE LOOKED LIKE A PASS
+
+    A scanner reports what it found, so a scanner that found nothing reports a
+    clean tree. That makes every way of quietly scanning nothing a way of
+    quietly passing, and this function had two of them.
+
+    `os.walk` on a path that does not exist yields no entry and raises nothing.
+    So a mistyped argument — a renamed directory, a file moved in the same
+    commit that a CI line still names — printed "every citation resolves, and
+    every cited document governs the file that cites it" and exited 0. The
+    checker refuses a missing engine with exit 2 and refused a missing scan
+    target with a clean bill of health, which is the wrong way round: the
+    engine is a tool and the target is the evidence.
+
+    `os.walk` also swallows a directory it cannot read. Its default `onerror`
+    is `None`, which discards the error and prunes that subtree, so one
+    unreadable directory silently removes every file under it from the
+    population and the report still says clean.
+
+    Both now raise, and `main` turns either into exit 2 with a sentence. The
+    fixture suite provokes the first and, on a process that is not root, the
+    second.
+    """
     out = []
     for given in paths:
+        if not os.path.exists(given):
+            raise OSError(f"no such path to scan: {given}")
         if os.path.isfile(given):
             out.append(given)
             continue
-        for here, dirs, names in os.walk(given):
+
+        def refuse(error):
+            raise error
+
+        for here, dirs, names in os.walk(given, onerror=refuse):
             dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
             for name in sorted(names):
                 out.append(os.path.join(here, name))
@@ -278,13 +308,23 @@ def files_under(paths, root):
 
 
 def read(path):
+    """The text of one file, or None where it holds no text at all.
+
+    A binary file carries no citation comment, and declining to decode one is
+    not a finding about it. A file this process may not open is a different
+    thing: skipping it is a silent hole in the population, so the error travels
+    and `main` turns it into exit 2. A symbolic link with nothing on the other
+    end reaches here the same way, because `os.walk` lists it and opening it
+    fails, and the same refusal is the right answer — the tool was told to read
+    something and could not.
+    """
     try:
         with open(path, "r", encoding="utf-8", errors="strict") as handle:
             return handle.read()
-    except (UnicodeDecodeError, OSError):
-        # A binary file carries no citation comment, and refusing to read one
-        # is not a finding about it.
+    except UnicodeDecodeError:
         return None
+    except OSError as error:
+        raise OSError(f"cannot read {path}: {error.strerror or error}") from None
 
 
 # ---------------------------------------------------------------------------

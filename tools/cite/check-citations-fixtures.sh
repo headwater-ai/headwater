@@ -346,7 +346,48 @@ python3 "$tool" --root "$corpus" --engine "$scratch/no-such-engine" \
 same "a missing engine exits 2 rather than 0" 2 "$?"
 holds "  and says so on standard error" "check-citations:" "$scratch/err"
 
-# 11. And a tree with no citation in it costs no engine at all, which is why
+# 11. A scan target that is not there. This is the shape that keeps finding
+#     this repository: the absence of a thing to check reads as a check that
+#     passed. `os.walk` on a missing path yields nothing and raises nothing, so
+#     before this case the checker printed "every citation resolves" over a
+#     directory somebody had renamed, and exited 0. It refuses a missing engine
+#     with exit 2; the evidence deserves at least what the tool gets.
+python3 "$tool" --root "$corpus" --engine "$engine" \
+    "$corpus/tools/cite/no-such-directory" >"$scratch/out" 2>"$scratch/err"
+same "a scan target that does not exist exits 2 rather than 0" 2 "$?"
+holds "  naming the path it could not find" "no such path to scan" "$scratch/err"
+absent "  and does not report a clean tree" "every citation resolves" "$scratch/out"
+
+# 12. The same shape one layer in. `os.walk` discards the error from a
+#     directory it cannot read and prunes that subtree, so one unreadable
+#     directory removes every file under it from the population and the report
+#     still says clean. Root can read anything, so this case says it skipped
+#     rather than reporting a pass it did not earn.
+mkdir -p "$corpus/tools/cite/shut/inside"
+printf '# per HW-DR-9999 (nowhere.md)\n' >"$corpus/tools/cite/shut/inside/x.py"
+chmod 000 "$corpus/tools/cite/shut/inside"
+if [ -r "$corpus/tools/cite/shut/inside" ]; then
+    echo "  skip  an unreadable directory is a refusal (this process can read it anyway)"
+else
+    python3 "$tool" --root "$corpus" --engine "$engine" \
+        "$corpus/tools/cite/shut" >"$scratch/out" 2>"$scratch/err"
+    same "an unreadable directory exits 2 rather than reporting a clean tree" 2 "$?"
+    absent "  and does not report a clean tree" "every citation resolves" "$scratch/out"
+fi
+chmod 755 "$corpus/tools/cite/shut/inside"
+
+# 13. A symbolic link with nothing on the other end. `os.walk` lists it among
+#     the names, so it is in the population and it cannot be opened, and the
+#     refusal has to be in this tool's own words rather than a bare errno.
+mkdir -p "$corpus/tools/cite/linked"
+ln -s "$scratch/nothing-is-here" "$corpus/tools/cite/linked/dangling.py"
+python3 "$tool" --root "$corpus" --engine "$engine" \
+    "$corpus/tools/cite/linked" >"$scratch/out" 2>"$scratch/err"
+same "a link with nothing behind it exits 2" 2 "$?"
+holds "  saying which file, in this tool's words" "cannot read" "$scratch/err"
+absent "  and does not report a clean tree" "every citation resolves" "$scratch/out"
+
+# 14. And a tree with no citation in it costs no engine at all, which is why
 #     the bogus binary above is not reached here.
 mkdir -p "$corpus/tools/cite/quiet"
 printf 'value = 1\n' >"$corpus/tools/cite/quiet/plain.py"
