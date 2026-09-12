@@ -2,7 +2,7 @@
 # What holds `tools/repo/retire-worktree.sh`, the sweep that retires a finished tree.
 #
 # The tool deletes directories and branches, so what has to be held is mostly
-# what it refuses. Each of its four guards is provoked below, and so is the
+# what it refuses. Each of its five guards is provoked below, and so is the
 # content check on both sides, because a sweep that retired everything would be
 # `rm -rf` with a longer name and a sweep that retired nothing would be a
 # comment. The two arms that matter most are the squash-merge arm, where
@@ -23,7 +23,7 @@ root=$(cd "$(dirname "$0")/../.." && pwd)
 tool="$root/tools/repo/retire-worktree.sh"
 
 # A tool this suite cannot execute makes every case below read an empty
-# report, and an empty report fails 21 assertions that each name a guard.
+# report, and an empty report fails all 37 assertions below.
 # That reads as a broken tool rather than as a path this file got wrong,
 # which is what it was when `tools/` was grouped by subject under the suite.
 [ -x "$tool" ] || {
@@ -129,7 +129,22 @@ echo 'in flight' >>file.txt
 git commit --quiet -am 'work under review'
 cd "$clone" || exit 1
 
+# The in-use tree carries a commit and a merged pull request of its own, so
+# that what clears it once its sitter exits is the arm the tool exists for and
+# not an emptiness. A tree sitting on `origin/main` with nothing committed to it
+# is the fresh case below, and the sweep now keeps it.
 git worktree add --quiet "$trees/in-use" -b in-use-work origin/main 2>/dev/null
+cd "$trees/in-use" || exit 1
+echo 'work an in-use tree carried' >>file.txt
+git commit --quiet -am 'work that a pull request merged'
+printf 'in-use-work\tMERGED\t%s\n' "$(git rev-parse HEAD)" >>"$state"
+cd "$clone" || exit 1
+
+# A tree made the way every build agent makes one, and not yet committed to. By
+# ancestry it is indistinguishable from a tree whose work landed: it sits at the
+# tip of `origin/main` from the second it exists. The sweep deleted such a tree,
+# and its branch with it, while the agent that made it was still working.
+git worktree add --quiet "$trees/fresh" -b fresh-work origin/main 2>/dev/null
 
 # A branch nobody checked out, sitting exactly on `origin/main`. This is what a
 # harness leaves when it makes a worktree for a session that commits nothing,
@@ -163,7 +178,8 @@ same '  and still names what it would retire' 1 \
 printf '\n# each guard, on the report the same run produced\n'
 same 'the squash-merged tree is cleared by its pull request' 'WOULD' "$(verdict "$trees/merged")"
 same '  and the reason names the merged head rather than ancestry' 1 \
-    "$(printf '%s\n' "$report" | grep -c 'inside the merged head of its pull request')"
+    "$(printf '%s\n' "$report" | grep -F "$trees/merged " \
+        | grep -c 'inside the merged head of its pull request')"
 same 'a tree with an uncommitted change is kept' 'KEPT' "$(verdict "$trees/dirty")"
 same 'a locked tree is kept' 'KEPT' "$(verdict "$trees/locked")"
 same '  and the lock is given as the reason' 1 \
@@ -172,6 +188,12 @@ same 'a tree holding unmerged work is kept' 'KEPT' "$(verdict "$trees/unmerged")
 same '  and the report says how many commits it holds' 1 \
     "$(printf '%s\n' "$report" | grep -c 'unmerged, holding 1 commit')"
 same 'a tree whose pull request is open is kept' 'KEPT' "$(verdict "$trees/open")"
+same 'a tree holding no commit origin/main lacks is kept' 'KEPT' "$(verdict "$trees/fresh")"
+same '  and the reason names the emptiness rather than ancestry' 1 \
+    "$(printf '%s\n' "$report" | grep -F "$trees/fresh " \
+        | grep -c 'holds no commit origin/main lacks, so it is a tree in flight rather than a tree whose work landed')"
+same '  and no line of the report proposes retiring it' 0 \
+    "$(printf '%s\n' "$report" | grep -F "$trees/fresh " | grep -c '^WOULD')"
 same 'a branch sitting on origin/main is retirable' 'WOULD' "$(verdict placeholder)"
 same 'a branch holding work no merge carried is kept' 'KEPT' "$(verdict survivor)"
 same 'main is never a candidate' 0 \
@@ -210,10 +232,16 @@ printf '\n# --retire acts, and only on what the report cleared\n'
 report=$(sh "$tool" --retire 2>&1)
 same 'the merged tree is gone' 0 "$(test -d "$trees/merged" && echo 1 || echo 0)"
 same '  and it is reported as retired' 'RETIRED' "$(verdict "$trees/merged")"
+same '  and the reason is still its merged pull request, not ancestry' 1 \
+    "$(printf '%s\n' "$report" | grep -F "$trees/merged " \
+        | grep -c 'inside the merged head of its pull request')"
 same 'the dirty tree survives' 1 "$(test -d "$trees/dirty" && echo 1 || echo 0)"
 same 'the locked tree survives' 1 "$(test -d "$trees/locked" && echo 1 || echo 0)"
 same 'the unmerged tree survives' 1 "$(test -d "$trees/unmerged" && echo 1 || echo 0)"
 same 'the open pull request tree survives' 1 "$(test -d "$trees/open" && echo 1 || echo 0)"
+same 'the fresh tree survives' 1 "$(test -d "$trees/fresh" && echo 1 || echo 0)"
+same '  and its branch survives with it' 1 \
+    "$(git show-ref --verify --quiet refs/heads/fresh-work && echo 1 || echo 0)"
 same 'the placeholder branch is gone' 0 \
     "$(git show-ref --verify --quiet refs/heads/placeholder && echo 1 || echo 0)"
 same 'the survivor branch is still here' 1 \
