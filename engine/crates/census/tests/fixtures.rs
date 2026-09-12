@@ -762,7 +762,10 @@ fn every_shape_that_names_a_file_has_a_member_of_this_tree() {
 
     for shape in headwater_census::derived::SHAPES {
         assert!(
-            population.members.iter().any(|member| member.shape == *shape),
+            population
+                .members
+                .iter()
+                .any(|member| member.shape == *shape),
             "no path of this tree has the shape {:?} ({}), so that row of \
              `The shapes a record takes` has stopped being reported and the \
              report is short in a way nothing prints",
@@ -836,9 +839,15 @@ fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
     // Row 1, declared nothing: every parallel append conflicts.
     root.write("store/conflicting.jsonl", "{\"b\":1}\n");
     // Row 2, declared for regeneration: the driver refuses the merge it takes.
-    root.write("engine/crates/a/fixtures/corpus.a", "docs/x.md\n  a record\n");
+    root.write(
+        "engine/crates/a/fixtures/corpus.a",
+        "docs/x.md\n  a record\n",
+    );
     // Row 2, declared union: two record streams interleave out of order.
-    root.write("engine/crates/b/fixtures/corpus.b", "docs/y.md\n  a record\n");
+    root.write(
+        "engine/crates/b/fixtures/corpus.b",
+        "docs/y.md\n  a record\n",
+    );
     // A fold declared union: the worst of the six, and nothing reported it.
     root.write(
         "docs/interleaved/README.md",
@@ -855,7 +864,10 @@ fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
         "426 seen\n  a finding\n",
     );
     root.write("store/ok.jsonl", "{\"c\":1}\n");
-    root.write("engine/crates/c/fixtures/corpus.c", "docs/z.md\n  a record\n");
+    root.write(
+        "engine/crates/c/fixtures/corpus.c",
+        "docs/z.md\n  a record\n",
+    );
 
     let population = headwater_census::derived::population(root.path());
     let found: Vec<(&str, Shape, Treatment)> = population
@@ -907,9 +919,7 @@ fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
             .members
             .iter()
             .find(|member| member.path == path)
-            .unwrap_or_else(|| {
-                panic!("{path} is not in the report:\n{}", population.render())
-            });
+            .unwrap_or_else(|| panic!("{path} is not in the report:\n{}", population.render()));
         assert!(
             member.disagreement().is_none(),
             "{path} agrees with its shape and was reported as a disagreement"
@@ -973,7 +983,7 @@ fn the_report_uses_the_words_of_the_evaluation_table() {
         std::fs::read_to_string(root.join("docs/evaluations/what-a-check-can-know.md"))
             .expect("the evaluation reads");
     for shape in headwater_census::derived::SHAPES {
-        for row in shape.row().split(", or ") {
+        for row in shape.rows() {
             assert!(
                 evaluation.contains(row),
                 "`The shapes a record takes` no longer holds a row named \
