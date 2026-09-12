@@ -191,7 +191,10 @@ impl Loss {
 ///
 /// `at` is the path from the object the [`Carrier`] is relative to. `members`
 /// are the members of the value at `at` that the entry claims are there, and it
-/// is empty where the value at `at` is the whole of what was carried.
+/// is empty where the value at `at` is the whole of what was carried. Empty is
+/// a statement and not a default: [`holds`] reports an entry adrift when its
+/// `members` are empty and the value at `at` is a map, because a map has names
+/// the entry could have listed.
 ///
 /// The two grains are not decoration. A carrier that named a block alone would
 /// pass over a block emptied of everything but its own name, which is the shape
@@ -534,12 +537,32 @@ fn member<'a>(value: &'a Spanned<Value>, path: &[&str]) -> Option<&'a Spanned<Va
     Some(at)
 }
 
-/// Whether one object carries one place: the path resolves, and every member the
-/// place names is under it.
+/// Whether one object carries one place: the path resolves, the value under it
+/// is not a bag the entry declined to name, and every member the place names is
+/// under it.
+///
+/// The middle clause is the one spec 6 rules and this function used not to
+/// hold. An entry whose `members` are empty says the value at `at` is the whole
+/// of what was carried, and a map is never that: a map has named members, so
+/// there is always a list an honest entry could have written, and stopping at
+/// the bag is the vaguer carrier that #233 shipped. A scalar and a sequence
+/// both pass, and they have to: a run value that is one string, or a list of
+/// entries with no names of their own, has no members to name and the path is
+/// the answer.
 fn holds(object: &Spanned<Value>, place: &Place) -> Result<(), String> {
     let Some(at) = member(object, place.at) else {
         return Err(format!("`{}` is not there", place.path()));
     };
+    if place.members.is_empty() {
+        return match at.value.as_map() {
+            Some(bag) => Err(format!(
+                "`{}` is a bag of {} members and this entry names none of them",
+                place.path(),
+                bag.len()
+            )),
+            None => Ok(()),
+        };
+    }
     let missing: Vec<&str> = place
         .members
         .iter()
@@ -885,19 +908,22 @@ fn recorded<'a, 'b>(all: &'a [Reported<'b>]) -> Vec<&'a Reported<'b>> {
 /// or a place outside these bytes, is counted as unaudited. Nothing falls out,
 /// which [`Census::accounts`] states and the suite asserts.
 ///
-/// # What a held entry does not prove
+/// # What a held entry proves, and the two ways it used not to
 ///
-/// A place whose `members` are empty is held when its path resolves to anything
-/// at all, so a carrier can be made vaguer without going adrift: name the bag
-/// above the member and both resolve. What catches that today is the recorded
-/// artifact rather than this function, because the sentence an entry renders is
-/// derived from the path and changes with it.
+/// A place whose `members` are empty is held only where its path resolves to a
+/// value that is not a map. It used to be held wherever the path resolved to
+/// anything at all, so a carrier could be made vaguer without going adrift:
+/// name the bag above the member and both resolve. The rule stops at *map*
+/// rather than at *scalar*, because a map has named members and there is always
+/// a list an honest entry could have written, while a value that is one string
+/// or one sequence is the whole of what was carried and has no members to name.
 ///
-/// And the predicate on an entry reads the run through the same function the
-/// emitter reads it through, which is what stops the two from drifting apart. A
-/// change to that one function moves the artifact and the expectation together,
-/// so this audit stays silent and the recorded artifact is again what reports
-/// it.
+/// And the predicate on an entry reads the run for itself rather than through
+/// the function the emitter reads it through. The two read the same register
+/// and they read it separately, which is what lets this audit disagree with the
+/// emitter: a predicate that called the emitter's own lookup would follow a
+/// change to it, moving the artifact and the expectation together, and the
+/// recorded artifact would again be the only thing that reported it.
 pub fn census(run: &Run, format: Format, artifact: &str) -> Census {
     census_with(run, format, artifact, format.loss())
 }

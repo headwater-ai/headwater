@@ -148,12 +148,15 @@ pub const SCHEMA: &str =
 
 /// What SARIF cannot carry, and where each value went instead.
 ///
-/// Four of the seven entries name a member of this document, and
-/// [`crate::census`] resolves each one against the emitted bytes. The `coverage`
-/// entry names the eight members its own reason lists, rather than the bag they
-/// sit in: an entry that named the bag alone stood for as long as it existed
-/// while three of the seven values coverage reports went nowhere, and a bag is
-/// what it named.
+/// Five of the seven entries name a place in this document, six places between
+/// them, and [`crate::census`] resolves each one against the emitted bytes. The
+/// other two carry [`Carrier::Nowhere`]. The `coverage` entry names the eight
+/// members its own reason lists, rather than the bag they sit in: an entry that
+/// named the bag alone stood for as long as it existed while three of the seven
+/// values coverage reports went nowhere, and a bag is what it named. Naming the
+/// bag is now a fault the census reports rather than a habit a reader has to
+/// catch, so the four places whose `members` are empty are four values that are
+/// each one string.
 pub const LOSS: &[Loss] = &[
     Loss {
         field: "the obligation's severity",
@@ -166,7 +169,9 @@ pub const LOSS: &[Loss] = &[
             }],
             // The member is on the results whose finding names an obligation
             // that the register grades, and on no others. The predicate reads
-            // the same register the emitter reads, through the same function.
+            // the same register the emitter reads and it reads it for itself,
+            // so a change to the emitter's lookup alone moves the artifact
+            // without moving the expectation, and this audit reports it.
             when: a_graded_obligation,
         },
     },
@@ -270,10 +275,11 @@ pub const LOSS: &[Loss] = &[
 
 /// The severity the register declares for the obligation a finding serves.
 ///
-/// One reader for the emitter below and for the loss set's own predicate above.
-/// Two copies of this lookup would be an emitter and a claim about the emitter
-/// that could come apart in silence, which is the class of defect the carrier
-/// audit exists to report.
+/// The emitter's one reader of it. The loss set's own predicate above asks the
+/// same question of the same register and does not call this, because a
+/// predicate that shared the emitter's lookup would follow it wherever it went:
+/// a change here would move the artifact and the expectation together, and the
+/// audit would stay silent on the one class of defect it exists to report.
 pub fn obligation_severity(entry: &Reported<'_>, run: &Run) -> Option<String> {
     let obligation = entry.finding.obligation.as_ref()?;
     run.register
@@ -284,8 +290,21 @@ pub fn obligation_severity(entry: &Reported<'_>, run: &Run) -> Option<String> {
 }
 
 /// Whether this result carries the member the first entry of [`LOSS`] names.
+///
+/// It reads the register off the run, and it does not call
+/// [`obligation_severity`]. The two are the same question asked of the same
+/// data, and that is the point: a predicate that called the emitter's own
+/// lookup would move with any change to it, so the audit would agree with the
+/// emitter whatever the emitter did. What audits an emitter has to be able to
+/// disagree with it.
 fn a_graded_obligation(entry: &Reported<'_>, run: &Run) -> bool {
-    obligation_severity(entry, run).is_some()
+    let Some(obligation) = entry.finding.obligation.as_ref() else {
+        return false;
+    };
+    run.register
+        .obligations
+        .iter()
+        .any(|disposed| disposed.id == *obligation && disposed.severity.is_some())
 }
 
 /// The check's severity as a SARIF `level`.
@@ -311,20 +330,40 @@ pub fn kind(escape: Escape) -> &'static str {
     }
 }
 
+/// How this emitter reads the obligation severity of one reported finding.
+///
+/// A parameter rather than a call, for the reason [`crate::census_with`] takes
+/// a loss set: the audit of the first [`LOSS`] entry is a claim about what this
+/// emitter writes, and a test that cannot move the emitter can only ever
+/// measure the emitter agreeing with itself. Production passes
+/// [`obligation_severity`] and nothing else does.
+pub type Grading = fn(&Reported<'_>, &Run) -> Option<String>;
+
 /// One run as a SARIF 2.1.0 log.
 pub fn render(run: &Run, subject: &Subject<'_>) -> String {
-    document(run, subject).render_pretty()
+    render_with(run, subject, obligation_severity)
 }
 
-fn document(run: &Run, subject: &Subject<'_>) -> Json {
+/// The same log, over a grading the caller names.
+///
+/// This exists for a suite, and the review question underneath it is the one
+/// [`crate::census_with`] answers at the other end: a census that passed a
+/// silent emitter would be an audit with nothing to report. Hand it a grading
+/// that returns nothing over a run whose register grades an obligation, and
+/// the census has to say so.
+pub fn render_with(run: &Run, subject: &Subject<'_>, grading: Grading) -> String {
+    document(run, subject, grading).render_pretty()
+}
+
+fn document(run: &Run, subject: &Subject<'_>, grading: Grading) -> Json {
     Json::object([
         ("$schema", Json::string(SCHEMA)),
         ("version", Json::string(VERSION)),
-        ("runs", Json::Array(vec![one_run(run, subject)])),
+        ("runs", Json::Array(vec![one_run(run, subject, grading)])),
     ])
 }
 
-fn one_run(run: &Run, subject: &Subject<'_>) -> Json {
+fn one_run(run: &Run, subject: &Subject<'_>, grading: Grading) -> Json {
     let rules: Vec<&'static str> = run.served.iter().map(|served| served.rule).collect();
     Json::object([
         ("tool", tool(run)),
@@ -349,7 +388,7 @@ fn one_run(run: &Run, subject: &Subject<'_>) -> Json {
             Json::Array(
                 reported(run)
                     .iter()
-                    .map(|entry| result(entry, &rules, run))
+                    .map(|entry| result(entry, &rules, run, grading))
                     .collect(),
             ),
         ),
@@ -456,7 +495,12 @@ fn bare(digest: &str) -> String {
         .unwrap_or_else(|| digest.to_string())
 }
 
-fn result(entry: &Reported<'_>, rules: &[&'static str], run: &Run) -> Json {
+fn result(
+    entry: &Reported<'_>,
+    rules: &[&'static str],
+    run: &Run,
+    grading: Grading,
+) -> Json {
     let finding = entry.finding;
     let mut members: Vec<(&'static str, Json)> = vec![("ruleId", Json::string(finding.rule))];
     if let Some(at) = rules.iter().position(|rule| *rule == finding.rule) {
@@ -475,7 +519,7 @@ fn result(entry: &Reported<'_>, rules: &[&'static str], run: &Run) -> Json {
             Json::Array(vec![suppression(entry, escape)]),
         ));
     }
-    members.push(("properties", result_properties(entry, run)));
+    members.push(("properties", result_properties(entry, run, grading)));
     Json::object(members)
 }
 
@@ -545,7 +589,7 @@ fn suppression(entry: &Reported<'_>, escape: Escape) -> Json {
     ])
 }
 
-fn result_properties(entry: &Reported<'_>, run: &Run) -> Json {
+fn result_properties(entry: &Reported<'_>, run: &Run, grading: Grading) -> Json {
     let finding = entry.finding;
     let mut headwater: Vec<(&'static str, Json)> = vec![
         // The check's severity in the engine's own word, beside the SARIF level
@@ -567,9 +611,10 @@ fn result_properties(entry: &Reported<'_>, run: &Run) -> Json {
         // The other scale, in the member the loss set points at. It is read off
         // the register rather than off the finding, because it is a property of
         // the invariant and a finding carries the check's severity instead.
-        // [`obligation_severity`] is the one reader of it, and the predicate on
-        // that loss entry calls the same function.
-        if let Some(declared) = obligation_severity(entry, run) {
+        // [`obligation_severity`] is this emitter's one reader of it. The
+        // predicate on that loss entry reads the register for itself, because
+        // an audit that shared this lookup could not report a change to it.
+        if let Some(declared) = grading(entry, run) {
             headwater.push(("obligation_severity", Json::string(declared)));
         }
     }
