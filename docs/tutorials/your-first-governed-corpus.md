@@ -323,7 +323,7 @@ git add -A
 git commit -m "A first governed corpus"
 ```
 
-**Check.** `git log --oneline` prints one line that ends in `A first governed corpus`. `git ls-files .headwater` prints six files: the five you have already met, and the `.gitignore` that `headwater check` writes inside `.headwater/cache/`.
+**Check.** `git log --oneline` prints one line that ends in `A first governed corpus`. `git ls-files .headwater ':!.headwater/packages'` prints six files: the five you have already met, and the `.gitignore` that `headwater check` writes inside `.headwater/cache/`. The exclusion leaves out the package you vendored at step 3, which is a publisher's artifact rather than a file you wrote, and which `ls .headwater/packages/headwater-standard` already showed you.
 
 ```
 .headwater/cache/.gitignore

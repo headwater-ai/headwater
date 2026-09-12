@@ -392,7 +392,8 @@ def main():
         log = run('git log --oneline').stdout.strip()
         assert_true('step 10: one commit',
                     len(log.split('\n')) == 1 and log.endswith('A first governed corpus'), log)
-        whole('step 10: git ls-files .headwater', run('git ls-files .headwater').stdout, 27)
+        whole('step 10: git ls-files .headwater',
+              run("git ls-files .headwater ':!.headwater/packages'").stdout, 27)
         # Held to the file on disk rather than to a copy of it: the pattern the
         # page claims the run wrote is read back from the run's own tree.
         ignore = os.path.join(cwd['at'], '.headwater/cache/.gitignore')
