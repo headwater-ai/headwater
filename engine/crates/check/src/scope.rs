@@ -847,6 +847,7 @@ pub struct EdgeEnd<'a> {
     pub path: &'a str,
     pub kind: &'a str,
     facets: Option<&'a Mapping>,
+    generated: bool,
 }
 
 impl<'a> EdgeEnd<'a> {
@@ -858,6 +859,23 @@ impl<'a> EdgeEnd<'a> {
     /// nothing.
     pub fn facets(&self) -> Option<&'a Mapping> {
         self.facets
+    }
+
+    /// Whether this engine wrote the file at this end.
+    ///
+    /// The census's answer, carried here rather than re-derived: the marker has
+    /// one predicate, `headwater_mark::carries_marker`, and the census is the
+    /// one caller of it over a corpus. A rule that opened the marker key itself
+    /// would be a second reading of which files this engine wrote, and the two
+    /// could then disagree about one file.
+    ///
+    /// It rides beside [`EdgeEnd::facets`] because the two answer one question
+    /// together. Spec 3 gives a generated document a warrant the engine derives
+    /// and no declared one, so a rule holding the front matter alone reads an
+    /// absence where there is an answer. [`headwater_doc::warrant_of`] is what
+    /// takes the pair.
+    pub fn generated(&self) -> bool {
+        self.generated
     }
 }
 
@@ -907,17 +925,21 @@ impl<'a> EdgeView<'a> {
         // about which end of one edge is which.
         let ends = match &anchor.target {
             Target::Document { id, path, kind } => {
+                let (writer_facets, writer_generated) = read_at(census, &anchor.source.path);
                 let writer = EdgeEnd {
                     id: &anchor.source.id,
                     path: &anchor.source.path,
                     kind: &anchor.source.kind,
-                    facets: facets_of(census, &anchor.source.path),
+                    facets: writer_facets,
+                    generated: writer_generated,
                 };
+                let (other_facets, other_generated) = read_at(census, path);
                 let other = EdgeEnd {
                     id,
                     path,
                     kind,
-                    facets: facets_of(census, path),
+                    facets: other_facets,
+                    generated: other_generated,
                 };
                 Some(match anchor.direction {
                     Direction::AsDeclared => (writer, other),
@@ -1223,21 +1245,34 @@ impl Digests {
     }
 }
 
-/// The front matter the census parsed for one path, and nothing where it
-/// parsed none.
+/// What the census holds for one path: the front matter it parsed, and whether
+/// this engine wrote the file.
+///
+/// Nothing for the front matter where the census parsed none, which is an
+/// absence rather than empty front matter. `false` for the marker where the
+/// census walked no such path at all, because a path outside the census is a
+/// path this engine has no record of writing.
 ///
 /// The census is the one reader of the corpus, and this is the second lookup
 /// into it from an edge-scoped view. [`Digests`] is the first, and it binary
 /// searches the same list; the difference is that this one borrows out of the
 /// census rather than copying, so it takes the census by reference at the point
 /// of use instead of being built once.
-fn facets_of<'a>(census: &'a Census, path: &str) -> Option<&'a Mapping> {
-    census
+///
+/// One lookup returns both facts rather than two functions searching the same
+/// list twice, and the pair is what [`EdgeEnd`] carries.
+fn read_at<'a>(census: &'a Census, path: &str) -> (Option<&'a Mapping>, bool) {
+    let Ok(index) = census
         .rows
         .binary_search_by(|row| row.path.as_str().cmp(path))
-        .ok()
-        .and_then(|index| census.rows[index].document.as_ref())
-        .map(|document| &document.facets)
+    else {
+        return (None, false);
+    };
+    let row = &census.rows[index];
+    (
+        row.document.as_ref().map(|document| &document.facets),
+        matches!(row.outcome, Classification::Generated { .. }),
+    )
 }
 
 /// Instantiate a document-scoped check over a census.
