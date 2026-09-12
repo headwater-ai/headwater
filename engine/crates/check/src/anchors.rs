@@ -84,7 +84,9 @@ pub struct Rules {
 impl Rules {
     /// The rules this binary was compiled with.
     pub fn shipped() -> Self {
-        Rules { held: &crate::RULES }
+        Rules {
+            held: &crate::RULES,
+        }
     }
 
     /// A resolver over a stated list, for a case table.
@@ -195,7 +197,10 @@ mod tests {
         let Binding::Unresolved(why) = over().resolve("no.such.rule") else {
             panic!("a rule this engine does not ship binds to nothing");
         };
-        assert_eq!(why, "this engine implements no rule `no.such.rule`, and it ships 2 rules");
+        assert_eq!(
+            why,
+            "this engine implements no rule `no.such.rule`, and it ships 2 rules"
+        );
     }
 
     /// An empty string is refused with its own sentence rather than with the

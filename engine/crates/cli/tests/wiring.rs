@@ -1457,7 +1457,7 @@ fn a_check_rule_this_engine_ships_is_an_edge_endpoint_and_a_typo_is_not() {
     // looking at the line that spells it.
     assert!(
         ran.says("this engine implements no rule `no.such.rule`"),
-            "a rule this engine does not ship is refused by name:\n{}",
+        "a rule this engine does not ship is refused by name:\n{}",
         ran.out
     );
     // And it is refused rather than normalized into something that binds.
