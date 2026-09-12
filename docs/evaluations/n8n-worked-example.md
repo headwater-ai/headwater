@@ -67,7 +67,7 @@ The entry assumed that a design specification belongs to a numbered series. A mo
 
 The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full, with the assembly that reproduces it. The summary:
 
-**4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 46 check instances, 13 findings, all 13 of them errors.** `headwater check --strict` exits 1. The first two counts read 42 and 38 until [HW-DR-0064](../decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md): the 38 were the vendored taxonomy package, which sat inside this corpus root and had to be excluded from it.
+**4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 46 check instances, 13 findings, all 13 of them errors.** `headwater check --strict` exits 1. The first and third read 42 and 38 until [HW-DR-0064](../decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md): the 38 were the vendored taxonomy package, which sat inside this corpus root and had to be excluded from it.
 
 Three findings per document, and the same three on each one.
 
