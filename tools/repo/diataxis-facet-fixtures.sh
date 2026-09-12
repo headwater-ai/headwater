@@ -264,12 +264,18 @@ label_page() {
     pass "$2 carries $facet: $3 in the assembled root and nowhere else"
 }
 
-# One arm: resolve, then check with an injected clock. $1 = root, $2 = tag.
+# One arm: resolve, then check with an injected clock, plain and strict. The
+# strict arm is run because the demonstration's claim is that no exit status
+# discriminates the two arms, and a claim of that shape has to be measured.
+# $1 = root, $2 = tag.
 run_arm() {
     (cd "$1" && "$engine" taxonomy resolve) > "$scratch/$2-resolve.out" 2>&1
     (cd "$1" && "$engine" check --no-cache --now "$today") \
         > "$scratch/$2.out" 2> "$scratch/$2.err"
     echo $? > "$scratch/$2.code"
+    (cd "$1" && "$engine" check --strict --no-cache --now "$today") \
+        > "$scratch/$2-strict.out" 2> "$scratch/$2-strict.err"
+    echo $? > "$scratch/$2-strict.code"
 }
 
 # A scalar of the census or the checks block: `<n> <label>` at the end of a
@@ -429,6 +435,14 @@ judge "the parser reads every finding the unlabeled arm tallies" "${u_find:-0}" 
 judge "the parser reads every finding the labeled arm tallies" "${l_find:-0}" "$l_pairs"
 judge "both arms walk the same census" "${u_files:-0}/${u_typed:-0}" "${l_files:-0}/${l_typed:-0}"
 judge "both arms instantiate the same number of checks" "${u_inst:-0}" "${l_inst:-0}"
+# The claim this holds is negative: the corpus is not clean in either arm, so
+# neither exit status separates them and the discriminator has to be the
+# finding. A suite that read an exit status here would report a pass on a day
+# the plant stopped working.
+judge "no plain run separates the arms" \
+    "$(cat "$scratch/unlabeled.code")" "$(cat "$scratch/labeled.code")"
+judge "no strict run separates the arms either" \
+    "$(cat "$scratch/unlabeled-strict.code")" "$(cat "$scratch/labeled-strict.code")"
 
 echo
 echo "case group 5 — the one finding the labels add"
@@ -496,7 +510,9 @@ echo "  labeled page:  $labeled_page   <- $facet: $good_value"
 echo "  planted page:  $planted_page   <- $facet: $planted_value"
 echo "  census:        ${u_files:-0} files, ${u_typed:-0} typed, ${u_inst:-0} check instances"
 echo "  findings:      ${u_find:-0} unlabeled, ${l_find:-0} labeled"
-echo "  check exit:    $(cat "$scratch/unlabeled.code") unlabeled, $(cat "$scratch/labeled.code") labeled"
+echo "  unlabeled:     $(report_number "$scratch/unlabeled.out" "✗ error") error, $(report_number "$scratch/unlabeled.out" "▲ warn") warn"
+echo "  labeled:       $(report_number "$scratch/labeled.out" "✗ error") error, $(report_number "$scratch/labeled.out" "▲ warn") warn"
+echo "  check exit:    $(cat "$scratch/unlabeled.code") and $(cat "$scratch/labeled.code") plain, $(cat "$scratch/unlabeled-strict.code") and $(cat "$scratch/labeled-strict.code") strict"
 echo "  the one finding:"
 sed 's/^/  /' "$scratch/gained.block"
 

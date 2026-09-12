@@ -100,7 +100,7 @@ add:
 
 **`templates/` holds one template per concrete kind that the entry adds.** [Spec 3](https://github.com/headwater-ai/headwater/blob/main/docs/spec/03-authoring-and-lifecycle.md) owns what a template contains. An entry with a kind that has no template asks an author to derive a document shape from a schema.
 
-**`fixtures/` holds the worked corpus of criterion 4**, and a `fixtures/README.md` that states what each document exercises and which findings it should raise. No runner reads these files yet. A fixture manifest in a format that nothing executes is a guess about a runner. The statement stays prose until an engine gives it a shape.
+**`fixtures/` holds the worked corpus of criterion 4**, and a `fixtures/README.md` that states what each document exercises and which findings it should raise. One program reads one of these pages and CI runs it as a blocking step: [`tools/repo/diataxis-facet-fixtures.sh`](https://github.com/headwater-ai/headwater/blob/main/tools/repo/diataxis-facet-fixtures.sh) performs the composition run that the `diataxis` entry records, and judges the difference it claims rather than the absolute counts that belong to another entry's corpus. Every other fixtures README here is prose that nothing executes, and a number in one of them reaches no gate, because this directory sits outside this repository's corpus root. No engine verb reads a fixture manifest, and none of these pages is written in a format that one could.
 
 ## What an assembly ships
 
