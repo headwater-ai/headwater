@@ -745,6 +745,286 @@ fn a_decomposed_recorded_fixture_is_not_a_member_and_a_folded_one_is() {
     );
 }
 
+/// Every row of the shapes table that names a file has a member in the report.
+///
+/// This is the guard on the whole change, and it is the same shape as the
+/// `for producer in PRODUCERS` loop above. A row that silently stops being
+/// reported leaves the report short in a way nothing prints, and three of the
+/// four rows had no member at all in the population `headwater derived`
+/// computed before this case existed: the two append-only stores are written
+/// by no producer, and the two decomposed recorded fixtures are excluded by
+/// the fold rule. So the reported set is wider than the population, and this
+/// case is what holds it wide.
+#[test]
+fn every_shape_that_names_a_file_has_a_member_of_this_tree() {
+    let root = repository_root();
+    let population = headwater_census::derived::population(&root);
+
+    for shape in headwater_census::derived::SHAPES {
+        assert!(
+            population
+                .members
+                .iter()
+                .any(|member| member.shape == *shape),
+            "no path of this tree has the shape {:?} ({}), so that row of \
+             `The shapes a record takes` has stopped being reported and the \
+             report is short in a way nothing prints",
+            shape,
+            shape.row()
+        );
+    }
+
+    assert!(
+        population.members.len() > population.outputs.len(),
+        "the reported set ({}) is no wider than the computed population ({}), \
+         so the paths that no producer writes have dropped out of it",
+        population.members.len(),
+        population.outputs.len()
+    );
+}
+
+/// This tree agrees, which is the correct answer and is why it is not evidence.
+#[test]
+fn no_path_of_this_tree_carries_an_attribute_that_is_not_its_shapes_treatment() {
+    let root = repository_root();
+    let population = headwater_census::derived::population(&root);
+
+    let mismatched: Vec<String> = population
+        .members
+        .iter()
+        .filter_map(|member| {
+            member
+                .disagreement()
+                .map(|cost| format!("{} ({:?}): {cost}", member.path, member.treatment))
+        })
+        .collect();
+    assert!(
+        mismatched.is_empty(),
+        "a path carries a merge attribute that its shape does not take: {mismatched:#?}"
+    );
+    assert!(
+        population.unreadable.is_empty(),
+        "a line of `.gitattributes` carries a merge attribute this reader \
+         cannot expand, so the rule passes over it in silence: {:#?}",
+        population.unreadable
+    );
+}
+
+/// All six disagreements, provoked in one planted tree.
+///
+/// The fourth of them is the one nothing in this repository could see before
+/// this case. A fold declared `merge=union` has an attribute, so the
+/// `undeclared` direction stays silent, and a producer writes it, so the
+/// `unproduced` direction stays silent too. What `union` then does is
+/// interleave two folds into a value that was true on neither branch.
+///
+/// The tree of this repository provokes none of the six, which is the correct
+/// answer for it and is the whole reason this case plants a tree.
+#[test]
+fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
+    use headwater_census::derived::{Shape, Treatment};
+
+    let root = TempTree::new("shapes");
+    root.write(
+        ".gitattributes",
+        "store/appended.jsonl merge=headwater-regenerate\n\
+         engine/crates/a/fixtures/corpus.a merge=headwater-regenerate\n\
+         engine/crates/b/fixtures/corpus.b merge=union\n\
+         docs/interleaved/README.md merge=union\n\
+         engine/crates/ok/fixtures/corpus.ok merge=headwater-regenerate\n\
+         store/ok.jsonl merge=union\n",
+    );
+    // Row 1, declared for regeneration: no producer rewrites an append store.
+    root.write("store/appended.jsonl", "{\"a\":1}\n{\"a\":2}\n");
+    // Row 1, declared nothing: every parallel append conflicts.
+    root.write("store/conflicting.jsonl", "{\"b\":1}\n");
+    // Row 2, declared for regeneration: the driver refuses the merge it takes.
+    root.write(
+        "engine/crates/a/fixtures/corpus.a",
+        "docs/x.md\n  a record\n",
+    );
+    // Row 2, declared union: two record streams interleave out of order.
+    root.write(
+        "engine/crates/b/fixtures/corpus.b",
+        "docs/y.md\n  a record\n",
+    );
+    // A fold declared union: the worst of the six, and nothing reported it.
+    root.write(
+        "docs/interleaved/README.md",
+        "<!-- headwater:generated shelf_index. -->\n\n# 48 decisions\n",
+    );
+    // A fold declared nothing: the direction the verb already reported.
+    root.write(
+        "site/silent/index.html",
+        "<p><span data-figure=\"census.seen\">426</span></p>\n",
+    );
+    // The three that agree.
+    root.write(
+        "engine/crates/ok/fixtures/corpus.ok",
+        "426 seen\n  a finding\n",
+    );
+    root.write("store/ok.jsonl", "{\"c\":1}\n");
+    root.write(
+        "engine/crates/c/fixtures/corpus.c",
+        "docs/z.md\n  a record\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+    let found: Vec<(&str, Shape, Treatment)> = population
+        .members
+        .iter()
+        .filter(|member| member.disagreement().is_some())
+        .map(|member| (member.path.as_str(), member.shape, member.treatment))
+        .collect();
+
+    assert_eq!(
+        found,
+        vec![
+            ("docs/interleaved/README.md", Shape::Fold, Treatment::Union),
+            (
+                "engine/crates/a/fixtures/corpus.a",
+                Shape::RecordPerEntity,
+                Treatment::Regenerate
+            ),
+            (
+                "engine/crates/b/fixtures/corpus.b",
+                Shape::RecordPerEntity,
+                Treatment::Union
+            ),
+            ("site/silent/index.html", Shape::Fold, Treatment::Unset),
+            (
+                "store/appended.jsonl",
+                Shape::IndependentLines,
+                Treatment::Regenerate
+            ),
+            (
+                "store/conflicting.jsonl",
+                Shape::IndependentLines,
+                Treatment::Unset
+            ),
+        ],
+        "the six disagreements were not all reported, or a path that agrees \
+         was reported as one:\n{}",
+        population.render()
+    );
+    assert!(!population.agrees(), "the report claims the tree agrees");
+
+    // The three agreeing paths are members and carry no finding.
+    for path in [
+        "engine/crates/ok/fixtures/corpus.ok",
+        "store/ok.jsonl",
+        "engine/crates/c/fixtures/corpus.c",
+    ] {
+        let member = population
+            .members
+            .iter()
+            .find(|member| member.path == path)
+            .unwrap_or_else(|| panic!("{path} is not in the report:\n{}", population.render()));
+        assert!(
+            member.disagreement().is_none(),
+            "{path} agrees with its shape and was reported as a disagreement"
+        );
+    }
+}
+
+/// The report names the row, the legitimate treatment, and the rebuild command.
+///
+/// One file of each shape, which is what the contract asks for.
+#[test]
+fn the_report_names_the_row_the_treatment_and_the_rebuild_for_one_file_of_each_shape() {
+    let root = TempTree::new("render");
+    root.write(
+        ".gitattributes",
+        "store/readings.jsonl merge=union\n\
+         docs/shelf/README.md merge=headwater-regenerate\n",
+    );
+    root.write("store/readings.jsonl", "{\"a\":1}\n");
+    root.write(
+        "docs/shelf/README.md",
+        "<!-- headwater:generated shelf_index. -->\n\n# A shelf\n",
+    );
+    root.write(
+        "engine/crates/census/fixtures/corpus.census",
+        "docs/LICENSE\n  not a document\n",
+    );
+
+    let rendered = headwater_census::derived::population(root.path()).render();
+    for expected in [
+        // Row 1: the path, its row, and the treatment that row takes.
+        "store/readings.jsonl",
+        "A line that depends on nothing",
+        "merge=union",
+        // Row 2: the path, its row, and what rebuilds it.
+        "engine/crates/census/fixtures/corpus.census",
+        "One record for each entity, in a fixed order",
+        "HEADWATER_BLESS=1 cargo test",
+        // Rows 3 and 4, which structure does not separate.
+        "docs/shelf/README.md",
+        "A fold over those records",
+        "A fold over everything",
+        "merge=headwater-regenerate",
+        "headwater generate",
+    ] {
+        assert!(
+            rendered.contains(expected),
+            "the report does not name {expected:?}:\n{rendered}"
+        );
+    }
+}
+
+/// The row names are the evaluation table's words and not a paraphrase.
+///
+/// The evaluation is accepted and this verb cites it. A row renamed here and
+/// not there leaves two vocabularies for one set of shapes.
+#[test]
+fn the_report_uses_the_words_of_the_evaluation_table() {
+    let root = repository_root();
+    let evaluation =
+        std::fs::read_to_string(root.join("docs/evaluations/what-a-check-can-know.md"))
+            .expect("the evaluation reads");
+    for shape in headwater_census::derived::SHAPES {
+        for row in shape.rows() {
+            assert!(
+                evaluation.contains(row),
+                "`The shapes a record takes` no longer holds a row named \
+                 {row:?}, so the report and the evaluation now use two \
+                 vocabularies"
+            );
+        }
+    }
+}
+
+/// A merge attribute this reader cannot expand is named rather than passed over.
+///
+/// `.gitattributes` is read as a list of paths. A pattern with a glob character
+/// reaches files this reader cannot enumerate, and a declaration nothing reads
+/// looks exactly like a declaration that agrees.
+#[test]
+fn a_merge_attribute_behind_a_glob_is_reported_rather_than_skipped() {
+    let root = TempTree::new("glob");
+    root.write(
+        ".gitattributes",
+        "# a comment naming merge=union, which is not a declaration\n\
+         docs/**/*.md merge=headwater-regenerate\n\
+         vendor/** whitespace=-trailing-space\n",
+    );
+    root.write("docs/shelf/README.md", "# hand written\n");
+
+    let population = headwater_census::derived::population(root.path());
+    assert_eq!(
+        population.unreadable,
+        vec!["docs/**/*.md".to_string()],
+        "a merge attribute behind a glob was passed over, or a pattern with no \
+         merge attribute was reported"
+    );
+    assert!(!population.agrees(), "the report claims the tree agrees");
+    assert!(
+        population.render().contains("docs/**/*.md"),
+        "the report does not name the pattern it could not read:\n{}",
+        population.render()
+    );
+}
+
 /// A tree under a directory this process owns, removed when the case ends.
 ///
 /// Keyed on the process identifier and a label, because `cargo` runs the cases

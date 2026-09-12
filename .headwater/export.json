@@ -2487,7 +2487,7 @@
           "id": "HW-IFACE-headwater-derived",
           "status": "current",
           "status_since": "2026-09-11",
-          "summary": "How the set of derived artifacts is computed from the producers that write them, and why no file of this repository holds that set as a list.",
+          "summary": "How the derived artifacts and the shape of each one are computed from the producers, rather than declared in any file.",
           "last_verified": "2026-09-11",
           "title": "headwater derived",
           "relations": {
