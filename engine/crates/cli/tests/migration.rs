@@ -359,7 +359,9 @@ impl Root {
     }
 
     fn candidate_of(&self, edits: &[(&[&str], &[&str])], payload: Option<&str>) {
-        let taxonomy = self.at.join(".headwater/packages/headwater-standard/taxonomy.yml");
+        let taxonomy = self
+            .at
+            .join(".headwater/packages/headwater-standard/taxonomy.yml");
         let mut text = std::fs::read_to_string(&taxonomy).expect("the taxonomy reads");
         for (from, to) in edits {
             let (from, to) = (from.join("\n"), to.join("\n"));
@@ -373,7 +375,9 @@ impl Root {
         )
         .expect("the taxonomy writes");
 
-        let manifest = self.at.join(".headwater/packages/headwater-standard/package.yml");
+        let manifest = self
+            .at
+            .join(".headwater/packages/headwater-standard/package.yml");
         let mut text = std::fs::read_to_string(&manifest).expect("the manifest reads");
         text = text.replacen("version: 1.0.0", "version: 2.0.0", 1);
         if let Some(payload) = payload {
@@ -383,7 +387,9 @@ impl Root {
                 "the scratch manifest states `{bundles}`, which `repoint_bundles` wrote"
             );
             text = text.replacen(&bundles, &format!("{bundles}\n  migrations: migrations"), 1);
-            let directory = self.at.join(".headwater/packages/headwater-standard/migrations");
+            let directory = self
+                .at
+                .join(".headwater/packages/headwater-standard/migrations");
             std::fs::create_dir_all(&directory).expect("the payload directory is there");
             std::fs::write(directory.join("1-to-2.yml"), payload).expect("the payload writes");
         }

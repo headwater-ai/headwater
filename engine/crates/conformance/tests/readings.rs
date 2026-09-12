@@ -57,7 +57,9 @@ fn package(root: &Path, version: &str) -> PathBuf {
 /// has to put the source on that one path or the collision the route turns on
 /// never happens.
 fn package_at(root: &Path, directory: &str, version: &str) -> PathBuf {
-    let dir = root.join(headwater_resolve::package::PACKAGES).join(directory);
+    let dir = root
+        .join(headwater_resolve::package::PACKAGES)
+        .join(directory);
     std::fs::create_dir_all(&dir).expect("the package directory");
     std::fs::write(
         dir.join("package.yml"),
@@ -423,7 +425,8 @@ fn the_route_the_remediation_names_is_the_route_that_reaches_the_met_arm() {
     let installed = package_at(&root, "acme-taxonomy", "1.0.0");
     assert_eq!(
         installed,
-        root.join(headwater_resolve::package::PACKAGES).join("acme-taxonomy"),
+        root.join(headwater_resolve::package::PACKAGES)
+            .join("acme-taxonomy"),
         "the source and the destination of a vendor are one path"
     );
     assert_ne!(pin_current(&root, &consumer("1.0.0", None)), Verdict::Met);
@@ -454,7 +457,10 @@ fn the_route_the_remediation_names_is_the_route_that_reaches_the_met_arm() {
         message.contains("Move it before vendoring over it"),
         "{message}"
     );
-    assert!(message.contains(".headwater/packages/acme-taxonomy"), "{message}");
+    assert!(
+        message.contains(".headwater/packages/acme-taxonomy"),
+        "{message}"
+    );
 
     // Step 3 — the move.
     std::fs::rename(&installed, root.join("aside")).expect("the source moves aside");

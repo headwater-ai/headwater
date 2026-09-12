@@ -94,7 +94,10 @@ fn publisher_at(scratch: &Scratch, requires_engine: Option<&str>, source: &str) 
         manifest.push_str(&format!("requires_engine: \"{range}\"\n"));
     }
     manifest.push_str("contents:\n  taxonomy: taxonomy.yml\n  bundles: ../../../library\n");
-    scratch.write("publisher/.headwater/packages/acme-fixture/package.yml", &manifest);
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/package.yml",
+        &manifest,
+    );
     scratch.write(
         "publisher/.headwater/packages/acme-fixture/taxonomy.yml",
         &TAXONOMY.replace("version: 1.0.0", &format!("version: {source}")),
@@ -120,7 +123,10 @@ fn publisher_with_doctrine(scratch: &Scratch, doctrine: &str) -> PathBuf {
     let text = std::fs::read_to_string(&manifest).expect("the manifest was just written");
     std::fs::write(&manifest, format!("{text}  doctrine: {doctrine}\n"))
         .expect("the manifest writes");
-    scratch.write("publisher/.headwater/packages/acme-fixture/doctrine/method.md", METHOD);
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/doctrine/method.md",
+        METHOD,
+    );
     root
 }
 
@@ -563,7 +569,9 @@ fn vendoring_over_a_maintained_package_is_refused() {
     let refused = package::vendor(&root, &out, &record.digest)
         .expect_err("a maintained package is not overwritten");
     assert!(headwater_resolve::render_errors(&refused).contains("somebody maintains"));
-    assert!(root.join(".headwater/packages/acme-fixture/taxonomy.yml").is_file());
+    assert!(root
+        .join(".headwater/packages/acme-fixture/taxonomy.yml")
+        .is_file());
 
     // A directory that was vendored carries one, and is replaced.
     let consumer_root = scratch.path().join("consumer");
@@ -1749,7 +1757,10 @@ fn a_manifest_that_declares_no_version_key_is_refused_against_a_versioned_source
         "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
-    scratch.write("publisher/.headwater/packages/acme-fixture/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/taxonomy.yml",
+        TAXONOMY,
+    );
     let root = scratch.path().join("publisher");
     let out = scratch.path().join("artifact");
 
@@ -1898,7 +1909,10 @@ fn publisher_naming_content_it_does_not_carry(scratch: &Scratch) -> PathBuf {
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  \
          conformance: nosuch-conformance.yml\n  bundles: nosuch-bundles\n",
     );
-    scratch.write("hollow/.headwater/packages/acme-fixture/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "hollow/.headwater/packages/acme-fixture/taxonomy.yml",
+        TAXONOMY,
+    );
     scratch.path().join("hollow")
 }
 
@@ -2313,7 +2327,10 @@ fn a_contents_path_that_leaves_the_package_is_refused_under_every_key_but_bundle
 fn a_contents_path_that_leaves_and_returns_inside_the_package_publishes() {
     let scratch = Scratch::new("leaves-and-returns");
     let root = publisher(&scratch, None);
-    scratch.write("publisher/.headwater/packages/acme-fixture/sub/inside.yml", "x: 1\n");
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/sub/inside.yml",
+        "x: 1\n",
+    );
     scratch.write(
         "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: sub/../taxonomy.yml\n  \
@@ -2534,7 +2551,8 @@ fn a_contents_bundles_naming_a_file_is_refused() {
          taxonomy.yml\n",
     );
     assert!(
-        root.join(".headwater/packages/acme-fixture/taxonomy.yml").is_file(),
+        root.join(".headwater/packages/acme-fixture/taxonomy.yml")
+            .is_file(),
         "the case is testing the existence check rather than the kind rule"
     );
 
@@ -2596,7 +2614,8 @@ fn a_contents_conformance_naming_a_directory_is_refused() {
         "x: 1\n",
     );
     assert!(
-        root.join(".headwater/packages/acme-fixture/confdir").is_dir(),
+        root.join(".headwater/packages/acme-fixture/confdir")
+            .is_dir(),
         "the case is testing the existence check rather than the kind rule"
     );
 
@@ -2760,8 +2779,9 @@ fn a_bundle_set_that_does_not_resolve_is_refused_whether_or_not_a_payload_reache
     for (at, payload) in [("with", true), ("without", false)] {
         let root = publisher_with_colliding_bundles(&scratch, at, payload);
         let out = scratch.path().join(format!("artifact-{at}"));
-        let refused = package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
-            .expect_err("a bundle set that does not resolve does not publish");
+        let refused =
+            package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+                .expect_err("a bundle set that does not resolve does not publish");
         let message = headwater_resolve::render_errors(&refused);
         assert!(
             message.contains(
@@ -2871,8 +2891,9 @@ fn a_package_whose_widest_selection_reads_a_name_nothing_declares_does_not_publi
     let root = publisher_reading_a_bundle_kind(&scratch, "dangles", false);
     let out = scratch.path().join("artifact-dangles");
 
-    let refused = package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
-        .expect_err("a widest selection that reads an undeclared name does not publish");
+    let refused =
+        package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+            .expect_err("a widest selection that reads an undeclared name does not publish");
     let message = headwater_resolve::render_errors(&refused);
     assert!(
         message.contains("this package is published with every bundle it ships"),
@@ -2903,13 +2924,14 @@ fn a_package_whose_widest_selection_declares_what_it_reads_still_publishes() {
     let root = publisher_reading_a_bundle_kind(&scratch, "declares", true);
     let out = scratch.path().join("artifact-declares");
 
-    let release = package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
-        .unwrap_or_else(|refused| {
-            panic!(
-                "a complete package does not publish: {}",
-                headwater_resolve::render_errors(&refused)
-            )
-        });
+    let release =
+        package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+            .unwrap_or_else(|refused| {
+                panic!(
+                    "a complete package does not publish: {}",
+                    headwater_resolve::render_errors(&refused)
+                )
+            });
     assert_eq!(release.package, "acme/fixture");
     assert!(out.join("taxonomy.yml").is_file());
 }
@@ -3015,7 +3037,10 @@ fn an_empty_contents_value_is_refused_under_every_key() {
         // it, rather than being appended beside it. A manifest that declared
         // `taxonomy` twice would be refused for the duplicate and never reach
         // the rule under test.
-        let mut declared = vec![("taxonomy", "taxonomy.yml"), ("bundles", "../../../library")];
+        let mut declared = vec![
+            ("taxonomy", "taxonomy.yml"),
+            ("bundles", "../../../library"),
+        ];
         match declared.iter_mut().find(|(name, _)| *name == key) {
             Some(pair) => pair.1 = "\"\"",
             None => declared.push((key, "\"\"")),
@@ -3610,7 +3635,8 @@ fn a_packages_directory_that_cannot_be_written_takes_nothing_from_the_installed_
     let refused = package::vendor(&adopter, &out, &digest);
     mode(&packages, 0o700);
 
-    let errors = refused.expect_err("a `.headwater/packages/` that cannot be written refuses the vendor");
+    let errors =
+        refused.expect_err("a `.headwater/packages/` that cannot be written refuses the vendor");
 
     // The state comes first, because the state is the defect and the sentence
     // about it is the clause underneath.
@@ -3643,8 +3669,9 @@ fn a_packages_directory_that_cannot_be_written_takes_nothing_from_the_installed_
         "the refusal does not say the installed package is untouched: {said}"
     );
 
-    package::vendor(&adopter, &out, &digest)
-        .expect("the verb can still vendor over the package once `.headwater/packages/` is writable again");
+    package::vendor(&adopter, &out, &digest).expect(
+        "the verb can still vendor over the package once `.headwater/packages/` is writable again",
+    );
     assert_eq!(
         packages_under(&adopter),
         vec!["acme-fixture".to_string()],
@@ -3725,7 +3752,8 @@ fn a_first_vendor_whose_copy_fails_installs_no_part_of_the_package() {
     let refused = package::vendor(&adopter, &out, &record.digest);
     mode(&packages, 0o700);
 
-    let errors = refused.expect_err("a `.headwater/packages/` that cannot be written refuses the vendor");
+    let errors =
+        refused.expect_err("a `.headwater/packages/` that cannot be written refuses the vendor");
 
     assert!(
         !packages.join("acme-fixture").exists(),
@@ -4010,7 +4038,8 @@ fn an_artifact_that_is_a_directory_this_verb_stages_through_is_refused() {
 
         // And the gesture that does work is the one the refusal names.
         let moved = scratch.path().join(format!("moved-{kind}"));
-        std::fs::rename(&residue, &moved).expect("the artifact moves out of `.headwater/packages/`");
+        std::fs::rename(&residue, &moved)
+            .expect("the artifact moves out of `.headwater/packages/`");
         package::vendor(&adopter, &moved, &digest)
             .expect("the artifact vendors once it sits outside `.headwater/packages/`");
         assert_eq!(
@@ -4600,7 +4629,10 @@ fn the_corrected_spec_seven_example_publishes_and_its_bundle_reaches_a_consumer(
 #[test]
 fn a_broken_manifest_under_packages_is_named_in_the_refusal() {
     let scratch = Scratch::new("broken-manifest");
-    scratch.write("root/.headwater/packages/broken/package.yml", "- one\n- two\n");
+    scratch.write(
+        "root/.headwater/packages/broken/package.yml",
+        "- one\n- two\n",
+    );
     let root = scratch.path().join("root");
     let out = scratch.path().join("artifact");
 
@@ -4636,7 +4668,10 @@ fn a_broken_manifest_under_packages_is_named_in_the_refusal() {
 #[test]
 fn a_broken_sibling_manifest_does_not_stop_a_package_that_resolves_fine() {
     let scratch = Scratch::new("broken-sibling");
-    scratch.write("root/.headwater/packages/aaa-broken/package.yml", "- one\n- two\n");
+    scratch.write(
+        "root/.headwater/packages/aaa-broken/package.yml",
+        "- one\n- two\n",
+    );
     let root = publisher_of(&scratch, "root", "acme/fixture");
     let out = scratch.path().join("artifact");
 
@@ -4664,12 +4699,18 @@ fn two_directories_declaring_one_name_are_both_named_rather_than_resolved_silent
         "root/.headwater/packages/aaa-vendored/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
-    scratch.write("root/.headwater/packages/aaa-vendored/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "root/.headwater/packages/aaa-vendored/taxonomy.yml",
+        TAXONOMY,
+    );
     scratch.write(
         "root/.headwater/packages/zzz-copied-source/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
-    scratch.write("root/.headwater/packages/zzz-copied-source/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "root/.headwater/packages/zzz-copied-source/taxonomy.yml",
+        TAXONOMY,
+    );
     let root = scratch.path().join("root");
     let out = scratch.path().join("artifact");
 
@@ -4702,12 +4743,18 @@ fn two_directories_declaring_one_name_are_caught_by_sources_too() {
         "root/.headwater/packages/aaa-vendored/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
-    scratch.write("root/.headwater/packages/aaa-vendored/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "root/.headwater/packages/aaa-vendored/taxonomy.yml",
+        TAXONOMY,
+    );
     scratch.write(
         "root/.headwater/packages/zzz-copied-source/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
-    scratch.write("root/.headwater/packages/zzz-copied-source/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "root/.headwater/packages/zzz-copied-source/taxonomy.yml",
+        TAXONOMY,
+    );
     let root = scratch.path().join("root");
 
     let consumer = package::Consumer {
@@ -4830,7 +4877,10 @@ fn a_directory_merely_named_with_the_reserved_suffix_is_a_real_collision_not_res
 fn contents_doctrine_that_names_a_file_is_refused_at_publish() {
     let scratch = Scratch::new("doctrine-file");
     let root = publisher_with_doctrine(&scratch, "method.md");
-    scratch.write("publisher/.headwater/packages/acme-fixture/method.md", METHOD);
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/method.md",
+        METHOD,
+    );
     let out = scratch.path().join("artifact");
 
     let refused = package::publish(&root, "acme/fixture", &out)
@@ -5324,8 +5374,9 @@ fn a_reference_a_carried_document_writes_to_a_file_the_artifact_lacks_is_refused
     );
     let out = scratch.path().join("artifact");
 
-    let refused = package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
-        .expect_err("the artifact carries no corpus/note.md");
+    let refused =
+        package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+            .expect_err("the artifact carries no corpus/note.md");
     let message = headwater_resolve::render_errors(&refused);
 
     assert!(
@@ -5426,8 +5477,12 @@ fn a_reference_the_manifest_records_is_admitted_and_the_record_is_a_pair() {
     )
     .expect("the misdirected record is written");
     let elsewhere = scratch.path().join("misdirected");
-    let refused = package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &elsewhere)
-        .expect_err("a record against another member admits nothing");
+    let refused = package::publish_from(
+        &root,
+        &root.join(".headwater/packages/acme-fixture"),
+        &elsewhere,
+    )
+    .expect_err("a record against another member admits nothing");
     let message = headwater_resolve::render_errors(&refused);
     assert!(
         message.contains("`notes.md`"),
@@ -5466,8 +5521,12 @@ fn a_reference_that_climbs_out_of_the_artifact_is_not_judged() {
         "# Notes\n\nThe rule is [in the specification](spec/07.md).\n",
     );
     let inside = scratch.path().join("inside");
-    let refused = package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &inside)
-        .expect_err("the same reference without the climb lands inside and dangles");
+    let refused = package::publish_from(
+        &root,
+        &root.join(".headwater/packages/acme-fixture"),
+        &inside,
+    )
+    .expect_err("the same reference without the climb lands inside and dangles");
     assert!(
         headwater_resolve::render_errors(&refused).contains("spec/07.md"),
         "the two are not being told apart by where the reference lands"
@@ -5519,8 +5578,9 @@ fn a_reference_after_an_unbalanced_fence_marker_is_still_read() {
     );
     let out = scratch.path().join("artifact");
 
-    let refused = package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
-        .expect_err("the reference after the fence closes is a reference");
+    let refused =
+        package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+            .expect_err("the reference after the fence closes is a reference");
     let message = headwater_resolve::render_errors(&refused);
 
     assert!(
@@ -5554,8 +5614,9 @@ fn a_recorded_pair_whose_member_the_artifact_lacks_is_refused() {
     .expect("the record is written");
     let out = scratch.path().join("artifact");
 
-    let refused = package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
-        .expect_err("the artifact carries no gone.md for the record to be about");
+    let refused =
+        package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+            .expect_err("the artifact carries no gone.md for the record to be about");
     let message = headwater_resolve::render_errors(&refused);
 
     assert!(
@@ -5585,7 +5646,10 @@ fn a_percent_escape_is_decoded_and_a_query_is_not_part_of_the_path() {
         "# Notes\n\nThe example is [in the corpus](corpus/a%20note.md), and the same file [with a \
          query](corpus/a%20note.md?raw=1).\n",
     );
-    scratch.write("publisher/.headwater/packages/acme-fixture/corpus/a note.md", "# A\n");
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/corpus/a note.md",
+        "# A\n",
+    );
     let out = scratch.path().join("artifact");
 
     package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
@@ -5639,8 +5703,9 @@ fn a_backtick_run_with_a_backtick_in_its_information_string_opens_no_fence() {
     );
     let out = scratch.path().join("artifact");
 
-    let refused = package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
-        .expect_err("the run opens no fence, so the reference below it is a reference");
+    let refused =
+        package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+            .expect_err("the run opens no fence, so the reference below it is a reference");
 
     assert!(
         headwater_resolve::render_errors(&refused).contains("corpus/after-the-run.md"),

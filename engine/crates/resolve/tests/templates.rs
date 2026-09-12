@@ -131,8 +131,14 @@ spec_layer: functional_spec
 
 /// A package that ships one bundle, with the templates a case plants in it.
 fn publisher(scratch: &Scratch, templates: &[(&str, &str)]) -> PathBuf {
-    scratch.write("publisher/.headwater/packages/acme-fixture/package.yml", MANIFEST);
-    scratch.write("publisher/.headwater/packages/acme-fixture/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/package.yml",
+        MANIFEST,
+    );
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/taxonomy.yml",
+        TAXONOMY,
+    );
     scratch.write(
         "publisher/.headwater/packages/acme-fixture/bundles/specs/bundle.yml",
         BUNDLE,

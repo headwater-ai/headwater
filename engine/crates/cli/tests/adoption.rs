@@ -778,7 +778,9 @@ fn a_source_that_moved_still_names_itself_and_keeps_the_old_message() {
         resolved.err
     );
 
-    let source = root.at.join(".headwater/packages/headwater-standard/taxonomy.yml");
+    let source = root
+        .at
+        .join(".headwater/packages/headwater-standard/taxonomy.yml");
     let mut text = std::fs::read_to_string(&source).expect("the source reads");
     text.push_str("\n# A comment this case appended, which moves the bytes and not the result.\n");
     std::fs::write(&source, text).expect("the source writes");
@@ -1285,7 +1287,9 @@ fn two_lock_digests_are_two_measurements_and_the_report_says_so() {
         first.err
     );
 
-    let source = root.at.join(".headwater/packages/headwater-standard/taxonomy.yml");
+    let source = root
+        .at
+        .join(".headwater/packages/headwater-standard/taxonomy.yml");
     let text = std::fs::read_to_string(&source).expect("the source reads");
     let moved = text.replace(
         "draft: the document is being written or argued over, and nothing may rely on it",

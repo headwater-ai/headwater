@@ -97,13 +97,22 @@ overlay: overlay.yml
 fn publisher(scratch: &Scratch) {
     scratch.write(".headwater/packages/acme-fixture/package.yml", PACKAGE);
     scratch.write(".headwater/packages/acme-fixture/taxonomy.yml", TAXONOMY);
-    scratch.write(".headwater/packages/acme-fixture/bundles/alpha/bundle.yml", ALPHA);
-    scratch.write(".headwater/packages/acme-fixture/bundles/beta/bundle.yml", BETA);
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/alpha/bundle.yml",
+        ALPHA,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/beta/bundle.yml",
+        BETA,
+    );
     scratch.write(
         ".headwater/packages/acme-fixture/assemblies/starter/assembly.yml",
         ASSEMBLY,
     );
-    scratch.write(".headwater/packages/acme-fixture/assemblies/starter/overlay.yml", GLUE);
+    scratch.write(
+        ".headwater/packages/acme-fixture/assemblies/starter/overlay.yml",
+        GLUE,
+    );
     scratch.write(
         ".headwater/packages/acme-fixture/doctrine/guide.md",
         "# Fixture doctrine\n",

@@ -94,7 +94,10 @@ fn wide_publisher(scratch: &Scratch) -> PathBuf {
         "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
-    scratch.write("publisher/.headwater/packages/acme-fixture/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/taxonomy.yml",
+        TAXONOMY,
+    );
     let body = "x".repeat(512);
     for index in 0..FILLER {
         scratch.write(

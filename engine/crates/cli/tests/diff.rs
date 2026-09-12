@@ -70,7 +70,9 @@ impl Root {
     /// standing inside the harness written to test the verb that ships it. The
     /// sibling helper in `migration.rs` moved both from the day it was written.
     fn edit(&self, version: &str, edits: &[(&str, &str)]) {
-        let taxonomy = self.at.join(".headwater/packages/headwater-standard/taxonomy.yml");
+        let taxonomy = self
+            .at
+            .join(".headwater/packages/headwater-standard/taxonomy.yml");
         let mut text = std::fs::read_to_string(&taxonomy).expect("the taxonomy reads");
         for (from, to) in edits {
             assert!(text.contains(from), "the fixture still carries `{from}`");
@@ -80,7 +82,9 @@ impl Root {
         std::fs::write(&taxonomy, text.replacen("version: 1.0.0", version, 1))
             .expect("the taxonomy writes");
 
-        let manifest = self.at.join(".headwater/packages/headwater-standard/package.yml");
+        let manifest = self
+            .at
+            .join(".headwater/packages/headwater-standard/package.yml");
         let text = std::fs::read_to_string(&manifest).expect("the manifest reads");
         assert!(text.contains("version: 1.0.0"), "the fixture is at 1.0.0");
         std::fs::write(&manifest, text.replacen("version: 1.0.0", version, 1))

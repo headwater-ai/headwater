@@ -230,7 +230,11 @@ impl Root {
     /// here and names what it found, rather than silently answering with the
     /// wrong line.
     fn declared_version(&self) -> String {
-        declared_version_at(&self.at.join(".headwater/packages/headwater-standard/package.yml"))
+        declared_version_at(
+            &self
+                .at
+                .join(".headwater/packages/headwater-standard/package.yml"),
+        )
     }
 
     /// A scratch directory beside this root, for something that is not part of
@@ -513,7 +517,11 @@ fn a_root_the_vendor_route_reached(label: &str) -> Root {
         "`headwater taxonomy vendor` accepts the artifact the declaration pins:\n{stderr}"
     );
     assert_eq!(
-        declared_version_at(&root.at.join(".headwater/packages/headwater-standard/package.yml")),
+        declared_version_at(
+            &root
+                .at
+                .join(".headwater/packages/headwater-standard/package.yml")
+        ),
         version,
         "the vendored package is the one the declaration pins"
     );

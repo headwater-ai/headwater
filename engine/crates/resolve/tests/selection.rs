@@ -154,12 +154,30 @@ add:
 fn library(scratch: &Scratch) {
     scratch.write(".headwater/packages/acme-fixture/package.yml", PACKAGE);
     scratch.write(".headwater/packages/acme-fixture/taxonomy.yml", TAXONOMY);
-    scratch.write(".headwater/packages/acme-fixture/bundles/alpha/bundle.yml", ALPHA);
-    scratch.write(".headwater/packages/acme-fixture/bundles/beta/bundle.yml", BETA);
-    scratch.write(".headwater/packages/acme-fixture/bundles/gamma/bundle.yml", GAMMA);
-    scratch.write(".headwater/packages/acme-fixture/bundles/delta/bundle.yml", DELTA);
-    scratch.write(".headwater/packages/acme-fixture/bundles/epsilon/bundle.yml", EPSILON);
-    scratch.write(".headwater/packages/acme-fixture/bundles/eta/bundle.yml", ETA);
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/alpha/bundle.yml",
+        ALPHA,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/beta/bundle.yml",
+        BETA,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/gamma/bundle.yml",
+        GAMMA,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/delta/bundle.yml",
+        DELTA,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/epsilon/bundle.yml",
+        EPSILON,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/eta/bundle.yml",
+        ETA,
+    );
 }
 
 /// One recipe over the same library, selecting what the caller names.
@@ -442,7 +460,9 @@ fn a_recipe_that_omits_a_bundle_another_bundle_needs_names_the_key_a_publisher_e
 
     let text = advice.render();
     assert!(
-        text.contains("`from.bundles:` in .headwater/packages/acme-fixture/assemblies/starter/assembly.yml"),
+        text.contains(
+            "`from.bundles:` in .headwater/packages/acme-fixture/assemblies/starter/assembly.yml"
+        ),
         "the remedy names the recipe file and its key: {text}"
     );
     assert!(

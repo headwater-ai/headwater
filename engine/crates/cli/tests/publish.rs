@@ -81,7 +81,8 @@ impl Root {
             &root.0.join("docs/taxonomies"),
         );
         std::fs::write(
-            root.0.join(".headwater/packages/headwater-standard/bundles"),
+            root.0
+                .join(".headwater/packages/headwater-standard/bundles"),
             "a regular file where the artifact needs a directory\n",
         )
         .expect("the colliding file is written");
@@ -934,7 +935,8 @@ fn a_pin_that_no_longer_names_the_installed_bytes_is_refused_by_conformance_and_
     // The hand edit lands after the publish that computed the pinned digest and
     // after the vendor that installed the bytes it names.
     write(&authored, &pin);
-    let installed = consumer.join(".headwater/packages/headwater-starter/doctrine/starter/starter.md");
+    let installed =
+        consumer.join(".headwater/packages/headwater-starter/doctrine/starter/starter.md");
     let carried = std::fs::read_to_string(&installed).expect("the installed doctrine reads");
     std::fs::write(
         &installed,
