@@ -227,13 +227,27 @@ pub(crate) fn emit(
             }
         };
 
+        let bytes = render(
+            &crate::shelf_label(shelf),
+            &path,
+            &sections,
+            front.as_deref(),
+        );
+        // The body half of the same question `front_matter` asked of the block.
+        // It runs here rather than there because a section contract is about
+        // headings, and the headings do not exist until this line.
+        if let Some(declared) = &declaration.identity {
+            if let Err(reason) = crate::identity::unheld(surface, &declared.kind, &bytes) {
+                plan.unwritten.push(Unwritten {
+                    at: path,
+                    kind: Kind::ShelfSections,
+                    reason,
+                });
+                continue;
+            }
+        }
         plan.outputs.push(Output {
-            bytes: render(
-                &crate::shelf_label(shelf),
-                &path,
-                &sections,
-                front.as_deref(),
-            ),
+            bytes,
             path,
             kind: Kind::ShelfSections,
         });
