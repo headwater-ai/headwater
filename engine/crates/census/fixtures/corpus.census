@@ -590,6 +590,8 @@ docs/obligations/0184-nothing-states-why-the-vendored-package-root-is-visible-in
   typed: obligation_record
 docs/obligations/0185-whether-an-admitted-library-entry-may-require-a-bundle-that-admission-refuses.md
   typed: obligation_record
+docs/obligations/0186-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
@@ -610,9 +612,17 @@ docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descr
   typed: probe
 docs/probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md
   typed: probe
+docs/probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md
+  typed: probe
+docs/probes/a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks.md
+  typed: probe
 docs/probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md
   typed: probe
 docs/probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md
+  typed: probe
+docs/probes/the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens.md
+  typed: probe
+docs/probes/what-a-session-writes-points-back-at-the-ruling-it-rests-on.md
   typed: probe
 docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md
   typed: process_decision

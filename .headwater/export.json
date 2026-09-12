@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 424,
-      "carried": 424,
+      "in the graph": 429,
+      "carried": 429,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 626,
-      "carried": 626,
+      "in the graph": 635,
+      "carried": 635,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -7766,6 +7766,34 @@
         }
       },
       {
+        "path": "docs/obligations/0186-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0186",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0186",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A supersession says that nobody may rely on the document that lost, and every mechanism here acts on a relation rather than on a reading.",
+          "last_verified": "2026-09-11",
+          "title": "A superseded document claims no reliance, and nothing measures whether a session honors that",
+          "waiting_on": "measurement",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "reconstructed"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0026",
+              "HW-DR-0062"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
         "kind": "probe_result",
         "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
@@ -7885,6 +7913,67 @@
         }
       },
       {
+        "path": "docs/probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md",
+        "kind": "probe",
+        "id": "HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Both registers carry the same answer, so nothing in what a session says separates the route it took, and the read set is the only instrument left.",
+          "last_verified": "2026-09-11",
+          "probe_category": "navigability",
+          "expectation": "not_opened",
+          "oracle": "none",
+          "title": "A session answers from the register without opening the question it replaced",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "draft",
+            "evidence_basis": "unevidenced"
+          },
+          "relations": {
+            "examines": [
+              "HW-REG-open-questions"
+            ],
+            "traces_to": [
+              "HW-OBL-0186"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/probes/a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks.md",
+        "kind": "probe",
+        "id": "HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "The declared instrument for the assist claim cannot separate its arms, so this grades the artifact a session produced against a rule instead of counting what a verb supplied.",
+          "last_verified": "2026-09-11",
+          "probe_category": "sufficiency",
+          "expectation": "patched",
+          "oracle": "section.required.missing",
+          "title": "A session records an unmeasured claim in the shape this corpus checks",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "draft",
+            "evidence_basis": "unevidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0004"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md",
         "kind": "probe",
         "id": "HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it",
@@ -7944,6 +8033,70 @@
             ],
             "traces_to": [
               "HW-SPEC-ai-integration"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/probes/the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens.md",
+        "kind": "probe",
+        "id": "HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Precision at intent time has no reading at all, and this takes the half of it that a transcript of tool calls can carry.",
+          "last_verified": "2026-09-11",
+          "probe_category": "discovery",
+          "expectation": "opened",
+          "oracle": "none",
+          "title": "The pointer this corpus offers for a task is the document a session opens",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "examines": [
+              "HW-OBL-0107"
+            ],
+            "traces_to": [
+              "HW-SPEC-ai-integration"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/probes/what-a-session-writes-points-back-at-the-ruling-it-rests-on.md",
+        "kind": "probe",
+        "id": "HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Every traceability edge in this corpus is hand entry under a creator value that names a hook, and this asks whether an agent supplies the identifier with nobody asking for one.",
+          "last_verified": "2026-09-11",
+          "probe_category": "navigability",
+          "expectation": "cited",
+          "oracle": "none",
+          "title": "What a session writes points back at the ruling it rests on",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "draft",
+            "evidence_basis": "unevidenced"
+          },
+          "relations": {
+            "examines": [
+              "HW-DR-0049"
+            ],
+            "traces_to": [
+              "HW-OBL-0105"
             ]
           }
         }
@@ -14694,6 +14847,28 @@
         }
       },
       {
+        "source": "docs/obligations/0186-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0026",
+          "path": "docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0186-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0062",
+          "path": "docs/decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md",
+          "kind": "decision"
+        }
+      },
+      {
         "source": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "relation": "examines",
         "written_as": "examines",
@@ -14723,6 +14898,39 @@
           "bound": "document",
           "id": "HW-OBL-0013",
           "path": "docs/obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md",
+        "relation": "examines",
+        "written_as": "examines",
+        "target": {
+          "bound": "document",
+          "id": "HW-REG-open-questions",
+          "path": "docs/spec/09-open-questions.md",
+          "kind": "decision_register"
+        }
+      },
+      {
+        "source": "docs/probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0186",
+          "path": "docs/obligations/0186-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/probes/a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0004",
+          "path": "docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md",
           "kind": "obligation_record"
         }
       },
@@ -14768,6 +14976,50 @@
           "id": "HW-SPEC-ai-integration",
           "path": "docs/spec/05-ai-integration.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/probes/the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens.md",
+        "relation": "examines",
+        "written_as": "examines",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0107",
+          "path": "docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/probes/the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-ai-integration",
+          "path": "docs/spec/05-ai-integration.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/probes/what-a-session-writes-points-back-at-the-ruling-it-rests-on.md",
+        "relation": "examines",
+        "written_as": "examines",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0049",
+          "path": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/probes/what-a-session-writes-points-back-at-the-ruling-it-rests-on.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0105",
+          "path": "docs/obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md",
+          "kind": "obligation_record"
         }
       },
       {
