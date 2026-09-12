@@ -590,6 +590,26 @@ docs/obligations/0184-nothing-states-why-the-vendored-package-root-is-visible-in
   typed: obligation_record
 docs/obligations/0185-whether-an-admitted-library-entry-may-require-a-bundle-that-admission-refuses.md
   typed: obligation_record
+docs/obligations/0186-a-facet-only-entry-has-no-kind-and-the-entry-anatomy-asks-for-two-things-that-presume-one.md
+  typed: obligation_record
+docs/obligations/0187-the-registered-deviation-edge-of-the-compliance-tradition-cannot-be-declared.md
+  typed: obligation_record
+docs/obligations/0188-the-negative-compliance-edge-and-the-governance-precedence-clause-contradict.md
+  typed: obligation_record
+docs/obligations/0189-a-base-shelf-path-is-closed-to-every-later-entry-over-the-same-ground.md
+  typed: obligation_record
+docs/obligations/0190-a-voice-regime-carries-a-forbid-list-so-a-normative-keyword-rule-has-no-form.md
+  typed: obligation_record
+docs/obligations/0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md
+  typed: obligation_record
+docs/obligations/0192-assumptions-that-a-library-entry-takes-where-the-specification-does-not-speak.md
+  typed: obligation_record
+docs/obligations/0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md
+  typed: obligation_record
+docs/obligations/0194-the-base-ships-one-voice-regime-and-a-prospective-document-has-none.md
+  typed: obligation_record
+docs/obligations/0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md

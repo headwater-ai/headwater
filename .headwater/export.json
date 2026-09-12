@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 424,
-      "carried": 424,
+      "in the graph": 434,
+      "carried": 434,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -3944,7 +3944,7 @@
           "status": "current",
           "status_since": "2026-08-13",
           "waiting_on": "ruling",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-09-11",
           "summary": "The first library entry to claim an address owns it, so a second entry cannot reuse the vocabulary that both traditions need.",
           "provenance": {
             "warrant": "accepted",
@@ -7755,6 +7755,226 @@
           "summary": "An entry the canonical library refuses is required by two entries it admits, and no criterion and no ruling reads that direction",
           "last_verified": "2026-09-11",
           "title": "Whether an admitted library entry may require a bundle that admission refuses",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0186-a-facet-only-entry-has-no-kind-and-the-entry-anatomy-asks-for-two-things-that-presume-one.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0186",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0186",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A facet-only entry declares no kind, so the worked corpus and the templates slot that the anatomy asks for have no stated content.",
+          "last_verified": "2026-09-11",
+          "title": "A facet-only entry has no kind, and the entry anatomy asks for two things that presume one",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0187-the-registered-deviation-edge-of-the-compliance-tradition-cannot-be-declared.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0187",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0187",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Spec 2 names a registered-deviation check on `does_not_comply_with`, and no entry can enable or declare that relation.",
+          "last_verified": "2026-09-11",
+          "title": "The registered-deviation edge of the compliance tradition cannot be declared",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0188-the-negative-compliance-edge-and-the-governance-precedence-clause-contradict.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0188",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0188",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Spec 2 puts `does_not_comply_with` in the governance family and spells it from the deviating document, so the violator governs the standard.",
+          "last_verified": "2026-09-11",
+          "title": "The negative compliance edge and the governance precedence clause contradict",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0189-a-base-shelf-path-is-closed-to-every-later-entry-over-the-same-ground.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0189",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0189",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "The base claims `docs/specifications/**` for one shelf, and shelf determinism then refuses every later entry the path its own tradition uses.",
+          "last_verified": "2026-09-11",
+          "title": "A base shelf path is closed to every later entry over the same ground",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0190-a-voice-regime-carries-a-forbid-list-so-a-normative-keyword-rule-has-no-form.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0190",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0190",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A voice regime carries a forbid list and nothing else, so a rule that every requirement uses a normative keyword has no declarable form.",
+          "last_verified": "2026-09-11",
+          "title": "A voice regime carries a forbid list, so a normative keyword rule has no form",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0191",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0191",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A document whose discriminator value names no kind leaves every check, the census still carries the row, and a strict run exits 0.",
+          "last_verified": "2026-09-11",
+          "title": "An unknown discriminator value removes a document from every check and no gate reports it",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0192-assumptions-that-a-library-entry-takes-where-the-specification-does-not-speak.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0192",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0192",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A shelf layout, a stable volatility, an identifier scheme with no namespace and an expectation window are readings that no document covers.",
+          "last_verified": "2026-09-11",
+          "title": "Assumptions that a library entry takes where the specification does not speak",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0193",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0193",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Criterion 5 escapes only a facet-only overlay, so a full entry with a third reader intent has no reading of it.",
+          "last_verified": "2026-09-11",
+          "title": "Admission criterion 5 has no reading for an entry that serves neither core purpose",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0194-the-base-ships-one-voice-regime-and-a-prospective-document-has-none.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0194",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0194",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "The base carries `voice.declarative` alone, and it forbids `future_intent`, so a corpus of requirements on the bare base reports its own tradition.",
+          "last_verified": "2026-09-11",
+          "title": "The base ships one voice regime and a prospective document has none",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0195",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0195",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A descoped requirement is a state of one line inside a document, and a line has no identity here.",
+          "last_verified": "2026-09-11",
+          "title": "A requirement has no identity, so a descoped requirement has no form",
           "waiting_on": "ruling",
           "provenance": {
             "warrant": "asserted",
