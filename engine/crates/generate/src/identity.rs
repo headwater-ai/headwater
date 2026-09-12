@@ -315,6 +315,74 @@ fn unwritable(
     ))
 }
 
+/// The reason no file can be written when the kind requires a section that the
+/// body this emitter composed does not carry.
+///
+/// # Why this is a second refusal and not a clause of the first
+///
+/// [`unwritable`] above reads `facets.require` against the front-matter block,
+/// and it can answer before a body exists because a block is a set of values
+/// this engine either writes or does not. A section contract is about the body,
+/// and the body of a generated document is composed out of the corpus rather
+/// than out of the contract: a shelf-sections page writes the shelf label and
+/// the name of each document on the shelf, a shelf index writes the label
+/// alone, and a probe result writes the headings its own report shape names.
+/// Nothing on any of those paths reads `sections.require`.
+///
+/// So the two refusals have two repairs. A facet outside every role is a
+/// taxonomy that asks for what nothing can write. A section is one an emitter
+/// could in principle write and this engine never does, and the repair is the
+/// kind: a kind whose population a projection writes states the section
+/// contract that projection keeps, or states none.
+///
+/// # Why it reads the composed body rather than the contract alone
+///
+/// Refusing every non-empty `sections.require` would be the cheaper rule and it
+/// would report a file that is correct. A shelf whose label is the heading a
+/// contract names satisfies that contract, and this function says so. What it
+/// does not do is call such a file safe: the heading is the shelf's name or a
+/// document's, so it moves when either is renamed, and the run after the rename
+/// is the one that reports it. That is the same posture `generate --check`
+/// takes over every other byte of a generated file.
+///
+/// The comparison itself is [`headwater_check::sections::absent_from_source`],
+/// which is the one the check layer applies to an authored document: a heading
+/// at any level, matched on its text with case and surrounding space removed.
+/// A second copy here would let the emitter and the rule disagree about what a
+/// heading satisfies.
+///
+/// # What reaches it
+///
+/// The three emitters that write a front-matter block, which are the three
+/// callers of [`front_matter`]: [`crate::shelf_sections`],
+/// [`crate::shelf_index`] and [`crate::probe_result`]. A generated file with no
+/// `identity` is no document of the corpus, so it resolves to no kind and no
+/// kind requires anything of it.
+pub(crate) fn unheld(surface: &Surface<'_>, kind: &str, bytes: &str) -> Result<(), String> {
+    let required = surface.shape().required_sections(kind);
+    if required.is_empty() {
+        return Ok(());
+    }
+    let missing = headwater_check::sections::absent_from_source(bytes, &required);
+    if missing.is_empty() {
+        return Ok(());
+    }
+    let sections = missing
+        .iter()
+        .map(|section| format!("`{section}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    Err(format!(
+        "declares the kind `{kind}`, and `{kind}` requires the section {sections}, which the body \
+         of this file does not carry. A generated body is composed from the corpus and never from \
+         a section contract: no emitter of this engine reads `sections.require`, and the headings \
+         it writes are a shelf's name and the names of the documents on it. The repair is the \
+         kind rather than the declaration. A generated document is the one document whose only \
+         writer is this engine, so a heading it does not write is one no author can add and one \
+         `section.required.missing` never reads"
+    ))
+}
+
 /// The discriminator the shelf that claims this path needs, and the reason no
 /// block can be written when the placement and the declared kind disagree.
 fn placement(

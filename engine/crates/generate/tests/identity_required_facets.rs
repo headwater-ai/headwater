@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Whether a projection `identity` that cannot supply a facet its kind requires
-//! is reported by anything.
+//! Whether a projection `identity` whose kind requires something the generated
+//! file cannot carry is reported by anything.
 //!
 //! # The defect this file was written against
 //!
@@ -41,7 +41,14 @@
 //! because a generated document's only writer is this engine, and one no check
 //! reads, because the census excuses a marked file from every document rule.
 //!
-//! # The three fixture taxonomies
+//! A second refusal reads the kind's `sections.require` against the body the
+//! emitter composed, and it is a separate function for a separate reason: the
+//! headings do not exist until the body does. No emitter of this engine reads a
+//! section contract, so a generated body answers one by accident or not at all,
+//! and the repair is the kind rather than the declaration
+//! ([#409](https://github.com/headwater-ai/headwater/issues/409)).
+//!
+//! # The four fixture taxonomies
 //!
 //! `fixtures/unsuppliable.taxonomy.yml` is `generate.taxonomy.yml` with one
 //! difference: the `guide` kind requires `title`, the facet in the `name` role.
@@ -302,10 +309,17 @@ fn a_kind_that_requires_no_name_facet_is_written_as_before() {
 
 /// This repository's own declarations, which is what item 2 of the bar measures.
 ///
-/// Two `identity` blocks, and the refusal must be silent over both after this
+/// Two `identity` blocks, and both refusals must be silent over both after this
 /// change merges. The numerator and the denominator are both printed, because a
 /// property over an empty set reports as a pass and a refactor that stopped
 /// reading the declarations would empty this one.
+///
+/// The filter reads both messages. Ten of the eighteen kinds in this
+/// repository's lock declare `sections.require`, and neither kind this
+/// repository generates is one of them, so the section half is at zero here for
+/// a reason the taxonomy states rather than by luck. A kind that gained a
+/// section contract and a generated member on one branch would redden `main`
+/// for every branch cut after it, and this is what says so first.
 #[test]
 fn every_identity_this_repository_declares_supplies_what_this_refusal_reads() {
     let root = repository_root();
@@ -339,17 +353,20 @@ fn every_identity_this_repository_declares_supplies_what_this_refusal_reads() {
         &Runs::default(),
         headwater_verbs::VERBS,
     );
-    let refused: Vec<&str> = plan
+    let refused: Vec<(&str, &str)> = plan
         .unwritten
         .iter()
-        .filter(|unwritten| unwritten.reason.contains("requires the facet"))
-        .map(|unwritten| unwritten.at.as_str())
+        .filter(|unwritten| {
+            unwritten.reason.contains("requires the facet")
+                || unwritten.reason.contains("requires the section")
+        })
+        .map(|unwritten| (unwritten.at.as_str(), unwritten.reason.as_str()))
         .collect();
     assert!(
         refused.is_empty(),
-        "{} of {declared} identity declarations of this repository cannot supply a facet their \
-         kind requires: {refused:?}. This branch must take that count to zero, or it reddens \
-         `main` for every branch cut after it.",
+        "{} of {declared} identity declarations of this repository cannot supply a facet or a \
+         section their kind requires: {refused:?}. This branch must take that count to zero, or \
+         it reddens `main` for every branch cut after it.",
         refused.len()
     );
 }

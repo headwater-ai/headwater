@@ -253,10 +253,21 @@ pub(crate) fn emit(
                 held: promoted,
             });
         }
+        let bytes = body(&front, path, &record, &results, &runs.selection);
+        if let Some(declared) = &declaration.identity {
+            if let Err(reason) = crate::identity::unheld(surface, &declared.kind, &bytes) {
+                plan.unwritten.push(Unwritten {
+                    at: output,
+                    kind: Kind::ProbeResult,
+                    reason,
+                });
+                continue;
+            }
+        }
         plan.outputs.push(Output {
             path: output,
             kind: Kind::ProbeResult,
-            bytes: body(&front, path, &record, &results, &runs.selection),
+            bytes,
         });
     }
 }
