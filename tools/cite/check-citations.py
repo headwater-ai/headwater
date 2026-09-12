@@ -16,7 +16,8 @@ still true, and so does a plain typo in the identifier.
 This is the checker. It drives the shipped binary rather than reading the corpus
 itself, so it has no second opinion about what a document is: `headwater explain
 <id> --json` answers whether an identifier resolves and what warrant stands
-behind it.
+behind it, and the `governing_docs_for_path` tool of `headwater mcp` answers
+which documents govern the file the comment sits in.
 
 It lives here rather than as a `headwater` subcommand because it checks code and
 every verb of that binary checks documents, and because it is meant to be lifted
@@ -24,18 +25,34 @@ into a repository of its own, where an adopter runs it over their own tree
 against their own corpus. Nothing here reads anything of this repository except
 through the binary and the paths on the command line.
 
-# TWO FINDINGS, AND ONLY ONE OF THEM STOPS A BUILD
+# THREE FINDINGS, AND ONLY TWO OF THEM STOP A BUILD
 
 `citation.identifier.unresolved` — the identifier names no document. A typo and
 an invention both land here, and the finding says which of the two the corpus
 can tell apart: an identifier that nothing carries at all, or one that a
 document carries while the census leaves that document untyped.
 
+`citation.governance.stale` — the identifier resolves, and the file the comment
+sits in is not in that document's governing set. This is the class the issue was
+filed about, and it is the only one that catches a citation that used to be
+true.
+
 `citation.warrant.asserted` — the cited document's warrant is `asserted` rather
 than `accepted`, so nobody has accepted what the code says it followed. It is
 advisory and it never moves the exit status, for the reason spec 5 gives for
 impact detection being advisory: a checker whose advisory class fails a build is
 a checker an adopter turns off.
+
+# THE LIMIT OF THE STALE CLASS, WHICH THIS TOOL PRINTS RATHER THAN HIDES
+
+`governing_docs_for_path` matches the path against what a `governs` edge
+reached, by equality. A document that governs a directory therefore answers for
+no file inside it, which is HW-OBL-0104, open and waiting on a ruling. So in a
+corpus whose author declared one edge onto a directory rather than one edge per
+file, every citation in a file under that directory is a stale finding and every
+one of them is wrong. The text report says so under the findings, and the SARIF
+rule carries the same sentence, because a user who meets a wall of stale
+findings needs to know which of the two things is broken.
 
 # WHAT IT NEEDS
 
@@ -74,6 +91,15 @@ CITATION = re.compile(
 # says so.
 MARKERS = ("#", "//", "--")
 
+# The one sentence a user needs beside a stale finding, because the finding is
+# wrong in a corpus that governs by directory. HW-OBL-0104 is the record.
+OBL_0104 = (
+    "A governing set is matched by path equality, so a document that governs a "
+    "directory answers for no file inside it (HW-OBL-0104, open). In a corpus "
+    "that declares one edge onto a directory rather than one edge per file, "
+    "every stale finding under that directory is a false positive."
+)
+
 RULES = {
     "citation.identifier.unresolved": {
         "level": "error",
@@ -84,6 +110,12 @@ RULES = {
             "has gone. `headwater explain <id>` is the same read this check "
             "made."
         ),
+    },
+    "citation.governance.stale": {
+        "level": "error",
+        "blocking": True,
+        "short": "the cited document does not govern the file that cites it",
+        "help": OBL_0104,
     },
     "citation.warrant.asserted": {
         "level": "note",
@@ -299,6 +331,27 @@ class Mcp:
             self.process.kill()
 
 
+# `<path> (<name>) — <summary> [asserted: …]`, of which this reads the path
+# alone. The renderer is `Pointer::render` in `engine/crates/query/src/lib.rs`
+# and every optional part of it opens with a space.
+POINTER = re.compile(r"^(.+?)(?: \(| — | \[asserted:|$)")
+
+
+def governing(mcp, path):
+    """The documents that govern one path, as corpus-relative paths."""
+    text = mcp.call("governing_docs_for_path", {"path": path})
+    if text.startswith("no document governs "):
+        return []
+    out = []
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        match = POINTER.match(line)
+        if match:
+            out.append(match.group(1))
+    return out
+
+
 def explain(engine, root, identifier):
     """What the corpus says about one identifier: the document, or the refusal."""
     result = subprocess.run(
@@ -386,6 +439,34 @@ def check(paths, root, engine):
             document = answer["document"]
             cited_path = document.get("path")
 
+            if citation["path"] not in governs:
+                governs[citation["path"]] = governing(mcp, citation["path"])
+            set_of = governs[citation["path"]]
+            if cited_path not in set_of:
+                if set_of:
+                    instead = ", ".join(f"`{one}`" for one in set_of)
+                    message = (
+                        f"`{identifier}` resolves to `{cited_path}`, which does "
+                        f"not govern this file. {instead} does."
+                    )
+                else:
+                    message = (
+                        f"`{identifier}` resolves to `{cited_path}`, and no "
+                        f"document governs this file at all."
+                    )
+                findings.append(
+                    Finding(
+                        "citation.governance.stale",
+                        citation["path"],
+                        citation["line"],
+                        citation["column"],
+                        citation["text"],
+                        message,
+                        "cite the document that governs this file, or declare "
+                        "the governance edge the citation assumes",
+                    )
+                )
+
             if document.get("warrant") == "asserted":
                 findings.append(
                     Finding(
@@ -441,9 +522,13 @@ def text_report(citations, findings, files, root, out):
     print(
         f"  {len(citations)} citations, "
         f"{counted['citation.identifier.unresolved']} unresolved, "
+        f"{counted['citation.governance.stale']} stale, "
         f"{counted['citation.warrant.asserted']} asserted",
         file=out,
     )
+    if counted["citation.governance.stale"]:
+        print("", file=out)
+        print(f"  {OBL_0104}", file=out)
     if counted["citation.warrant.asserted"]:
         print(
             "  An asserted citation is advisory and did not move the exit "
