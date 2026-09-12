@@ -746,7 +746,10 @@ fn a_record_level_bag_named_with_none_of_its_members_is_adrift() {
     assert!(audited.accounts());
     assert_eq!(audited.entries, 1);
     assert_eq!(audited.unaudited, 0);
-    assert_eq!(audited.held, 0, "the bag above the member is not the member");
+    assert_eq!(
+        audited.held, 0,
+        "the bag above the member is not the member"
+    );
     assert!(
         audited.adrift[0].contains("properties.headwater"),
         "the fault names the path: {audited:?}"
@@ -798,8 +801,11 @@ fn an_emitter_that_stops_grading_an_obligation_is_reported_adrift() {
         "the fixture run has to grade an obligation or this measures nothing"
     );
 
-    let honest =
-        headwater_adapter::sarif::render_with(&ran.run, &at, headwater_adapter::sarif::obligation_severity);
+    let honest = headwater_adapter::sarif::render_with(
+        &ran.run,
+        &at,
+        headwater_adapter::sarif::obligation_severity,
+    );
     let audited = headwater_adapter::census(&ran.run, Format::Sarif, &honest);
     assert!(
         audited.adrift.is_empty(),

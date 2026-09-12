@@ -495,12 +495,7 @@ fn bare(digest: &str) -> String {
         .unwrap_or_else(|| digest.to_string())
 }
 
-fn result(
-    entry: &Reported<'_>,
-    rules: &[&'static str],
-    run: &Run,
-    grading: Grading,
-) -> Json {
+fn result(entry: &Reported<'_>, rules: &[&'static str], run: &Run, grading: Grading) -> Json {
     let finding = entry.finding;
     let mut members: Vec<(&'static str, Json)> = vec![("ruleId", Json::string(finding.rule))];
     if let Some(at) = rules.iter().position(|rule| *rule == finding.rule) {
