@@ -58,6 +58,13 @@
 //! and it is stated in one function so that an adopter reading a wrong verdict
 //! finds one place to look.
 //!
+//! One place in this engine, and a second across a language boundary. The site
+//! derives its own anchors with `pymdownx.slugs.slugify(case='lower')`, which
+//! `mkdocs.yml` names and `.github/workflows/ci.yml` pins, and neither
+//! implementation can call the other. `mod renderer_slug` at the foot of this
+//! file is what now holds the two to one answer, over every heading the site
+//! renders, and it fails naming the document, the heading and both slugs.
+//!
 //! # The one instance says what it read
 //!
 //! A run whose scope admitted no links, and a run that reached no document
@@ -377,7 +384,7 @@ mod comment_links {
             .expect("the engine root")
     }
 
-    fn repository_root() -> PathBuf {
+    pub(super) fn repository_root() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../..")
             .canonicalize()
@@ -792,6 +799,458 @@ mod comment_links {
                  docs/spec/02-taxonomy-model.md#the-heading-that-is-not",
             ]
         );
+    }
+}
+
+/// This engine's slug rule held against the renderer's, over every heading the
+/// site serves.
+///
+/// # Two implementations of one rule, in two languages
+///
+/// [`slug`] above is this engine's. The site's is
+/// `pymdownx.slugs.slugify(case='lower')`, which `mkdocs.yml` names and
+/// `.github/workflows/ci.yml` pins at `pymdown-extensions==10.11.2`. Neither
+/// can call the other — this engine cannot reach Python while it checks, and
+/// MkDocs cannot reach Rust while it builds — so two implementations is the
+/// situation rather than the defect. The defect was that nothing compared
+/// them, which is [#545](https://github.com/headwater-ai/headwater/issues/545).
+///
+/// What the absence cost is measured rather than argued. A release of
+/// `pymdown-extensions` that moved that function would move every anchor the
+/// site serves with no commit in this repository, and the first report would
+/// arrive as *N dead links across the corpus*. That is the shape #431 took,
+/// and it cost three weeks and two agents to reduce to one sentence about em
+/// dashes. This says instead: these two rules disagree, on this heading of
+/// this document, and here are the two slugs.
+///
+/// # What this compares, and what it does not
+///
+/// [`slug`], which is the whole of the derivation a renderer performs on one
+/// heading. Not the repeat suffix [`anchors`] adds, which is a second rule
+/// settled against GitHub's own renderer, where this corpus is read, rather
+/// than against a renderer it is not. Not the `id=` attribute of the built
+/// site either: `tools/site/check-site-fragments.py` reads those and states in
+/// its own header that it asserts nothing about how an anchor is derived.
+///
+/// # The population is derived and never carried
+///
+/// `mkdocs.yml` declares `docs_dir` and `exclude_docs`, and this reads both
+/// rather than repeating either. A literal file list would go stale on the
+/// next document, and a literal heading count on the next heading. The
+/// exclusions are not cosmetic: `docs/taxonomies/` carries third-party source
+/// fixtures whose `<a name="...">` headings disagree by construction, and the
+/// site never renders one of them.
+///
+/// # Skipping, and what turns a skip into a failure
+///
+/// The comparison reaches `python3` and `pymdownx`. Absent either, it skips
+/// with a printed reason, on the terms `crates/hash/tests/oracle.rs` and the
+/// two stock-validator differentials already take. Set `HEADWATER_SLUG_ORACLE`
+/// and the skip becomes a failure. Continuous integration sets it, so this
+/// comparison cannot go quiet by losing a dependency.
+#[cfg(test)]
+mod renderer_slug {
+    use super::comment_links::repository_root;
+    use super::slug;
+    use std::io::Write;
+    use std::path::{Path, PathBuf};
+    use std::process::{Command, Stdio};
+
+    /// The Python that answers, one slugger per name.
+    ///
+    /// `pymdownx` is the site's own. `default` is Python-Markdown's, which
+    /// this corpus is **not** rendered with, and it is here so that the
+    /// comparison can be watched refusing something: spec 12 refuses a check
+    /// that ships with no failing fixture, and a gate that has refused nothing
+    /// is a gate nobody has seen work. `pymdown-extensions` depends on
+    /// `Markdown`, so the second slugger needs no second pin.
+    ///
+    /// Headings travel separated by a NUL in both directions. No heading can
+    /// hold one, so nothing has to be escaped and nothing can be mis-split.
+    const SLUGGERS: &str = r#"
+import sys
+which = sys.argv[1]
+if which == "pymdownx":
+    from pymdownx.slugs import slugify
+    fn = slugify(case="lower")
+elif which == "default":
+    from markdown.extensions.toc import slugify as fn
+else:
+    raise SystemExit("no slugger is named " + which)
+raw = sys.stdin.buffer.read().decode("utf-8")
+texts = raw.split("\0") if raw else []
+sys.stdout.buffer.write("\0".join(fn(text, "-") for text in texts).encode("utf-8"))
+"#;
+
+    /// Every heading the site renders, and what the walk that found them read.
+    struct Population {
+        /// `(path relative to the repository root, heading text)`, in path
+        /// order and then in document order.
+        headings: Vec<(String, String)>,
+        documents: usize,
+        excluded: usize,
+    }
+
+    /// A heading the two rules do not agree on.
+    struct Disagreement {
+        document: String,
+        heading: String,
+        ours: String,
+        theirs: String,
+    }
+
+    impl Disagreement {
+        /// The four facts a reader needs to act, and no fifth.
+        fn report(&self) -> String {
+            format!(
+                "{}\n    heading   `{}`\n    engine    {}\n    renderer  {}",
+                self.document, self.heading, self.ours, self.theirs
+            )
+        }
+    }
+
+    /// `docs_dir` and the `exclude_docs` patterns, as `mkdocs.yml` declares
+    /// them.
+    ///
+    /// Read by hand rather than loaded as YAML because `mkdocs.yml` carries
+    /// Python object tags that no loader in this workspace accepts. Both keys
+    /// must be found: a rename that left this reading nothing would compare an
+    /// empty corpus and report a pass.
+    fn site_declaration(root: &Path) -> (PathBuf, Vec<String>) {
+        let source = std::fs::read_to_string(root.join("mkdocs.yml"))
+            .expect("`mkdocs.yml`, which declares what the site renders");
+        let mut docs_dir: Option<String> = None;
+        let mut exclude: Vec<String> = Vec::new();
+        let mut in_block = false;
+        for line in source.lines() {
+            if let Some(rest) = line.strip_prefix("docs_dir:") {
+                docs_dir = Some(rest.trim().to_string());
+            }
+            if in_block {
+                if line.starts_with(' ') || line.starts_with('\t') {
+                    let pattern = line.trim();
+                    if !pattern.is_empty() && !pattern.starts_with('#') {
+                        exclude.push(pattern.to_string());
+                    }
+                    continue;
+                }
+                in_block = false;
+            }
+            if line.starts_with("exclude_docs:") {
+                in_block = true;
+            }
+        }
+        let docs_dir = docs_dir.expect(
+            "`mkdocs.yml` declares no `docs_dir`, so what the site renders is not stated \
+             where this reads it",
+        );
+        assert!(
+            !exclude.is_empty(),
+            "`mkdocs.yml` declares no `exclude_docs` pattern this reads, so this would \
+             compare files the site never serves"
+        );
+        (root.join(docs_dir), exclude)
+    }
+
+    /// Whether `exclude_docs` names a path, which is given relative to
+    /// `docs_dir` with `/` separators.
+    ///
+    /// A pattern that ends in `/` names a directory and excludes everything
+    /// under a directory of that name at any depth, which is the gitignore
+    /// shape MkDocs matches these with. Anything else names a file.
+    fn excluded(relative: &str, patterns: &[String]) -> bool {
+        patterns.iter().any(|pattern| {
+            match pattern.strip_suffix('/') {
+                Some(directory) => relative
+                    .split('/')
+                    .rev()
+                    .skip(1)
+                    .any(|component| component == directory),
+                // The bare name matches at any depth and the whole path
+                // matches once, which is how `LICENSE` reaches
+                // `docs/LICENSE`.
+                None => {
+                    relative == pattern
+                        || relative.rsplit('/').next() == Some(pattern.as_str())
+                }
+            }
+        })
+    }
+
+    /// Every Markdown file under a directory, in path order.
+    fn markdown(dir: &Path, out: &mut Vec<PathBuf>) {
+        let mut entries: Vec<PathBuf> = std::fs::read_dir(dir)
+            .expect("the directory the site renders")
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .collect();
+        entries.sort();
+        for path in entries {
+            if path.is_dir() {
+                markdown(&path, out);
+            } else if path.extension().is_some_and(|it| it == "md") {
+                out.push(path);
+            }
+        }
+    }
+
+    /// The headings of the documents the site renders.
+    ///
+    /// The front matter is split off first, for the reason
+    /// `comment_links::anchors_of` states: a `---` fence read as body gives the
+    /// line above it a setext heading that no renderer produces.
+    fn population(root: &Path) -> Population {
+        let (docs_dir, patterns) = site_declaration(root);
+        let mut files = Vec::new();
+        markdown(&docs_dir, &mut files);
+
+        let mut headings = Vec::new();
+        let mut documents = 0usize;
+        let mut excluded = 0usize;
+        for file in files {
+            let relative = file
+                .strip_prefix(&docs_dir)
+                .expect("a file this walk found under `docs_dir`")
+                .to_string_lossy()
+                .replace('\\', "/");
+            if excluded(&relative, &patterns) {
+                excluded += 1;
+                continue;
+            }
+            documents += 1;
+            let reported = file
+                .strip_prefix(root)
+                .unwrap_or(&file)
+                .to_string_lossy()
+                .replace('\\', "/");
+            let source = std::fs::read_to_string(&file).expect("a document the site renders");
+            let body = match headwater_doc::split::split(&source) {
+                Ok(split) => headwater_doc::body::scan(&source, split.body, split.body_offset),
+                Err(_) => headwater_doc::body::scan(&source, &source, 0),
+            };
+            for heading in body.headings() {
+                headings.push((reported.clone(), heading.text()));
+            }
+        }
+        Population {
+            headings,
+            documents,
+            excluded,
+        }
+    }
+
+    /// What the named slugger makes of each heading, or why it could not be
+    /// asked.
+    fn renderer(which: &str, texts: &[String]) -> Result<Vec<String>, String> {
+        let mut child = Command::new("python3")
+            .arg("-c")
+            .arg(SLUGGERS)
+            .arg(which)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|error| format!("python3 did not run: {error}"))?;
+        let payload = texts.join("\0").into_bytes();
+        let mut stdin = child.stdin.take().expect("a piped standard input");
+        // Written from a second thread, and not inline. This corpus's headings
+        // are larger than a pipe buffer, so a writer that filled one while
+        // this thread waited on the reader would deadlock both halves.
+        let writing = std::thread::spawn(move || stdin.write_all(&payload));
+        let ran = child
+            .wait_with_output()
+            .map_err(|error| format!("python3 did not finish: {error}"))?;
+        let _ = writing.join();
+        if !ran.status.success() {
+            return Err(format!(
+                "python3 exited {}: {}",
+                ran.status,
+                String::from_utf8_lossy(&ran.stderr).trim()
+            ));
+        }
+        let text = String::from_utf8(ran.stdout)
+            .map_err(|error| format!("python3 wrote bytes this cannot read: {error}"))?;
+        let slugs: Vec<String> = if text.is_empty() {
+            Vec::new()
+        } else {
+            text.split('\0').map(str::to_string).collect()
+        };
+        if slugs.len() != texts.len() {
+            return Err(format!(
+                "{} headings were sent and {} slugs came back, so no heading here is \
+                 held against the slug that belongs to it",
+                texts.len(),
+                slugs.len()
+            ));
+        }
+        Ok(slugs)
+    }
+
+    /// Every heading the named slugger and [`slug`] answer differently.
+    fn disagreements(which: &str, population: &Population) -> Result<Vec<Disagreement>, String> {
+        let texts: Vec<String> = population
+            .headings
+            .iter()
+            .map(|(_, text)| text.clone())
+            .collect();
+        let theirs = renderer(which, &texts)?;
+        Ok(population
+            .headings
+            .iter()
+            .zip(theirs)
+            .filter_map(|((document, heading), their)| {
+                let ours = slug(heading);
+                (ours != their).then(|| Disagreement {
+                    document: document.clone(),
+                    heading: heading.clone(),
+                    ours,
+                    theirs: their,
+                })
+            })
+            .collect())
+    }
+
+    /// The population, and the denominators that say it is one.
+    ///
+    /// A run that compared nothing must not read as a run that found nothing,
+    /// which is the assertion `tools/site/site-fragments-fixtures.sh` makes of
+    /// the site checker in the same words. Each figure is held against zero
+    /// rather than against a literal, because a literal would be a measurement
+    /// of one day committed as a contract.
+    fn measured(root: &Path) -> Population {
+        let population = population(root);
+        assert!(
+            population.documents > 0,
+            "no document under `docs_dir` survived the `exclude_docs` patterns, so this \
+             compared nothing"
+        );
+        assert!(
+            !population.headings.is_empty(),
+            "{} documents carried no heading between them, so this compared nothing",
+            population.documents
+        );
+        assert!(
+            population.excluded > 0,
+            "`exclude_docs` excluded none of the {} files under `docs_dir`, so either the \
+             declaration in `mkdocs.yml` moved or this stopped reading it, and material \
+             the site never renders is being held to the site's rule",
+            population.documents
+        );
+        eprintln!(
+            "note: {} headings across {} rendered documents, {} files excluded by \
+             `exclude_docs`",
+            population.headings.len(),
+            population.documents,
+            population.excluded
+        );
+        population
+    }
+
+    /// Every heading the site renders takes the same slug under both rules.
+    #[test]
+    fn the_renderer_slugs_every_rendered_heading_as_this_engine_does() {
+        let required = std::env::var_os("HEADWATER_SLUG_ORACLE").is_some();
+        let population = measured(&repository_root());
+
+        let found = match disagreements("pymdownx", &population) {
+            Ok(found) => found,
+            Err(reason) => {
+                assert!(
+                    !required,
+                    "HEADWATER_SLUG_ORACLE is set and the site's slugger did not run, so \
+                     nothing holds this engine's heading anchors against the ones the site \
+                     serves: {reason}"
+                );
+                eprintln!(
+                    "note: the site's slugger did not run, so this slug rule is held only \
+                     against its own cases. Install `pymdown-extensions`, or set \
+                     HEADWATER_SLUG_ORACLE to make its absence a failure.\n{reason}"
+                );
+                return;
+            }
+        };
+
+        assert!(
+            found.is_empty(),
+            "the engine's slug rule and the site's disagree on {} of {} rendered \
+             headings:\n{}",
+            found.len(),
+            population.headings.len(),
+            found
+                .iter()
+                .map(Disagreement::report)
+                .collect::<Vec<_>>()
+                .join("\n")
+        );
+    }
+
+    /// The same comparison, pointed at a slugger this corpus is not rendered
+    /// with, names the document, the heading and both slugs.
+    ///
+    /// This is the failing fixture the comparison above ships with. It provokes
+    /// the one thing #545 exists to catch — a slugger that moved under a corpus
+    /// nobody edited — and it holds the report to the diagnosis rather than to
+    /// a count of dead links downstream of it.
+    #[test]
+    fn a_slugger_this_corpus_is_not_rendered_with_is_named_heading_by_heading() {
+        let required = std::env::var_os("HEADWATER_SLUG_ORACLE").is_some();
+        let population = measured(&repository_root());
+
+        let found = match disagreements("default", &population) {
+            Ok(found) => found,
+            Err(reason) => {
+                assert!(
+                    !required,
+                    "HEADWATER_SLUG_ORACLE is set and Python-Markdown's own slugger did \
+                     not run, so the comparison above has not been seen refusing \
+                     anything: {reason}"
+                );
+                eprintln!(
+                    "note: Python-Markdown's slugger did not run, so the comparison above \
+                     has not been seen refusing anything here. Install \
+                     `pymdown-extensions`, or set HEADWATER_SLUG_ORACLE to make its \
+                     absence a failure.\n{reason}"
+                );
+                return;
+            }
+        };
+
+        assert!(
+            !found.is_empty(),
+            "Python-Markdown's own slugger agreed with this engine on all {} rendered \
+             headings, which no corpus of this one's shape does. The comparison has \
+             stopped comparing, or it is reading a slugger it did not ask for",
+            population.headings.len()
+        );
+
+        let first = &found[0];
+        assert!(
+            first.document.ends_with(".md"),
+            "a disagreement names no document: {}",
+            first.report()
+        );
+        assert!(
+            !first.heading.is_empty(),
+            "a disagreement names no heading: {}",
+            first.report()
+        );
+        assert!(
+            !first.ours.is_empty() && first.ours != first.theirs,
+            "a disagreement carries no pair of slugs to compare: {}",
+            first.report()
+        );
+        let report = first.report();
+        for fact in [
+            first.document.as_str(),
+            first.heading.as_str(),
+            first.ours.as_str(),
+            first.theirs.as_str(),
+        ] {
+            assert!(
+                report.contains(fact),
+                "the report drops one of the four facts it exists to carry: {report}"
+            );
+        }
     }
 }
 
