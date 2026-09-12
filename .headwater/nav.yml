@@ -66,6 +66,7 @@ nav:
       - "The engine's version stays one number, and a build's exact commit is a separate, unwired fact": "decisions/0060-the-engine-s-version-stays-one-number-and-a-build-s-exact-commit-is-a-separate-unwired-fact.md"
       - "A refused recording is held by the reliance its state claims, and not by promotion": "decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md"
       - "Every required facet of a generated document is derived, and the emitter composes the summary": "decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md"
+      - "A kind narrows the value set of an enumerated facet, and nothing else can": "decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"

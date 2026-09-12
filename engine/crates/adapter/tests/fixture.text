@@ -588,7 +588,7 @@ read set
   barrier lifecycle.deletion.not_permitted
   windowed relation.participation.overdue
   version facet.required.missing 1
-  version facet.value.not_permitted 1
+  version facet.value.not_permitted 2
   version facet.value.blank 1
   version identifier.pattern.not_met 1
   version shelf.placement_is_primary 2

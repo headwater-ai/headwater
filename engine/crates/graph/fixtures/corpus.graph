@@ -81,6 +81,8 @@ anchors
     cited by HW-OBL-0170
   code_path `engine/crates/check/src/facet_blank.rs` via source-tree
     cited by HW-OBL-0171
+  code_path `engine/crates/check/src/facet_value.rs` via source-tree
+    cited by HW-DR-0066
   code_path `engine/crates/check/src/gate.rs` via source-tree
     cited by HW-IFACE-headwater-gate
   code_path `engine/crates/check/src/language.rs` via source-tree
@@ -253,6 +255,8 @@ anchors
     cited by HW-DR-0025
   code_path `engine/crates/resolve/src/rules.rs` via source-tree
     cited by HW-DR-0026
+  code_path `engine/crates/resolve/src/rules.rs` via source-tree
+    cited by HW-DR-0066
   code_path `engine/crates/scaffold/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-new
   code_path `engine/crates/scaffold/src/reading.rs` via source-tree

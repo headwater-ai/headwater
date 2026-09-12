@@ -178,7 +178,10 @@ fn the_message_names_the_narrowed_set_and_not_the_declared_one() {
     let run = run();
     let refusals = refusals(&run);
     let (_, message) = refusals[0];
-    assert!(message.contains("`cited`"), "the admitted value: {message}");
+    assert!(
+        message.contains("admits cited,"),
+        "the admitted value: {message}"
+    );
     for excluded in ["asserted", "observed"] {
         assert!(
             !message.contains(excluded),
@@ -227,7 +230,10 @@ fn a_child_inherits_the_intersection_of_every_narrowing_above_it() {
 fn a_kind_that_narrows_nothing_admits_the_whole_set_and_still_instantiates() {
     let run = run();
     let reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
-    assert!(!reported.contains(&"facet-values/opens/any.md"), "{reported:?}");
+    assert!(
+        !reported.contains(&"facet-values/opens/any.md"),
+        "{reported:?}"
+    );
 
     let targets: Vec<&str> = run
         .instances
