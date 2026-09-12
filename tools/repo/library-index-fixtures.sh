@@ -1073,28 +1073,51 @@ sentences_of() {
 # names this repository uses for it, or names the page or the shelf by path.
 cites_index_re='admitted-entry table|admission table|taxonomies/README\.md|docs/taxonomies/'
 
-# A sentence states a size when a cardinal or an ordinal, in digits or in
-# words, qualifies one of the four nouns this index is counted in. The optional
-# word between the two allows "five admitted entries" and "six bundle
+# A sentence states a size, for this judge, when one member of a named and
+# closed word list qualifies one of the four nouns this index is counted in.
+# The list is every string of digits, the cardinals `one` through `twelve`, the
+# ordinals `first` through `twelfth`, and four count words that carry no
+# numeral: `single`, `no other`, `the only` and `the sole`. The optional word
+# between the count and the noun allows "five admitted entries" and "six bundle
 # directories" without allowing a number and a noun that are unrelated.
 #
-# Four of the alternatives carry no numeral, and they are here because an
-# attack on the first repair of this defect found them. That repair replaced
-# "the one bundle that the admission table refuses" with "and it refuses no
-# other". Both sentences assert that exactly one bundle is refused, both go
-# false on the day a second one is, and only the first reddened. So `single`,
-# `no other`, `the only` and `the sole` count as counts, and the way past this
-# judge is to stop asserting a size rather than to spell one differently.
+# The four wordless counts are here because an attack on the first repair of
+# this defect found them. That repair replaced "the one bundle that the
+# admission table refuses" with "and it refuses no other". Both sentences
+# assert that exactly one bundle is refused, both go false on the day a second
+# one is, and only the first reddened. So the way past this judge is to stop
+# asserting a size rather than to spell one differently.
 #
 # "The other bundles" is deliberately not in the list. It asserts no size, and
 # it is the shape this judge exists to send an author toward.
 #
-# One form stays out of reach, and it is the very form that attack found: an
-# elided noun. "It refuses no other" has no noun for the pattern to bind to,
-# and resolving an ellipsis is not something a regular expression does. What
-# the widening buys is the spelled-out family — "no other bundle", "a single
-# bundle", "the only entry" — and a reader who meets this comment knows that
-# the elided form is a hole rather than a pass.
+# # WHAT THIS JUDGE DOES NOT HOLD, WHICH IS SAID HERE RATHER THAN INFERRED
+#
+# It is a floor over the word list above and not a reading of English. Every
+# sentence in this section was planted against the pattern and measured on
+# 2026-09-12, rather than reasoned about.
+#
+#   A count in words above twelve passes. "Thirteen entries" and "twenty rows"
+#   are silent, because the cardinal list closes at `twelve` and the ordinal
+#   list at `twelfth`. Digits carry no such bound, so "13 entries" is reported
+#   and "thirteen entries" is not.
+#
+#   Every other way English says how many passes. `lone`, `solitary`,
+#   `unique`, `both`, `a pair of`, `a dozen`, `the last`, `the final`, `the
+#   remaining` and "nothing but" were each planted, and each one was silent.
+#   The list is not extended to chase them, and the reason is this judge's own
+#   subject: a script that exists to catch prose claiming more than is true
+#   must not claim more than is true itself. Each word added buys one phrasing
+#   and moves the boundary nowhere.
+#
+#   An elided noun passes, which is the form the attack above actually used.
+#   "It refuses no other" gives the pattern no noun to bind to, and resolving
+#   an ellipsis is not something a regular expression does.
+#
+# So a green case 5b means that no document states a size in one of the named
+# forms. It does not mean that no document states a size. A reviewer reading a
+# document that cites this index is the wider check, and this judge holds the
+# family that has gone stale here twice.
 states_size_re='(^|[^a-z-])([Ss]ingle|[Nn]o other|[Tt]he only|[Tt]he sole|[Oo]ne|[Tt]wo|[Tt]hree|[Ff]our|[Ff]ive|[Ss]ix|[Ss]even|[Ee]ight|[Nn]ine|[Tt]en|[Ee]leven|[Tt]welve|[Ff]irst|[Ss]econd|[Tt]hird|[Ff]ourth|[Ff]ifth|[Ss]ixth|[Ss]eventh|[Ee]ighth|[Nn]inth|[Tt]enth|[Ee]leventh|[Tt]welfth|[0-9]+)[ -]([a-z][a-z-]*[ -])?(rows?|entry|entries|director(y|ies)|bundles?)([^a-z]|$)'
 
 # citing_of ROOT — one path per line, relative to ROOT: every `*.md` under
@@ -1201,6 +1224,11 @@ same "  the same size asserted as uniqueness" \
     'docs/evaluations/a.md states a size of this index: `the only entry`|' \
     "$(pop_arm docs/evaluations/a.md \
         'It is the only entry the admitted-entry table refuses.')"
+
+same "  the same size asserted as sole membership" \
+    'docs/evaluations/a.md states a size of this index: `the sole entry`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'It is the sole entry the admitted-entry table refuses.')"
 
 same "  a relative phrase, which asserts no size and is the way out" \
     "" \
