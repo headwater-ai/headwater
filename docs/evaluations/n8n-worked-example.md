@@ -67,7 +67,7 @@ The entry assumed that a design specification belongs to a numbered series. A mo
 
 The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full, with the assembly that reproduces it. The summary:
 
-**42 files under the corpus root, 4 typed, 38 excluded, 4 checked, 46 check instances, 13 findings, all 13 of them errors.** `headwater check --strict` exits 1. The 38 excluded files are the vendored taxonomy package.
+**4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 46 check instances, 13 findings, all 13 of them errors.** `headwater check --strict` exits 1. The first two counts read 42 and 38 until [HW-DR-0064](../decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md): the 38 were the vendored taxonomy package, which sat inside this corpus root and had to be excluded from it.
 
 Three findings per document, and the same three on each one.
 
@@ -109,7 +109,7 @@ That arm reported 0 findings and exited 0 until headwater/standard 4.3.0. A gree
 
 Three properties, and each one was measured rather than assumed.
 
-**The corpus root is `packages` and not `docs`.** That forces an exclusion, because a taxonomy package is found under `packages/` and n8n's prose is under `packages/` too. A corpus root that reaches the second reaches the first. The three earlier fixtures of this library never met this, because each of them roots its corpus at `docs`.
+**The corpus root is `packages` and not `docs`.** That forced an exclusion until [HW-DR-0064](../decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md), because a taxonomy package was found under `packages/` and n8n's prose is under `packages/` too. A corpus root that reached the second reached the first. The three earlier fixtures of this library never met it, because each of them roots its corpus at `docs`. **This corpus is the measurement that priced the old root**, and the move took the exclusion with it: the package now lands under `.headwater/packages/`, which no corpus root an adopter can name reaches.
 
 **The path pattern has to be `packages/**`, which fixes one segment out of 27,688 files.** The four documents share no directory. What they share is a filename, and the pattern language reads a path rather than a name. `packages/**/ARCHITECTURE.md` is legal and it claims **2 of the 4**, because the other two are named `architecture.md` and `ARCHITECTURE_CONNECTION_VS_SETTINGS.md`. That run reports 2 typed, 2 untyped, 22 check instances and 6 findings, and the two documents it misses report nothing at all.
 
@@ -395,7 +395,7 @@ The two runs and the sweep put 38 findings and facts into this document. This is
 | An artifact of this library's vocabulary | 33 | 87% |
 | Contestable, and this document adjudicates neither | 2 | 5% |
 
-**34 of the 38 were reported by one of the two `headwater check` runs, and 33 of those 34 are in the artifact bucket.** 13 came from the design-spec corpus, out of 46 check instances over 4 typed documents of 42 files under that root. 21 came from the standards-spec corpus, out of 97 check instances over 7 typed documents of 7 files. All 34 are errors. The 34th is the broken link. It sits in the genuine-defect bucket, and a rule started to report it at headwater/standard 4.3.0. The other 33 are about the distance between an admitted entry and n8n's shape: a `sequence` facet that a package has no number for, a `title` facet that upstream does not write, an identifier scheme that the entry never declares, and three headings that this tradition writes as labeled paragraphs. Not one is about n8n's prose, [for the reason recorded above](#not-one-finding-is-about-n8ns-writing).
+**34 of the 38 were reported by one of the two `headwater check` runs, and 33 of those 34 are in the artifact bucket.** 13 came from the design-spec corpus, out of 46 check instances over 4 typed documents, which are the whole of that root now that the vendored package is not under it. 21 came from the standards-spec corpus, out of 97 check instances over 7 typed documents of 7 files. All 34 are errors. The 34th is the broken link. It sits in the genuine-defect bucket, and a rule started to report it at headwater/standard 4.3.0. The other 33 are about the distance between an admitted entry and n8n's shape: a `sequence` facet that a package has no number for, a `title` facet that upstream does not write, an identifier scheme that the entry never declares, and three headings that this tradition writes as labeled paragraphs. Not one is about n8n's prose, [for the reason recorded above](#not-one-finding-is-about-n8ns-writing).
 
 The 143-finding run under this repository's own house regime stays out of the denominator on purpose. A house regime is not an admitted library entry, and holding somebody else's corpus to this repository's line breaks and contractions produces nothing that n8n would call a defect.
 

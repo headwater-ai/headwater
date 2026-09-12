@@ -67,7 +67,7 @@ The design-spec and standards-spec fixtures each add a Headwater front-matter bl
     ROOT=$(mktemp -d)
     cp -R docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents "$ROOT/.agents"
     cp -R docs/taxonomies/diataxis-site/fixtures/n8n/.headwater "$ROOT/.headwater"
-    cp -R packages "$ROOT/packages"
+    cp -R .headwater/packages "$ROOT/.headwater/packages"
     headwater taxonomy resolve --root "$ROOT"
     headwater check --root "$ROOT" --no-cache --now 2026-09-01
 

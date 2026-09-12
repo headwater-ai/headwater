@@ -45,9 +45,10 @@ The byte counts are of the upstream body, and the copies carry that many bytes p
 `headwater check` reads one corpus root, and this tree sits inside a directory that this repository excludes from its own corpus. Assemble a scratch root out of three committed things and run the engine over it:
 
     ROOT=$(mktemp -d)
-    cp -R packages "$ROOT/packages"
-    cp -R docs/taxonomies/design-spec/fixtures/n8n/corpus/packages/@n8n "$ROOT/packages/@n8n"
     cp -R docs/taxonomies/design-spec/fixtures/n8n/.headwater "$ROOT/.headwater"
+    cp -R .headwater/packages "$ROOT/.headwater/packages"
+    mkdir -p "$ROOT/packages"
+    cp -R docs/taxonomies/design-spec/fixtures/n8n/corpus/packages/@n8n "$ROOT/packages/@n8n"
     headwater taxonomy resolve --root "$ROOT"
     headwater check --root "$ROOT" --no-cache --now 2026-09-01
 
@@ -81,9 +82,9 @@ The third row is what this fixture commits. A one-kind heterogeneous shelf makes
 
 ## What a run reports
 
-`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **42 files under the corpus root, 4 typed, 38 excluded, 4 checked, 46 check instances, 13 findings, all 13 of them errors.** The census reads 4 `design_spec`. The graph reads 0 nodes, 0 declared edge halves, and 1 prose link that did not resolve. `headwater check --strict` exits 1.
+`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 46 check instances, 13 findings, all 13 of them errors.** The census reads 4 `design_spec`. The graph reads 0 nodes, 0 declared edge halves, and 1 prose link that did not resolve. `headwater check --strict` exits 1.
 
-The 38 excluded files are the vendored taxonomy package, and that count moves when the package does. It read 101 at `headwater/standard` 4.0.0 and 38 at 4.3.0, which is the package losing files rather than this corpus gaining any. The other counts move only when this corpus moves.
+**Nothing is excluded now, and the zero is this fixture's own finding closing.** The corpus root is `packages` and the vendored taxonomy package used to sit under `packages/` too, so this run had to be told that the package it resolves is not corpus content. The excluded count was the size of that package rather than anything about n8n: 101 files at `headwater/standard` 4.0.0, and 38 at 4.3.0. [HW-DR-0064](../../../../decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) moved the package root to `.headwater/packages/`, which no corpus root an adopter can name reaches, so the exclusion is gone and the files under the corpus root are the four this page is about. The other counts move only when this corpus moves.
 
 **This run reported 8 findings until headwater/standard 4.0.0 and 12 from it, and it reports 13 at 4.3.0. Each move is the fixture doing its job.** That release requires the facet `title` on `design_spec`, and none of these four upstream files declares one. Giving them titles would falsify the corpus, because the value of this fixture is that nobody here wrote a word of it, so the four errors stand and the number moved.
 
@@ -160,6 +161,6 @@ Per document:
 
 **The pin does not move and the upstream does.** Every count above is of the four blobs at `b0550cb`. Re-run the assembly at a later commit of `master` and every number is a different measurement.
 
-**The excluded count moves with the vendored package.** It is 38 today, it was 101 at 4.0.0, and it counts files of `packages/headwater-standard/`, which this corpus does not describe. The four typed rows are the corpus.
+**The excluded count used to move with the vendored package, and there is none to move.** It was 101 at 4.0.0 and 38 at 4.3.0, and every one of those files was the package rather than anything this corpus describes. The move of the package root took the whole count to 0, and the four typed rows are now the whole census.
 
 **Three of the four findings are about declarations rather than about documents.** `facet.required.missing` on `sequence` stops the day the entry stops requiring it or the day somebody writes a number, and neither is a change to n8n. The same rule on `title` stops on the same two conditions, and the second of them is the one this fixture refuses. `identifier.unusable` stops the day the entry mints a scheme. All three are recorded in [the evaluation](../../../../evaluations/n8n-worked-example.md) as findings against the library. The fourth, `link.path.unresolved`, is about the document and moves the day somebody fixes the link upstream.

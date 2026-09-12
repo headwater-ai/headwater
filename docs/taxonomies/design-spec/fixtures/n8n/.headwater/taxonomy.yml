@@ -4,7 +4,7 @@
 # from here: `headwater check` reads one corpus root, and this tree sits inside
 # a directory that this repository excludes from its own corpus. `README.md`
 # beside this directory states the three commands that assemble a scratch root
-# out of this file, `overlay.yml`, `packages/headwater-standard/` and
+# out of this file, `overlay.yml`, `.headwater/packages/headwater-standard/` and
 # `corpus/packages/@n8n/`.
 #
 # `corpus.root` is `packages` and not `docs`, because n8n keeps its governed
@@ -13,20 +13,18 @@
 
 taxonomy:
   package: headwater/standard
-  version: 4.3.0
+  version: 4.3.1
   bundles: [design-spec, evidence-and-obligation]
   overlay: .headwater/overlay.yml
 
-# The exclusion is forced, and it is a finding rather than housekeeping. A
-# taxonomy package is found under `packages/`, and n8n's governed prose is
-# under `packages/` too. A corpus root that reaches the second reaches the
-# first, so the run has to be told that the package it resolves is not corpus
-# content. The design-spec, standards-spec and brd-prd fixtures never met this,
-# because each of them roots its corpus at `docs`.
+# No exclusion, and the reason it is gone is the finding. This fixture was
+# forced into `exclude: packages/headwater-standard/**` because a taxonomy
+# package was found under `packages/` and n8n's governed prose is under
+# `packages/` too: a corpus root that reached the second reached the first, so
+# the run had to be told that the package it resolves is not corpus content.
+# [HW-DR-0064](../../../../../decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)
+# moved the package root under `.headwater/`, which is outside every corpus
+# root an adopter can name, and the collision went with it. This is the one
+# corpus in this repository that measured the cost of the old root.
 corpus:
   root: packages
-  exclude:
-    - path: packages/headwater-standard/**
-      reason: >-
-        package content. The taxonomy package this run resolves lives under
-        `packages/`, which is also where n8n's governed prose lives.
