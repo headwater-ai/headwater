@@ -1768,7 +1768,7 @@
           "status": "current",
           "status_since": "2026-09-11",
           "summary": "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars.",
-          "last_verified": "2026-09-11",
+          "last_verified": "2026-09-12",
           "title": "Every required facet of a generated document is derived, and the emitter composes the summary",
           "provenance": {
             "warrant": "asserted",
@@ -2571,7 +2571,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How to write the projections declared by the taxonomy and detect stale generated files.",
-          "last_verified": "2026-09-07",
+          "last_verified": "2026-09-12",
           "title": "headwater generate",
           "relations": {
             "governs": [
