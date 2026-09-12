@@ -40,8 +40,9 @@ fn repository_root() -> PathBuf {
 /// trailing backslash, so the parse takes everything between the opening quote
 /// and the closing one and then splits on whitespace.
 fn published_order() -> Vec<String> {
-    let text = std::fs::read_to_string(repository_root().join(".github/workflows/publish-crates.yml"))
-        .expect("the publish workflow is on disk");
+    let text =
+        std::fs::read_to_string(repository_root().join(".github/workflows/publish-crates.yml"))
+            .expect("the publish workflow is on disk");
     let start = text
         .find("order=\"")
         .expect("publish-crates.yml assigns the publish order to `order`");
@@ -64,7 +65,9 @@ fn published_order() -> Vec<String> {
 fn workspace_members() -> Vec<(String, String)> {
     let root = repository_root().join("engine");
     let text = std::fs::read_to_string(root.join("Cargo.toml")).expect("the workspace manifest");
-    let start = text.find("members = [").expect("the workspace declares members");
+    let start = text
+        .find("members = [")
+        .expect("the workspace declares members");
     let rest = &text[start..];
     let end = rest.find(']').expect("the members list closes");
     rest[..end]
@@ -101,8 +104,14 @@ fn the_publish_order_names_exactly_the_members_of_the_workspace() {
         .map(|(name, _)| name)
         .collect();
 
-    let missing: Vec<&String> = members.iter().filter(|name| !order.contains(name)).collect();
-    let extra: Vec<&String> = order.iter().filter(|name| !members.contains(name)).collect();
+    let missing: Vec<&String> = members
+        .iter()
+        .filter(|name| !order.contains(name))
+        .collect();
+    let extra: Vec<&String> = order
+        .iter()
+        .filter(|name| !members.contains(name))
+        .collect();
 
     assert!(
         missing.is_empty() && extra.is_empty(),
