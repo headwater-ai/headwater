@@ -5740,50 +5740,116 @@ fn names_the_old_root(message: &str) -> bool {
 /// name, while the package the adopter installed sits right there unread: a
 /// check that cannot run, reading exactly like a check that passes.
 ///
-/// The second half is the half that can fail quietly. A refusal that named the
-/// old root on every tree would pass the first assertion while saying nothing
-/// about this tree at all — [#211](https://github.com/headwater-ai/headwater/issues/211)'s
-/// defect, where a fixture passed by reporting the ambient outcome.
+/// **[`package::find`] can fail to find a package two ways, and this holds
+/// both of them positively and negatively.** It fails at `read_dir` when the
+/// new root is not there at all, which is the tree of an adopter who has not
+/// vendored since the move. It falls through to the zero-match arm when the
+/// new root *is* there and nothing under it declares the name, which is the
+/// tree of an adopter who has vendored something since — and that is the arm a
+/// real adopter reaches, because `vendor` creates the new root on its way in.
+/// One arrangement of the four would have left half the behavior held by
+/// nothing.
+///
+/// The negative arrangements are the half that can fail quietly. A refusal
+/// that named the old root on every tree would pass the positive assertions
+/// while saying nothing about the tree it is printed for —
+/// [#211](https://github.com/headwater-ai/headwater/issues/211)'s defect,
+/// where a fixture passed by reporting the ambient outcome.
 #[test]
 fn a_directory_at_the_old_package_root_is_named_in_the_refusal() {
     let scratch = Scratch::new("stale-old-root");
-
-    // A complete package, installed where a `vendor` before #792 put it.
-    scratch.write(
-        &format!("stale/{OLD_ROOT}/acme-fixture/package.yml"),
-        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
-    );
-    scratch.write(
-        &format!("stale/{OLD_ROOT}/acme-fixture/taxonomy.yml"),
-        TAXONOMY,
-    );
-    let stale = scratch.path().join("stale");
     let out = scratch.path().join("artifact");
 
-    let refused = package::publish(&stale, "acme/fixture", &out)
-        .expect_err("the old root is not read, so nothing under this tree declares acme/fixture");
-    let message = headwater_resolve::render_errors(&refused);
+    /// A package the walk can read, planted under `at`.
+    fn plant(scratch: &Scratch, at: &str, directory: &str, name: &str) {
+        scratch.write(
+            &format!("{at}/{directory}/package.yml"),
+            &format!("package: {name}\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n"),
+        );
+        scratch.write(
+            &format!("{at}/{directory}/taxonomy.yml"),
+            &TAXONOMY.replace("taxonomy: acme/fixture", &format!("taxonomy: {name}")),
+        );
+    }
 
+    let refusal_over = |tree: &str| -> String {
+        let root = scratch.path().join(tree);
+        let refused = package::publish(&root, "acme/fixture", &out)
+            .expect_err("no root this test builds resolves `acme/fixture`");
+        headwater_resolve::render_errors(&refused)
+    };
+
+    // 1. The old root carries the package and the new root is not there. This
+    //    is the `read_dir` arm, and it is the tree of an adopter who has not
+    //    run `vendor` since the move.
+    plant(
+        &scratch,
+        &format!("unvendored/{OLD_ROOT}"),
+        "acme-fixture",
+        "acme/fixture",
+    );
+    let unvendored = refusal_over("unvendored");
     assert!(
-        names_the_old_root(&message),
-        "a package sits at the old root and the refusal never names it, so the adopter is told \
-         their taxonomy does not exist:\n{message}"
+        names_the_old_root(&unvendored),
+        "a package sits at the old root, the new root is absent, and the refusal never names \
+         the old one, so the adopter is told their taxonomy does not exist:\n{unvendored}"
     );
     assert!(
-        message.contains(package::PACKAGES),
-        "the refusal names the old root and not the root to move it to:\n{message}"
+        unvendored.contains(package::PACKAGES),
+        "the refusal names the old root and not the root to move it to:\n{unvendored}"
     );
 
-    // The same request against a tree that carries no old root at all.
-    let clean = scratch.path().join("clean");
-    std::fs::create_dir_all(clean.join(package::PACKAGES)).expect("the new root is made");
-    let refused = package::publish(&clean, "acme/fixture", &out)
-        .expect_err("nothing under this tree declares acme/fixture either");
-    let ambient = headwater_resolve::render_errors(&refused);
-
+    // 2. The old root carries the package and the new root carries a different
+    //    one. This is the zero-match arm: the walk reads the new root, finds a
+    //    package, and finds that it declares another name. It is the tree of an
+    //    adopter who vendored something after the move and left the old
+    //    directory standing, which is the state `vendor` itself produces.
+    plant(
+        &scratch,
+        &format!("vendored/{OLD_ROOT}"),
+        "acme-fixture",
+        "acme/fixture",
+    );
+    plant(
+        &scratch,
+        &format!("vendored/{}", package::PACKAGES),
+        "other-taxonomy",
+        "other/taxonomy",
+    );
+    let vendored = refusal_over("vendored");
     assert!(
-        !names_the_old_root(&ambient),
-        "the old root is named on a tree that has no directory there, so the sentence is ambient \
-         and says nothing about the tree it is printed for:\n{ambient}"
+        names_the_old_root(&vendored),
+        "the new root is there and the old one still carries the package, and the refusal \
+         never names it. This is the tree `vendor` leaves behind, so it is the one an adopter \
+         actually meets:\n{vendored}"
+    );
+    assert!(
+        vendored.contains(package::PACKAGES),
+        "the refusal names the old root and not the root to move it to:\n{vendored}"
+    );
+
+    // 3. The new root is there and no old root is. The zero-match arm again,
+    //    and it must say nothing about a directory this tree does not have.
+    plant(
+        &scratch,
+        &format!("clean-vendored/{}", package::PACKAGES),
+        "other-taxonomy",
+        "other/taxonomy",
+    );
+    let clean_vendored = refusal_over("clean-vendored");
+    assert!(
+        !names_the_old_root(&clean_vendored),
+        "the old root is named on a tree that has no directory there, so the sentence is \
+         ambient and says nothing about the tree it is printed for:\n{clean_vendored}"
+    );
+
+    // 4. Neither root is there. The `read_dir` arm again, negatively, so that
+    //    arm is held from both sides as well.
+    let bare = scratch.path().join("bare");
+    std::fs::create_dir_all(bare.join("docs")).expect("the bare tree is made");
+    let bare = refusal_over("bare");
+    assert!(
+        !names_the_old_root(&bare),
+        "a tree with neither root is told about a directory at the old one:\n{bare}"
     );
 }
