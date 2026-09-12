@@ -91,6 +91,10 @@ plant stale.rs engine/crates/query/src/mcp.rs
 plant invented.py tools/cite/invented.py
 plant orphan.py tools/cite/orphan.py
 plant shapes.txt tools/cite/shapes.txt
+plant renamed.rs engine/crates/query/src/lib.rs
+plant untyped-carrier.md docs/doctrine/a-note-that-carries-an-identifier.md
+plant untyped-cite.py tools/cite/untyped-cite.py
+plant docstring.py tools/cite/docstring.py
 
 passed=0
 failed=0
@@ -165,7 +169,8 @@ echo "one citation at a time, each against the corpus that licensed it"
 status=$(run text .claude/hooks/write.sh)
 same "a true citation reports nothing" 0 "$status"
 holds "  and the report says so in words" "every citation resolves" "$scratch/out"
-holds "  and counts one citation" "1 citations, 0 unresolved, 0 stale, 0 asserted" "$scratch/out"
+holds "  and counts one citation" \
+    "1 citations, 0 unresolved, 0 misplaced, 0 stale, 0 asserted" "$scratch/out"
 
 # 2. An identifier nothing carries.
 status=$(run text tools/cite/invented.py)
@@ -206,6 +211,41 @@ holds "  under the same stale rule" "citation.governance.stale" "$scratch/out"
 holds "  and says the set is empty rather than wrong" \
     "no document governs this file at all" "$scratch/out"
 
+# 6. THE THIRD DECISIVE CASE, and the one the first version of this tool got
+#    wrong. The identifier resolves and the cited document governs this file,
+#    so the two classes above are both correctly silent. The path in the
+#    parentheses names a document that is not there. A document that is
+#    renamed keeps its identifier and loses its path, and a checker that reads
+#    only the identifier reports a clean run and says so out loud.
+status=$(run text engine/crates/query/src/lib.rs)
+same "a citation whose path is not where the identifier lives fails the run" 1 "$status"
+holds "  under the misplaced rule" "citation.path.mismatch" "$scratch/out"
+holds "  naming where the identifier does live" \
+    "\`HW-IFACE-headwater-explain\` lives at \`docs/interfaces/headwater-explain.md\`" \
+    "$scratch/out"
+holds "  and the path the citation wrote instead" \
+    "this citation names \`docs/decisions/9999-a-document-that-does-not-exist.md\`" \
+    "$scratch/out"
+absent "  and not as stale, because that document does govern this file" \
+    "citation.governance.stale" "$scratch/out"
+absent "  and not as unresolved, because the identifier is real" \
+    "citation.identifier.unresolved" "$scratch/out"
+
+# 7. The near miss, which is the read behind the repair this branch made to
+#    `docs/interfaces/headwater-explain.md`. An identifier a document carries
+#    while the census leaves that document untyped is a different state from an
+#    identifier nothing carries, and `headwater explain` cannot tell them
+#    apart: it refuses both through the path matcher. `resolve_identifier` can,
+#    and this is the case that holds the checker asking it. Replace the body of
+#    `carried()` with a constant and the last two lines here go red.
+status=$(run text tools/cite/untyped-cite.py)
+same "a citation of an untyped document fails the run" 1 "$status"
+holds "  under the unresolved rule" "citation.identifier.unresolved" "$scratch/out"
+holds "  and says the document exists and cannot be served" \
+    "is carried by a document the census leaves untyped" "$scratch/out"
+absent "  rather than sending a reader to look for a typo" \
+    "no document of this corpus carries" "$scratch/out"
+
 echo
 echo "the classes stay apart, and the whole tree agrees with its parts"
 
@@ -239,6 +279,43 @@ same "four of the eight shapes are citations" 4 \
     "$(field . 'd["runs"][0]["properties"]["headwater"]["citations"]')"
 same "  and the run fails, because nothing governs where they sit" 1 "$status"
 
+# A string that outlives its own line. The docstring of this fixture writes
+# the citation shape twice as prose about the shape, exactly as the checker's
+# own module docstring does. The first version of this tool reported a finding
+# against its own source at `check-citations.py:163` for that reason, and
+# invented the identifier `A-B` out of an example. One citation is real here
+# and it is the one outside the docstring.
+status=$(run sarif tools/cite/docstring.py)
+same "a shape inside a docstring is prose and not a citation" 1 \
+    "$(field . 'd["runs"][0]["properties"]["headwater"]["citations"]')"
+same "  and the one that counts is the one outside it" 16 \
+    "$(field . 'd["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["region"]["startLine"]')"
+same "  and the run still fails, because nothing governs where it sits" 1 "$status"
+
+echo
+echo "what this repository itself carries"
+
+# The population claim, held against the real document rather than asserted in
+# prose. `DEVELOPING.md` and the CI step both say why this suite runs over
+# fixtures instead of over this tree, and the reason is a measurement that can
+# go stale. So it is a case.
+#
+# `docs/spec/05-ai-integration.md` is copied into the scratch corpus unedited.
+# It carries one line of the shape, at line 290, and that line is spec 5
+# illustrating the convention with an identifier and a path from an imagined
+# corpus. The checker reports it as unresolved, which is right about what it
+# was asked and beside the point about what the line means. That is the whole
+# population of citation comments this repository carries outside this
+# directory, and #844 is the issue for making it a real one.
+status=$(run sarif docs/spec/05-ai-integration.md)
+same "spec 5 carries exactly one line of the shape" 1 \
+    "$(field . 'd["runs"][0]["properties"]["headwater"]["citations"]')"
+same "  at the line the page writes its worked example on" 290 \
+    "$(field . 'd["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["region"]["startLine"]')"
+same "  and it does not resolve, because its corpus is imagined" \
+    citation.identifier.unresolved "$(rules)"
+same "  so a run over this repository's own prose fails" 1 "$status"
+
 echo
 echo "the format a forge annotates a diff with"
 
@@ -249,14 +326,14 @@ status=$(run sarif .claude/hooks/lib.sh)
 same "an advisory-only sarif run still exits 0" 0 "$status"
 same "  the document states the version a forge reads" 2.1.0 \
     "$(field . 'd["version"]')"
-same "  all three rules are declared" 3 \
+same "  all four rules are declared" 4 \
     "$(field . 'len(d["runs"][0]["tool"]["driver"]["rules"])')"
 same "  the advisory rule carries sarif note rather than error" note \
     "$(field . 'd["runs"][0]["results"][0]["level"]')"
 same "  and says in its own properties that it blocks nothing" False \
     "$(field . 'd["runs"][0]["results"][0]["properties"]["headwater"]["blocking"]')"
 same "  and the rule a reader looks up carries the reason it is advisory" True \
-    "$(field . '"turns off" in d["runs"][0]["tool"]["driver"]["rules"][2]["help"]["text"]')"
+    "$(field . '"turns off" in d["runs"][0]["tool"]["driver"]["rules"][3]["help"]["text"]')"
 
 echo
 echo "what the checker refuses rather than guesses"

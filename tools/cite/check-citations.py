@@ -25,12 +25,17 @@ into a repository of its own, where an adopter runs it over their own tree
 against their own corpus. Nothing here reads anything of this repository except
 through the binary and the paths on the command line.
 
-# THREE FINDINGS, AND ONLY TWO OF THEM STOP A BUILD
+# FOUR FINDINGS, AND ONLY ONE OF THEM LETS A BUILD THROUGH
 
 `citation.identifier.unresolved` — the identifier names no document. A typo and
 an invention both land here, and the finding says which of the two the corpus
 can tell apart: an identifier that nothing carries at all, or one that a
 document carries while the census leaves that document untyped.
+
+`citation.path.mismatch` — the identifier resolves, and the path in the
+parentheses is not where it lives. A document that is renamed or moved keeps
+its identifier and loses its path, which is the commonest way a citation rots,
+and the identifier resolving is exactly what hides it.
 
 `citation.governance.stale` — the identifier resolves, and the file the comment
 sits in is not in that document's governing set. This is the class the issue was
@@ -91,6 +96,10 @@ CITATION = re.compile(
 # says so.
 MARKERS = ("#", "//", "--")
 
+# A quote that outlives its own line. Nothing else here carries state from one
+# line to the next, and this is the reason it has to.
+TRIPLES = ('"""', "'''")
+
 # The one sentence a user needs beside a stale finding, because the finding is
 # wrong in a corpus that governs by directory. HW-OBL-0104 is the record.
 OBL_0104 = (
@@ -109,6 +118,17 @@ RULES = {
             "Either the identifier is wrong, or the document that carried it "
             "has gone. `headwater explain <id>` is the same read this check "
             "made."
+        ),
+    },
+    "citation.path.mismatch": {
+        "level": "error",
+        "blocking": True,
+        "short": "the path in the citation is not where the identifier lives",
+        "help": (
+            "A document that was renamed or moved keeps its identifier and "
+            "loses its path, so the identifier still resolves and the "
+            "parentheses name a file that is gone. `headwater explain <id> "
+            "--json` prints the path this check compared against."
         ),
     },
     "citation.governance.stale": {
@@ -154,45 +174,74 @@ class Finding:
 # ---------------------------------------------------------------------------
 
 
-def comment_at(line):
-    """Where the line comment starts on this line, or None.
+def comments_in(text):
+    """Every line comment in one file, as (line number, body start, line).
 
     A citation inside a string literal is not a citation, so the marker has to
-    stand outside every quote. This tracks single and double quotes and a
-    backslash escape, which is enough to tell `x = "# per A-B (c)"` from
-    `x = 1  # per A-B (c)` and is not a parser for any one language. The
-    docstring of this module states that limit.
+    stand outside every quote. Two kinds of quote matter and they are not the
+    same problem.
+
+    A single-line quote is closed by the end of its line. A triple quote is
+    not, and that is the one that drew blood: the docstring of this module
+    writes an example of the shape, and a scanner that resets its quote state
+    at every newline read that example as a live citation and reported an
+    identifier it had invented for a comment about itself. The first version of
+    this file did exactly that. So the triple-quote state is carried across
+    lines and the single-quote state is not, which is how each one behaves.
+
+    This is still not a parser for any one language. A raw string, a heredoc
+    and a block comment all defeat it in one direction or the other. What it
+    holds is the cases a fixture provokes, and the module docstring states the
+    limit.
     """
-    quote = None
-    i = 0
-    while i < len(line):
-        ch = line[i]
-        if quote:
-            if ch == "\\":
-                i += 2
+    triple = None
+    for number, line in enumerate(text.splitlines(), start=1):
+        quote = None
+        i = 0
+        start = None
+        while i < len(line):
+            if triple:
+                if line.startswith(triple, i):
+                    i += 3
+                    triple = None
+                else:
+                    i += 1
                 continue
-            if ch == quote:
-                quote = None
+            ch = line[i]
+            if quote:
+                if ch == "\\":
+                    i += 2
+                elif ch == quote:
+                    quote = None
+                    i += 1
+                else:
+                    i += 1
+                continue
+            opened = next((t for t in TRIPLES if line.startswith(t, i)), None)
+            if opened:
+                closes = line.find(opened, i + 3)
+                if closes == -1:
+                    triple = opened
+                    break
+                i = closes + 3
+                continue
+            if ch in "'\"":
+                quote = ch
+                i += 1
+                continue
+            marker = next((m for m in MARKERS if line.startswith(m, i)), None)
+            if marker:
+                start = i + len(marker)
+                break
             i += 1
-            continue
-        if ch in "'\"":
-            quote = ch
-            i += 1
-            continue
-        for marker in MARKERS:
-            if line.startswith(marker, i):
-                return i + len(marker)
-        i += 1
-    return None
+        if start is not None:
+            yield number, start, line
 
 
 def citations_in(text, path):
     """Every citation in one file, as (line, column, identifier, cited path)."""
     found = []
-    for number, line in enumerate(text.splitlines(), start=1):
-        start = comment_at(line)
-        if start is None:
-            continue
+    for number, start, line in comments_in(text):
         for match in CITATION.finditer(line, start):
             found.append(
                 {
@@ -365,20 +414,33 @@ def explain(engine, root, identifier):
 
 
 def carried(mcp, identifier):
-    """Whether any document carries an identifier that `explain` refused.
+    """Whether a document this corpus leaves untyped carries the identifier.
 
     `headwater explain` refuses a missing identifier through the path matcher,
     so it answers "is outside every corpus root this repository declares" for
     an invented identifier and for a typo alike — the four states its contract
     names classify a path. `resolve_identifier` is the surface that separates
     an identifier nothing carries from one a document carries while the census
-    leaves that document untyped, which is the only near-miss this engine
+    leaves that document untyped, which is the only near miss this engine
     computes.
+
+    # THE TRAP, WHICH THIS FUNCTION FELL INTO ONCE
+
+    The two refusals share a prefix. `Resolved::Nothing` renders "no document
+    carries X" and `Resolved::NearMiss` renders "no document carries X, and one
+    carries Y". A test of `startswith("no document carries ")` therefore reads
+    every near miss as nothing, and the branch below becomes unreachable while
+    every case still passes — an absence read as satisfaction, which is the
+    shape that keeps finding this repository. The discriminator is the second
+    clause and nothing else.
+
+    The engine's sentence is not quoted into the finding, because `near_miss`
+    matches an identifier exactly and then reports it as the near one, so Y is
+    always X and the sentence names the same identifier twice. That is filed as
+    a defect of the engine rather than worked around here.
     """
     text = mcp.call("resolve_identifier", {"id": identifier})
-    if text.startswith("no document carries "):
-        return None
-    return text.strip()
+    return ", and one carries " in text
 
 
 # ---------------------------------------------------------------------------
@@ -410,11 +472,10 @@ def check(paths, root, engine):
             answer = known[identifier]
 
             if not answer["resolved"]:
-                near = carried(mcp, identifier)
-                if near:
+                if carried(mcp, identifier):
                     message = (
                         f"`{identifier}` is carried by a document the census "
-                        f"leaves untyped, so nothing can serve it: {near}"
+                        f"leaves untyped, so the graph cannot serve it"
                     )
                     remedy = (
                         "type the document that carries it, or cite one this "
@@ -438,6 +499,24 @@ def check(paths, root, engine):
 
             document = answer["document"]
             cited_path = document.get("path")
+
+            named = citation["cited"]
+            if named.startswith("./"):
+                named = named[2:]
+            if named != cited_path:
+                findings.append(
+                    Finding(
+                        "citation.path.mismatch",
+                        citation["path"],
+                        citation["line"],
+                        citation["column"],
+                        citation["text"],
+                        f"`{identifier}` lives at `{cited_path}`, and this "
+                        f"citation names `{named}`",
+                        "write the path the identifier resolves to, because "
+                        "the document moved or the path was never right",
+                    )
+                )
 
             if citation["path"] not in governs:
                 governs[citation["path"]] = governing(mcp, citation["path"])
@@ -522,6 +601,7 @@ def text_report(citations, findings, files, root, out):
     print(
         f"  {len(citations)} citations, "
         f"{counted['citation.identifier.unresolved']} unresolved, "
+        f"{counted['citation.path.mismatch']} misplaced, "
         f"{counted['citation.governance.stale']} stale, "
         f"{counted['citation.warrant.asserted']} asserted",
         file=out,

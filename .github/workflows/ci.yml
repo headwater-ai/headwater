@@ -954,10 +954,18 @@ jobs:
         # and holds that the two classes report under two rule identifiers and
         # that the advisory third one leaves the exit status at 0.
         #
-        # Nothing in this repository carries a citation comment, so this step
-        # runs the tool over its fixtures and never over this tree. It writes
-        # only under a temporary directory and it builds no engine: it drives
-        # the one the build step above already wrote.
+        # The step runs over the fixtures rather than over this tree, and
+        # the reason is a measurement this suite pins rather than a claim this
+        # comment makes. Outside `tools/cite/`, one line of this repository
+        # carries the shape: `docs/spec/05-ai-integration.md` line 290, where
+        # spec 5 illustrates the convention with an identifier and a path from
+        # an imagined corpus. A case reads that real document and holds the
+        # count and the line. What this repository carries nowhere is a
+        # citation written as a claim about what licensed a line of its own
+        # code, and #844 is the issue for that.
+        #
+        # It writes only under a temporary directory and it builds no engine:
+        # it drives the one the build step above already wrote.
         run: sh tools/cite/check-citations-fixtures.sh
       - name: The build still declares its license and still refuses to rewrite its lock
         # Two declarations that are green the day they land and green forever.
