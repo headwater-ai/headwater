@@ -1019,6 +1019,245 @@ same "  a comment naming the purpose declares nothing" \
     "$(procedure_judge "$scratch/pd/base.yml" "$scratch/pd/beta/.." \
         "$scratch/pd/index.md" | tr '\n' '|')"
 
+# ---------------------------------------------------------------------------
+# 5. A second document that restates the population of this index.
+#
+# `docs/evaluations/n8n-worked-example.md` told its reader that the
+# admitted-entry table "still lists five rows while `docs/taxonomies/` holds
+# six directories". Both numbers were true on the day they were written, the
+# library moved under them, and on 2026-09-12 the table carried six rows over
+# seven directories. Nothing reported the drift: every judge above opens
+# `docs/taxonomies/README.md` or the vendored copy of it, and no judge opens
+# any other document at all.
+#
+# This is case group 3's defect over a different pair. There, two copies of one
+# page drift while every gate stays green. Here, an authored page and a second
+# document that restates its population drift the same way, and the second
+# document is adopter-facing evidence for criterion 4 rather than an aside.
+#
+# The judge writes down no number, which is the rule the whole file keeps. It
+# refuses a SHAPE: a sentence that names this index and qualifies its rows, its
+# entries, its directories or its bundles with a cardinal or an ordinal. A
+# number that is right today is the thing that goes stale, and a relative
+# invariant does not. An ordinal counts as a count here for the reason the head
+# of this file gives: "the fifth entry" is a count wearing a different hat, and
+# it is the form the original defect wore inside the index.
+#
+# Two shelves are out of the population, each for a stated reason. The
+# `docs/taxonomies/` shelf is the index and the entries themselves, which every
+# judge above already reads. The `docs/reviews/` shelf holds point-in-time
+# records, which `CLAUDE.md` rules stay as written.
+#
+# One limit, measured rather than assumed. The citation and the count have to
+# meet in one sentence. A document that names the table in one sentence and
+# counts the library in the next is silent here, and that boundary has its own
+# arm below so that a later reader meets it as a decision rather than a
+# surprise.
+
+# sentences_of FILE — one sentence per line. Markdown source in this repository
+# is never hard-wrapped, so a paragraph arrives as a single line, and a
+# sentence boundary is a period, a space, and a character a sentence opens
+# with.
+sentences_of() {
+    awk '{
+        so_line = $0
+        while (match(so_line, /\. [A-Z`*(]/)) {
+            print substr(so_line, 1, RSTART)
+            so_line = substr(so_line, RSTART + 2)
+        }
+        print so_line
+    }' "$1"
+}
+
+# A sentence names this index when it names the table by either of the two
+# names this repository uses for it, or names the page or the shelf by path.
+cites_index_re='admitted-entry table|admission table|taxonomies/README\.md|docs/taxonomies/'
+
+# A sentence states a size, for this judge, when one member of a named and
+# closed word list qualifies one of the four nouns this index is counted in.
+# The list is every string of digits, the cardinals `one` through `twelve`, the
+# ordinals `first` through `twelfth`, and four count words that carry no
+# numeral: `single`, `no other`, `the only` and `the sole`. The optional word
+# between the count and the noun allows "five admitted entries" and "six bundle
+# directories" without allowing a number and a noun that are unrelated.
+#
+# The four wordless counts are here because an attack on the first repair of
+# this defect found them. That repair replaced "the one bundle that the
+# admission table refuses" with "and it refuses no other". Both sentences
+# assert that exactly one bundle is refused, both go false on the day a second
+# one is, and only the first reddened. So the way past this judge is to stop
+# asserting a size rather than to spell one differently.
+#
+# "The other bundles" is deliberately not in the list. It asserts no size, and
+# it is the shape this judge exists to send an author toward.
+#
+# # WHAT THIS JUDGE DOES NOT HOLD, WHICH IS SAID HERE RATHER THAN INFERRED
+#
+# It is a floor over the word list above and not a reading of English. Every
+# sentence in this section was planted against the pattern and measured on
+# 2026-09-12, rather than reasoned about.
+#
+#   A count in words above twelve passes. "Thirteen entries" and "twenty rows"
+#   are silent, because the cardinal list closes at `twelve` and the ordinal
+#   list at `twelfth`. Digits carry no such bound, so "13 entries" is reported
+#   and "thirteen entries" is not.
+#
+#   Every other way English says how many passes. `lone`, `solitary`,
+#   `unique`, `both`, `a pair of`, `a dozen`, `the last`, `the final`, `the
+#   remaining` and "nothing but" were each planted, and each one was silent.
+#   The list is not extended to chase them, and the reason is this judge's own
+#   subject: a script that exists to catch prose claiming more than is true
+#   must not claim more than is true itself. Each word added buys one phrasing
+#   and moves the boundary nowhere.
+#
+#   An elided noun passes, which is the form the attack above actually used.
+#   "It refuses no other" gives the pattern no noun to bind to, and resolving
+#   an ellipsis is not something a regular expression does.
+#
+#   A document that names this index in a form `citing_of` does not recognize
+#   is invisible here, whatever it goes on to state. The population filter
+#   reads two forms only, the phrase "admitted-entry table" and a link to
+#   `taxonomies/README.md` carrying an `#admission` fragment, and it is
+#   narrower on purpose than the four forms `cites_index_re` reads inside a
+#   sentence. So a document can name the shelf by path, state a size of it,
+#   and never reach the sentence test at all. That is measured rather than
+#   hypothetical. `docs/obligations/0166-…md` writes "neither does any of the
+#   six bundles under `docs/taxonomies/`", the shelf holds seven directories
+#   today, the sentence IS reported when it is fed to the pattern on its own,
+#   and case 5b is green because the file is outside the population. Widening
+#   the filter to every mention of the path pulls in the corpus and makes a
+#   different judge. What this one holds is the documents that engage with the
+#   admission section.
+#
+# So a green case 5b means that no document in the citing population states a
+# size in one of the named forms. It does not mean that no document states a
+# size. A reviewer reading a document that cites this index is the wider check,
+# and this judge holds the family that has gone stale here twice.
+states_size_re='(^|[^a-z-])([Ss]ingle|[Nn]o other|[Tt]he only|[Tt]he sole|[Oo]ne|[Tt]wo|[Tt]hree|[Ff]our|[Ff]ive|[Ss]ix|[Ss]even|[Ee]ight|[Nn]ine|[Tt]en|[Ee]leven|[Tt]welve|[Ff]irst|[Ss]econd|[Tt]hird|[Ff]ourth|[Ff]ifth|[Ss]ixth|[Ss]eventh|[Ee]ighth|[Nn]inth|[Tt]enth|[Ee]leventh|[Tt]welfth|[0-9]+)[ -]([a-z][a-z-]*[ -])?(rows?|entry|entries|director(y|ies)|bundles?)([^a-z]|$)'
+
+# citing_of ROOT — one path per line, relative to ROOT: every `*.md` under
+# `ROOT/docs`, outside the two excluded shelves, that engages with the
+# admission part of this index. The population is enumerated out of the tree
+# and no document is named here, so the next document to cite the index is
+# judged the same way without this file moving.
+citing_of() {
+    find "$1/docs" -type f -name '*.md' \
+        ! -path "$1/docs/taxonomies/*" \
+        ! -path "$1/docs/reviews/*" 2>/dev/null |
+        sort | while read -r co_f; do
+        grep -qE 'admitted-entry table|taxonomies/README\.md#admission' \
+            "$co_f" || continue
+        echo "${co_f#$1/}"
+    done
+}
+
+# restated_size FILE — one line per size the file states about this index.
+# Nothing when it states none.
+restated_size() {
+    sentences_of "$1" |
+        grep -E "$cites_index_re" |
+        grep -oE "$states_size_re" |
+        sed 's/^[^0-9A-Za-z]*//; s/[^0-9A-Za-z]*$//'
+}
+
+# population_judge ROOT — one line per size a document outside the library
+# states about the library.
+population_judge() {
+    citing_of "$1" | while read -r pj_f; do
+        restated_size "$1/$pj_f" | while read -r pj_size; do
+            echo "$pj_f states a size of this index: \`$pj_size\`"
+        done
+    done
+}
+
+# pop_arm PATH TEXT — a scratch corpus of one document at PATH under a `docs/`
+# tree, judged whole. The three shelves exist in every arm, so an arm that
+# reports nothing reports nothing because of its own document.
+pop_arm() {
+    rm -rf "$scratch/pop"
+    mkdir -p "$scratch/pop/docs/evaluations" "$scratch/pop/docs/reviews" \
+        "$scratch/pop/docs/taxonomies"
+    printf '%s\n' "$2" >"$scratch/pop/$1"
+    population_judge "$scratch/pop" | tr '\n' '|'
+}
+
+echo
+echo "a second document that restates the population of this index"
+
+# 5a. The population is non-empty. A judge whose citing set came back empty
+#     reports green over nothing at all, which is this file's standing floor.
+citing_of "$root" >"$scratch/citing"
+more_than "documents outside the library cite its admission section" 0 \
+    "$(wc -l <"$scratch/citing" | tr -d ' ')"
+
+# 5b. This corpus, now.
+same "no document outside the library states a size of it" \
+    "" "$(population_judge "$root" | tr '\n' '|')"
+
+# 5c. The judge, provoked over scratch corpora. Each arm moves one thing.
+same "  a citing document that counts the rows in words" \
+    'docs/evaluations/a.md states a size of this index: `five rows`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'That entry is not in the admitted-entry table, which still lists five rows.')"
+
+same "  the same count in digits" \
+    'docs/evaluations/a.md states a size of this index: `5 rows`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'That entry is not in the admitted-entry table, which still lists 5 rows.')"
+
+same "  an ordinal, which is a count wearing a different hat" \
+    'docs/evaluations/a.md states a size of this index: `seventh entry`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'It would be the seventh entry of the admitted-entry table.')"
+
+same "  a citing document that states no size" \
+    "" \
+    "$(pop_arm docs/evaluations/a.md \
+        'That entry is not in the admitted-entry table, and the paragraph below the table is where a composer finds it.')"
+
+same "  a point-in-time review record, which stays as written" \
+    "" \
+    "$(pop_arm docs/reviews/a.md \
+        'That entry is not in the admitted-entry table, which still lists five rows.')"
+
+same "  the index and the entries, which the judges above already read" \
+    "" \
+    "$(pop_arm docs/taxonomies/a.md \
+        'That entry is not in the admitted-entry table, which still lists five rows.')"
+
+same "  a count word with no numeral in it" \
+    'docs/evaluations/a.md states a size of this index: `single bundle`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'The admitted-entry table refuses a single bundle.')"
+
+same "  the same size asserted by denying every other member" \
+    'docs/evaluations/a.md states a size of this index: `no other bundle`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'The admitted-entry table refuses `evidence-and-obligation` and no other bundle.')"
+
+same "  the same size asserted as uniqueness" \
+    'docs/evaluations/a.md states a size of this index: `the only entry`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'It is the only entry the admitted-entry table refuses.')"
+
+same "  the same size asserted as sole membership" \
+    'docs/evaluations/a.md states a size of this index: `the sole entry`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'It is the sole entry the admitted-entry table refuses.')"
+
+same "  a relative phrase, which asserts no size and is the way out" \
+    "" \
+    "$(pop_arm docs/evaluations/a.md \
+        'The admitted-entry table gives the other bundles a row each.')"
+
+same "  a size stated by a document that cites nothing" \
+    "" \
+    "$(pop_arm docs/evaluations/a.md 'This corpus holds five rows and six directories.')"
+
+same "  the citation and the count in different sentences, which is the limit" \
+    "" \
+    "$(pop_arm docs/evaluations/a.md \
+        'The admitted-entry table is the index of this library. This corpus holds five rows.')"
 echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]
