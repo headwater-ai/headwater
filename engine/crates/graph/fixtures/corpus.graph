@@ -91,8 +91,6 @@ anchors
     cited by HW-OBL-0178
   code_path `engine/crates/check/src/lifecycle_state.rs` via source-tree
     cited by HW-DR-0026
-  code_path `engine/crates/check/src/paint.rs` via source-tree
-    cited by HW-OBL-0180
   code_path `engine/crates/check/src/voice.rs` via source-tree
     cited by HW-OBL-0168
   code_path `engine/crates/cli/Cargo.toml` via source-tree
@@ -229,6 +227,8 @@ anchors
     cited by HW-DR-0025
   code_path `engine/crates/meta/meta-schema.yml` via source-tree
     cited by HW-DR-0040
+  code_path `engine/crates/paint/src/lib.rs` via source-tree
+    cited by HW-OBL-0180
   code_path `engine/crates/probe/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-probe
   code_path `engine/crates/query/src/explain.rs` via source-tree
