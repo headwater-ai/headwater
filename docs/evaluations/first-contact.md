@@ -230,7 +230,7 @@ Q3 settled that `infer` and the `init` interview are one command with two eviden
 
 `infer` cannot make the corpus valid by weakening the base, and that is a structural property rather than a rule anyone has to enforce. Q3 made bundles add-only over disjoint addresses, which is what makes every subset resolve. An add-only overlay has no operation that removes a base rule. So an inference that optimized for zero findings would encode the corpus's accidents as if they were intentions. Such an inference is not expressible in the artifact `infer` is permitted to write.
 
-### `--since <ref>` as a gate is refused, and the flag it would have duplicated already exists
+### `--since` as a gate is refused, and the flag it would have duplicated already exists
 
 The leaning proposes an incremental adoption mode "where checks apply only to newly touched documents", as a first-release feature. Three arguments refuse it, and one of them is that the word already means something else in this specification.
 
