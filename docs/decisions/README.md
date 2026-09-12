@@ -2,7 +2,7 @@
 
 # Decision records
 
-63 documents on this shelf, in the reading order this corpus derives.
+64 documents on this shelf, in the reading order this corpus derives.
 
 - [Q1 — Implementation language](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [Q2 — Schema format](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -67,3 +67,4 @@
 - [The engine's version stays one number, and a build's exact commit is a separate, unwired fact](0060-the-engine-s-version-stays-one-number-and-a-build-s-exact-commit-is-a-separate-unwired-fact.md) — A binary's `--version` keeps naming one number, the `Cargo.toml` version a `requires_engine` range is read against. Which commit built it is a separate fact a build script now captures, kept out of that comparison and not yet on the command line.
 - [A refused recording is held by the reliance its state claims, and not by promotion](0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md) — A refused transcript fails the run where its state carries the `live` role. A role that says nobody relies on the document leaves the run green. (asserted, and no human has accepted it)
 - [Every required facet of a generated document is derived, and the emitter composes the summary](0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md) — Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars. (asserted, and no human has accepted it)
+- [Q64 — Whether intent-time routing gains an offline embedding path in shadow mode](0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md) — Routing gains the shadow-mode embedding path, amended in four places. The intent hook is the only writer, and the vectors are a cache rather than a generated artifact. The model is pinned rather than committed, and the recorder gains a join key and a liveness fact. (asserted, and no human has accepted it)
