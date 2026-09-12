@@ -278,6 +278,103 @@ fn edit(at: &Path, relative: &str, from: &str, to: &str) {
     std::fs::write(&path, source.replace(from, to)).expect("it writes");
 }
 
+/// The document a generated file stands for in the fixture corpus.
+///
+/// It lives on the transcript shelf because that is the only shelf of this
+/// fixture taxonomy other than the probe shelf, and a probe may not examine a
+/// file that sits on no shelf at all.
+const GENERATED: &str = "corpus/probe-runs/generated.md";
+
+/// Write a generated document into a scratch corpus, and point the
+/// `not_opened` probe at it.
+///
+/// A generated document carries the marker in its front matter, which is one of
+/// the two positions the marker is read in. The census classifies it
+/// `generated` rather than `typed`, and that is the whole point of it here.
+fn examine_a_generated_document(at: &Path) {
+    std::fs::write(
+        at.join(GENERATED),
+        "---\n\"headwater:generated\": \"shelf_sections. A verb writes this file.\"\nid: \
+         RUN-FIX-generated\nstatus: current\nstatus_since: 2026-08-14\nsummary: A generated \
+         document, which the census classifies as generated rather than typed.\ntier: \
+         regression\narm: present\n---\n\n# A generated document of the fixture \
+         corpus\n\nOne paragraph, and the bytes of it are what a digest is over.\n",
+    )
+    .expect("the generated document");
+    edit(
+        at,
+        "corpus/probes/0003-not-opened.md",
+        "    - PROBE-FIX-opened",
+        "    - PROBE-FIX-opened\n    - RUN-FIX-generated",
+    );
+}
+
+/// A generated document a probe examines carries its digest into the read set,
+/// and an edit to it moves the read-set digest.
+///
+/// # The shape this holds against, which shipped and was never provoked
+///
+/// The read set exists so that a recorded result is reported stale when a
+/// document the run was pointed at moves. The lookup that supplies each
+/// member's digest was collected inside the filter that keeps the typed rows,
+/// so a member the census classified any other way found no entry and reached
+/// the listing as the literal `-` that stands for "no digest". Every member
+/// then hashed to the same string forever, and the comparison that should have
+/// voided the result could not fire. Nothing reported that, because a
+/// comparison that cannot fire and a comparison that passed print the same
+/// verdict.
+///
+/// No probe of this repository reached that path until one examined
+/// `docs/spec/09-open-questions.md`, which is a generated shelf index that the
+/// decision register superseded. Both assertions below are needed: the first
+/// says the member carries a digest at all, and the second says the digest is
+/// the one that moves, because a member carrying a constant would pass the
+/// first.
+#[test]
+fn a_generated_document_a_probe_examines_moves_the_read_set_when_it_moves() {
+    let at = copied("read-set-generated");
+    examine_a_generated_document(&at);
+
+    let before = plan_over(&at);
+    assert_eq!(
+        before.refusal, None,
+        "the plan refused: {:?}",
+        before.refusal
+    );
+    let member = before
+        .reads
+        .iter()
+        .find(|read| read.path == GENERATED)
+        .unwrap_or_else(|| {
+            panic!(
+                "{GENERATED} is in no read set, so this test measures nothing. The members are \
+                 {:?}",
+                before.reads.iter().map(|r| &r.path).collect::<Vec<_>>()
+            )
+        });
+    assert!(
+        member.digest.is_some(),
+        "{GENERATED} is a read-set member with no digest, so every edit to it hashes to the same \
+         listing and no recorded result over it can ever be reported stale"
+    );
+
+    edit(
+        &at,
+        GENERATED,
+        "One paragraph, and the bytes",
+        "Two paragraphs, and the bytes",
+    );
+    let after = plan_over(&at);
+    assert_eq!(
+        before.tree, after.tree,
+        "the corpus tree moved, so this edit no longer isolates the read set"
+    );
+    assert_ne!(
+        before.read_set, after.read_set,
+        "an edit to a document the selection examines left the read-set digest where it was"
+    );
+}
+
 #[test]
 fn the_read_set_over_the_committed_run_is_recorded() {
     compare(

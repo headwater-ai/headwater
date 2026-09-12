@@ -2,9 +2,13 @@
 
 # Probes
 
-4 documents on this shelf, in the reading order this corpus derives.
+8 documents on this shelf, in the reading order this corpus derives.
 
 - [A cold agent reaches the governing document through the corpus descriptor](a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md) — The descriptor names one entry point for each shelf that holds a document, and this asks whether a session with no other pointer opens the one that governs the task. (asserted, and no human has accepted it)
 - [A counted tombstone separates a withheld answer from an absent answer](a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md) — A session classifies a recovery word as present, withheld, or absent from a served corpus with a counted tombstone. (asserted, and no human has accepted it)
+- [A session answers from the register without opening the question it replaced](a-session-answers-from-the-register-without-opening-the-question-it-replaced.md) — Both registers carry the same answer, so nothing in what a session says separates the route it took, and the read set is the only instrument left. (asserted, and no human has accepted it)
+- [A session records an unmeasured claim in the shape this corpus checks](a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks.md) — The declared instrument for the assist claim cannot separate its arms, so this grades the artifact a session produced against a rule instead of counting what a verb supplied. (asserted, and no human has accepted it)
 - [An agent reaches the adjudication from the document that lost it](an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md) — A session that meets the superseded register first either reaches the decision that replaced it or reports the stale answer. (asserted, and no human has accepted it)
 - [The authoring skill reaches an agent that is about to write a governed document](the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md) — Nothing makes a skill load, so its reach is a measurement, and this is the instrument that takes it. (asserted, and no human has accepted it)
+- [The pointer this corpus offers for a task is the document a session opens](the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens.md) — Precision at intent time has no reading at all, and this takes the half of it that a transcript of tool calls can carry. (asserted, and no human has accepted it)
+- [What a session writes points back at the ruling it rests on](what-a-session-writes-points-back-at-the-ruling-it-rests-on.md) — Every traceability edge in this corpus is hand entry under a creator value that names a hook, and this asks whether an agent supplies the identifier with nobody asking for one. (asserted, and no human has accepted it)

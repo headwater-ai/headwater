@@ -492,18 +492,42 @@ impl Plan {
 
         let mut tree = String::new();
         let mut probes = Vec::new();
-        // The digest of every classified document, by path, which is what a
-        // read-set member is looked up in. It comes from the same walk the tree
-        // digest comes from, because two passes over one corpus can disagree
-        // and a read set that disagreed with the tree would report a state that
-        // no plan fixed.
+        // The digest of every document the walk read bytes of, by path, which
+        // is what a read-set member is looked up in. It comes from the same
+        // walk the tree digest comes from, because two passes over one corpus
+        // can disagree and a read set that disagreed with the tree would report
+        // a state that no plan fixed.
+        //
+        // # Two populations, and this loop used to treat them as one
+        //
+        // The lookup is over every row that carries a digest. The corpus count
+        // and the tree digest below are over the typed rows alone. Those are
+        // different populations, and collecting the lookup inside the typed
+        // filter made a generated document unreachable.
+        //
+        // A generated document is classified `generated` rather than `typed`,
+        // and the census still carries the digest of the bytes it read. An
+        // `examines` edge may name one, because such a document is a file a
+        // session can open: `docs/spec/09-open-questions.md` is a generated
+        // shelf index that the decision register superseded, and a probe over
+        // it asks whether a session opens the document that lost.
+        //
+        // Under the typed-only lookup that member reached the listing below as
+        // the literal `-` that stands for "no digest". So the read-set digest
+        // did not move when the document moved, and a recorded result over it
+        // could never be reported stale — the silent-success shape, where a
+        // comparison that cannot fire reads as a comparison that passed. The
+        // listing still writes `-` for a member the walk read no bytes of,
+        // which is a real absence rather than a lookup that missed.
         let mut digests: Vec<(&str, Option<&str>)> = Vec::new();
         for row in &census.rows {
+            if row.digest.is_some() {
+                digests.push((row.path.as_str(), row.digest.as_deref()));
+            }
             let Outcome::Typed { kind, .. } = &row.outcome else {
                 continue;
             };
             plan.corpus += 1;
-            digests.push((row.path.as_str(), row.digest.as_deref()));
             tree.push_str(&row.path);
             tree.push('\t');
             tree.push_str(row.digest.as_deref().unwrap_or("-"));
