@@ -93,6 +93,8 @@ anchors
     cited by HW-DR-0026
   code_path `engine/crates/check/src/paint.rs` via source-tree
     cited by HW-OBL-0180
+  code_path `engine/crates/check/src/sections.rs` via source-tree
+    cited by HW-AC-0002
   code_path `engine/crates/check/src/voice.rs` via source-tree
     cited by HW-OBL-0168
   code_path `engine/crates/cli/Cargo.toml` via source-tree
@@ -319,3 +321,6 @@ anchors
     cited by HW-DR-0048
   code_path `wrangler.jsonc` via source-tree
     cited by HW-DR-0047
+
+docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md:17:7
+  edge: `verified_by` -> section.required.missing resolves to nothing at all, and `check_rule` names the resolver `check-rule`, which this run does not have

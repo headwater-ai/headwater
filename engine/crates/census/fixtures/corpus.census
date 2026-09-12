@@ -2,6 +2,8 @@ docs/LICENSE
   not a document: not a Markdown file
 docs/acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md
   typed: acceptance_criterion
+docs/acceptance-criteria/0002-every-required-section-of-every-governed-document-has-a-heading.md
+  typed: acceptance_criterion
 docs/acceptance-criteria/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/decisions/0001-implementation-language.md
@@ -629,6 +631,8 @@ docs/process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumabl
 docs/process/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md
+  typed: requirement
+docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md
   typed: requirement
 docs/requirements/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census

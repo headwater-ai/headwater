@@ -131,6 +131,7 @@
 //! barriers.
 
 pub mod adoption;
+pub mod anchors;
 pub mod basis;
 pub mod cache;
 pub mod change;

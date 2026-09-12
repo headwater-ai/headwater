@@ -106,13 +106,17 @@ fn run_at(
     let shape = Shape::read(root).expect("the shape reads");
     let taken = census::take(corpus, &taxonomy);
     let config = Config::default();
-    let graph = Graph::build(
-        &taken,
-        &declarations,
-        &Resolvers::over(corpus),
-        corpus,
-        &config,
-    );
+    // The resolver set this crate contributes to, and not the corpus set
+    // alone. `Resolvers::over` builds `source-tree`; `headwater_check::anchors`
+    // owns `check-rule`, and `main.rs` is where a run puts the two together.
+    // A fixture that took `over` alone would report every `check_rule` target
+    // in this repository as resolving to nothing, which is the state before
+    // that resolver existed rather than the state a user sees. See the module
+    // comment of `headwater_check::anchors` and #411.
+    let resolvers = Resolvers::over(corpus)
+        .with(Box::new(headwater_check::anchors::Rules::shipped()))
+        .expect("the check-rule resolver is the only one of its name");
+    let graph = Graph::build(&taken, &declarations, &resolvers, corpus, &config);
     headwater_check::run(
         &taken,
         &graph,

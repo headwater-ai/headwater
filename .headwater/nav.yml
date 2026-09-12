@@ -69,6 +69,7 @@ nav:
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
+      - "Every required section of every governed document has a heading": "acceptance-criteria/0002-every-required-section-of-every-governed-document-has-a-heading.md"
   - "Evaluations":
       - "Evaluations": "evaluations/README.md"
       - "Adjacent work and tooling": "evaluations/adjacent-work.md"
@@ -326,6 +327,7 @@ nav:
   - "Requirements":
       - "Requirements": "requirements/README.md"
       - "The engine reaches no network at check time": "requirements/0001-the-engine-reaches-no-network-at-check-time.md"
+      - "Every document of a kind that requires sections carries all of them": "requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md"
   - "Review records":
       - "Review records": "reviews/README.md"
       - "Assessment of the existing core-concepts findings": "reviews/core-concepts-findings-assessment.md"
