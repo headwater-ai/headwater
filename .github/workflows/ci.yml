@@ -1037,6 +1037,33 @@ jobs:
         # It runs `awk`, `sed` and `cmp`, builds no engine, opens no socket,
         # and writes only under a temporary directory.
         run: sh tools/repo/library-index-fixtures.sh
+      - name: The composition demonstration reports the one finding it claims
+        # `docs/taxonomies/diataxis/fixtures/README.md` records what happens
+        # when the `reader_mode` facet of one library entry is read over
+        # another entry's instance corpus, and `docs/taxonomies/**` sits
+        # outside this repository's corpus root, so nothing in the census
+        # opens it. The entry beside it measured what that costs: a defect
+        # planted in the `diataxis-site` worked corpus lived in the tree for
+        # two days with every gate green, because the only thing that stated
+        # the expected result was prose.
+        #
+        # So this step runs the recording rather than trusting it. It
+        # assembles the `design-spec` fixture corpus under a selection that
+        # carries the `diataxis` bundle, writes one admitted value and one
+        # value outside the set into the scratch copy and never into the tree,
+        # and judges the difference between the two arms: exactly one more
+        # finding, a facet value refusal naming the facet, the value and the
+        # page, and nothing new against the page that carries the admitted
+        # value.
+        #
+        # The absolute finding count belongs to another entry's fixture corpus
+        # and is printed rather than asserted, so this step does not redden
+        # when that corpus changes for a reason of its own. The facet, its
+        # values and the bundle selection are read out of the declarations.
+        #
+        # It runs `awk`, `sed` and `comm` over the release binary this job
+        # already built, and writes only under a temporary directory.
+        run: sh tools/repo/diataxis-facet-fixtures.sh
       - name: The command an outsider runs still runs
         # `engine/README.md` carries two `docker run` recipes, and on 2026-09-07
         # both exited 101 before compiling a line: `ordered-float 5.5.0` had
