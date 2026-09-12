@@ -620,13 +620,30 @@ fn a_carrier_that_is_wrong_is_adrift_and_one_that_is_right_is_held() {
     for (name, entry, adrift) in [
         (
             "a run-level member that is there",
-            run_place(&["properties", "headwater", "coverage"], &[], every_run),
+            run_place(&["properties", "headwater", "shape"], &[], every_run),
             false,
         ),
         (
             "a run-level member that is not",
             run_place(&["properties", "headwater", "covrage"], &[], every_run),
             true,
+        ),
+        (
+            // `coverage` is a map of eight named values, and an entry that
+            // stops at the bag has named none of them. This row used to be the
+            // one above it, and it read as "a member that is there".
+            "a run-level bag, named with none of its members",
+            run_place(&["properties", "headwater", "coverage"], &[], every_run),
+            true,
+        ),
+        (
+            // A list is the shape the rule above must not reach. `loss_set` is
+            // a sequence, so there are no member names an honest entry could
+            // have listed, and the whole of what was carried is the value at
+            // the path.
+            "a run-level list, which has no members to name",
+            run_place(&["properties", "headwater", "loss_set"], &[], every_run),
+            false,
         ),
         (
             "a record-level member that is there",
@@ -662,18 +679,33 @@ fn a_carrier_that_is_wrong_is_adrift_and_one_that_is_right_is_held() {
 ///
 /// The injectivity question, over the case that produced #233. `coverage` named
 /// a property bag while three of the seven values it reports went nowhere, and a
-/// carrier that stopped at the bag would report that entry as held. The members
-/// are what the entry names now, and a member that is not under the block fails
+/// carrier that stopped at the bag reported that entry as held. The members are
+/// what the entry names now, and a member that is not under the block fails
 /// while the block itself resolves.
+///
+/// The first of the three readings below is the one #521 flipped. It asserted
+/// that the bag alone resolves and that the census holds it, which is the
+/// vaguer carrier passing: an entry could be walked up one level at any time
+/// and nothing but a recorded artifact would say so. It now asserts the
+/// opposite, and the doc sentence it rests on is the one spec 6 already ruled,
+/// "an entry names its members, so a bag that resolves is not an answer".
 #[test]
-fn a_carrier_that_names_the_block_and_not_the_values_cannot_see_the_difference() {
+fn a_carrier_that_names_the_block_and_not_the_values_is_adrift() {
     let ran = fixture_run();
     let artifact = render(&ran, Format::Sarif);
     let at: &[&str] = &["properties", "headwater", "coverage"];
 
     let block = [run_place(at, &[], every_run)];
     let audited = headwater_adapter::census_with(&ran.run, Format::Sarif, &artifact, &block);
-    assert_eq!(audited.held, 1, "the block alone resolves");
+    assert_eq!(audited.held, 0, "the bag alone is not an answer");
+    assert!(
+        audited.adrift[0].contains("properties.headwater.coverage"),
+        "the fault names the path: {audited:?}"
+    );
+    assert!(
+        audited.adrift[0].contains("bag"),
+        "and says why the path is not enough: {audited:?}"
+    );
 
     let values = [run_place(at, &["seen", "skips", "unaccounted"], every_run)];
     let audited = headwater_adapter::census_with(&ran.run, Format::Sarif, &artifact, &values);
@@ -690,6 +722,45 @@ fn a_carrier_that_names_the_block_and_not_the_values_cannot_see_the_difference()
         "a value the block does not hold is adrift while the block resolves"
     );
     assert!(audited.adrift[0].contains("the_document_each_skip_fell_on"));
+}
+
+/// The same at the record grain: the bag above the member is not the member.
+///
+/// The decisive case of #521. Every per-finding entry of the SARIF loss set
+/// names a member under `properties.headwater` of a result, and every one of
+/// them could be walked up to the bag itself with no census reporting it: the
+/// bag is on every result, so the path resolves for every finding and the
+/// entry is held. The vaguer carrier is the one an emitter change makes true
+/// again for free, which is why it has to fail rather than pass.
+#[test]
+fn a_record_level_bag_named_with_none_of_its_members_is_adrift() {
+    let ran = fixture_run();
+    let artifact = render(&ran, Format::Sarif);
+
+    let bag = [finding_place(
+        &["properties", "headwater"],
+        &[],
+        headwater_adapter::every_finding,
+    )];
+    let audited = headwater_adapter::census_with(&ran.run, Format::Sarif, &artifact, &bag);
+    assert!(audited.accounts());
+    assert_eq!(audited.entries, 1);
+    assert_eq!(audited.unaudited, 0);
+    assert_eq!(audited.held, 0, "the bag above the member is not the member");
+    assert!(
+        audited.adrift[0].contains("properties.headwater"),
+        "the fault names the path: {audited:?}"
+    );
+
+    // And the member under it still holds, so the rule cuts between the two
+    // grains rather than refusing an empty `members` list outright.
+    let member = [finding_place(
+        &["properties", "headwater", "escape"],
+        &[],
+        headwater_adapter::every_finding,
+    )];
+    let audited = headwater_adapter::census_with(&ran.run, Format::Sarif, &artifact, &member);
+    assert_eq!(audited.held, 1, "a scalar is the whole of what was carried");
 }
 
 /// A member written where the run carries no value for it is adrift too.
