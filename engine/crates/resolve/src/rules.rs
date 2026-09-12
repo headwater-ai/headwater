@@ -77,7 +77,7 @@ pub enum Ran {
 /// [`crate::resolve`] and [`crate::confluence`]. A rule whose wording changed
 /// with no change to what it accepts or refuses does not need the bump; a rule
 /// whose *verdict* over some taxonomy changed does.
-pub const RULE_SET: u32 = 1;
+pub const RULE_SET: u32 = 2;
 
 /// Every rule that [spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)
 /// lists for `taxonomy validate`, in spec 2's own order, and where each runs.
@@ -128,8 +128,9 @@ pub const RULES: [(&str, Ran); 23] = [
     (
         "kind inheritance",
         Ran::Resolved(
-            "`is_a` names a declared abstract kind, the chain terminates and holds no cycle, and \
-             no child un-requires or forbids what a parent requires",
+            "`is_a` names a declared abstract kind, the chain terminates and holds no cycle, no \
+             child un-requires or forbids what a parent requires, and a narrowed value set names \
+             only values the facet declares and only values every kind above it admits",
         ),
     ),
     (
@@ -732,6 +733,9 @@ fn dangling_names(view: &View) -> Vec<Dangling> {
                     reads(at(&format!("facets.{member}")), "facet", &facet, &facets);
                 }
             }
+            for (facet, _) in narrowings(contract) {
+                reads(at("facets.values"), "facet", &facet, &facets);
+            }
         }
     }
 
@@ -1031,6 +1035,121 @@ fn kind_inheritance(view: &View, out: &mut Vec<ResolveError>) {
                          A child may not void a contract that a reader of the parent trusts"
                     ),
                 ));
+            }
+        }
+    }
+    narrowed_value_sets(view, out);
+}
+
+/// A narrowing names an enumerated facet the kind carries, names only values
+/// that facet declares, and never admits a value a kind above it excluded.
+///
+/// The four refusals are one rule because they are one mistake seen from four
+/// sides: a narrowing that says something the facet's own declaration does not
+/// hold. [HW-DR-0066](../../../../docs/decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md)
+/// rules the widening case, and it rules it the way spec 2 already rules an
+/// un-require: a child may not void a contract that a reader of the parent
+/// trusts, and a wider value set voids one exactly as an un-require does.
+fn narrowed_value_sets(view: &View, out: &mut Vec<ResolveError>) {
+    const RULE: &str = "kind inheritance";
+    let declared: BTreeMap<String, Vec<String>> = view
+        .members("facets")
+        .into_iter()
+        .map(|(facet, body)| (facet.to_string(), value_set(body)))
+        .collect();
+
+    for (kind, body) in view.members("kinds") {
+        let Some(contract) = block(body, "facets") else {
+            continue;
+        };
+        let at = format!("kinds.{kind}.facets.values");
+        let forbidden: BTreeSet<String> = view
+            .ancestry(kind)
+            .into_iter()
+            .flat_map(|step| {
+                view.kind(step)
+                    .and_then(|body| block(body, "facets"))
+                    .map(|contract| strings(contract, "forbid"))
+                    .unwrap_or_default()
+            })
+            .collect();
+
+        for (facet, named) in narrowings(contract) {
+            let Some(values) = declared.get(&facet) else {
+                continue; // referential integrity reported it
+            };
+            if values.is_empty() {
+                out.push(refusal(
+                    RULE,
+                    &at,
+                    format!(
+                        "narrows `{facet}`, which declares no value set. A narrowing names \
+                         values of a closed set, and a facet that enumerates nothing has \
+                         none to name"
+                    ),
+                ));
+                continue;
+            }
+            if named.is_empty() {
+                out.push(refusal(
+                    RULE,
+                    &at,
+                    format!(
+                        "narrows `{facet}` to no value at all, so no document of this kind \
+                         could ever be valid. `facets.forbid` is how a kind takes a facet \
+                         away"
+                    ),
+                ));
+                continue;
+            }
+            if forbidden.contains(&facet) {
+                out.push(refusal(
+                    RULE,
+                    &at,
+                    format!(
+                        "narrows `{facet}`, and this kind or one above it forbids the same \
+                         facet. A forbidden facet has no values on this kind to narrow"
+                    ),
+                ));
+            }
+            for value in &named {
+                if !values.contains(value) {
+                    out.push(refusal(
+                        RULE,
+                        &at,
+                        format!(
+                            "narrows `{facet}` to `{value}`, which `facets.{facet}.values` \
+                             does not hold. A narrowing takes values away and it adds none"
+                        ),
+                    ));
+                }
+            }
+            // The chain above this kind, narrowest first. A value every
+            // narrowing above admits is a value this one may name.
+            for step in view.ancestry(kind).into_iter().skip(1) {
+                let Some(above) = view
+                    .kind(step)
+                    .and_then(|body| block(body, "facets"))
+                    .map(narrowings)
+                else {
+                    continue;
+                };
+                let Some((_, admitted)) = above.into_iter().find(|(name, _)| *name == facet) else {
+                    continue;
+                };
+                for value in &named {
+                    if values.contains(value) && !admitted.contains(value) {
+                        out.push(refusal(
+                            RULE,
+                            &at,
+                            format!(
+                                "narrows `{facet}` to `{value}`, and `{step}` above it does \
+                                 not admit that value. A child may not void a contract that \
+                                 a reader of the parent trusts"
+                            ),
+                        ));
+                    }
+                }
             }
         }
     }
@@ -1750,6 +1869,7 @@ fn facets_read(view: &View) -> BTreeSet<String> {
         out.extend(view.facets_of(kind));
         if let Some(contract) = view.kind(kind).and_then(|body| block(body, "facets")) {
             out.extend(strings(contract, "forbid"));
+            out.extend(narrowings(contract).into_iter().map(|(facet, _)| facet));
         }
     }
     for (_, body) in view.members("shelves") {
@@ -1841,6 +1961,32 @@ fn value_set(facet: &Mapping) -> Vec<String> {
             Value::Scalar(scalar) => Some(scalar.text.clone()),
             Value::Map(map) => text(map, "value").map(str::to_string),
             Value::Seq(_) => None,
+        })
+        .collect()
+}
+
+/// `facets.values` on one kind, as declared: the facet each key names and the
+/// values it admits.
+///
+/// A member whose value is not a list of scalars is dropped, because structural
+/// conformance refuses it at the source and a second reading of it here would
+/// report one defect twice.
+fn narrowings(contract: &Mapping) -> Vec<(String, Vec<String>)> {
+    let Some(values) = contract.get("values").and_then(|node| node.value.as_map()) else {
+        return Vec::new();
+    };
+    values
+        .iter()
+        .filter_map(|entry| {
+            let items = entry.value.value.as_seq()?;
+            Some((
+                entry.key.value.clone(),
+                items
+                    .iter()
+                    .filter_map(|item| item.value.as_scalar())
+                    .map(|scalar| scalar.text.clone())
+                    .collect(),
+            ))
         })
         .collect()
 }

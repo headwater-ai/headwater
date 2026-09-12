@@ -331,6 +331,16 @@ pub struct Kind {
     /// [`Shape::required_facets`] is the inherited set.
     pub require: Vec<String>,
     pub forbid: Vec<String>,
+    /// `facets.values`, as this kind declares it: one entry per enumerated
+    /// facet this kind narrows, in declaration order, and the values of that
+    /// facet it means. [`Shape::admitted_values`] is the inherited answer.
+    ///
+    /// Empty for a kind that narrows nothing, which is not the same statement
+    /// as narrowing to nothing. A kind that narrows nothing admits whatever the
+    /// facet declares, and a kind that wrote an empty list here would admit no
+    /// value at all — a contradiction `taxonomy validate` refuses, so this
+    /// layer never has to decide which of the two an empty list meant.
+    pub narrows: Vec<(String, Vec<String>)>,
     /// The name of the voice regime this kind binds, inherited through
     /// [`Shape::voice_of`].
     pub voice: Option<String>,
@@ -602,6 +612,40 @@ impl Shape {
 
     /// Every section a document of this kind owes, in one order.
     ///
+    /// The values of one facet a kind admits, in the facet's own declaration
+    /// order.
+    ///
+    /// The whole declared set for a facet that no kind in the chain narrows,
+    /// and otherwise the intersection of every narrowing in the chain with it.
+    /// Intersection rather than replacement, and it is the same ruling that
+    /// [`Shape::required_facets`] rests on: spec 2 gives a child no way to void
+    /// a contract a reader of the parent trusts, and a child that admitted a
+    /// value its parent excluded would void one exactly as an un-require would
+    /// ([HW-DR-0066](../../../../docs/decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md)).
+    /// `taxonomy validate` refuses the widening at the declaration, so the
+    /// intersection here reports a taxonomy that never resolved rather than
+    /// deciding anything of its own.
+    ///
+    /// Three absences, and they are three different answers. Nothing for a
+    /// facet this taxonomy does not declare. An empty list for a facet that
+    /// declares no value set, which is the same answer [`Facet::admitted`]
+    /// gives and means "this facet enumerates nothing". The whole declared set
+    /// for a kind this taxonomy does not declare, because a kind nothing
+    /// declares narrows nothing, exactly as a declared kind that names no
+    /// narrowing does; no caller here produces one, since both readers iterate
+    /// `Shape::kinds`.
+    pub fn admitted_values(&self, kind: &str, facet: &str) -> Option<Vec<&str>> {
+        let declared = self.facet(facet)?.admitted();
+        let mut admitted = declared;
+        for step in self.ancestry(kind) {
+            let Some((_, narrowed)) = step.narrows.iter().find(|(name, _)| name == facet) else {
+                continue;
+            };
+            admitted.retain(|value| narrowed.iter().any(|named| named == value));
+        }
+        Some(admitted)
+    }
+
     /// Inherited the way [`Shape::required_facets`] is inherited, and from the
     /// root of the chain down, so the order a report prints does not move when
     /// a kind gains a parent. A section has no `forbid`, because the
@@ -787,6 +831,7 @@ fn read_kind(name: &str, value: &Value, span: Span) -> Result<Kind, DeclarationE
         forbid: facets
             .map(|map| sequence(map, "forbid"))
             .unwrap_or_default(),
+        narrows: facets.map(narrowings).unwrap_or_default(),
         voice: scalar(map, "voice"),
         language: scalar(map, "language"),
         lifecycle: scalar(map, "lifecycle"),
@@ -921,6 +966,32 @@ fn sequence(map: &Mapping, key: &str) -> Vec<String> {
 /// guessed at: the meta-schema requires both, so a source that reaches here
 /// missing one has already been refused, and inventing a reason would put words
 /// in a finding that no taxonomy wrote.
+/// `facets.values`, as a kind declares it.
+///
+/// A member whose value is not a list of scalars is dropped rather than
+/// guessed at, on the same terms as every other reader in this file: the
+/// meta-schema owns the shape of a declaration, and a narrowing this engine
+/// cannot read is a shape defect that `taxonomy validate` reports once.
+fn narrowings(facets: &Mapping) -> Vec<(String, Vec<String>)> {
+    let Some(values) = facets.get("values").and_then(|node| node.value.as_map()) else {
+        return Vec::new();
+    };
+    values
+        .iter()
+        .filter_map(|entry| {
+            let items = entry.value.value.as_seq()?;
+            Some((
+                entry.key.value.clone(),
+                items
+                    .iter()
+                    .filter_map(|item| item.value.as_scalar())
+                    .map(|scalar| scalar.text.clone())
+                    .collect(),
+            ))
+        })
+        .collect()
+}
+
 fn retired_terms(map: &Mapping) -> Vec<RetiredTerm> {
     let Some(items) = map
         .get("retired_terms")

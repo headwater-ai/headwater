@@ -124,7 +124,7 @@ rule by rule
   coverage
     on the result: every shelf reaches a kind, every concrete kind is reached by a shelf, and an abstract kind is reached by none
   kind inheritance
-    on the result: `is_a` names a declared abstract kind, the chain terminates and holds no cycle, and no child un-requires or forbids what a parent requires
+    on the result: `is_a` names a declared abstract kind, the chain terminates and holds no cycle, no child un-requires or forbids what a parent requires, and a narrowed value set names only values the facet declares and only values every kind above it admits
   purpose completeness
     on the result: every concrete kind has a purpose by declaration or inheritance, and every declared purpose is served
   determinism

@@ -1,4 +1,4 @@
-headwater/taxonomy 0.3.0
+headwater/taxonomy 0.4.0
 
 declarations
   taxonomy (required) scalar:string
@@ -80,6 +80,7 @@ declarations
         require seq of scalar:string
         optional seq of scalar:string
         forbid seq of scalar:string
+        values map of seq of scalar:string
       sections members
         require seq of scalar:string
         optional seq of scalar:string

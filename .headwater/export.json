@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 424,
-      "carried": 424,
+      "in the graph": 426,
+      "carried": 426,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 626,
-      "carried": 626,
+      "in the graph": 629,
+      "carried": 629,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1783,6 +1783,36 @@
             ],
             "governs": [
               "engine/crates/generate/src/derived.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md",
+        "kind": "decision",
+        "id": "HW-DR-0066",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0066",
+          "status": "current",
+          "status_since": "2026-09-12",
+          "summary": "A kind states which values of an enumerated facet it means, under `facets.values`. A lifecycle regime, a shelf discriminator and `facets.forbid` each narrow a value set. None of the three reaches a facet with no state machine behind it.",
+          "last_verified": "2026-09-12",
+          "title": "A kind narrows the value set of an enumerated facet, and nothing else can",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-SPEC-taxonomy-model"
+            ],
+            "governs": [
+              "engine/crates/check/src/facet_value.rs",
+              "engine/crates/resolve/src/rules.rs"
             ]
           }
         }
@@ -8717,7 +8747,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 63 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 64 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
@@ -9073,6 +9103,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/check/src/facet_blank.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/check/src/facet_value.rs",
         "resolver": "source-tree"
       },
       {
@@ -10829,6 +10864,39 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/generate/src/derived.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-taxonomy-model",
+          "path": "docs/spec/02-taxonomy-model.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/facet_value.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/resolve/src/rules.rs",
           "resolver": "source-tree"
         }
       },

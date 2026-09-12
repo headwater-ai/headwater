@@ -17,12 +17,33 @@
 //! statement about the document that only its author can make, so no fix is
 //! mechanical ([spec 12](../../../../docs/spec/12-check-layer.md#fixability)).
 //!
+//! # The admitted set is per kind, and a kind that narrows nothing admits all
+//!
+//! A kind names the values of an enumerated facet it means, under
+//! `facets.values`, and the set this rule reads for that kind is the
+//! intersection of every narrowing in its inheritance chain with the facet's
+//! declared list ([HW-DR-0066](../../../../docs/decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md)).
+//! A kind that names none, and stands under no kind that names one, admits the
+//! whole declared list, which is what this rule did for every kind before the
+//! member existed.
+//!
+//! The message names the set the kind admits and not the set the facet
+//! declares. They are one list wherever nothing narrows, and where something
+//! does, a remediation quoting the declaration would send an author to a value
+//! their own kind refuses.
+//!
 //! # The generation step is per kind, and that is what keeps coverage honest
 //!
 //! A kind that **forbids** an enumerated facet can never carry a value outside
 //! its set, so no instance is generated over it. That is a real reading of the
 //! taxonomy rather than an optimization, and it matters for a reason one level
 //! up.
+//!
+//! A narrowing is not that reading and must not become one. A narrowed kind
+//! carries the facet and admits fewer of its values, so it instantiates exactly
+//! as it did before, and a change that made instantiation depend on a declared
+//! narrowing would stop counting every kind that declares none — which is every
+//! kind of most taxonomies.
 //!
 //! An instance that could only ever pass still counts its document as checked.
 //! A rule that instantiated over every typed document whatever its kind would
@@ -91,7 +112,12 @@ impl Values {
                             .filter(|facet| !forbidden.contains(&facet.name.as_str()))
                             .map(|facet| Enumerated {
                                 facet: facet.name.clone(),
-                                values: facet.admitted().into_iter().map(str::to_string).collect(),
+                                values: shape
+                                    .admitted_values(&kind.name, &facet.name)
+                                    .unwrap_or_default()
+                                    .into_iter()
+                                    .map(str::to_string)
+                                    .collect(),
                             })
                             .collect(),
                     }
@@ -112,8 +138,10 @@ impl Values {
 
 impl DocumentCheck for Values {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`].
-    const VERSION: u32 = 1;
+    /// See [`crate::placement::Placement::VERSION`]. 2 reads a kind's
+    /// `facets.values`, so a warm cache written by 1 holds the verdict of a
+    /// rule that admitted the whole declared set on every kind.
+    const VERSION: u32 = 2;
     /// A declared value set becomes an `enum` over the same members, under a
     /// guard that lets a mapping or a list through. The guard is what makes
     /// the translation equivalent rather than stricter, because this check

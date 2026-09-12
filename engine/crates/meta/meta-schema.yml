@@ -49,12 +49,17 @@ meta_schema: headwater/taxonomy
 # because `members` is a closed set. No package of this repository wrote it and
 # one fixture did.
 #
+# 0.4.0 adds `facet_contract.values`, an optional member that names the values
+# of one enumerated facet a kind means. Every source that validated under 0.3.0
+# validates under this one, because a member that is absent is a kind that
+# narrows nothing, so it is a minor by the rule above.
+#
 # No consumer compares this value against anything. `fixtures/schema.record`
 # carries it, so a bump shows up in a diff, and nothing refuses a source for
 # the version it was written against. So the position of a digit here is a
 # statement to a reader and never a gate: the removal above is refused at the
 # member and never at the version.
-version: 0.3.0
+version: 0.4.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
@@ -343,6 +348,12 @@ definitions:
       require: {seq: {scalar: string}}
       optional: {seq: {scalar: string}}
       forbid: {seq: {scalar: string}}
+      # Optional. One key per enumerated facet this kind narrows, and the
+      # values of that facet it means. A kind that names none admits the whole
+      # declared set, and a narrowing is intersected with every narrowing above
+      # it in the chain (HW-DR-0066). `forbid` takes the facet away and this
+      # takes values away, so a facet may not appear under both.
+      values: {map: {seq: {scalar: string}}}
 
   section_contract:
     members:
