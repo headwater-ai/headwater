@@ -1114,10 +1114,25 @@ cites_index_re='admitted-entry table|admission table|taxonomies/README\.md|docs/
 #   "It refuses no other" gives the pattern no noun to bind to, and resolving
 #   an ellipsis is not something a regular expression does.
 #
-# So a green case 5b means that no document states a size in one of the named
-# forms. It does not mean that no document states a size. A reviewer reading a
-# document that cites this index is the wider check, and this judge holds the
-# family that has gone stale here twice.
+#   A document that names this index in a form `citing_of` does not recognize
+#   is invisible here, whatever it goes on to state. The population filter
+#   reads two forms only, the phrase "admitted-entry table" and a link to
+#   `taxonomies/README.md` carrying an `#admission` fragment, and it is
+#   narrower on purpose than the four forms `cites_index_re` reads inside a
+#   sentence. So a document can name the shelf by path, state a size of it,
+#   and never reach the sentence test at all. That is measured rather than
+#   hypothetical. `docs/obligations/0166-…md` writes "neither does any of the
+#   six bundles under `docs/taxonomies/`", the shelf holds seven directories
+#   today, the sentence IS reported when it is fed to the pattern on its own,
+#   and case 5b is green because the file is outside the population. Widening
+#   the filter to every mention of the path pulls in the corpus and makes a
+#   different judge. What this one holds is the documents that engage with the
+#   admission section.
+#
+# So a green case 5b means that no document in the citing population states a
+# size in one of the named forms. It does not mean that no document states a
+# size. A reviewer reading a document that cites this index is the wider check,
+# and this judge holds the family that has gone stale here twice.
 states_size_re='(^|[^a-z-])([Ss]ingle|[Nn]o other|[Tt]he only|[Tt]he sole|[Oo]ne|[Tt]wo|[Tt]hree|[Ff]our|[Ff]ive|[Ss]ix|[Ss]even|[Ee]ight|[Nn]ine|[Tt]en|[Ee]leven|[Tt]welve|[Ff]irst|[Ss]econd|[Tt]hird|[Ff]ourth|[Ff]ifth|[Ss]ixth|[Ss]eventh|[Ee]ighth|[Nn]inth|[Tt]enth|[Ee]leventh|[Tt]welfth|[0-9]+)[ -]([a-z][a-z-]*[ -])?(rows?|entry|entries|director(y|ies)|bundles?)([^a-z]|$)'
 
 # citing_of ROOT — one path per line, relative to ROOT: every `*.md` under
