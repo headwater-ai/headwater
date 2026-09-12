@@ -879,7 +879,7 @@ jobs:
             exit 0
           fi
           exit "$status"
-      - name: The retirement sweep refuses a locked, dirty, open or occupied worktree
+      - name: The retirement sweep refuses a locked, dirty, open, occupied or empty worktree
         # `tools/repo/retire-worktree.sh` deletes directories and branches, so what
         # this holds is mostly what it refuses. The tool exists because the
         # agent that makes a build worktree exits while its branch is still
@@ -898,6 +898,14 @@ jobs:
         # the next cargo run there exits 101 with a `NotFound` naming the
         # binary under test, which reads as a defect in the code rather than
         # as a directory somebody deleted.
+        #
+        # The empty guard is the other one with a cost behind it. A tree made
+        # by `git worktree add <path> -b <branch> origin/main` sits at that
+        # tip before anything is committed to it, so ancestry alone cleared it
+        # from the second it existed and the sweep removed the directory and
+        # then the branch it had just freed. The case asserts the reason
+        # string rather than the `KEPT` verb, because four other guards also
+        # print `KEPT`.
         #
         # It needs nothing but git. It builds its own repository under a
         # temporary directory and writes nothing inside this checkout.
