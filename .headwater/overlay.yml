@@ -703,17 +703,21 @@ add:
   # is covered with no new declaration: the criterion names it in `Method` and
   # declares the base relation `traces_to` onto its `code_path`, which already
   # runs from a governed document to an anchor and declares no reciprocity.
-  # **A check rule is a named gap.** A rule identifier is neither a document nor
-  # an anchor. `Resolvers::over` builds the `source-tree` resolver and nothing
-  # else, so an `anchors.check_rule` declaration today names a resolver no run
-  # has, and every edge under it reports `Unbound::NoResolver` on every use.
-  # What carries the coverage instead is the `Method` section, which names the
-  # rule identifier in prose, and the control block of spec 4, which binds a
-  # rule to an invariant through `mechanism: check:<rule-id>`.
-  # [#411](https://github.com/headwater-ai/headwater/issues/411) holds the gap,
-  # and it holds the two questions that stop it being mechanical: which crate
-  # may name `headwater_check::RULES`, and whether a generated rule is
-  # addressable at all.
+  # **A check rule is an anchor, and `anchors.check_rule` below declares it.**
+  # A rule identifier is not a document, so the fourth artifact reaches a
+  # requirement through the same end of `verified_by` that a document reaches
+  # it through. `headwater_check::anchors::Rules` is the resolver, and it binds
+  # a string when `headwater_check::RULES` holds it. That answers the first of
+  # the two questions [#411](https://github.com/headwater-ai/headwater/issues/411)
+  # held: `headwater-check` owns `RULES` and depends on `headwater-graph`, so a
+  # resolver there implements `headwater_graph::Resolver` with no new crate,
+  # which is the shape `headwater_import::anchors::Items` already takes. The
+  # second question is answered in that module: a rule template is addressable
+  # and a generated instance is not, because nothing anywhere carries an
+  # instance identifier. What already carried this coverage still carries it:
+  # the `Method` section names the rule identifier in prose, and the control
+  # block of spec 4 binds a rule to an invariant through
+  # `mechanism: check:<rule-id>`. The edge is what makes the pair a graph.
   #
   # **The verification method is a facet and the fit criterion is a section,
   # which is the shape `probe` already uses.** 29148 supplies the closed method
@@ -859,10 +863,23 @@ add:
     sections:
       require: [Fit criterion, Method]
 
+  # The `check-rule` resolver, which `headwater_check::anchors::Rules` supplies
+  # and `main.rs` adds beside the import resolvers. A rule identifier is a
+  # string this engine ships in `headwater_check::RULES`, so the resolver is a
+  # membership test over that list and the identity is the string itself.
+  # `register::mechanism` reads the same list for `mechanism: check:<rule-id>`,
+  # and the two agree by construction: one engine ships one set of rules, and a
+  # control and an edge that name one rule name one thing.
+  anchors.check_rule: {resolver: check-rule}
+
+  # `check_rule` at the target end, and the `from` end stays at `requirement`.
+  # Q35 says `verified_by` names both kinds at its `from` end, and the block
+  # above states why one endpoint is the right reading here. Widening `from` is
+  # a separate change against that ruling and not a consequence of this one.
   relations.verified_by:
     family: evidence
     from: [requirement]
-    to:   [acceptance_criterion, probe]
+    to:   [acceptance_criterion, probe, check_rule]
     cardinality: many
     inverse: verifies
     reciprocal: required

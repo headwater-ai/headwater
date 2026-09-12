@@ -1424,3 +1424,62 @@ fn capture_pools_across_taxonomies_and_names_every_one() {
         assert!(ran.says(lock), "and it names {lock}:\n{}", ran.out);
     }
 }
+
+/// **The decisive case for the `check-rule` resolver.** A rule identifier this
+/// engine ships binds, and one it does not is refused by name.
+///
+/// It runs the binary rather than a function, and that is the whole point of
+/// putting it in this target. `Resolvers::over(&corpus)` is called at 37 sites
+/// under `engine/crates/*/tests/` and at one site in `main.rs`. A case built
+/// through any of the 37 sees no check-rule resolver, so it reports that
+/// `check_rule` names a resolver this run does not have, which is exactly what
+/// the tree said before this resolver existed. Only a run of the binary
+/// assembles the set the way a user does.
+///
+/// Both arms are asserted, and the second is what stops the first from passing
+/// vacuously: a resolver that refused every string would also refuse the typo,
+/// and a resolver that bound every string would bind it too.
+#[test]
+fn a_check_rule_this_engine_ships_is_an_edge_endpoint_and_a_typo_is_not() {
+    let root = Root::over("check-rule-anchor", "check-rule-binds-and-refuses");
+    let ran = root.run(&["check", "--no-cache", "--now", "2026-09-06"]);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+
+    // The binding arm. The report names the anchor kind, the identifier and
+    // the resolver that owns it, so a reader can see which component answered.
+    assert!(
+        ran.says("check_rule `section.required.missing` via check-rule"),
+        "a rule this engine ships is a bound target:\n{}",
+        ran.out
+    );
+
+    // The refusal arm. The identifier is in the message, because the author is
+    // looking at the line that spells it.
+    assert!(
+        ran.says("this engine implements no rule `no.such.rule`"),
+            "a rule this engine does not ship is refused by name:\n{}",
+        ran.out
+    );
+    // And it is refused rather than normalized into something that binds.
+    assert!(
+        !ran.says("check_rule `no.such.rule` via check-rule"),
+        "nothing guessed a binding for it:\n{}",
+        ran.out
+    );
+
+    // **The measured limit of this change, pinned so that a later reader meets
+    // it here rather than in a corpus.** A bound anchor edge is a target the
+    // graph reports and it is not a neighbour: `Adjacency::of` in
+    // `headwater_check::scope` skips every target that is not a document, so
+    // `relation.participation.overdue` cannot see this edge and reports the
+    // requirement as reaching nothing. The adjudication of #411 predicted the
+    // opposite, and this is the measurement that corrects it. #855 holds the
+    // work, and inverting this assertion is what closes it.
+    let overdue = root.run(&["check", "--no-cache", "--now", "2026-12-31"]);
+    assert_eq!(overdue.code, Some(0), "{}{}", overdue.out, overdue.err);
+    assert!(
+        overdue.says("`requirement-verified`: 116 days"),
+        "a check-rule verifier does not yet settle the expectation:\n{}",
+        overdue.out
+    );
+}
