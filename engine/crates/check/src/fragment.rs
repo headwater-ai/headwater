@@ -970,8 +970,7 @@ sys.stdout.buffer.write("\0".join(fn(text, "-") for text in texts).encode("utf-8
                 // matches once, which is how `LICENSE` reaches
                 // `docs/LICENSE`.
                 None => {
-                    relative == pattern
-                        || relative.rsplit('/').next() == Some(pattern.as_str())
+                    relative == pattern || relative.rsplit('/').next() == Some(pattern.as_str())
                 }
             }
         })
