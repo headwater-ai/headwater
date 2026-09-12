@@ -1077,7 +1077,25 @@ cites_index_re='admitted-entry table|admission table|taxonomies/README\.md|docs/
 # words, qualifies one of the four nouns this index is counted in. The optional
 # word between the two allows "five admitted entries" and "six bundle
 # directories" without allowing a number and a noun that are unrelated.
-states_size_re='(^|[^a-z-])([Oo]ne|[Tt]wo|[Tt]hree|[Ff]our|[Ff]ive|[Ss]ix|[Ss]even|[Ee]ight|[Nn]ine|[Tt]en|[Ee]leven|[Tt]welve|[Ff]irst|[Ss]econd|[Tt]hird|[Ff]ourth|[Ff]ifth|[Ss]ixth|[Ss]eventh|[Ee]ighth|[Nn]inth|[Tt]enth|[Ee]leventh|[Tt]welfth|[0-9]+)[ -]([a-z][a-z-]*[ -])?(rows?|entry|entries|director(y|ies)|bundles?)([^a-z]|$)'
+#
+# Four of the alternatives carry no numeral, and they are here because an
+# attack on the first repair of this defect found them. That repair replaced
+# "the one bundle that the admission table refuses" with "and it refuses no
+# other". Both sentences assert that exactly one bundle is refused, both go
+# false on the day a second one is, and only the first reddened. So `single`,
+# `no other`, `the only` and `the sole` count as counts, and the way past this
+# judge is to stop asserting a size rather than to spell one differently.
+#
+# "The other bundles" is deliberately not in the list. It asserts no size, and
+# it is the shape this judge exists to send an author toward.
+#
+# One form stays out of reach, and it is the very form that attack found: an
+# elided noun. "It refuses no other" has no noun for the pattern to bind to,
+# and resolving an ellipsis is not something a regular expression does. What
+# the widening buys is the spelled-out family — "no other bundle", "a single
+# bundle", "the only entry" — and a reader who meets this comment knows that
+# the elided form is a hole rather than a pass.
+states_size_re='(^|[^a-z-])([Ss]ingle|[Nn]o other|[Tt]he only|[Tt]he sole|[Oo]ne|[Tt]wo|[Tt]hree|[Ff]our|[Ff]ive|[Ss]ix|[Ss]even|[Ee]ight|[Nn]ine|[Tt]en|[Ee]leven|[Tt]welve|[Ff]irst|[Ss]econd|[Tt]hird|[Ff]ourth|[Ff]ifth|[Ss]ixth|[Ss]eventh|[Ee]ighth|[Nn]inth|[Tt]enth|[Ee]leventh|[Tt]welfth|[0-9]+)[ -]([a-z][a-z-]*[ -])?(rows?|entry|entries|director(y|ies)|bundles?)([^a-z]|$)'
 
 # citing_of ROOT — one path per line, relative to ROOT: every `*.md` under
 # `ROOT/docs`, outside the two excluded shelves, that engages with the
@@ -1168,6 +1186,26 @@ same "  the index and the entries, which the judges above already read" \
     "" \
     "$(pop_arm docs/taxonomies/a.md \
         'That entry is not in the admitted-entry table, which still lists five rows.')"
+
+same "  a count word with no numeral in it" \
+    'docs/evaluations/a.md states a size of this index: `single bundle`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'The admitted-entry table refuses a single bundle.')"
+
+same "  the same size asserted by denying every other member" \
+    'docs/evaluations/a.md states a size of this index: `no other bundle`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'The admitted-entry table refuses `evidence-and-obligation` and no other bundle.')"
+
+same "  the same size asserted as uniqueness" \
+    'docs/evaluations/a.md states a size of this index: `the only entry`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'It is the only entry the admitted-entry table refuses.')"
+
+same "  a relative phrase, which asserts no size and is the way out" \
+    "" \
+    "$(pop_arm docs/evaluations/a.md \
+        'The admitted-entry table gives the other bundles a row each.')"
 
 same "  a size stated by a document that cites nothing" \
     "" \
