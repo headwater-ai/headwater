@@ -763,6 +763,66 @@ fn a_record_level_bag_named_with_none_of_its_members_is_adrift() {
     assert_eq!(audited.held, 1, "a scalar is the whole of what was carried");
 }
 
+/// An emitter that stops writing a conditional member is reported adrift.
+///
+/// **Read what this does and does not hold before citing it.** It holds that
+/// the census reports an emitter that has stopped writing a member its loss
+/// set claims, end to end through a real render. It does **not** hold the
+/// coupling #521 closed, and it was green before that change as well as after:
+/// the old predicate was `obligation_severity(entry, run).is_some()`, and this
+/// mutation moves the emitter's grading while leaving that function alone, so
+/// the old predicate read the register through it and reported the same fault.
+///
+/// The coupling is only observable when `obligation_severity` itself moves,
+/// and Rust cannot stub a free function from a test, so no test can reach it.
+/// It was measured by hand instead, on 2026-09-12: with that function edited
+/// to return `None`, the census over the SARIF loss set read `held=5,
+/// adrift=[]` under the old predicate and `held=4` with the
+/// `obligation_severity` entry named under the new one. That measurement is in
+/// the pull request of #521 and is the evidence the second half rests on.
+#[test]
+fn an_emitter_that_stops_grading_an_obligation_is_reported_adrift() {
+    let ran = fixture_run();
+    let lock = lock_digest();
+    let at = subject(&lock);
+
+    let graded = ran
+        .run
+        .register
+        .obligations
+        .iter()
+        .filter(|disposed| disposed.severity.is_some())
+        .count();
+    assert!(
+        graded > 0,
+        "the fixture run has to grade an obligation or this measures nothing"
+    );
+
+    let honest =
+        headwater_adapter::sarif::render_with(&ran.run, &at, headwater_adapter::sarif::obligation_severity);
+    let audited = headwater_adapter::census(&ran.run, Format::Sarif, &honest);
+    assert!(
+        audited.adrift.is_empty(),
+        "the emitter as it stands is held: {audited:?}"
+    );
+
+    let silent = headwater_adapter::sarif::render_with(&ran.run, &at, |_, _| None);
+    assert!(
+        silent.matches("obligation_severity").count()
+            < honest.matches("obligation_severity").count(),
+        "the mutation has to take the member out of the results"
+    );
+
+    let audited = headwater_adapter::census(&ran.run, Format::Sarif, &silent);
+    assert!(
+        audited
+            .adrift
+            .iter()
+            .any(|fault| fault.contains("obligation_severity")),
+        "an emitter that grades nothing is adrift on the entry that names it: {audited:?}"
+    );
+}
+
 /// A member written where the run carries no value for it is adrift too.
 ///
 /// The other direction, and it is the one #234 rests on: an absent `change`
