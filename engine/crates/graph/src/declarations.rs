@@ -35,14 +35,16 @@
 //! it, because a half that nobody wrote is a missing edge rather than a
 //! mis-resolved one.
 //!
-//! **`lifecycle_sensitive`** is on the same terms, and it is the one member
-//! here that no `relations:` block writes. The word is declared on a *family*,
-//! in `core.requires`, and [`headwater_resolve::core`] is the reader of that
-//! block. This module calls it rather than reading the block a second time:
-//! the family a relation names and the families a core requirement marks are
-//! one join, and two crates that each did it their own way would answer one
-//! question twice. [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle)
-//! is the rule that reads it.
+//! **`lifecycle_sensitive`** is on the same terms, and it is written at two
+//! grains that this module unions. A `relations:` block writes it about one
+//! relation, and `core.requires` writes it about a whole *family*, which
+//! [`headwater_resolve::core`] reads. This module calls that reader rather than
+//! reading the block a second time: the family a relation names and the
+//! families a core requirement marks are one join, and two crates that each did
+//! it their own way would answer one question twice. A relation is sensitive
+//! when either reading marks it, which HW-DR-0065 rules, and
+//! [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle) is
+//! the rule that reads the answer.
 //!
 //! **`sets_target_state`** is `on_target.set_state`, the one declaration in the
 //! language that makes a relation act on the state of its target. A rule about
@@ -75,13 +77,14 @@ pub struct Relation {
     /// derives no reading order rather than an invented one.
     pub family: Option<String>,
     /// Whether the lifecycle of the two ends is part of what this relation
-    /// means, from the `lifecycle_sensitive` flag a `core.requires` entry
-    /// writes on this relation's family.
+    /// means, which the relation declares for itself or a `core.requires` entry
+    /// demands of its family.
     ///
-    /// It is derived rather than declared here, because no relation may write
-    /// the word: the meta-schema puts `lifecycle_sensitive` on a core
-    /// requirement over a family and nowhere else. A relation that names no
-    /// family is never sensitive, because the requirement names families.
+    /// The two readings are a union and never an override (HW-DR-0065): the
+    /// member on the relation body marks this relation and says nothing about
+    /// its family, and the flag on a core requirement marks every relation of
+    /// the family it names. A relation that declares neither is not sensitive,
+    /// and a relation that names no family can still mark itself.
     pub lifecycle_sensitive: bool,
     /// The state an edge of this relation writes onto its target, from
     /// `on_target.set_state`.
@@ -224,7 +227,11 @@ impl Declarations {
                     for entry in map {
                         match read_relation(&entry.key.value, &entry.value.value, entry.key.span) {
                             Ok(mut relation) => {
-                                relation.lifecycle_sensitive = relation
+                                // A union, not an assignment. `read_relation`
+                                // has already read what this relation declares
+                                // about itself, and a core requirement over its
+                                // family marks it too.
+                                relation.lifecycle_sensitive |= relation
                                     .family
                                     .as_deref()
                                     .is_some_and(|family| sensitive.iter().any(|f| f == family));
@@ -324,10 +331,16 @@ fn read_relation(name: &str, value: &Value, span: Span) -> Result<Relation, Decl
         from: sequence(map, "from").unwrap_or_default(),
         to,
         family: scalar("family"),
-        // Set by [`Declarations::read`], which is the one place the core
-        // requirements are in reach. A relation read on its own is not
-        // sensitive, because nothing it declares says so.
-        lifecycle_sensitive: false,
+        // What this relation declares about itself. [`Declarations::read`]
+        // unions the families a core requirement marks onto it, because that
+        // block is in reach there and not here.
+        //
+        // Read through the core schema and never off the text of the scalar,
+        // for the reason [`headwater_resolve::core`] states where it reads the
+        // same word: `True` and `TRUE` are the same declaration, and the quoted
+        // string the meta-schema refuses is not one.
+        lifecycle_sensitive: headwater_yaml::core_schema::flag(map, "lifecycle_sensitive")
+            .unwrap_or(false),
         sets_target_state: map
             .get("on_target")
             .and_then(|value| value.value.as_map())
@@ -478,11 +491,10 @@ anchors:
         );
     }
 
-    /// The flag is on a family in `core.requires` and never on a relation, so
-    /// every relation of the named family carries it and no relation of
-    /// another family does. A taxonomy that states no such requirement marks
-    /// nothing, which is the arm that keeps the fixture trees of this engine
-    /// silent.
+    /// A core requirement marks every relation of the family it names, and no
+    /// relation of another family. A taxonomy that states no such requirement
+    /// marks nothing through this reading, which is the arm that keeps the
+    /// fixture trees of this engine silent.
     #[test]
     fn a_core_requirement_marks_the_relations_of_the_family_it_names() {
         let source = concat!(
@@ -519,6 +531,41 @@ anchors:
         // And with no `core` block at all.
         let none = read(SOURCE).expect("reads");
         assert!(none.relations.iter().all(|r| !r.lifecycle_sensitive));
+    }
+
+    /// A relation declares the word for itself, and the two readings union.
+    ///
+    /// HW-DR-0065 rules the union: the member on a relation marks that relation
+    /// and asserts nothing about its family, and a core requirement marks every
+    /// relation of the family it names. A reader that assigned the family join
+    /// over the relation body loses the first arm, and a reader that stopped at
+    /// the body loses the second.
+    #[test]
+    fn a_relation_declares_the_word_for_itself_and_the_two_readings_union() {
+        let source = concat!(
+            "relations:\n",
+            "  supersedes: {family: succession, to: [d]}\n",
+            "  cites:      {family: evidence, to: [d], lifecycle_sensitive: true}\n",
+            "  mentions:   {family: association, to: [d]}\n",
+            "  quiet:      {family: evidence, to: [d], lifecycle_sensitive: false}\n",
+            "core:\n",
+            "  requires:\n",
+            "    - relation_family: succession\n",
+            "      lifecycle_sensitive: true\n",
+        );
+        let read = read(source).expect("the declarations read");
+        let flag = |name: &str| {
+            read.named(name)
+                .expect("declared")
+                .relation
+                .lifecycle_sensitive
+        };
+        // The family requirement marks its own, and the declaration marks its
+        // own, and neither reaches a relation that neither names.
+        assert!(flag("supersedes"), "the family requirement was lost");
+        assert!(flag("cites"), "the relation's own declaration was lost");
+        assert!(!flag("mentions"), "an unmarked relation was marked");
+        assert!(!flag("quiet"), "an explicit false was read as true");
     }
 
     #[test]

@@ -1,4 +1,4 @@
-headwater/taxonomy 0.3.0
+headwater/taxonomy 0.4.0
 
 declarations
   taxonomy (required) scalar:string
@@ -48,6 +48,7 @@ declarations
       inherits seq of scalar:string
       cardinality enum[one many]
       created_by (required) enum[author scaffold generator hook agent import]
+      lifecycle_sensitive scalar:boolean
       attributes map of members
           type enum[string integer boolean date duration]
           values seq of scalar:string
