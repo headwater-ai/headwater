@@ -235,7 +235,7 @@ This paragraph read eighteen for sixteen iterations, and the number is nineteen.
 
 ## What the engine found about itself
 
-Forty-nine items: HW-OBL-0131 through HW-OBL-0159, HW-OBL-0161 through HW-OBL-0169, HW-OBL-0172 through HW-OBL-0181, and HW-OBL-0183. HW-OBL-0167, HW-OBL-0177 and HW-OBL-0183 name a decision and the other forty-six name none, because nothing else here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
+Fifty items: HW-OBL-0131 through HW-OBL-0159, HW-OBL-0161 through HW-OBL-0169, HW-OBL-0172 through HW-OBL-0181, HW-OBL-0183, and HW-OBL-0196. HW-OBL-0167, HW-OBL-0177 and HW-OBL-0183 name a decision and the other forty-seven name none, because nothing else here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
 
 This class did not exist before 2026-08-26. Before that date, such a finding was filed as a GitHub issue labeled `self-audit` and left open. The theory was that a defect nobody outside this repository can reach costs nothing to hold. The theory was half right. The label did keep such work out of an iteration's hands, but it never closed anything. Of 24 issues so labeled, three ever closed. The issue board as a whole ran net-positive on all but one of the eleven days that followed. [The value rule](../../.claude/commands/next-run.md#the-value-rule) now routes a self-audit finding here directly. These 21 are the backlog that rule found already sitting on the tracker, migrated in the same change that rewrote it.
 
@@ -288,6 +288,7 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0180](../obligations/0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-type-forbids-from-being-wrong.md) — A renderer's color mode is wired at a call site that no type forbids from being wrong
 - [HW-OBL-0181](../obligations/0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md) — An unresolved prose link reaches a run as a graph fact and no rule turns it into a finding
 - [HW-OBL-0183](../obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md) — No mechanism holds a committed binary asset against a run
+- [HW-OBL-0196](../obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md) — A relation writes a state onto a kind that binds no lifecycle regime and nothing reads that pair
 
 ## What the first typing of this corpus found
 

@@ -23,7 +23,7 @@
 lock:
   format: 3
   digest: sha256:f07ef4f79d94b2691591df416b460113fba43898800dfd6305ba695047e28c9a
-  rules: 1
+  rules: 2
   package: acme/answered-export
   version: 1.0.0
   sources:

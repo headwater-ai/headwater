@@ -134,7 +134,7 @@ rule by rule
   lifecycle soundness
     on the result: every state is a value of the state vocabulary, every state a regime names is reachable from that regime's initial state, every state of the vocabulary is reachable in at least one regime, and every state with no exit is declared terminal
   relation coherence (in part)
-    on the result: a nucleus–satellite relation names its nucleus and a multinuclear one names none, and `inherits` names facets that both ends carry
+    on the result: a nucleus–satellite relation names its nucleus and a multinuclear one names none, `inherits` names facets that both ends carry, and `on_target.set_state` names a state that every kind at the `to` end can stand in
     not decided: "a family's default is not contradicted without explicit override" states no rule that a validator can fail. A declared nuclearity is the explicit override, and spec 2 gives the count to `taxonomy audit`
   expectation well-formedness
     on the result: every expectation names a declared relation or a declared inverse, endpoints that the relation admits, a reachable target kind, and an origin facet that the declaring kind requires
