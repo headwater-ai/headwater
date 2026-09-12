@@ -7633,7 +7633,7 @@
           "status": "current",
           "status_since": "2026-09-08",
           "summary": "A caller that passes the plain color mode forever is a defect that no type and no piped test can report.",
-          "last_verified": "2026-09-08",
+          "last_verified": "2026-09-11",
           "title": "A renderer's color mode is wired at a call site that no type forbids from being wrong",
           "waiting_on": "build",
           "provenance": {
@@ -7645,7 +7645,7 @@
           },
           "relations": {
             "traces_to": [
-              "engine/crates/check/src/paint.rs"
+              "engine/crates/paint/src/lib.rs"
             ]
           }
         }
@@ -9097,11 +9097,6 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": "engine/crates/check/src/paint.rs",
-        "resolver": "source-tree"
-      },
-      {
-        "anchor_kind": "code_path",
         "id": "engine/crates/check/src/voice.rs",
         "resolver": "source-tree"
       },
@@ -9208,6 +9203,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/meta/meta-schema.yml",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/paint/src/lib.rs",
         "resolver": "source-tree"
       },
       {
@@ -14678,7 +14678,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/check/src/paint.rs",
+          "id": "engine/crates/paint/src/lib.rs",
           "resolver": "source-tree"
         }
       },
