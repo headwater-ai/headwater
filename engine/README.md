@@ -63,6 +63,7 @@ The mount is read only, the target directory sits inside the container, and the 
 | `headwater-hash` | SHA-256, and nothing else. The lock, the census and the check cache all hash, and one implementation is what stops two of them disagreeing |
 | `headwater-check` | Generates the rules from the taxonomy, runs them, computes coverage against the census, and keys each instance on what it read and on the clock it was handed |
 | `headwater-mark` | The generated-file marker: the one wording that tells a writer it may overwrite a file, and tells the census which files this engine wrote |
+| `headwater-paint` | The terminal palette HW-DR-0045 rules on. It is a leaf because renderers sit on both sides of `headwater-check`, so a palette inside that crate is a cycle from anything below it |
 | `headwater-generate` | Writes every projection the taxonomy declares, and `generate --check` refuses a committed output that differs from what this corpus and this lock produce now |
 | `headwater-query` | The deterministic reads of the graph a run already built, as one surface that the CLI, an editor and an adapter each reach through rather than around |
 | `headwater-scaffold` | What `headwater new <kind>` proposes and what it refuses, which spec 12 names a correctness root because nobody reviews a scaffolded edge on its own |

@@ -16,6 +16,7 @@ members = [
     "crates/lock",
     "crates/mark",
     "crates/meta",
+    "crates/paint",
     "crates/probe",
     "crates/query",
     "crates/ref",
@@ -120,6 +121,7 @@ headwater-import = { path = "crates/import", version = "0.1.2" }
 headwater-lock = { path = "crates/lock", version = "0.1.2" }
 headwater-mark = { path = "crates/mark", version = "0.1.2" }
 headwater-meta = { path = "crates/meta", version = "0.1.2" }
+headwater-paint = { path = "crates/paint", version = "0.1.2" }
 headwater-probe = { path = "crates/probe", version = "0.1.2" }
 headwater-query = { path = "crates/query", version = "0.1.2" }
 headwater-ref = { path = "crates/ref", version = "0.1.2" }
