@@ -52,7 +52,7 @@ meta_schema: headwater/taxonomy
 # 0.4.0 adds `relation.lifecycle_sensitive`, an optional boolean that a relation
 # writes about itself. Every source that validated under 0.3.0 validates under
 # this one, because a new optional member refuses nothing a source already
-# wrote, so it is a minor. HW-DR-0064 rules what the member means beside the
+# wrote, so it is a minor. HW-DR-0065 rules what the member means beside the
 # `core_requirement` flag of the same name: the requirement is a demand over a
 # family, and this member is a declaration by one relation.
 #
@@ -269,7 +269,7 @@ definitions:
       cardinality: {enum: [one, many]}
       created_by: {enum: [author, scaffold, generator, hook, agent, import], required: true}
       # A relation declares the word about itself, and a `core.requires` entry
-      # demands it of a whole family. Either marks the relation, and HW-DR-0064
+      # demands it of a whole family. Either marks the relation, and HW-DR-0065
       # rules that the two readings are a union rather than an override.
       lifecycle_sensitive: {scalar: boolean}
       attributes: {map: {block: relation_attribute}}

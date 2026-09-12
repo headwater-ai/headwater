@@ -42,7 +42,7 @@
 //! reading the block a second time: the family a relation names and the
 //! families a core requirement marks are one join, and two crates that each did
 //! it their own way would answer one question twice. A relation is sensitive
-//! when either reading marks it, which HW-DR-0064 rules, and
+//! when either reading marks it, which HW-DR-0065 rules, and
 //! [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle) is
 //! the rule that reads the answer.
 //!
@@ -80,7 +80,7 @@ pub struct Relation {
     /// means, which the relation declares for itself or a `core.requires` entry
     /// demands of its family.
     ///
-    /// The two readings are a union and never an override (HW-DR-0064): the
+    /// The two readings are a union and never an override (HW-DR-0065): the
     /// member on the relation body marks this relation and says nothing about
     /// its family, and the flag on a core requirement marks every relation of
     /// the family it names. A relation that declares neither is not sensitive,
@@ -535,7 +535,7 @@ anchors:
 
     /// A relation declares the word for itself, and the two readings union.
     ///
-    /// HW-DR-0064 rules the union: the member on a relation marks that relation
+    /// HW-DR-0065 rules the union: the member on a relation marks that relation
     /// and asserts nothing about its family, and a core requirement marks every
     /// relation of the family it names. A reader that assigned the family join
     /// over the relation body loses the first arm, and a reader that stopped at
