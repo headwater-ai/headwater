@@ -1,7 +1,6 @@
 498 seen, 327 classified, 327 checked, 6272 check instances
      16 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
-      1 skipped: the document at the target end, `HW-REG-open-questions`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
     655 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   a check read .headwater/ids, which the census never walked
   a check read .headwater/ids, which the census never walked

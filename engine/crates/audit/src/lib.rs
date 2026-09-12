@@ -314,7 +314,12 @@ impl DwellReading {
 /// [`CREATORS`] is written out. A warrant that no document of a corpus carries
 /// is an arm of the promotion reading that this corpus cannot fill, and a
 /// report built from the values in use omits exactly the arm a reader needs.
-pub const WARRANTS: [&str; 4] = ["accepted", "regenerated", "transcribed", "asserted"];
+pub const WARRANTS: [&str; 4] = [
+    "accepted",
+    headwater_doc::REGENERATED,
+    "transcribed",
+    "asserted",
+];
 
 /// The two warrants the engine derives from the generated-file marker.
 ///
@@ -322,7 +327,14 @@ pub const WARRANTS: [&str; 4] = ["accepted", "regenerated", "transcribed", "asse
 /// declaration." A generated document that declares one would state a fact a
 /// hand edit can falsify. So a zero on either row is a property of this engine
 /// rather than of the authoring, and the report says which.
-pub const DERIVED: [&str; 2] = ["regenerated", "transcribed"];
+///
+/// The first is [`headwater_doc::REGENERATED`] and not a second spelling of the
+/// word. That constant is what `headwater_doc::warrant_of` answers for a
+/// generated document, so the value this report calls derived is the value the
+/// engine derives, rather than two strings that happen to match today.
+/// `transcribed` has no derivation yet, and it is written out here because no
+/// component answers with it.
+pub const DERIVED: [&str; 2] = [headwater_doc::REGENERATED, "transcribed"];
 
 /// The role a facet would take to record the state a document left.
 ///
