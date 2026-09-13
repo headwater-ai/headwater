@@ -158,16 +158,32 @@ jobs:
         # implementation defect is answerable by evidence. This is the evidence,
         # so its absence has to be a failure rather than a skip.
         run: sha256sum --version
-      - name: The stock validators the two differentials run against
-        # Two suites hold an emitter to an implementation nobody here wrote.
+      - name: The stock implementations the differentials run against
+        # Three suites hold this engine to an implementation nobody here wrote.
         # `engine/crates/generate/tests/differential.rs` compares the emitted
         # JSON Schema's finding set with the engine's.
         # `engine/crates/adapter/tests/fixtures.rs` validates the emitted SARIF
         # against the OASIS schema and reads the finding set back out of it.
-        # Absent, each comparison skips, because the pinned build container
-        # carries no Python. The two variables below turn a skip into a failure,
-        # so neither gate can go quiet by losing a dependency.
-        run: python3 -m pip install --user --break-system-packages jsonschema PyYAML
+        # `engine/crates/check/src/fragment.rs`'s `renderer_slug` module holds
+        # this engine's heading-slug rule against the site's own, which is
+        # `pymdownx.slugs.slugify(case='lower')`, over every heading the site
+        # renders. Absent, each comparison skips, because the pinned build
+        # container carries no Python. The variables on the `Test` step below
+        # turn a skip into a failure, so no gate here can go quiet by losing a
+        # dependency.
+        #
+        # `pymdown-extensions==10.11.2` is pinned here and in the `site` job's
+        # own install below, and the two copies are two on purpose: this job
+        # compares against the version that job renders with, so a bump that
+        # moved one of them alone would leave the comparison holding the engine
+        # to a slugger the site no longer runs. Move both, or the comparison
+        # stops being about the site. `mkdocs.yml` already states that shape
+        # about its own pins and the two places that install them. `Markdown`
+        # is not named here: `pymdown-extensions` depends on it, and the second
+        # slugger that module provokes itself with comes from there.
+        run: |
+          python3 -m pip install --user --break-system-packages \
+            jsonschema PyYAML pymdown-extensions==10.11.2
       - name: The mount point the killed-publish suite needs
         # `engine/crates/resolve/tests/killed_publish.rs` measures what a
         # classifier reads back from a real mount point, because that is the
@@ -211,6 +227,16 @@ jobs:
           HEADWATER_SARIF_VALIDATOR: required
           HEADWATER_SHA256_ORACLE: required
           HEADWATER_JSON_ORACLE: required
+          # `engine/crates/check/src/fragment.rs` derives every heading anchor
+          # this engine resolves a prose fragment against, and `mkdocs.yml`
+          # names a second implementation of that one rule in another language.
+          # Neither can call the other, so the comparison in that file is what
+          # holds them to one answer. A release of `pymdown-extensions` that
+          # moved its slugger would move every anchor the site serves with no
+          # commit in this repository, and a comparison that skipped is how
+          # that arrives as a count of dead links rather than as a named
+          # heading (#545, #431).
+          HEADWATER_SLUG_ORACLE: required
           # `bash` is the only reader that can say a completion script loads,
           # so `engine/crates/cli/tests/completions.rs` runs the command line
           # clause 8 of #321 states through it. A runner that lost `bash`
@@ -388,8 +414,17 @@ jobs:
         # carries more weight than a version floor: `mkdocs.yml` names
         # `pymdownx.slugs.slugify` as the rule that derives every heading
         # anchor on the site, so a release that moved that function would move
-        # 2577 anchors and 3559 links with no commit in this repository. #431
-        # is what the pin protects, and the step below is what would catch it.
+        # every anchor and every in-site link with no commit in this
+        # repository. #431 is what the pin protects, and the step below is what
+        # would catch it.
+        #
+        # The `engine` job installs this same pin, on its own line, so that
+        # `renderer_slug` in `engine/crates/check/src/fragment.rs` can hold the
+        # engine's heading-slug rule against the one this job renders with.
+        # The two copies are two on purpose and have to move together: a bump
+        # here alone leaves that comparison holding the engine to a slugger the
+        # site no longer runs, and a bump there alone leaves it refusing a
+        # corpus this job renders correctly (#545).
         run: |
           python3 -m pip install --user --break-system-packages \
             mkdocs==1.6.1 pymdown-extensions==10.11.2 PyYAML
