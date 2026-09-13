@@ -1037,6 +1037,31 @@ jobs:
         # It runs `awk`, `sed` and `cmp`, builds no engine, opens no socket,
         # and writes only under a temporary directory.
         run: sh tools/repo/library-index-fixtures.sh
+      - name: The diataxis-site entry still resolves, and its worked corpus still reports what it records
+        # `tools/repo/diataxis-fixtures.sh`, which nothing ran until this step.
+        # The suite landed on 2026-09-11 against a fixture corpus that had
+        # carried a committed defect for two days with every gate green:
+        # `docs/taxonomies/**` is excluded from this repository's census, so a
+        # document inside a bundle's fixture corpus reaches no rule of the
+        # engine, and a strict run over that corpus exited 1 while this
+        # workflow stayed green. A suite written for that is worth nothing
+        # behind no gate, and it was behind none (#813).
+        #
+        # It holds the entry's resolution in isolation, its constructors, the
+        # four documents it assembles from the pinned sources of admission
+        # criterion 4, and the digest of every pinned file. No kind name, shelf
+        # path or expected count is written into it: the kinds come from the
+        # `add:` block of the entry's `bundle.yml` and the sources come from
+        # the table on the entry's fixture page, compared as set equality in
+        # both directions.
+        #
+        # The denominators of criterion 4 are printed and asserted by nothing.
+        # A finding count is a property of somebody else's prose, and a case
+        # that held one would redden the day a source was re-pinned or a rule
+        # of the engine was widened.
+        #
+        # It reads the engine this job already built and opens no socket.
+        run: sh tools/repo/diataxis-fixtures.sh
       - name: The command an outsider runs still runs
         # `engine/README.md` carries two `docker run` recipes, and on 2026-09-07
         # both exited 101 before compiling a line: `ordered-float 5.5.0` had
