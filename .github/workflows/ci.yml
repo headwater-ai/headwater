@@ -938,6 +938,35 @@ jobs:
             exit 0
           fi
           exit "$status"
+      - name: A citation that went stale reads differently from one that was invented
+        # `tools/cite/check-citations.py` is the only checker in this
+        # repository that reads a code file rather than a document. Spec 5 asks
+        # generated code to carry `# per <IDENTIFIER> (<path>)` and states the
+        # purpose that rests on the comment being true, and nothing checked it,
+        # so a citation that aged out read exactly like one that still holds.
+        #
+        # The class that matters is the middle one. An identifier nothing
+        # carries is the easy half, and a checker that found only that half
+        # would pass a review while missing what the tool is for: a citation
+        # whose identifier resolves, in a file the cited document no longer
+        # governs. This suite plants each fixture at a path this repository
+        # really governs, or really does not, in a scratch copy of the corpus,
+        # and holds that the two classes report under two rule identifiers and
+        # that the advisory third one leaves the exit status at 0.
+        #
+        # The step runs over the fixtures rather than over this tree, and
+        # the reason is a measurement this suite pins rather than a claim this
+        # comment makes. Outside `tools/cite/`, one line of this repository
+        # carries the shape: `docs/spec/05-ai-integration.md` line 290, where
+        # spec 5 illustrates the convention with an identifier and a path from
+        # an imagined corpus. A case reads that real document and holds the
+        # count and the line. What this repository carries nowhere is a
+        # citation written as a claim about what licensed a line of its own
+        # code, and #844 is the issue for that.
+        #
+        # It writes only under a temporary directory and it builds no engine:
+        # it drives the one the build step above already wrote.
+        run: sh tools/cite/check-citations-fixtures.sh
       - name: The build still declares its license and still refuses to rewrite its lock
         # Two declarations that are green the day they land and green forever.
         # `--locked` on a lock that is in sync changes no exit status, so
