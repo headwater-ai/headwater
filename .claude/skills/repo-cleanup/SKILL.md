@@ -94,7 +94,7 @@ A sweep that reports nothing surviving has usually not fetched with `--prune`. A
 
 ## The sweep that runs without being asked
 
-`sh tools/repo/retire-worktree.sh` is this procedure as a tool, and `hw-integrate` runs it with `--retire` after every merge. It decides merged the way this document does, by the pull request rather than by ancestry, and it refuses a locked tree, a tree a live process is working in, a tree holding any uncommitted change, and every branch its content check does not clear. Reporting is its default, so a run with no flag is the read-the-state step above in one command.
+`sh tools/repo/retire-worktree.sh` is this procedure as a tool, and `hw-integrate` runs it with `--retire` after every merge. It decides merged the way this document does, by the pull request rather than by ancestry, and it refuses a locked tree, a tree a live process is working in, a tree holding any uncommitted change, and every branch its content check does not clear. It also refuses a tree that holds no commit `origin/main` lacks. Such a tree is what `git worktree add <path> -b <branch> origin/main` makes, and ancestry reads it as finished before anything is committed to it. A branch with no tree sitting on `origin/main` is retired still, because the absence of a tree is what says nobody is building on it. Reporting is its default, so a run with no flag is the read-the-state step above in one command.
 
 Run it first. What it reports as kept is the list this skill exists to work through by hand, and it is a shorter list than the one a fetch and six `git` commands produce. It reaches nothing outside this repository, it never removes the tree it is running in, and it decides nothing about an unmerged branch beyond naming it.
 
