@@ -23,7 +23,7 @@ root=$(cd "$(dirname "$0")/../.." && pwd)
 tool="$root/tools/repo/retire-worktree.sh"
 
 # A tool this suite cannot execute makes every case below read an empty
-# report, and an empty report fails all 37 assertions below.
+# report, and an empty report fails all 39 assertions below.
 # That reads as a broken tool rather than as a path this file got wrong,
 # which is what it was when `tools/` was grouped by subject under the suite.
 [ -x "$tool" ] || {
@@ -111,6 +111,15 @@ mkdir -p "$trees"
 
 git worktree add --quiet "$trees/merged" squashed 2>/dev/null
 
+# A worktree on no branch at all: its porcelain record carries an empty
+# `branch` field, which is the field a parse that splits on a tab alone
+# mishandles under `dash` (POSIX makes a tab IFS whitespace regardless of how
+# IFS is set, so a shell that honors that collapses the pair of tabs an empty
+# field leaves and shifts every field after it left by one). This is the case
+# a build agent's own scratch tree sits in most often, and the one the tool
+# missed silently until this case existed.
+git worktree add --quiet "$trees/detached-merge" --detach "$squashed_head" 2>/dev/null
+
 git worktree add --quiet "$trees/dirty" -b dirty-work origin/main 2>/dev/null
 echo 'uncommitted' >"$trees/dirty/scratch.txt"
 
@@ -180,6 +189,7 @@ same 'the squash-merged tree is cleared by its pull request' 'WOULD' "$(verdict 
 same '  and the reason names the merged head rather than ancestry' 1 \
     "$(printf '%s\n' "$report" | grep -F "$trees/merged " \
         | grep -c 'inside the merged head of its pull request')"
+same 'a detached tree inside a merged pull request is retirable' 'WOULD' "$(verdict "$trees/detached-merge")"
 same 'a tree with an uncommitted change is kept' 'KEPT' "$(verdict "$trees/dirty")"
 same 'a locked tree is kept' 'KEPT' "$(verdict "$trees/locked")"
 same '  and the lock is given as the reason' 1 \
@@ -235,6 +245,7 @@ same '  and it is reported as retired' 'RETIRED' "$(verdict "$trees/merged")"
 same '  and the reason is still its merged pull request, not ancestry' 1 \
     "$(printf '%s\n' "$report" | grep -F "$trees/merged " \
         | grep -c 'inside the merged head of its pull request')"
+same 'the merged detached tree is gone' 0 "$(test -d "$trees/detached-merge" && echo 1 || echo 0)"
 same 'the dirty tree survives' 1 "$(test -d "$trees/dirty" && echo 1 || echo 0)"
 same 'the locked tree survives' 1 "$(test -d "$trees/locked" && echo 1 || echo 0)"
 same 'the unmerged tree survives' 1 "$(test -d "$trees/unmerged" && echo 1 || echo 0)"

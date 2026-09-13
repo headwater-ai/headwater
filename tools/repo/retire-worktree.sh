@@ -179,17 +179,25 @@ say_keep() {
 
 printf '# worktrees\n'
 
+# A detached worktree's record carries an empty `branch` field, and POSIX
+# classifies a tab as IFS whitespace no matter how IFS is set, so `dash` (the
+# `/bin/sh` this script actually runs under) collapses the pair of tabs that
+# field leaves behind and shifts every field after it left by one. The unit
+# separator is not IFS whitespace under any shell, so it delimits an empty
+# field the way this parse needs.
+us=$(printf '\037')
+
 # One record per worktree: path, branch (empty when detached), tip, locked.
-git worktree list --porcelain | awk '
+git worktree list --porcelain | awk -v OFS="$us" '
     /^worktree /  { if (path != "") emit(); path = substr($0, 10); branch = ""; tip = ""; locked = "no" }
     /^HEAD /      { tip = substr($0, 6) }
     /^branch /    { branch = substr($0, 8); sub("^refs/heads/", "", branch) }
     /^locked/     { locked = "yes" }
     END           { if (path != "") emit() }
-    function emit() { printf "%s\t%s\t%s\t%s\n", path, branch, tip, locked }
+    function emit() { print path, branch, tip, locked }
 ' >"$work/worktrees"
 
-while IFS="$(printf '\t')" read -r path branch tip locked; do
+while IFS="$us" read -r path branch tip locked; do
     [ -n "$path" ] || continue
     label=${branch:-"detached at $(git rev-parse --short=8 "$tip" 2>/dev/null)"}
 
