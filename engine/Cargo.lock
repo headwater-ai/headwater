@@ -198,6 +198,7 @@ dependencies = [
  "headwater-hash",
  "headwater-mark",
  "headwater-meta",
+ "headwater-paint",
  "headwater-resolve",
  "headwater-yaml",
 ]
@@ -212,6 +213,7 @@ dependencies = [
  "headwater-hash",
  "headwater-lock",
  "headwater-meta",
+ "headwater-paint",
  "headwater-resolve",
  "headwater-yaml",
 ]
@@ -340,6 +342,10 @@ dependencies = [
  "headwater-ref",
  "headwater-yaml",
 ]
+
+[[package]]
+name = "headwater-paint"
+version = "0.1.2"
 
 [[package]]
 name = "headwater-probe"

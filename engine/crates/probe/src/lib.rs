@@ -85,6 +85,13 @@
 //!    agrees with its own transcript, which spec 5 calls a defect in the
 //!    grader, the parser or the committed inputs. No exit status of this engine
 //!    carries a model's behavior, which is what the four enforcements are for.
+//!
+//!    A result over a refused recording names the documents of the corpus that
+//!    read it, so the committed inputs of that file include which documents
+//!    link it. A document that starts citing such a result moves those bytes
+//!    and the gate asks for a regeneration. That is a fact about the corpus
+//!    rather than about a session, and it moves no exit status toward a
+//!    model's answer.
 //! 4. **No socket.** No crate of this engine depends on the network, and
 //!    nothing here opens one.
 //!

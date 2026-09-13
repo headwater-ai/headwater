@@ -19,7 +19,7 @@
 //! Read the diff before committing it. A blessed fixture is the change.
 
 use headwater_audit::reading::{Reading, TaskReading};
-use headwater_audit::{Audit, Series, Subject, Supply, Waiting, CREATORS, WARRANTS};
+use headwater_audit::{Audit, Series, Subject, Supply, Waiting, CREATORS, DERIVED, WARRANTS};
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
@@ -636,6 +636,40 @@ fn a_reading_that_still_waits_says_where_the_absence_lives() {
     assert!(report.contains("nothing declares it —"), "{report}");
     assert!(report.contains("nothing authored one —"), "{report}");
     assert!(report.contains("2 of 2 still wait"), "{report}");
+}
+
+/// The warrant the engine derives is the warrant this report calls derived.
+///
+/// `warrant.evidence.unsupported` decides a pointer onto a generated document
+/// on the value `headwater_doc::warrant_of` answers, and this report tells a
+/// reader that a zero on that row is the engine's doing rather than the
+/// authoring's. Two statements about one value, in two crates, and this is
+/// where they are held to being one value. A rule that derived a word this
+/// report does not name as derived would send a reader to the wrong row with
+/// no test anywhere reporting it.
+///
+/// It also holds the derived value inside spec 3's closed set. A value outside
+/// it is reported as one a corpus invented, and the engine's own answer must
+/// not be one of those.
+#[test]
+fn the_warrant_the_engine_derives_is_named_derived_and_is_inside_the_closed_set() {
+    // The reader borrows out of the front matter it was handed, so the empty
+    // block outlives the answer rather than being a temporary in the call.
+    let declares_nothing = headwater_yaml::Mapping::default();
+    let derived = headwater_doc::warrant_of(&declares_nothing, true)
+        .expect("a generated document has a warrant");
+    assert!(
+        DERIVED.contains(&derived),
+        "`{derived}` is derived by the engine and this report does not name it: {DERIVED:?}"
+    );
+    assert!(
+        WARRANTS.contains(&derived),
+        "`{derived}` is outside spec 3's closed set: {WARRANTS:?}"
+    );
+
+    // And the same reader still answers the declared half for a document this
+    // engine did not write, which is what keeps the two absences apart.
+    assert_eq!(headwater_doc::warrant_of(&declares_nothing, false), None);
 }
 
 /// The closed warrant set is walked in full, whatever a corpus states.

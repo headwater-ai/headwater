@@ -4744,7 +4744,10 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>, json: bool) -
 /// stale and on a tree mid-merge, which are the two moments a caller asks.
 fn derived(root: &Path) -> ExitCode {
     let population = headwater_census::derived::population(root);
-    print!("{}", population.render());
+    print!(
+        "{}",
+        population.render(headwater_cli::paint::stdout_color())
+    );
     match population.agrees() {
         true => ExitCode::SUCCESS,
         false => ExitCode::FAILURE,
