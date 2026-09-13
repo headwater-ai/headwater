@@ -16,7 +16,7 @@
 # record that survives, so a branch is retired when a MERGED pull request names
 # a head that contains the branch tip, and never on ancestry alone.
 #
-# Four guards, each of which cost somebody work before it was written here:
+# Five guards, each of which cost somebody work before it was written here:
 #
 #   locked     a lock is a deliberate hold, and often a session still inside.
 #   in use     a process whose working directory is under the tree. Removing it
@@ -26,7 +26,24 @@
 #   dirty      any uncommitted change, tracked or not. Build output is ignored
 #              and does not appear; a new document does, and it is work that no
 #              branch holds.
+#   in flight  a tree holding no commit `origin/main` lacks. `git worktree add
+#              <path> -b <branch> origin/main` puts a new tree exactly at that
+#              tip, so ancestry cleared such a tree from the first second of its
+#              life and the sweep deleted the directory, and then the branch it
+#              had just freed, while the agent that made it was still working.
+#              Emptiness is what a tree in flight and a tree whose work landed
+#              do not share: the second is cleared by its merged pull request,
+#              which is asked first and needs no clock. So a tree is never
+#              retired on ancestry alone. A branch with no tree still is,
+#              because the absence of a tree is what says nobody is building on
+#              it, and six such branches were found in one real sweep.
 #   unmerged   the content check above did not clear it.
+#
+# What the `in flight` guard costs: a tree that is empty and also abandoned is
+# now kept rather than collected, and every sweep reports it again. That is the
+# trade, and it is this way round because the other direction destroys work in
+# progress. Read the `KEPT` lines, and remove such a tree by hand once you know
+# nobody is in it.
 #
 # Run it from anywhere:
 #     sh tools/repo/retire-worktree.sh              # report what it would retire
@@ -95,8 +112,12 @@ open_pr() {
 
 # Merged by content: the tip is inside a merged pull request head, or inside
 # `origin/main` itself. Prints the reason that cleared it, or nothing.
+#
+# The third argument says whether ancestry may clear it. It is `no` for a
+# worktree, where sitting at the tip of `origin/main` says the tree holds
+# nothing rather than that its work landed, and `yes` for a branch with no tree.
 cleared_by() {
-    tip=$1 branch=$2
+    tip=$1 branch=$2 ancestry=${3:-yes}
     if [ -n "$branch" ]; then
         head=$(merged_head "$branch")
         if [ -n "$head" ] && git cat-file -e "$head" 2>/dev/null \
@@ -105,7 +126,7 @@ cleared_by() {
             return 0
         fi
     fi
-    if git merge-base --is-ancestor "$tip" origin/main 2>/dev/null; then
+    if [ "$ancestry" = yes ] && git merge-base --is-ancestor "$tip" origin/main 2>/dev/null; then
         printf 'an ancestor of origin/main'
         return 0
     fi
@@ -207,7 +228,7 @@ while IFS="$(printf '\t')" read -r path branch tip locked; do
         say_keep "$path ($label) — its pull request is open"
         continue
     fi
-    if reason=$(cleared_by "$tip" "$branch"); then
+    if reason=$(cleared_by "$tip" "$branch" no); then
         if [ "$retire" = yes ]; then
             if git worktree remove "$path" 2>"$work/err"; then
                 retired_trees=$((retired_trees + 1))
@@ -220,7 +241,11 @@ while IFS="$(printf '\t')" read -r path branch tip locked; do
         fi
     else
         ahead=$(git rev-list --count origin/main.."$tip" 2>/dev/null)
-        say_keep "$path ($label) — unmerged, holding ${ahead:-?} commit(s) origin/main lacks"
+        if [ "${ahead:-}" = 0 ]; then
+            say_keep "$path ($label) — holds no commit origin/main lacks, so it is a tree in flight rather than a tree whose work landed"
+        else
+            say_keep "$path ($label) — unmerged, holding ${ahead:-?} commit(s) origin/main lacks"
+        fi
     fi
 done <"$work/worktrees"
 
@@ -245,7 +270,7 @@ while IFS= read -r branch; do
         say_keep "$branch — its pull request is open"
         continue
     fi
-    if reason=$(cleared_by "$branch" "$branch"); then
+    if reason=$(cleared_by "$branch" "$branch" yes); then
         if [ "$retire" = yes ]; then
             # `-d` measures a branch against its own upstream and never against
             # `origin/main`, so it refuses every squash-merged branch. The

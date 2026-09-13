@@ -158,16 +158,32 @@ jobs:
         # implementation defect is answerable by evidence. This is the evidence,
         # so its absence has to be a failure rather than a skip.
         run: sha256sum --version
-      - name: The stock validators the two differentials run against
-        # Two suites hold an emitter to an implementation nobody here wrote.
+      - name: The stock implementations the differentials run against
+        # Three suites hold this engine to an implementation nobody here wrote.
         # `engine/crates/generate/tests/differential.rs` compares the emitted
         # JSON Schema's finding set with the engine's.
         # `engine/crates/adapter/tests/fixtures.rs` validates the emitted SARIF
         # against the OASIS schema and reads the finding set back out of it.
-        # Absent, each comparison skips, because the pinned build container
-        # carries no Python. The two variables below turn a skip into a failure,
-        # so neither gate can go quiet by losing a dependency.
-        run: python3 -m pip install --user --break-system-packages jsonschema PyYAML
+        # `engine/crates/check/src/fragment.rs`'s `renderer_slug` module holds
+        # this engine's heading-slug rule against the site's own, which is
+        # `pymdownx.slugs.slugify(case='lower')`, over every heading the site
+        # renders. Absent, each comparison skips, because the pinned build
+        # container carries no Python. The variables on the `Test` step below
+        # turn a skip into a failure, so no gate here can go quiet by losing a
+        # dependency.
+        #
+        # `pymdown-extensions==10.11.2` is pinned here and in the `site` job's
+        # own install below, and the two copies are two on purpose: this job
+        # compares against the version that job renders with, so a bump that
+        # moved one of them alone would leave the comparison holding the engine
+        # to a slugger the site no longer runs. Move both, or the comparison
+        # stops being about the site. `mkdocs.yml` already states that shape
+        # about its own pins and the two places that install them. `Markdown`
+        # is not named here: `pymdown-extensions` depends on it, and the second
+        # slugger that module provokes itself with comes from there.
+        run: |
+          python3 -m pip install --user --break-system-packages \
+            jsonschema PyYAML pymdown-extensions==10.11.2
       - name: The mount point the killed-publish suite needs
         # `engine/crates/resolve/tests/killed_publish.rs` measures what a
         # classifier reads back from a real mount point, because that is the
@@ -211,6 +227,16 @@ jobs:
           HEADWATER_SARIF_VALIDATOR: required
           HEADWATER_SHA256_ORACLE: required
           HEADWATER_JSON_ORACLE: required
+          # `engine/crates/check/src/fragment.rs` derives every heading anchor
+          # this engine resolves a prose fragment against, and `mkdocs.yml`
+          # names a second implementation of that one rule in another language.
+          # Neither can call the other, so the comparison in that file is what
+          # holds them to one answer. A release of `pymdown-extensions` that
+          # moved its slugger would move every anchor the site serves with no
+          # commit in this repository, and a comparison that skipped is how
+          # that arrives as a count of dead links rather than as a named
+          # heading (#545, #431).
+          HEADWATER_SLUG_ORACLE: required
           # `bash` is the only reader that can say a completion script loads,
           # so `engine/crates/cli/tests/completions.rs` runs the command line
           # clause 8 of #321 states through it. A runner that lost `bash`
@@ -388,8 +414,17 @@ jobs:
         # carries more weight than a version floor: `mkdocs.yml` names
         # `pymdownx.slugs.slugify` as the rule that derives every heading
         # anchor on the site, so a release that moved that function would move
-        # 2577 anchors and 3559 links with no commit in this repository. #431
-        # is what the pin protects, and the step below is what would catch it.
+        # every anchor and every in-site link with no commit in this
+        # repository. #431 is what the pin protects, and the step below is what
+        # would catch it.
+        #
+        # The `engine` job installs this same pin, on its own line, so that
+        # `renderer_slug` in `engine/crates/check/src/fragment.rs` can hold the
+        # engine's heading-slug rule against the one this job renders with.
+        # The two copies are two on purpose and have to move together: a bump
+        # here alone leaves that comparison holding the engine to a slugger the
+        # site no longer runs, and a bump there alone leaves it refusing a
+        # corpus this job renders correctly (#545).
         run: |
           python3 -m pip install --user --break-system-packages \
             mkdocs==1.6.1 pymdown-extensions==10.11.2 PyYAML
@@ -879,7 +914,7 @@ jobs:
             exit 0
           fi
           exit "$status"
-      - name: The retirement sweep refuses a locked, dirty, open or occupied worktree
+      - name: The retirement sweep refuses a locked, dirty, open, occupied or empty worktree
         # `tools/repo/retire-worktree.sh` deletes directories and branches, so what
         # this holds is mostly what it refuses. The tool exists because the
         # agent that makes a build worktree exits while its branch is still
@@ -898,6 +933,14 @@ jobs:
         # the next cargo run there exits 101 with a `NotFound` naming the
         # binary under test, which reads as a defect in the code rather than
         # as a directory somebody deleted.
+        #
+        # The empty guard is the other one with a cost behind it. A tree made
+        # by `git worktree add <path> -b <branch> origin/main` sits at that
+        # tip before anything is committed to it, so ancestry alone cleared it
+        # from the second it existed and the sweep removed the directory and
+        # then the branch it had just freed. The case asserts the reason
+        # string rather than the `KEPT` verb, because four other guards also
+        # print `KEPT`.
         #
         # It needs nothing but git. It builds its own repository under a
         # temporary directory and writes nothing inside this checkout.
@@ -938,6 +981,35 @@ jobs:
             exit 0
           fi
           exit "$status"
+      - name: A citation that went stale reads differently from one that was invented
+        # `tools/cite/check-citations.py` is the only checker in this
+        # repository that reads a code file rather than a document. Spec 5 asks
+        # generated code to carry `# per <IDENTIFIER> (<path>)` and states the
+        # purpose that rests on the comment being true, and nothing checked it,
+        # so a citation that aged out read exactly like one that still holds.
+        #
+        # The class that matters is the middle one. An identifier nothing
+        # carries is the easy half, and a checker that found only that half
+        # would pass a review while missing what the tool is for: a citation
+        # whose identifier resolves, in a file the cited document no longer
+        # governs. This suite plants each fixture at a path this repository
+        # really governs, or really does not, in a scratch copy of the corpus,
+        # and holds that the two classes report under two rule identifiers and
+        # that the advisory third one leaves the exit status at 0.
+        #
+        # The step runs over the fixtures rather than over this tree, and
+        # the reason is a measurement this suite pins rather than a claim this
+        # comment makes. Outside `tools/cite/`, one line of this repository
+        # carries the shape: `docs/spec/05-ai-integration.md` line 290, where
+        # spec 5 illustrates the convention with an identifier and a path from
+        # an imagined corpus. A case reads that real document and holds the
+        # count and the line. What this repository carries nowhere is a
+        # citation written as a claim about what licensed a line of its own
+        # code, and #844 is the issue for that.
+        #
+        # It writes only under a temporary directory and it builds no engine:
+        # it drives the one the build step above already wrote.
+        run: sh tools/cite/check-citations-fixtures.sh
       - name: The build still declares its license and still refuses to rewrite its lock
         # Two declarations that are green the day they land and green forever.
         # `--locked` on a lock that is in sync changes no exit status, so
@@ -1037,6 +1109,31 @@ jobs:
         # It runs `awk`, `sed` and `cmp`, builds no engine, opens no socket,
         # and writes only under a temporary directory.
         run: sh tools/repo/library-index-fixtures.sh
+      - name: The diataxis-site entry still resolves, and its worked corpus still reports what it records
+        # `tools/repo/diataxis-fixtures.sh`, which nothing ran until this step.
+        # The suite landed on 2026-09-11 against a fixture corpus that had
+        # carried a committed defect for two days with every gate green:
+        # `docs/taxonomies/**` is excluded from this repository's census, so a
+        # document inside a bundle's fixture corpus reaches no rule of the
+        # engine, and a strict run over that corpus exited 1 while this
+        # workflow stayed green. A suite written for that is worth nothing
+        # behind no gate, and it was behind none (#813).
+        #
+        # It holds the entry's resolution in isolation, its constructors, the
+        # four documents it assembles from the pinned sources of admission
+        # criterion 4, and the digest of every pinned file. No kind name, shelf
+        # path or expected count is written into it: the kinds come from the
+        # `add:` block of the entry's `bundle.yml` and the sources come from
+        # the table on the entry's fixture page, compared as set equality in
+        # both directions.
+        #
+        # The denominators of criterion 4 are printed and asserted by nothing.
+        # A finding count is a property of somebody else's prose, and a case
+        # that held one would redden the day a source was re-pinned or a rule
+        # of the engine was widened.
+        #
+        # It reads the engine this job already built and opens no socket.
+        run: sh tools/repo/diataxis-fixtures.sh
       - name: The command an outsider runs still runs
         # `engine/README.md` carries two `docker run` recipes, and on 2026-09-07
         # both exited 101 before compiling a line: `ordered-float 5.5.0` had

@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 434,
-      "carried": 434,
+      "in the graph": 435,
+      "carried": 435,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1788,6 +1788,27 @@
         }
       },
       {
+        "path": "docs/decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md",
+        "kind": "decision",
+        "id": "HW-DR-0064",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0064",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Routing gains the shadow-mode embedding path, amended in four places. The intent hook is the only writer, and the vectors are a cache rather than a generated artifact. The model is pinned rather than committed, and the recorder gains a join key and a liveness fact.",
+          "last_verified": "2026-09-11",
+          "title": "Q64 — Whether intent-time routing gains an offline embedding path in shadow mode",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/adjacent-work.md",
         "kind": "evaluation",
         "id": "HW-EVAL-adjacent-work",
@@ -2508,7 +2529,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How a path or identifier yields the taxonomy derivation, requirements, relations, and graph edges.",
-          "last_verified": "2026-08-25",
+          "last_verified": "2026-09-12",
           "title": "headwater explain",
           "relations": {
             "governs": [
@@ -3093,11 +3114,11 @@
         "facets": {
           "id": "HW-OBL-0010",
           "title": "The corpus descriptor exists and no probe has run against it",
-          "status": "discharged",
+          "status": "current",
           "status_since": "2026-09-11",
-          "waiting_on": "build",
+          "waiting_on": "measurement",
           "last_verified": "2026-09-11",
-          "summary": "The descriptor has a reading at last, and it says that a cold session reached neither the check layer nor the decision register.",
+          "summary": "Two recordings stand on the shelf, a confirmation refuses both, and no probe has returned a verdict against the descriptor.",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -6326,10 +6347,10 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0124",
-          "status": "discharged",
+          "status": "current",
           "status_since": "2026-09-11",
-          "waiting_on": "build",
-          "summary": "A committed transcript generates a result, regeneration holds the pair, and the result this corpus holds carries a verdict for every probe it graded.",
+          "waiting_on": "measurement",
+          "summary": "A committed transcript generates a result and regeneration holds the pair, and no result this corpus holds carries a verdict for any probe.",
           "last_verified": "2026-09-11",
           "title": "A probe result is printed and never committed, so nothing regenerates one",
           "provenance": {
@@ -7633,7 +7654,7 @@
           "status": "current",
           "status_since": "2026-09-08",
           "summary": "A caller that passes the plain color mode forever is a defect that no type and no piped test can report.",
-          "last_verified": "2026-09-08",
+          "last_verified": "2026-09-11",
           "title": "A renderer's color mode is wired at a call site that no type forbids from being wrong",
           "waiting_on": "build",
           "provenance": {
@@ -7645,7 +7666,7 @@
           },
           "relations": {
             "traces_to": [
-              "engine/crates/check/src/paint.rs"
+              "engine/crates/paint/src/lib.rs"
             ]
           }
         }
@@ -8937,7 +8958,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 63 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 64 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
@@ -9317,11 +9338,6 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": "engine/crates/check/src/paint.rs",
-        "resolver": "source-tree"
-      },
-      {
-        "anchor_kind": "code_path",
         "id": "engine/crates/check/src/voice.rs",
         "resolver": "source-tree"
       },
@@ -9428,6 +9444,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/meta/meta-schema.yml",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/paint/src/lib.rs",
         "resolver": "source-tree"
       },
       {
@@ -14898,7 +14919,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/check/src/paint.rs",
+          "id": "engine/crates/paint/src/lib.rs",
           "resolver": "source-tree"
         }
       },

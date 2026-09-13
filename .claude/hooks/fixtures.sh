@@ -1,5 +1,5 @@
 #!/bin/sh
-# What holds the three harness hooks: one fixture per outcome each hook can
+# What holds the four harness hooks: one fixture per outcome each hook can
 # reach, driven through the same standard input the harness writes.
 #
 # Spec 12 refuses a check that ships with no failing fixture. A hook is not a
@@ -674,6 +674,128 @@ if [ -x "$engine" ]; then
         '{"hook_event_name":"Stop","stop_hook_active":false}'
 else
     skip 'review.sh cases that call the engine' 'no built engine'
+fi
+
+printf '\n# cap-output.sh, on PreToolUse: a bounded result that still reports\n'
+
+# This position is judged by what the shell it rewrote then does, and not by
+# what it printed. The other three answer a harness in words; this one hands
+# back a command, so a case that read only its standard output would hold the
+# wrapper's shape and none of its behavior. `capped` runs the command the hook
+# returned and holds the result of running it.
+#
+# The suffix argument is how a property that outlives the command is read. A
+# `cd` matters only if the next thing the shell does sees it, so that case
+# appends `pwd` outside the wrapper rather than inside it.
+capped() {
+    name=$1 status=$2 substring=$3 payload=$4 suffix=${5:-}
+    reply=$(printf '%s' "$payload" | sh "$hooks/cap-output.sh" 2>&1)
+    cmd=$(printf '%s' "$reply" |
+        "$engine" json field hookSpecificOutput updatedInput command 2>/dev/null)
+    if [ -z "$cmd" ]; then
+        printf 'FAIL %s\n  the hook rewrote nothing; it replied:\n%s\n' "$name" "$reply"
+        failed=$((failed + 1))
+        return
+    fi
+    out=$(sh -c "$cmd$suffix" 2>&1)
+    got=$?
+    if [ "$got" -ne "$status" ]; then
+        printf 'FAIL %s\n  expected the rewritten command to exit %s, got %s\n' \
+            "$name" "$status" "$got"
+        failed=$((failed + 1))
+        return
+    fi
+    case $out in
+        *"$substring"*)
+            printf 'ok   %s\n' "$name"
+            passed=$((passed + 1))
+            ;;
+        *)
+            printf 'FAIL %s\n  expected the output to hold %s, got:\n%s\n' \
+                "$name" "$substring" "$out"
+            failed=$((failed + 1))
+            ;;
+    esac
+}
+
+if [ -x "$engine" ]; then
+    cap_logs=$(mktemp -d)
+    export HW_CAP_LOGDIR="$cap_logs"
+    trap 'rm -rf "$cap_logs"' EXIT INT TERM
+
+    # The cap is pinned here rather than read from the environment. The two
+    # boundary cases below name the exact line where the head stops and the
+    # line where the tail resumes, and a runner with `HW_CAP_HEAD` already set
+    # would otherwise reach a verdict that is a property of its own shell.
+    export HW_CAP_HEAD=60
+    export HW_CAP_TAIL=40
+
+    # The two silences. Neither is a refusal: the harness runs what the agent
+    # wrote, unchanged. A backgrounded call collects its output elsewhere and
+    # the wrapper would hold the shell open on it. A command this hook already
+    # wrapped carries the marker, and wrapping it twice would nest the traps and
+    # report the inner status as the outer one.
+    expect 'a backgrounded call is left alone' \
+        cap-output.sh 0 '' \
+        '{"tool_input":{"command":"sleep 1","run_in_background":true}}'
+    expect 'a command this hook already wrapped is left alone' \
+        cap-output.sh 0 '' \
+        '{"tool_input":{"command":"__hwcap=x; echo already"}}'
+    expect 'a call with no command at all is left alone' \
+        cap-output.sh 0 '' \
+        '{"tool_input":{"description":"no command here"}}'
+
+    # The decision the harness acts on. It is `allow` and never `deny`: this
+    # position bounds a result and refuses nothing, so a reader who meets it in
+    # a transcript should not have to ask whether a command was blocked.
+    expect 'a command is rewritten under an allow decision' \
+        cap-output.sh 0 '"permissionDecision":"allow"' \
+        '{"tool_input":{"command":"echo hello"}}'
+
+    # Output under the cap is not touched. The common call reads as it always
+    # did, with the status line the only addition.
+    capped 'output under the cap arrives whole' 0 'hello' \
+        '{"tool_input":{"command":"echo hello"}}'
+
+    # Output over the cap keeps both ends and names the whole log. Head alone
+    # would drop the summary a test run ends with, which is the line that says
+    # whether it passed.
+    capped 'the head stops at exactly the cap' 0 '
+60
+...[' '{"tool_input":{"command":"seq 1 400"}}'
+    capped 'the tail resumes at exactly the cap' 0 ']...
+361
+' '{"tool_input":{"command":"seq 1 400"}}'
+    capped 'output over the cap says how much it dropped' 0 'lines omitted' \
+        '{"tool_input":{"command":"seq 1 400"}}'
+    capped 'output over the cap names the whole log' 0 'whole log: ' \
+        '{"tool_input":{"command":"seq 1 400"}}'
+
+    # The exit status, which is the whole reason this is not a pipe into
+    # `head`. A bounded result that loses the status turns a failure into a
+    # silence, and this repository has paid for that shape more than once.
+    capped 'a failing command still exits non-zero' 1 '[exit=1 ' \
+        '{"tool_input":{"command":"false"}}'
+    capped 'a long failing command still exits non-zero' 1 '[exit=1 ' \
+        '{"tool_input":{"command":"seq 1 400; false"}}'
+    capped 'the exit builtin reports instead of killing the wrapper' 7 '[exit=7 ' \
+        '{"tool_input":{"command":"seq 1 400; exit 7"}}'
+
+    # Standard error reaches the same log, so the message a failure prints is
+    # readable without opening it.
+    capped 'standard error is captured with the output' 2 'the real error' \
+        '{"tool_input":{"command":"echo \"the real error\" >&2; exit 2"}}'
+
+    # A `cd` still moves the shell the next call inherits, which is what the
+    # brace group buys and a subshell would lose.
+    capped 'a cd still moves the shell the next call inherits' 0 '/etc' \
+        '{"tool_input":{"command":"cd /etc"}}' '; pwd'
+
+    rm -rf "$cap_logs"
+    trap - EXIT INT TERM
+    unset HW_CAP_LOGDIR
+else
+    skip 'cap-output.sh cases' 'no built engine'
 fi
 
 printf '\n%s passed, %s failed, %s skipped\n' "$passed" "$failed" "$skipped"

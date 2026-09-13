@@ -15,6 +15,11 @@ repository.workspace = true
 # the three can disagree about one byte string.
 headwater-hash = { workspace = true }
 
+# The terminal palette. It sits below this crate rather than inside it because
+# `headwater-census`, which this crate depends on, has a renderer of its own and
+# could never have named a module here. See `src/paint.rs` for the whole reason.
+headwater-paint = { workspace = true }
+
 # The census is the denominator. Coverage is computed against it and never
 # against the set of documents that classified.
 headwater-census = { workspace = true }
