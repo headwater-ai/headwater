@@ -1,5 +1,5 @@
 ---
-id: HW-DR-0064
+id: HW-DR-0067
 status: current
 status_since: 2026-09-11
 summary: "The vendored package root moves to `.headwater/packages/`, on the ground that the visibility it bought is one explainer, and a tree at the old root now meets a named refusal."

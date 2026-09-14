@@ -2,7 +2,7 @@
 id: HW-OBL-0184
 status: discharged
 status_since: 2026-09-11
-summary: "Issue #381 ruled where doctrine lands inside a package and gave three reasons, none about visibility. The root moved under `.headwater/` on a ruling and not on that measurement, which HW-DR-0064 states."
+summary: "Issue #381 ruled where doctrine lands inside a package and gave three reasons, none about visibility. The root moved under `.headwater/` on a ruling and not on that measurement, which HW-DR-0067 states."
 last_verified: 2026-09-11
 title: "Nothing states why the vendored package root is visible in an adopter tree"
 waiting_on: ruling
@@ -45,8 +45,8 @@ The ruling waits on one outside adopter. That adopter says where they looked for
 
 The gap in the paragraph above is not discharged by either ruling. It belongs to spec 13, and this record states it rather than closes it.
 
-**This record is discharged.** The owner ruled *move* on 2026-09-11, and [HW-DR-0064](../decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) states the ruling, the reason accepted and the condition that reopens it. The silence this record held open is gone, which is what it asked for.
+**This record is discharged.** The owner ruled *move* on 2026-09-11, and [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) states the ruling, the reason accepted and the condition that reopens it. The silence this record held open is gone, which is what it asked for.
 
-**It is discharged by a ruling and not by a measurement, and the record says so.** No outside adopter has reported. The paragraph above stands as written: the ruling was taken without the measurement the specification names, and HW-DR-0064 repeats that in its own words so that a later reader of either document is not misled into thinking the evidence arrived.
+**It is discharged by a ruling and not by a measurement, and the record says so.** No outside adopter has reported. The paragraph above stands as written: the ruling was taken without the measurement the specification names, and HW-DR-0067 repeats that in its own words so that a later reader of either document is not misled into thinking the evidence arrived.
 
 **The compatibility gap is not discharged with it.** [#821](https://github.com/headwater-ai/headwater/issues/821) carries it, and the ruling of *move* is exactly the change that made it visible: three interface contracts moved a path row by row, and no dimension of `headwater taxonomy diff` reported it.

@@ -22,7 +22,7 @@ taxonomy:
 # package was found under `packages/` and n8n's governed prose is under
 # `packages/` too: a corpus root that reached the second reached the first, so
 # the run had to be told that the package it resolves is not corpus content.
-# [HW-DR-0064](../../../../../decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)
+# [HW-DR-0067](../../../../../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)
 # moved the package root under `.headwater/`, which is outside every corpus
 # root an adopter can name, and the collision went with it. This is the one
 # corpus in this repository that measured the cost of the old root.

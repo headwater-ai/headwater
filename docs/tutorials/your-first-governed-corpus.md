@@ -111,7 +111,7 @@ vendored headwater/standard 4.2.0
   doctrine at .headwater/packages/headwater-standard/doctrine/
 ```
 
-The two paths in that account are two different trees. `packages/headwater-standard` is where the package sits inside the release tag the script fetched, and a tag's tree never moves. `.headwater/packages/headwater-standard` is where `vendor` installed it in yours ([HW-DR-0064](../decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)).
+The two paths in that account are two different trees. `packages/headwater-standard` is where the package sits inside the release tag the script fetched, and a tag's tree never moves. `.headwater/packages/headwater-standard` is where `vendor` installed it in yours ([HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)).
 
 **Check.** `ls .headwater/packages/headwater-standard` prints seven lines:
 

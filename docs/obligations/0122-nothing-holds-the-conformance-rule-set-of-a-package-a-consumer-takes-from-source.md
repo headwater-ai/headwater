@@ -47,7 +47,7 @@ The second is defensible and it is not free. A publisher is the ordinary occupan
 
 ## Discharge
 
-**This record is discharged.** [#336](https://github.com/headwater-ai/headwater/issues/336) moved the authored files of `headwater/standard` to `taxonomy-source/headwater-standard/`, outside the vendored package root. That root then held a real vendored artifact, published from that source and installed by `headwater taxonomy vendor`. It was `packages/` on the day of #336 and it is `.headwater/packages/` now ([HW-DR-0064](../decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)).
+**This record is discharged.** [#336](https://github.com/headwater-ai/headwater/issues/336) moved the authored files of `headwater/standard` to `taxonomy-source/headwater-standard/`, outside the vendored package root. That root then held a real vendored artifact, published from that source and installed by `headwater taxonomy vendor`. It was `packages/` on the day of #336 and it is `.headwater/packages/` now ([HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)).
 
 **The first of the two closing conditions this record named is the one that closed it.** A digest over the rule set, recorded where a run can compare it, was the first. `release::compute` takes a digest over every member of the vendored artifact, and `conformance.yml` is one of those members. `.headwater/taxonomy.yml` now pins that digest as `taxonomy.digest`, and `headwater conformance` reports `pin.current` as met against it.
 

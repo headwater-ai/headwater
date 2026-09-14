@@ -24,7 +24,7 @@ taxonomy:
 # No exclusion, and the absence is the finding. The design-spec fixture beside
 # this one was forced into `exclude: packages/headwater-standard/**` while a
 # taxonomy package was found under `packages/` and n8n's architecture prose
-# lives under `packages/` too. HW-DR-0064 moved the package under `.headwater/`
+# lives under `packages/` too. HW-DR-0067 moved the package under `.headwater/`
 # and that fixture declares no exclusion any more. This entry never declared
 # one, because `root: .agents` put the package outside the corpus root either
 # way, so the exclusion was a property of where that kind's prose lives rather

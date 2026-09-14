@@ -44,7 +44,7 @@ use std::path::{Path, PathBuf};
 /// The directory a package is looked up in, relative to the repository root.
 ///
 /// It sits under `.headwater/` with every other piece of consumer state this
-/// engine writes ([HW-DR-0064](../../../../docs/decisions/0064-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)).
+/// engine writes ([HW-DR-0067](../../../../docs/decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)).
 /// Engines before 0.2.0 read [`LEGACY_PACKAGES`] instead.
 pub const PACKAGES: &str = ".headwater/packages";
 

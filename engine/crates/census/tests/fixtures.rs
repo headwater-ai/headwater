@@ -694,7 +694,7 @@ fn a_planted_producer_output_and_a_planted_orphan_are_both_reported() {
     );
     assert!(!population.agrees(), "the report claims the tree agrees");
 
-    let rendered = population.render();
+    let rendered = population.render(headwater_paint::ColorMode::Plain);
     for expected in [
         "site/planted/index.html",
         "docs/nobody/README.md",
