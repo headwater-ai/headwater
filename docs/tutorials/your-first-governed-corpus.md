@@ -48,7 +48,7 @@ cargo install headwater-cli
 
 `cargo install` puts the binary in `cargo`'s own bin directory. `cargo` already put that directory on your `PATH` when it set itself up. Nothing here needs exporting, and nothing has to survive into a new shell.
 
-This installs whatever the newest published version is, from crates.io: no clone, and no local build. It does not get you `taxonomy-source`, the package this tutorial's step 3 needs. That package arrives the same way: fetched rather than cloned. Step 3 shows how. The README's *Obtaining a named version* section names the source-build route instead. It is for a reader who wants the engine and the package matched to one commit.
+This installs whatever the newest version published on crates.io. It does not get you `taxonomy-source`; step 3 fetches that. The README's *Obtaining a named version* section covers a fixed-version route instead.
 
 ## Steps
 
@@ -129,7 +129,7 @@ Step 2 named two routes, and this step took the second. `headwater taxonomy vend
 
 `taxonomy/headwater-standard/v<version>` is the taxonomy-only route. It publishes `headwater/standard` alone, with no engine release. `.github/workflows/release-taxonomy.yml` cuts a tag of this form whenever the package authors choose to. It needs no new engine version.
 
-A second route pins an engine build and this package to the same commit. The README's *Obtaining a named version* section names both. Step 5 pins the version this pulled, `4.2.0`, and the digest this block already printed. Step 16 reads back what the second pin buys.
+A second route pins a fixed version of the engine and of this package. The README's *Obtaining a named version* section names both. Step 5 pins the version this pulled, `4.2.0`, and the digest this block already printed. Step 16 reads back what the second pin buys.
 
 ### Step 4 — Meet the first refusal
 
