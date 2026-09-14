@@ -252,7 +252,7 @@ anchors
   code_path `engine/crates/resolve/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-taxonomy
   code_path `engine/crates/resolve/src/package.rs` via source-tree
-    cited by HW-DR-0064
+    cited by HW-DR-0067
   code_path `engine/crates/resolve/src/rules.rs` via source-tree
     cited by HW-DR-0025
   code_path `engine/crates/resolve/src/rules.rs` via source-tree
