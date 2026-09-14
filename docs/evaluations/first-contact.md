@@ -163,7 +163,7 @@ The theory's contribution is the last row, and it is uncomfortable. Observabilit
 
 ### Four documentation modes, and the site is a corpus
 
-Diátaxis names four kinds of documentation on two axes — practical against theoretical, and specific against general — yielding tutorials, how-to guides, reference and explanation. Its claim is that content, style and organization all follow from keeping the four apart.
+Diátaxis names four kinds of documentation on two axes — practical against theoretical, and at work against at study — yielding tutorials, how-to guides, reference and explanation. Its claim is that content, style and organization all follow from keeping the four apart.
 
 This lands on Q16 through [principle 8](../spec/00-vision-and-scope.md#design-principles) rather than as advice. If the site is generated from the corpus that documents Headwater, then the site's sections are shelves and its page types are kinds. The four modes are a candidate kind set for a documentation-site bundle. The Q3 walkthrough's own finding applies: the specification documents here serve two purposes at once. They state a model and argue for it in the same file, with `docs/evaluations/` already carrying the argument. That split is reference against explanation, found independently in this repository before the framework was consulted.
 
