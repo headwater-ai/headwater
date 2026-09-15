@@ -2,7 +2,7 @@
 
 # Obligation records
 
-195 documents on this shelf, in the reading order this corpus derives.
+196 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and no category reaches the adjudicated sample bar of 50 findings.
@@ -199,3 +199,4 @@
 - [Admission criterion 5 has no reading for an entry that serves neither core purpose](0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md) — Criterion 5 escapes only a facet-only overlay, so a full entry with a third reader intent has no reading of it. (asserted, and no human has accepted it)
 - [The base ships one voice regime and a prospective document has none](0194-the-base-ships-one-voice-regime-and-a-prospective-document-has-none.md) — The base carries `voice.declarative` alone, and it forbids `future_intent`, so a corpus of requirements on the bare base reports its own tradition. (asserted, and no human has accepted it)
 - [A requirement has no identity, so a descoped requirement has no form](0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md) — A descoped requirement is a state of one line inside a document, and a line has no identity here. (asserted, and no human has accepted it)
+- [A superseded document claims no reliance, and nothing measures whether a session honors that](0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md) — A supersession says that nobody may rely on the document that lost, and every mechanism here acts on a relation rather than on a reading. (asserted, and no human has accepted it)
