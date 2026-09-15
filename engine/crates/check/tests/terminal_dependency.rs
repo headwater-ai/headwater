@@ -222,6 +222,28 @@ fn a_relation_no_core_requirement_marks_generates_no_instance() {
     );
 }
 
+/// A relation that declares the flag for itself reaches the rule, and its
+/// neighbor of an unmarked family stays silent in the same run.
+///
+/// `cites` is `evidence`, a family no `core.requires` entry of this fixture
+/// names at all, and it carries `lifecycle_sensitive: true` on its own body.
+/// The two readings are a union: a requirement over a family marks every
+/// relation of it, and a relation marks itself, and either one is enough. A
+/// reader that took the family join as the whole answer overwrites the
+/// declaration and reports nothing here.
+#[test]
+fn a_relation_that_declares_the_flag_for_itself_reaches_the_rule() {
+    let run = run();
+    let message = about(&run, "NOTE-FIX-cites-retired").expect("the self-declared finding");
+    assert!(message.contains("`cites`"), "{message}");
+    assert!(message.contains("`deprecated`"), "{message}");
+    assert!(
+        about(&run, "NOTE-FIX-mentions-retired").is_none(),
+        "the unmarked neighbor was reported in the same run: {:?}",
+        refusals(&run)
+    );
+}
+
 /// The edge that wrote the state it points at is not resting on it.
 ///
 /// `supersedes` declares `on_target: {set_state: superseded}` and the target
@@ -375,13 +397,14 @@ fn the_direction_comes_from_the_relation_and_never_from_the_file_that_wrote_it()
 /// The whole corpus, in one assertion, so a case that stops being reported
 /// cannot hide behind a test that names only its own document.
 #[test]
-fn the_tree_reports_four_pairs_and_no_others() {
+fn the_tree_reports_five_pairs_and_no_others() {
     let run = run();
     let mut reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
     reported.sort_unstable();
     assert_eq!(
         reported,
         [
+            "terminal-dependency/live/cites-retired.md",
             "terminal-dependency/live/rests-on-receipt.md",
             "terminal-dependency/live/rests-on-retired.md",
             "terminal-dependency/live/succeeds-retired.md",

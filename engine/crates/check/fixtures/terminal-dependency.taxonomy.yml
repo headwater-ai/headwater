@@ -4,10 +4,14 @@
 # smallest shape the question needs, and every declaration here is one the rule
 # reads.
 #
-# `core.requires` is where `lifecycle_sensitive` is written, on a relation
-# *family*, because the meta-schema puts it nowhere else. `succession` carries
-# the flag and `association` does not, so `mentions` reaches no instance of this
-# rule and a corpus that only mentioned a retired document is silent.
+# `lifecycle_sensitive` is written at two grains, and this file writes both.
+# `core.requires` states a *requirement* over a family: `succession` carries the
+# flag and `association` does not, so `mentions` reaches no instance of this
+# rule and a corpus that only mentioned a retired document is silent. A relation
+# also *declares* the word for itself: `cites` is `evidence`, a family no core
+# requirement here names at all, and it carries the flag on its own body. A
+# relation is lifecycle-sensitive when either reading marks it, so `cites`
+# reaches the rule and `mentions` does not.
 #
 # Two succession relations, and the difference between them is the whole of the
 # exemption. `supersedes` declares `on_target: {set_state: superseded}`, so an
@@ -69,6 +73,12 @@ relations:
     family: association
     from: [record, receipt]
     to:   [record, receipt, stub]
+    created_by: author
+  cites:
+    family: evidence
+    from: [record, receipt]
+    to:   [record, receipt, stub]
+    lifecycle_sensitive: true
     created_by: author
 
 core:

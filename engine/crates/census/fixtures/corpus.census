@@ -132,6 +132,8 @@ docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-
   typed: decision
 docs/decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md
   typed: decision
+docs/decisions/0065-a-relation-declares-lifecycle-sensitive-for-itself-and-a-core-requirement-demands-it-of-a-family.md
+  typed: decision
 docs/decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md
   typed: decision
 docs/decisions/README.md
