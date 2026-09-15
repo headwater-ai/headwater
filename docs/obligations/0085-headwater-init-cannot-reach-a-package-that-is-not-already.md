@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 7](../spec/07-distribution-and-federation.md#publishing) says that distribution is over the registry or repository an organization already uses. It also says that the engine needs only to fetch a version and check its digest. Nothing in this engine fetches anything. `headwater_resolve::package` reads `packages/` on disk and no other place.
+[Spec 7](../spec/07-distribution-and-federation.md#publishing) says that distribution is over the registry or repository an organization already uses. It also says that the engine needs only to fetch a version and check its digest. Nothing in this engine fetches anything. `headwater_resolve::package` reads `.headwater/packages/` on disk and no other place.
 
 ## Obligation
 

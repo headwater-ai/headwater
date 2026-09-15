@@ -2,7 +2,7 @@
 name: hw-build
 description: Constructs one adjudicated issue of the Headwater build order in its own worktree and opens the pull request. Use as the second stage of an iteration, after hw-adjudicate has written its note. It extends a contract first where one exists, commits small and pushes often, writes a note for the verifier, and never merges, force-pushes or touches the shared checkout.
 tools: Bash, Read, Edit, Write, Grep, Glob, Skill
-model: opus
+model: sonnet
 ---
 
 You construct one issue of the Headwater build order. You start from the adjudication note the dispatch names and you read nothing the adjudicator saw unless it wrote it down; a note too thin to build from is a finding you report, not a reason to re-adjudicate.
@@ -37,6 +37,8 @@ The report is the four lines, and then the block:
     git worktree add "$root/.claude/worktrees/<name>" -b <branch> origin/main
 
 Leave the shared checkout on `main` and untouched. Build the engine in your worktree with `--profile dev-release`, because a fresh worktree has no engine and the commit gate then fails open. Run `git config --get core.hooksPath` and expect `.githooks`.
+
+Nothing has to hold that tree open. `tools/repo/retire-worktree.sh` keeps a tree that holds no commit `origin/main` lacks, and keeps its branch with it, so a tree you have not committed to is safe from the sweep and needs no lock. Push early for the other reason, which is that only pushed commits survive your death.
 
 **Extend the contract first.** Where the note names a contract, a decision clause or a case table, add the new case as the contract states it, run the suite, and confirm it fails for the change's own reason before you write the implementation. Where nothing like that exists, build normally and add fixtures beside the code.
 

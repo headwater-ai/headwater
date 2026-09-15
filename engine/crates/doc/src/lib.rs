@@ -71,14 +71,58 @@ pub const WARRANT: &str = "warrant";
 /// terms as the warrant beside it.
 pub const EVIDENCE_BASIS: &str = "evidence_basis";
 
+/// The warrant this engine derives for a file it wrote itself.
+///
+/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires):
+/// "The engine derives `regenerated` from the marker, and never from a
+/// declaration. A generated file that declares no front matter has no block in
+/// which to state a warrant. A generated document that declares an identity has
+/// one, and a declared warrant there would be a fact that a hand edit can
+/// falsify."
+///
+/// The value is spelled here, beside the reader that answers with it, and
+/// `headwater_audit::DERIVED` names this constant rather than repeating the
+/// word. One spelling, for the reason [`warrant`] has one reader.
+pub const REGENERATED: &str = "regenerated";
+
 /// What stands behind a document, from the provenance block of its front
 /// matter.
 ///
 /// One reader, because two would be two answers to a question that decides
 /// whether a pointer states a warrant out loud and whether a corpus has a
 /// population to promote from.
+///
+/// **A caller that also knows whether this engine wrote the file wants
+/// [`warrant_of`] instead.** This function answers what an author declared, and
+/// a generated document declares nothing here by design, so `None` from this
+/// function is an absence of a declaration rather than an absence of a warrant.
 pub fn warrant(facets: &Mapping) -> Option<&str> {
     member(facets, WARRANT)
+}
+
+/// What stands behind a document, for a caller that has the census row as well
+/// as the front matter.
+///
+/// `generated` is the census's answer and never a reading of the front matter
+/// here: `headwater_census::census::Outcome::Generated` is the one predicate
+/// over the marker, and a second reader of `headwater:generated` in this crate
+/// is how the census and its caller would come to disagree about which files
+/// this engine wrote.
+///
+/// The derivation wins over a declaration, and that is the ruling rather than a
+/// precedence this function invented. Spec 3 derives the value from the marker
+/// "and never from a declaration", so a generated document that also wrote a
+/// warrant into a provenance block wrote a fact a hand edit can falsify, and
+/// reading it would be reading the falsifiable half.
+///
+/// A caller with no census row in hand calls [`warrant`] and gets the declared
+/// half, which is the same answer this function gives for a file the engine did
+/// not write.
+pub fn warrant_of(facets: &Mapping, generated: bool) -> Option<&str> {
+    match generated {
+        true => Some(REGENERATED),
+        false => warrant(facets),
+    }
 }
 
 /// What kind of evidence a document claims to rest on, from the same block.

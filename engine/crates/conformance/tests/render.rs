@@ -90,7 +90,7 @@ fn compare(recorded: &Path, actual: &str) {
 /// copy would go stale on the next edit of the package.
 fn shipped(rule: &str) -> String {
     let text = std::fs::read_to_string(
-        repository_root().join("packages/headwater-standard/conformance.yml"),
+        repository_root().join(".headwater/packages/headwater-standard/conformance.yml"),
     )
     .expect("this repository's conformance rule set");
     let set = headwater_conformance::read(&text, "headwater/standard").expect("the rule set reads");

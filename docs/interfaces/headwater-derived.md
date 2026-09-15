@@ -67,6 +67,8 @@ Three rules give the shape, and they are read in this order:
 
 **The check layer does not carry this rule, and the reason is the grain.** A check of this repository runs at the grain of a document or of the corpus. [Spec 12](../spec/12-check-layer.md) gives a finding a document to hang on. Most paths here are not documents: a lock, a site page, a record of a test run, and a store of readings. A rule whose subject is a path that no shelf claims has no document grain to run at. So it lives in the verb that already computes the population.
 
+**The report renders the palette [HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md) rules on, when standard output is a terminal.** The opening count is a heading. Each producer command carries the verb color, because it is the command a reader retypes. Every path carries the path color, on both sides of the answer. The two headings that report a disagreement carry the error color, and their agreement counterparts stay plain: the verb exits non-zero on exactly those two conditions, so the color says what the exit status says.
+
 ## Preconditions
 
 The repository root must hold a readable `.gitattributes`. A root without one reports every producer output as undeclared.
@@ -78,7 +80,7 @@ No producer has to run first. The verb reads what each producer last wrote, and 
 | Option | What it does |
 |---|---|
 | `--root <path>` | Select the repository whose tree is read. |
-| `--no-color` | Force plain text on both streams. The default renders color only on a terminal. |
+| `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. This report paints the opening count, each producer command, every path on both sides of the answer, and the two headings that report a disagreement. |
 | `--no-banner` | Suppress the masthead. It is accepted here and does nothing, because only the root help screen prints one. |
 
 The verb takes no option of its own. It computes one answer about one tree, and the tree is every input it has. `--format` and `--json` are not options of this verb.

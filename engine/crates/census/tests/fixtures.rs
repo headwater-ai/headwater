@@ -694,7 +694,7 @@ fn a_planted_producer_output_and_a_planted_orphan_are_both_reported() {
     );
     assert!(!population.agrees(), "the report claims the tree agrees");
 
-    let rendered = population.render();
+    let rendered = population.render(headwater_paint::ColorMode::Plain);
     for expected in [
         "site/planted/index.html",
         "docs/nobody/README.md",
@@ -905,7 +905,7 @@ fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
         ],
         "the six disagreements were not all reported, or a path that agrees \
          was reported as one:\n{}",
-        population.render()
+        population.render(headwater_paint::ColorMode::Plain)
     );
     assert!(!population.agrees(), "the report claims the tree agrees");
 
@@ -919,7 +919,7 @@ fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
             .members
             .iter()
             .find(|member| member.path == path)
-            .unwrap_or_else(|| panic!("{path} is not in the report:\n{}", population.render()));
+            .unwrap_or_else(|| panic!("{path} is not in the report:\n{}", population.render(headwater_paint::ColorMode::Plain)));
         assert!(
             member.disagreement().is_none(),
             "{path} agrees with its shape and was reported as a disagreement"
@@ -948,7 +948,7 @@ fn the_report_names_the_row_the_treatment_and_the_rebuild_for_one_file_of_each_s
         "docs/LICENSE\n  not a document\n",
     );
 
-    let rendered = headwater_census::derived::population(root.path()).render();
+    let rendered = headwater_census::derived::population(root.path()).render(headwater_paint::ColorMode::Plain);
     for expected in [
         // Row 1: the path, its row, and the treatment that row takes.
         "store/readings.jsonl",
@@ -1019,9 +1019,11 @@ fn a_merge_attribute_behind_a_glob_is_reported_rather_than_skipped() {
     );
     assert!(!population.agrees(), "the report claims the tree agrees");
     assert!(
-        population.render().contains("docs/**/*.md"),
+        population
+            .render(headwater_paint::ColorMode::Plain)
+            .contains("docs/**/*.md"),
         "the report does not name the pattern it could not read:\n{}",
-        population.render()
+        population.render(headwater_paint::ColorMode::Plain)
     );
 }
 
