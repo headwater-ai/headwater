@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the facet-values tree is checked against. It is the smallest
+# shape the question needs: one enumerated facet with no machine behind it, and
+# three kinds that mean three different parts of it.
+#
+# `evidence_basis` is the case this fixture exists for. It has no order, no
+# initial value and no transitions, so no lifecycle regime can name a subset of
+# it, and it is the discriminator of no shelf. `kinds.<name>.facets.values` is
+# the only declaration that can say which of its four values a kind means.
+#
+# **Every narrowing below is one `kind inheritance` accepts**, and that is the
+# property rather than a detail. A narrowing takes values away and adds none,
+# so a child's set is a subset of every set above it. An earlier draft of this
+# file had `note` name a value `record` excluded, which the check layer read as
+# an intersection and `taxonomy validate` refuses, so the two enforcement paths
+# disagreed about one file. `engine/crates/resolve/tests/facet_narrowing.rs`
+# holds that refusal and every other one this member carries.
+#
+# `record` is abstract and narrows to two of the four. `ruling` descends from
+# it and narrows nothing of its own, so what it admits comes from walking the
+# chain and from nowhere else. `note` descends from it and narrows to one of
+# those two. `open` stands outside the chain and narrows nothing, so it admits
+# the whole declared set and still generates an instance.
+
+facets:
+  evidence_basis:
+    required: true
+    values: [measured, cited, asserted, observed]
+    volatility: stable
+    guidance:
+      measured: a number this corpus produced, with the command that produced it
+      cited: a claim attributed to a source outside this corpus
+      asserted: a claim the author stands behind and did not measure
+      observed: something seen once and not repeated
+  summary:
+    role: scent
+    required: true
+    volatility: mutable
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+kinds:
+  record:
+    abstract: true
+    purpose: hold_evidence
+    identifier: {scheme: note_id}
+    facets:
+      require: [evidence_basis, summary]
+      values:
+        evidence_basis: [measured, cited]
+  ruling:
+    is_a: record
+    identifier: {scheme: note_id}
+  note:
+    is_a: record
+    identifier: {scheme: note_id}
+    facets:
+      values:
+        evidence_basis: [cited]
+  open:
+    purpose: hold_evidence
+    identifier: {scheme: note_id}
+    facets:
+      require: [evidence_basis, summary]
+
+purposes:
+  hold_evidence: {intent: state what stands behind a claim}
+
+shelves:
+  rulings:
+    path: facet-values/rulings/**
+    homogeneous: true
+    kind: ruling
+  notes:
+    path: facet-values/notes/**
+    homogeneous: true
+    kind: note
+  opens:
+    path: facet-values/opens/**
+    homogeneous: true
+    kind: open

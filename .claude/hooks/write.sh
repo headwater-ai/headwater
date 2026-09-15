@@ -57,6 +57,14 @@ path=$(hw_field "$input" tool_input file_path) \
     || exit 0
 [ -n "$path" ] || exit 0
 
+# Corrected from the payload's own `cwd` now that it is readable. Everything
+# below this line treats `hw_root` as the repository: the prefix comparison
+# right after it, and the `explain`/`route` calls each branch makes with
+# `--root "$hw_root"`. `event` and `path` above are payload reads, not
+# checkout reads, so they were worth taking through the pre-correction root
+# first.
+hw_root=$(hw_resolve_root "$input")
+
 # The path as the corpus names it: relative to the repository root.
 case $path in
     "$hw_root"/*) rel=${path#"$hw_root"/} ;;

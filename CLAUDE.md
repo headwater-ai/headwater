@@ -58,10 +58,10 @@ Nothing makes a skill load. A harness reads a description and a model picks, whi
 |---|---|
 | `headwater-orient` | you search `docs/` or open a specification part to find out what this repository already says |
 | `headwater-authoring` | you add or revise any document under `docs/`, and whenever `headwater new` refuses |
-| `headwater-taxonomy` | you touch `packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` |
+| `headwater-taxonomy` | you touch `.headwater/packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` |
 | `ste-editor` | you rewrite prose under the governed shelves above |
 | `headwater-engine` | the first cargo or CLI command of a session, and whenever a build fails on the toolchain |
-| `repo-cleanup` | you retire a worktree, a local branch or a remote branch that a merged change left behind |
+| `repo-cleanup` | you retire a worktree, or a local or remote branch that a merged change left behind |
 | `headwater-sweep` | you are asked to read a slice of the corpus for what no check can see |
 
 `hw-verification-bar` and `hw-run-policy` load only from the build-order agents under `.claude/agents/` that name them. The first two above are ordered: orientation finds the document, and authoring writes one. `headwater explain` answers from the graph the engine already built, so open a specification part only after it has named the right one.

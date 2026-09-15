@@ -132,6 +132,14 @@ docs/decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims
   typed: decision
 docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md
   typed: decision
+docs/decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md
+  typed: decision
+docs/decisions/0065-a-relation-declares-lifecycle-sensitive-for-itself-and-a-core-requirement-demands-it-of-a-family.md
+  typed: decision
+docs/decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md
+  typed: decision
+docs/decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -147,6 +155,8 @@ docs/evaluations/default-taxonomy-first-run.md
 docs/evaluations/first-contact.md
   typed: evaluation
 docs/evaluations/graph-export-and-federation.md
+  typed: evaluation
+docs/evaluations/inspect-evals-worked-example.md
   typed: evaluation
 docs/evaluations/language-choice.md
   typed: evaluation
@@ -592,6 +602,30 @@ docs/obligations/0184-nothing-states-why-the-vendored-package-root-is-visible-in
   typed: obligation_record
 docs/obligations/0185-whether-an-admitted-library-entry-may-require-a-bundle-that-admission-refuses.md
   typed: obligation_record
+docs/obligations/0186-a-facet-only-entry-has-no-kind-and-the-entry-anatomy-asks-for-two-things-that-presume-one.md
+  typed: obligation_record
+docs/obligations/0187-the-registered-deviation-edge-of-the-compliance-tradition-cannot-be-declared.md
+  typed: obligation_record
+docs/obligations/0188-the-negative-compliance-edge-and-the-governance-precedence-clause-contradict.md
+  typed: obligation_record
+docs/obligations/0189-a-base-shelf-path-is-closed-to-every-later-entry-over-the-same-ground.md
+  typed: obligation_record
+docs/obligations/0190-a-voice-regime-carries-a-forbid-list-so-a-normative-keyword-rule-has-no-form.md
+  typed: obligation_record
+docs/obligations/0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md
+  typed: obligation_record
+docs/obligations/0192-assumptions-that-a-library-entry-takes-where-the-specification-does-not-speak.md
+  typed: obligation_record
+docs/obligations/0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md
+  typed: obligation_record
+docs/obligations/0194-the-base-ships-one-voice-regime-and-a-prospective-document-has-none.md
+  typed: obligation_record
+docs/obligations/0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md
+  typed: obligation_record
+docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md
+  typed: obligation_record
+docs/obligations/0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
@@ -612,9 +646,17 @@ docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descr
   typed: probe
 docs/probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md
   typed: probe
+docs/probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md
+  typed: probe
+docs/probes/a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks.md
+  typed: probe
 docs/probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md
   typed: probe
 docs/probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md
+  typed: probe
+docs/probes/the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens.md
+  typed: probe
+docs/probes/what-a-session-writes-points-back-at-the-ruling-it-rests-on.md
   typed: probe
 docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md
   typed: process_decision
@@ -737,6 +779,28 @@ docs/taxonomies/decision-record/fixtures/corpus/docs/obligations/0001-window-len
 docs/taxonomies/decision-record/fixtures/corpus/docs/obligations/0002-redis-durability-waits-on-an-operator.md
   excluded: docs/taxonomies/**
 docs/taxonomies/decision-record/fixtures/corpus/docs/obligations/0003-integration-guide-states-the-old-guarantee.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/LICENSE
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0001-eval-metadata-location.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0002-versioning-metadata.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0003-use-huggingface-hub-for-asset-hosting.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0004-no-floating-refs-for-external-assets.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0005-asset-manifest-in-per-eval-config.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0006-manual-upload-workflow-before-automation.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0007-dataset-hosting-escalation-policy.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0008-task-configurability-uses-standard-inspect-layers.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0009-dependency-isolation-for-conflict-heavy-evals.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0010-hardened-cross-repo-ci-for-fork-pr-tests.md
   excluded: docs/taxonomies/**
 docs/taxonomies/decision-record/templates/decision.md
   excluded: docs/taxonomies/**

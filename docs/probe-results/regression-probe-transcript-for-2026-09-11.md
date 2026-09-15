@@ -14,8 +14,21 @@ A probe result is a function of three committed inputs and of nothing else: the 
 
 ## The run this transcript recorded
 
-This transcript recorded nothing usable: it was planned against taxonomy sha256:52e80828f5e9333f24256b9163ee363e3e52069d6853a50431feabc286de5ff1 and this tree carries sha256:df757d2f0d311d6789f22f0dedb678cf8f3339fe3393674052dc21220642a82c
+This transcript recorded nothing usable: it was planned against taxonomy sha256:52e80828f5e9333f24256b9163ee363e3e52069d6853a50431feabc286de5ff1 and this tree carries sha256:2f2d2c2eab439e418769adbfd24fcb0d15cd9a28efa4acf5d628b027d53c44d0
 
-This transcript reached no grader: it was planned against taxonomy sha256:52e80828f5e9333f24256b9163ee363e3e52069d6853a50431feabc286de5ff1 and this tree carries sha256:df757d2f0d311d6789f22f0dedb678cf8f3339fe3393674052dc21220642a82c
+This transcript reached no grader: it was planned against taxonomy sha256:52e80828f5e9333f24256b9163ee363e3e52069d6853a50431feabc286de5ff1 and this tree carries sha256:2f2d2c2eab439e418769adbfd24fcb0d15cd9a28efa4acf5d628b027d53c44d0
 
 A transcript that fails any of the five confirmations is refused whole, so there are no verdicts to report and no rate over none.
+
+## What reads this result
+
+This result carries no verdict, so a rate taken off it is a rate over none. 6 documents of this corpus link this result or the transcript it graded, and each one is where a reader meets a measurement this corpus does not hold:
+
+- `docs/obligations/0005-a-closed-set-expectation-has-no-reproducibility-reading-under.md`
+- `docs/obligations/0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md`
+- `docs/obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md`
+- `docs/obligations/0014-no-probe-tests-whether-an-agent-reaches-the-adjudication-from.md`
+- `docs/obligations/0111-the-capture-cost-surface-names-an-entry-point-and-never-the-caller.md`
+- `docs/obligations/0124-a-probe-result-is-printed-and-never-committed-so-nothing-regenerates-one.md`
+
+The state this recording stands in decides whether the refusal fails a run, and it says nothing about the list above: those are other documents, and retiring the recording leaves every sentence in them where it was.

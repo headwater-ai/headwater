@@ -611,11 +611,14 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
         let required = shape.required_facets(&kind.name);
         let mut properties = Vec::new();
         for name in &required {
-            properties.push((name.clone(), constraint(shape, name)));
+            properties.push((name.clone(), constraint(shape, &kind.name, name)));
         }
         for facet in &shape.facets {
             if !required.contains(&facet.name) && !facet.values.is_empty() {
-                properties.push((facet.name.clone(), constraint(shape, &facet.name)));
+                properties.push((
+                    facet.name.clone(),
+                    constraint(shape, &kind.name, &facet.name),
+                ));
             }
         }
         let mut members = vec![
@@ -798,7 +801,15 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
 /// A bare `enum` rejects that document, which is a constraint arriving with
 /// more force than the check it claims to carry. So the emitted form admits a
 /// composite and enumerates a scalar, which is what the check does.
-fn constraint(shape: &headwater_check::Shape, name: &str) -> Json {
+///
+/// The kind is a parameter and not a convenience. A kind narrows the value set
+/// of an enumerated facet under `facets.values`, and the schema is emitted one
+/// per kind, so an `enum` over the facet's declaration would be wider than the
+/// check it carries for every narrowed kind — the divergence
+/// `engine/crates/generate/tests/differential.rs` exists to catch, and the one
+/// direction a loss set cannot record, because a constraint that is too wide is
+/// a wrong answer rather than less coverage.
+fn constraint(shape: &headwater_check::Shape, kind: &str, name: &str) -> Json {
     match shape.facet(name) {
         Some(facet) if !facet.values.is_empty() => Json::object([(
             "anyOf",
@@ -810,10 +821,11 @@ fn constraint(shape: &headwater_check::Shape, name: &str) -> Json {
                 Json::object([(
                     "enum",
                     Json::Array(
-                        facet
-                            .values
-                            .iter()
-                            .map(|value| Json::string(&value.value))
+                        shape
+                            .admitted_values(kind, name)
+                            .unwrap_or_default()
+                            .into_iter()
+                            .map(Json::string)
                             .collect(),
                     ),
                 )]),
