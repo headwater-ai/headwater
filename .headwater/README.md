@@ -2,7 +2,7 @@
 
 Two files. `taxonomy.yml` says what this repository takes, and `overlay.yml` says how it differs. They exist because [issue #4](https://github.com/headwater-ai/headwater/issues/4) typed `docs/` against the [design-spec entry](../docs/taxonomies/design-spec/doctrine.md), and a typed corpus needs a declaration to be wrong against.
 
-They run now. `headwater check` reads `taxonomy.yml` for the package it takes, the bundles it selects and the corpus it walks, and `headwater-resolve` merges the base package at [`packages/headwater-standard/`](../packages/headwater-standard/) with the design-spec bundle and this overlay. Every source is validated against the meta-schema before anything merges, and a source the meta-schema refuses stops the run. Two throwaway readers used to do this and each applied `add` operations at dotted addresses and stopped there. [The resolver](https://github.com/headwater-ai/headwater/issues/50) retired both.
+They run now. `headwater check` reads `taxonomy.yml` for the package it takes, the bundles it selects and the corpus it walks, and `headwater-resolve` merges the base package at [`.headwater/packages/headwater-standard/`](../.headwater/packages/headwater-standard/) with the design-spec bundle and this overlay. Every source is validated against the meta-schema before anything merges, and a source the meta-schema refuses stops the run. Two throwaway readers used to do this and each applied `add` operations at dotted addresses and stopped there. [The resolver](https://github.com/headwater-ai/headwater/issues/50) retired both.
 
 ## Why an overlay exists at all
 

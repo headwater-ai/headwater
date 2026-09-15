@@ -18,11 +18,11 @@
 # file would make an unrelated edit to the engine-release job run this one's
 # steps for a diff that never touches `taxonomy-source/`.
 #
-# # WHY THIS BUILDS THE ENGINE RATHER THAN ZIPPING `packages/headwater-standard`
+# # WHY THIS BUILDS THE ENGINE RATHER THAN ZIPPING `.headwater/packages/headwater-standard`
 #
-# `packages/headwater-standard` is already the vendored output of the last
+# `.headwater/packages/headwater-standard` is already the vendored output of the last
 # `taxonomy publish` a maintainer ran by hand, committed alongside the source
-# it was published from — the four-step process `packages/headwater-standard/package.yml`
+# it was published from — the four-step process `.headwater/packages/headwater-standard/package.yml`
 # documents. Zipping that directory would attach whatever a maintainer last
 # vendored, which is a fact about when someone last ran step two of that
 # process and not a fact about the tagged commit. Running `taxonomy publish`
@@ -30,7 +30,7 @@
 # makes the release and the tag the same claim: this is what publishing this
 # commit's source produces, checked the same way a consumer's `vendor` checks
 # it, with a digest this run prints rather than one carried over from
-# whenever `packages/` was last regenerated.
+# whenever `.headwater/packages/` was last regenerated.
 #
 # # THE VERSION GUARD
 #

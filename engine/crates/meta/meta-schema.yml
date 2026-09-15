@@ -49,12 +49,19 @@ meta_schema: headwater/taxonomy
 # because `members` is a closed set. No package of this repository wrote it and
 # one fixture did.
 #
+# 0.4.0 adds `relation.lifecycle_sensitive`, an optional boolean that a relation
+# writes about itself. Every source that validated under 0.3.0 validates under
+# this one, because a new optional member refuses nothing a source already
+# wrote, so it is a minor. HW-DR-0065 rules what the member means beside the
+# `core_requirement` flag of the same name: the requirement is a demand over a
+# family, and this member is a declaration by one relation.
+#
 # No consumer compares this value against anything. `fixtures/schema.record`
 # carries it, so a bump shows up in a diff, and nothing refuses a source for
 # the version it was written against. So the position of a digit here is a
 # statement to a reader and never a gate: the removal above is refused at the
 # member and never at the version.
-version: 0.3.0
+version: 0.4.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
@@ -261,6 +268,10 @@ definitions:
       # whether a declaration binds the inverse relation name.
       cardinality: {enum: [one, many]}
       created_by: {enum: [author, scaffold, generator, hook, agent, import], required: true}
+      # A relation declares the word about itself, and a `core.requires` entry
+      # demands it of a whole family. Either marks the relation, and HW-DR-0065
+      # rules that the two readings are a union rather than an override.
+      lifecycle_sensitive: {scalar: boolean}
       attributes: {map: {block: relation_attribute}}
       on_target: {block: on_target}
       invalid_when: {block: invalid_when}

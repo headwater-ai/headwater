@@ -21,7 +21,7 @@ The third dial already carries the ratchet that a maturity model would otherwise
 
 ## Where the ladder actually lives, and which rungs ship
 
-This file is the argument. `packages/headwater-standard/conformance.yml` is the ladder, and where the two disagree the package is right.
+This file is the argument. `.headwater/packages/headwater-standard/conformance.yml` is the ladder, and where the two disagree the package is right.
 
 **Three rungs ship, and they are L0, L1 and L2.** Each one names rules that the engine holds a reading for: `pin.current` and `lock.current` at L0, `corpus.classified` at L1, `projections.current` at L2. A rung arrives with the rules that earn it or it does not arrive, and a level naming no rule is refused at read time.
 

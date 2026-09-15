@@ -18,7 +18,7 @@ provenance:
 
 ## Context
 
-The canonical taxonomy library admits an entry when all seven of its [admission criteria](../taxonomies/README.md#admission-criteria) hold. `evidence-and-obligation` is the one bundle of that library that the admission table refuses. Criterion 1 refuses it because it models no tradition, and criterion 4 refuses it because it carries no worked corpus of its own. [HW-DR-0044](../decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md) authorized the split that made it, and it settled nothing about admission.
+The canonical taxonomy library admits an entry when all seven of its [admission criteria](../taxonomies/README.md#admission-criteria) hold. `evidence-and-obligation` is refused by the admission table. Criterion 1 refuses it because it models no tradition, and criterion 4 refuses it because it carries no worked corpus of its own. [HW-DR-0044](../decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md) authorized the split that made it, and it settled nothing about admission.
 
 Two admitted entries declare `requires: [evidence-and-obligation]`. `design-spec` declares it for the `evaluation` kind that left it, and `decision-record` declares it for the `obligation` purpose. The `headwater/starter` recipe also selects it. So a composer who takes either admitted entry takes a refused bundle with it, and no criterion of the seven asks about that direction.
 

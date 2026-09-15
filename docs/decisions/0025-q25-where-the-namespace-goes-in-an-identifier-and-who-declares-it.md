@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   governs:
-    - packages/headwater-standard/taxonomy.yml
+    - .headwater/packages/headwater-standard/taxonomy.yml
     - docs/taxonomies/decision-record/bundle.yml
     - engine/crates/meta/meta-schema.yml
     - engine/crates/resolve/src/rules.rs
@@ -24,7 +24,7 @@ relations:
 
 ## Context
 
-Nine identifier schemes serve this corpus. Seven are declared in this repository's own overlay and carried `namespace: HW`. Two are declared in shipped sources, and both carried `namespace: repo`. They are `decision_id` in `packages/headwater-standard/taxonomy.yml` and `obligation_record_id` in `docs/taxonomies/decision-record/bundle.yml`.
+Nine identifier schemes serve this corpus. Seven are declared in this repository's own overlay and carried `namespace: HW`. Two are declared in shipped sources, and both carried `namespace: repo`. They are `decision_id` in `.headwater/packages/headwater-standard/taxonomy.yml` and `obligation_record_id` in `docs/taxonomies/decision-record/bundle.yml`.
 
 **The split fell exactly along what is published, and the published half held the one value a namespace cannot be.** `repo` is a word that every corpus adopting the package would also write. Two adopters who take the base unchanged therefore both mint decision number one under the namespace `repo`, and the two strings are the same string. `OB-ID-1` and [departure 7](../spec/08-design-departures.md#7-identifier-namespacing-arrives-late) both rest on the namespace being globally unique, and the shipped default guaranteed a collision. [Spec 2](../spec/02-taxonomy-model.md#the-thirteen-declarations) annotated the value as globally unique when vendored, which is the one thing a constant in a published package cannot be.
 
