@@ -919,7 +919,12 @@ fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
             .members
             .iter()
             .find(|member| member.path == path)
-            .unwrap_or_else(|| panic!("{path} is not in the report:\n{}", population.render(headwater_paint::ColorMode::Plain)));
+            .unwrap_or_else(|| {
+                panic!(
+                    "{path} is not in the report:\n{}",
+                    population.render(headwater_paint::ColorMode::Plain)
+                )
+            });
         assert!(
             member.disagreement().is_none(),
             "{path} agrees with its shape and was reported as a disagreement"
@@ -948,7 +953,8 @@ fn the_report_names_the_row_the_treatment_and_the_rebuild_for_one_file_of_each_s
         "docs/LICENSE\n  not a document\n",
     );
 
-    let rendered = headwater_census::derived::population(root.path()).render(headwater_paint::ColorMode::Plain);
+    let rendered = headwater_census::derived::population(root.path())
+        .render(headwater_paint::ColorMode::Plain);
     for expected in [
         // Row 1: the path, its row, and the treatment that row takes.
         "store/readings.jsonl",
