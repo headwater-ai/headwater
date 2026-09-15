@@ -59,6 +59,15 @@ active=$(hw_field "$input" stop_hook_active)
 # turn without the gate. A session id is never reused, so a marker a dead run
 # left behind names nobody, and a run started outside the harness writes none.
 session=$(hw_field "$input" session_id)
+
+# From here on, every use of `hw_root` is corpus-relative: the git common dir
+# below, and the gate path and `cd` after it. The two reads above it are not —
+# `stop_hook_active` and `session_id` are read off the payload, not off a
+# checkout — so they run first, through whichever engine the pre-correction
+# root already resolves to, and lose nothing on a worktree with no engine of
+# its own.
+hw_root=$(hw_resolve_root "$input")
+
 if [ -n "$session" ]; then
     common=$(hw_common_dir) || common=
     if [ -n "$common" ]; then
