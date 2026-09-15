@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 424,
-      "carried": 424,
+      "in the graph": 436,
+      "carried": 436,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1788,6 +1788,27 @@
         }
       },
       {
+        "path": "docs/decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md",
+        "kind": "decision",
+        "id": "HW-DR-0064",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0064",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Routing gains the shadow-mode embedding path, amended in four places. The intent hook is the only writer, and the vectors are a cache rather than a generated artifact. The model is pinned rather than committed, and the recorder gains a join key and a liveness fact.",
+          "last_verified": "2026-09-11",
+          "title": "Q64 — Whether intent-time routing gains an offline embedding path in shadow mode",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/adjacent-work.md",
         "kind": "evaluation",
         "id": "HW-EVAL-adjacent-work",
@@ -1938,6 +1959,27 @@
               "HW-SPEC-check-layer",
               "HW-SPEC-glossary"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/evaluations/inspect-evals-worked-example.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-inspect-evals-worked-example",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-inspect-evals-worked-example",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Ten real architecture decision records from a UK government project, typed against the decision-record entry, and what the run found that their own linters cannot.",
+          "last_verified": "2026-09-11",
+          "title": "inspect_evals as a worked instance — the first ADR log this project did not write",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
           }
         }
       },
@@ -2508,7 +2550,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How a path or identifier yields the taxonomy derivation, requirements, relations, and graph edges.",
-          "last_verified": "2026-08-25",
+          "last_verified": "2026-09-12",
           "title": "headwater explain",
           "relations": {
             "governs": [
@@ -3093,11 +3135,11 @@
         "facets": {
           "id": "HW-OBL-0010",
           "title": "The corpus descriptor exists and no probe has run against it",
-          "status": "discharged",
+          "status": "current",
           "status_since": "2026-09-11",
-          "waiting_on": "build",
+          "waiting_on": "measurement",
           "last_verified": "2026-09-11",
-          "summary": "The descriptor has a reading at last, and it says that a cold session reached neither the check layer nor the decision register.",
+          "summary": "Two recordings stand on the shelf, a confirmation refuses both, and no probe has returned a verdict against the descriptor.",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -3944,7 +3986,7 @@
           "status": "current",
           "status_since": "2026-08-13",
           "waiting_on": "ruling",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-09-11",
           "summary": "The first library entry to claim an address owns it, so a second entry cannot reuse the vocabulary that both traditions need.",
           "provenance": {
             "warrant": "accepted",
@@ -6326,10 +6368,10 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0124",
-          "status": "discharged",
+          "status": "current",
           "status_since": "2026-09-11",
-          "waiting_on": "build",
-          "summary": "A committed transcript generates a result, regeneration holds the pair, and the result this corpus holds carries a verdict for every probe it graded.",
+          "waiting_on": "measurement",
+          "summary": "A committed transcript generates a result and regeneration holds the pair, and no result this corpus holds carries a verdict for any probe.",
           "last_verified": "2026-09-11",
           "title": "A probe result is printed and never committed, so nothing regenerates one",
           "provenance": {
@@ -7633,7 +7675,7 @@
           "status": "current",
           "status_since": "2026-09-08",
           "summary": "A caller that passes the plain color mode forever is a defect that no type and no piped test can report.",
-          "last_verified": "2026-09-08",
+          "last_verified": "2026-09-11",
           "title": "A renderer's color mode is wired at a call site that no type forbids from being wrong",
           "waiting_on": "build",
           "provenance": {
@@ -7645,7 +7687,7 @@
           },
           "relations": {
             "traces_to": [
-              "engine/crates/check/src/paint.rs"
+              "engine/crates/paint/src/lib.rs"
             ]
           }
         }
@@ -7755,6 +7797,226 @@
           "summary": "An entry the canonical library refuses is required by two entries it admits, and no criterion and no ruling reads that direction",
           "last_verified": "2026-09-11",
           "title": "Whether an admitted library entry may require a bundle that admission refuses",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0186-a-facet-only-entry-has-no-kind-and-the-entry-anatomy-asks-for-two-things-that-presume-one.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0186",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0186",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A facet-only entry declares no kind, so the worked corpus and the templates slot that the anatomy asks for have no stated content.",
+          "last_verified": "2026-09-11",
+          "title": "A facet-only entry has no kind, and the entry anatomy asks for two things that presume one",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0187-the-registered-deviation-edge-of-the-compliance-tradition-cannot-be-declared.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0187",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0187",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Spec 2 names a registered-deviation check on `does_not_comply_with`, and no entry can enable or declare that relation.",
+          "last_verified": "2026-09-11",
+          "title": "The registered-deviation edge of the compliance tradition cannot be declared",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0188-the-negative-compliance-edge-and-the-governance-precedence-clause-contradict.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0188",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0188",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Spec 2 puts `does_not_comply_with` in the governance family and spells it from the deviating document, so the violator governs the standard.",
+          "last_verified": "2026-09-11",
+          "title": "The negative compliance edge and the governance precedence clause contradict",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0189-a-base-shelf-path-is-closed-to-every-later-entry-over-the-same-ground.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0189",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0189",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "The base claims `docs/specifications/**` for one shelf, and shelf determinism then refuses every later entry the path its own tradition uses.",
+          "last_verified": "2026-09-11",
+          "title": "A base shelf path is closed to every later entry over the same ground",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0190-a-voice-regime-carries-a-forbid-list-so-a-normative-keyword-rule-has-no-form.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0190",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0190",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A voice regime carries a forbid list and nothing else, so a rule that every requirement uses a normative keyword has no declarable form.",
+          "last_verified": "2026-09-11",
+          "title": "A voice regime carries a forbid list, so a normative keyword rule has no form",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0191",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0191",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A document whose discriminator value names no kind leaves every check, the census still carries the row, and a strict run exits 0.",
+          "last_verified": "2026-09-11",
+          "title": "An unknown discriminator value removes a document from every check and no gate reports it",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0192-assumptions-that-a-library-entry-takes-where-the-specification-does-not-speak.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0192",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0192",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A shelf layout, a stable volatility, an identifier scheme with no namespace and an expectation window are readings that no document covers.",
+          "last_verified": "2026-09-11",
+          "title": "Assumptions that a library entry takes where the specification does not speak",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0193",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0193",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Criterion 5 escapes only a facet-only overlay, so a full entry with a third reader intent has no reading of it.",
+          "last_verified": "2026-09-11",
+          "title": "Admission criterion 5 has no reading for an entry that serves neither core purpose",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0194-the-base-ships-one-voice-regime-and-a-prospective-document-has-none.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0194",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0194",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "The base carries `voice.declarative` alone, and it forbids `future_intent`, so a corpus of requirements on the bare base reports its own tradition.",
+          "last_verified": "2026-09-11",
+          "title": "The base ships one voice regime and a prospective document has none",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0195",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0195",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "A descoped requirement is a state of one line inside a document, and a line has no identity here.",
+          "last_verified": "2026-09-11",
+          "title": "A requirement has no identity, so a descoped requirement has no form",
           "waiting_on": "ruling",
           "provenance": {
             "warrant": "asserted",
@@ -8717,7 +8979,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 63 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 64 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
@@ -9097,11 +9359,6 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": "engine/crates/check/src/paint.rs",
-        "resolver": "source-tree"
-      },
-      {
-        "anchor_kind": "code_path",
         "id": "engine/crates/check/src/voice.rs",
         "resolver": "source-tree"
       },
@@ -9208,6 +9465,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/meta/meta-schema.yml",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/paint/src/lib.rs",
         "resolver": "source-tree"
       },
       {
@@ -14678,7 +14940,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/check/src/paint.rs",
+          "id": "engine/crates/paint/src/lib.rs",
           "resolver": "source-tree"
         }
       },

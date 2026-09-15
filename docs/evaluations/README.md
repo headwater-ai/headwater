@@ -2,13 +2,14 @@
 
 # Evaluations
 
-20 documents on this shelf, in the reading order this corpus derives.
+21 documents on this shelf, in the reading order this corpus derives.
 
 - [Adjacent work and tooling](adjacent-work.md) — Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.
 - [The capability-bundle address inventory](capability-bundle-address-inventory.md) — The cross-bundle address inventory HW-DR-0044 asks for, and what it shows decision-record actually reaches inside design-spec. (asserted, and no human has accepted it)
 - [What ships in the box — a first-run walkthrough](default-taxonomy-first-run.md) — The Q3 evidence, which wrote the base package out as real YAML and ran five adopters through their first day against it.
 - [First contact — the Q11, Q12 and Q16 evaluation](first-contact.md) — The Q11, Q12 and Q16 evidence, which is the license, the migration path, and the public presence that a first reader meets.
 - [The graph, its export, and the tier above it](graph-export-and-federation.md) — The Q6, Q13 and Q9 evidence, which is where the corpus graph lives, what it exports, and how a second repository consumes it.
+- [inspect_evals as a worked instance — the first ADR log this project did not write](inspect-evals-worked-example.md) — Ten real architecture decision records from a UK government project, typed against the decision-record entry, and what the run found that their own linters cannot. (asserted, and no human has accepted it)
 - [The implementation language — the evidence for Q1](language-choice.md) — The Q1 evidence, which decides the implementation language on embedding, scope enforcement and sum types rather than on speed.
 - [The Q1 spike — results](language-spike-results.md) — The results of the Q1 risk-retirement spike, which are four items, all passing, and three findings that the argument did not predict.
 - [The Headwater taxonomy in LinkML — a worked example](linkml-worked-example.md) — The Headwater taxonomy written out in LinkML, and the boundary where the standard stops covering what spec 2 declares.
