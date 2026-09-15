@@ -21,7 +21,7 @@ provenance:
 
 ## The instrument
 
-Read `packages/headwater-standard/bundles/*/bundle.yml` for all five bundles: `design-spec`, `decision-record`, `standards-spec`, `brd-prd`, and `diataxis`. For `decision-record`, traced every relation and kind reference back to the address it needs from `design-spec`. The `requires: [design-spec]` label does not describe that footprint on its own. Cross-checked the finding against this repository's own resolved corpus. `.headwater/overlay.yml`'s `bundles:` selection is one part of that check. Whether `docs/spec/09-decisions.md` and `docs/spec/13-open-obligations.md` exercise the relations a split would have to preserve is the other part. Both are this repository's own `decision_register` and `obligation_register` documents.
+Read `.headwater/packages/headwater-standard/bundles/*/bundle.yml` for all five bundles: `design-spec`, `decision-record`, `standards-spec`, `brd-prd`, and `diataxis`. For `decision-record`, traced every relation and kind reference back to the address it needs from `design-spec`. The `requires: [design-spec]` label does not describe that footprint on its own. Cross-checked the finding against this repository's own resolved corpus. `.headwater/overlay.yml`'s `bundles:` selection is one part of that check. Whether `docs/spec/09-decisions.md` and `docs/spec/13-open-obligations.md` exercise the relations a split would have to preserve is the other part. Both are this repository's own `decision_register` and `obligation_register` documents.
 
 ## What it found
 

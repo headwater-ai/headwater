@@ -11,7 +11,8 @@
       {
         "matcher": "apply_patch",
         "hooks": [
-          { "type": "command", "command": "sh .claude/hooks/write.sh", "timeout": 15 }
+          { "type": "command", "command": "sh .claude/hooks/write.sh", "timeout": 15 },
+          { "type": "command", "command": "sh .claude/hooks/touch.sh", "timeout": 15 }
         ]
       }
     ],

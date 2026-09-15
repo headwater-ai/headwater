@@ -329,7 +329,7 @@ pub const VERBS: &[Verb] = &[
             Word {
                 name: "vendor",
                 summary: "check a fetched artifact against the pinned digest",
-                description: "Check an artifact that somebody already fetched against the digest this repository pinned, and install it under `packages/`. It refuses an artifact that is not the pinned one, and it names every file that moved. Nothing here fetches: no crate of this engine depends on the network, so the verb takes the path of a directory and never a location.",
+                description: "Check an artifact that somebody already fetched against the digest this repository pinned, and install it under `.headwater/packages/`. It refuses an artifact that is not the pinned one, and it names every file that moved. Nothing here fetches: no crate of this engine depends on the network, so the verb takes the path of a directory and never a location.",
             },
             Word {
                 name: "diff",

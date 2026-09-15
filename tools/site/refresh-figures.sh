@@ -427,15 +427,33 @@ stale_measured = [s for s in stale if s[1] not in CLOCK_KEYS]
 stale_clock = [s for s in stale if s[1] in CLOCK_KEYS]
 
 rel = lambda p: p.relative_to(root)
+
+
+def collapse(occurrences):
+    # A key repeats on a page as often as the page names it, and until here
+    # each repeat printed its own line, identical byte for byte, with nothing
+    # to tell a reader whether that was five places on the page or one place
+    # printed five times. Group by the whole tuple, so a page that genuinely
+    # disagrees with itself at two spots still prints as two lines, and carry
+    # the count forward instead of the repetition.
+    counts = {}
+    for item in occurrences:
+        counts[item] = counts.get(item, 0) + 1
+    return list(counts.items())
+
+
 for page, key in unknown:
     print("unknown figure key %s in %s" % (key, rel(page)), file=sys.stderr)
-for page, key, was, now in stale_measured:
+for (page, key, was, now), count in collapse(stale_measured):
     verb = "rewrote" if mode == "write" else "stale"
-    print("%s %s in %s: %s -> %s" % (verb, key, rel(page), was, now),
+    times = " (×%d)" % count if count > 1 else ""
+    print("%s %s in %s: %s -> %s%s" % (verb, key, rel(page), was, now, times),
           file=sys.stderr)
-for page, key, was, now in stale_clock:
+stale_clock_groups = collapse(stale_clock)
+for (page, key, was, now), count in stale_clock_groups:
     verb = "rewrote" if mode == "write" else "clock only"
-    print("%s %s in %s: %s -> %s" % (verb, key, rel(page), was, now),
+    times = " (×%d)" % count if count > 1 else ""
+    print("%s %s in %s: %s -> %s%s" % (verb, key, rel(page), was, now, times),
           file=sys.stderr)
 
 # --- the tutorial page, held against the tutorial document ----------------
@@ -523,11 +541,18 @@ if never:
 # either mode, and neither one is silently folded into the other.
 print("%d figures measured, %d used across %d pages, %d stale, run of %s"
       % (len(fig), len(used), len(pages), len(stale_measured), fig["run.date"]))
-if stale_clock:
-    print("%d further occurrences differ in a figure that is a function of the "
-          "clock. A lapsed adoption task, an expired escape directive and the "
-          "run date each move one without the tree moving, so they are counted "
-          "here and they fail no check." % len(stale_clock))
+if stale_clock_groups:
+    # Counted as groups rather than occurrences, so this sentence names the
+    # same number of figures the lines above it just printed, one grouped
+    # line each. A lapsed adoption task, an expired escape directive and the
+    # run date each move one without the tree moving, so they are counted
+    # here and they fail no check.
+    print("%d further figure%s %s only because %s a function of the "
+          "clock, and each is counted above rather than in the stale count."
+          % (len(stale_clock_groups),
+             "" if len(stale_clock_groups) == 1 else "s",
+             "differs" if len(stale_clock_groups) == 1 else "differ",
+             "it is" if len(stale_clock_groups) == 1 else "they are"))
 
 if unknown or drift or never:
     raise SystemExit(1)

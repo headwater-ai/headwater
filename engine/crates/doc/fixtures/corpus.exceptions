@@ -34,6 +34,26 @@ docs/taxonomies/decision-record/doctrine.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/decision-record/fixtures/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0001-eval-metadata-location.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0002-versioning-metadata.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0003-use-huggingface-hub-for-asset-hosting.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0004-no-floating-refs-for-external-assets.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0005-asset-manifest-in-per-eval-config.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0006-manual-upload-workflow-before-automation.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0007-dataset-hosting-escalation-policy.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0008-task-configurability-uses-standard-inspect-layers.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0009-dependency-isolation-for-conflict-heavy-evals.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0010-hardened-cross-repo-ci-for-fork-pr-tests.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/design-spec/doctrine.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/design-spec/fixtures/README.md

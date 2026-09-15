@@ -43,7 +43,7 @@ fn consumer(version: &str, digest: Option<&str>) -> Consumer {
     }
 }
 
-/// A package directory under `packages/`, with a manifest and one content file.
+/// A package directory under `.headwater/packages/`, with a manifest and one content file.
 fn package(root: &Path, version: &str) -> PathBuf {
     package_at(root, "acme", version)
 }
@@ -51,13 +51,15 @@ fn package(root: &Path, version: &str) -> PathBuf {
 /// The same package, under a directory the caller names.
 ///
 /// The directory name matters to exactly one caller and to nothing else here.
-/// `pin_current` finds a package by reading every manifest under `packages/`, so
+/// `pin_current` finds a package by reading every manifest under `.headwater/packages/`, so
 /// any name serves it. `headwater taxonomy vendor` installs at
-/// `packages/<package name with the slash replaced>`, so a test about the route
+/// `.headwater/packages/<package name with the slash replaced>`, so a test about the route
 /// has to put the source on that one path or the collision the route turns on
 /// never happens.
 fn package_at(root: &Path, directory: &str, version: &str) -> PathBuf {
-    let dir = root.join("packages").join(directory);
+    let dir = root
+        .join(headwater_resolve::package::PACKAGES)
+        .join(directory);
     std::fs::create_dir_all(&dir).expect("the package directory");
     std::fs::write(
         dir.join("package.yml"),
@@ -321,7 +323,8 @@ fn a_version_the_installed_package_does_not_declare_is_a_gap() {
 #[test]
 fn a_package_that_is_not_installed_at_all_is_a_gap() {
     let root = scratch("pin-absent");
-    std::fs::create_dir_all(root.join("packages")).expect("an empty packages directory");
+    std::fs::create_dir_all(root.join(headwater_resolve::package::PACKAGES))
+        .expect("an empty packages directory");
     let detail = gap(&pin_current(&root, &consumer("1.0.0", None)));
     assert!(detail.contains("acme/taxonomy"));
     let _ = std::fs::remove_dir_all(&root);
@@ -357,8 +360,8 @@ const ROUTE: [(&str, &str); 7] = [
     ),
     ("step 4 — vendor the artifact", "headwater taxonomy vendor"),
     (
-        "step 4 — it installs under `packages/`",
-        "under `packages/`",
+        "step 4 — it installs under `.headwater/packages/`",
+        "under `.headwater/packages/`",
     ),
     (
         "step 5 — a vendored source moves the lock, so resolve follows",
@@ -422,7 +425,8 @@ fn the_route_the_remediation_names_is_the_route_that_reaches_the_met_arm() {
     let installed = package_at(&root, "acme-taxonomy", "1.0.0");
     assert_eq!(
         installed,
-        root.join("packages").join("acme-taxonomy"),
+        root.join(headwater_resolve::package::PACKAGES)
+            .join("acme-taxonomy"),
         "the source and the destination of a vendor are one path"
     );
     assert_ne!(pin_current(&root, &consumer("1.0.0", None)), Verdict::Met);
@@ -453,7 +457,10 @@ fn the_route_the_remediation_names_is_the_route_that_reaches_the_met_arm() {
         message.contains("Move it before vendoring over it"),
         "{message}"
     );
-    assert!(message.contains("packages/acme-taxonomy"), "{message}");
+    assert!(
+        message.contains(".headwater/packages/acme-taxonomy"),
+        "{message}"
+    );
 
     // Step 3 — the move.
     std::fs::rename(&installed, root.join("aside")).expect("the source moves aside");
@@ -462,7 +469,7 @@ fn the_route_the_remediation_names_is_the_route_that_reaches_the_met_arm() {
         Verdict::Met
     );
 
-    // Step 4 — vendor, and the artifact lands under `packages/` at the package's
+    // Step 4 — vendor, and the artifact lands under `.headwater/packages/` at the package's
     // own directory, carrying the release record the source never had.
     headwater_resolve::package::vendor(&root, &artifact, &digest).expect("step 4 installs it");
     assert!(
@@ -499,7 +506,7 @@ fn the_route_the_remediation_names_is_the_route_that_reaches_the_met_arm() {
 #[test]
 fn the_remediation_of_pin_current_names_every_step_of_the_route_in_order() {
     let text = std::fs::read_to_string(
-        repository_root().join("packages/headwater-standard/conformance.yml"),
+        repository_root().join(".headwater/packages/headwater-standard/conformance.yml"),
     )
     .expect("this repository's conformance rule set");
     let set = headwater_conformance::read(&text, "headwater/standard").expect("the rule set reads");
@@ -531,7 +538,7 @@ fn the_remediation_of_pin_current_names_every_step_of_the_route_in_order() {
              one",
             "the remediation of pin.current does not name step 3 — move the existing package \
              directory aside",
-            "the remediation of pin.current does not name step 4 — it installs under `packages/`",
+            "the remediation of pin.current does not name step 4 — it installs under `.headwater/packages/`",
             "the remediation of pin.current does not name step 5 — a vendored source moves the \
              lock, so resolve follows",
         ],
@@ -548,7 +555,7 @@ fn the_remediation_of_pin_current_names_every_step_of_the_route_in_order() {
     // complete.
     const OUT_OF_TURN: &str = "headwater taxonomy publish writes one, HW-OBL-0085 records the \
                                fetch, taxonomy.digest takes the number, then run `headwater \
-                               taxonomy vendor` and it installs under `packages/`, then move \
+                               taxonomy vendor` and it installs under `.headwater/packages/`, then move \
                                the existing directory aside, then headwater taxonomy resolve.";
     assert_eq!(
         unsaid(OUT_OF_TURN),
