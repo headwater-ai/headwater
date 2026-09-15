@@ -83,6 +83,7 @@ operations
   add.identifier_schemes.acceptance_criterion_id (.headwater/overlay.yml)
   add.kinds.requirement (.headwater/overlay.yml)
   add.kinds.acceptance_criterion (.headwater/overlay.yml)
+  add.anchors.check_rule (.headwater/overlay.yml)
   add.relations.verified_by (.headwater/overlay.yml)
   add.shelves.requirements (.headwater/overlay.yml)
   add.shelves.acceptance_criteria (.headwater/overlay.yml)
@@ -98,7 +99,7 @@ declarations, by member count
   vocabularies: 1 member
   facets: 14 members
   regimes: 3 members
-  anchors: 1 member
+  anchors: 2 members
   kinds: 18 members
   relations: 12 members
   shelves: 14 members

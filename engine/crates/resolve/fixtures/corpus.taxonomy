@@ -270,6 +270,8 @@ regimes:
 anchors:
   code_path:
     resolver: source-tree
+  check_rule:
+    resolver: check-rule
 kinds:
   governed_document:
     abstract: true
@@ -655,6 +657,7 @@ relations:
     to:
       - acceptance_criterion
       - probe
+      - check_rule
 shelves:
   decisions:
     path: "docs/decisions/**"

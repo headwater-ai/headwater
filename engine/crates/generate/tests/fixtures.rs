@@ -82,13 +82,16 @@ impl Built {
         let relations = Declarations::read(root).expect("the declarations read");
         let shape = Shape::read(root).expect("the shape reads");
         let census = census::take(corpus, &taxonomy);
-        let graph = Graph::build(
-            &census,
-            &relations,
-            &Resolvers::over(corpus),
-            corpus,
-            &Config::default(),
-        );
+        // The resolver set a run of the verb assembles, and not the corpus
+        // set alone. `main.rs` adds `headwater_check::anchors::Rules` beside
+        // `source-tree`, so a fixture that took `Resolvers::over` alone would
+        // build a graph in which every `check_rule` target of this repository
+        // resolves to nothing, and would then report the committed artifact as
+        // wrong. See #411.
+        let resolvers = Resolvers::over(corpus)
+            .with(Box::new(headwater_check::anchors::Rules::shipped()))
+            .expect("the check-rule resolver is the only one of its name");
+        let graph = Graph::build(&census, &relations, &resolvers, corpus, &Config::default());
         Built {
             census,
             graph,

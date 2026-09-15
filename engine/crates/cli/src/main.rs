@@ -3007,11 +3007,20 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
 
     // The resolver set, in the one place every verb that builds a graph reaches
     // it. `Resolvers::over` builds what a corpus supplies, and `with` adds what
-    // it cannot: `headwater-import` reads a committed snapshot and depends on
-    // `headwater-graph`, so the graph crate cannot name the resolver and this is
-    // where the two meet. A repository that declares no import adds nothing and
-    // the set is what it was.
+    // it cannot: `headwater-check` owns the rule list and `headwater-import`
+    // reads a committed snapshot, and both crates depend on `headwater-graph`,
+    // so the graph crate can name neither resolver and this is where they meet.
+    // A repository that declares no import adds nothing beyond the rules and the
+    // set is what it was.
     let mut resolvers = Resolvers::over(&corpus);
+    resolvers = match resolvers.with(Box::new(headwater_check::anchors::Rules::shipped())) {
+        Ok(resolvers) => resolvers,
+        Err(why) => {
+            eprintln!("headwater: {}", err("the resolver set is ambiguous"));
+            eprintln!("{}", indent(&err(&why)));
+            return Err(ExitCode::FAILURE);
+        }
+    };
     let imports = match headwater_import::declared(root) {
         Ok(imports) => imports,
         Err(why) => {
