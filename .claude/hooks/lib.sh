@@ -81,6 +81,54 @@ hw_field() {
     printf '%s' "$_json" | "$_engine" json field "$@" 2>/dev/null
 }
 
+# The corpus-relative correction of `hw_root`, read from the payload rather
+# than from an environment variable, once a hook has captured `$input` and can
+# call `hw_field` at all.
+#
+# `CLAUDE_PROJECT_DIR` names the checkout a session started in and never
+# moves: the harness's own docs put it plainly — "`${CLAUDE_PROJECT_DIR}`
+# stays put... `cwd` follows Claude" (https://code.claude.com/docs/en/worktrees.md,
+# "Hook paths don't follow the worktree"). Every session in this repository
+# runs from a worktree, by the rule at the top of `CLAUDE.md`, so the line
+# above this one hands every such hook a `hw_root` that names the main
+# checkout regardless of which worktree is actually being checked. The
+# payload's own `cwd` member names the worktree correctly, and this is the one
+# place that reads it.
+#
+# The chicken-and-egg is real and this is the answer to it. Reading `cwd`
+# takes `hw_field`, `hw_field` takes an engine, and an engine is found through
+# `hw_root` — the same bind `cap-output.sh` reaches past on purpose, for the
+# same reason: locating a binary to answer `headwater json field` is not a
+# corpus-relative act, so it does not matter which checkout's binary answers
+# it. So a caller reads `cwd` through whatever engine the unmodified `hw_root`
+# already resolves to, and only the value this function returns — never the
+# read that produced it — is corpus-relative. Every JSON-only read a hook
+# still needs (a session id, an event name, a prompt) is best taken before
+# calling this, through the pre-correction root, so a worktree with no engine
+# of its own loses only the corpus-relative answers and not the plain parse of
+# its own input.
+#
+# `HEADWATER_HOOK_ROOT` keeps winning regardless. A fixture sets it to point a
+# hook at a corpus that is not this one on purpose, and a session's own `cwd`
+# is not grounds to override what a test asked for.
+#
+# Empty input, no `cwd` member, no engine to read it with: this returns
+# `hw_root` unchanged, the same fail-open answer every function in this file
+# gives. That is the wrong checkout in exactly the case this function exists
+# to fix, and the checkout every caller already had before that case was
+# noticed — a caller loses nothing it did not already lack.
+hw_resolve_root() {
+    if [ -n "$HEADWATER_HOOK_ROOT" ]; then
+        printf '%s' "$hw_root"
+        return 0
+    fi
+    _cwd=$(hw_field "$1" cwd) && [ -n "$_cwd" ] || {
+        printf '%s' "$hw_root"
+        return 0
+    }
+    printf '%s' "$_cwd"
+}
+
 # How many elements the array or the object at that path holds.
 #
 # An empty array and an absent member give a caller the same nothing back
@@ -113,6 +161,26 @@ hw_quote() {
 # creates several files in one call holds this hook to the first of them, and
 # the commit gate holds the rest, the same as it holds every write a `Bash`
 # call makes that no matcher here ever sees.
+# The git common dir of `hw_root`, absolute. Every worktree of one clone
+# answers the same path, which is where state that has to reach every
+# worktree of a clone belongs — `tools/run/run-dir.sh` puts `headwater-run`
+# there for the same reason, and `.claude/hooks/touch.sh` and `review.sh` put
+# `headwater-session` there.
+#
+# Empty on any failure: no git, no common dir, or a relative answer this
+# cannot resolve against `hw_root`. A caller that gets nothing back skips
+# whatever it meant to read or write there, the same as every other fail-open
+# read in this file.
+hw_common_dir() {
+    _common=$(git -C "$hw_root" rev-parse --git-common-dir 2>/dev/null) || return 1
+    [ -n "$_common" ] || return 1
+    case $_common in
+        /*) ;;
+        *) _common="$hw_root/$_common" ;;
+    esac
+    printf '%s' "$_common"
+}
+
 hw_patch_path() {
     _patch=$(hw_field "$1" tool_input command) || return 1
     _first=$(printf '%s\n' "$_patch" |

@@ -1,4 +1,4 @@
-526 seen, 344 classified, 344 checked, 6540 check instances
+526 seen, 344 classified, 344 checked, 6541 check instances
      16 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
     689 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
@@ -17,7 +17,7 @@ adoption
     344 instances of facet.value.blank
     344 instances of identifier.pattern.not_met
     344 instances of shelf.placement_is_primary
-    636 instances of relation.target.unresolved
+    637 instances of relation.target.unresolved
      88 instances of relation.reciprocity.missing
     388 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
