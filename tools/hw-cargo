@@ -72,9 +72,30 @@ case "${1:-}" in
     ;;
 esac
 
-# The worktree this was invoked from, so the built binary can be copied back to
-# where every hook and every script under tools/ looks for it.
-root=$(git rev-parse --show-toplevel 2>/dev/null) || root=
+# The worktree to copy the built binary back into, so every hook and every
+# script under tools/ finds it where it already looks. `--manifest-path`,
+# when the caller gives one, names the project cargo itself builds regardless
+# of the caller's own cwd, so this resolves the toplevel from the manifest's
+# own directory rather than from cwd. `git rev-parse --show-toplevel` against
+# the ambient cwd alone named the wrong worktree whenever a session's cwd was
+# pinned to, or had drifted into, one other than the `--manifest-path` it was
+# given (#856): the binary cargo built for the named worktree was copied into
+# the ambient one instead, silently overwriting whatever binary sat there. A
+# caller with no `--manifest-path` falls back to the ambient cwd's own
+# toplevel, which is exactly right when cwd is already the worktree meant.
+manifest=
+prev=
+for arg in "$@"; do
+    case "$prev" in --manifest-path) manifest=$arg ;; esac
+    case "$arg" in --manifest-path=*) manifest=${arg#--manifest-path=} ;; esac
+    prev=$arg
+done
+
+if [ -n "$manifest" ]; then
+    root=$(git -C "$(dirname "$manifest")" rev-parse --show-toplevel 2>/dev/null) || root=
+else
+    root=$(git rev-parse --show-toplevel 2>/dev/null) || root=
+fi
 
 # Take the first free slot. A caller that finds none queues on slot 1 rather
 # than adding a compiler to a machine that already has too many.
