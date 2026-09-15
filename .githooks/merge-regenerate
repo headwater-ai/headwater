@@ -69,19 +69,36 @@
 # that, and only while the branch is current with `main`.
 
 ours="$2"
+theirs="$3"
 path="$4"
+site_non_figure_diff=
+
+normalize_site_figures() {
+    sed -E 's/(data-figure="[^"]*">)[^<]*(<)/\1__HEADWATER_FIGURE__\2/g' "$1"
+}
 
 case "$path" in
   .headwater/corpus.json|.headwater/export.json|.headwater/nav.yml|docs/*)
     remedy="headwater generate    (CI holds it with: headwater generate --check)"
     ;;
   site/*)
-    # The pages are hand-built and only their figures are written, so the
-    # remedy rewrites the numbers and leaves every other byte of the page
-    # alone. Without this arm these paths fall to `*` below, whose line says
-    # "regenerate this artifact from its source" and names no command, which
-    # for a file git leaves with no conflict marker in it is nothing at all.
-    remedy="sh tools/site/refresh-figures.sh    (CI holds it with: sh tools/site/refresh-figures.sh --check)"
+    # These pages are mixed: hand-written prose and markup, plus measured
+    # `data-figure` spans. Refreshing figures is still needed, but it cannot by
+    # itself reconcile prose and markup that differ between the two sides.
+    # That is why this does not reduce to #675's two options: treating the page
+    # as one regenerated artifact discards hand edits, and refusing every
+    # figure-adjacent merge would stop ordinary same-day page work.
+    remedy="review prose/markup changes, then run sh tools/site/refresh-figures.sh    (CI holds it with: sh tools/site/refresh-figures.sh --check)"
+    if test -f "$ours" && test -f "$theirs"; then
+        ours_normalized=$(mktemp)
+        theirs_normalized=$(mktemp)
+        normalize_site_figures "$ours" >"$ours_normalized"
+        normalize_site_figures "$theirs" >"$theirs_normalized"
+        if ! cmp -s "$ours_normalized" "$theirs_normalized"; then
+            site_non_figure_diff=$(diff -u "$ours_normalized" "$theirs_normalized" || true)
+        fi
+        rm -f "$ours_normalized" "$theirs_normalized"
+    fi
     ;;
   .headwater/taxonomy.lock)
     remedy="headwater taxonomy resolve --write    (CI holds it with: headwater taxonomy resolve --check)"
@@ -113,6 +130,19 @@ cat >&2 <<EOF
       git add $path
 
 EOF
+
+if [ -n "$site_non_figure_diff" ]; then
+cat >&2 <<EOF
+  WARNING: non-figure prose/markup differs between %A and %B for $path.
+  Refreshing figures alone keeps one side's prose and can drop the other side.
+  Carry forward the intended prose/markup first, then refresh figures.
+
+  Non-figure diff after normalizing every data-figure span:
+
+EOF
+printf '%s\n' "$site_non_figure_diff" | sed 's/^/  /' >&2
+printf '\n' >&2
+fi
 
 # Our version stands, unmodified. Exit non-zero so that git records a conflict
 # rather than accepting it.
