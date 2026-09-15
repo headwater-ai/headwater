@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 443,
-      "carried": 443,
+      "in the graph": 444,
+      "carried": 444,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 636,
-      "carried": 636,
+      "in the graph": 637,
+      "carried": 637,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -8989,6 +8989,7 @@
               ".claude/hooks/lib.sh",
               ".claude/hooks/intent.sh",
               ".claude/hooks/write.sh",
+              ".claude/hooks/touch.sh",
               ".claude/hooks/review.sh",
               ".claude/skills/fixtures.sh",
               ".claude/skills/headwater-authoring/SKILL.md",
@@ -9388,6 +9389,11 @@
       {
         "anchor_kind": "code_path",
         "id": ".claude/hooks/review.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".claude/hooks/touch.sh",
         "resolver": "source-tree"
       },
       {
@@ -16192,6 +16198,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": ".claude/hooks/write.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/05-ai-integration.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/hooks/touch.sh",
           "resolver": "source-tree"
         }
       },

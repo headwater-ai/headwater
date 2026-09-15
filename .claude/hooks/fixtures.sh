@@ -549,6 +549,42 @@ else
     skip 'write.sh and intent.sh fail-open cases' 'no built engine'
 fi
 
+printf '\n# touch.sh, on PreToolUse: the marker review.sh reads back\n'
+if [ -x "$engine" ]; then
+    common=$(git -C "$root" rev-parse --git-common-dir 2>/dev/null)
+    case $common in
+        /*) ;;
+        *) common="$root/$common" ;;
+    esac
+    fixture_session="fixture-session-touch-$$"
+    marker="$common/headwater-session/$fixture_session/touched"
+    trap 'rm -rf "$common/headwater-session/$fixture_session"' EXIT INT TERM
+
+    expect 'a Write call is silent' \
+        touch.sh 0 '' \
+        "{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Write\",\"session_id\":\"$fixture_session\"}"
+    if [ -f "$marker" ]; then
+        printf 'ok   %s\n' 'a Write call leaves review.sh a marker for this session'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'a Write call left no marker for review.sh to read back'
+        failed=$((failed + 1))
+    fi
+
+    expect 'a second call with the same session id is silent and safe' \
+        touch.sh 0 '' \
+        "{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Edit\",\"session_id\":\"$fixture_session\"}"
+
+    expect 'touch.sh fails open with no session id at all' \
+        touch.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Write"}'
+
+    rm -rf "$common/headwater-session/$fixture_session"
+    trap - EXIT INT TERM
+else
+    skip 'touch.sh cases' 'no built engine'
+fi
+
 printf '\n# review.sh, on Stop\n'
 if [ -x "$engine" ]; then
     expect 'a tree the commit gate passes lets the turn end' \
@@ -598,6 +634,31 @@ if [ -x "$engine" ]; then
     expect 'the refusal carries the remediation the commit gate prints' \
         review.sh 2 'headwater check' \
         '{"hook_event_name":"Stop","stop_hook_active":false}'
+
+    # The session-marker exemption, over the same planted failure. A session
+    # with no marker under it could not have caused the finding above, so the
+    # gate skips it; the same session id with a marker present is gated the
+    # same as one with no session id at all.
+    common=$(git -C "$root" rev-parse --git-common-dir 2>/dev/null)
+    case $common in
+        /*) ;;
+        *) common="$root/$common" ;;
+    esac
+    fixture_session="fixture-session-review-$$"
+    session_dir="$common/headwater-session/$fixture_session"
+    trap 'rm -f "$planted"; rm -rf "$session_dir"' EXIT INT TERM
+
+    expect 'a session with no touched marker is let through the same failing tree' \
+        review.sh 0 '' \
+        "{\"hook_event_name\":\"Stop\",\"stop_hook_active\":false,\"session_id\":\"$fixture_session\"}"
+
+    mkdir -p "$session_dir" && : > "$session_dir/touched"
+    expect 'the same session marked touched is gated as before' \
+        review.sh 2 '9999-a-fixture-that-this-runner-removes.md' \
+        "{\"hook_event_name\":\"Stop\",\"stop_hook_active\":false,\"session_id\":\"$fixture_session\"}"
+
+    rm -rf "$session_dir"
+    trap 'rm -f "$planted"' EXIT INT TERM
 
     # Confirmed live: Copilot's `Stop` does not honor exit 2 the way Claude
     # Code and Codex do. An exit-2 hook there is logged and the turn ends

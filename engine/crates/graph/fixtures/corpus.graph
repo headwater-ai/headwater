@@ -15,6 +15,8 @@ anchors
     cited by HW-DR-0055
   code_path `.claude/hooks/review.sh` via source-tree
     cited by HW-SPEC-ai-integration
+  code_path `.claude/hooks/touch.sh` via source-tree
+    cited by HW-SPEC-ai-integration
   code_path `.claude/hooks/write.sh` via source-tree
     cited by HW-SPEC-ai-integration
   code_path `.claude/settings.json` via source-tree
