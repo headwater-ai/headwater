@@ -1,39 +1,39 @@
-headwater/standard 4.3.0
+headwater/standard 4.3.1
 
 sources, in application order
-  packages/headwater-standard/taxonomy.yml
-  packages/headwater-standard/bundles/design-spec/bundle.yml
-  packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
-  packages/headwater-standard/bundles/decision-record/bundle.yml
+  .headwater/packages/headwater-standard/taxonomy.yml
+  .headwater/packages/headwater-standard/bundles/design-spec/bundle.yml
+  .headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
+  .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
   .headwater/overlay.yml
 
 operations
-  add.facets.doc_type (packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.facets.sequence (packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.kinds.design_spec (packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.kinds.decision_register (packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.kinds.obligation_register (packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.kinds.review_prompt (packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.kinds.review_record (packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.relations.cites_evidence (packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.relations.applied_in (packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.relations.assesses (packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.shelves.spec_series (packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.shelves.reviews (packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.purposes.evidence (packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
-  add.purposes.obligation (packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
-  add.regimes.voice.narrative (packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
-  add.kinds.evaluation (packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
-  add.shelves.evaluations (packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
-  add.facets.waiting_on (packages/headwater-standard/bundles/decision-record/bundle.yml)
-  add.kinds.decision.facets (packages/headwater-standard/bundles/decision-record/bundle.yml)
-  add.kinds.obligation_record (packages/headwater-standard/bundles/decision-record/bundle.yml)
-  add.relations.discharges (packages/headwater-standard/bundles/decision-record/bundle.yml)
-  add.shelves.obligations (packages/headwater-standard/bundles/decision-record/bundle.yml)
-  add.identifier_schemes.obligation_record_id (packages/headwater-standard/bundles/decision-record/bundle.yml)
-  add.obligations.OB-DR-1 (packages/headwater-standard/bundles/decision-record/bundle.yml)
-  add.obligations.OB-DR-2 (packages/headwater-standard/bundles/decision-record/bundle.yml)
-  add.obligations.OB-DR-3 (packages/headwater-standard/bundles/decision-record/bundle.yml)
+  add.facets.doc_type (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.facets.sequence (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.kinds.design_spec (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.kinds.decision_register (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.kinds.obligation_register (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.kinds.review_prompt (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.kinds.review_record (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.relations.cites_evidence (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.relations.applied_in (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.relations.assesses (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.shelves.spec_series (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.shelves.reviews (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.purposes.evidence (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
+  add.purposes.obligation (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
+  add.regimes.voice.narrative (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
+  add.kinds.evaluation (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
+  add.shelves.evaluations (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
+  add.facets.waiting_on (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
+  add.kinds.decision.facets (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
+  add.kinds.obligation_record (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
+  add.relations.discharges (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
+  add.shelves.obligations (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
+  add.identifier_schemes.obligation_record_id (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
+  add.obligations.OB-DR-1 (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
+  add.obligations.OB-DR-2 (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
+  add.obligations.OB-DR-3 (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
   add.identifier_schemes.decision_id.namespace (.headwater/overlay.yml)
   add.identifier_schemes.obligation_record_id.namespace (.headwater/overlay.yml)
   add.identifier_schemes.spec_id (.headwater/overlay.yml)
@@ -93,7 +93,7 @@ operations
 
 declarations, by member count
   taxonomy: headwater/standard
-  version: 4.3.0
+  version: 4.3.1
   purposes: 6 members
   vocabularies: 1 member
   facets: 14 members

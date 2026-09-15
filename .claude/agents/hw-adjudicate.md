@@ -21,7 +21,7 @@ The report ends with this block, which the parent acts on:
     FOOTPRINT: <the derived artifacts the change regenerates, or none>
     FIXTURE: <the decisive test, in one line>
 
-`FOOTPRINT` names what a merge of this change will regenerate: a document under `docs/` moves the census, the graph export, the navigation and the shelf index; an engine change under a crate with recorded fixtures moves those; a change under `packages/` or `.headwater/overlay.yml` moves the lock. The integrator merges the widest footprint first and orders the rest behind it ([HW-PD-0004](../../docs/process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md)), so an honest footprint is worth more than a narrow one.
+`FOOTPRINT` names what a merge of this change will regenerate: a document under `docs/` moves the census, the graph export, the navigation and the shelf index; an engine change under a crate with recorded fixtures moves those; a change under `.headwater/packages/` or `.headwater/overlay.yml` moves the lock. The integrator merges the widest footprint first and orders the rest behind it ([HW-PD-0004](../../docs/process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md)), so an honest footprint is worth more than a narrow one.
 
 ## How you find each one
 
