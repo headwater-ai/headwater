@@ -62,7 +62,6 @@
   .navlinks a { color: var(--muted); text-decoration: none; }
   .navlinks a:hover { color: var(--accent); }
   .navlinks a.here { color: var(--fg); border-bottom: 2px solid var(--accent); }
-  .navlinks a.nav-cta { color: var(--accent); font-weight: 650; }
   .nav-toggle { display: none; }
 
   @media (max-width: 34rem) {
@@ -125,7 +124,7 @@
     color: var(--accent); margin: 0 0 1.8rem;
   }
   h1 {
-    font-size: 3.7rem; line-height: 1.05; letter-spacing: -0.025em;
+    font-size: 4rem; line-height: 1.05; letter-spacing: -0.025em;
     font-weight: 600; margin: 0 0 1.5rem; text-wrap: balance;
   }
   h1 em { color: var(--accent); }
@@ -160,7 +159,7 @@
   }
   .card-back {
     background: var(--code-bg); border: 1px solid var(--rule);
-    padding: 1.1rem 1.3rem; margin: -0.75rem 0 0 min(12%, 2.5rem);
+    padding: 1.1rem 1.3rem; margin: -2rem 0 0 min(12%, 2.5rem);
     position: relative; z-index: 1; overflow: hidden;
     max-width: calc(100% - min(12%, 2.5rem));
   }
@@ -287,12 +286,6 @@
     color: var(--muted);
   }
   .foot p { margin: 0 0 1rem; max-width: 46rem; }
-  .footgroups { display: flex; gap: 2.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
-  .footgroup { flex: 1 1 14rem; min-width: 0; }
-  .footlabel {
-    font-family: var(--sans); font-size: 0.72rem; text-transform: uppercase;
-    letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.7rem;
-  }
   .footlinks { display: flex; gap: 1.25rem; flex-wrap: wrap; }
 
   @media (max-width: 62rem) {
@@ -359,7 +352,7 @@
       <a href="/how-it-works/">How it works</a>
       <a href="/compare/">Compare</a>
       <a href="/proof/">Proof</a>
-      <a href="/tutorial/" class="nav-cta">Run the tutorial →</a>
+      <a href="/tutorial/">Tutorial</a>
     </div>
   </nav>
 </div>
@@ -378,14 +371,16 @@
         </div>
         <div class="install">
           <div><span class="dim">$</span> cargo install headwater-cli <span class="cursor" aria-hidden="true">▍</span></div>
-          <!-- This line works: all 23 workspace crates are on crates.io,
-               published in dependency order by
-               `.github/workflows/publish-crates.yml` (#735, still open for
-               its own remaining Done-when items). The v0.1.2 tag's run
-               (34398366170) succeeded 2026-09-09. Verified by an actual
-               `cargo install headwater-cli` into a scratch root, not only by
-               the registry listing (see #754). -->
-          <div class="note">This works: <code>cargo install headwater-cli</code> gets you the binary at whatever the newest published version is, no clone needed. It doesn't include the taxonomy package — the tutorial and the README's <em>Obtaining a named version</em> section are the two routes to that.</div>
+          <!-- v0.1.0 carries a binary and a checksum now (#707: the
+               workflow landed in #708, then a hand run of it against the
+               existing tag attached the pair, 2026-09-08). What still
+               makes this line false is narrower than before: a package
+               registry entry, which #707 named and excluded as its own
+               scope. #735 is that issue and its workflow is written
+               (`.github/workflows/publish-crates.yml`); nobody has run it,
+               because it needs a `CARGO_REGISTRY_TOKEN` this repository
+               does not hold. -->
+          <div class="note">v0.1.0 carries a binary and a checksum, but this line still does not work: <code>cargo install</code> needs a package registry entry, and #735 has not published one yet. The release page and the tutorial are the two routes that work today.</div>
         </div>
       </div>
       <div class="cards">
@@ -419,7 +414,7 @@ census
       <b class="key" data-figure="census.typed">344</b> typed
         <b class="key" data-figure="census.untyped">2</b> untyped
         <b class="key" data-figure="census.unaccounted">2</b> unaccounted for
-  <b class="key" data-figure="findings.reported">221</b> findings
+  <b class="key" data-figure="findings.reported">220</b> findings
         <b class="key" data-figure="findings.suppressed">0</b> suppressed, by dated directive
   taxonomy <span class="dim"><span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.3.1</span></span></pre>
         </div>
@@ -432,8 +427,8 @@ census
      translate of -50% loops seamlessly. Pure CSS, no script. -->
 <div class="tickerwrap" aria-hidden="true">
   <div class="tickerrun">
-    <span class="tickseg"><span data-figure="census.seen">526</span> files under the corpus root · <span data-figure="census.typed">344</span> typed · <span data-figure="census.untyped">2</span> untyped, reported as such · <span data-figure="census.unaccounted">2</span> silently unaccounted for · <span data-figure="census.instances">6541</span> check instances · <span data-figure="findings.reported">221</span> findings, every one named · <span data-figure="findings.suppressed">0</span> suppressed, each by a dated directive · <span data-figure="oblig.total">36</span> obligations: <span data-figure="oblig.verified">33</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable · taxonomy <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.3.1</span> · </span>
-    <span class="tickseg"><span data-figure="census.seen">526</span> files under the corpus root · <span data-figure="census.typed">344</span> typed · <span data-figure="census.untyped">2</span> untyped, reported as such · <span data-figure="census.unaccounted">2</span> silently unaccounted for · <span data-figure="census.instances">6541</span> check instances · <span data-figure="findings.reported">221</span> findings, every one named · <span data-figure="findings.suppressed">0</span> suppressed, each by a dated directive · <span data-figure="oblig.total">36</span> obligations: <span data-figure="oblig.verified">33</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable · taxonomy <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.3.1</span> · </span>
+    <span class="tickseg"><span data-figure="census.seen">526</span> files under the corpus root · <span data-figure="census.typed">344</span> typed · <span data-figure="census.untyped">2</span> untyped, reported as such · <span data-figure="census.unaccounted">2</span> silently unaccounted for · <span data-figure="census.instances">6541</span> check instances · <span data-figure="findings.reported">220</span> findings, every one named · <span data-figure="findings.suppressed">0</span> suppressed, each by a dated directive · <span data-figure="oblig.total">36</span> obligations: <span data-figure="oblig.verified">33</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable · taxonomy <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.3.1</span> · </span>
+    <span class="tickseg"><span data-figure="census.seen">526</span> files under the corpus root · <span data-figure="census.typed">344</span> typed · <span data-figure="census.untyped">2</span> untyped, reported as such · <span data-figure="census.unaccounted">2</span> silently unaccounted for · <span data-figure="census.instances">6541</span> check instances · <span data-figure="findings.reported">220</span> findings, every one named · <span data-figure="findings.suppressed">0</span> suppressed, each by a dated directive · <span data-figure="oblig.total">36</span> obligations: <span data-figure="oblig.verified">33</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable · taxonomy <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.3.1</span> · </span>
   </div>
 </div>
 
@@ -454,9 +449,9 @@ census
       <div><div class="statnum" data-figure="census.seen">526</div><div class="statlab">files under the corpus root — the denominator for the tiles that follow</div></div>
       <div><div class="statnum" data-figure="census.typed">344</div><div class="statlab">of those files typed, and all <span data-figure="census.checked">344</span> checked</div></div>
       <div><div class="statnum" data-figure="census.unaccounted">2</div><div class="statlab">of those files silently unaccounted for</div></div>
-      <div><div class="statnum" data-figure="findings.reported">221</div><div class="statlab">findings reported, every one named and located</div></div>
+      <div><div class="statnum" data-figure="findings.reported">220</div><div class="statlab">findings reported, every one named and located</div></div>
       <div><div class="statnum" data-figure="findings.suppressed">0</div><div class="statlab">further findings suppressed, each by a dated directive</div></div>
-      <div><div class="statnum" data-figure="findings.errors">0</div><div class="statlab">of the <span data-figure="findings.reported">221</span> are errors — every one is advisory</div></div>
+      <div><div class="statnum" data-figure="findings.errors">0</div><div class="statlab">of the <span data-figure="findings.reported">220</span> are errors — every one is advisory</div></div>
     </div>
     <p style="font-size: 0.95rem; max-width: 52rem; margin: 0 0 2.5rem; opacity: 0.85;"><span data-figure="census.instances">6541</span> check instances ran over those <span data-figure="census.typed">344</span> documents, from <span data-figure="rules.wired">32</span> wired rules, of which <span data-figure="rules.fired">3</span> found anything. The obligation register behind them holds <span data-figure="oblig.total">36</span> obligations: <span data-figure="oblig.verified">33</span> verified, <span data-figure="oblig.gap">2</span> gap and <span data-figure="oblig.unverifiable">1</span> unverifiable, and each gap names its owner.</p>
     <div class="emptyrow">
@@ -545,7 +540,7 @@ owes `superseded_by`
       <div class="commit">
         <div class="roman">III.</div>
         <h3>AI assistants are readers too, and measured ones.</h3>
-        <p>The corpus feeds agents at intent time, read time, write time, and review time. A probe records whether that context changed what the agent did — not whether it was shown.</p>
+        <p>The corpus feeds agents at intent time, read time, write time, and review time — and the system probes whether that context actually changes agent behavior, rather than assuming it does.</p>
       </div>
     </div>
     <div style="margin-top: 3rem; border-top: 1px solid var(--rule); padding-top: 2.2rem;">
@@ -616,39 +611,20 @@ owes `superseded_by`
   </div>
 </section>
 
-<section class="tint" id="final-cta">
-  <div class="bar pad" style="text-align: center;">
-    <p style="font-size: 1.3rem; max-width: 40rem; margin: 0 auto 2rem; font-family: var(--serif);">Run it against your own corpus, and read what it can't yet answer.</p>
-    <a class="cta" href="/tutorial/">Run the tutorial →</a>
-  </div>
-</section>
-
 <footer>
   <div class="bar foot">
     <p>The corpus of this project is served here, rendered from the repository on every push to the default branch: <a href="/spec/">the specification</a>, <a href="/decisions/">the decisions</a>, <a href="/obligations/">the obligation records</a>, and <a href="/corpus.json">the descriptor</a> that each of those pages names as the machine-readable account of itself.</p>
     <p>The source of this project is <a href="https://github.com/headwater-ai/headwater">github.com/headwater-ai/headwater</a>, under Apache-2.0. The engine, the taxonomy library and the corpus these pages describe are all in it.</p>
-    <div class="footgroups">
-      <div class="footgroup">
-        <div class="footlabel">The corpus — generated from the repository</div>
-        <div class="footlinks">
-          <a href="/spec/">Specification</a>
-          <a href="/decisions/">Decisions</a>
-          <a href="/obligations/">Obligations</a>
-          <a href="/corpus.json">Descriptor</a>
-        </div>
-      </div>
-      <div class="footgroup">
-        <div class="footlabel">This site — hand-built</div>
-        <div class="footlinks">
-          <a href="/how-it-works/">How it works</a>
-          <a href="/compare/">Compare</a>
-          <a href="/proof/">Proof</a>
-          <a href="/tutorial/">Tutorial</a>
-          <a href="/glossary/">Glossary</a>
-          <a href="/ns/">Namespace</a>
-          <a href="/changelog/">Changelog</a>
-        </div>
-      </div>
+    <div class="footlinks">
+      <a href="/spec/">Specification</a>
+      <a href="/decisions/">Decisions</a>
+      <a href="/how-it-works/">How it works</a>
+      <a href="/compare/">Compare</a>
+      <a href="/proof/">Proof</a>
+      <a href="/tutorial/">Tutorial</a>
+      <a href="/glossary/">Glossary</a>
+      <a href="/ns/">Namespace</a>
+      <a href="/changelog/">Changelog</a>
     </div>
   </div>
 </footer>
