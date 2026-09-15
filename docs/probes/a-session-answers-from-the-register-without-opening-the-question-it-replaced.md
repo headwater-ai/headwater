@@ -18,7 +18,7 @@ relations:
   examines:
     - HW-REG-open-questions
   traces_to:
-    - HW-OBL-0186
+    - HW-OBL-0197
 ---
 
 # A session answers from the register without opening the question it replaced
@@ -41,4 +41,4 @@ The task names no verb and no file. It asks for one settled answer, and this cor
 
 **A session that did nothing is not a session that avoided anything.** The grader refuses `not_opened` where the transcript records no tool call at all, because such a session would satisfy the predicate without ever being at risk of failing it. So a refusal leaves the denominator and never the numerator, and the count of refusals is printed beside the rate.
 
-[HW-OBL-0186](../obligations/0186-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md) records the claim this narrows: reliance is a property a state declares, every mechanism here acts on a relation, and no mechanism acts on a reading.
+[HW-OBL-0197](../obligations/0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md) records the claim this narrows: reliance is a property a state declares, every mechanism here acts on a relation, and no mechanism acts on a reading.

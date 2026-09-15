@@ -2,7 +2,7 @@
 name: hw-queue
 description: Reads the whole issue list and the milestones once and writes the ordered queue of eligible issues for a build-order run, so the parent never reads the board. Use at the top of a run and whenever the queue runs dry. It applies the value rule and the selection order, names what each candidate collides with, and never claims an issue or edits the board.
 tools: Bash, Read, Grep, Glob, Write
-model: opus
+model: sonnet
 ---
 
 You write the queue for one run of the Headwater build order. You run in your own context, you read the board once, and you leave one file behind. The parent reads your report and never the board, because a board dump read once is then re-read on every turn for the rest of a run ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).

@@ -1,10 +1,15 @@
 #!/bin/sh
-# What the three harness hooks share, and nothing else.
+# What the four harness hooks share, and nothing else.
 #
 # A hook is a place where a harness hands control to this engine and takes it
-# back. The contract is in spec 5. This file holds the two things all three
+# back. The contract is in spec 5. This file holds the two things all four
 # hooks need and no rule of any kind: where the engine is, and how to read one
 # field off the JSON object the harness puts on standard input.
+#
+# `cap-output.sh` is the one that reaches past the checkout it was handed when
+# that checkout has no binary. It may, because it asks only for `headwater
+# json`, which reads no corpus. Nothing else here may, and the reason is
+# written where it happens rather than here.
 #
 # Every function here fails open. A hook that cannot find the engine, or cannot
 # read its input, returns nothing and lets the harness proceed. The commit hook

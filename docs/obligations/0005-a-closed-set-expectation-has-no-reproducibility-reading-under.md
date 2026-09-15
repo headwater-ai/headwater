@@ -30,6 +30,6 @@ relations:
 
 ## Discharge
 
-`headwater generate --check` exists and it now holds a result document of this repository. [The result of 2026-09-11](../probe-results/regression-probe-transcript-for-2026-09-11.md) carries four verdicts of four, and one of the four probes declares a closed answer set. So the instrument has a reading at last.
+`headwater generate --check` exists and it now holds a result document of this repository. [The result of 2026-09-11](../probe-results/regression-probe-transcript-for-2026-09-11.md) carried four verdicts of four for one day, and one of the four probes declares a closed answer set. A later change moved the lock under that recording, so the first confirmation refuses it and the result carries zero verdicts of four. The instrument has no reading yet.
 
 **The reading does not support the claim, and it does not refute it either.** The closed-set session ended with the word `present`, the transcript records that word, and the verdict is `satisfied`. One verdict is not a reproducibility reading: reproducibility is a comparison of two verdicts over one expectation under one grader, and this corpus holds one. What this record waits on is a second run of the same probe.
