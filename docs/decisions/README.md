@@ -2,7 +2,7 @@
 
 # Decision records
 
-66 documents on this shelf, in the reading order this corpus derives.
+67 documents on this shelf, in the reading order this corpus derives.
 
 - [Q1 — Implementation language](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [Q2 — Schema format](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -69,4 +69,5 @@
 - [Every required facet of a generated document is derived, and the emitter composes the summary](0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md) — Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars. (asserted, and no human has accepted it)
 - [Q64 — Whether intent-time routing gains an offline embedding path in shadow mode](0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md) — Routing gains the shadow-mode embedding path, amended in four places. The intent hook is the only writer, and the vectors are a cache rather than a generated artifact. The model is pinned rather than committed, and the recorder gains a join key and a liveness fact. (asserted, and no human has accepted it)
 - [A relation declares lifecycle_sensitive for itself and a core requirement demands it of a family](0065-a-relation-declares-lifecycle-sensitive-for-itself-and-a-core-requirement-demands-it-of-a-family.md) — The relation-level member and the core requirement are a union: either marks a relation, and the published base marks nothing beyond succession. (asserted, and no human has accepted it)
+- [A kind narrows the value set of an enumerated facet, and nothing else can](0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md) — A kind states which values of an enumerated facet it means, under `facets.values`. A lifecycle regime, a shelf discriminator and `facets.forbid` each narrow a value set. None of the three reaches a facet with no state machine behind it. (asserted, and no human has accepted it)
 - [The vendored package root moves under .headwater and the old root is named in a refusal](0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) — The vendored package root moves to `.headwater/packages/`, on the ground that the visibility it bought is one explainer, and a tree at the old root now meets a named refusal. (asserted, and no human has accepted it)

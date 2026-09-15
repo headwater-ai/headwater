@@ -134,6 +134,8 @@ docs/decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-p
   typed: decision
 docs/decisions/0065-a-relation-declares-lifecycle-sensitive-for-itself-and-a-core-requirement-demands-it-of-a-family.md
   typed: decision
+docs/decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md
+  typed: decision
 docs/decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md
   typed: decision
 docs/decisions/README.md

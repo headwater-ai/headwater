@@ -68,6 +68,7 @@ nav:
       - "Every required facet of a generated document is derived, and the emitter composes the summary": "decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md"
       - "Q64 — Whether intent-time routing gains an offline embedding path in shadow mode": "decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md"
       - "A relation declares lifecycle_sensitive for itself and a core requirement demands it of a family": "decisions/0065-a-relation-declares-lifecycle-sensitive-for-itself-and-a-core-requirement-demands-it-of-a-family.md"
+      - "A kind narrows the value set of an enumerated facet, and nothing else can": "decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md"
       - "The vendored package root moves under .headwater and the old root is named in a refusal": "decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
