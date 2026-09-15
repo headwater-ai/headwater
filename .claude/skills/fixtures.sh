@@ -110,7 +110,7 @@ counted=0
 for file in $instruction_files; do
     for span in $(spans "$file"); do
         case $span in
-            docs/*|.claude/*|.headwater/*|packages/*|engine/*) ;;
+            docs/*|.claude/*|.headwater/*|engine/*) ;;
             *) continue ;;
         esac
         # A shelf pattern and a directory both name a directory.

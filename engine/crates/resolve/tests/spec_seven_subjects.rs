@@ -260,7 +260,7 @@ const RECORD_ANCHOR: &str = "The artifact ships no migration payload";
 /// and the vendored artifact a consumer of this repository resolves against.
 const RECORDS: [&str; 2] = [
     "taxonomy-source/headwater-standard/taxonomy.yml",
-    "packages/headwater-standard/taxonomy.yml",
+    ".headwater/packages/headwater-standard/taxonomy.yml",
 ];
 
 fn repo_root() -> PathBuf {
@@ -547,7 +547,7 @@ fn the_package_record_of_the_facet_required_absence_follows_the_spec_7_ruling() 
 ///
 /// The assertion is over the whole file rather than over one paragraph, because
 /// byte equality is what publish actually gives for this member. A comparison of
-/// a fresh publish into a scratch directory against `packages/headwater-standard`
+/// a fresh publish into a scratch directory against `.headwater/packages/headwater-standard`
 /// returns no differences across all 37 members, which is the measurement behind
 /// this sentence.
 ///

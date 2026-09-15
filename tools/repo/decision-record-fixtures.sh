@@ -243,8 +243,8 @@ bundle_selection() {
 # A scratch root that selects the entry. $1 = destination.
 make_root() {
     at=$1
-    mkdir -p "$at/packages" "$at/.headwater" "$at/docs"
-    cp -r "$root/packages/headwater-standard" "$at/packages/"
+    mkdir -p "$at/.headwater/packages" "$at/docs"
+    cp -r "$root/.headwater/packages/headwater-standard" "$at/.headwater/packages/"
     {
         echo 'taxonomy:'
         echo '  package: headwater/standard'

@@ -30,7 +30,7 @@
 # ## Source prose and vendored prose drifting apart with every gate green
 #
 # `docs/taxonomies/README.md` is the authored page and
-# `packages/headwater-standard/bundles/README.md` is the vendored copy that a
+# `.headwater/packages/headwater-standard/bundles/README.md` is the vendored copy that a
 # consumer of `headwater/standard` actually receives. Measured on 2026-09-07:
 # appending one line to the authored page alone left `taxonomy resolve --check`
 # at exit 0 and `headwater check --strict` at exit 0 with a byte-identical
@@ -98,7 +98,7 @@ set -u
 root=$(cd "$(dirname "$0")/../.." && pwd)
 manifest="$root/taxonomy-source/headwater-standard/package.yml"
 index="$root/docs/taxonomies/README.md"
-vendored="$root/packages/headwater-standard/bundles/README.md"
+vendored="$root/.headwater/packages/headwater-standard/bundles/README.md"
 
 for required in "$manifest" "$index" "$vendored"; do
     if [ ! -f "$required" ]; then
@@ -839,7 +839,7 @@ more_than "the carried set holds the schema, the doctrine and the templates" 1 \
 #     2026-09-07: one appended line on either side of this pair passes
 #     `taxonomy resolve --check` and `headwater check --strict` at exit 0.
 same "the source library and the vendored bundles are byte-identical where carried" \
-    "" "$(carried_judge "$lib" "$root/packages/headwater-standard/bundles" \
+    "" "$(carried_judge "$lib" "$root/.headwater/packages/headwater-standard/bundles" \
             "$scratch/parts" | tr '\n' '|')"
 
 # 3c. The drift judge, provoked in all three shapes it refuses, over a scratch
@@ -962,8 +962,8 @@ same "the \`procedure\` gap and the index agree" \
 # 4b. The vendored copy of the page is judged against the vendored sources, so
 #     the artifact a consumer receives cannot record a different gap.
 same "the vendored copy records the same gap as the vendored sources" \
-    "" "$(procedure_judge "$root/packages/headwater-standard/taxonomy.yml" \
-            "$root/packages/headwater-standard/bundles" "$vendored" | tr '\n' '|')"
+    "" "$(procedure_judge "$root/.headwater/packages/headwater-standard/taxonomy.yml" \
+            "$root/.headwater/packages/headwater-standard/bundles" "$vendored" | tr '\n' '|')"
 
 # 4c. Both refusals, provoked over scratch files. A judge whose failure nobody
 #     has seen holds nothing, and each half of an exclusive or fails for its

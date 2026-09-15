@@ -67,6 +67,7 @@ nav:
       - "A refused recording is held by the reliance its state claims, and not by promotion": "decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md"
       - "Every required facet of a generated document is derived, and the emitter composes the summary": "decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md"
       - "Q64 — Whether intent-time routing gains an offline embedding path in shadow mode": "decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md"
+      - "The vendored package root moves under .headwater and the old root is named in a refusal": "decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"

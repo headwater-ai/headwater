@@ -33,7 +33,7 @@ The form that would turn the profile on is a full regime declaration plus one `l
 
 **The doctrine page of the starter kit carries the promise, and no package carries it.** A language regime reaches prose only through the kinds that bind it. The kinds a corpus wants under a controlled profile are a fact about that corpus. The declaration therefore belongs to the adopter, and it lands in the adopter overlay. The doctrine page is where the adopter reads how to write it, and `taxonomy-source/headwater-standard/doctrine/starter.md` says so under *Your writing profile*.
 
-**`headwater init` writes no language declaration.** That holds on a tree carrying the package under `packages/` and on a tree carrying none. The verb reads one version scalar and asks its questions in the file it writes, and this ruling adds nothing to either half.
+**`headwater init` writes no language declaration.** That holds on a tree carrying the package under `.headwater/packages/` and on a tree carrying none. The verb reads one version scalar and asks its questions in the file it writes, and this ruling adds nothing to either half.
 
 **Spec 2 names the doctrine as the carrier.** Its paragraph on the two packages says where an adopter turns the profile on. The base package keeps `controlled: none` for the reason [Q3](../spec/09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) gives.
 

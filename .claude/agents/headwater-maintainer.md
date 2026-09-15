@@ -29,7 +29,7 @@ One report, in four parts, and every claim in it names the artifact it came from
 
 The binary that writes lands beside the `release` one rather than over it, and every hook and the commit gate run whichever of the two is newer. A binary from somewhere else carries its own meta-schema, so it reports findings this tree does not have and misses the ones it does. One review of a taxonomy change ran a two-day-old binary from a scratch directory and reported five errors on a document that has none.
 
-`headwater check` reads `.headwater/taxonomy.lock` and never the taxonomy sources. If the change touched `packages/`, `docs/taxonomies/` or `.headwater/overlay.yml`, run `headwater taxonomy resolve` first or your findings came from a taxonomy nobody committed.
+`headwater check` reads `.headwater/taxonomy.lock` and never the taxonomy sources. If the change touched `.headwater/packages/`, `docs/taxonomies/` or `.headwater/overlay.yml`, run `headwater taxonomy resolve` first or your findings came from a taxonomy nobody committed.
 
 For the `governs` half, run the write hook the way the harness does, once per changed path:
 

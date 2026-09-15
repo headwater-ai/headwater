@@ -2,7 +2,7 @@
 
 # Decision records
 
-64 documents on this shelf, in the reading order this corpus derives.
+65 documents on this shelf, in the reading order this corpus derives.
 
 - [Q1 — Implementation language](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [Q2 — Schema format](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -68,3 +68,4 @@
 - [A refused recording is held by the reliance its state claims, and not by promotion](0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md) — A refused transcript fails the run where its state carries the `live` role. A role that says nobody relies on the document leaves the run green. (asserted, and no human has accepted it)
 - [Every required facet of a generated document is derived, and the emitter composes the summary](0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md) — Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars. (asserted, and no human has accepted it)
 - [Q64 — Whether intent-time routing gains an offline embedding path in shadow mode](0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md) — Routing gains the shadow-mode embedding path, amended in four places. The intent hook is the only writer, and the vectors are a cache rather than a generated artifact. The model is pinned rather than committed, and the recorder gains a join key and a liveness fact. (asserted, and no human has accepted it)
+- [The vendored package root moves under .headwater and the old root is named in a refusal](0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) — The vendored package root moves to `.headwater/packages/`, on the ground that the visibility it bought is one explainer, and a tree at the old root now meets a named refusal. (asserted, and no human has accepted it)
