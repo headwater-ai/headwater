@@ -89,6 +89,11 @@ permissions:
 jobs:
   engine:
     name: Engine tests
+    # This literal is only the unset-variable fallback. Read the live value
+    # with `gh variable list` before treating either name as fact, and before
+    # reading a missing check-suite as a dead runner: a pull request that has
+    # gone `CONFLICTING` against a moved `main` gets no check-suite at all,
+    # on either runner, which looks the same from here.
     runs-on: ${{ fromJSON(vars.CI_RUNNER || '["self-hosted", "headwater"]') }}
     steps:
       - uses: actions/checkout@v4
