@@ -192,13 +192,24 @@ pub(crate) fn emit(
                 }
             }
         };
+        let bytes = render(
+            &crate::shelf_label(shelf),
+            &path,
+            &ordered,
+            front.as_deref(),
+        );
+        if let Some(declared) = &declaration.identity {
+            if let Err(reason) = crate::identity::unheld(surface, &declared.kind, &bytes) {
+                plan.unwritten.push(Unwritten {
+                    at: path,
+                    kind: Kind::ShelfIndex,
+                    reason,
+                });
+                continue;
+            }
+        }
         plan.outputs.push(Output {
-            bytes: render(
-                &crate::shelf_label(shelf),
-                &path,
-                &ordered,
-                front.as_deref(),
-            ),
+            bytes,
             path,
             kind: Kind::ShelfIndex,
         });

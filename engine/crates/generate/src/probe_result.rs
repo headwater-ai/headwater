@@ -275,10 +275,21 @@ pub(crate) fn emit(
                 readers: read_by.clone(),
             });
         }
+        let bytes = body(&front, path, &record, &results, &runs.selection, &read_by);
+        if let Some(declared) = &declaration.identity {
+            if let Err(reason) = crate::identity::unheld(surface, &declared.kind, &bytes) {
+                plan.unwritten.push(Unwritten {
+                    at: output,
+                    kind: Kind::ProbeResult,
+                    reason,
+                });
+                continue;
+            }
+        }
         plan.outputs.push(Output {
             path: output,
             kind: Kind::ProbeResult,
-            bytes: body(&front, path, &record, &results, &runs.selection, &read_by),
+            bytes,
         });
     }
 }
