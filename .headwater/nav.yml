@@ -314,6 +314,7 @@ nav:
       - "Admission criterion 5 has no reading for an entry that serves neither core purpose": "obligations/0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md"
       - "The base ships one voice regime and a prospective document has none": "obligations/0194-the-base-ships-one-voice-regime-and-a-prospective-document-has-none.md"
       - "A requirement has no identity, so a descoped requirement has no form": "obligations/0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md"
+      - "A superseded document claims no reliance, and nothing measures whether a session honors that": "obligations/0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"
@@ -326,8 +327,12 @@ nav:
       - "Probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
       - "A counted tombstone separates a withheld answer from an absent answer": "probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md"
+      - "A session answers from the register without opening the question it replaced": "probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md"
+      - "A session records an unmeasured claim in the shape this corpus checks": "probes/a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks.md"
       - "An agent reaches the adjudication from the document that lost it": "probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md"
       - "The authoring skill reaches an agent that is about to write a governed document": "probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md"
+      - "The pointer this corpus offers for a task is the document a session opens": "probes/the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens.md"
+      - "What a session writes points back at the ruling it rests on": "probes/what-a-session-writes-points-back-at-the-ruling-it-rests-on.md"
   - "Process decisions":
       - "Process decisions": "process/decisions/README.md"
       - "Orchestration prose has one owner per sentence": "process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md"
