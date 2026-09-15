@@ -67,6 +67,13 @@ case $task in
     '<task-notification>'* | '<cross-session-message'* ) exit 0 ;;
 esac
 
+# Corrected from the payload's own `cwd` now that it is readable. `engine`
+# above is a binary, found once through the pre-correction root and reused as
+# is — locating it is not a corpus-relative act, only what it is asked about
+# below is. `--root "$hw_root"` is that corpus-relative ask, so it is the one
+# argument this correction has to reach before the call is made.
+hw_root=$(hw_resolve_root "$input")
+
 route=$("$engine" route --root "$hw_root" --json "$task" 2>/dev/null) || exit 0
 
 # Two reads of one document, and the same engine that wrote it reads it back.
