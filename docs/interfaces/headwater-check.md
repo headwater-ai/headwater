@@ -39,7 +39,7 @@ The verb takes no operand. A word after `check` is refused, and the message name
 
 **Two streams carry two different facts, and a caller that merges them reads a correct report as a broken one.** The report goes to standard output. The cache accounting goes to standard error, because it is a fact about the disk of one machine rather than about the corpus. `--fix` puts its account of what it wrote on standard error for the same reason. A cached run and a `--no-cache` run write the same bytes to standard output. A line about the cache on that stream is the one thing that would make the two differ.
 
-**The verb reads the lock and never the package sources.** An edit to `packages/` or to `.headwater/overlay.yml` reaches no check until `headwater taxonomy resolve` writes the lock again. This is the trap that makes a test of a rule pass over a declaration that moved.
+**The verb reads the lock and never the package sources.** An edit to `.headwater/packages/` or to `.headwater/overlay.yml` reaches no check until `headwater taxonomy resolve` writes the lock again. This is the trap that makes a test of a rule pass over a declaration that moved.
 
 **Nothing here reaches a network.** No crate under `engine/crates/` depends on an HTTP client, and the checks read the tree in front of them.
 

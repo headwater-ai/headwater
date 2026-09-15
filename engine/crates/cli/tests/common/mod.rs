@@ -3,7 +3,7 @@
 //! they all take.
 //!
 //! `diff.rs` and `migration.rs` both build a scratch repository out of this
-//! one's `packages/`, `docs/taxonomies/` and `.headwater/`, and both then read
+//! one's `.headwater/packages/`, `docs/taxonomies/` and `.headwater/`, and both then read
 //! a step from one package version to the next.
 //!
 //! [`Root`] moved here from `diff.rs` when `conformance_lock.rs` needed the
@@ -85,7 +85,7 @@ impl Root {
         std::fs::create_dir_all(&at).expect("the root is made");
 
         let repository = repository();
-        // `packages/headwater-standard/` is a vendored artifact since #366
+        // `.headwater/packages/headwater-standard/` is a vendored artifact since #366
         // (it carries a `release.yml`, and `taxonomy publish` now refuses to
         // publish a directory in that state — the guard this fixture would
         // otherwise trip, since every case here calls `taxonomy publish` by
@@ -94,8 +94,9 @@ impl Root {
         // by-name lookup expects.
         copy(
             &repository.join("taxonomy-source/headwater-standard"),
-            &at.join("packages/headwater-standard"),
+            &at.join(".headwater/packages/headwater-standard"),
         );
+        repoint_bundles(&at.join(".headwater/packages/headwater-standard"));
         copy(
             &repository.join("docs/taxonomies"),
             &at.join("docs/taxonomies"),
@@ -197,7 +198,7 @@ pub(crate) fn copy(from: &Path, to: &Path) {
 /// package is at.
 ///
 /// Every case in both targets reads a step from 1.0.0 to 2.0.0. Without this
-/// the base version is inherited from `packages/`, so a major of the real
+/// the base version is inherited from `.headwater/packages/`, so a major of the real
 /// package rewrites a literal in every case at once. The version under test is
 /// a property of the case and not of the repository the fixture is copied from.
 ///
@@ -206,7 +207,7 @@ pub(crate) fn copy(from: &Path, to: &Path) {
 /// it, and the consumer declaration that pins what this root takes. The
 /// manifest is read first, because it is the one the resolver compares.
 pub(crate) fn pin(at: &Path, version: &str) {
-    let manifest = at.join("packages/headwater-standard/package.yml");
+    let manifest = at.join(".headwater/packages/headwater-standard/package.yml");
     let text = std::fs::read_to_string(&manifest).expect("the manifest reads");
     let found = text
         .lines()
@@ -215,8 +216,8 @@ pub(crate) fn pin(at: &Path, version: &str) {
         .to_string();
 
     for (relative, indent) in [
-        ("packages/headwater-standard/package.yml", ""),
-        ("packages/headwater-standard/taxonomy.yml", ""),
+        (".headwater/packages/headwater-standard/package.yml", ""),
+        (".headwater/packages/headwater-standard/taxonomy.yml", ""),
         (".headwater/taxonomy.yml", "  "),
     ] {
         let path = at.join(relative);
@@ -229,4 +230,22 @@ pub(crate) fn pin(at: &Path, version: &str) {
         let to = format!("\n{indent}version: {version}\n");
         std::fs::write(&path, text.replacen(&from, &to, 1)).expect("the source writes");
     }
+}
+
+/// Repoint `contents.bundles` in a scratch copy of the authored manifest.
+///
+/// The scalar is relative to the package directory, and
+/// [`package::PACKAGES`] put that directory one level deeper in #792. The
+/// prefix is computed from the constant rather than written out, so a root
+/// that moves again moves this with it. `taxonomy publish` rewrites this same
+/// scalar on every artifact it writes, so a fixture that does it here is not
+/// inventing a mechanism.
+fn repoint_bundles(package: &std::path::Path) {
+    let up = "../".repeat(headwater_resolve::package::PACKAGES.split('/').count() + 1);
+    let manifest = package.join(headwater_resolve::package::MANIFEST);
+    let text = std::fs::read_to_string(&manifest).expect("the scratch manifest reads");
+    let from = "  bundles: ../../docs/taxonomies";
+    assert!(text.contains(from), "the authored manifest states `{from}`");
+    let to = format!("  bundles: {up}docs/taxonomies");
+    std::fs::write(&manifest, text.replace(from, &to)).expect("the scratch manifest writes");
 }

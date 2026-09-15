@@ -152,14 +152,32 @@ add:
 ";
 
 fn library(scratch: &Scratch) {
-    scratch.write("packages/acme-fixture/package.yml", PACKAGE);
-    scratch.write("packages/acme-fixture/taxonomy.yml", TAXONOMY);
-    scratch.write("packages/acme-fixture/bundles/alpha/bundle.yml", ALPHA);
-    scratch.write("packages/acme-fixture/bundles/beta/bundle.yml", BETA);
-    scratch.write("packages/acme-fixture/bundles/gamma/bundle.yml", GAMMA);
-    scratch.write("packages/acme-fixture/bundles/delta/bundle.yml", DELTA);
-    scratch.write("packages/acme-fixture/bundles/epsilon/bundle.yml", EPSILON);
-    scratch.write("packages/acme-fixture/bundles/eta/bundle.yml", ETA);
+    scratch.write(".headwater/packages/acme-fixture/package.yml", PACKAGE);
+    scratch.write(".headwater/packages/acme-fixture/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/alpha/bundle.yml",
+        ALPHA,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/beta/bundle.yml",
+        BETA,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/gamma/bundle.yml",
+        GAMMA,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/delta/bundle.yml",
+        DELTA,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/epsilon/bundle.yml",
+        EPSILON,
+    );
+    scratch.write(
+        ".headwater/packages/acme-fixture/bundles/eta/bundle.yml",
+        ETA,
+    );
 }
 
 /// One recipe over the same library, selecting what the caller names.
@@ -168,14 +186,14 @@ fn library(scratch: &Scratch) {
 /// changes nothing else about the fixture.
 fn recipe(scratch: &Scratch, bundles: &[&str]) -> PathBuf {
     scratch.write(
-        "packages/acme-fixture/assemblies/starter/assembly.yml",
+        ".headwater/packages/acme-fixture/assemblies/starter/assembly.yml",
         &format!(
             "assembly: starter\npackage: acme/starter\nversion: 2.0.0\nfrom:\n  package: \
              acme/fixture@1.0.0\n  bundles: [{}]\n",
             bundles.join(", ")
         ),
     );
-    scratch.0.join("packages/acme-fixture")
+    scratch.0.join(".headwater/packages/acme-fixture")
 }
 
 fn consumer(bundles: &[&str], overlay: Option<&str>) -> Consumer {
@@ -442,7 +460,9 @@ fn a_recipe_that_omits_a_bundle_another_bundle_needs_names_the_key_a_publisher_e
 
     let text = advice.render();
     assert!(
-        text.contains("`from.bundles:` in packages/acme-fixture/assemblies/starter/assembly.yml"),
+        text.contains(
+            "`from.bundles:` in .headwater/packages/acme-fixture/assemblies/starter/assembly.yml"
+        ),
         "the remedy names the recipe file and its key: {text}"
     );
     assert!(

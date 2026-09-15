@@ -131,15 +131,21 @@ spec_layer: functional_spec
 
 /// A package that ships one bundle, with the templates a case plants in it.
 fn publisher(scratch: &Scratch, templates: &[(&str, &str)]) -> PathBuf {
-    scratch.write("publisher/packages/acme-fixture/package.yml", MANIFEST);
-    scratch.write("publisher/packages/acme-fixture/taxonomy.yml", TAXONOMY);
     scratch.write(
-        "publisher/packages/acme-fixture/bundles/specs/bundle.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
+        MANIFEST,
+    );
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/taxonomy.yml",
+        TAXONOMY,
+    );
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/bundles/specs/bundle.yml",
         BUNDLE,
     );
     for (name, body) in templates {
         scratch.write(
-            &format!("publisher/packages/acme-fixture/bundles/specs/templates/{name}"),
+            &format!("publisher/.headwater/packages/acme-fixture/bundles/specs/templates/{name}"),
             body,
         );
     }
@@ -148,14 +154,14 @@ fn publisher(scratch: &Scratch, templates: &[(&str, &str)]) -> PathBuf {
 
 /// Publish the fixture and hand back what the refusal said.
 fn refused(root: &Path, out: &Path) -> String {
-    let errors = package::publish_from(root, &root.join("packages/acme-fixture"), out)
+    let errors = package::publish_from(root, &root.join(".headwater/packages/acme-fixture"), out)
         .expect_err("the publish is refused");
     headwater_resolve::render_errors(&errors)
 }
 
 /// Every branch this reader reported over one package.
 fn variants(root: &Path) -> Vec<&'static str> {
-    let directory = root.join("packages/acme-fixture");
+    let directory = root.join(".headwater/packages/acme-fixture");
     let manifest = package::manifest_at(&directory).expect("the manifest reads");
     let taxonomy = package::maximal(root, &directory).expect("the shipped set resolves");
     template::refusals(root, &directory, &manifest, &taxonomy.taxonomy)
@@ -385,7 +391,7 @@ fn a_template_that_is_not_text_is_refused_at_publish() {
     let scratch = Scratch::new("not-text");
     let root = publisher(&scratch, &[]);
     scratch.write_bytes(
-        "publisher/packages/acme-fixture/bundles/specs/templates/functional_spec.md",
+        "publisher/.headwater/packages/acme-fixture/bundles/specs/templates/functional_spec.md",
         &[0xff, 0xfe, 0x00, 0x9f],
     );
     let out = scratch.path().join("artifact");
@@ -445,7 +451,7 @@ fn a_template_that_agrees_with_its_bundle_publishes() {
     );
     let out = scratch.path().join("artifact");
 
-    let record = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+    let record = package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
         .expect("a package whose templates agree with its bundles publishes");
     let paths: Vec<&str> = record.members.iter().map(|m| m.path.as_str()).collect();
     assert!(
@@ -483,7 +489,7 @@ fn a_markdown_file_with_no_front_matter_is_not_a_template() {
     );
     let out = scratch.path().join("artifact");
 
-    package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+    package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
         .expect("prose beside the templates is not a template");
 }
 
@@ -578,16 +584,16 @@ fn a_directory_that_declares_no_bundle_is_not_walked() {
     let scratch = Scratch::new("no-bundle-yml");
     let root = publisher(&scratch, &[("functional_spec.md", GOOD_LAYER)]);
     scratch.write(
-        "publisher/packages/acme-fixture/bundles/README.md",
+        "publisher/.headwater/packages/acme-fixture/bundles/README.md",
         "# The bundles this package ships\n",
     );
     scratch.write(
-        "publisher/packages/acme-fixture/bundles/draft/templates/functional_spec.md",
+        "publisher/.headwater/packages/acme-fixture/bundles/draft/templates/functional_spec.md",
         BAD_LAYER,
     );
     let out = scratch.path().join("artifact");
 
-    package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+    package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
         .expect("a directory that declares no bundle is not a bundle");
 }
 
@@ -628,18 +634,18 @@ fn every_refusal_branch_has_a_case() {
         let _ = std::fs::remove_dir_all(
             scratch
                 .path()
-                .join("publisher/packages/acme-fixture/bundles/specs/templates"),
+                .join("publisher/.headwater/packages/acme-fixture/bundles/specs/templates"),
         );
     }
 
     let root = publisher(&scratch, &[]);
     scratch.write(
-        "publisher/packages/acme-fixture/bundles/specs/templates/functional_spec.md",
+        "publisher/.headwater/packages/acme-fixture/bundles/specs/templates/functional_spec.md",
         "---\nstatus_since: {{today}}\n---\n\n# x\n",
     );
     reached.extend(variants(&root));
     scratch.write_bytes(
-        "publisher/packages/acme-fixture/bundles/specs/templates/functional_spec.md",
+        "publisher/.headwater/packages/acme-fixture/bundles/specs/templates/functional_spec.md",
         &[0xff, 0xfe],
     );
     reached.extend(variants(&root));

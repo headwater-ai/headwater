@@ -125,7 +125,7 @@ fn this_repositorys_own_sources_validate_to_the_recorded_verdict() {
     let root = repository_root();
     let mut out = String::new();
 
-    const BASE: &str = "packages/headwater-standard/taxonomy.yml";
+    const BASE: &str = ".headwater/packages/headwater-standard/taxonomy.yml";
     const BUNDLE: &str = "docs/taxonomies/design-spec/bundle.yml";
     const OVERLAY: &str = ".headwater/overlay.yml";
 

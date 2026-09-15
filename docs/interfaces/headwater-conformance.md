@@ -40,7 +40,7 @@ Without `--level`, the verb measures and exits successfully even when gaps exist
 
 The repository must carry a readable `.headwater/taxonomy.lock` and consumer declaration. The lock supplies the package identity and the corpus configuration.
 
-The selected package must exist under `packages/`, declare a conformance file and carry a conformance format this engine reads.
+The selected package must exist under `.headwater/packages/`, declare a conformance file and carry a conformance format this engine reads.
 
 The projections must read from the resolved taxonomy. The host must provide a date, or `--now` must provide one in `YYYY-MM-DD` form.
 
@@ -79,7 +79,7 @@ No environment variable reaches this verb. The package, taxonomy, repository and
 |---|---|
 | `.headwater/taxonomy.lock` | Read for the resolved taxonomy and lock digest. |
 | `.headwater/taxonomy.yml` | Read through the consumer loader. |
-| `packages/` and the selected package directory | Read for the package manifest, release record and conformance rules. |
+| `.headwater/packages/` and the selected package directory | Read for the package manifest, release record and conformance rules. |
 | The corpus | Read for classification and projection checks. |
 
 The verb writes no file.

@@ -15,6 +15,8 @@ anchors
     cited by HW-DR-0055
   code_path `.claude/hooks/review.sh` via source-tree
     cited by HW-SPEC-ai-integration
+  code_path `.claude/hooks/touch.sh` via source-tree
+    cited by HW-SPEC-ai-integration
   code_path `.claude/hooks/write.sh` via source-tree
     cited by HW-SPEC-ai-integration
   code_path `.claude/settings.json` via source-tree
@@ -47,6 +49,8 @@ anchors
     cited by HW-DR-0027
   code_path `.headwater/overlay.yml` via source-tree
     cited by HW-DR-0028
+  code_path `.headwater/packages/headwater-standard/taxonomy.yml` via source-tree
+    cited by HW-DR-0025
   code_path `.headwater/taxonomy.yml` via source-tree
     cited by HW-DR-0029
   code_path `docs/taxonomies/decision-record/bundle.yml` via source-tree
@@ -91,8 +95,6 @@ anchors
     cited by HW-OBL-0178
   code_path `engine/crates/check/src/lifecycle_state.rs` via source-tree
     cited by HW-DR-0026
-  code_path `engine/crates/check/src/paint.rs` via source-tree
-    cited by HW-OBL-0180
   code_path `engine/crates/check/src/voice.rs` via source-tree
     cited by HW-OBL-0168
   code_path `engine/crates/cli/Cargo.toml` via source-tree
@@ -229,6 +231,8 @@ anchors
     cited by HW-DR-0025
   code_path `engine/crates/meta/meta-schema.yml` via source-tree
     cited by HW-DR-0040
+  code_path `engine/crates/paint/src/lib.rs` via source-tree
+    cited by HW-OBL-0180
   code_path `engine/crates/probe/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-probe
   code_path `engine/crates/query/src/explain.rs` via source-tree
@@ -249,6 +253,8 @@ anchors
     cited by HW-IFACE-headwater-route
   code_path `engine/crates/resolve/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-taxonomy
+  code_path `engine/crates/resolve/src/package.rs` via source-tree
+    cited by HW-DR-0067
   code_path `engine/crates/resolve/src/rules.rs` via source-tree
     cited by HW-DR-0025
   code_path `engine/crates/resolve/src/rules.rs` via source-tree
@@ -277,8 +283,6 @@ anchors
     cited by HW-DR-0050
   code_path `mkdocs/overrides/main.html` via source-tree
     cited by HW-DR-0038
-  code_path `packages/headwater-standard/taxonomy.yml` via source-tree
-    cited by HW-DR-0025
   code_path `site/_headers` via source-tree
     cited by HW-DR-0047
   code_path `site/changelog/index.html` via source-tree
