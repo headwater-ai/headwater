@@ -393,7 +393,7 @@
           <!-- An excerpt of the front matter of
                docs/decisions/0037-…-projection-of-this-corpus.md. Every line of
                it is checked against that record by
-               tools/refresh-figures.sh, so this card cannot quote a
+               tools/site/refresh-figures.sh, so this card cannot quote a
                field the record no longer carries. The volatile facets of that
                record are deliberately not quoted here. -->
           <pre class="quotes-0037"><span class="dim">---</span>
@@ -409,7 +409,7 @@
           <div class="cardnote">This page is <em>not</em> a typed document. It sits outside the corpus root, so no rule reads it. That block is the record which governs it, and the record is checked like any other. A page here with no edge above it is a page the engine would let you delete in silence.</div>
         </div>
         <div class="card-back">
-          <!-- Every figure below is written by tools/refresh-figures.sh
+          <!-- Every figure below is written by tools/site/refresh-figures.sh
                from `headwater check --root . --json`. Denominators: typed,
                untyped and unaccounted-for are all out of the file count on the
                first line; suppressed is out of the findings raised. -->
@@ -445,7 +445,7 @@ census
       <span class="secline"></span>
     </div>
     <p style="font-size: 1.35rem; max-width: 46rem; margin: 0 0 3rem; line-height: 1.45;">Where a vendor site puts logos and percentages, this one puts the run — including the ugly number. A full board with a name against each item beats a clean one.</p>
-    <!-- Every figure in this band is written by tools/refresh-figures.sh.
+    <!-- Every figure in this band is written by tools/site/refresh-figures.sh.
          Denominators, stated in the label under each one, because a bare count
          is a trap: the first three tiles are out of the file count on the
          first tile, and the last three are out of the findings the run raised.
@@ -601,13 +601,13 @@ owes `superseded_by`
       <span class="dot"></span><span class="span"></span>
       <span class="dot"></span><span class="span"></span>
       <span class="dot"></span><span class="span open"></span>
-      <span class="dot open"></span><span class="span open"></span>
+      <span class="dot"></span><span class="span"></span>
       <span class="dot open"></span>
     </div>
     <div class="raillabels">
-      <span>M1 core</span><span>M2 graph</span><span>M3 checks</span><span>M4 projections</span><span>M5 authoring</span><span>M6 distribution — open</span><span>M7 measurement — open</span>
+      <span>M1 core</span><span>M2 graph</span><span>M3 checks</span><span>M4 projections</span><span>M5 authoring</span><span>M6 distribution</span><span>M7 measurement — open</span>
     </div>
-    <p style="font-size: 0.98rem; max-width: 46rem; margin: 0 0 1.1rem;">The engine runs, and two layers of it are unfinished. This repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. Every efficacy claim in this repository is still marked unmeasured. A lettered milestone for the canonical taxonomy library runs beside the numbered ones, and it is open too.</p>
+    <p style="font-size: 0.98rem; max-width: 46rem; margin: 0 0 1.1rem;">The engine runs, and one layer of it is unfinished. This repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. M6, distribution, is closed; what it left open — a second package and one outside adopter — continues as M6b. Every efficacy claim in this repository is still marked unmeasured. A lettered milestone for the canonical taxonomy library runs beside the numbered ones, and it is open too.</p>
     <!-- Both figures below come from the refresh script: the emitter split is
          read off the `Emitter` enum and `is_built` in
          engine/crates/generate/src/profile.rs, and the verb figures come from
