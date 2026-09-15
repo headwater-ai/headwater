@@ -113,6 +113,26 @@ hw_quote() {
 # creates several files in one call holds this hook to the first of them, and
 # the commit gate holds the rest, the same as it holds every write a `Bash`
 # call makes that no matcher here ever sees.
+# The git common dir of `hw_root`, absolute. Every worktree of one clone
+# answers the same path, which is where state that has to reach every
+# worktree of a clone belongs — `tools/run/run-dir.sh` puts `headwater-run`
+# there for the same reason, and `.claude/hooks/touch.sh` and `review.sh` put
+# `headwater-session` there.
+#
+# Empty on any failure: no git, no common dir, or a relative answer this
+# cannot resolve against `hw_root`. A caller that gets nothing back skips
+# whatever it meant to read or write there, the same as every other fail-open
+# read in this file.
+hw_common_dir() {
+    _common=$(git -C "$hw_root" rev-parse --git-common-dir 2>/dev/null) || return 1
+    [ -n "$_common" ] || return 1
+    case $_common in
+        /*) ;;
+        *) _common="$hw_root/$_common" ;;
+    esac
+    printf '%s' "$_common"
+}
+
 hw_patch_path() {
     _patch=$(hw_field "$1" tool_input command) || return 1
     _first=$(printf '%s\n' "$_patch" |

@@ -25,6 +25,7 @@ relations:
     - .claude/hooks/lib.sh
     - .claude/hooks/intent.sh
     - .claude/hooks/write.sh
+    - .claude/hooks/touch.sh
     - .claude/hooks/review.sh
     - .claude/skills/fixtures.sh
     - .claude/skills/headwater-authoring/SKILL.md
