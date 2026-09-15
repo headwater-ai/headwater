@@ -315,6 +315,7 @@ nav:
       - "Admission criterion 5 has no reading for an entry that serves neither core purpose": "obligations/0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md"
       - "The base ships one voice regime and a prospective document has none": "obligations/0194-the-base-ships-one-voice-regime-and-a-prospective-document-has-none.md"
       - "A requirement has no identity, so a descoped requirement has no form": "obligations/0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md"
+      - "A relation writes a state onto a kind that binds no lifecycle regime and nothing reads that pair": "obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md"
       - "A superseded document claims no reliance, and nothing measures whether a session honors that": "obligations/0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"

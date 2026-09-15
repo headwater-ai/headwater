@@ -1,0 +1,121 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# A relation writes a state onto its target, and a kind at that target end
+# cannot hold the state. `supersedes` keeps the `on_target: {set_state:
+# superseded}` that `validate/valid/base.yml` already carries, and its `to` end
+# moves from `decision` to the abstract `governed_document`, which `receipt`
+# also descends from. `receipt` binds the `discharge` regime, whose machine
+# never names `superseded`, so the edge would write a state that no document of
+# that kind can stand in.
+#
+# **The passing side of this rule is `validate/valid/base.yml` itself**, and the
+# pairing is the point: that taxonomy carries the same relation with the same
+# `on_target.set_state`, and its `to` end reaches only `decision`, which binds
+# `standard`, which names `superseded`. A rule that refused every `on_target`
+# rather than the unreachable ones fails the pair, because `valid` would stop
+# being valid.
+#
+# The abstract `to` end is what this case is for. An implementation that reads
+# `lifecycle` off each name in the `to` list finds nothing on
+# `governed_document` — it is abstract, and every binding sits on a child — and
+# reports nothing, which would also pass this repository's own package and the
+# instance the issue was filed about. `retires` is the direct-kind half of the
+# same question: its `to` end names `receipt` with no abstraction in the way.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft,      role: initial}
+    - {value: current,    role: live}
+    - {value: superseded, role: terminal-retained}
+    - {value: discharged, role: terminal-retained}
+
+facets:
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over, and nothing may rely on it
+      current: it states what holds now
+      superseded: a later decision replaced it
+      discharged: it recorded something the corpus owed, and the corpus paid it
+  sequence:
+    type: integer
+    required: true
+    volatility: stable
+  status_since:
+    role: state_entered
+    type: date
+    required: true
+    volatility: mutable
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+    discharge:
+      initial: draft
+      transitions: {draft: [current], current: [discharged]}
+      retain_terminal: true
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    lifecycle: standard
+    facets: {require: [sequence, status_since]}
+    relations:
+      expect:
+        - id: decision-superseded
+          relation: supersedes
+          within: 180d
+          since: state_entered
+          rationale: an expectation that names no target kind is satisfied by any kind the relation admits at its target end
+  receipt:
+    is_a: governed_document
+    purpose: rationale
+    lifecycle: discharge
+    facets: {require: [status]}
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [governed_document]
+    reciprocal: required
+    on_target: {set_state: superseded}
+    created_by: scaffold
+  retires:
+    family: succession
+    from: [decision]
+    to: [receipt]
+    reciprocal: required
+    on_target: {set_state: superseded}
+    created_by: scaffold
+
+shelves:
+  decisions:
+    path: docs/decisions/**
+    homogeneous: true
+    kind: decision
+    layout: "{sequence:02d}-{slug}.md"
+  receipts:
+    path: docs/receipts/**
+    homogeneous: true
+    kind: receipt
+
+core:
+  requires:
+    - facet_role: state

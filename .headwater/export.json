@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 445,
-      "carried": 445,
+      "in the graph": 446,
+      "carried": 446,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -8064,6 +8064,28 @@
           "summary": "A descoped requirement is a state of one line inside a document, and a line has no identity here.",
           "last_verified": "2026-09-11",
           "title": "A requirement has no identity, so a descoped requirement has no form",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0196",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0196",
+          "status": "current",
+          "status_since": "2026-09-12",
+          "summary": "A rule reads on_target.set_state, and it skips a kind that binds no lifecycle regime and can stand in no state.",
+          "last_verified": "2026-09-12",
+          "title": "A relation writes a state onto a kind that binds no lifecycle regime and nothing reads that pair",
           "waiting_on": "ruling",
           "provenance": {
             "warrant": "asserted",

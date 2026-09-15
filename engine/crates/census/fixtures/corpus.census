@@ -618,6 +618,8 @@ docs/obligations/0194-the-base-ships-one-voice-regime-and-a-prospective-document
   typed: obligation_record
 docs/obligations/0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md
   typed: obligation_record
+docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md
+  typed: obligation_record
 docs/obligations/0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md
   typed: obligation_record
 docs/obligations/README.md

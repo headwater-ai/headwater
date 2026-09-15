@@ -77,7 +77,7 @@ pub enum Ran {
 /// [`crate::resolve`] and [`crate::confluence`]. A rule whose wording changed
 /// with no change to what it accepts or refuses does not need the bump; a rule
 /// whose *verdict* over some taxonomy changed does.
-pub const RULE_SET: u32 = 1;
+pub const RULE_SET: u32 = 2;
 
 /// Every rule that [spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)
 /// lists for `taxonomy validate`, in spec 2's own order, and where each runs.
@@ -162,7 +162,9 @@ pub const RULES: [(&str, Ran); 23] = [
         "relation coherence",
         Ran::Partly {
             decides: "a nucleus–satellite relation names its nucleus and a multinuclear one \
-                      names none, and `inherits` names facets that both ends carry",
+                      names none, `inherits` names facets that both ends carry, and \
+                      `on_target.set_state` names a state that every kind at the `to` end can \
+                      stand in",
             waits: "\"a family's default is not contradicted without explicit override\" states \
                     no rule that a validator can fail. A declared nuclearity is the explicit \
                     override, and spec 2 gives the count to `taxonomy audit`",
@@ -617,6 +619,71 @@ impl<'a> View<'a> {
             }
         }
         out
+    }
+
+    /// The lifecycle regime a kind is held to, through the chain that binds it.
+    ///
+    /// The nearest binding wins, and a kind whose whole chain binds none
+    /// answers `None`. That is the reading
+    /// [`headwater_check::Shape::lifecycle_of`](../../../../engine/crates/check/src/shape.rs)
+    /// already takes over the same two declarations, and this one is written to
+    /// match it rather than to be shorter: one binding read two ways is two
+    /// things to keep true.
+    fn lifecycle_of(&self, kind: &str) -> Option<&'a str> {
+        self.ancestry(kind)
+            .into_iter()
+            .find_map(|step| self.kind(step).and_then(|body| text(body, "lifecycle")))
+    }
+
+    /// Every state a lifecycle regime names: its initial state, and both ends
+    /// of every transition it declares.
+    ///
+    /// Named, rather than reachable from the initial state.
+    /// [`lifecycle_soundness`] already refuses a regime that names a state it
+    /// cannot reach, so over a taxonomy that passes that rule the two sets are
+    /// one set. Where they differ, the reading that reports less is the one
+    /// that leaves the other rule to name the defect it owns.
+    fn lifecycle_states(&self, regime: &str) -> BTreeSet<String> {
+        let mut out = BTreeSet::new();
+        let Some(body) = self
+            .root
+            .get("regimes")
+            .and_then(|node| node.value.as_map())
+            .and_then(|regimes| regimes.get("lifecycle"))
+            .and_then(|node| node.value.as_map())
+            .and_then(|family| family.get(regime))
+            .and_then(|node| node.value.as_map())
+        else {
+            return out;
+        };
+        if let Some(initial) = text(body, "initial") {
+            out.insert(initial.to_string());
+        }
+        if let Some(transitions) = block(body, "transitions") {
+            for entry in transitions {
+                out.insert(entry.key.value.clone());
+                for item in entry.value.value.as_seq().unwrap_or_default() {
+                    if let Some(scalar) = item.value.as_scalar() {
+                        out.insert(scalar.text.clone());
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    /// Every concrete kind that a name at an end of a relation stands for: the
+    /// name itself when it is concrete, and its concrete descendants when it is
+    /// abstract.
+    ///
+    /// [`admits`] asks the same question from the other side, of one kind at a
+    /// time.
+    fn concrete_under(&self, name: &str) -> Vec<&'a str> {
+        self.members("kinds")
+            .into_iter()
+            .map(|(kind, _)| kind)
+            .filter(|kind| !self.is_abstract(kind) && self.ancestry(kind).contains(&name))
+            .collect()
     }
 }
 
@@ -1343,6 +1410,64 @@ fn relation_coherence(view: &View, out: &mut Vec<ResolveError>) {
                 ),
             )),
             _ => {}
+        }
+
+        // `on_target.set_state` names a state that every kind at the `to` end
+        // can stand in. The scope is stated here so that a later reader does
+        // not open it again.
+        //
+        // Only the `to` list is read. `on_target` writes the target end of the
+        // edge and says nothing about the source end.
+        //
+        // A name at the `to` end that no kind declares is skipped, the way the
+        // `inherits` clause below skips it and for its reason: it is an anchor
+        // kind, or referential integrity has already reported it.
+        //
+        // An abstract kind at the `to` end stands for its concrete
+        // descendants, and each descendant's own binding is read. That is the
+        // rule and not a refinement of it. All seventeen lifecycle bindings of
+        // this repository's own taxonomy sit on children of its one abstract
+        // kind, so a direct lookup of `lifecycle` on the `to` name would find
+        // nothing, report nothing, and pass the instance
+        // [#225](https://github.com/headwater-ai/headwater/issues/225) was
+        // filed about.
+        //
+        // A concrete kind that binds no lifecycle regime is skipped. It can
+        // stand at no state at all, so a relation that writes one onto it is a
+        // different defect with a different remedy, and this rule can pick
+        // neither. An anchor-adjacent kind is the common case, and spec 13
+        // carries the finding.
+        if let Some(state) = block(body, "on_target").and_then(|written| text(written, "set_state"))
+        {
+            let mut seen: BTreeSet<&str> = BTreeSet::new();
+            for end in strings(body, "to") {
+                if view.kind(&end).is_none() {
+                    continue; // an anchor kind, or already reported
+                }
+                for target in view.concrete_under(&end) {
+                    if !seen.insert(target) {
+                        continue; // reached through two names of one `to` list
+                    }
+                    let Some(regime) = view.lifecycle_of(target) else {
+                        continue;
+                    };
+                    let named = view.lifecycle_states(regime);
+                    // An empty set is a regime that nothing declares, which
+                    // referential integrity reports at the kind that binds it.
+                    if named.is_empty() || named.contains(state) {
+                        continue;
+                    }
+                    out.push(refusal(
+                        RULE,
+                        &at("on_target.set_state"),
+                        format!(
+                            "writes `{state}`, and `kinds.{target}` at the `to` end binds the \
+                             `{regime}` lifecycle regime, which never names it. A relation \
+                             writes a state that the kind it writes onto can stand in"
+                        ),
+                    ));
+                }
+            }
         }
 
         // `inherits` names facets that exist on both ends.
