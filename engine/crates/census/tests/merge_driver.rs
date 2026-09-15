@@ -521,6 +521,101 @@ fn a_declared_page_refuses_the_merge_and_names_the_command() {
     );
 }
 
+/// A stale branch cannot be resolved by refreshing figures alone.
+///
+/// This is the failure shape from #879: one branch carries a newer hand-written
+/// edit to the page's prose, the stale branch updates only figures, and the
+/// merge driver leaves `%A` in place. The refusal now has to call out the
+/// non-figure drift so a resolver does not accept stale prose by mistake.
+#[test]
+fn a_site_merge_warns_when_non_figure_content_differs() {
+    let repo = scratch("site-stale-non-figure-diff");
+    let driver = repository_root().join(".githooks/merge-regenerate");
+    assert!(driver.is_file(), "{} is not there", driver.display());
+
+    git_ok(&repo, &["init", "-q", "-b", "main"]);
+    git_ok(&repo, &["config", "user.name", "Fixture"]);
+    git_ok(&repo, &["config", "user.email", "fixture@example.invalid"]);
+    git_ok(&repo, &["config", "commit.gpgsign", "false"]);
+    git_ok(
+        &repo,
+        &[
+            "config",
+            "merge.headwater-regenerate.name",
+            "regenerate a derived artifact",
+        ],
+    );
+    git_ok(
+        &repo,
+        &[
+            "config",
+            "merge.headwater-regenerate.driver",
+            &format!("{} %O %A %B %P", driver.display()),
+        ],
+    );
+    write(&repo, ".gitattributes", &attributes());
+    write(
+        &repo,
+        "site/index.html",
+        "<!doctype html>\n<html><body>\n\
+         <p class=\"copy\">Base copy.</p>\n\
+         <p>Seen <span data-figure=\"census.seen\">3</span>.</p>\n\
+         </body></html>\n",
+    );
+    git_ok(&repo, &["add", "-A"]);
+    git_ok(&repo, &["commit", "-q", "-m", "base"]);
+
+    git_ok(&repo, &["checkout", "-q", "-b", "stale"]);
+    git_ok(&repo, &["checkout", "-q", "main"]);
+    write(
+        &repo,
+        "site/index.html",
+        "<!doctype html>\n<html><body>\n\
+         <p class=\"copy\">Main copy.</p>\n\
+         <p>Seen <span data-figure=\"census.seen\">3</span>.</p>\n\
+         </body></html>\n",
+    );
+    git_ok(&repo, &["add", "site/index.html"]);
+    git_ok(&repo, &["commit", "-q", "-m", "main hand edit"]);
+
+    git_ok(&repo, &["checkout", "-q", "stale"]);
+    write(
+        &repo,
+        "site/index.html",
+        "<!doctype html>\n<html><body>\n\
+         <p class=\"copy\">Base copy.</p>\n\
+         <p>Seen <span data-figure=\"census.seen\">4</span>.</p>\n\
+         </body></html>\n",
+    );
+    git_ok(&repo, &["add", "site/index.html"]);
+    git_ok(
+        &repo,
+        &["commit", "-q", "-m", "refresh figures on stale branch"],
+    );
+
+    let merged = git(&repo, &["merge", "--no-edit", "main"]);
+    let said = format!(
+        "{}{}",
+        String::from_utf8_lossy(&merged.stdout),
+        String::from_utf8_lossy(&merged.stderr)
+    );
+
+    assert!(
+        !merged.status.success(),
+        "the merge unexpectedly succeeded, so stale prose can still pass silently: {said}"
+    );
+    assert_eq!(conflicted(&repo), vec!["site/index.html".to_owned()]);
+    assert!(
+        said.contains("WARNING: non-figure prose/markup differs"),
+        "the refusal did not warn about the stale non-figure drift: {said}"
+    );
+    assert!(
+        said.contains("-<p class=\"copy\">Base copy.</p>")
+            && said.contains("+<p class=\"copy\">Main copy.</p>"),
+        "the warning did not include a non-figure diff naming the prose mismatch: {said}"
+    );
+}
+
 /// The hole. A merge driver is not called when both branches wrote one byte
 /// string, and that is the case `.gitattributes` describes.
 ///
