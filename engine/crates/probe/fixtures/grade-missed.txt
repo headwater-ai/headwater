@@ -1,4 +1,4 @@
-Graded by grader 0.1.2.
+Graded by grader 0.2.0.
 A regression run in the absent arm, on a-model at served version a-model-20260701.
 
 ## The verdicts

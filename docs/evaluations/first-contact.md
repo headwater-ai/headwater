@@ -163,7 +163,7 @@ The theory's contribution is the last row, and it is uncomfortable. Observabilit
 
 ### Four documentation modes, and the site is a corpus
 
-Diátaxis names four kinds of documentation on two axes — practical against theoretical, and specific against general — yielding tutorials, how-to guides, reference and explanation. Its claim is that content, style and organization all follow from keeping the four apart.
+Diátaxis names four kinds of documentation on two axes — practical against theoretical, and at work against at study — yielding tutorials, how-to guides, reference and explanation. Its claim is that content, style and organization all follow from keeping the four apart.
 
 This lands on Q16 through [principle 8](../spec/00-vision-and-scope.md#design-principles) rather than as advice. If the site is generated from the corpus that documents Headwater, then the site's sections are shelves and its page types are kinds. The four modes are a candidate kind set for a documentation-site bundle. The Q3 walkthrough's own finding applies: the specification documents here serve two purposes at once. They state a model and argue for it in the same file, with `docs/evaluations/` already carrying the argument. That split is reference against explanation, found independently in this repository before the framework was consulted.
 
@@ -230,7 +230,7 @@ Q3 settled that `infer` and the `init` interview are one command with two eviden
 
 `infer` cannot make the corpus valid by weakening the base, and that is a structural property rather than a rule anyone has to enforce. Q3 made bundles add-only over disjoint addresses, which is what makes every subset resolve. An add-only overlay has no operation that removes a base rule. So an inference that optimized for zero findings would encode the corpus's accidents as if they were intentions. Such an inference is not expressible in the artifact `infer` is permitted to write.
 
-### `--since <ref>` as a gate is refused, and the flag it would have duplicated already exists
+### `--since` as a gate is refused, and the flag it would have duplicated already exists
 
 The leaning proposes an incremental adoption mode "where checks apply only to newly touched documents", as a first-release feature. Three arguments refuse it, and one of them is that the word already means something else in this specification.
 

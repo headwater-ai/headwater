@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-generate
 status: current
 status_since: 2026-09-06
 summary: "How to write the projections declared by the taxonomy and detect stale generated files."
-last_verified: 2026-09-07
+last_verified: 2026-09-12
 title: "headwater generate"
 relations:
   governs:
@@ -25,6 +25,10 @@ The command writes every generated projection that the resolved taxonomy declare
 Without `--check`, it computes projections and writes marked generated files. With `--check`, it writes nothing and compares committed projections with the same plan.
 
 It refuses to overwrite a file that lacks the generated-file marker. A stale projection or a marked file that the plan does not write is an error.
+
+**The command also refuses a declaration whose kind requires what the generated file cannot carry, and it writes no file for that declaration.** Two refusals have this shape. The first reads the `facets.require` list of the declared kind. The front-matter block states the identifier, the discriminator of a heterogeneous shelf, and the facet in the `name` role. The command derives the state, the two dates and the summary. A required facet outside that set is one that no author can add, because the only writer of a generated document is this engine.
+
+The second reads the `sections.require` list of the same kind against the body that the emitter composes. No emitter of this engine reads a section contract. The headings of a generated body are the name of a shelf and the names of the documents on it. So a required section that no heading answers is also one that no author can add. Each refusal names the kind and the requirement, and the run prints it under *what this verb does not write, and why*.
 
 **With `--check`, the command reads the producer identity before it compares the bytes of any projection.** The corpus descriptor at `.headwater/corpus.json` records the emitter set of the engine that wrote it. When that number is not this engine's, the two runs do not agree about what the projections are. A byte difference then has two possible causes. A corpus moved, or an emitter moved, and the command cannot tell which. It reports both numbers, it withholds the instruction to regenerate for every projection in the run, and it exits non-zero. When the numbers agree, or when the committed descriptor records no emitter set, the command behaves as it always did.
 

@@ -40,6 +40,7 @@ use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
 use crate::scope::{DocumentCheck, DocumentView};
 use crate::shape::Shape;
+use headwater_doc::body::Body;
 
 pub const RULE: &str = "section.required.missing";
 
@@ -88,17 +89,10 @@ impl DocumentCheck for Sections {
         let Some(body) = view.body() else {
             return Outcome::Passed;
         };
-        let headings: Vec<String> = body
-            .headings()
-            .filter(|heading| heading.quote_depth == 0)
-            .map(|heading| normalized(&heading.text()))
-            .collect();
-
         let kind = view.kind();
-        let findings = self
-            .owed_by(kind)
-            .iter()
-            .filter(|section| !headings.contains(&normalized(section)))
+        let owed = self.owed_by(kind).to_vec();
+        let findings = absent_from_body(body, &owed)
+            .into_iter()
             .map(|section| Finding {
                 rule: self::RULE,
                 severity: Severity::Error,
@@ -120,6 +114,44 @@ impl DocumentCheck for Sections {
             .collect();
         Outcome::failed(findings)
     }
+}
+
+/// The sections a contract requires that a parsed body does not carry, in the
+/// order the contract states them.
+///
+/// The one copy of the match. `evaluate` above asks it of a document the census
+/// classified `Typed`, and
+/// [`headwater_generate`](https://docs.rs/headwater-generate) asks it of a body
+/// an emitter composed, before that body becomes a file. A generated document
+/// reaches no document-scoped rule, so the emitter is the only reader it has;
+/// two copies of this comparison would let the two readers disagree about what
+/// a heading satisfies.
+pub fn absent_from_body(body: &Body, required: &[String]) -> Vec<String> {
+    let headings: Vec<String> = body
+        .headings()
+        .filter(|heading| heading.quote_depth == 0)
+        .map(|heading| normalized(&heading.text()))
+        .collect();
+    required
+        .iter()
+        .filter(|section| !headings.contains(&normalized(section)))
+        .cloned()
+        .collect()
+}
+
+/// The same question, asked of the whole text of a Markdown file.
+///
+/// The front matter is split off first, for the reason `fragment`'s anchor
+/// reader states: a `---` fence read as body gives the line above it a setext
+/// heading, and a heading set that is too large is a heading set that confirms a
+/// contract nothing wrote. A source with no front matter is scanned whole, which
+/// is what the fallback arm is for.
+pub fn absent_from_source(source: &str, required: &[String]) -> Vec<String> {
+    let body = match headwater_doc::split::split(source) {
+        Ok(split) => headwater_doc::body::scan(source, split.body, split.body_offset),
+        Err(_) => headwater_doc::body::scan(source, source, 0),
+    };
+    absent_from_body(&body, required)
 }
 
 /// A heading, reduced to what a contract names.

@@ -151,9 +151,9 @@ jobs:
         # only ever runs on a pushed tag gets no other run before the day
         # somebody cuts a release, and a grep for the flag is not one.
         run: |
-          digest=$(awk '/^release:/{b=1;next} /^[^ \t#]/{b=0} b && /^  digest:/{print $2; exit}' packages/headwater-standard/release.yml)
+          digest=$(awk '/^release:/{b=1;next} /^[^ \t#]/{b=0} b && /^  digest:/{print $2; exit}' .headwater/packages/headwater-standard/release.yml)
           if [ -z "$digest" ]; then
-              echo "::error::packages/headwater-standard/release.yml states no release.digest, so this release would carry none" && exit 1
+              echo "::error::.headwater/packages/headwater-standard/release.yml states no release.digest, so this release would carry none" && exit 1
           fi
           printf 'release.digest: %s\n\nThis tag carries `headwater/standard` with that `release.digest`. Pass the value to `headwater taxonomy vendor <dir> --expect %s`. It is what `headwater taxonomy publish` printed for the package in this tree, and it is not a checksum of any one file.\n' "$digest" "$digest" >release-notes.md
       - name: Attach both to the release

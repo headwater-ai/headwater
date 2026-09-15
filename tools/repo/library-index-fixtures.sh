@@ -30,7 +30,7 @@
 # ## Source prose and vendored prose drifting apart with every gate green
 #
 # `docs/taxonomies/README.md` is the authored page and
-# `packages/headwater-standard/bundles/README.md` is the vendored copy that a
+# `.headwater/packages/headwater-standard/bundles/README.md` is the vendored copy that a
 # consumer of `headwater/standard` actually receives. Measured on 2026-09-07:
 # appending one line to the authored page alone left `taxonomy resolve --check`
 # at exit 0 and `headwater check --strict` at exit 0 with a byte-identical
@@ -98,7 +98,7 @@ set -u
 root=$(cd "$(dirname "$0")/../.." && pwd)
 manifest="$root/taxonomy-source/headwater-standard/package.yml"
 index="$root/docs/taxonomies/README.md"
-vendored="$root/packages/headwater-standard/bundles/README.md"
+vendored="$root/.headwater/packages/headwater-standard/bundles/README.md"
 
 for required in "$manifest" "$index" "$vendored"; do
     if [ ! -f "$required" ]; then
@@ -839,7 +839,7 @@ more_than "the carried set holds the schema, the doctrine and the templates" 1 \
 #     2026-09-07: one appended line on either side of this pair passes
 #     `taxonomy resolve --check` and `headwater check --strict` at exit 0.
 same "the source library and the vendored bundles are byte-identical where carried" \
-    "" "$(carried_judge "$lib" "$root/packages/headwater-standard/bundles" \
+    "" "$(carried_judge "$lib" "$root/.headwater/packages/headwater-standard/bundles" \
             "$scratch/parts" | tr '\n' '|')"
 
 # 3c. The drift judge, provoked in all three shapes it refuses, over a scratch
@@ -962,8 +962,8 @@ same "the \`procedure\` gap and the index agree" \
 # 4b. The vendored copy of the page is judged against the vendored sources, so
 #     the artifact a consumer receives cannot record a different gap.
 same "the vendored copy records the same gap as the vendored sources" \
-    "" "$(procedure_judge "$root/packages/headwater-standard/taxonomy.yml" \
-            "$root/packages/headwater-standard/bundles" "$vendored" | tr '\n' '|')"
+    "" "$(procedure_judge "$root/.headwater/packages/headwater-standard/taxonomy.yml" \
+            "$root/.headwater/packages/headwater-standard/bundles" "$vendored" | tr '\n' '|')"
 
 # 4c. Both refusals, provoked over scratch files. A judge whose failure nobody
 #     has seen holds nothing, and each half of an exclusive or fails for its
@@ -1018,6 +1018,574 @@ same "  a comment naming the purpose declares nothing" \
     "" \
     "$(procedure_judge "$scratch/pd/base.yml" "$scratch/pd/beta/.." \
         "$scratch/pd/index.md" | tr '\n' '|')"
+
+# ---------------------------------------------------------------------------
+# 5. A second document that restates the population of this index.
+#
+# `docs/evaluations/n8n-worked-example.md` told its reader that the
+# admitted-entry table "still lists five rows while `docs/taxonomies/` holds
+# six directories". Both numbers were true on the day they were written, the
+# library moved under them, and on 2026-09-12 the table carried six rows over
+# seven directories. Nothing reported the drift: every judge above opens
+# `docs/taxonomies/README.md` or the vendored copy of it, and no judge opens
+# any other document at all.
+#
+# This is case group 3's defect over a different pair. There, two copies of one
+# page drift while every gate stays green. Here, an authored page and a second
+# document that restates its population drift the same way, and the second
+# document is adopter-facing evidence for criterion 4 rather than an aside.
+#
+# The judge writes down no number, which is the rule the whole file keeps. It
+# refuses a SHAPE: a sentence that names this index and qualifies its rows, its
+# entries, its directories or its bundles with a cardinal or an ordinal. A
+# number that is right today is the thing that goes stale, and a relative
+# invariant does not. An ordinal counts as a count here for the reason the head
+# of this file gives: "the fifth entry" is a count wearing a different hat, and
+# it is the form the original defect wore inside the index.
+#
+# Two shelves are out of the population, each for a stated reason. The
+# `docs/taxonomies/` shelf is the index and the entries themselves, which every
+# judge above already reads. The `docs/reviews/` shelf holds point-in-time
+# records, which `CLAUDE.md` rules stay as written.
+#
+# One limit, measured rather than assumed. The citation and the count have to
+# meet in one sentence. A document that names the table in one sentence and
+# counts the library in the next is silent here, and that boundary has its own
+# arm below so that a later reader meets it as a decision rather than a
+# surprise.
+
+# sentences_of FILE — one sentence per line. Markdown source in this repository
+# is never hard-wrapped, so a paragraph arrives as a single line, and a
+# sentence boundary is a period, a space, and a character a sentence opens
+# with.
+sentences_of() {
+    awk '{
+        so_line = $0
+        while (match(so_line, /\. [A-Z`*(]/)) {
+            print substr(so_line, 1, RSTART)
+            so_line = substr(so_line, RSTART + 2)
+        }
+        print so_line
+    }' "$1"
+}
+
+# A sentence names this index when it names the table by either of the two
+# names this repository uses for it, or names the page or the shelf by path.
+cites_index_re='admitted-entry table|admission table|taxonomies/README\.md|docs/taxonomies/'
+
+# A sentence states a size, for this judge, when one member of a named and
+# closed word list qualifies one of the four nouns this index is counted in.
+# The list is every string of digits, the cardinals `one` through `twelve`, the
+# ordinals `first` through `twelfth`, and four count words that carry no
+# numeral: `single`, `no other`, `the only` and `the sole`. The optional word
+# between the count and the noun allows "five admitted entries" and "six bundle
+# directories" without allowing a number and a noun that are unrelated.
+#
+# The four wordless counts are here because an attack on the first repair of
+# this defect found them. That repair replaced "the one bundle that the
+# admission table refuses" with "and it refuses no other". Both sentences
+# assert that exactly one bundle is refused, both go false on the day a second
+# one is, and only the first reddened. So the way past this judge is to stop
+# asserting a size rather than to spell one differently.
+#
+# "The other bundles" is deliberately not in the list. It asserts no size, and
+# it is the shape this judge exists to send an author toward.
+#
+# # WHAT THIS JUDGE DOES NOT HOLD, WHICH IS SAID HERE RATHER THAN INFERRED
+#
+# It is a floor over the word list above and not a reading of English. Every
+# sentence in this section was planted against the pattern and measured on
+# 2026-09-12, rather than reasoned about.
+#
+#   A count in words above twelve passes. "Thirteen entries" and "twenty rows"
+#   are silent, because the cardinal list closes at `twelve` and the ordinal
+#   list at `twelfth`. Digits carry no such bound, so "13 entries" is reported
+#   and "thirteen entries" is not.
+#
+#   Every other way English says how many passes. `lone`, `solitary`,
+#   `unique`, `both`, `a pair of`, `a dozen`, `the last`, `the final`, `the
+#   remaining` and "nothing but" were each planted, and each one was silent.
+#   The list is not extended to chase them, and the reason is this judge's own
+#   subject: a script that exists to catch prose claiming more than is true
+#   must not claim more than is true itself. Each word added buys one phrasing
+#   and moves the boundary nowhere.
+#
+#   An elided noun passes, which is the form the attack above actually used.
+#   "It refuses no other" gives the pattern no noun to bind to, and resolving
+#   an ellipsis is not something a regular expression does.
+#
+#   A document that names this index in a form `citing_of` does not recognize
+#   is invisible here, whatever it goes on to state. The population filter
+#   reads two forms only, the phrase "admitted-entry table" and a link to
+#   `taxonomies/README.md` carrying an `#admission` fragment, and it is
+#   narrower on purpose than the four forms `cites_index_re` reads inside a
+#   sentence. So a document can name the shelf by path, state a size of it,
+#   and never reach the sentence test at all. That is measured rather than
+#   hypothetical. `docs/obligations/0166-…md` writes "neither does any of the
+#   six bundles under `docs/taxonomies/`", the shelf holds seven directories
+#   today, the sentence IS reported when it is fed to the pattern on its own,
+#   and case 5b is green because the file is outside the population. Widening
+#   the filter to every mention of the path pulls in the corpus and makes a
+#   different judge. What this one holds is the documents that engage with the
+#   admission section.
+#
+# So a green case 5b means that no document in the citing population states a
+# size in one of the named forms. It does not mean that no document states a
+# size. A reviewer reading a document that cites this index is the wider check,
+# and this judge holds the family that has gone stale here twice.
+states_size_re='(^|[^a-z-])([Ss]ingle|[Nn]o other|[Tt]he only|[Tt]he sole|[Oo]ne|[Tt]wo|[Tt]hree|[Ff]our|[Ff]ive|[Ss]ix|[Ss]even|[Ee]ight|[Nn]ine|[Tt]en|[Ee]leven|[Tt]welve|[Ff]irst|[Ss]econd|[Tt]hird|[Ff]ourth|[Ff]ifth|[Ss]ixth|[Ss]eventh|[Ee]ighth|[Nn]inth|[Tt]enth|[Ee]leventh|[Tt]welfth|[0-9]+)[ -]([a-z][a-z-]*[ -])?(rows?|entry|entries|director(y|ies)|bundles?)([^a-z]|$)'
+
+# citing_of ROOT — one path per line, relative to ROOT: every `*.md` under
+# `ROOT/docs`, outside the two excluded shelves, that engages with the
+# admission part of this index. The population is enumerated out of the tree
+# and no document is named here, so the next document to cite the index is
+# judged the same way without this file moving.
+citing_of() {
+    find "$1/docs" -type f -name '*.md' \
+        ! -path "$1/docs/taxonomies/*" \
+        ! -path "$1/docs/reviews/*" 2>/dev/null |
+        sort | while read -r co_f; do
+        grep -qE 'admitted-entry table|taxonomies/README\.md#admission' \
+            "$co_f" || continue
+        echo "${co_f#$1/}"
+    done
+}
+
+# restated_size FILE — one line per size the file states about this index.
+# Nothing when it states none.
+restated_size() {
+    sentences_of "$1" |
+        grep -E "$cites_index_re" |
+        grep -oE "$states_size_re" |
+        sed 's/^[^0-9A-Za-z]*//; s/[^0-9A-Za-z]*$//'
+}
+
+# population_judge ROOT — one line per size a document outside the library
+# states about the library.
+population_judge() {
+    citing_of "$1" | while read -r pj_f; do
+        restated_size "$1/$pj_f" | while read -r pj_size; do
+            echo "$pj_f states a size of this index: \`$pj_size\`"
+        done
+    done
+}
+
+# pop_arm PATH TEXT — a scratch corpus of one document at PATH under a `docs/`
+# tree, judged whole. The three shelves exist in every arm, so an arm that
+# reports nothing reports nothing because of its own document.
+pop_arm() {
+    rm -rf "$scratch/pop"
+    mkdir -p "$scratch/pop/docs/evaluations" "$scratch/pop/docs/reviews" \
+        "$scratch/pop/docs/taxonomies"
+    printf '%s\n' "$2" >"$scratch/pop/$1"
+    population_judge "$scratch/pop" | tr '\n' '|'
+}
+
+echo
+echo "a second document that restates the population of this index"
+
+# 5a. The population is non-empty. A judge whose citing set came back empty
+#     reports green over nothing at all, which is this file's standing floor.
+citing_of "$root" >"$scratch/citing"
+more_than "documents outside the library cite its admission section" 0 \
+    "$(wc -l <"$scratch/citing" | tr -d ' ')"
+
+# 5b. This corpus, now.
+same "no document outside the library states a size of it" \
+    "" "$(population_judge "$root" | tr '\n' '|')"
+
+# 5c. The judge, provoked over scratch corpora. Each arm moves one thing.
+same "  a citing document that counts the rows in words" \
+    'docs/evaluations/a.md states a size of this index: `five rows`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'That entry is not in the admitted-entry table, which still lists five rows.')"
+
+same "  the same count in digits" \
+    'docs/evaluations/a.md states a size of this index: `5 rows`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'That entry is not in the admitted-entry table, which still lists 5 rows.')"
+
+same "  an ordinal, which is a count wearing a different hat" \
+    'docs/evaluations/a.md states a size of this index: `seventh entry`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'It would be the seventh entry of the admitted-entry table.')"
+
+same "  a citing document that states no size" \
+    "" \
+    "$(pop_arm docs/evaluations/a.md \
+        'That entry is not in the admitted-entry table, and the paragraph below the table is where a composer finds it.')"
+
+same "  a point-in-time review record, which stays as written" \
+    "" \
+    "$(pop_arm docs/reviews/a.md \
+        'That entry is not in the admitted-entry table, which still lists five rows.')"
+
+same "  the index and the entries, which the judges above already read" \
+    "" \
+    "$(pop_arm docs/taxonomies/a.md \
+        'That entry is not in the admitted-entry table, which still lists five rows.')"
+
+same "  a count word with no numeral in it" \
+    'docs/evaluations/a.md states a size of this index: `single bundle`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'The admitted-entry table refuses a single bundle.')"
+
+same "  the same size asserted by denying every other member" \
+    'docs/evaluations/a.md states a size of this index: `no other bundle`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'The admitted-entry table refuses `evidence-and-obligation` and no other bundle.')"
+
+same "  the same size asserted as uniqueness" \
+    'docs/evaluations/a.md states a size of this index: `the only entry`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'It is the only entry the admitted-entry table refuses.')"
+
+same "  the same size asserted as sole membership" \
+    'docs/evaluations/a.md states a size of this index: `the sole entry`|' \
+    "$(pop_arm docs/evaluations/a.md \
+        'It is the sole entry the admitted-entry table refuses.')"
+
+same "  a relative phrase, which asserts no size and is the way out" \
+    "" \
+    "$(pop_arm docs/evaluations/a.md \
+        'The admitted-entry table gives the other bundles a row each.')"
+
+same "  a size stated by a document that cites nothing" \
+    "" \
+    "$(pop_arm docs/evaluations/a.md 'This corpus holds five rows and six directories.')"
+
+same "  the citation and the count in different sentences, which is the limit" \
+    "" \
+    "$(pop_arm docs/evaluations/a.md \
+        'The admitted-entry table is the index of this library. This corpus holds five rows.')"
+echo
+echo "who reads a fixture page, and where the page sends a reader"
+
+# 5. What the index says about the programs that read a fixture page.
+#
+# The defect this group exists for. The anatomy section said "No runner reads
+# these files yet" while `tools/repo/diataxis-fixtures.sh` required one of them
+# and parsed its source table for a mode map and a digest, and while
+# `tools/taxonomy/drive_n8n.py` read three more and ran the commands out of
+# each as a blocking CI step. A hundred lines further down the same page said
+# of the same entry that "The runner exists, the denominators are recorded, and
+# the row stands", so the page carried both halves of a contradiction. Nothing
+# reported it: this page classifies to no kind, no language rule of the engine
+# reads it, and no rule of any engine reads a claim about a script (#813).
+#
+# In the same claim, three places named `tools/diataxis-fixtures.sh`, and no
+# such file has ever been in this tree. The script is under `tools/repo/`.
+#
+# THE READERS are enumerated out of the tree. A program under `tools/` is a
+# reader when it is shell or Python source whose lines, with whole-line
+# comments removed, name `docs/taxonomies`, name a `/fixtures` path segment and
+# name a `README`. Three signals anywhere in one file, and not one pattern
+# across one line, because the two readers in this tree write their paths in
+# different shapes: `tools/taxonomy/drive_n8n.py` globs
+# `docs/taxonomies/*/fixtures/n8n/README.md` whole, and
+# `tools/repo/diataxis-fixtures.sh` assembles its own out of three variables
+# set twenty-one lines apart.
+#
+# THIS IS A FLOOR AND NOT A PROOF, and the first draft of it was neither.
+# That draft matched the tail of an assembled path, which made completeness
+# rest on the second reader having named its variable `fixtures`; three reader
+# shapes were planted against it and two went green — a two-line assembly
+# through a variable named `fx`, and a Python glob whose `*` the pattern's
+# character class did not admit. Three loose signals err the other way. They
+# will name a program that walks a fixture corpus without opening a page, and
+# the remedy for that is a line in the paragraph, which is cheap. They cannot
+# find a program that names none of the three, and nothing that reads source
+# text can.
+#
+# The suite excludes ITSELF from the population, by the path it was invoked as
+# and not by a name written down here. It carries all three signals — it reads
+# `docs/taxonomies/README.md`, and case group 3 and case 5e both build scratch
+# trees with a `fixtures` directory in them — and a file cannot be a member of
+# the population it enumerates. Case 5a holds both halves of that: the suite is
+# absent from the population, and it would be in it without the exclusion.
+#
+# THE NAMED READERS come from the one paragraph of the anatomy section that
+# states what a `fixtures` directory holds. Case 5b asserts SET EQUALITY
+# between the two populations, in both directions: a program that starts
+# reading a fixture page reddens until that paragraph names it, and a path the
+# paragraph names that reads no fixture page reddens too.
+#
+# No count of readers and no count of fixture pages is written down here, and
+# the paragraph is written so that it carries none either. It names WHICH pages
+# a runner reads and says the rest are prose. That is a set, and an eighth
+# entry added tomorrow moves neither the paragraph nor this group.
+#
+# Case 5c is the other half of the same claim, and it is page-wide rather than
+# paragraph-wide: every `tools/` path the index writes names a file in this
+# tree.
+#
+# Case 5d holds the last clause of the paragraph, that CI runs both readers. A
+# program is reached when a line of the workflow that is not a comment names
+# it, or when such a line names a file that names it ON A LINE THAT IS NOT A
+# COMMENT EITHER: `tools/taxonomy/drive_n8n.py` is run by a wrapper and the
+# workflow never writes its path. One level, and no more, because a second
+# level would reach half this repository.
+#
+# The second comment strip is the whole of whether this case holds anything.
+# Without it, deleting the CI step that runs `tools/repo/diataxis-fixtures.sh`
+# left the suite at 60 passed and 0 failed, because THIS FILE is run by the
+# workflow and names that script in the prose above. A judge that reads a
+# comment as a call reports a gate that is gone as a gate that runs. Case 5e
+# provokes exactly that.
+#
+# It is a weaker claim than "this step ran", which no file in this tree can
+# make about a workflow. It is the claim that reddens when the step is deleted
+# under a paragraph that still credits it, and that has been measured by
+# deleting the step rather than assumed.
+
+# tools_paths FILE — every `tools/` file path written anywhere in FILE, sorted
+# and deduplicated. Every sort and every `comm` in this group is `LC_ALL=C`,
+# because a path is punctuation-heavy: the default collation of this host puts
+# `tools/repo/a-b.sh` and `tools/repo/ab.sh` in an order that `comm` then reads
+# as unsorted, and `comm` answers with a warning on standard error and a wrong
+# set. A match must end in an extension, so a bare `tools/`
+# naming the directory is not a path this judge holds. Trailing sentence
+# punctuation is stripped before the extension is read, because a path at the
+# end of a sentence outside a code span carries it.
+tools_paths() {
+    grep -oE 'tools/[A-Za-z0-9._/-]+' "$1" |
+        sed 's/[.,;:)]*$//' |
+        grep -E '\.[A-Za-z0-9]+$' |
+        LC_ALL=C sort -u
+}
+
+# live_lines FILE OUT — FILE with every whole-line comment removed. `#` opens
+# one in shell, in Python and in YAML, which is every language this judge
+# reads. A trailing comment on a line of code is left alone: the line is code.
+live_lines() {
+    grep -v '^[[:space:]]*#' "$1" >"$2" || :
+}
+
+# fixture_readme_readers ROOT SELF WORK — one path per line, relative to ROOT
+# and sorted: a shell or Python source under `tools/`, other than SELF, whose
+# live lines carry all three signals named in the header. WORK is a directory
+# the judge writes one file into.
+fixture_readme_readers() {
+    find "$1/tools" -type f \( -name '*.sh' -o -name '*.py' \) 2>/dev/null |
+        LC_ALL=C sort |
+        while read -r frr_f; do
+            frr_rel=${frr_f#"$1"/}
+            [ "$frr_rel" = "$2" ] && continue
+            live_lines "$frr_f" "$3/frr-live"
+            grep -q 'docs/taxonomies' "$3/frr-live" || continue
+            grep -q '/fixtures' "$3/frr-live" || continue
+            grep -q 'README' "$3/frr-live" || continue
+            echo "$frr_rel"
+        done
+}
+
+# fixtures_paragraph FILE — the paragraph of the anatomy section that states
+# what a `fixtures` directory holds. One logical line, because this repository
+# hard-wraps no Markdown. Empty when the bolded lead is gone, which the floor
+# in case 5a reports rather than passing over an unread paragraph.
+fixtures_paragraph() {
+    section_of "$1" "What an entry ships" | grep '^\*\*`fixtures/`'
+}
+
+# reader_judge ROOT INDEX WORK SELF — one line per disagreement, nothing when
+# the paragraph names exactly the programs that read a fixture page. WORK is a
+# directory the judge writes four files into.
+reader_judge() {
+    fixture_readme_readers "$1" "$4" "$3" >"$3/rj-readers"
+    fixtures_paragraph "$2" >"$3/rj-para"
+    tools_paths "$3/rj-para" >"$3/rj-named"
+    LC_ALL=C comm -23 "$3/rj-readers" "$3/rj-named" |
+        sed 's|^|a program reads a fixture page and the paragraph does not name it: |'
+    LC_ALL=C comm -13 "$3/rj-readers" "$3/rj-named" |
+        sed 's|^|the paragraph names a reader of a fixture page that reads none: |'
+}
+
+# ci_reached ROOT WORKFLOW WORK — every `tools/` path a non-comment line of
+# WORKFLOW names, plus every `tools/` path a non-comment line of each of those
+# files names. Sorted, deduplicated, one per line. The second strip is not
+# symmetry: without it this suite's own prose reaches everything it discusses.
+ci_reached() {
+    live_lines "$2" "$3/cr-live"
+    tools_paths "$3/cr-live" >"$3/cr-direct"
+    cp "$3/cr-direct" "$3/cr-all"
+    while read -r cr_p; do
+        [ -f "$1/$cr_p" ] || continue
+        live_lines "$1/$cr_p" "$3/cr-inner"
+        tools_paths "$3/cr-inner" >>"$3/cr-all"
+    done <"$3/cr-direct"
+    LC_ALL=C sort -u "$3/cr-all"
+}
+
+# ci_claim_judge ROOT WORKFLOW INDEX WORK — one line per program the paragraph
+# credits that no step of the workflow reaches.
+ci_claim_judge() {
+    ci_reached "$1" "$2" "$4" >"$4/cc-reached"
+    fixtures_paragraph "$3" >"$4/cc-para"
+    tools_paths "$4/cc-para" | LC_ALL=C sort >"$4/cc-named"
+    LC_ALL=C comm -23 "$4/cc-named" "$4/cc-reached" |
+        sed 's|^|the paragraph says CI runs it and no step of the workflow reaches it: |'
+}
+
+# tools_path_judge ROOT FILE — one line per `tools/` path FILE writes that
+# names no file under ROOT.
+tools_path_judge() {
+    tools_paths "$2" | while read -r tpj_p; do
+        [ -f "$1/$tpj_p" ] ||
+            echo "the page names \`$tpj_p\` and no such file is in the tree"
+    done
+}
+
+mkdir -p "$scratch/rd"
+self=$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
+self=${self#"$root"/}
+fixture_readme_readers "$root" "$self" "$scratch/rd" >"$scratch/rd/readers"
+fixture_readme_readers "$root" "" "$scratch/rd" >"$scratch/rd/readers-unfiltered"
+fixtures_paragraph "$index" >"$scratch/rd/para"
+
+# 5a. Floors. A reader population that came back empty, or a paragraph the
+#     selector no longer finds, would pass 5b for the wrong reason.
+more_than "programs under \`tools/\` read a fixture page" 0 \
+    "$(wc -l <"$scratch/rd/readers" | tr -d ' ')"
+more_than "the anatomy section carries the paragraph that says who reads one" 0 \
+    "$(wc -l <"$scratch/rd/para" | tr -d ' ')"
+more_than "the index writes \`tools/\` paths" 0 \
+    "$(tools_paths "$index" | wc -l | tr -d ' ')"
+same "this suite is not in the population it enumerates" \
+    "" "$(grep -c "^$self\$" "$scratch/rd/readers" | sed 's/^0$//')"
+same "  and it would be, which is what the exclusion is for" \
+    "1" "$(grep -c "^$self\$" "$scratch/rd/readers-unfiltered")"
+
+# 5b. Set equality, both directions. This is the case #813 was filed for.
+same "the paragraph names every program that reads a fixture page, and no other" \
+    "" "$(reader_judge "$root" "$index" "$scratch/rd" "$self" | tr '\n' '|')"
+
+# 5c. Every `tools/` path the page writes resolves. `tools/diataxis-fixtures.sh`
+#     did not, in the same claim, and the vendored copy carried the same line.
+same "every \`tools/\` path the index writes names a file in this tree" \
+    "" "$(tools_path_judge "$root" "$index" | tr '\n' '|')"
+
+# 5d. The paragraph's last clause: CI reaches every program it credits.
+more_than "the workflow runs \`tools/\` programs" 0 \
+    "$(ci_reached "$root" "$root/.github/workflows/ci.yml" "$scratch/rd" |
+        wc -l | tr -d ' ')"
+same "every program the paragraph credits is reached by a step of the workflow" \
+    "" "$(ci_claim_judge "$root" "$root/.github/workflows/ci.yml" "$index" \
+            "$scratch/rd" | tr '\n' '|')"
+
+# 5e. Every refusal and every agreement, provoked over a scratch tree. Four
+#     reader shapes are planted, because three signals in one file is a rule
+#     that has to be shown finding each of them: the whole-literal path, the
+#     two-line assembly through a variable named `fixtures`, the two-line
+#     assembly through a variable named `fx`, and a glob with a `*` in the
+#     middle of the path. The first draft of this judge found only the first
+#     two, and the run that measured that is in the header.
+mkdir -p "$scratch/rp/tools/repo" "$scratch/rp/work"
+printf '#!/bin/sh\nentry=docs/taxonomies/alpha\nfixtures="$root/$entry/fixtures"\ncat "$fixtures/%s"\n' \
+    'README.md' >"$scratch/rp/tools/repo/alpha-fixtures.sh"
+printf '#!/bin/sh\necho this one opens nothing\n' \
+    >"$scratch/rp/tools/repo/unrelated.sh"
+
+write_anatomy() {
+    printf '## What an entry ships\n\n' >"$1"
+    printf '%s\n' "$2" >>"$1"
+}
+
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** Nothing runs any of it.'
+same "  a reader the paragraph does not name" \
+    "a program reads a fixture page and the paragraph does not name it: tools/repo/alpha-fixtures.sh|" \
+    "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" "" | tr '\n' '|')"
+
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry, and every other page here is prose.'
+same "  the same tree once the paragraph names it" \
+    "" "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" "" | tr '\n' '|')"
+
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` and `tools/repo/unrelated.sh` both read a page here.'
+same "  a program the paragraph credits that reads no fixture page" \
+    "the paragraph names a reader of a fixture page that reads none: tools/repo/unrelated.sh|" \
+    "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" "" | tr '\n' '|')"
+
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry.'
+printf 'And `tools/alpha-fixtures.sh` measures the addresses, from `tools/` itself.\n' \
+    >>"$scratch/rp/index.md"
+same "  a \`tools/\` path the page writes that names no file" \
+    "the page names \`tools/alpha-fixtures.sh\` and no such file is in the tree|" \
+    "$(tools_path_judge "$scratch/rp" "$scratch/rp/index.md" | tr '\n' '|')"
+
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` and `tools/repo/unrelated.sh` are both under `tools/`.'
+same "  the same page once every path it writes resolves" \
+    "" "$(tools_path_judge "$scratch/rp" "$scratch/rp/index.md" | tr '\n' '|')"
+
+mkdir -p "$scratch/rp/.github/workflows"
+printf 'jobs:\n  one:\n    steps:\n      # run: sh tools/repo/alpha-fixtures.sh\n      - run: sh tools/repo/unrelated.sh\n' \
+    >"$scratch/rp/.github/workflows/ci.yml"
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry, and CI runs it.'
+same "  a credited program that only a comment of the workflow names" \
+    "the paragraph says CI runs it and no step of the workflow reaches it: tools/repo/alpha-fixtures.sh|" \
+    "$(ci_claim_judge "$scratch/rp" "$scratch/rp/.github/workflows/ci.yml" \
+        "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+
+printf 'exec python3 "$root/tools/repo/alpha-fixtures.sh"\n' \
+    >>"$scratch/rp/tools/repo/unrelated.sh"
+same "  the same program once a step reaches it through one wrapper" \
+    "" "$(ci_claim_judge "$scratch/rp" "$scratch/rp/.github/workflows/ci.yml" \
+        "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+
+# 5f. The reader shapes this judge was rewritten to find. Each one is planted
+#     alone, under a paragraph that names only the first reader, so the line it
+#     produces is its own.
+plant_reader() {
+    printf '%s' "$2" >"$scratch/rp/tools/repo/second.sh"
+    write_anatomy "$scratch/rp/index.md" \
+        '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry.'
+    same "  $1" \
+        "a program reads a fixture page and the paragraph does not name it: tools/repo/second.sh|" \
+        "$(reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" "" |
+            tr '\n' '|')"
+    rm -f "$scratch/rp/tools/repo/second.sh"
+}
+
+plant_reader "a whole literal path on one line" \
+    "$(printf '#!/bin/sh\ncat docs/taxonomies/beta/fixtures/%s\n' 'README.md')"
+plant_reader "an assembly through a variable named \`fx\`" \
+    "$(printf '#!/bin/sh\nfx=docs/taxonomies/beta/fixtures\ncat "$fx/%s"\n' 'README.md')"
+plant_reader "a glob with a \`*\` in the middle of the path" \
+    "$(printf 'import glob\nfor p in glob.glob("docs/taxonomies/*/fixtures/*/%s"):\n    print(p)\n' 'README.md')"
+
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry.'
+same "  a program that names a fixture corpus and no README is not a reader" \
+    "" "$(printf '#!/bin/sh\nls docs/taxonomies/beta/fixtures/corpus\n' \
+            >"$scratch/rp/tools/repo/second.sh"
+          reader_judge "$scratch/rp" "$scratch/rp/index.md" "$scratch/rp/work" "" |
+            tr '\n' '|')"
+rm -f "$scratch/rp/tools/repo/second.sh"
+
+# 5g. The false positive that made case 5d hold nothing until 2026-09-12: a
+#     file the workflow runs that names the program in a COMMENT. Before the
+#     second comment strip, this suite was that file and the deleted step still
+#     read as reached.
+printf 'jobs:\n  one:\n    steps:\n      - run: sh tools/repo/unrelated.sh\n' \
+    >"$scratch/rp/.github/workflows/ci.yml"
+printf '# tools/repo/alpha-fixtures.sh is discussed here and never run\necho nothing\n' \
+    >"$scratch/rp/tools/repo/unrelated.sh"
+write_anatomy "$scratch/rp/index.md" \
+    '**`fixtures/` holds the worked corpus.** `tools/repo/alpha-fixtures.sh` reads the page of the `alpha` entry, and CI runs it.'
+same "  a wrapper that names the program only in a comment reaches nothing" \
+    "the paragraph says CI runs it and no step of the workflow reaches it: tools/repo/alpha-fixtures.sh|" \
+    "$(ci_claim_judge "$scratch/rp" "$scratch/rp/.github/workflows/ci.yml" \
+        "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+
+printf '# tools/repo/alpha-fixtures.sh is discussed here\nsh tools/repo/alpha-fixtures.sh\n' \
+    >"$scratch/rp/tools/repo/unrelated.sh"
+same "  and the same wrapper once a live line runs it" \
+    "" "$(ci_claim_judge "$scratch/rp" "$scratch/rp/.github/workflows/ci.yml" \
+        "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
 
 echo
 echo "$passed passed, $failed failed"

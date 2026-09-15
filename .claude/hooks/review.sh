@@ -59,19 +59,48 @@ active=$(hw_field "$input" stop_hook_active)
 # turn without the gate. A session id is never reused, so a marker a dead run
 # left behind names nobody, and a run started outside the harness writes none.
 session=$(hw_field "$input" session_id)
+
+# From here on, every use of `hw_root` is corpus-relative: the git common dir
+# below, and the gate path and `cd` after it. The two reads above it are not —
+# `stop_hook_active` and `session_id` are read off the payload, not off a
+# checkout — so they run first, through whichever engine the pre-correction
+# root already resolves to, and lose nothing on a worktree with no engine of
+# its own.
+hw_root=$(hw_resolve_root "$input")
+
 if [ -n "$session" ]; then
-    common=$(git -C "$hw_root" rev-parse --git-common-dir 2>/dev/null)
-    case $common in
-        '') ;;
-        /*) ;;
-        *) common="$hw_root/$common" ;;
-    esac
-    for marker in "$common"/headwater-run/*/parent.session; do
-        [ -f "$marker" ] || continue
-        prefix=$(head -n 1 "$marker")
-        [ -n "$prefix" ] || continue
-        case $session in "$prefix"*) exit 0 ;; esac
-    done
+    common=$(hw_common_dir) || common=
+    if [ -n "$common" ]; then
+        for marker in "$common"/headwater-run/*/parent.session; do
+            [ -f "$marker" ] || continue
+            prefix=$(head -n 1 "$marker")
+            [ -n "$prefix" ] || continue
+            case $session in "$prefix"*) exit 0 ;; esac
+        done
+
+        # A session that never called a tool `.claude/hooks/touch.sh` marks
+        # could not have introduced whatever this tree already fails. Gating
+        # its Stop anyway reports somebody else's unfinished work: every
+        # session that has not fixed `core.hooksPath` back to a relative
+        # value after `EnterWorktree` shares the main checkout's tree with
+        # whatever else is running there, and a session that only reads,
+        # searches or talks inherits every failure already sitting on it.
+        # That is not a hypothetical — a session with zero mutating tool
+        # calls was stopped by a stale `site/` figure and a stale
+        # `taxonomy.lock` hash that a different, unrelated branch's edits had
+        # left on the checkout it ran against.
+        #
+        # `touch.sh` marks `Write`, `Edit` and Codex's `apply_patch`, and not
+        # `Bash`, so a session whose only mutation ran through a shell command
+        # is not exempted here and still gates normally — the safe direction,
+        # since the alternative is skipping a session that did change the
+        # tree. A session this exempts wrongly is not lost: the commit hook
+        # and CI hold the same tree at the next real gate, which is the whole
+        # reason this position is allowed to be wrong in the permissive
+        # direction rather than the refusing one. The file above states it:
+        # "this position only makes the finding arrive sooner."
+        [ -e "$common/headwater-session/$session/touched" ] || exit 0
+    fi
 fi
 
 gate="$hw_root/.githooks/pre-commit"

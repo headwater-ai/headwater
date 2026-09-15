@@ -23,12 +23,12 @@
 //!
 //! This repository's own maintained source of `headwater/standard` —
 //! `taxonomy-source/headwater-standard/` since #336 moved it out of
-//! `packages/` — copied to where `--package` looks a package up, and nothing
+//! `.headwater/packages/` — copied to where `--package` looks a package up, and nothing
 //! else. That is the state `headwater init` sends a newcomer into: its refusal
-//! says *"package headwater/standard is not under `packages/`, and nothing here
+//! says *"package headwater/standard is not under `.headwater/packages/`, and nothing here
 //! fetches one"*, and the copy that line invites carries a manifest whose
 //! `contents.bundles` climbs out with `../..` into a library that the copy left
-//! behind. `packages/headwater-standard/` itself is no longer this fixture,
+//! behind. `.headwater/packages/headwater-standard/` itself is no longer this fixture,
 //! because #336 also made it a vendored artifact whose manifest carries the
 //! library inside it rather than climbing out to reach one.
 //!
@@ -74,14 +74,15 @@ impl Root {
         let root = Root::scratch(label);
         copy(
             &repository().join("taxonomy-source/headwater-standard"),
-            &root.0.join("packages/headwater-standard"),
+            &root.0.join(".headwater/packages/headwater-standard"),
         );
         copy(
             &repository().join("docs/taxonomies"),
             &root.0.join("docs/taxonomies"),
         );
         std::fs::write(
-            root.0.join("packages/headwater-standard/bundles"),
+            root.0
+                .join(".headwater/packages/headwater-standard/bundles"),
             "a regular file where the artifact needs a directory\n",
         )
         .expect("the colliding file is written");
@@ -99,7 +100,7 @@ impl Root {
         std::fs::create_dir_all(&at).expect("the root is made");
         copy(
             &repository().join("taxonomy-source/headwater-standard"),
-            &at.join("packages/headwater-standard"),
+            &at.join(".headwater/packages/headwater-standard"),
         );
         assert!(
             !at.join("docs/taxonomies").exists(),
@@ -135,7 +136,7 @@ fn publish_from(root: &Path, out: &Path) -> (Option<i32>, String) {
 
 /// `taxonomy publish --from` over this repository's own maintained source.
 ///
-/// `--package headwater/standard` now finds `packages/headwater-standard/`,
+/// `--package headwater/standard` now finds `.headwater/packages/headwater-standard/`,
 /// and #366 made that refuse: the directory carries a release record, so it
 /// was vendored rather than maintained by hand. `taxonomy-source/headwater-standard/`
 /// is the maintained source, and this is the real, substantial artifact this
@@ -652,7 +653,7 @@ fn a_flattened_assembly_is_pinned_vendored_and_resolved_without_bundle_selection
         ],
     );
     assert_eq!(code, Some(0), "{stderr}");
-    let installed = consumer.join("packages/acme-starter");
+    let installed = consumer.join(".headwater/packages/acme-starter");
     assert!(
         installed.join("release.yml").is_file(),
         "the artifact was not vendored"
@@ -783,7 +784,7 @@ fn the_shipped_starter_recipe_publishes_vendors_and_resolves() {
     assert_eq!(code, Some(0), "{stderr}");
     assert!(
         consumer
-            .join("packages/headwater-starter/doctrine/starter/starter.md")
+            .join(".headwater/packages/headwater-starter/doctrine/starter/starter.md")
             .is_file(),
         "the doctrine did not arrive with the vendored package"
     );
@@ -803,7 +804,7 @@ fn the_shipped_starter_recipe_publishes_vendors_and_resolves() {
     // against the release record, so hand-placing the file cannot satisfy it.
     assert!(
         consumer
-            .join("packages/headwater-starter/conformance.yml")
+            .join(".headwater/packages/headwater-starter/conformance.yml")
             .is_file(),
         "the conformance rule set did not arrive with the vendored package"
     );
@@ -934,7 +935,8 @@ fn a_pin_that_no_longer_names_the_installed_bytes_is_refused_by_conformance_and_
     // The hand edit lands after the publish that computed the pinned digest and
     // after the vendor that installed the bytes it names.
     write(&authored, &pin);
-    let installed = consumer.join("packages/headwater-starter/doctrine/starter/starter.md");
+    let installed =
+        consumer.join(".headwater/packages/headwater-starter/doctrine/starter/starter.md");
     let carried = std::fs::read_to_string(&installed).expect("the installed doctrine reads");
     std::fs::write(
         &installed,
@@ -1261,12 +1263,12 @@ fn a_failed_write_leaves_neither_the_output_directory_nor_the_path_to_it() {
 
 /// #336's `--from <dir>`, exercised as a person would type it: two flags that
 /// name the same thing are refused together, and `--from` alone publishes a
-/// directory `--package` would never find under `packages/`.
+/// directory `--package` would never find under `.headwater/packages/`.
 ///
 /// The directory this hands `--from` is `taxonomy-source/headwater-standard/`
 /// itself, in this repository's own tree rather than a copy of it, precisely
 /// because the point of the flag is that it reads a manifest `find` would never
-/// walk to (it does not sit under `packages/` at all). A copy would test the
+/// walk to (it does not sit under `.headwater/packages/` at all). A copy would test the
 /// read and hide the one thing worth proving: this path bypasses the lookup by
 /// name entirely.
 #[test]
@@ -1316,7 +1318,7 @@ fn from_and_package_together_are_refused_and_from_alone_publishes_the_relocated_
     );
     assert!(
         out.join("release.yml").is_file(),
-        "publishing `--from` a directory outside `packages/` wrote no release record"
+        "publishing `--from` a directory outside `.headwater/packages/` wrote no release record"
     );
 }
 
@@ -1326,7 +1328,7 @@ fn from_and_package_together_are_refused_and_from_alone_publishes_the_relocated_
 /// #407: `taxonomy-source/headwater-standard/package.yml` declares `bundles:
 /// ../../docs/taxonomies`, and `headwater taxonomy publish` copies that
 /// directory into `bundles/` inside the artifact `taxonomy vendor` later
-/// installs at `packages/headwater-standard/bundles/`. Nothing re-takes that
+/// installs at `.headwater/packages/headwater-standard/bundles/`. Nothing re-takes that
 /// snapshot or compares it against the source it was taken from, so six of
 /// seventy-two files drifted before anyone noticed: every rule that reads
 /// this repository's corpus excludes `docs/taxonomies/**` (#350), and every
@@ -1338,7 +1340,7 @@ fn from_and_package_together_are_refused_and_from_alone_publishes_the_relocated_
 /// maintained source with [`publish_real_source_into`], the same call
 /// [`from_and_package_together_are_refused_and_from_alone_publishes_the_relocated_source`]
 /// makes, and diff the `bundles/` that publish just wrote against
-/// `packages/headwater-standard/bundles/`, the copy this repository ships. A
+/// `.headwater/packages/headwater-standard/bundles/`, the copy this repository ships. A
 /// path present on one side and not the other, or a path whose bytes differ,
 /// is exactly the drift #407 found by grepping for two deleted paths by
 /// hand.
@@ -1355,7 +1357,7 @@ fn the_vendored_bundles_agree_with_a_fresh_publish_of_the_maintained_source() {
     );
 
     let fresh = out.join("bundles");
-    let vendored = repository().join("packages/headwater-standard/bundles");
+    let vendored = repository().join(".headwater/packages/headwater-standard/bundles");
 
     let mut fresh_paths = relative_files(&fresh);
     let mut vendored_paths = relative_files(&vendored);
@@ -1381,7 +1383,7 @@ fn the_vendored_bundles_agree_with_a_fresh_publish_of_the_maintained_source() {
 
     assert!(
         only_in_fresh.is_empty() && only_in_vendored.is_empty() && differing.is_empty(),
-        "packages/headwater-standard/bundles/ has drifted from docs/taxonomies/, the source \
+        ".headwater/packages/headwater-standard/bundles/ has drifted from docs/taxonomies/, the source \
          taxonomy-source/headwater-standard/package.yml declares.\n\
          only in a fresh publish, missing from the vendored copy: {only_in_fresh:?}\n\
          only in the vendored copy, missing from a fresh publish: {only_in_vendored:?}\n\
@@ -2474,15 +2476,15 @@ fn the_vendor_report_names_both_artifacts_of_one_version() {
     let root = Root::scratch("one-version-two-artifacts");
     let publisher = root.path().join("publisher");
     write(
-        &publisher.join("packages/acme-fixture/package.yml"),
+        &publisher.join(".headwater/packages/acme-fixture/package.yml"),
         "package: acme/fixture\nversion: 4.2.0\ncontents:\n  taxonomy: taxonomy.yml\n  doctrine: doctrine/\n",
     );
     write(
-        &publisher.join("packages/acme-fixture/taxonomy.yml"),
+        &publisher.join(".headwater/packages/acme-fixture/taxonomy.yml"),
         "taxonomy: acme/fixture\nversion: 4.2.0\npurposes:\n  rationale: {intent: explain why a choice was made and what it forecloses}\n",
     );
     write(
-        &publisher.join("packages/acme-fixture/doctrine/method.md"),
+        &publisher.join(".headwater/packages/acme-fixture/doctrine/method.md"),
         "# Method\n\nWhy this taxonomy shelves what it shelves.\n",
     );
 
@@ -2522,7 +2524,7 @@ fn the_vendor_report_names_both_artifacts_of_one_version() {
     // One more member of the maintained source. Neither version key moves: a
     // package that states two versions of itself is refused at publish.
     write(
-        &publisher.join("packages/acme-fixture/doctrine/second.md"),
+        &publisher.join(".headwater/packages/acme-fixture/doctrine/second.md"),
         "# Second\n\nOne more file, and the version stays where it is.\n",
     );
     let second_out = root.path().join("artifact-2");

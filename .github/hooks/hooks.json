@@ -12,7 +12,8 @@
       {
         "matcher": "Write|Edit",
         "hooks": [
-          { "type": "command", "command": "sh .claude/hooks/write.sh", "timeoutSec": 15 }
+          { "type": "command", "command": "sh .claude/hooks/write.sh", "timeoutSec": 15 },
+          { "type": "command", "command": "sh .claude/hooks/touch.sh", "timeoutSec": 15 }
         ]
       }
     ],

@@ -48,7 +48,7 @@ cargo install headwater-cli
 
 `cargo install` puts the binary in `cargo`'s own bin directory. `cargo` already put that directory on your `PATH` when it set itself up. Nothing here needs exporting, and nothing has to survive into a new shell.
 
-This installs whatever the newest published version is, from crates.io: no clone, and no local build. It does not get you `taxonomy-source`, the package this tutorial's step 3 needs. That package arrives the same way: fetched rather than cloned. Step 3 shows how. The README's *Obtaining a named version* section names the source-build route instead. It is for a reader who wants the engine and the package matched to one commit.
+This installs whatever the newest version published on crates.io. It does not get you `taxonomy-source`; step 3 fetches that. The README's *Obtaining a named version* section covers a fixed-version route instead.
 
 ## Steps
 
@@ -81,7 +81,7 @@ wrote .headwater/overlay.yml
 
 what this read off the tree
   corpus root docs
-  package headwater/standard is not under `packages/`, and nothing here fetches one. Two routes reach a lock, and each one needs a different field of `.headwater/taxonomy.yml`. Copy a package directory into `packages/`, and pin `taxonomy.version` at the version that package declares. Or run `headwater taxonomy vendor <dir>` on a published artifact: that verb reads `taxonomy.digest` and refuses until it holds the digest the publisher printed, and `headwater taxonomy resolve` reads `taxonomy.version` after it, so the vendor route needs the digest first and the version as well
+  package headwater/standard is not under `.headwater/packages/`, and nothing here fetches one. Two routes reach a lock, and each one needs a different field of `.headwater/taxonomy.yml`. Copy a package directory into `.headwater/packages/`, and pin `taxonomy.version` at the version that package declares. Or run `headwater taxonomy vendor <dir>` on a published artifact: that verb reads `taxonomy.digest` and refuses until it holds the digest the publisher printed, and `headwater taxonomy resolve` reads `taxonomy.version` after it, so the vendor route needs the digest first and the version as well
 
 what it cannot read off a tree, and asked instead
   the phrases each purpose answers, which decide what a task routes to
@@ -108,10 +108,12 @@ headwater-bootstrap: fetching packages/headwater-standard at taxonomy/headwater-
 vendored headwater/standard 4.2.0
   31 files, all of them the pinned bytes
   digest sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
-  doctrine at packages/headwater-standard/doctrine/
+  doctrine at .headwater/packages/headwater-standard/doctrine/
 ```
 
-**Check.** `ls packages/headwater-standard` prints seven lines:
+The two paths in that account are two different trees. `packages/headwater-standard` is where the package sits inside the release tag the script fetched, and a tag's tree never moves. `.headwater/packages/headwater-standard` is where `vendor` installed it in yours ([HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)).
+
+**Check.** `ls .headwater/packages/headwater-standard` prints seven lines:
 
 ```
 assemblies
@@ -129,7 +131,7 @@ Step 2 named two routes, and this step took the second. `headwater taxonomy vend
 
 `taxonomy/headwater-standard/v<version>` is the taxonomy-only route. It publishes `headwater/standard` alone, with no engine release. `.github/workflows/release-taxonomy.yml` cuts a tag of this form whenever the package authors choose to. It needs no new engine version.
 
-A second route pins an engine build and this package to the same commit. The README's *Obtaining a named version* section names both. Step 5 pins the version this pulled, `4.2.0`, and the digest this block already printed. Step 16 reads back what the second pin buys.
+A second route pins a fixed version of the engine and of this package. The README's *Obtaining a named version* section names both. Step 5 pins the version this pulled, `4.2.0`, and the digest this block already printed. Step 16 reads back what the second pin buys.
 
 ### Step 4 — Meet the first refusal
 
@@ -191,7 +193,7 @@ headwater taxonomy resolve
 
 ```
 wrote .headwater/taxonomy.lock
-  from packages/headwater-standard/taxonomy.yml
+  from .headwater/packages/headwater-standard/taxonomy.yml
   from .headwater/overlay.yml
   no lock was there, so there was no adoption block to carry
 ```
@@ -321,7 +323,7 @@ git add -A
 git commit -m "A first governed corpus"
 ```
 
-**Check.** `git log --oneline` prints one line that ends in `A first governed corpus`. `git ls-files .headwater` prints six files: the five you have already met, and the `.gitignore` that `headwater check` writes inside `.headwater/cache/`.
+**Check.** `git log --oneline` prints one line that ends in `A first governed corpus`. `git ls-files .headwater ':!.headwater/packages'` prints six files: the five you have already met, and the `.gitignore` that `headwater check` writes inside `.headwater/cache/`. The exclusion leaves out the package you vendored at step 3, which is a publisher's artifact rather than a file you wrote, and which `ls .headwater/packages/headwater-standard` already showed you.
 
 ```
 .headwater/cache/.gitignore
@@ -508,7 +510,7 @@ L1 reached, against headwater/standard 4.2.0
 
 **Check.** The last line of the levels block reads `L1 reached, against headwater/standard 4.2.0`.
 
-Your corpus already stands on the first two rungs, which a package copied by hand never reaches. `pin.current` is what carried you there. It reads the digest step 5 pinned against the record `packages/headwater-standard/release.yml` carries, and step 3 already gave you both. A package you copy from a source directory has no digest to pin, because nobody has published it. That route never reaches this rung: it stays off the ladder for the whole life of a corpus built that way. One gap is left, and it closes with a command:
+Your corpus already stands on the first two rungs, which a package copied by hand never reaches. `pin.current` is what carried you there. It reads the digest step 5 pinned against the record `.headwater/packages/headwater-standard/release.yml` carries, and step 3 already gave you both. A package you copy from a source directory has no digest to pin, because nobody has published it. That route never reaches this rung: it stays off the ladder for the whole life of a corpus built that way. One gap is left, and it closes with a command:
 
 ```
 headwater generate

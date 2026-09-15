@@ -57,7 +57,7 @@ pub mod shelves;
 pub mod walk;
 
 pub use census::{Census, Detail, Row};
-pub use derived::{Population, Producer};
+pub use derived::{Member, Population, Producer, Shape, Treatment};
 pub use headwater_meta::pattern::{self, Pattern};
 pub use resolve::{Resolution, Step};
 pub use shelves::{DeclarationError, Shelf, ShelfBody, Taxonomy};

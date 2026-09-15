@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-paint"
+description = "The terminal palette HW-DR-0045 rules on: a color mode, the semantic roles, and the pure functions every renderer of this engine applies them through"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+# No dependencies, for the reason `headwater-hash` and `headwater-mark` have
+# none. Renderers sit on both sides of `headwater-check`: `Finding::render` is
+# above it and `Population::render` in `headwater-census` is below it, so a
+# palette either sits under both of them or gets copied. A second copy of a
+# palette is two palettes, and HW-DR-0045 rules on one.
+[dependencies]
+
+[lints]
+workspace = true

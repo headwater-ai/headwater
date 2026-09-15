@@ -93,10 +93,13 @@ fn publisher_at(scratch: &Scratch, requires_engine: Option<&str>, source: &str) 
     if let Some(range) = requires_engine {
         manifest.push_str(&format!("requires_engine: \"{range}\"\n"));
     }
-    manifest.push_str("contents:\n  taxonomy: taxonomy.yml\n  bundles: ../../library\n");
-    scratch.write("publisher/packages/acme-fixture/package.yml", &manifest);
+    manifest.push_str("contents:\n  taxonomy: taxonomy.yml\n  bundles: ../../../library\n");
     scratch.write(
-        "publisher/packages/acme-fixture/taxonomy.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
+        &manifest,
+    );
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/taxonomy.yml",
         &TAXONOMY.replace("version: 1.0.0", &format!("version: {source}")),
     );
     scratch.write("publisher/library/extra/bundle.yml", BUNDLE);
@@ -116,11 +119,14 @@ const METHOD: &str = "# Method\n\nWhy this taxonomy shelves what it shelves.\n";
 /// case rather than derived here from the string it passed.
 fn publisher_with_doctrine(scratch: &Scratch, doctrine: &str) -> PathBuf {
     let root = publisher(scratch, None);
-    let manifest = root.join("packages/acme-fixture/package.yml");
+    let manifest = root.join(".headwater/packages/acme-fixture/package.yml");
     let text = std::fs::read_to_string(&manifest).expect("the manifest was just written");
     std::fs::write(&manifest, format!("{text}  doctrine: {doctrine}\n"))
         .expect("the manifest writes");
-    scratch.write("publisher/packages/acme-fixture/doctrine/method.md", METHOD);
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/doctrine/method.md",
+        METHOD,
+    );
     root
 }
 
@@ -137,7 +143,7 @@ fn publisher_with_doctrine(scratch: &Scratch, doctrine: &str) -> PathBuf {
 /// positional parameter, so the fifteen call sites of that helper are untouched.
 fn publisher_named(scratch: &Scratch, source: &str) -> PathBuf {
     let root = publisher_at(scratch, None, "1.0.0");
-    let path = root.join("packages/acme-fixture/taxonomy.yml");
+    let path = root.join(".headwater/packages/acme-fixture/taxonomy.yml");
     let text = std::fs::read_to_string(&path).expect("the source was just written");
     let moved = text.replace("taxonomy: acme/fixture", &format!("taxonomy: {source}"));
     assert_ne!(text, moved, "the source did not declare the name it was to");
@@ -155,11 +161,11 @@ fn publisher_named(scratch: &Scratch, source: &str) -> PathBuf {
 fn publisher_of(scratch: &Scratch, at: &str, package: &str) -> PathBuf {
     let directory = package.replace('/', "-");
     scratch.write(
-        &format!("{at}/packages/{directory}/package.yml"),
+        &format!("{at}/.headwater/packages/{directory}/package.yml"),
         &format!("package: {package}\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n"),
     );
     scratch.write(
-        &format!("{at}/packages/{directory}/taxonomy.yml"),
+        &format!("{at}/.headwater/packages/{directory}/taxonomy.yml"),
         &TAXONOMY.replace("taxonomy: acme/fixture", &format!("taxonomy: {package}")),
     );
     scratch.path().join(at)
@@ -415,7 +421,7 @@ fn a_consistent_forgery_is_refused_by_the_pin() {
 
     // The publisher's tree, edited, and published again. Every internal check
     // passes over the result.
-    let taxonomy = root.join("packages/acme-fixture/taxonomy.yml");
+    let taxonomy = root.join(".headwater/packages/acme-fixture/taxonomy.yml");
     let text = std::fs::read_to_string(&taxonomy).expect("it is there");
     std::fs::write(&taxonomy, format!("{text}# what the adversary added\n")).expect("written");
     let forged = scratch.path().join("forged");
@@ -440,7 +446,7 @@ fn a_consistent_forgery_is_refused_by_the_pin() {
 /// adversary rewrites the name in them, `release::verify` passes, and the target
 /// directory the vendor deletes and rewrites was named by the edit.
 ///
-/// **The victim is vendored rather than written.** A `packages/acme-victim/`
+/// **The victim is vendored rather than written.** A `.headwater/packages/acme-victim/`
 /// made by hand carries no release record, so `vendor` refuses it on the
 /// maintained-package guard — `is_err` with no fix in the tree at all, which is
 /// a green test measuring nothing. That is why the assertions below are on the
@@ -461,7 +467,7 @@ fn a_record_that_renames_the_artifact_does_not_steer_the_vendor_target() {
     let victim =
         package::publish(&victim_root, "acme/victim", &victim_out).expect("the victim publishes");
     package::vendor(&adopter, &victim_out, &victim.digest).expect("the victim vendors");
-    let landed = adopter.join("packages/acme-victim/taxonomy.yml");
+    let landed = adopter.join(".headwater/packages/acme-victim/taxonomy.yml");
     let held = std::fs::read_to_string(&landed).expect("the victim's source landed");
     assert!(held.contains("taxonomy: acme/victim"), "{held}");
 
@@ -496,7 +502,7 @@ fn a_record_that_renames_the_artifact_does_not_steer_the_vendor_target() {
         std::fs::read_to_string(&landed).expect("the victim's source is still there"),
         held
     );
-    assert!(!adopter.join("packages/acme-attacker").exists());
+    assert!(!adopter.join(".headwater/packages/acme-attacker").exists());
 }
 
 /// A record whose header states a version or an engine range the artifact's own
@@ -548,7 +554,7 @@ fn a_record_that_restates_the_version_or_the_engine_range_is_refused() {
 /// A package directory that a person maintains is not overwritten by a consumer
 /// command.
 ///
-/// The publisher's own tree is the case: `packages/acme-fixture/` there is a
+/// The publisher's own tree is the case: `.headwater/packages/acme-fixture/` there is a
 /// source, not a vendored artifact, and a vendor that replaced it would delete
 /// the thing being published.
 #[test]
@@ -558,12 +564,14 @@ fn vendoring_over_a_maintained_package_is_refused() {
     let out = scratch.path().join("artifact");
     let record = package::publish(&root, "acme/fixture", &out).expect("it publishes");
 
-    // Vendor into the publisher's own root, where `packages/acme-fixture/`
+    // Vendor into the publisher's own root, where `.headwater/packages/acme-fixture/`
     // carries no release record.
     let refused = package::vendor(&root, &out, &record.digest)
         .expect_err("a maintained package is not overwritten");
     assert!(headwater_resolve::render_errors(&refused).contains("somebody maintains"));
-    assert!(root.join("packages/acme-fixture/taxonomy.yml").is_file());
+    assert!(root
+        .join(".headwater/packages/acme-fixture/taxonomy.yml")
+        .is_file());
 
     // A directory that was vendored carries one, and is replaced.
     let consumer_root = scratch.path().join("consumer");
@@ -627,7 +635,7 @@ fn a_second_artifact_of_the_installed_version_is_named_before_it_replaces_it() {
 
     // One more member of the maintained source, and neither version key moves.
     scratch.write(
-        "publisher/packages/acme-fixture/doctrine/second.md",
+        "publisher/.headwater/packages/acme-fixture/doctrine/second.md",
         "# Second
 
 One more file, and the version stays where it is.
@@ -694,11 +702,11 @@ fn publisher_declaring(scratch: &Scratch, at: &str, name: &str) -> PathBuf {
 /// it.
 fn publisher_declaring_at(scratch: &Scratch, at: &str, name: &str, version: &str) -> PathBuf {
     scratch.write(
-        &format!("{at}/packages/source/package.yml"),
+        &format!("{at}/.headwater/packages/source/package.yml"),
         &format!("package: {name}\nversion: {version}\ncontents:\n  taxonomy: taxonomy.yml\n"),
     );
     scratch.write(
-        &format!("{at}/packages/source/taxonomy.yml"),
+        &format!("{at}/.headwater/packages/source/taxonomy.yml"),
         &TAXONOMY
             .replace("taxonomy: acme/fixture", &format!("taxonomy: {name}"))
             .replace("version: 1.0.0", &format!("version: {version}")),
@@ -708,15 +716,15 @@ fn publisher_declaring_at(scratch: &Scratch, at: &str, name: &str, version: &str
 
 /// A package named `..` does not reach the adopter's own root.
 ///
-/// **The adopter must not already hold a `packages/` directory, and the case
+/// **The adopter must not already hold a `.headwater/packages/` directory, and the case
 /// asserts it rather than assuming it.** `Path::exists()` asks the operating
 /// system, which resolves a `..` only under a directory that is on disk, so
-/// `<root>/packages/..` does not exist on an adopter that has never vendored
+/// `<root>/.headwater/packages/..` does not exist on an adopter that has never vendored
 /// anything. That single fact decides which arm of `vendor` runs: with no
-/// `packages/` the target looks absent and the artifact scatters over the
-/// adopter's root, and with a `packages/` the maintained-package guard fires
+/// `.headwater/packages/` the target looks absent and the artifact scatters over the
+/// adopter's root, and with a `.headwater/packages/` the maintained-package guard fires
 /// first and refuses for a reason that has nothing to do with the name. A
-/// setup that hands the adopter a `packages/` — the natural thing to write,
+/// setup that hands the adopter a `.headwater/packages/` — the natural thing to write,
 /// and what every other case in this file does — passes with no fix in the
 /// tree at all.
 ///
@@ -744,7 +752,7 @@ fn a_package_named_dot_dot_does_not_reach_the_adopters_own_root() {
     std::fs::write(adopter.join("keepme.txt"), "the adopter's own file\n").expect("it writes");
     assert!(
         !adopter.join(package::PACKAGES).exists(),
-        "the adopter already holds `packages/`, so this measures the maintained-package guard"
+        "the adopter already holds `.headwater/packages/`, so this measures the maintained-package guard"
     );
 
     let refused = package::vendor(&adopter, &out, &record.digest)
@@ -772,7 +780,7 @@ fn a_package_named_dot_dot_does_not_reach_the_adopters_own_root() {
 /// deleting vendor needs.
 ///
 /// **The precondition is built by hand and never by running the case above.**
-/// A first vendor of this artifact used to create `packages/` and leave a
+/// A first vendor of this artifact used to create `.headwater/packages/` and leave a
 /// `release.yml` at the adopter's root, which is exactly the pair that sends
 /// `remove_dir_all` at the root on the second run. The moment the guard lands
 /// that route closes, so an arm that seeded itself by vendoring once would go
@@ -801,7 +809,7 @@ fn a_package_named_dot_dot_does_not_reach_a_root_that_already_holds_packages() {
         .expect("the record copies");
     assert!(
         adopter.join(package::PACKAGES).is_dir(),
-        "without `packages/` on disk the operating system cannot resolve the `..` under it"
+        "without `.headwater/packages/` on disk the operating system cannot resolve the `..` under it"
     );
     assert!(
         release::at(&adopter).is_ok(),
@@ -827,17 +835,17 @@ fn a_package_named_dot_dot_does_not_reach_a_root_that_already_holds_packages() {
     );
 }
 
-/// A package named `.` does not empty the adopter's `packages/` directory.
+/// A package named `.` does not empty the adopter's `.headwater/packages/` directory.
 ///
 /// **The result type says nothing about this shape and the surviving bytes say
-/// everything.** `packages/.` is `packages/`, and `remove_dir_all` on a path
+/// everything.** `.headwater/packages/.` is `.headwater/packages/`, and `remove_dir_all` on a path
 /// ending in `.` returns `EINVAL` *after* it has emptied the directory. So
 /// before the guard this call returned `Err` and destroyed the adopter's whole
-/// `packages/` tree in the same breath, and a case that asserted only "it
+/// `.headwater/packages/` tree in the same breath, and a case that asserted only "it
 /// refused" scored that as a pass.
 ///
-/// It is also the shape a path-containment guard cannot see: `packages/.` is
-/// strictly under `packages/` by any reading of the paths, so only a rule about
+/// It is also the shape a path-containment guard cannot see: `.headwater/packages/.` is
+/// strictly under `.headwater/packages/` by any reading of the paths, so only a rule about
 /// the name refuses it.
 #[test]
 fn a_package_named_dot_does_not_empty_the_adopters_packages_directory() {
@@ -858,7 +866,7 @@ fn a_package_named_dot_does_not_empty_the_adopters_packages_directory() {
         .expect("the record copies");
     assert!(
         release::at(&packages).is_ok(),
-        "without a record in `packages/` the maintained-package guard answers instead, and \
+        "without a record in `.headwater/packages/` the maintained-package guard answers instead, and \
          nothing reaches the removal this case is about"
     );
 
@@ -867,7 +875,7 @@ fn a_package_named_dot_does_not_empty_the_adopters_packages_directory() {
 
     assert!(
         packages.join("keepme.txt").is_file(),
-        "`packages/` was emptied behind the refusal, which is what the result type hides"
+        "`.headwater/packages/` was emptied behind the refusal, which is what the result type hides"
     );
     let message = headwater_resolve::render_errors(&refused);
     assert!(message.contains(package::MANIFEST), "{message}");
@@ -875,7 +883,7 @@ fn a_package_named_dot_does_not_empty_the_adopters_packages_directory() {
 }
 
 /// A manifest whose `package:` is a YAML null does not vendor into
-/// `packages/~`.
+/// `.headwater/packages/~`.
 ///
 /// This engine hands back a scalar's source text and the source text of a null
 /// is the literal `~`, so `is_empty()` is false and the value travels as a
@@ -886,7 +894,7 @@ fn a_package_named_dot_does_not_empty_the_adopters_packages_directory() {
 fn a_manifest_whose_package_is_a_yaml_null_does_not_vendor_into_a_directory() {
     let scratch = Scratch::new("name-null");
     scratch.write(
-        "publisher/packages/source/package.yml",
+        "publisher/.headwater/packages/source/package.yml",
         "package:\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
     // The source states the same name as a quoted scalar rather than as a
@@ -897,7 +905,7 @@ fn a_manifest_whose_package_is_a_yaml_null_does_not_vendor_into_a_directory() {
     // ever runs. `agrees` still holds the two declarations to each other,
     // because a null's source text is the literal `~`.
     scratch.write(
-        "publisher/packages/source/taxonomy.yml",
+        "publisher/.headwater/packages/source/taxonomy.yml",
         &TAXONOMY.replace("taxonomy: acme/fixture", "taxonomy: \"~\""),
     );
     let root = scratch.path().join("publisher");
@@ -919,14 +927,14 @@ fn a_manifest_whose_package_is_a_yaml_null_does_not_vendor_into_a_directory() {
     );
 }
 
-/// The directories under an adopter's `packages/`, sorted.
+/// The directories under an adopter's `.headwater/packages/`, sorted.
 ///
-/// The three cases below assert what `packages/` holds as well as what `find`
+/// The three cases below assert what `.headwater/packages/` holds as well as what `find`
 /// answers, because a refusal that left a second tree beside the first would
 /// answer every lookup correctly and still have written where it must not.
 fn packages_under(root: &Path) -> Vec<String> {
     let mut names: Vec<String> = std::fs::read_dir(root.join(package::PACKAGES))
-        .expect("the adopter holds `packages/`")
+        .expect("the adopter holds `.headwater/packages/`")
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
         .collect();
@@ -939,7 +947,7 @@ fn packages_under(root: &Path) -> Vec<String> {
 ///
 /// `acme/my-taxonomy` and `acme-my/taxonomy` are both names the grammar
 /// accepts, and `declared.replace('/', "-")` sends both of them to
-/// `packages/acme-my-taxonomy`. The first vendor leaves a release record there,
+/// `.headwater/packages/acme-my-taxonomy`. The first vendor leaves a release record there,
 /// so `release::at` succeeds, the maintained-package guard does not fire, and
 /// the replace arm removed the first publisher's package before writing the
 /// second — two honest publishers, no adversary, and both runs exiting 0. That
@@ -1006,7 +1014,7 @@ fn two_names_that_flatten_to_one_directory_do_not_delete_each_other() {
         "the package the artifact declares is not named:\n{message}"
     );
     assert!(
-        message.contains("packages/acme-my-taxonomy"),
+        message.contains(".headwater/packages/acme-my-taxonomy"),
         "the directory the two names contend for is not named:\n{message}"
     );
 
@@ -1029,7 +1037,7 @@ fn two_names_that_flatten_to_one_directory_do_not_delete_each_other() {
         std::fs::read_to_string(installed.join("taxonomy.yml")).expect("the source is there");
     assert!(source.contains("taxonomy: acme/my-taxonomy"), "{source}");
 
-    // And the refusal wrote nothing anywhere else under `packages/`.
+    // And the refusal wrote nothing anywhere else under `.headwater/packages/`.
     assert_eq!(
         packages_under(&adopter),
         vec!["acme-my-taxonomy".to_string()],
@@ -1042,7 +1050,7 @@ fn two_names_that_flatten_to_one_directory_do_not_delete_each_other() {
 ///
 /// This extends [`two_names_that_flatten_to_one_directory_do_not_delete_each_other`]
 /// past the point that case stops at. `widgets/core-schema` and
-/// `widgets-core/schema` both flatten to `packages/widgets-core-schema`, so the
+/// `widgets-core/schema` both flatten to `.headwater/packages/widgets-core-schema`, so the
 /// second name collides with the first exactly as `acme/my-taxonomy` and
 /// `acme-my/taxonomy` do above. Renaming the target once, per the refusal's own
 /// remedy, lets the second package land — that still has to work, or the
@@ -1050,12 +1058,12 @@ fn two_names_that_flatten_to_one_directory_do_not_delete_each_other() {
 /// because it still derives the directory the second package now holds.
 /// Renaming the target aside a second time used to let that upgrade land too,
 /// leaving two directories that both declare `widgets/core-schema` — one of
-/// them, `packages/a-moved-aside`, holding the package the adopter renamed
+/// them, `.headwater/packages/a-moved-aside`, holding the package the adopter renamed
 /// away in the first place. That is [#354](https://github.com/headwater-ai/headwater/issues/354):
 /// `find` would then answer from whichever of the two sorts first while
 /// `vendor` reports installing the other. This case asserts that the second
 /// rename is refused instead, naming the directory the package already
-/// resolves from, and that `packages/` never ends with two directories
+/// resolves from, and that `.headwater/packages/` never ends with two directories
 /// declaring one name.
 ///
 /// **The permanent limitation stays, and is asserted rather than hidden.**
@@ -1155,7 +1163,7 @@ fn a_second_rename_around_a_collision_is_refused_rather_than_duplicated() {
     assert!(message.contains("widgets/core-schema"), "{message}");
 
     // Step 5: exactly two directories stand, and neither declares the other's
-    // name — packages/ never ends with two directories declaring one name.
+    // name — .headwater/packages/ never ends with two directories declaring one name.
     assert_eq!(
         packages_under(&adopter),
         vec!["a-moved-aside".to_string(), "b-moved-aside".to_string()],
@@ -1349,7 +1357,7 @@ fn a_vendored_directory_that_declares_no_readable_name_is_not_replaced() {
         .expect_err("a directory that declares no readable name is not removed");
     let message = headwater_resolve::render_errors(&refused);
     assert!(
-        message.contains("packages/acme-fixture/package.yml"),
+        message.contains(".headwater/packages/acme-fixture/package.yml"),
         "the file that cannot be read is not named:\n{message}"
     );
     assert!(
@@ -1403,11 +1411,11 @@ fn a_package_that_states_two_versions_of_itself_is_refused_on_either_pin() {
 
         // Both files, so a reader knows where to go.
         assert!(
-            message.contains("packages/acme-fixture/package.yml"),
+            message.contains(".headwater/packages/acme-fixture/package.yml"),
             "the manifest is not named:\n{message}"
         );
         assert!(
-            message.contains("packages/acme-fixture/taxonomy.yml"),
+            message.contains(".headwater/packages/acme-fixture/taxonomy.yml"),
             "the taxonomy source is not named:\n{message}"
         );
         // Both numbers, so a reader knows which two disagree.
@@ -1506,7 +1514,7 @@ fn the_package_in_this_repository_states_one_version_in_both_files() {
     assert_eq!(
         declared(&manifest),
         declared(&source),
-        "packages/headwater-standard states two versions of itself"
+        ".headwater/packages/headwater-standard states two versions of itself"
     );
 }
 
@@ -1525,9 +1533,9 @@ fn the_package_in_this_repository_states_one_version_in_both_files() {
 /// property of `find` rather than an omission. A consumer pins a version, so
 /// which of the two numbers it wrote decided which refusal it got, and the
 /// second arm is what holds the comparison in front of the pin. A consumer
-/// cannot pin either name: `find` searches `packages/` by the manifest key
+/// cannot pin either name: `find` searches `.headwater/packages/` by the manifest key
 /// alone, so a consumer naming the source's name never reaches this comparison
-/// and is told "no package under `packages/` declares" instead. There is no
+/// and is told "no package under `.headwater/packages/` declares" instead. There is no
 /// `find`-side arm to write, and asserting that this refusal is not that one is
 /// what stands in place of it.
 #[test]
@@ -1545,11 +1553,11 @@ fn a_package_that_states_two_names_of_itself_is_refused() {
 
     // Both files, so a reader knows where to go.
     assert!(
-        message.contains("packages/acme-fixture/package.yml"),
+        message.contains(".headwater/packages/acme-fixture/package.yml"),
         "the manifest is not named:\n{message}"
     );
     assert!(
-        message.contains("packages/acme-fixture/taxonomy.yml"),
+        message.contains(".headwater/packages/acme-fixture/taxonomy.yml"),
         "the taxonomy source is not named:\n{message}"
     );
     // Both keys, because they are two different keys.
@@ -1690,7 +1698,7 @@ fn a_manifest_that_declares_no_package_key_is_refused_against_a_named_source() {
 fn a_source_that_declares_no_taxonomy_key_is_refused_against_a_named_manifest() {
     let scratch = Scratch::new("name-absent-source");
     let root = publisher_at(&scratch, None, "1.0.0");
-    let path = root.join("packages/acme-fixture/taxonomy.yml");
+    let path = root.join(".headwater/packages/acme-fixture/taxonomy.yml");
     let text = std::fs::read_to_string(&path).expect("the source was just written");
     let stripped = text.replace("taxonomy: acme/fixture\n", "");
     assert_ne!(
@@ -1746,10 +1754,13 @@ fn a_manifest_and_source_that_both_declare_no_name_key_are_refused() {
 fn a_manifest_that_declares_no_version_key_is_refused_against_a_versioned_source() {
     let scratch = Scratch::new("version-absent-manifest");
     scratch.write(
-        "publisher/packages/acme-fixture/package.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
-    scratch.write("publisher/packages/acme-fixture/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/taxonomy.yml",
+        TAXONOMY,
+    );
     let root = scratch.path().join("publisher");
     let out = scratch.path().join("artifact");
 
@@ -1771,11 +1782,11 @@ fn a_manifest_that_declares_no_version_key_is_refused_against_a_versioned_source
 fn a_source_that_declares_no_version_key_is_refused_against_a_versioned_manifest() {
     let scratch = Scratch::new("version-absent-source");
     scratch.write(
-        "publisher/packages/acme-fixture/package.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
     scratch.write(
-        "publisher/packages/acme-fixture/taxonomy.yml",
+        "publisher/.headwater/packages/acme-fixture/taxonomy.yml",
         "taxonomy: acme/fixture\npurposes:\n  rationale: {intent: explain why a choice was made and what it forecloses}\n",
     );
     let root = scratch.path().join("publisher");
@@ -1797,11 +1808,11 @@ fn a_source_that_declares_no_version_key_is_refused_against_a_versioned_manifest
 fn a_manifest_and_source_that_both_declare_no_version_key_are_refused() {
     let scratch = Scratch::new("version-absent-both");
     scratch.write(
-        "publisher/packages/acme-fixture/package.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
     scratch.write(
-        "publisher/packages/acme-fixture/taxonomy.yml",
+        "publisher/.headwater/packages/acme-fixture/taxonomy.yml",
         "taxonomy: acme/fixture\npurposes:\n  rationale: {intent: explain why a choice was made and what it forecloses}\n",
     );
     let root = scratch.path().join("publisher");
@@ -1843,7 +1854,7 @@ fn the_package_in_this_repository_states_one_name_in_both_files() {
     assert_eq!(
         named(&manifest, "package: "),
         named(&source, "taxonomy: "),
-        "packages/headwater-standard states two names of itself"
+        ".headwater/packages/headwater-standard states two names of itself"
     );
 }
 
@@ -1894,11 +1905,14 @@ fn publisher_without_its_library(scratch: &Scratch) -> PathBuf {
 /// and exited 0.
 fn publisher_naming_content_it_does_not_carry(scratch: &Scratch) -> PathBuf {
     scratch.write(
-        "hollow/packages/acme-fixture/package.yml",
+        "hollow/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  \
          conformance: nosuch-conformance.yml\n  bundles: nosuch-bundles\n",
     );
-    scratch.write("hollow/packages/acme-fixture/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "hollow/.headwater/packages/acme-fixture/taxonomy.yml",
+        TAXONOMY,
+    );
     scratch.path().join("hollow")
 }
 
@@ -1925,7 +1939,7 @@ fn a_publish_that_cannot_read_its_declared_content_leaves_the_output_directory_a
         "the refusal does not name the manifest that declares the path: {first}"
     );
     assert!(
-        first.contains("../../library"),
+        first.contains("../../../library"),
         "the refusal does not name the declared value: {first}"
     );
     assert!(
@@ -1995,7 +2009,7 @@ fn the_package_in_this_repository_publishes_and_its_digest_covers_what_is_on_dis
     let root = Path::new("../../..");
     let out = scratch.path().join("artifact");
 
-    // `package::publish` by name finds `packages/headwater-standard/` first,
+    // `package::publish` by name finds `.headwater/packages/headwater-standard/` first,
     // and #366 made that refuse: the directory carries a release record, so
     // it is a vendored copy and not the maintained source. The maintained
     // source is `taxonomy-source/headwater-standard/`, and `--from` is how a
@@ -2174,7 +2188,7 @@ fn a_dangling_symlink_at_the_output_path_is_refused_and_is_still_there() {
 fn publisher_that_fails_inside_the_write(scratch: &Scratch) -> PathBuf {
     let root = publisher(scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/bundles",
+        "publisher/.headwater/packages/acme-fixture/bundles",
         "a regular file where the artifact needs a directory\n",
     );
     root
@@ -2243,7 +2257,7 @@ fn a_write_that_fails_empties_the_output_directory_the_caller_made() {
 ///
 /// A sequence under `contents` used to be skipped by the reachability check with
 /// no reading at all: not for existence and not for escape. So a manifest could
-/// carry `../../secrets.yml` under any key and publish at exit 0, with the `..`
+/// carry `../../../secrets.yml` under any key and publish at exit 0, with the `..`
 /// verbatim in the manifest an adopter reads. Spec 7 (Publishing) says `bundles`
 /// is the only key whose path is rewritten and that no published artifact
 /// carries a path that leaves the package.
@@ -2252,9 +2266,9 @@ fn a_contents_value_that_is_not_a_path_is_refused() {
     let scratch = Scratch::new("contents-sequence");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/package.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
-         ../../library\n  conformance: [\"../../secrets.yml\", \"nosuch.yml\"]\n",
+         ../../../library\n  conformance: [\"../../../secrets.yml\", \"nosuch.yml\"]\n",
     );
 
     let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
@@ -2280,12 +2294,12 @@ fn a_contents_path_that_leaves_the_package_is_refused_under_every_key_but_bundle
     let scratch = Scratch::new("contents-escape");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/package.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
-         ../../library\n  conformance: ../../library/extra/bundle.yml\n",
+         ../../../library\n  conformance: ../../../library/extra/bundle.yml\n",
     );
     assert!(
-        root.join("packages/acme-fixture/../../library/extra/bundle.yml")
+        root.join(".headwater/packages/acme-fixture/../../../library/extra/bundle.yml")
             .exists(),
         "the case is testing the existence check rather than the escape rule"
     );
@@ -2313,11 +2327,14 @@ fn a_contents_path_that_leaves_the_package_is_refused_under_every_key_but_bundle
 fn a_contents_path_that_leaves_and_returns_inside_the_package_publishes() {
     let scratch = Scratch::new("leaves-and-returns");
     let root = publisher(&scratch, None);
-    scratch.write("publisher/packages/acme-fixture/sub/inside.yml", "x: 1\n");
     scratch.write(
-        "publisher/packages/acme-fixture/package.yml",
+        "publisher/.headwater/packages/acme-fixture/sub/inside.yml",
+        "x: 1\n",
+    );
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: sub/../taxonomy.yml\n  \
-         bundles: ../../library\n",
+         bundles: ../../../library\n",
     );
 
     let record = package::publish(&root, "acme/fixture", &out_of(&scratch)).expect("it publishes");
@@ -2343,7 +2360,7 @@ fn a_contents_path_that_is_a_symlink_resolving_outside_the_package_is_refused() 
         "secret/stolen.yml",
         "taxonomy: acme/fixture\nversion: 1.0.0\n",
     );
-    let linked = root.join("packages/acme-fixture/taxonomy.yml");
+    let linked = root.join(".headwater/packages/acme-fixture/taxonomy.yml");
     std::fs::remove_file(&linked).expect("the real file makes way for the link");
     std::os::unix::fs::symlink(scratch.path().join("secret/stolen.yml"), &linked)
         .expect("the link is made");
@@ -2375,7 +2392,7 @@ fn an_undeclared_symlink_under_the_package_directory_is_refused() {
     scratch.write("secret/stolen.yml", "STOLEN\n");
     std::os::unix::fs::symlink(
         scratch.path().join("secret/stolen.yml"),
-        root.join("packages/acme-fixture/undeclared.yml"),
+        root.join(".headwater/packages/acme-fixture/undeclared.yml"),
     )
     .expect("the link is made");
 
@@ -2441,7 +2458,7 @@ fn a_contents_bundles_that_resolves_outside_the_repository_is_refused() {
         "/".to_string(),
     ] {
         scratch.write(
-            "publisher/packages/acme-fixture/package.yml",
+            "publisher/.headwater/packages/acme-fixture/package.yml",
             &format!(
                 "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  \
                  bundles: {declared}\n"
@@ -2467,7 +2484,7 @@ fn a_contents_bundles_that_resolves_outside_the_repository_is_refused() {
 ///
 /// `taxonomy_source` reads that one key for the resolver, and while the
 /// reachability check ran inside `stage` the resolver answered first. The
-/// publisher got `cannot read …/packages/acme-fixture/../../elsewhere/taxonomy.yml:
+/// publisher got `cannot read …/.headwater/packages/acme-fixture/../../../elsewhere/taxonomy.yml:
 /// No such file or directory`: a file system error that names neither the
 /// manifest nor the key, and that carries the `..` publication exists to remove.
 /// Spec 7 says the refusal names the manifest, the key and the declared value,
@@ -2479,14 +2496,14 @@ fn a_contents_bundles_that_resolves_outside_the_repository_is_refused() {
 /// for not being there.
 #[test]
 fn a_missing_taxonomy_source_is_refused_by_the_manifest_rather_than_by_the_resolver() {
-    for declared in ["../../elsewhere/taxonomy.yml", "nosuch.yml"] {
+    for declared in ["../../../elsewhere/taxonomy.yml", "nosuch.yml"] {
         let scratch = Scratch::new("missing-taxonomy");
         let root = publisher(&scratch, None);
         scratch.write(
-            "publisher/packages/acme-fixture/package.yml",
+            "publisher/.headwater/packages/acme-fixture/package.yml",
             &format!(
                 "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: {declared}\n  \
-                 bundles: ../../library\n"
+                 bundles: ../../../library\n"
             ),
         );
 
@@ -2529,12 +2546,13 @@ fn a_contents_bundles_naming_a_file_is_refused() {
     let scratch = Scratch::new("bundles-file");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/package.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
          taxonomy.yml\n",
     );
     assert!(
-        root.join("packages/acme-fixture/taxonomy.yml").is_file(),
+        root.join(".headwater/packages/acme-fixture/taxonomy.yml")
+            .is_file(),
         "the case is testing the existence check rather than the kind rule"
     );
 
@@ -2559,9 +2577,9 @@ fn a_contents_assemblies_naming_a_file_is_refused() {
     let scratch = Scratch::new("assemblies-file");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/package.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
-         ../../library\n  assemblies: taxonomy.yml\n",
+         ../../../library\n  assemblies: taxonomy.yml\n",
     );
 
     let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
@@ -2587,16 +2605,17 @@ fn a_contents_conformance_naming_a_directory_is_refused() {
     let scratch = Scratch::new("conformance-directory");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/package.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
-         ../../library\n  conformance: confdir\n",
+         ../../../library\n  conformance: confdir\n",
     );
     scratch.write(
-        "publisher/packages/acme-fixture/confdir/inside.yml",
+        "publisher/.headwater/packages/acme-fixture/confdir/inside.yml",
         "x: 1\n",
     );
     assert!(
-        root.join("packages/acme-fixture/confdir").is_dir(),
+        root.join(".headwater/packages/acme-fixture/confdir")
+            .is_dir(),
         "the case is testing the existence check rather than the kind rule"
     );
 
@@ -2619,7 +2638,7 @@ fn a_contents_conformance_naming_a_directory_is_refused() {
 ///
 /// The sibling of the missing-source case above, and it was false in the same
 /// way. `taxonomy_source` runs after the reachability check, so before a kind
-/// comparison existed the publisher got `packages/acme-fixture/confdir: cannot
+/// comparison existed the publisher got `.headwater/packages/acme-fixture/confdir: cannot
 /// read …: Is a directory (os error 21)` — a file system error that names
 /// neither the manifest nor the key.
 #[test]
@@ -2627,12 +2646,12 @@ fn a_contents_taxonomy_naming_a_directory_is_refused_by_the_manifest() {
     let scratch = Scratch::new("taxonomy-directory");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/package.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: confdir\n  bundles: \
-         ../../library\n",
+         ../../../library\n",
     );
     scratch.write(
-        "publisher/packages/acme-fixture/confdir/inside.yml",
+        "publisher/.headwater/packages/acme-fixture/confdir/inside.yml",
         "x: 1\n",
     );
 
@@ -2667,9 +2686,9 @@ fn a_contents_migrations_naming_a_file_is_refused() {
     let scratch = Scratch::new("migrations-file");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/package.yml",
+        "publisher/.headwater/packages/acme-fixture/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
-         ../../library\n  migrations: taxonomy.yml\n",
+         ../../../library\n  migrations: taxonomy.yml\n",
     );
 
     let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
@@ -2716,21 +2735,21 @@ fn publisher_with_colliding_bundles(scratch: &Scratch, at: &str, payload: bool) 
     if payload {
         manifest.push_str("  migrations: migrations\n");
         scratch.write(
-            &format!("{at}/packages/acme-fixture/migrations/0-to-1.yml"),
+            &format!("{at}/.headwater/packages/acme-fixture/migrations/0-to-1.yml"),
             PAYLOAD,
         );
     }
     scratch.write(
-        &format!("{at}/packages/acme-fixture/package.yml"),
+        &format!("{at}/.headwater/packages/acme-fixture/package.yml"),
         &manifest,
     );
     scratch.write(
-        &format!("{at}/packages/acme-fixture/taxonomy.yml"),
+        &format!("{at}/.headwater/packages/acme-fixture/taxonomy.yml"),
         TAXONOMY,
     );
     for name in ["one", "two"] {
         scratch.write(
-            &format!("{at}/packages/acme-fixture/bundles/{name}/bundle.yml"),
+            &format!("{at}/.headwater/packages/acme-fixture/bundles/{name}/bundle.yml"),
             &COLLIDING.replace("NAME", name),
         );
     }
@@ -2760,8 +2779,9 @@ fn a_bundle_set_that_does_not_resolve_is_refused_whether_or_not_a_payload_reache
     for (at, payload) in [("with", true), ("without", false)] {
         let root = publisher_with_colliding_bundles(&scratch, at, payload);
         let out = scratch.path().join(format!("artifact-{at}"));
-        let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
-            .expect_err("a bundle set that does not resolve does not publish");
+        let refused =
+            package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+                .expect_err("a bundle set that does not resolve does not publish");
         let message = headwater_resolve::render_errors(&refused);
         assert!(
             message.contains(
@@ -2821,21 +2841,21 @@ add:
 /// differ in exactly that and nothing else about the fixture changed.
 fn publisher_reading_a_bundle_kind(scratch: &Scratch, at: &str, ships: bool) -> PathBuf {
     scratch.write(
-        &format!("{at}/packages/acme-fixture/package.yml"),
+        &format!("{at}/.headwater/packages/acme-fixture/package.yml"),
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
          bundles\n",
     );
     scratch.write(
-        &format!("{at}/packages/acme-fixture/taxonomy.yml"),
+        &format!("{at}/.headwater/packages/acme-fixture/taxonomy.yml"),
         READS_A_BUNDLE_KIND,
     );
     scratch.write(
-        &format!("{at}/packages/acme-fixture/bundles/alpha/bundle.yml"),
+        &format!("{at}/.headwater/packages/acme-fixture/bundles/alpha/bundle.yml"),
         DECLARES_ALPHA,
     );
     if ships {
         scratch.write(
-            &format!("{at}/packages/acme-fixture/bundles/beta/bundle.yml"),
+            &format!("{at}/.headwater/packages/acme-fixture/bundles/beta/bundle.yml"),
             DECLARES_BETA,
         );
     }
@@ -2871,8 +2891,9 @@ fn a_package_whose_widest_selection_reads_a_name_nothing_declares_does_not_publi
     let root = publisher_reading_a_bundle_kind(&scratch, "dangles", false);
     let out = scratch.path().join("artifact-dangles");
 
-    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
-        .expect_err("a widest selection that reads an undeclared name does not publish");
+    let refused =
+        package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+            .expect_err("a widest selection that reads an undeclared name does not publish");
     let message = headwater_resolve::render_errors(&refused);
     assert!(
         message.contains("this package is published with every bundle it ships"),
@@ -2903,13 +2924,14 @@ fn a_package_whose_widest_selection_declares_what_it_reads_still_publishes() {
     let root = publisher_reading_a_bundle_kind(&scratch, "declares", true);
     let out = scratch.path().join("artifact-declares");
 
-    let release = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
-        .unwrap_or_else(|refused| {
-            panic!(
-                "a complete package does not publish: {}",
-                headwater_resolve::render_errors(&refused)
-            )
-        });
+    let release =
+        package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+            .unwrap_or_else(|refused| {
+                panic!(
+                    "a complete package does not publish: {}",
+                    headwater_resolve::render_errors(&refused)
+                )
+            });
     assert_eq!(release.package, "acme/fixture");
     assert!(out.join("taxonomy.yml").is_file());
 }
@@ -3015,7 +3037,10 @@ fn an_empty_contents_value_is_refused_under_every_key() {
         // it, rather than being appended beside it. A manifest that declared
         // `taxonomy` twice would be refused for the duplicate and never reach
         // the rule under test.
-        let mut declared = vec![("taxonomy", "taxonomy.yml"), ("bundles", "../../library")];
+        let mut declared = vec![
+            ("taxonomy", "taxonomy.yml"),
+            ("bundles", "../../../library"),
+        ];
         match declared.iter_mut().find(|(name, _)| *name == key) {
             Some(pair) => pair.1 = "\"\"",
             None => declared.push((key, "\"\"")),
@@ -3025,7 +3050,7 @@ fn an_empty_contents_value_is_refused_under_every_key() {
             .map(|(name, value)| format!("  {name}: {value}\n"))
             .collect();
         scratch.write(
-            "publisher/packages/acme-fixture/package.yml",
+            "publisher/.headwater/packages/acme-fixture/package.yml",
             &format!("package: acme/fixture\nversion: 1.0.0\ncontents:\n{block}"),
         );
 
@@ -3061,7 +3086,7 @@ fn a_file_whose_name_is_not_utf8_is_refused_rather_than_dropped() {
     let scratch = Scratch::new("not-utf8");
     let root = publisher(&scratch, None);
     let name = std::ffi::OsStr::from_bytes(b"bad\xffname.yml");
-    let at = root.join("packages/acme-fixture").join(name);
+    let at = root.join(".headwater/packages/acme-fixture").join(name);
     std::fs::write(&at, "x").expect("the file is written");
 
     let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
@@ -3535,7 +3560,7 @@ fn files_at_the_output_path_with_no_record_are_reported_and_not_silently_repaire
 }
 
 /// Every file under a directory, counted.
-/// The three files a vendored `acme/fixture` leaves under `packages/`, sorted.
+/// The three files a vendored `acme/fixture` leaves under `.headwater/packages/`, sorted.
 ///
 /// The cases below read the whole directory rather than asking `find_version`,
 /// because a partial tree answers `find_version` correctly as long as the
@@ -3575,13 +3600,13 @@ fn adopter_holding(scratch: &Scratch) -> (PathBuf, PathBuf, String) {
     (adopter, out, first.digest)
 }
 
-/// A `packages/` this process cannot write takes nothing from the package that
+/// A `.headwater/packages/` this process cannot write takes nothing from the package that
 /// is installed, and the verb is not locked out of its own repair.
 ///
 /// # The state this pins is worse than a partial tree
 ///
 /// `remove_dir_all(&target)` needed write on the target to empty it and write
-/// on `packages/` to unlink the target itself. Mode `0500` on `packages/` grants
+/// on `.headwater/packages/` to unlink the target itself. Mode `0500` on `.headwater/packages/` grants
 /// the first and refuses the second, so the removal emptied the adopter's
 /// installed package and then failed. The verb printed `nothing was vendored`
 /// over a directory it had just emptied, `find_version` answered `None`, and —
@@ -3610,7 +3635,8 @@ fn a_packages_directory_that_cannot_be_written_takes_nothing_from_the_installed_
     let refused = package::vendor(&adopter, &out, &digest);
     mode(&packages, 0o700);
 
-    let errors = refused.expect_err("a `packages/` that cannot be written refuses the vendor");
+    let errors =
+        refused.expect_err("a `.headwater/packages/` that cannot be written refuses the vendor");
 
     // The state comes first, because the state is the defect and the sentence
     // about it is the clause underneath.
@@ -3643,8 +3669,9 @@ fn a_packages_directory_that_cannot_be_written_takes_nothing_from_the_installed_
         "the refusal does not say the installed package is untouched: {said}"
     );
 
-    package::vendor(&adopter, &out, &digest)
-        .expect("the verb can still vendor over the package once `packages/` is writable again");
+    package::vendor(&adopter, &out, &digest).expect(
+        "the verb can still vendor over the package once `.headwater/packages/` is writable again",
+    );
     assert_eq!(
         packages_under(&adopter),
         vec!["acme-fixture".to_string()],
@@ -3698,12 +3725,12 @@ fn vendoring_a_package_over_itself_installs_it() {
     );
 }
 
-/// A first vendor whose copy fails leaves nothing under `packages/`, rather than
+/// A first vendor whose copy fails leaves nothing under `.headwater/packages/`, rather than
 /// the part of the tree it had written.
 ///
 /// The other half of the clause the case above holds: where nothing is
 /// installed, *the tree that was there before* is nothing, and that is the state
-/// the adopter must be left in. `packages/` is made by hand at mode `0500` so
+/// the adopter must be left in. `.headwater/packages/` is made by hand at mode `0500` so
 /// the copy is refused rather than the directory listing.
 #[cfg(unix)]
 #[test]
@@ -3719,22 +3746,23 @@ fn a_first_vendor_whose_copy_fails_installs_no_part_of_the_package() {
 
     let adopter = scratch.path().join("adopter");
     let packages = adopter.join(package::PACKAGES);
-    std::fs::create_dir_all(&packages).expect("the adopter holds an empty `packages/`");
+    std::fs::create_dir_all(&packages).expect("the adopter holds an empty `.headwater/packages/`");
 
     mode(&packages, 0o500);
     let refused = package::vendor(&adopter, &out, &record.digest);
     mode(&packages, 0o700);
 
-    let errors = refused.expect_err("a `packages/` that cannot be written refuses the vendor");
+    let errors =
+        refused.expect_err("a `.headwater/packages/` that cannot be written refuses the vendor");
 
     assert!(
         !packages.join("acme-fixture").exists(),
-        "a vendor that refused left a directory at `packages/acme-fixture`"
+        "a vendor that refused left a directory at `.headwater/packages/acme-fixture`"
     );
     assert_eq!(
         packages_under(&adopter),
         Vec::<String>::new(),
-        "a vendor that refused left something under `packages/`"
+        "a vendor that refused left something under `.headwater/packages/`"
     );
 
     let said = errors
@@ -3743,12 +3771,12 @@ fn a_first_vendor_whose_copy_fails_installs_no_part_of_the_package() {
         .collect::<Vec<_>>()
         .join("\n");
     assert!(
-        said.contains("nothing is installed at `packages/acme-fixture`"),
+        said.contains("nothing is installed at `.headwater/packages/acme-fixture`"),
         "the refusal does not say that nothing was installed: {said}"
     );
 }
 
-/// An artifact directory that holds `packages/` inside it is refused before a
+/// An artifact directory that holds `.headwater/packages/` inside it is refused before a
 /// byte is staged.
 ///
 /// `copy_tree` calls `create_dir_all(to)` before `read_dir(from)`, so a
@@ -3757,7 +3785,7 @@ fn a_first_vendor_whose_copy_fails_installs_no_part_of_the_package() {
 /// new: today's destination is inside the source in this shape too.
 ///
 /// **The adopter root here is itself the artifact**, which is the cheapest tree
-/// that `release::verify` accepts at a path above `packages/`. That is the
+/// that `release::verify` accepts at a path above `.headwater/packages/`. That is the
 /// `headwater taxonomy vendor .` shape.
 #[test]
 fn an_artifact_that_holds_the_target_inside_it_is_refused() {
@@ -3766,7 +3794,7 @@ fn an_artifact_that_holds_the_target_inside_it_is_refused() {
     let out = scratch.path().join("artifact-1");
     let record = package::publish(&root, "acme/fixture", &out).expect("1.0.0 publishes");
 
-    // The adopter root is the artifact, so `<root>/packages/acme-fixture` is a
+    // The adopter root is the artifact, so `<root>/.headwater/packages/acme-fixture` is a
     // path inside the directory being vendored.
     let adopter = scratch.path().join("adopter");
     std::fs::create_dir_all(&adopter).expect("the adopter root is made");
@@ -3787,7 +3815,7 @@ fn an_artifact_that_holds_the_target_inside_it_is_refused() {
     );
     assert!(
         !adopter.join(package::PACKAGES).exists(),
-        "the refusal came after something had already been staged under `packages/`"
+        "the refusal came after something had already been staged under `.headwater/packages/`"
     );
 }
 
@@ -3796,7 +3824,7 @@ fn an_artifact_that_holds_the_target_inside_it_is_refused() {
 ///
 /// # Two properties of one name, and both of them are load-bearing for `find`
 ///
-/// [`package::find_version`] goes through the one listing of `packages/` this
+/// [`package::find_version`] goes through the one listing of `.headwater/packages/` this
 /// engine has. It sorts the entries and returns the first whose manifest
 /// declares the name, with no filter on the name of the entry itself, so a
 /// staging tree — which carries a manifest like any other — answers the lookup
@@ -3859,7 +3887,7 @@ fn a_directory_this_verb_stages_into_never_wins_the_lookup() {
 /// comment already states the reachable state: a kill inside the one-rename
 /// window leaves the installed package complete under `<name>~aside`, and
 /// [`package::find`] answers from it in the meantime. The staging residue
-/// under `packages/~staging/<name>` never answers a lookup at all, complete
+/// under `.headwater/packages/~staging/<name>` never answers a lookup at all, complete
 /// or not, which is [#357](https://github.com/headwater-ai/headwater/issues/357).
 /// The *next* `vendor` of that same package is what clears both residues,
 /// which is the self-heal [#312](https://github.com/headwater-ai/headwater/issues/312)
@@ -3921,19 +3949,19 @@ fn a_plain_retry_after_a_kill_mid_swap_still_lands() {
 /// # The reachable state, and why the natural gesture is the destructive one
 ///
 /// A run killed after the staging copy and before the first rename leaves
-/// exactly `packages/~staging/<name>`, complete, with nothing at the target.
+/// exactly `.headwater/packages/~staging/<name>`, complete, with nothing at the target.
 /// [`find`] never reads it there, which is what
 /// [#357](https://github.com/headwater-ai/headwater/issues/357) closes: this
 /// state does not resolve at all, complete or not, until a further `vendor`
 /// clears it. A run killed between the two renames leaves
-/// `packages/<name>~aside`, complete, with nothing at the target, and `find`
+/// `.headwater/packages/<name>~aside`, complete, with nothing at the target, and `find`
 /// does read that one — it is a flat sibling of the target, one level down
 /// like any package — which is the state
 /// [#312](https://github.com/headwater-ai/headwater/issues/312) asked to keep
 /// resolving. The aside case is where the adopter holds one copy of the
 /// package under a name they did not choose, and pointing this verb at it is
 /// what finishing the install looks like from outside; the refusal there says
-/// the package "is complete under `packages/<name>~aside`", so the message
+/// the package "is complete under `.headwater/packages/<name>~aside`", so the message
 /// names the directory the gesture would use.
 ///
 /// The first step of the write phase clears both of those paths. Handed one of
@@ -4010,13 +4038,14 @@ fn an_artifact_that_is_a_directory_this_verb_stages_through_is_refused() {
 
         // And the gesture that does work is the one the refusal names.
         let moved = scratch.path().join(format!("moved-{kind}"));
-        std::fs::rename(&residue, &moved).expect("the artifact moves out of `packages/`");
+        std::fs::rename(&residue, &moved)
+            .expect("the artifact moves out of `.headwater/packages/`");
         package::vendor(&adopter, &moved, &digest)
-            .expect("the artifact vendors once it sits outside `packages/`");
+            .expect("the artifact vendors once it sits outside `.headwater/packages/`");
         assert_eq!(
             packages_under(&adopter),
             vec!["acme-fixture".to_string()],
-            "the install from outside `packages/` did not land cleanly"
+            "the install from outside `.headwater/packages/` did not land cleanly"
         );
     }
 }
@@ -4078,9 +4107,9 @@ fn a_file_an_earlier_run_left_in_the_staging_directory_is_not_installed() {
 /// not resolve, on a first install.
 ///
 /// This is [#357](https://github.com/headwater-ai/headwater/issues/357)'s own
-/// Done-when: a residue under `packages/~staging/<name>` carries a manifest
+/// Done-when: a residue under `.headwater/packages/~staging/<name>` carries a manifest
 /// like any other package directory, but [`find`] reads only one level of
-/// `packages/`, and `packages/~staging` itself carries no manifest beside it.
+/// `.headwater/packages/`, and `.headwater/packages/~staging` itself carries no manifest beside it.
 /// So the residue never reaches the comparison that would answer this lookup,
 /// whether it is complete or, as here, missing everything but its manifest.
 #[test]
@@ -4105,7 +4134,7 @@ fn a_partial_staging_tree_with_no_package_installed_does_not_resolve() {
     assert_eq!(
         packages_under(&adopter),
         vec!["~staging".to_string()],
-        "packages/ should hold only the shared staging parent, not a package name"
+        ".headwater/packages/ should hold only the shared staging parent, not a package name"
     );
 }
 
@@ -4139,12 +4168,12 @@ fn a_successful_first_vendor_removes_the_shared_staging_parent() {
 /// A copy failure still removes the shared staging parent this run created.
 ///
 /// The parent is made by `create_dir_all` inside `copy_tree`'s first call, and
-/// mode `0500` set here on the parent itself — rather than on `packages/` as
+/// mode `0500` set here on the parent itself — rather than on `.headwater/packages/` as
 /// the other permission-injected cases in this file do — blocks only the leaf
 /// underneath: the one write the copy needs and the one this run made. That
 /// isolates the copy-phase cleanup site from the earlier `clear` calls and
 /// from the read phase above them, both of which still succeed. `remove_dir`
-/// on the now-empty parent needs write only on `packages/`, which this mode
+/// on the now-empty parent needs write only on `.headwater/packages/`, which this mode
 /// leaves alone, so the assertion below needs no mode restored first.
 #[cfg(unix)]
 #[test]
@@ -4160,7 +4189,7 @@ fn a_copy_failure_still_removes_the_shared_staging_parent_it_created() {
 
     let adopter = scratch.path().join("adopter");
     let packages = adopter.join(package::PACKAGES);
-    std::fs::create_dir_all(&packages).expect("the adopter holds an empty `packages/`");
+    std::fs::create_dir_all(&packages).expect("the adopter holds an empty `.headwater/packages/`");
     let staging_root = packages.join(package::STAGING);
     std::fs::create_dir_all(&staging_root).expect(
         "the shared staging parent exists already, as a concurrent sibling's vendor might leave it",
@@ -4180,7 +4209,7 @@ fn a_copy_failure_still_removes_the_shared_staging_parent_it_created() {
 /// subdirectory, or the shared parent while that subdirectory still stands.
 ///
 /// Two concurrent vendors of different packages now share the literal
-/// `packages/~staging` parent as a mkdir/rmdir target, which they did not
+/// `.headwater/packages/~staging` parent as a mkdir/rmdir target, which they did not
 /// before this repair — each used to write its own flat `<name>~staged`
 /// sibling and never touched the other's path at all. [`tidy`]'s
 /// non-recursive `remove_dir`, rather than `remove_dir_all`, is the safety
@@ -4196,7 +4225,7 @@ fn a_concurrent_siblings_staging_subdirectory_is_never_touched() {
 
     let adopter = scratch.path().join("adopter");
     let packages = adopter.join(package::PACKAGES);
-    std::fs::create_dir_all(&packages).expect("the adopter holds an empty `packages/`");
+    std::fs::create_dir_all(&packages).expect("the adopter holds an empty `.headwater/packages/`");
 
     // A sibling package's own vendor is staging into the shared parent right
     // now, and this run must neither remove it nor be blocked by it.
@@ -4227,7 +4256,7 @@ fn a_concurrent_siblings_staging_subdirectory_is_never_touched() {
     assert_eq!(
         packages_under(&adopter),
         vec!["acme-fixture".to_string(), package::STAGING.to_string()],
-        "the successful vendor left something under `packages/` besides the package and the \
+        "the successful vendor left something under `.headwater/packages/` besides the package and the \
          still-occupied shared parent"
     );
 }
@@ -4284,7 +4313,7 @@ fn hand_editing_the_vendored_taxonomy_source_moves_the_digest_a_lock_would_hold(
     let digest_before = headwater_hash::digest(base.text.as_bytes());
 
     // Nothing here goes through `vendor`. This is a person, or a script, that
-    // reached into `packages/` directly.
+    // reached into `.headwater/packages/` directly.
     let taxonomy = adopter
         .join(package::PACKAGES)
         .join("acme-fixture")
@@ -4413,7 +4442,7 @@ fn spec_seven_example(scratch: &Scratch, at: &str, broken: bool) -> PathBuf {
          {top_level}\
          interview: interview.yml\n"
     );
-    let package_dir = format!("{at}/packages/acme-headwater-taxonomy");
+    let package_dir = format!("{at}/.headwater/packages/acme-headwater-taxonomy");
     scratch.write(&format!("{package_dir}/package.yml"), &manifest);
     scratch.write(
         &format!("{package_dir}/taxonomy.yml"),
@@ -4583,24 +4612,27 @@ fn the_corrected_spec_seven_example_publishes_and_its_bundle_reaches_a_consumer(
     // to this engine rather than left as a claim about it.
     assert!(
         consumer_root
-            .join("packages/acme-headwater-taxonomy/doctrine/doctrine.md")
+            .join(".headwater/packages/acme-headwater-taxonomy/doctrine/doctrine.md")
             .is_file(),
         "the prose spec 7's example says is vendored to consumers did not reach one"
     );
 }
 
-/// A manifest under `packages/` that parses but is not a mapping is named in
+/// A manifest under `.headwater/packages/` that parses but is not a mapping is named in
 /// the refusal, distinguishably from a plain "nothing declares that name".
 ///
 /// Before this, `find` skipped a manifest of this shape in silence and the
-/// walk fell through to the same "no package under `packages/` declares"
+/// walk fell through to the same "no package under `.headwater/packages/` declares"
 /// message a typo in the requested name produces. A reader chasing a typo
 /// and a reader chasing a corrupt, unrelated manifest saw the identical
 /// sentence.
 #[test]
 fn a_broken_manifest_under_packages_is_named_in_the_refusal() {
     let scratch = Scratch::new("broken-manifest");
-    scratch.write("root/packages/broken/package.yml", "- one\n- two\n");
+    scratch.write(
+        "root/.headwater/packages/broken/package.yml",
+        "- one\n- two\n",
+    );
     let root = scratch.path().join("root");
     let out = scratch.path().join("artifact");
 
@@ -4609,7 +4641,7 @@ fn a_broken_manifest_under_packages_is_named_in_the_refusal() {
     let message = headwater_resolve::render_errors(&refused);
 
     assert!(
-        message.contains("packages/broken/package.yml"),
+        message.contains(".headwater/packages/broken/package.yml"),
         "the broken manifest is not named:\n{message}"
     );
     assert!(
@@ -4623,7 +4655,7 @@ fn a_broken_manifest_under_packages_is_named_in_the_refusal() {
     );
 }
 
-/// A broken, unrelated manifest elsewhere under `packages/` does not stop a
+/// A broken, unrelated manifest elsewhere under `.headwater/packages/` does not stop a
 /// package that resolves fine from resolving.
 ///
 /// This is the case that separates two designs `find` could have taken: stop
@@ -4636,7 +4668,10 @@ fn a_broken_manifest_under_packages_is_named_in_the_refusal() {
 #[test]
 fn a_broken_sibling_manifest_does_not_stop_a_package_that_resolves_fine() {
     let scratch = Scratch::new("broken-sibling");
-    scratch.write("root/packages/aaa-broken/package.yml", "- one\n- two\n");
+    scratch.write(
+        "root/.headwater/packages/aaa-broken/package.yml",
+        "- one\n- two\n",
+    );
     let root = publisher_of(&scratch, "root", "acme/fixture");
     let out = scratch.path().join("artifact");
 
@@ -4661,15 +4696,21 @@ fn a_broken_sibling_manifest_does_not_stop_a_package_that_resolves_fine() {
 fn two_directories_declaring_one_name_are_both_named_rather_than_resolved_silently() {
     let scratch = Scratch::new("duplicate-declared-name");
     scratch.write(
-        "root/packages/aaa-vendored/package.yml",
+        "root/.headwater/packages/aaa-vendored/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
-    scratch.write("root/packages/aaa-vendored/taxonomy.yml", TAXONOMY);
     scratch.write(
-        "root/packages/zzz-copied-source/package.yml",
+        "root/.headwater/packages/aaa-vendored/taxonomy.yml",
+        TAXONOMY,
+    );
+    scratch.write(
+        "root/.headwater/packages/zzz-copied-source/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
-    scratch.write("root/packages/zzz-copied-source/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "root/.headwater/packages/zzz-copied-source/taxonomy.yml",
+        TAXONOMY,
+    );
     let root = scratch.path().join("root");
     let out = scratch.path().join("artifact");
 
@@ -4677,11 +4718,11 @@ fn two_directories_declaring_one_name_are_both_named_rather_than_resolved_silent
         .expect_err("two directories declaring one name must not resolve silently");
     let message = headwater_resolve::render_errors(&refused);
     assert!(
-        message.contains("packages/aaa-vendored"),
+        message.contains(".headwater/packages/aaa-vendored"),
         "the first colliding directory is not named:\n{message}"
     );
     assert!(
-        message.contains("packages/zzz-copied-source"),
+        message.contains(".headwater/packages/zzz-copied-source"),
         "the second colliding directory is not named:\n{message}"
     );
 }
@@ -4693,21 +4734,27 @@ fn two_directories_declaring_one_name_are_both_named_rather_than_resolved_silent
 ///
 /// The consumer declaration is built directly rather than read from a written
 /// `.headwater/taxonomy.yml`, because the collision this proves lives entirely
-/// under `packages/` and a hand-built [`package::Consumer`] is the smaller
+/// under `.headwater/packages/` and a hand-built [`package::Consumer`] is the smaller
 /// fixture for it.
 #[test]
 fn two_directories_declaring_one_name_are_caught_by_sources_too() {
     let scratch = Scratch::new("duplicate-declared-name-sources");
     scratch.write(
-        "root/packages/aaa-vendored/package.yml",
+        "root/.headwater/packages/aaa-vendored/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
-    scratch.write("root/packages/aaa-vendored/taxonomy.yml", TAXONOMY);
     scratch.write(
-        "root/packages/zzz-copied-source/package.yml",
+        "root/.headwater/packages/aaa-vendored/taxonomy.yml",
+        TAXONOMY,
+    );
+    scratch.write(
+        "root/.headwater/packages/zzz-copied-source/package.yml",
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
-    scratch.write("root/packages/zzz-copied-source/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "root/.headwater/packages/zzz-copied-source/taxonomy.yml",
+        TAXONOMY,
+    );
     let root = scratch.path().join("root");
 
     let consumer = package::Consumer {
@@ -4726,11 +4773,11 @@ fn two_directories_declaring_one_name_are_caught_by_sources_too() {
     );
     let message = headwater_resolve::render_errors(&refused);
     assert!(
-        message.contains("packages/aaa-vendored"),
+        message.contains(".headwater/packages/aaa-vendored"),
         "the first colliding directory is not named:\n{message}"
     );
     assert!(
-        message.contains("packages/zzz-copied-source"),
+        message.contains(".headwater/packages/zzz-copied-source"),
         "the second colliding directory is not named:\n{message}"
     );
 }
@@ -4757,7 +4804,7 @@ fn a_yaml_syntax_error_after_a_match_does_not_stop_the_match_from_resolving() {
     let scratch = Scratch::new("syntax-error-after-match");
     let root = publisher_of(&scratch, "root", "acme/fixture");
     scratch.write(
-        "root/packages/zzz-broken-syntax/package.yml",
+        "root/.headwater/packages/zzz-broken-syntax/package.yml",
         "package: [oops\nversion: 1.0.0\n",
     );
     let out = scratch.path().join("artifact");
@@ -4776,7 +4823,7 @@ fn a_yaml_syntax_error_after_a_match_does_not_stop_the_match_from_resolving() {
 ///
 /// The grammar refuses `~` in a `package:` name, never in a directory name a
 /// person chooses by hand, so nothing stops someone from copying a package
-/// directory into `packages/` and naming it `<name>~aside` — the shape
+/// directory into `.headwater/packages/` and naming it `<name>~aside` — the shape
 /// `headwater init`'s own suggested workflow invites, at any name at all. This
 /// is not residue: a directory `vendor` actually leaves at that name always
 /// carries a release record, because it is the rename of a directory that was
@@ -4794,11 +4841,11 @@ fn a_directory_merely_named_with_the_reserved_suffix_is_a_real_collision_not_res
     // with the suffix `vendor`'s own atomic swap reserves. Naming it this way
     // must not make it invisible to the collision check.
     scratch.write(
-        "root/packages/acme-fixture~aside/package.yml",
+        "root/.headwater/packages/acme-fixture~aside/package.yml",
         "package: acme/fixture\nversion: 2.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
     scratch.write(
-        "root/packages/acme-fixture~aside/taxonomy.yml",
+        "root/.headwater/packages/acme-fixture~aside/taxonomy.yml",
         &TAXONOMY.replace("version: 1.0.0", "version: 2.0.0"),
     );
     let out = scratch.path().join("artifact");
@@ -4813,7 +4860,7 @@ fn a_directory_merely_named_with_the_reserved_suffix_is_a_real_collision_not_res
         "the collision is not reported as a collision:\n{message}"
     );
     assert!(
-        message.contains("packages/acme-fixture~aside"),
+        message.contains(".headwater/packages/acme-fixture~aside"),
         "the suffixed directory is not named as a real collision:\n{message}"
     );
 }
@@ -4830,7 +4877,10 @@ fn a_directory_merely_named_with_the_reserved_suffix_is_a_real_collision_not_res
 fn contents_doctrine_that_names_a_file_is_refused_at_publish() {
     let scratch = Scratch::new("doctrine-file");
     let root = publisher_with_doctrine(&scratch, "method.md");
-    scratch.write("publisher/packages/acme-fixture/method.md", METHOD);
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/method.md",
+        METHOD,
+    );
     let out = scratch.path().join("artifact");
 
     let refused = package::publish(&root, "acme/fixture", &out)
@@ -4881,7 +4931,7 @@ fn without_its_doctrine(out: &Path) -> String {
 /// **This passes on the code that reads no `contents.doctrine` at all**, and
 /// that is what it is for. `stage` walks the whole package directory and
 /// `copy_tree` copies the whole artifact, so the prose lands under
-/// `packages/<flattened>/` whether or not any key names it. The milestone bar
+/// `.headwater/packages/<flattened>/` whether or not any key names it. The milestone bar
 /// is that the library entries ship with their doctrine prose, and nothing in
 /// this suite asserted that the prose reaches a *consumer* — the one doctrine
 /// assertion here stopped at the artifact. A later change to either walk that
@@ -4904,7 +4954,7 @@ fn a_vendored_package_carries_its_doctrine_into_the_consumers_tree() {
     let consumer_root = scratch.path().join("consumer");
     package::vendor(&consumer_root, &out, &record.digest).expect("it vendors");
 
-    let landed = consumer_root.join("packages/acme-fixture/doctrine/method.md");
+    let landed = consumer_root.join(".headwater/packages/acme-fixture/doctrine/method.md");
     assert!(
         landed.is_file(),
         "the prose did not reach the consumer at {}",
@@ -4921,7 +4971,7 @@ fn a_vendored_package_carries_its_doctrine_into_the_consumers_tree() {
 /// bytes, with one top-level directory left out.
 ///
 /// The omitted name is `packages`, and it is omitted rather than compared
-/// because the whole point of a `vendor` is that `packages/` changes. What has
+/// because the whole point of a `vendor` is that `.headwater/packages/` changes. What has
 /// to hold still is everything else, and a map of path to bytes is what says so
 /// without naming a single path in advance.
 fn tree_outside(root: &Path, without: &str) -> BTreeMap<String, Vec<u8>> {
@@ -4951,32 +5001,18 @@ fn tree_outside(root: &Path, without: &str) -> BTreeMap<String, Vec<u8>> {
         }
     }
 
+    // The exclusion is by relative path and not by top-level entry name. It
+    // used to compare a name, which worked only while the package root was one
+    // segment: #792 made it two, a name never equals a path, and the filter
+    // would have stopped filtering while still reading as a filter.
     let mut into = BTreeMap::new();
-    let mut entries: Vec<PathBuf> = std::fs::read_dir(root)
-        .expect("the tree reads")
-        .filter_map(|entry| entry.ok())
-        .map(|entry| entry.path())
-        .collect();
-    entries.sort();
-    for path in entries {
-        let name = path
-            .file_name()
-            .expect("a directory entry has a name")
-            .to_string_lossy()
-            .into_owned();
-        if name == without {
-            continue;
-        }
-        if path.is_dir() {
-            walk(&path, &name, &mut into);
-        } else {
-            into.insert(name, std::fs::read(&path).expect("the file reads"));
-        }
-    }
+    walk(root, "", &mut into);
+    let under = format!("{without}/");
+    into.retain(|key, _| key != without && !key.starts_with(&under));
     into
 }
 
-/// `packages/<name>/<doctrine>` is the only destination a publisher's prose
+/// `.headwater/packages/<name>/<doctrine>` is the only destination a publisher's prose
 /// reaches, and `vendor` writes nowhere else in the consumer's tree.
 ///
 /// This is [#381](https://github.com/headwater-ai/headwater/issues/381), and it
@@ -4986,7 +5022,7 @@ fn tree_outside(root: &Path, without: &str) -> BTreeMap<String, Vec<u8>> {
 /// on the day somebody adds a second destination — a copy into the adopter's
 /// corpus root, say — because a second copy takes nothing away from the first.
 /// So the assertion here is the complement: **enumerate the consumer tree
-/// outside `packages/` before the run and after it, and hold the two maps
+/// outside `.headwater/packages/` before the run and after it, and hold the two maps
 /// equal**. Nothing here names the path a defect would write to, which is what
 /// makes it hold against a destination nobody has thought of yet.
 ///
@@ -5058,8 +5094,8 @@ fn a_vendor_writes_under_packages_and_nowhere_else_in_the_consumers_tree() {
 /// that package directories are *read* by `vendor` and written by `publish` or
 /// `migrate --apply`. That is the sentence an adopter reads before asking the
 /// question [#381](https://github.com/headwater-ai/headwater/issues/381) asks,
-/// and it was false: `vendor` is the writer of `packages/<flattened>`,
-/// `packages/~staging/<name>` and `packages/<flattened>~aside`.
+/// and it was false: `vendor` is the writer of `.headwater/packages/<flattened>`,
+/// `.headwater/packages/~staging/<name>` and `.headwater/packages/<flattened>~aside`.
 ///
 /// The three names are composed here from the engine's own constants rather
 /// than typed as prose, so a rename in `package.rs` fails this case and moves
@@ -5098,10 +5134,10 @@ fn the_interface_contract_names_the_directories_vendor_writes() {
 /// refused, and the refusal happens before the first byte is written.
 ///
 /// The digest still verifies, so the refusal is the doctrine reader's and not
-/// the pin's. `packages/` is made by hand and empty, because an adopter with an
-/// empty `packages/` is the ordinary state before a first install, and the
+/// the pin's. `.headwater/packages/` is made by hand and empty, because an adopter with an
+/// empty `.headwater/packages/` is the ordinary state before a first install, and the
 /// assertion is that the refused run left it exactly that way: no target, no
-/// `packages/~staging/<name>`, and no `packages/<name>~aside`.
+/// `.headwater/packages/~staging/<name>`, and no `.headwater/packages/<name>~aside`.
 #[test]
 fn a_fetched_artifact_whose_doctrine_is_not_there_is_refused_before_anything_is_written() {
     let scratch = Scratch::new("doctrine-absent");
@@ -5120,7 +5156,7 @@ fn a_fetched_artifact_whose_doctrine_is_not_there_is_refused_before_anything_is_
 
     let adopter = scratch.path().join("adopter");
     std::fs::create_dir_all(adopter.join(package::PACKAGES))
-        .expect("the adopter holds an empty `packages/`");
+        .expect("the adopter holds an empty `.headwater/packages/`");
 
     let refused = package::vendor(&adopter, &out, &digest)
         .expect_err("an artifact that declares prose it does not carry is refused");
@@ -5137,7 +5173,7 @@ fn a_fetched_artifact_whose_doctrine_is_not_there_is_refused_before_anything_is_
     assert_eq!(
         packages_under(&adopter),
         Vec::<String>::new(),
-        "the refused run wrote under `packages/`, which is the defect"
+        "the refused run wrote under `.headwater/packages/`, which is the defect"
     );
 }
 
@@ -5178,8 +5214,8 @@ fn a_doctrine_refusal_on_an_upgrade_leaves_the_installed_package_standing() {
     // The second version, out of the same tree with both of the two version
     // declarations moved, and then subtracted the way the case above subtracts.
     for relative in [
-        "packages/acme-fixture/package.yml",
-        "packages/acme-fixture/taxonomy.yml",
+        ".headwater/packages/acme-fixture/package.yml",
+        ".headwater/packages/acme-fixture/taxonomy.yml",
     ] {
         let path = root.join(relative);
         let text = std::fs::read_to_string(&path).expect("the file is there");
@@ -5204,7 +5240,7 @@ fn a_doctrine_refusal_on_an_upgrade_leaves_the_installed_package_standing() {
     assert_eq!(
         packages_under(&adopter),
         vec!["acme-fixture".to_string()],
-        "the refused upgrade left something under `packages/` beside the installed package"
+        "the refused upgrade left something under `.headwater/packages/` beside the installed package"
     );
     assert_eq!(
         package::find_version(&adopter, "acme/fixture"),
@@ -5239,7 +5275,7 @@ fn a_doctrine_refusal_on_an_upgrade_leaves_the_installed_package_standing() {
 #[test]
 fn contents_doctrine_may_not_name_a_path_outside_the_package() {
     let scratch = Scratch::new("doctrine-escapes");
-    let root = publisher_with_doctrine(&scratch, "../../elsewhere");
+    let root = publisher_with_doctrine(&scratch, "../../../elsewhere");
     scratch.write("publisher/elsewhere/method.md", METHOD);
     let out = scratch.path().join("artifact");
 
@@ -5247,7 +5283,7 @@ fn contents_doctrine_may_not_name_a_path_outside_the_package() {
         .expect_err("a `contents.doctrine` that leaves the package is refused");
     let message = headwater_resolve::render_errors(&refused);
     assert!(
-        message.contains("`contents.doctrine` names ../../elsewhere"),
+        message.contains("`contents.doctrine` names ../../../elsewhere"),
         "the refusal does not name the key and the value:\n{message}"
     );
     assert!(
@@ -5333,13 +5369,14 @@ fn a_reference_a_carried_document_writes_to_a_file_the_artifact_lacks_is_refused
     let scratch = Scratch::new("reference-dangles");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/notes.md",
+        "publisher/.headwater/packages/acme-fixture/notes.md",
         "# Notes\n\nThe worked example is [in the corpus](corpus/note.md).\n",
     );
     let out = scratch.path().join("artifact");
 
-    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
-        .expect_err("the artifact carries no corpus/note.md");
+    let refused =
+        package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+            .expect_err("the artifact carries no corpus/note.md");
     let message = headwater_resolve::render_errors(&refused);
 
     assert!(
@@ -5372,17 +5409,17 @@ fn a_reference_that_resolves_inside_the_artifact_publishes() {
     let scratch = Scratch::new("reference-resolves");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/notes.md",
+        "publisher/.headwater/packages/acme-fixture/notes.md",
         "# Notes\n\nThe worked example is [in the corpus](corpus/note.md), which sits [in this \
          directory](corpus/).\n",
     );
     scratch.write(
-        "publisher/packages/acme-fixture/corpus/note.md",
+        "publisher/.headwater/packages/acme-fixture/corpus/note.md",
         "# A note\n",
     );
     let out = scratch.path().join("artifact");
 
-    let record = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+    let record = package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
         .expect("both references resolve inside the artifact");
 
     assert!(
@@ -5411,10 +5448,10 @@ fn a_reference_that_resolves_inside_the_artifact_publishes() {
 fn a_reference_the_manifest_records_is_admitted_and_the_record_is_a_pair() {
     let scratch = Scratch::new("reference-recorded");
     let root = publisher(&scratch, None);
-    let manifest = root.join("packages/acme-fixture/package.yml");
+    let manifest = root.join(".headwater/packages/acme-fixture/package.yml");
     let base = std::fs::read_to_string(&manifest).expect("the manifest was just written");
     scratch.write(
-        "publisher/packages/acme-fixture/notes.md",
+        "publisher/.headwater/packages/acme-fixture/notes.md",
         "# Notes\n\nThe worked example is [in the corpus](corpus/note.md).\n",
     );
 
@@ -5424,7 +5461,7 @@ fn a_reference_the_manifest_records_is_admitted_and_the_record_is_a_pair() {
     )
     .expect("the record is written");
     let out = scratch.path().join("recorded");
-    let record = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+    let record = package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
         .expect("the record admits the one reference that dangles");
     assert!(
         record
@@ -5440,8 +5477,12 @@ fn a_reference_the_manifest_records_is_admitted_and_the_record_is_a_pair() {
     )
     .expect("the misdirected record is written");
     let elsewhere = scratch.path().join("misdirected");
-    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &elsewhere)
-        .expect_err("a record against another member admits nothing");
+    let refused = package::publish_from(
+        &root,
+        &root.join(".headwater/packages/acme-fixture"),
+        &elsewhere,
+    )
+    .expect_err("a record against another member admits nothing");
     let message = headwater_resolve::render_errors(&refused);
     assert!(
         message.contains("`notes.md`"),
@@ -5467,21 +5508,25 @@ fn a_reference_that_climbs_out_of_the_artifact_is_not_judged() {
     let scratch = Scratch::new("reference-outside");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/notes.md",
+        "publisher/.headwater/packages/acme-fixture/notes.md",
         "# Notes\n\nThe rule is [in the specification](../spec/07.md).\n",
     );
     let out = scratch.path().join("outside");
 
-    package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+    package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
         .expect("a reference that climbs out of the artifact is not this rule's to judge");
 
     scratch.write(
-        "publisher/packages/acme-fixture/notes.md",
+        "publisher/.headwater/packages/acme-fixture/notes.md",
         "# Notes\n\nThe rule is [in the specification](spec/07.md).\n",
     );
     let inside = scratch.path().join("inside");
-    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &inside)
-        .expect_err("the same reference without the climb lands inside and dangles");
+    let refused = package::publish_from(
+        &root,
+        &root.join(".headwater/packages/acme-fixture"),
+        &inside,
+    )
+    .expect_err("the same reference without the climb lands inside and dangles");
     assert!(
         headwater_resolve::render_errors(&refused).contains("spec/07.md"),
         "the two are not being told apart by where the reference lands"
@@ -5500,13 +5545,13 @@ fn a_reference_inside_a_code_span_or_a_fence_is_not_read() {
     let scratch = Scratch::new("reference-example");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/notes.md",
+        "publisher/.headwater/packages/acme-fixture/notes.md",
         "# Notes\n\nWrite `[the corpus](corpus/note.md)` to point at it.\n\n```\n[the \
          corpus](corpus/other.md)\n```\n",
     );
     let out = scratch.path().join("example");
 
-    package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+    package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
         .expect("neither an example nor a fenced block is a reference a consumer follows");
 }
 
@@ -5527,14 +5572,15 @@ fn a_reference_after_an_unbalanced_fence_marker_is_still_read() {
     let scratch = Scratch::new("reference-fence");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/notes.md",
+        "publisher/.headwater/packages/acme-fixture/notes.md",
         "# Notes\n\n```\n~~~\n[an example](corpus/inside-the-fence.md)\n~~~\n```\n\nThe worked \
          example is [in the corpus](corpus/after-the-fence.md).\n",
     );
     let out = scratch.path().join("artifact");
 
-    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
-        .expect_err("the reference after the fence closes is a reference");
+    let refused =
+        package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+            .expect_err("the reference after the fence closes is a reference");
     let message = headwater_resolve::render_errors(&refused);
 
     assert!(
@@ -5559,7 +5605,7 @@ fn a_reference_after_an_unbalanced_fence_marker_is_still_read() {
 fn a_recorded_pair_whose_member_the_artifact_lacks_is_refused() {
     let scratch = Scratch::new("reference-scope");
     let root = publisher(&scratch, None);
-    let manifest = root.join("packages/acme-fixture/package.yml");
+    let manifest = root.join(".headwater/packages/acme-fixture/package.yml");
     let base = std::fs::read_to_string(&manifest).expect("the manifest was just written");
     std::fs::write(
         &manifest,
@@ -5568,8 +5614,9 @@ fn a_recorded_pair_whose_member_the_artifact_lacks_is_refused() {
     .expect("the record is written");
     let out = scratch.path().join("artifact");
 
-    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
-        .expect_err("the artifact carries no gone.md for the record to be about");
+    let refused =
+        package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+            .expect_err("the artifact carries no gone.md for the record to be about");
     let message = headwater_resolve::render_errors(&refused);
 
     assert!(
@@ -5595,14 +5642,17 @@ fn a_percent_escape_is_decoded_and_a_query_is_not_part_of_the_path() {
     let scratch = Scratch::new("reference-escape");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/notes.md",
+        "publisher/.headwater/packages/acme-fixture/notes.md",
         "# Notes\n\nThe example is [in the corpus](corpus/a%20note.md), and the same file [with a \
          query](corpus/a%20note.md?raw=1).\n",
     );
-    scratch.write("publisher/packages/acme-fixture/corpus/a note.md", "# A\n");
+    scratch.write(
+        "publisher/.headwater/packages/acme-fixture/corpus/a note.md",
+        "# A\n",
+    );
     let out = scratch.path().join("artifact");
 
-    package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+    package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
         .expect("both references name a file the artifact carries");
 }
 
@@ -5620,13 +5670,13 @@ fn a_reference_inside_an_indented_block_is_not_read() {
     let scratch = Scratch::new("reference-indented");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/notes.md",
+        "publisher/.headwater/packages/acme-fixture/notes.md",
         "# Notes\n\nRun it like this:\n\n    open [the corpus](corpus/note.md)\n\nAnd that is \
          all.\n",
     );
     let out = scratch.path().join("artifact");
 
-    package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+    package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
         .expect("an indented block prints a path rather than referring to one");
 }
 
@@ -5648,16 +5698,158 @@ fn a_backtick_run_with_a_backtick_in_its_information_string_opens_no_fence() {
     let scratch = Scratch::new("reference-opener");
     let root = publisher(&scratch, None);
     scratch.write(
-        "publisher/packages/acme-fixture/notes.md",
+        "publisher/.headwater/packages/acme-fixture/notes.md",
         "# Notes\n\n```a`b\n\nThe worked example is [in the corpus](corpus/after-the-run.md).\n",
     );
     let out = scratch.path().join("artifact");
 
-    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
-        .expect_err("the run opens no fence, so the reference below it is a reference");
+    let refused =
+        package::publish_from(&root, &root.join(".headwater/packages/acme-fixture"), &out)
+            .expect_err("the run opens no fence, so the reference below it is a reference");
 
     assert!(
         headwater_resolve::render_errors(&refused).contains("corpus/after-the-run.md"),
         "the reader opened a fence nothing closes and stopped seeing the document"
+    );
+}
+
+/// The literal a tree vendored before #792 carries, spelled out rather than
+/// taken from [`package::PACKAGES`] because the whole case is that the two
+/// differ.
+const OLD_ROOT: &str = "packages";
+
+/// True when `message` names the old root as a path in its own right, rather
+/// than as the tail of the new one.
+///
+/// `.headwater/packages/` ends in `packages/`, so a bare `contains` answers true
+/// for every refusal the moved engine writes. Blanking the new root first is
+/// what makes the question answerable at all.
+fn names_the_old_root(message: &str) -> bool {
+    message
+        .replace(package::PACKAGES, "<the new root>")
+        .contains(&format!("{OLD_ROOT}/"))
+}
+
+/// A directory standing at the old `packages/` root is named in one refusal,
+/// and a tree that carries no such directory is told nothing about it.
+///
+/// [#792](https://github.com/headwater-ai/headwater/issues/792) moved the
+/// vendored package root to `.headwater/packages/`. Every tree vendored before
+/// that move carries a directory at the old root, and after the move nothing
+/// reads it. Left silent, the lookup reports only that no package declares the
+/// name, while the package the adopter installed sits right there unread: a
+/// check that cannot run, reading exactly like a check that passes.
+///
+/// **[`package::find`] can fail to find a package two ways, and this holds
+/// both of them positively and negatively.** It fails at `read_dir` when the
+/// new root is not there at all, which is the tree of an adopter who has not
+/// vendored since the move. It falls through to the zero-match arm when the
+/// new root *is* there and nothing under it declares the name, which is the
+/// tree of an adopter who has vendored something since — and that is the arm a
+/// real adopter reaches, because `vendor` creates the new root on its way in.
+/// One arrangement of the four would have left half the behavior held by
+/// nothing.
+///
+/// The negative arrangements are the half that can fail quietly. A refusal
+/// that named the old root on every tree would pass the positive assertions
+/// while saying nothing about the tree it is printed for —
+/// [#211](https://github.com/headwater-ai/headwater/issues/211)'s defect,
+/// where a fixture passed by reporting the ambient outcome.
+#[test]
+fn a_directory_at_the_old_package_root_is_named_in_the_refusal() {
+    let scratch = Scratch::new("stale-old-root");
+    let out = scratch.path().join("artifact");
+
+    /// A package the walk can read, planted under `at`.
+    fn plant(scratch: &Scratch, at: &str, directory: &str, name: &str) {
+        scratch.write(
+            &format!("{at}/{directory}/package.yml"),
+            &format!("package: {name}\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n"),
+        );
+        scratch.write(
+            &format!("{at}/{directory}/taxonomy.yml"),
+            &TAXONOMY.replace("taxonomy: acme/fixture", &format!("taxonomy: {name}")),
+        );
+    }
+
+    let refusal_over = |tree: &str| -> String {
+        let root = scratch.path().join(tree);
+        let refused = package::publish(&root, "acme/fixture", &out)
+            .expect_err("no root this test builds resolves `acme/fixture`");
+        headwater_resolve::render_errors(&refused)
+    };
+
+    // 1. The old root carries the package and the new root is not there. This
+    //    is the `read_dir` arm, and it is the tree of an adopter who has not
+    //    run `vendor` since the move.
+    plant(
+        &scratch,
+        &format!("unvendored/{OLD_ROOT}"),
+        "acme-fixture",
+        "acme/fixture",
+    );
+    let unvendored = refusal_over("unvendored");
+    assert!(
+        names_the_old_root(&unvendored),
+        "a package sits at the old root, the new root is absent, and the refusal never names \
+         the old one, so the adopter is told their taxonomy does not exist:\n{unvendored}"
+    );
+    assert!(
+        unvendored.contains(package::PACKAGES),
+        "the refusal names the old root and not the root to move it to:\n{unvendored}"
+    );
+
+    // 2. The old root carries the package and the new root carries a different
+    //    one. This is the zero-match arm: the walk reads the new root, finds a
+    //    package, and finds that it declares another name. It is the tree of an
+    //    adopter who vendored something after the move and left the old
+    //    directory standing, which is the state `vendor` itself produces.
+    plant(
+        &scratch,
+        &format!("vendored/{OLD_ROOT}"),
+        "acme-fixture",
+        "acme/fixture",
+    );
+    plant(
+        &scratch,
+        &format!("vendored/{}", package::PACKAGES),
+        "other-taxonomy",
+        "other/taxonomy",
+    );
+    let vendored = refusal_over("vendored");
+    assert!(
+        names_the_old_root(&vendored),
+        "the new root is there and the old one still carries the package, and the refusal \
+         never names it. This is the tree `vendor` leaves behind, so it is the one an adopter \
+         actually meets:\n{vendored}"
+    );
+    assert!(
+        vendored.contains(package::PACKAGES),
+        "the refusal names the old root and not the root to move it to:\n{vendored}"
+    );
+
+    // 3. The new root is there and no old root is. The zero-match arm again,
+    //    and it must say nothing about a directory this tree does not have.
+    plant(
+        &scratch,
+        &format!("clean-vendored/{}", package::PACKAGES),
+        "other-taxonomy",
+        "other/taxonomy",
+    );
+    let clean_vendored = refusal_over("clean-vendored");
+    assert!(
+        !names_the_old_root(&clean_vendored),
+        "the old root is named on a tree that has no directory there, so the sentence is \
+         ambient and says nothing about the tree it is printed for:\n{clean_vendored}"
+    );
+
+    // 4. Neither root is there. The `read_dir` arm again, negatively, so that
+    //    arm is held from both sides as well.
+    let bare = scratch.path().join("bare");
+    std::fs::create_dir_all(bare.join("docs")).expect("the bare tree is made");
+    let bare = refusal_over("bare");
+    assert!(
+        !names_the_old_root(&bare),
+        "a tree with neither root is told about a directory at the old one:\n{bare}"
     );
 }

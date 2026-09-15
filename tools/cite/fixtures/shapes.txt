@@ -1,0 +1,25 @@
+what counts as a citation and what only looks like one
+
+the three line-comment markers, each of which is a citation
+
+# per HW-DR-0049 (docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
+// per HW-DR-0049 (docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
+-- per HW-DR-0049 (docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
+
+a comment that follows code on the same line is still a comment
+
+emit(value)  // per HW-DR-0049 (docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
+
+and now the four that are not citations
+
+a string literal carries the shape and not the claim, so the marker inside it opens no comment
+banner = "# per HW-DR-0049 (docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)"
+
+a line with no comment marker at all is code or prose, whatever it says
+per HW-DR-0049 (docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
+
+a single bare word after per is prose, because an identifier carries a hyphen
+# per convention (docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
+
+and a citation with no path in parentheses states nothing to check
+# per HW-DR-0049
