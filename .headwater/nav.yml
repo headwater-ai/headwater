@@ -95,6 +95,7 @@ nav:
       - "The build order as a multi-agent system": "evaluations/the-build-order-as-a-multi-agent-system.md"
       - "The measurement layer — the Q8 and Q20 evaluation": "evaluations/the-measurement-layer.md"
       - "The serving boundary — what is advertised, what is withheld, what is written back": "evaluations/the-serving-boundary.md"
+      - "The three discovery misses of 2026-09-16 have three different mechanisms, and only one is routing precision": "evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md"
       - "Theoretical foundations": "evaluations/theoretical-foundations.md"
       - "Warrant — what stands behind a document, and who vouched for it": "evaluations/warrant-and-adjudication.md"
       - "What a check can know — the Q5 and Q21 evaluation": "evaluations/what-a-check-can-know.md"

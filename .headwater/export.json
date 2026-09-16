@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 459,
-      "carried": 459,
+      "in the graph": 460,
+      "carried": 460,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 650,
-      "carried": 650,
+      "in the graph": 653,
+      "carried": 653,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2460,6 +2460,34 @@
               "HW-SPEC-distribution-and-federation",
               "HW-SPEC-check-layer",
               "HW-SPEC-glossary"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision",
+          "status": "current",
+          "status_since": "2026-09-16",
+          "summary": "A replay of the router shows three different misses: one true precision failure, one ignored correct offer, and one target the router cannot reach.",
+          "last_verified": "2026-09-16",
+          "title": "The three discovery misses of 2026-09-16 have three different mechanisms, and only one is routing precision",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "measure+draft",
+            "evidence_basis": "reconstructed"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
+              "HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document",
+              "HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens"
             ]
           }
         }
@@ -12340,6 +12368,39 @@
           "id": "HW-SPEC-glossary",
           "path": "docs/spec/glossary.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
+          "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
+          "kind": "probe"
+        }
+      },
+      {
+        "source": "docs/evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document",
+          "path": "docs/probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md",
+          "kind": "probe"
+        }
+      },
+      {
+        "source": "docs/evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens",
+          "path": "docs/probes/the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens.md",
+          "kind": "probe"
         }
       },
       {
