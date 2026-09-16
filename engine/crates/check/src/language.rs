@@ -162,6 +162,17 @@ fn expansion(word: &str) -> Option<String> {
     Some(crate::patch::matching_case(word, expanded))
 }
 
+/// Whether this rule's mechanical checks apply to a controlled language and
+/// profile pair, the same predicate [`Language::over`] uses to decide which
+/// regimes it binds. A caller outside this rule, such as a scaffolder
+/// reporting what a document's prose answers to, reads this rather than
+/// keeping a second copy of the pairs this engine knows.
+pub fn known(controlled: &str, profile: Option<&str>) -> bool {
+    HOUSE.iter().any(|(language, house_profile)| {
+        language.eq_ignore_ascii_case(controlled) && *house_profile == profile
+    })
+}
+
 /// The check, generated from the language regimes and the kinds that bind them.
 pub struct Language {
     bound: Vec<Bound>,
@@ -202,13 +213,7 @@ impl Language {
             if controlled.eq_ignore_ascii_case("none") {
                 continue;
             }
-            let profile = HOUSE
-                .iter()
-                .any(|(language, profile)| {
-                    language.eq_ignore_ascii_case(controlled)
-                        && *profile == regime.profile.as_deref()
-                })
-                .then_some(Profile::House);
+            let profile = known(controlled, regime.profile.as_deref()).then_some(Profile::House);
             bound.push(Bound {
                 kind: kind.name.clone(),
                 regime: regime.name.clone(),

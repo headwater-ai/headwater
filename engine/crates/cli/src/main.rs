@@ -3537,6 +3537,49 @@ fn scaffold_report(
         }
     }
 
+    if let Some(language) = &plan.language {
+        let _ = writeln!(out, "\nwhat this document's prose answers to");
+        let _ = writeln!(
+            out,
+            "  the `{}` language regime — {}",
+            language.regime, language.declared
+        );
+        if language.mechanically_checked {
+            let _ = writeln!(
+                out,
+                "  `headwater check` reads sentence length, a semicolon in running prose, a \
+                 contraction and a British spelling mechanically, plus {} retired term{} this \
+                 taxonomy names",
+                language.retired_terms,
+                if language.retired_terms == 1 { "" } else { "s" }
+            );
+        } else {
+            let _ = writeln!(
+                out,
+                "  `headwater check` has no mechanical rule for this pair, and reads none of it"
+            );
+        }
+        if language.voice_forbids.is_empty() {
+            let _ = writeln!(out, "  no voice regime forbids a construction here");
+        } else {
+            let _ = writeln!(
+                out,
+                "  it also reads for {} forbidden construction{} a voice regime names: {}",
+                language.voice_forbids.len(),
+                if language.voice_forbids.len() == 1 {
+                    ""
+                } else {
+                    "s"
+                },
+                language.voice_forbids.join(", ")
+            );
+        }
+        let _ = writeln!(
+            out,
+            "  every other rule the regime states is a rewrite this engine cannot grade"
+        );
+    }
+
     let assisted = plan.assisted();
     let _ = writeln!(out, "\nassisted fraction of this run");
     let _ = writeln!(
