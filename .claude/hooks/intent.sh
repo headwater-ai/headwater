@@ -106,13 +106,13 @@ hw_shadow_log() {
     mkdir -p "$_dir" 2>/dev/null || return 0
     _file="$_dir/$_session.jsonl"
 
-    # The taxonomy lock's own digest, read the way `probe plan` reads the same
-    # value, off the file this repository already commits rather than by
-    # asking the engine to recompute it. The corpus tree digest that goes
-    # beside it in spec 15's identity block has no such shortcut — it is a
-    # census walk over every classified document, and step 2's `neighbors`
-    # verb is where the issue's own build order puts that call, so this line
-    # carries no `tree_digest` member until then.
+    # The taxonomy lock's own digest, read off the file this repository
+    # already commits rather than asked of the engine to recompute — spec
+    # 15's own identity block reads the same field the same way. The corpus
+    # tree digest that goes beside it in that block has no such shortcut — it
+    # is a census walk over every classified document, and step 2's
+    # `neighbors` verb is where the issue's own build order puts that call,
+    # so this line carries no `tree_digest` member until then.
     _lock=$("$engine" json field lock digest < "$hw_root/.headwater/taxonomy.lock" 2>/dev/null) || _lock=
     _version=$("$engine" -V 2>/dev/null) || _version=
     _at=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null) || _at=
