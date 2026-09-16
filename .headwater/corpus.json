@@ -33,6 +33,11 @@
           "id": "HW-EVAL-adjacent-work"
         },
         {
+          "shelf": "how_to",
+          "path": "docs/how-to/relocate-a-shelf.md",
+          "id": "HW-HOW-relocate-a-shelf"
+        },
+        {
           "shelf": "interfaces",
           "path": "docs/interfaces/headwater-capture.md",
           "id": "HW-IFACE-headwater-capture"

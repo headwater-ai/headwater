@@ -97,6 +97,9 @@ nav:
       - "Theoretical foundations": "evaluations/theoretical-foundations.md"
       - "Warrant — what stands behind a document, and who vouched for it": "evaluations/warrant-and-adjudication.md"
       - "What a check can know — the Q5 and Q21 evaluation": "evaluations/what-a-check-can-know.md"
+  - "How-to guides":
+      - "How-to guides": "how-to/README.md"
+      - "Relocate a shelf": "how-to/relocate-a-shelf.md"
   - "The command surface":
       - "The command surface": "interfaces/README.md"
       - "headwater capture": "interfaces/headwater-capture.md"
