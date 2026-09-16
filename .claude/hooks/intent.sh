@@ -37,8 +37,106 @@
 # no line of its own: a pointer line assembled here would be a second copy of
 # `Pointer::render`, and a terminal and an agent that read different text about
 # one document are reading about different corpora as far as either can tell.
+#
+# # The shadow-mode routing log
+#
+# [HW-DR-0064](../../docs/decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md)
+# rules that this hook, and nothing else, keeps a private record of what the
+# deterministic route decided, so a later comparison against a second, meaning
+# based lookup has something to compare against. [#819] carries the build in
+# four steps; this file carries step 1 alone, the half that needs no model and
+# no vector: the task, the route document as `route` wrote it, and whether the
+# pointers it offered reached the agent.
+#
+# `hw_shadow_log`, below, is the whole of it. It runs once `route` has already
+# answered, so a corpus this cannot log for is a corpus this hook still routes
+# for exactly as before it existed: the function only ever adds a write to a
+# file nobody reads back here, and never a line of output or a changed exit
+# status. It fails open the same way every read in this file already does,
+# and silently, because a write error surfacing on either stream would corrupt
+# what the harness injects, and a non-zero exit would block the prompt.
+#
+# The file lives at `<git common dir>/headwater-shadow-log/<session>.jsonl`,
+# beside the marks `touch.sh` and `review.sh` already keep under the common
+# dir rather than under the tree: every worktree of one clone answers the same
+# path for it, `repo-cleanup` removing one worktree never touches it, and
+# `headwater generate` and `headwater check` never read it because it sits
+# outside the corpus entirely. One file per harness session is what keeps a
+# POSIX append atomic: a session submits its prompts in order, so a file per
+# session has exactly one writer, and the ten worktrees this host may run at
+# once never interleave a line because each one holds a session of its own.
+#
+# A session with no `session_id` on its payload logs nothing at all, the same
+# posture `touch.sh` already takes: nobody has yet named a file to hold a line
+# for. Every case at the top of this suite predates the shadow log and carries
+# no `session_id`, so none of them gains a write; the log-writing cases live
+# in their own block, further down, with a session id of their own.
+#
+# The one gotcha worth stating here because it is easy to get wrong twice: a
+# shell that fails to open a file for `>>` writes its complaint to whatever
+# stderr already is at that point, and a `2>/dev/null` placed after the `>>`
+# on the same line does not catch it — the two are set up in the order
+# written, and the redirection that failed already reported before the one
+# meant to silence it took effect. Wrapping the write in a brace group and
+# putting the redirect on the group is what actually silences it, and the
+# decisive fixture in `fixtures.sh` is what would catch a return to the
+# broken form.
 
 . "$(dirname "$0")/lib.sh"
+
+# One line, appended to the file the header above names. Every value it
+# cannot get — no session id, no common git dir, no writable directory, no
+# quotable string — ends this function at that point and leaves nothing
+# written, the same fail-open posture as `hw_field` and `hw_count` below. It
+# never touches standard output or standard error, and it never sets an exit
+# status the caller reads, because the caller has already decided both by the
+# time this runs. Defined ahead of the input it reads, because a shell script
+# executes top to bottom and a call to a function defined after the point
+# that calls it finds nothing there yet — `foo: not found`, on standard
+# error, which is exactly the leak this whole file exists to not have.
+hw_shadow_log() {
+    _session=$(hw_field "$input" session_id) || return 0
+    [ -n "$_session" ] || return 0
+
+    _dir=${HEADWATER_SHADOW_LOG_DIR:-}
+    if [ -z "$_dir" ]; then
+        _common=$(hw_common_dir) || return 0
+        _dir="$_common/headwater-shadow-log"
+    fi
+    mkdir -p "$_dir" 2>/dev/null || return 0
+    _file="$_dir/$_session.jsonl"
+
+    # The taxonomy lock's own digest, read off the file this repository
+    # already commits rather than asked of the engine to recompute — spec
+    # 15's own identity block reads the same field the same way. The corpus
+    # tree digest that goes beside it in that block has no such shortcut — it
+    # is a census walk over every classified document, and step 2's
+    # `neighbors` verb is where the issue's own build order puts that call,
+    # so this line carries no `tree_digest` member until then.
+    _lock=$("$engine" json field lock digest < "$hw_root/.headwater/taxonomy.lock" 2>/dev/null) || _lock=
+    _version=$("$engine" -V 2>/dev/null) || _version=
+    _at=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null) || _at=
+
+    _session_q=$(hw_quote "$_session") || return 0
+    _root_q=$(hw_quote "$hw_root") || return 0
+    _task_q=$(hw_quote "$task") || return 0
+    _route_q=$(hw_quote "$route") || return 0
+    _version_q=$(hw_quote "$_version") || _version_q='""'
+    _lock_q=$(hw_quote "$_lock") || _lock_q='""'
+
+    _line=$(printf '{"at":"%s","session":%s,"corpus_root":%s,"engine_version":%s,"lock_digest":%s,"task":%s,"injected":%s,"route":%s}' \
+        "$_at" "$_session_q" "$_root_q" "$_version_q" "$_lock_q" "$_task_q" "$injected" "$_route_q") || return 0
+
+    # The brace group is what keeps this silent, and not a stylistic choice: a
+    # bare `printf ... >> "$_file" 2>/dev/null` still leaks "cannot create" to
+    # the real standard error when the `>>` itself is what fails, because a
+    # shell sets redirections up in the order written and the first one had
+    # already reported before the second took effect. Putting the redirect on
+    # the group instead silences the open failure along with everything it
+    # wraps.
+    { printf '%s\n' "$_line" >> "$_file"; } 2>/dev/null
+    return 0
+}
 
 input=$(cat)
 engine=$(hw_engine) || exit 0
@@ -85,12 +183,30 @@ route=$("$engine" route --root "$hw_root" --json "$task" 2>/dev/null) || exit 0
 # empty or its status non-zero, and both of those end the hook with the prompt
 # untouched.
 pointers=$(hw_count "$route" pointers) || exit 0
-[ "$pointers" -gt 0 ] 2>/dev/null || exit 0
 
-report=$(hw_field "$route" text) || exit 0
-[ -n "$report" ] || exit 0
+# `report` and `injected` are worked out here, ahead of the shadow-log write
+# below, rather than at the two early exits the rest of this hook used before
+# the log existed. The four branches below reach the same output and the same
+# exit status the two-exit form gave: an empty `report` is never printed
+# either way, and every path here still ends at the one `exit 0` at the
+# bottom. What changes is only that `hw_shadow_log` now runs, once, on every
+# branch, because a silence is as much a shadow-log line as a hit is.
+if [ "$pointers" -gt 0 ] 2>/dev/null; then
+    report=$(hw_field "$route" text) || report=
+else
+    report=
+fi
 
-printf 'Headwater routed this task to the documents that govern it, before you open a file.\n'
-printf 'These are pointers, not content. Open the ones that bear on the task.\n\n'
-printf '%s\n' "$report"
+injected=false
+if [ "$pointers" -gt 0 ] 2>/dev/null && [ -n "$report" ]; then
+    injected=true
+fi
+
+hw_shadow_log
+
+if [ "$injected" = true ]; then
+    printf 'Headwater routed this task to the documents that govern it, before you open a file.\n'
+    printf 'These are pointers, not content. Open the ones that bear on the task.\n\n'
+    printf '%s\n' "$report"
+fi
 exit 0

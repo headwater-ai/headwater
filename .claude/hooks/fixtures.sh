@@ -549,6 +549,110 @@ else
     skip 'write.sh and intent.sh fail-open cases' 'no built engine'
 fi
 
+printf '\n# intent.sh: the shadow-mode routing log HW-DR-0064 adds beside it\n'
+# Step 1 of #819's build order: the deterministic half of the log, in the hook
+# alone. Two things earn a case here that no case above already covers. One is
+# the "harness output unchanged" bar, which nothing above would catch because
+# nothing above runs the hook twice with a session id present — every case
+# before this block predates the log and carries no `session_id`, so none of
+# them ever reaches the write at all. The other is the actual risk of this
+# change: a write failure that is not as silent as the routing decision it
+# rides beside. `intent.sh`'s own header names the shell gotcha this guards
+# against, and this is the fixture that would catch a regression back into it.
+if [ -x "$engine" ]; then
+    common=$(git -C "$root" rev-parse --git-common-dir 2>/dev/null)
+    case $common in
+        /*) ;;
+        *) common="$root/$common" ;;
+    esac
+    shadow_dir="$common/headwater-shadow-log"
+    trap 'chmod u+w "$shadow_dir" 2>/dev/null; rm -rf "$shadow_dir"' EXIT INT TERM
+    rm -rf "$shadow_dir"
+
+    # The cheaper regression: the same payload the very first case in this
+    # file already answers with `docs/spec/`, run twice with a session id and
+    # the log therefore live, still answers with that identical substring
+    # both times. A hook that let logging change what it prints would fail
+    # this before it failed anything more specific.
+    routed_session="fixture-session-shadow-$$"
+    routed_file="$shadow_dir/$routed_session.jsonl"
+    routed_payload="{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$routed_session\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+    expect 'a routed task with a session id hands back the report unchanged, once' \
+        intent.sh 0 'docs/spec/' "$routed_payload"
+    expect 'a routed task with a session id hands back the report unchanged, twice' \
+        intent.sh 0 'docs/spec/' "$routed_payload"
+
+    if [ -s "$routed_file" ] && [ "$(wc -l < "$routed_file")" -eq 2 ]; then
+        printf 'ok   %s\n' 'the two calls above each left their own shadow-log line, in the one file for their session'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'the two routed calls above did not leave two shadow-log lines'
+        failed=$((failed + 1))
+    fi
+
+    # `route` invoked directly is not this hook, and Done-when says it writes
+    # no entry. The file the two calls above just wrote to is the proof: a
+    # direct call between them would have to land in the same file, since a
+    # session id is not something a direct call carries or could invent one
+    # of its own to collide with.
+    before_lines=$(wc -l < "$routed_file")
+    "$engine" route --root "$root" --json "what does a check know about the front matter of a document" > /dev/null 2>&1
+    after_lines=$(wc -l < "$routed_file")
+    if [ "$before_lines" = "$after_lines" ]; then
+        printf 'ok   %s\n' 'headwater route invoked directly writes no shadow-log line'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'headwater route invoked directly changed the shadow-log file it never should have reached'
+        failed=$((failed + 1))
+    fi
+
+    # The decisive fixture. The control shows the mechanism is live: a fresh,
+    # still-writable directory gains a line for a task the deterministic route
+    # is already silent about — routing's own silence is not what is under
+    # test, it is silent with or without a log. The sabotage removes write
+    # permission from that same directory before its session's first prompt
+    # ever reaches it, so the write has to create a file rather than append to
+    # one already there, and a directory with no write permission refuses
+    # exactly that create. What is under test is whether the refusal stays as
+    # silent, on both streams, as the routing decision already was.
+    rm -rf "$shadow_dir"
+    mkdir -p "$shadow_dir"
+    silent_payload_of() {
+        printf '{"hook_event_name":"UserPromptSubmit","session_id":"%s","user_input":"xyzzy plugh frobnicate quuxbar"}' "$1"
+    }
+
+    control_session="fixture-session-shadow-control-$$"
+    control_file="$shadow_dir/$control_session.jsonl"
+    expect 'the control for: an unwritable shadow-log path, and the prompt proceeds in silence' \
+        intent.sh 0 '' "$(silent_payload_of "$control_session")"
+    if [ -s "$control_file" ]; then
+        printf 'ok   %s\n' 'the control above left a shadow-log line while the directory was still writable'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'the control above left no shadow-log line, so the sabotage below would prove nothing'
+        failed=$((failed + 1))
+    fi
+
+    chmod a-w "$shadow_dir"
+    sabotage_session="fixture-session-shadow-sabotage-$$"
+    sabotage_file="$shadow_dir/$sabotage_session.jsonl"
+    expect 'an unwritable shadow-log path, and the prompt proceeds in silence' \
+        intent.sh 0 '' "$(silent_payload_of "$sabotage_session")"
+    chmod u+w "$shadow_dir"
+    if [ -e "$sabotage_file" ]; then
+        printf 'FAIL %s\n' 'the sabotage above wrote a shadow-log line through a directory with no write permission'
+        failed=$((failed + 1))
+    else
+        printf 'ok   %s\n' 'the sabotage above left no shadow-log line and no complaint on either stream'
+        passed=$((passed + 1))
+    fi
+
+    rm -rf "$shadow_dir"
+    trap - EXIT INT TERM
+else
+    skip 'intent.sh shadow-log cases' 'no built engine'
+fi
+
 printf '\n# touch.sh, on PreToolUse: the marker review.sh reads back\n'
 if [ -x "$engine" ]; then
     common=$(git -C "$root" rev-parse --git-common-dir 2>/dev/null)
