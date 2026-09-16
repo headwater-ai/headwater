@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 461,
-      "carried": 461,
+      "in the graph": 463,
+      "carried": 463,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -8381,6 +8381,20 @@
         }
       },
       {
+        "path": "docs/probe-results/regression-probe-transcript-for-2026-09-17.md",
+        "kind": "probe_result",
+        "id": "HW-RESULT-regression-probe-transcript-for-2026-09-17",
+        "facets": {
+          "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
+          "id": "HW-RESULT-regression-probe-transcript-for-2026-09-17",
+          "title": "Probe result for regression-probe-transcript-for-2026-09-17",
+          "status": "current",
+          "status_since": "2026-09-16",
+          "summary": "The grade of the transcript `regression-probe-transcript-for-2026-09-17`, taken over the probes this corpus declares and the version of the grader that evaluated them.",
+          "last_verified": "2026-09-16"
+        }
+      },
+      {
         "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-09.md",
         "kind": "probe_transcript",
         "id": "HW-RUN-regression-probe-transcript-for-2026-09-09",
@@ -8423,6 +8437,21 @@
           "tier": "regression",
           "arm": "present",
           "title": "Regression probe transcript for 2026-09-16"
+        }
+      },
+      {
+        "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-17.md",
+        "kind": "probe_transcript",
+        "id": "HW-RUN-regression-probe-transcript-for-2026-09-17",
+        "facets": {
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-17",
+          "status": "current",
+          "status_since": "2026-09-16",
+          "summary": "Eight regression sessions ran against the lock of this tree, on claude-sonnet-5 rather than the haiku model every earlier run drove.",
+          "last_verified": "2026-09-16",
+          "tier": "regression",
+          "arm": "present",
+          "title": "Regression probe transcript for 2026-09-17"
         }
       },
       {
