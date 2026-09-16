@@ -2,7 +2,7 @@
 
 # Evaluations
 
-22 documents on this shelf, in the reading order this corpus derives.
+23 documents on this shelf, in the reading order this corpus derives.
 
 - [Adjacent work and tooling](adjacent-work.md) — Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.
 - [The capability-bundle address inventory](capability-bundle-address-inventory.md) — The cross-bundle address inventory HW-DR-0044 asks for, and what it shows decision-record actually reaches inside design-spec. (asserted, and no human has accepted it)
@@ -22,6 +22,7 @@
 - [The build order as a multi-agent system](the-build-order-as-a-multi-agent-system.md) — What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, the architecture that follows, what was rejected, and the numbers the next run is held against. (asserted, and no human has accepted it)
 - [The measurement layer — the Q8 and Q20 evaluation](the-measurement-layer.md) — The Q8 and Q20 evidence, which is what a probe costs, when it runs, and whether the promised instruments can produce their measurements.
 - [The serving boundary — what is advertised, what is withheld, what is written back](the-serving-boundary.md) — The Q14, Q17 and Q7 evidence, which is what a corpus advertises, what it withholds, and what a tool may write back.
+- [The three discovery misses of 2026-09-16 have three different mechanisms, and only one is routing precision](the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md) — A replay of the router shows three different misses: one true precision failure, one ignored correct offer, and one target the router cannot reach. (asserted, and no human has accepted it)
 - [Theoretical foundations](theoretical-foundations.md) — Where the research literature confirms, sharpens, or contradicts the design, and what changed in the specification as a result.
 - [Warrant — what stands behind a document, and who vouched for it](warrant-and-adjudication.md) — The Q15, Q19 and Q18 evidence, which is what stands behind a document, who vouched for it, and how a disagreement is settled.
 - [What a check can know — the Q5 and Q21 evaluation](what-a-check-can-know.md) — The Q5 and Q21 evidence, which measures what a lexical checker gets wrong on the checker that this repository already runs.

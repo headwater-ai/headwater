@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 459,
-      "carried": 459,
+      "in the graph": 460,
+      "carried": 460,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 650,
-      "carried": 650,
+      "in the graph": 651,
+      "carried": 651,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2460,6 +2460,32 @@
               "HW-SPEC-distribution-and-federation",
               "HW-SPEC-check-layer",
               "HW-SPEC-glossary"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision",
+          "status": "current",
+          "status_since": "2026-09-16",
+          "summary": "A replay of the router shows three different misses: one true precision failure, one ignored correct offer, and one target the router cannot reach.",
+          "last_verified": "2026-09-16",
+          "title": "The three discovery misses of 2026-09-16 have three different mechanisms, and only one is routing precision",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-RUN-regression-probe-transcript-for-2026-09-16"
             ]
           }
         }
@@ -12340,6 +12366,17 @@
           "id": "HW-SPEC-glossary",
           "path": "docs/spec/glossary.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-16",
+          "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-16.md",
+          "kind": "probe_transcript"
         }
       },
       {
