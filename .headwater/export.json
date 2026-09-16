@@ -2481,7 +2481,8 @@
             "agency": "agent",
             "drafted_by": "claude-sonnet-5",
             "activity": "measure+draft",
-            "evidence_basis": "reconstructed"
+            "evidence_basis": "reconstructed",
+            "reconstructed_from": "docs/probe-runs/regression-probe-transcript-for-2026-09-16.md, the raw harness session logs `probe-record.sh` wrote for that recording, and a live `headwater route` replay run for this evaluation"
           },
           "relations": {
             "traces_to": [
