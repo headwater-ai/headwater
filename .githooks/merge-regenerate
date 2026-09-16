@@ -67,6 +67,30 @@
 # Neither half reaches the merge button on the forge, which runs nothing from
 # this repository. The pull-request run over `refs/pull/N/merge` is what covers
 # that, and only while the branch is current with `main`.
+#
+# # Why a conflicting `site/*` merge also writes a marker, not only a warning
+#
+# The warning above is printed once, to a terminal a `git rebase` may be
+# running unattended in, and read by whoever is resolving the conflict at that
+# moment. Nothing checks afterward that they read it, carried the other side's
+# prose forward, and did not just run the figure refresh and move on — and
+# `.githooks/merged-fold-check`, the gate that would otherwise re-run
+# `sh tools/site/refresh-figures.sh --check` on the merged tree, does not run
+# for a rebase at all (`.githooks/commit-msg` fires on `git commit`, and a
+# rebase replays each commit with no `commit-msg` hook of its own). That is
+# the gap four incidents on this repository's own site walked through: a
+# rebase carried a stale side's prose past this exact refusal with nothing
+# left behind to say so.
+#
+# So this also drops one file per unresolved `site/*` conflict under
+# `<git-common-dir>/headwater-pending-site-review/`, named for the path and
+# holding the diff above. `.githooks/post-rewrite` reports it the moment a
+# rebase finishes, and `.githooks/pre-push` refuses to push while one exists.
+# `tools/site/ack-site-prose-reviewed.sh <path>` is the one command that clears
+# it, and it is deliberately a second command from resolving the conflict: it
+# does not run automatically, because whether the prose was actually carried
+# forward is a judgment this driver already declined to make for the same
+# reason it declines to regenerate.
 
 ours="$2"
 theirs="$3"
@@ -75,6 +99,14 @@ site_non_figure_diff=
 
 normalize_site_figures() {
     sed -E 's/(data-figure="[^"]*">)[^<]*(<)/\1__HEADWATER_FIGURE__\2/g' "$1"
+}
+
+record_site_conflict() {
+    common_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 0
+    marker_dir="$common_dir/headwater-pending-site-review"
+    mkdir -p "$marker_dir" 2>/dev/null || return 0
+    marker_name=$(printf '%s' "$1" | tr '/' '_')
+    printf '%s\n' "$2" > "$marker_dir/$marker_name"
 }
 
 case "$path" in
@@ -132,10 +164,14 @@ cat >&2 <<EOF
 EOF
 
 if [ -n "$site_non_figure_diff" ]; then
+record_site_conflict "$path" "$site_non_figure_diff"
 cat >&2 <<EOF
   WARNING: non-figure prose/markup differs between %A and %B for $path.
   Refreshing figures alone keeps one side's prose and can drop the other side.
   Carry forward the intended prose/markup first, then refresh figures.
+
+  This also blocks a future push: sh tools/site/ack-site-prose-reviewed.sh $path
+  clears it once you have, and prints the diff below again if you need it.
 
   Non-figure diff after normalizing every data-figure span:
 

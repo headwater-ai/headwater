@@ -1,0 +1,46 @@
+#!/bin/sh
+# The one position that sees a `git rebase` land, because nothing else does.
+#
+# `.githooks/commit-msg` is the gate on a merge: it runs whenever `MERGE_HEAD`
+# is present, which covers `git merge` and `git merge --continue` but, by its
+# own comment, reaches a rebase "not at all" — a rebase replays each commit
+# with `git commit`, and no `MERGE_HEAD` is ever written for it. So the same
+# `.githooks/merge-regenerate` conflict on a `site/*` page that a merge gates
+# a second time can pass a rebase with only the driver's own refusal in the
+# way, resolved once and never checked again.
+#
+# `post-rewrite` is what git runs after `git rebase` and `git commit --amend`
+# finish rewriting history — the two operations `commit-msg` misses. It cannot
+# refuse anything: by the time it runs, the rewrite already succeeded and the
+# new commits already exist. What it can do is make a pending review
+# impossible to miss the moment the rebase that caused it ends, rather than
+# leaving it for whoever next reads `.githooks/merge-regenerate`'s stderr
+# scroll past, or for `.githooks/pre-push` to be the first thing that ever
+# mentions it.
+#
+# Install once per clone, the same command every hook here needs:
+#     git config core.hooksPath .githooks
+
+# `git rev-parse --show-toplevel` rather than `dirname "$0")/..`: an absolute
+# `core.hooksPath` (the value `EnterWorktree` writes, per `CLAUDE.md`) would
+# otherwise resolve this into the main checkout's `tools/`, and the marker
+# this reads is the current worktree's own, not the main checkout's.
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -n "$root" ] || exit 0
+
+pending=$(sh "$root/tools/site/ack-site-prose-reviewed.sh" 2>/dev/null)
+[ -n "$pending" ] || exit 0
+
+cat >&2 <<EOF
+
+  This rebase left a site/* merge conflict resolved but not reviewed:
+
+$pending
+
+  sh tools/site/ack-site-prose-reviewed.sh <path> shows the diff again and
+  clears it once you have carried the losing side's prose forward by hand.
+  Until then, .githooks/pre-push refuses to push any ref from this clone.
+
+EOF
+
+exit 0

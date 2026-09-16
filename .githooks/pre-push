@@ -1,0 +1,44 @@
+#!/bin/sh
+# The one position that can still refuse, once `.githooks/merge-regenerate`
+# and `.githooks/commit-msg` have both already let a `site/*` conflict
+# through unreviewed.
+#
+# A rebase resolves that driver's refusal locally and commits the result with
+# no `commit-msg` hook of its own (see `.githooks/post-rewrite`, which reports
+# the same gap but cannot block anything — the rewrite it would refuse has
+# already finished by the time it runs). `pre-push` is the last local hook
+# before the content leaves this clone, so it is where the gap actually
+# closes: refuse the push outright while `tools/site/ack-site-prose-reviewed.sh`
+# still lists something pending, on the theory that a diff nobody has looked
+# at is worth a blocked push and a false one costs one command to clear.
+#
+# This blocks every ref in the push, not only one that touches `site/*` —
+# `pre-push` receives the whole batch on stdin, and a marker already means a
+# `site/*` page in *this clone* carries an unreviewed resolution, which the
+# push about to happen may or may not include but the next one probably will.
+# Reading stdin to narrow it to "does this push actually carry that blob"
+# would make a real gap look like it was never checked, on a clone where the
+# blocker is still true five minutes later.
+#
+# Install once per clone, the same command every hook here needs:
+#     git config core.hooksPath .githooks
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -n "$root" ] || exit 0
+
+pending=$(sh "$root/tools/site/ack-site-prose-reviewed.sh" 2>/dev/null)
+[ -n "$pending" ] || exit 0
+
+cat >&2 <<EOF
+
+  Push refused: a site/* merge conflict was resolved but never reviewed.
+
+$pending
+
+  sh tools/site/ack-site-prose-reviewed.sh <path> shows the diff again and
+  clears it once you have carried the losing side's prose forward by hand
+  and refreshed figures. That is the one command this refusal is waiting on.
+
+EOF
+
+exit 1
