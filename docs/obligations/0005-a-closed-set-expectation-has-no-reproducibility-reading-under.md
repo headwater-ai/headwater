@@ -1,11 +1,11 @@
 ---
 id: HW-OBL-0005
 title: "A closed-set expectation has no reproducibility reading under grading"
-status: current
-status_since: 2026-08-11
+status: discharged
+status_since: 2026-09-16
 waiting_on: build
-last_verified: 2026-08-13
-summary: "Q8 claims that a closed-set expectation makes a probe verdict reproducible, and the one closed-set probe this corpus declares has now returned a verdict."
+last_verified: 2026-09-16
+summary: "Q8 claims that a closed-set expectation makes a probe verdict reproducible, and two runs of the one closed-set probe this corpus declares disagree."
 provenance:
   warrant: accepted
   agency: mixed
@@ -30,6 +30,8 @@ relations:
 
 ## Discharge
 
-`headwater generate --check` exists and it now holds a result document of this repository. [The result of 2026-09-11](../probe-results/regression-probe-transcript-for-2026-09-11.md) carried four verdicts of four for one day, and one of the four probes declares a closed answer set. A later change moved the lock under that recording, so the first confirmation refuses it and the result carries zero verdicts of four. The instrument has no reading yet.
+`headwater generate --check` exists and it now holds a result document of this repository. [The result of 2026-09-11](../probe-results/regression-probe-transcript-for-2026-09-11.md) carried four verdicts of four for one day, and one of the four probes declares a closed answer set. A later change moved the lock under that recording, so the first confirmation refuses it and that result carries zero verdicts of four now.
 
-**The reading does not support the claim, and it does not refute it either.** The closed-set session ended with the word `present`, the transcript records that word, and the verdict is `satisfied`. One verdict is not a reproducibility reading: reproducibility is a comparison of two verdicts over one expectation under one grader, and this corpus holds one. What this record waits on is a second run of the same probe.
+**A second run of the same probe landed, and the instrument has a reading at last.** [The result of 2026-09-16](../probe-results/regression-probe-transcript-for-2026-09-16.md) carries a verdict for [HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer](../probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md) too: `not satisfied`, because the session ended with no answer in the closed set rather than with the bare word `present` the 2026-09-11 session wrote. The two verdicts disagree, over the same probe and the same grader.
+
+**The disagreement is a reproducibility finding, and it is not evidence that the grader is unsound.** Each session ran once, against a different draft of the same task, and the closed-set derivation is deliberately narrow: it matches only a whole trimmed final answer, never a substring or a markup character. The 2026-09-11 session closed with the bare word; the 2026-09-16 session closed with the same word set in bold Markdown, which the derivation correctly refuses to read as a match. So the disagreement traces to what the two sessions wrote, not to two runs of one grader over one transcript, and it says nothing about whether the grader itself reproduces. What it does show is that a closed-set expectation graded this narrowly is not reproducible across sessions that differ only in how they format an answer the reader would recognize as the same word. That is the claim Q8 makes, read once: this reading does not support it.

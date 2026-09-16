@@ -1,11 +1,11 @@
 ---
 id: HW-OBL-0010
 title: "The corpus descriptor exists and no probe has run against it"
-status: current
-status_since: 2026-09-11
+status: discharged
+status_since: 2026-09-16
 waiting_on: measurement
-last_verified: 2026-09-11
-summary: "Two recordings stand on the shelf, a confirmation refuses both, and no probe has returned a verdict against the descriptor."
+last_verified: 2026-09-16
+summary: "A third recording is not refused, and both the discovery and navigability probe categories now carry a verdict against the descriptor."
 provenance:
   warrant: asserted
   agency: mixed
@@ -45,4 +45,10 @@ This record stood at `discharged` with an `accepted` warrant between 2026-08-13 
 
 **[The recording of 2026-09-11](../probe-runs/regression-probe-transcript-for-2026-09-11.md) was that recording for one day, and this record stands at `current` again.** This record read it as a discharge on 2026-09-11. `8b61593e` moved `.headwater/taxonomy.lock` later the same day, so the lock the recording pins is not the lock of this tree, and the first of the five confirmations refuses the recording whole. `0149a92c` retired it from `current` to `deprecated`, and [the result](../probe-results/regression-probe-transcript-for-2026-09-11.md) carries zero verdicts of four. Both recordings on the shelf are refused, and this corpus holds no reading.
 
-**The transcript still records what each session did, and no rate here rests on it.** A reader who wants the calls reads the transcript and counts the events. A verdict is what the grader returns, the grader reaches no refused recording, and a rate over zero verdicts is a rate over none. What discharges this record is a recording that a confirmation does not refuse. The owner ruled on 2026-09-11 to let the current one go stale until a fresh recording is worth taking, which [HW-DR-0062](../decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md) carries, so this record waits on a measurement rather than on a build.
+**The transcript still records what each session did, and no rate here rests on it.** A reader who wants the calls reads the transcript and counts the events. A verdict is what the grader returns, the grader reaches no refused recording, and a rate over zero verdicts is a rate over none. What discharges this record is a recording that a confirmation does not refuse. The owner ruled on 2026-09-11 to let the current one go stale until a fresh recording is worth taking, which [HW-DR-0062](../decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md) carries.
+
+## A third recording carries a verdict for both categories
+
+[The transcript of 2026-09-16](../probe-runs/regression-probe-transcript-for-2026-09-16.md) is a recording the first confirmation does not refuse, and [the result](../probe-results/regression-probe-transcript-for-2026-09-16.md) carries a verdict for every probe of the current regression selection. The descriptor session itself — [HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor](../probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md) — made 27 recorded calls and named the governing document in none of them. The verdict is `not satisfied`.
+
+**The negative reading discharges this record, because the obligation is for a reading and never for a passing one.** The Discovery category now has three readings from this run and Navigability has three: two of the three navigability probes were satisfied (a `not_opened` reading over the register, and a `cited` reading over an evaluation the session produced) and one was not (the adjudication probe below). Every Discovery reading in the run was `not satisfied`. Both categories the obligation names have a verdict, so the instrument this record asked for has run.
