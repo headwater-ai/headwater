@@ -24,6 +24,8 @@ The command proposes and writes one document whose kind, shelf, facets, sections
 
 The command decides the complete artifact before it writes any file. It derives engine-owned fields, accepts a title and declared facet values, and can add scaffold-created relation edges.
 
+Where the kind binds a language regime that holds prose to something, the report states the regime. It also states whether `headwater check` has a mechanical rule for its controlled-language and profile pair. It states the count of retired terms that regime names, and any construction a voice regime forbids for the kind. It never names a skill or a file outside the corpus. The engine reads no harness layout.
+
 It never overwrites a document, and it never overwrites a claim. A kind whose scheme allocates `reconcile-first` gets one file of the identifier claim store, written before the document and holding the path of the document. That file records what the run minted, so an allocator on another branch reads a value this tree does not yet hold. The command writes the document and appends one capture-cost reading. If the document lands but the reading does not, the command reports the line to append and exits non-zero.
 
 ## Preconditions

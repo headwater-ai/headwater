@@ -304,6 +304,29 @@ pub struct Plan {
     pub edges: Vec<Proposed>,
     pub expected: Vec<Expected>,
     pub title: String,
+    /// What the kind's language regime holds this document's prose to, and
+    /// nothing where the regime declares `none` or a profile this engine has
+    /// no mechanical rule for. A session that reaches this verb has already
+    /// read [`crate`]'s account of what is hand entry; this is the account of
+    /// what happens after the file is written, which the report otherwise
+    /// never states.
+    pub language: Option<LanguageHint>,
+}
+
+/// What a document's prose answers to, read off the language and voice
+/// regimes its kind binds, for the scaffold report to state without the
+/// engine learning a harness's own layout or naming a skill by path.
+#[derive(Clone, Debug)]
+pub struct LanguageHint {
+    pub regime: String,
+    /// As the regime declares it, e.g. `ASD-STE100, profile house`.
+    pub declared: String,
+    /// Whether [`headwater_check::language::known`] has a mechanical rule for
+    /// this pair. `false` means the regime is real and this rule reads none of
+    /// it, which is the skip [`headwater_check::language`] itself reports.
+    pub mechanically_checked: bool,
+    pub retired_terms: usize,
+    pub voice_forbids: Vec<String>,
 }
 
 impl Plan {
@@ -841,6 +864,7 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
 
     let edges = propose_edges(sources, request, kind, minting.as_ref())?;
     let expected = expected_relations(sources, kind, &edges);
+    let language = language_hint(sources, kind);
 
     Ok(Plan {
         kind: kind.to_string(),
@@ -852,6 +876,36 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
         edges,
         expected,
         title: title.to_string(),
+        language,
+    })
+}
+
+/// What the kind's language regime holds this document's prose to, for the
+/// report. `None` where the regime declares `none`, since a regime that holds
+/// prose to nothing gives a session nothing to answer to.
+fn language_hint(sources: &Sources<'_>, kind: &str) -> Option<LanguageHint> {
+    let regime = sources.shape.language_of(kind)?;
+    let controlled = regime.controlled.as_deref().unwrap_or("none");
+    if controlled.eq_ignore_ascii_case("none") {
+        return None;
+    }
+    let voice_forbids = sources
+        .shape
+        .voice_of(kind)
+        .map(|voice| voice.forbid.clone())
+        .unwrap_or_default();
+    Some(LanguageHint {
+        regime: regime.name.clone(),
+        declared: match &regime.profile {
+            Some(profile) => format!("{controlled}, profile {profile}"),
+            None => controlled.to_string(),
+        },
+        mechanically_checked: headwater_check::language::known(
+            controlled,
+            regime.profile.as_deref(),
+        ),
+        retired_terms: regime.retired_terms.len(),
+        voice_forbids,
     })
 }
 
