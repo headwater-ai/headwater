@@ -14,8 +14,10 @@ One directory per subject, because the thing a script acts on is what a reader i
 | `cite/` | a citation comment in a code tree: the checker that holds one against the corpus that licensed it, and the fixtures planted at governed and ungoverned paths that hold the checker |
 | `taxonomy/` | the fixture corpora under `docs/taxonomies/`: the recipe each README prints and the figures it states about the run |
 
-Two scripts stand at the top of this directory rather than in one of those, and both stay there. They are entry points a person types by name, where every script below is one that a subject owns. `hw-cargo-fixtures.sh` stands beside the one it holds, the same rule that puts a fixture suite beside its subject everywhere else.
+Three scripts stand at the top of this directory rather than in one of those, and all three stay there. They are entry points a person types by name, where every script below is one that a subject owns. `hw-cargo-fixtures.sh` stands beside the one it holds, the same rule that puts a fixture suite beside its subject everywhere else.
 
 `headwater-bootstrap.sh` is the one script written for somebody outside this repository, and `site/tutorial/index.html` publishes a `curl` of its raw URL on `main`. Moving it breaks an install command that people have already copied.
 
 `hw-cargo` wraps every cargo command of a session on a host that runs several at once. [DEVELOPING.md](../DEVELOPING.md) and the `hw-run-policy` skill both spell the path out in a command line a reader retypes, so a longer one costs something on every use and buys nothing.
+
+`cap-run` bounds a command's output to a head and a tail on request, the whole of it kept on disk, for a session that expects a command to print a lot. Its own header states why this is a plain script rather than a `PreToolUse` hook, which is what bounded every command's output unconditionally until a worktree-isolated session started refusing the shape it generated.

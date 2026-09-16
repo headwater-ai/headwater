@@ -6,11 +6,6 @@
 # hooks need and no rule of any kind: where the engine is, and how to read one
 # field off the JSON object the harness puts on standard input.
 #
-# `cap-output.sh` is the one that reaches past the checkout it was handed when
-# that checkout has no binary. It may, because it asks only for `headwater
-# json`, which reads no corpus. Nothing else here may, and the reason is
-# written where it happens rather than here.
-#
 # Every function here fails open. A hook that cannot find the engine, or cannot
 # read its input, returns nothing and lets the harness proceed. The commit hook
 # and the CI job are downstream of all three, so a hook that failed closed would
@@ -97,8 +92,7 @@ hw_field() {
 #
 # The chicken-and-egg is real and this is the answer to it. Reading `cwd`
 # takes `hw_field`, `hw_field` takes an engine, and an engine is found through
-# `hw_root` — the same bind `cap-output.sh` reaches past on purpose, for the
-# same reason: locating a binary to answer `headwater json field` is not a
+# `hw_root`. Locating a binary to answer `headwater json field` is not a
 # corpus-relative act, so it does not matter which checkout's binary answers
 # it. So a caller reads `cwd` through whatever engine the unmodified `hw_root`
 # already resolves to, and only the value this function returns — never the

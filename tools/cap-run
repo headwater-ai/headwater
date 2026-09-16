@@ -1,0 +1,78 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+#
+# Runs one command with its output bounded to a head and a tail, the whole of
+# it kept on disk. Reach for it yourself, by name, on a command you expect to
+# print a lot: a full test suite, `headwater check` on the whole corpus, a
+# release build. Nothing in this repository and nothing in CI requires it.
+#
+# This replaces a `PreToolUse` hook on the `Bash` matcher that used to do the
+# same rewrite to every command, unconditionally, by handing the harness a
+# generated command carrying a `trap` and a brace group. A worktree-isolated
+# session refuses that shape outright, unconditionally, whether or not the
+# command underneath it was safe: measured 2026-09-16, `trap 'echo x' EXIT`
+# refuses by name, and a function definition combined with a redirected brace
+# group refuses even though each passes alone. Since a worktree is now this
+# repository's ordinary way to run a session (the rule at the top of
+# `CLAUDE.md`), that hook was refusing an ordinary session's ordinary `Bash`
+# calls, not the rare ones it meant to bound. Nothing about the trap can be
+# rewritten around the refusal, because the check's job is exactly to keep a
+# deferred, unparseable shell string out of the command it is asked to run.
+#
+# So this is a plain script instead of a hook. The command a caller types to
+# reach it, `sh tools/cap-run <command...>`, carries no `trap` and no brace
+# group of its own; the isolation check parses that line and sees an ordinary
+# invocation of `sh`. Everything this file used to do to a rewritten string it
+# now does to `"$@"`, inside a script the check never has to parse. That also
+# drops the dependency the hook needed to safely quote a generated string back
+# into a JSON reply: this script takes real argv and execs it, so nothing here
+# needs the engine at all.
+#
+# What it hands back. The head, the tail, a count of the lines between them,
+# the exit status, and the path of the whole log. The last two are the point.
+# A bounded result that loses the exit status turns a failure into a silence,
+# and a bounded result that loses the log turns a truncation into a dead end.
+#
+# What it does not do. It merges stdout and stderr into one log, so do not
+# reach for this on a command whose invariant depends on reading the two
+# separately (`hw-run-policy` names one: the engine's own run statistic on
+# stderr against its artifact on stdout). It takes the command as `"$@"`, not
+# a string, so a `cd` before it and a pipeline inside it need their own `sh -c`
+# rather than shell syntax typed straight after the command name.
+#
+#   sh tools/cap-run cargo test --workspace
+#   sh tools/cap-run sh tools/hw-cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked
+#
+# Environment:
+#   HW_CAP_HEAD     lines kept from the start of a long result, default 60
+#   HW_CAP_TAIL     lines kept from the end of a long result, default 40
+#   HW_CAP_LOGDIR   where the whole log goes, default ${TMPDIR:-/tmp}/headwater-bashlogs
+
+set -u
+
+cap_head=${HW_CAP_HEAD:-60}
+cap_tail=${HW_CAP_TAIL:-40}
+cap_logs=${HW_CAP_LOGDIR:-${TMPDIR:-/tmp}/headwater-bashlogs}
+
+if [ "$#" -eq 0 ]; then
+    sed -n '3,49p' "$0" | sed 's/^# \{0,1\}//' >&2
+    exit 2
+fi
+
+mkdir -p "$cap_logs" || exit 1
+log=$(mktemp "$cap_logs/cmd.XXXXXX") || exit 1
+
+"$@" >"$log" 2>&1
+status=$?
+
+n=$(wc -l <"$log")
+if [ "$n" -le $((cap_head + cap_tail)) ]; then
+    cat "$log"
+else
+    head -n "$cap_head" "$log"
+    echo "...[$((n - cap_head - cap_tail)) lines omitted; whole log: $log]..."
+    tail -n "$cap_tail" "$log"
+fi
+echo "[exit=$status log=$log]"
+
+exit "$status"
