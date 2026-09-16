@@ -5,7 +5,7 @@ doc_type: decision_register
 title: Open questions, closed and redirected
 status: superseded
 status_since: 2026-08-11
-summary: "One heading for each of the 67 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
+summary: "One heading for each of the 68 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
 last_verified: 2026-08-11
 sequence: 9
 relations:
@@ -16,7 +16,7 @@ relations:
 
 # Decision records
 
-67 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+68 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -285,3 +285,7 @@ relations:
 ## The vendored package root moves under .headwater and the old root is named in a refusal
 
 [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) — The vendored package root moves to `.headwater/packages/`, on the ground that the visibility it bought is one explainer, and a tree at the old root now meets a named refusal. (asserted, and no human has accepted it)
+
+## The front-matter key that carries a minted identifier is id
+
+[HW-DR-0068](../decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md) — The front-matter key `id` is the fixed, global name for the value a kind's `identifier: {scheme: …}` facet mints. (asserted, and no human has accepted it)

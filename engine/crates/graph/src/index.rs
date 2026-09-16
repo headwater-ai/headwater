@@ -42,12 +42,12 @@
 //!
 //! # The identifier facet is a parameter
 //!
-//! A kind declares `identifier: {scheme: …}`, and nothing in the specification
-//! states which front-matter key holds the minted value. `.headwater/README.md`
-//! records the guess this repository made — a key named `id` — and
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
-//! carries the gap. The engine takes the name rather than fixing it, so that
-//! settling the question changes a declaration and not this file.
+//! A kind declares `identifier: {scheme: …}`, and
+//! [HW-DR-0068](../../../../docs/decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md)
+//! names `id` as the front-matter key that holds the minted value, as a global
+//! fixed rule with no per-kind override. The engine takes the name as a
+//! parameter rather than a literal, so a later change to the declaration
+//! changes one default and not this file.
 
 use crate::Config;
 use headwater_census::census::{Census, Row};

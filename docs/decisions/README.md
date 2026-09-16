@@ -2,7 +2,7 @@
 
 # Decision records
 
-67 documents on this shelf, in the reading order this corpus derives.
+68 documents on this shelf, in the reading order this corpus derives.
 
 - [Q1 — Implementation language](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [Q2 — Schema format](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -71,3 +71,4 @@
 - [A relation declares lifecycle_sensitive for itself and a core requirement demands it of a family](0065-a-relation-declares-lifecycle-sensitive-for-itself-and-a-core-requirement-demands-it-of-a-family.md) — The relation-level member and the core requirement are a union: either marks a relation, and the published base marks nothing beyond succession. (asserted, and no human has accepted it)
 - [A kind narrows the value set of an enumerated facet, and nothing else can](0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md) — A kind states which values of an enumerated facet it means, under `facets.values`. A lifecycle regime, a shelf discriminator and `facets.forbid` each narrow a value set. None of the three reaches a facet with no state machine behind it. (asserted, and no human has accepted it)
 - [The vendored package root moves under .headwater and the old root is named in a refusal](0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) — The vendored package root moves to `.headwater/packages/`, on the ground that the visibility it bought is one explainer, and a tree at the old root now meets a named refusal. (asserted, and no human has accepted it)
+- [The front-matter key that carries a minted identifier is id](0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md) — The front-matter key `id` is the fixed, global name for the value a kind's `identifier: {scheme: …}` facet mints. (asserted, and no human has accepted it)

@@ -69,11 +69,12 @@ use headwater_census::walk::Corpus;
 
 /// The two front-matter keys this phase reads by name.
 ///
-/// Both are parameters because neither is settled. A kind declares
-/// `identifier: {scheme: …}` and nothing states which key holds the value.
-/// [Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage) does name
-/// `relations:`, so that one is a parameter for symmetry rather than for doubt.
-/// `.headwater/README.md` records both guesses this repository made.
+/// Both are parameters, and both are settled. [HW-DR-0068](../../../../docs/decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md)
+/// names `id` as the key that carries the value a kind's `identifier:
+/// {scheme: …}` facet mints, and
+/// [Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage) names
+/// `relations:`. Each stays a parameter rather than a literal, so a future
+/// change to either declaration changes one default and not every call site.
 #[derive(Clone, Debug)]
 pub struct Config {
     pub identifier_facet: String,
