@@ -39,6 +39,19 @@
 # and this script refuses to run a session whose working directory is the
 # corpus it was planned over.
 #
+# A workspace built by `cp -a` of a worktree checkout carries the worktree's
+# own `.git` file along with it — a pointer of the form `gitdir:
+# /path/to/repo/.git/worktrees/<name>` — and neither the workspace guard above
+# nor anything downstream strips it. A probed session that finds that pointer
+# has a live handle on this repository's real history and branch list from
+# inside what the guard treats as fully isolated: it can `git commit` there,
+# and with `EnterWorktree` it can register a real worktree and branch against
+# the actual repository. Two sessions of the first real eight-probe recording
+# did exactly that, caught by reading `git log` and `git worktree list` after
+# the run rather than by anything this script refused ([#897]). So this script
+# refuses a workspace that carries a `.git` file or directory the same way it
+# refuses one inside the corpus: before the session starts, not after.
+#
 # ## What this half derives, and what the transform derives
 #
 # [Spec 15] §"The values a session log omits" splits the derivations between
@@ -152,6 +165,15 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
             exit 6
             ;;
     esac
+    # A `cp -a` of a worktree copies its `.git` file (or a full clone's `.git`
+    # directory) along with the tree. Either one is a live pointer into this
+    # repository's real history, and a probed session that finds it has a
+    # handle the workspace guard above was supposed to deny it.
+    if [ -e "$here/.git" ]; then
+        echo "probe-record: the workspace at $here carries a \`.git\` file or directory." >&2
+        echo "probe-record: that is a live pointer into this repository's history, most likely left by \`cp -a\` of a worktree. Strip \`.git\` from the copy before recording." >&2
+        exit 4
+    fi
 fi
 
 command -v jq >/dev/null 2>&1 || {

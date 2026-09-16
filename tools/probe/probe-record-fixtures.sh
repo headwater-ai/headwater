@@ -569,6 +569,21 @@ PATH="$scratch/bin" "$shell" "$driver" --probe PROBE-FIX-opened --session x \
     >/dev/null 2>"$scratch/driver-bare.err"
 same "and it refuses the same way with an empty PATH, which is the runner" "6" "$?"
 
+# The `.git` guard, asserted unconditionally, over both shapes a `cp -a` can
+# leave behind: a worktree's `.git` file (a `gitdir:` pointer) and a full
+# clone's `.git` directory.
+mkdir -p "$scratch/copied-worktree"
+printf 'gitdir: %s/.git/worktrees/probe-fixture\n' "$root" > "$scratch/copied-worktree/.git"
+sh "$driver" --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md" \
+    --workspace "$scratch/copied-worktree" >/dev/null 2>"$scratch/driver-gitfile.err"
+same "the driver refuses a workspace carrying a worktree's \`.git\` file" "4" "$?"
+present "and it says why" "live pointer into this repository's history" "$scratch/driver-gitfile.err"
+
+mkdir -p "$scratch/copied-clone/.git"
+sh "$driver" --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md" \
+    --workspace "$scratch/copied-clone" >/dev/null 2>"$scratch/driver-gitdir.err"
+same "the driver refuses a workspace carrying a clone's \`.git\` directory" "4" "$?"
+
 present "the driver names the channel and never a file under ~/.claude/projects" \
     "output-format stream-json" "$driver"
 present "the driver requires --verbose, which the harness requires" \
