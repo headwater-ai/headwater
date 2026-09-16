@@ -10,13 +10,10 @@ provenance:
   agency: agent
   drafted_by: claude-sonnet-5
   activity: measure+draft
-  evidence_basis: reconstructed
-  reconstructed_from: "docs/probe-runs/regression-probe-transcript-for-2026-09-16.md, the raw harness session logs `probe-record.sh` wrote for that recording, and a live `headwater route` replay run for this evaluation"
+  evidence_basis: evidenced
 relations:
   traces_to:
-    - HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor
-    - HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
-    - HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens
+    - HW-RUN-regression-probe-transcript-for-2026-09-16
 ---
 
 # The three discovery misses of 2026-09-16 have three different mechanisms, and only one is routing precision
@@ -25,7 +22,7 @@ relations:
 
 [Issue #896](https://github.com/headwater-ai/headwater/issues/896) asks whether the three `discovery` misses of `docs/probe-runs/regression-probe-transcript-for-2026-09-16.md` share one fixable cause, or are three unrelated misses. It names three candidate causes. The first is router silence or precision, already tracked by [#819](https://github.com/headwater-ai/headwater/issues/819). The second is the authoring skill's reach. The third is the task phrasing of the discovery probes themselves.
 
-Each of the three failed probes already reads as a different shape in the transcript's own tool-call record. This evaluation checks that reading against one part of the mechanism. That part is deterministic, and it needs no further paid session: `headwater route`, replayed offline over the exact task text each probe states.
+Three probes failed: [a cold agent reaching the governing document](../probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md), [the pointer this corpus offers for a task](../probes/the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens.md), and [the authoring skill reaching an agent](../probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md). Each already reads as a different shape in the transcript's own tool-call record. This evaluation checks that reading against one part of the mechanism. That part is deterministic, and it needs no further paid session: `headwater route`, replayed offline over the exact task text each probe states.
 
 The evidence below comes from two sources. The first is the committed transcript's recorded tool calls. The second is a live replay of the router, run for this evaluation and quoted with each finding, so a later reader can repeat it.
 

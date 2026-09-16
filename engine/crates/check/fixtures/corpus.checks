@@ -1,6 +1,7 @@
-539 seen, 355 classified, 355 checked, 6734 check instances
+539 seen, 355 classified, 355 checked, 6728 check instances
      18 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+      1 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-16`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
     711 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   a check read .headwater/ids, which the census never walked
   a check read .headwater/ids, which the census never walked
@@ -17,11 +18,11 @@ adoption
     355 instances of facet.value.blank
     355 instances of identifier.pattern.not_met
     355 instances of shelf.placement_is_primary
-    653 instances of relation.target.unresolved
+    651 instances of relation.target.unresolved
      89 instances of relation.reciprocity.missing
-    397 instances of relation.endpoint.not_permitted
+    395 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
-    390 instances of warrant.evidence.unsupported
+    388 instances of warrant.evidence.unsupported
       3 instances of relation.participation.overdue
     355 instances of relation.declaration.unusable
     355 instances of identifier.unusable

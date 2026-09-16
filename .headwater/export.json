@@ -16,8 +16,8 @@
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 653,
-      "carried": 653,
+      "in the graph": 651,
+      "carried": 651,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2481,14 +2481,11 @@
             "agency": "agent",
             "drafted_by": "claude-sonnet-5",
             "activity": "measure+draft",
-            "evidence_basis": "reconstructed",
-            "reconstructed_from": "docs/probe-runs/regression-probe-transcript-for-2026-09-16.md, the raw harness session logs `probe-record.sh` wrote for that recording, and a live `headwater route` replay run for this evaluation"
+            "evidence_basis": "evidenced"
           },
           "relations": {
             "traces_to": [
-              "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
-              "HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document",
-              "HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens"
+              "HW-RUN-regression-probe-transcript-for-2026-09-16"
             ]
           }
         }
@@ -12377,31 +12374,9 @@
         "written_as": "traces_to",
         "target": {
           "bound": "document",
-          "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
-          "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
-          "kind": "probe"
-        }
-      },
-      {
-        "source": "docs/evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md",
-        "relation": "traces_to",
-        "written_as": "traces_to",
-        "target": {
-          "bound": "document",
-          "id": "HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document",
-          "path": "docs/probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md",
-          "kind": "probe"
-        }
-      },
-      {
-        "source": "docs/evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md",
-        "relation": "traces_to",
-        "written_as": "traces_to",
-        "target": {
-          "bound": "document",
-          "id": "HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens",
-          "path": "docs/probes/the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens.md",
-          "kind": "probe"
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-16",
+          "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-16.md",
+          "kind": "probe_transcript"
         }
       },
       {
