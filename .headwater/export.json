@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 460,
-      "carried": 460,
+      "in the graph": 461,
+      "carried": 461,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 651,
-      "carried": 651,
+      "in the graph": 653,
+      "carried": 653,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1941,6 +1941,35 @@
             "agency": "agent",
             "drafted_by": "claude-sonnet-5",
             "activity": "draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md",
+        "kind": "decision",
+        "id": "HW-DR-0069",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0069",
+          "status": "draft",
+          "status_since": "2026-09-16",
+          "summary": "No word-length rule joins the check layer. The six-sentence limit of the standard the house regime declares lands as a fifth defect of the language rule, advisory permanently. The paragraph that raised the question is a hand-kept index, and a derived list repairs it where no lexical rule reads it.",
+          "last_verified": "2026-09-16",
+          "title": "A paragraph limit counts sentences under the language rule and never words",
+          "relations": {
+            "governs": [
+              "engine/crates/check/src/language.rs"
+            ],
+            "traces_to": [
+              "HW-DR-0005"
+            ]
+          },
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-fable-5-1",
+            "activity": "measure+draft",
             "evidence_basis": "evidenced"
           }
         }
@@ -9442,7 +9471,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 68 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 69 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
@@ -11684,6 +11713,28 @@
           "id": "HW-OBL-0053",
           "path": "docs/obligations/0053-the-front-matter-key-that-carries-an-identifier-is-undeclared.md",
           "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/language.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0005",
+          "path": "docs/decisions/0005-voice-checking-depth.md",
+          "kind": "decision"
         }
       },
       {

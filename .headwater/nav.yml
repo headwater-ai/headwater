@@ -71,6 +71,7 @@ nav:
       - "A kind narrows the value set of an enumerated facet, and nothing else can": "decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md"
       - "The vendored package root moves under .headwater and the old root is named in a refusal": "decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md"
       - "The front-matter key that carries a minted identifier is id": "decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md"
+      - "A paragraph limit counts sentences under the language rule and never words": "decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
