@@ -566,6 +566,108 @@ add:
     homogeneous: true
     kind: tutorial
 
+  # --- the reader who already holds the model -------------------------------
+  # A how-to guide answers one task for a reader who has the model already and
+  # wants a result today: move the shelves somewhere else, adopt a bundle a
+  # colleague published, take a rule out of the way of a migration. The shelf
+  # below is the second half of the served site's task-oriented half, and the
+  # kind is what separates it from the on-ramp above.
+  #
+  # **Why a second kind rather than a facet of `tutorial`.** The two differ in
+  # what the reader already holds, and a kind is what a document is rather than
+  # a property of one. A tutorial may assume nothing and therefore owes a
+  # glossary and a hand-off; a how-to assumes the whole model and owes neither,
+  # because a reader who needs `The words this teaches` is a reader who is on
+  # the wrong page. Two documents that owe different sections are two kinds,
+  # which is the reading the validator holds a kind to.
+  #
+  # **This does not settle HW-OBL-0097 and it is not meant to.** That record
+  # asks whether the four modes of Diátaxis are the kind set of a
+  # documentation-site bundle, and `waiting_on: adopter` is where it stays.
+  # `docs/taxonomies/diataxis-site/` already declares the four as a library
+  # bundle another repository can take whole, and this repository cannot select
+  # it: an `add` asserts absence at the key it addresses, and four of that
+  # bundle's keys are already declared above. The resolution #349 records is the
+  # one the owner gave on #6 — one is the on-ramp of this engine, on one shelf
+  # of one corpus, and the other is the spine of a documentation site. The kind
+  # below is the first of those, the same reading the tutorial block states
+  # prospectively, and a `how_to` of that bundle is a different thing from this
+  # one.
+  #
+  # **The purpose is `procedure`, reused rather than redeclared.** The block
+  # above already declares it, and its `answers` phrases — "how do I start",
+  # "how do I set this up", "what are the steps" — are what a reader types for
+  # either kind. Routing matches a purpose before it matches any text, so both
+  # kinds are reachable from one question and the shelf index is what separates
+  # them for the reader who arrives. A second purpose that split the two would
+  # send a reader who typed "how do I set this up" to one shelf and hide the
+  # other.
+  #
+  # **The house language regime binds this kind too, for a reason the tutorial
+  # block does not carry.** That block's argument is that a reader who holds
+  # none of the model is the reader least able to carry a long sentence. A
+  # how-to's reader holds the model, so that argument does not reach here. The
+  # argument that does: a how-to's reader is mid-task and scanning for the line
+  # to type, and a 25-word sentence is read once for its own sake before it can
+  # be acted on. The regime that helps the newcomer most helps the interrupted
+  # reader for a different reason, and the exemption would still be the one this
+  # project would least be able to defend.
+  #
+  # **The section contract is three, and it is not the tutorial's four.**
+  # `Before you start` is the tutorial's heading, deliberately, because the
+  # precondition is the failure a how-to meets first: every guide on this shelf
+  # assumes a corpus that already resolves, and a step that fails on an
+  # unresolved lock teaches the reader nothing about the task. A reader who came
+  # through the tutorial meets a heading already known. `Steps` holds the
+  # ordered sequence. `How to know it worked` is the section a how-to owes that
+  # a tutorial does not: a tutorial's steps each end in a state the author
+  # stated, because #102 required that of every one of them, and a how-to's
+  # reader has no author beside them and no scratch corpus whose state anybody
+  # can predict. So the check is a section rather than a habit.
+  #
+  # **There is no `Goal` section, and this is the call least certain here.**
+  # Diátaxis asks a how-to to state its problem up front, and the shared bundle
+  # requires it. The reading taken instead: the title is that statement, a
+  # reader picks this page off a generated shelf index that lists titles, and a
+  # required section whose honest content restates the title is the section most
+  # likely to be filled with something that is not read. `Before you start`
+  # carries what the title cannot, which is what the reader must already hold.
+  # If a guide lands whose task a title cannot carry, this is the declaration to
+  # revisit.
+  #
+  # **No `Where to go next`.** A how-to ends at the result. The hand-off is the
+  # tutorial's job, because a tutorial's reader has nowhere to go until it is
+  # done, and a how-to's reader came from somewhere and returns there.
+
+  identifier_schemes.how_to_id:
+    pattern: "{namespace}-HOW-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  kinds.how_to:
+    is_a: governed_document
+    purpose: procedure
+    voice: declarative
+    lifecycle: standard
+    language: ste_house
+    identifier: {scheme: how_to_id}
+    facets:
+      require: [title]
+    sections:
+      require: [Before you start, Steps, How to know it worked]
+
+  # Disjoint from every shelf above it, including `docs/tutorials/**`, and from
+  # `docs/taxonomies/**`, which the corpus declaration excludes. No `layout`,
+  # because nothing numbers a how-to: the file is named from the title, the way
+  # a tutorial is. The title is the plural noun phrase every other shelf of this
+  # corpus uses — `Tutorials`, `Requirements`, `Process decisions` — and it is
+  # the string the site navigation reads for the group a reader sees.
+  shelves.how_to:
+    title: How-to guides
+    path: docs/how-to/**
+    homogeneous: true
+    kind: how_to
+
   # --- the requirement layer ------------------------------------------------
   # Spec 3 gives a stable name to five artifacts: "decisions, requirements,
   # acceptance criteria, controls, and obligations". Three of the five had a
@@ -1008,8 +1110,14 @@ add_to:
     # [#531](https://github.com/headwater-ai/headwater/issues/531) carries the
     # writing of the missing probes. A shelf index reads what is on the shelf,
     # which is the whole of what this declaration claims.
+    # **`how_to` is named here before the shelf holds anything.** It is the one
+    # name on this list whose index no run writes yet, and a run states that as
+    # a reason rather than passing over it. Naming it now is what makes the
+    # first guide on the shelf one change instead of two: the document lands and
+    # the index appears, with no second edit to this list by somebody who would
+    # have to notice it was missing.
     - kind: shelf_index
-      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, probes, probe_results, probe_runs, reviews, tutorials, process_decisions]
+      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions]
       output: "{shelf}/README.md"
 
     # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: the

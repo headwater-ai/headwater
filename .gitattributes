@@ -146,6 +146,7 @@ engine/crates/lock/fixtures/corpus.lock merge=headwater-regenerate
 docs/acceptance-criteria/README.md merge=headwater-regenerate
 docs/decisions/README.md merge=headwater-regenerate
 docs/evaluations/README.md merge=headwater-regenerate
+docs/how-to/README.md merge=headwater-regenerate
 docs/interfaces/README.md merge=headwater-regenerate
 docs/obligations/README.md merge=headwater-regenerate
 docs/probes/README.md merge=headwater-regenerate

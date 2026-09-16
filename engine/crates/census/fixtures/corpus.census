@@ -188,6 +188,10 @@ docs/evaluations/warrant-and-adjudication.md
   typed: evaluation
 docs/evaluations/what-a-check-can-know.md
   typed: evaluation
+docs/how-to/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/how-to/relocate-a-shelf.md
+  typed: how_to
 docs/interfaces/README.md
   generated: `verb_index`, and `headwater generate --check` holds it rather than this census
 docs/interfaces/headwater-capture.md

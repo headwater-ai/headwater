@@ -48,7 +48,7 @@ One harness hook you will meet: `.claude/hooks/write.sh` refuses a raw `Write` o
 
 `reason` is `false_positive` where the rule is wrong and `accepted_deviation` where the rule is right and the text stands anyway. `scope` is `file` or `block`. `until` is required, so no exception is permanent. The second hatch is for debt: `headwater infer --owner <name> --write` records `(document, rule)` pairs under a task in the `adoption` block of `.headwater/taxonomy.lock`, and a pending finding does not fail a strict run.
 
-**Writing governed prose.** Invoke the `ste-editor` skill before you rewrite a document under `docs/spec/`, `docs/decisions/`, `docs/evaluations/`, `docs/obligations/`, `docs/interfaces/`, `docs/requirements/`, `docs/acceptance-criteria/`, `docs/tutorials/` or `docs/process/decisions/`, and run `headwater check` on the result. The skill carries the rules that no check reads.
+**Writing governed prose.** Invoke the `ste-editor` skill before you rewrite a document under `docs/spec/`, `docs/decisions/`, `docs/evaluations/`, `docs/obligations/`, `docs/interfaces/`, `docs/requirements/`, `docs/acceptance-criteria/`, `docs/tutorials/`, `docs/how-to/` or `docs/process/decisions/`, and run `headwater check`. The skill carries the rules that no check reads.
 
 ## The skills, and when each one loads
 

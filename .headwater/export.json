@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 452,
-      "carried": 452,
+      "in the graph": 453,
+      "carried": 453,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 644,
-      "carried": 644,
+      "in the graph": 645,
+      "carried": 645,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2536,6 +2536,33 @@
             ],
             "traces_to": [
               "engine/crates/check/src/language.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/how-to/relocate-a-shelf.md",
+        "kind": "how_to",
+        "id": "HW-HOW-relocate-a-shelf",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-HOW-relocate-a-shelf",
+          "status": "draft",
+          "status_since": "2026-09-16",
+          "summary": "An overlay relocates a shelf with one override key, and the move breaks every relative link into the old path until you repair them.",
+          "last_verified": "2026-09-16",
+          "title": "Relocate a shelf",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "measure+draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-SPEC-taxonomy-model"
             ]
           }
         }
@@ -12428,6 +12455,17 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/check/src/language.rs",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/how-to/relocate-a-shelf.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-taxonomy-model",
+          "path": "docs/spec/02-taxonomy-model.md",
+          "kind": "design_spec"
         }
       },
       {
