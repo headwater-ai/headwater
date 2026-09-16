@@ -191,15 +191,28 @@ command -v jq >/dev/null 2>&1 || {
 # of the identity that says which weights answered. So the served version is
 # the key that carries a dated suffix where the provider exposes one, and the
 # name as a name where none is exposed, which is what [spec 15] asks for.
+#
+# **A dated key is not this session's dated key.** Measured on 2026-09-17,
+# driving `claude-sonnet-5`: `modelUsage` also carried `claude-haiku-4-5-20251001`
+# for a small internal call the harness makes regardless of the driven model,
+# and that entry's key is the only one with a dated suffix. The first version of
+# this derivation took the first dated key of the whole object, so it wrote
+# Haiku's pin as the served version of a session that spent 94% of its cost on
+# Sonnet. The dated key has to belong to the driven model, which `canonicalModel`
+# on the `modelUsage` entry states, so the search below narrows to entries whose
+# `canonicalModel` is the name the init line announced before it looks for a
+# date on any of them.
 step_derive_provider() {
     jq -s -r '
         ([.[] | select(.type == "result")] | last) as $r
         | ([.[] | select(.type == "system" and .subtype == "init")] | last) as $i
-        | (($r.modelUsage // {}) | keys) as $used
+        | ($r.modelUsage // {}) as $usage
+        | ($usage | keys) as $used
         | ($i.model // ($used | first) // "unknown") as $name
+        | ([$used[] | select($usage[.].canonicalModel == $name and test("-[0-9]{8}$"))] | first) as $own_dated
         | {
             model: $name,
-            served: (([$used[] | select(test("-[0-9]{8}$"))] | first) // $name),
+            served: ($own_dated // $name),
             cost_cents: (((($r.total_cost_usd // 0) * 100) | round)),
           }
         | "model: \(.model)\nserved_version: \(.served)\ncost_cents: \(.cost_cents)"

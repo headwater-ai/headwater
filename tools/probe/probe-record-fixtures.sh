@@ -488,6 +488,31 @@ if [ -f "$live" ]; then
         "cost_cents: 1" \
         "$(printf '%s\n' "$provider" | grep '^cost_cents:')"
 
+    # ---------------------------------------------------------------------
+    # A second model in `modelUsage` that is not the one driven.
+    #
+    # Measured on 2026-09-17, driving `claude-sonnet-5`: the harness makes a
+    # small internal call on `claude-haiku-4-5-20251001` regardless of the
+    # driven model, and that entry's key is the only one in `modelUsage` with a
+    # dated suffix. `claude-sonnet-5` carries no dated pin of its own here. The
+    # first version of this derivation took the first dated key of the whole
+    # object and so wrote Haiku's pin as the served version of a session that
+    # spent 94% of its cost on Sonnet. This fixture is that shape, minimized:
+    # two `canonicalModel` values in `modelUsage`, only one of them dated, and
+    # it is not the driven model's own.
+    # ---------------------------------------------------------------------
+    cat > "$scratch/multi-model.jsonl" <<'JSONL'
+{"type":"system","subtype":"init","model":"claude-sonnet-5","session_id":"s7"}
+{"type":"result","session_id":"s7","total_cost_usd":0.58,"modelUsage":{"claude-haiku-4-5-20251001":{"canonicalModel":"claude-haiku-4-5","inputTokens":989},"claude-sonnet-5":{"canonicalModel":"claude-sonnet-5","inputTokens":38}}}
+JSONL
+    multi=$(sh "$driver" --provider-only "$scratch/multi-model.jsonl" 2>/dev/null)
+    same "the served version belongs to the driven model, not to another key that happens to be dated" \
+        "served_version: claude-sonnet-5" \
+        "$(printf '%s\n' "$multi" | grep '^served_version:')"
+    same "the model is still the name the harness announced" \
+        "model: claude-sonnet-5" \
+        "$(printf '%s\n' "$multi" | grep '^model:')"
+
     # `answer` is the key that says what a closed-set session concluded, and
     # this script wrote `null` for every session it drove until #803, because
     # the driver called the transform with no `--answer`. The real session
