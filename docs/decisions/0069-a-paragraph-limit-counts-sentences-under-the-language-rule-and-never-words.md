@@ -1,9 +1,9 @@
 ---
 id: HW-DR-0069
-status: draft
-status_since: 2026-09-16
+status: current
+status_since: 2026-09-17
 summary: "No word-length rule joins the check layer. The six-sentence limit of the standard the house regime declares lands as a fifth defect of the language rule, advisory permanently. The paragraph that raised the question is a hand-kept index, and a derived list repairs it where no lexical rule reads it."
-last_verified: 2026-09-16
+last_verified: 2026-09-17
 title: "A paragraph limit counts sentences under the language rule and never words"
 relations:
   governs:
@@ -11,10 +11,11 @@ relations:
   traces_to:
     - HW-DR-0005
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-fable-5-1
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 ---
 
