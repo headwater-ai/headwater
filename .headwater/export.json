@@ -3186,11 +3186,11 @@
         "facets": {
           "id": "HW-OBL-0005",
           "title": "A closed-set expectation has no reproducibility reading under grading",
-          "status": "current",
-          "status_since": "2026-08-11",
+          "status": "discharged",
+          "status_since": "2026-09-16",
           "waiting_on": "build",
-          "last_verified": "2026-08-13",
-          "summary": "Q8 claims that a closed-set expectation makes a probe verdict reproducible, and the one closed-set probe this corpus declares has now returned a verdict.",
+          "last_verified": "2026-09-16",
+          "summary": "Q8 claims that a closed-set expectation makes a probe verdict reproducible, and two runs of the one closed-set probe this corpus declares disagree.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -3326,11 +3326,11 @@
         "facets": {
           "id": "HW-OBL-0010",
           "title": "The corpus descriptor exists and no probe has run against it",
-          "status": "current",
-          "status_since": "2026-09-11",
+          "status": "discharged",
+          "status_since": "2026-09-16",
           "waiting_on": "measurement",
-          "last_verified": "2026-09-11",
-          "summary": "Two recordings stand on the shelf, a confirmation refuses both, and no probe has returned a verdict against the descriptor.",
+          "last_verified": "2026-09-16",
+          "summary": "A third recording is not refused, and both the discovery and navigability probe categories now carry a verdict against the descriptor.",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -3412,8 +3412,8 @@
           "status": "current",
           "status_since": "2026-08-10",
           "waiting_on": "build",
-          "last_verified": "2026-08-28",
-          "summary": "Q17 claims that a counted tombstone stops an agent reporting absence with confidence, and the probe has run against a corpus that serves no tombstone.",
+          "last_verified": "2026-09-16",
+          "summary": "Q17 claims a counted tombstone stops a confident report of absence, and a third run against a corpus with no tombstone recorded no answer.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -3440,8 +3440,8 @@
           "status": "current",
           "status_since": "2026-08-10",
           "waiting_on": "build",
-          "last_verified": "2026-08-13",
-          "summary": "Q18 claims that an agent meeting the losing document first reaches the adjudication, and one run says that it did not.",
+          "last_verified": "2026-09-16",
+          "summary": "Q18 claims that an agent meeting the losing document first reaches the adjudication, and two runs now say that it did not.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -6195,7 +6195,7 @@
           "status": "current",
           "status_since": "2026-08-14",
           "waiting_on": "measurement",
-          "last_verified": "2026-08-14",
+          "last_verified": "2026-09-16",
           "summary": "The store records which wire a run of the authoring verb arrived on, and an agent drove both wires on the day the term arrived.",
           "provenance": {
             "warrant": "accepted",
@@ -6559,11 +6559,11 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0124",
-          "status": "current",
-          "status_since": "2026-09-11",
+          "status": "discharged",
+          "status_since": "2026-09-16",
           "waiting_on": "measurement",
-          "summary": "A committed transcript generates a result and regeneration holds the pair, and no result this corpus holds carries a verdict for any probe.",
-          "last_verified": "2026-09-11",
+          "summary": "A committed transcript generates a result, regeneration holds the pair, and the result this corpus holds carries a verdict for every probe it graded.",
+          "last_verified": "2026-09-16",
           "title": "A probe result is printed and never committed, so nothing regenerates one",
           "provenance": {
             "warrant": "asserted",
