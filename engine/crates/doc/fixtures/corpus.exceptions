@@ -6,6 +6,8 @@ docs/doctrine/maturity-model.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/evaluations/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/how-to/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/interfaces/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/obligations/README.md

@@ -577,22 +577,26 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its nineteen artifacts, and it says why for
+/// This repository generates its twenty artifacts, and it says why for
 /// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Twelve of the nineteen are shelf indexes, one per shelf that holds a
+/// **Thirteen of the twenty are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
-/// file until #124 filled that shelf. The other eleven are the overlay's own
+/// file until #124 filled that shelf. The other twelve are the overlay's own
 /// entry, in the order its `for` list names them, and the specification index
 /// leads it because that is the list the root README used to carry by hand.
 /// #528 is why the seven after it are there: each of those shelf roots answered
 /// 404 on the served site while every record under it was served, because a
-/// shelf with no index declaration writes no page for MkDocs to render.
+/// shelf with no index declaration writes no page for MkDocs to render. The
+/// twelfth, `how_to`, is the same story as the decisions shelf's own #124: the
+/// `for` list named it before #885 put a document on it, and until then it
+/// produced a reason rather than a file, the same way `specifications` still
+/// does below.
 ///
 /// **Five of the other seven are one each, and two are one per committed
 /// transcript.** The count in the name of this test therefore moves when a
@@ -620,7 +624,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_nineteen_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_twenty_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -692,6 +696,7 @@ fn this_repository_generates_its_nineteen_artifacts_and_accounts_for_the_rest() 
             "docs/probe-runs/README.md",
             "docs/reviews/README.md",
             "docs/tutorials/README.md",
+            "docs/how-to/README.md",
             "docs/process/decisions/README.md",
             "docs/spec/09-open-questions.md",
             "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
@@ -701,24 +706,25 @@ fn this_repository_generates_its_nineteen_artifacts_and_accounts_for_the_rest() 
             ".headwater/nav.yml",
             descriptor::PATH
         ],
-        "this repository writes an index for each of its twelve shelves that hold a \
+        "this repository writes an index for each of its thirteen shelves that hold a \
          document, then the redirect map, the verb index, the graph export, the \
          site navigation and the descriptor, in that order"
     );
-    // Two declared shelves that hold no document (`specifications` and
-    // `how_to`; the `process_decisions` shelf held none for one commit,
-    // which put this literal at 8 and left `docs/process/decisions/README.md`
-    // out of the list above), one declared projection whose source this
-    // corpus does not hold, and the register. Nothing is passed over: a
-    // projection that produced no file states a reason. The other four are
-    // the declarable kinds this engine does not emit and this corpus does
-    // not declare — `relation_view`, `agent_rules`, `template` and
-    // `transcription` — which a run states whether or not a declaration
-    // named them, because the reason is a property of this engine rather
-    // than of the corpus.
+    // One declared shelf holds no document, `specifications`. The
+    // `process_decisions` shelf held none for one commit, which put this
+    // literal at 8 and left `docs/process/decisions/README.md` out of the
+    // list above, and `how_to` held none from the taxonomy that declared it
+    // until #885 put a document on it, which held this literal at 7 for one
+    // commit. The register is the second declaration that produces a reason
+    // rather than a file. Nothing is passed over: a projection that produced
+    // no file states a reason. The other four are the declarable kinds this
+    // engine does not emit and this corpus does not declare —
+    // `relation_view`, `agent_rules`, `template` and `transcription` — which
+    // a run states whether or not a declaration named them, because the
+    // reason is a property of this engine rather than of the corpus.
     assert_eq!(
         plan.unwritten.len(),
-        7,
+        6,
         "a projection produced neither a file nor a reason"
     );
     for unwritten in &plan.unwritten {
