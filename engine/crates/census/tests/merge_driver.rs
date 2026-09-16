@@ -62,6 +62,12 @@ fn scratch(case: &str) -> PathBuf {
 fn git(repo: &Path, args: &[&str]) -> Output {
     Command::new("git")
         .current_dir(repo)
+        // Every case that reaches an editor at all passes `-m`, except
+        // `rebase --continue`, which reuses the replayed commit's own message
+        // but still opens one to confirm it. CI has no `TERM` an editor can
+        // use and no `EDITOR` set, so git refuses outright rather than
+        // falling back to one — this fixture needs none of that back-and-forth.
+        .env("GIT_EDITOR", "true")
         .args(args)
         .output()
         .unwrap_or_else(|e| panic!("git {}: {e}", args.join(" ")))
