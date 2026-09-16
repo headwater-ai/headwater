@@ -2,7 +2,7 @@
 
 # Evaluations
 
-21 documents on this shelf, in the reading order this corpus derives.
+22 documents on this shelf, in the reading order this corpus derives.
 
 - [Adjacent work and tooling](adjacent-work.md) — Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.
 - [The capability-bundle address inventory](capability-bundle-address-inventory.md) — The cross-bundle address inventory HW-DR-0044 asks for, and what it shows decision-record actually reaches inside design-spec. (asserted, and no human has accepted it)
@@ -25,3 +25,4 @@
 - [Theoretical foundations](theoretical-foundations.md) — Where the research literature confirms, sharpens, or contradicts the design, and what changed in the specification as a result.
 - [Warrant — what stands behind a document, and who vouched for it](warrant-and-adjudication.md) — The Q15, Q19 and Q18 evidence, which is what stands behind a document, who vouched for it, and how a disagreement is settled.
 - [What a check can know — the Q5 and Q21 evaluation](what-a-check-can-know.md) — The Q5 and Q21 evidence, which measures what a lexical checker gets wrong on the checker that this repository already runs.
+- [Why corpus counts are derived, not stored](why-corpus-counts-are-derived-not-stored.md) — Counts over the whole corpus are computed when read, not kept in committed files. Stored counts cause silent merge failures when two branches write the same total but the merged tree holds a different number. (asserted, and no human has accepted it)

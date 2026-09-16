@@ -98,6 +98,7 @@ nav:
       - "Theoretical foundations": "evaluations/theoretical-foundations.md"
       - "Warrant — what stands behind a document, and who vouched for it": "evaluations/warrant-and-adjudication.md"
       - "What a check can know — the Q5 and Q21 evaluation": "evaluations/what-a-check-can-know.md"
+      - "Why corpus counts are derived, not stored": "evaluations/why-corpus-counts-are-derived-not-stored.md"
   - "How-to guides":
       - "How-to guides": "how-to/README.md"
       - "Relocate a shelf": "how-to/relocate-a-shelf.md"
@@ -323,14 +324,17 @@ nav:
       - "A requirement has no identity, so a descoped requirement has no form": "obligations/0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md"
       - "A relation writes a state onto a kind that binds no lifecycle regime and nothing reads that pair": "obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md"
       - "A superseded document claims no reliance, and nothing measures whether a session honors that": "obligations/0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md"
+      - "Nothing states how much of a session's budget the standing instructions consume before work starts": "obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"
       - "Probe result for regression-probe-transcript-for-2026-09-11": "probe-results/regression-probe-transcript-for-2026-09-11.md"
+      - "Probe result for regression-probe-transcript-for-2026-09-16": "probe-results/regression-probe-transcript-for-2026-09-16.md"
   - "Probe runs":
       - "Probe runs": "probe-runs/README.md"
       - "Regression probe transcript for 2026-09-09": "probe-runs/regression-probe-transcript-for-2026-09-09.md"
       - "Regression probe transcript for 2026-09-11": "probe-runs/regression-probe-transcript-for-2026-09-11.md"
+      - "Regression probe transcript for 2026-09-16": "probe-runs/regression-probe-transcript-for-2026-09-16.md"
   - "Probes":
       - "Probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"

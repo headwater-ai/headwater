@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0124
-status: current
-status_since: 2026-09-11
+status: discharged
+status_since: 2026-09-16
 waiting_on: measurement
-summary: "A committed transcript generates a result and regeneration holds the pair, and no result this corpus holds carries a verdict for any probe."
-last_verified: 2026-09-11
+summary: "A committed transcript generates a result, regeneration holds the pair, and the result this corpus holds carries a verdict for every probe it graded."
+last_verified: 2026-09-16
 title: "A probe result is printed and never committed, so nothing regenerates one"
 provenance:
   warrant: asserted
@@ -70,3 +70,11 @@ What closes this record is a transcript that a confirmation does not refuse, and
 **The rate the recording held for a day was 1 of 4, and the first transform of those four logs made it 0 of 4.** `tools/probe/probe-record.sh` called the transform with no `--answer`, so the one probe that declares a closed answer set recorded `answer: null` whatever the session said, and a quarter of the figure graded the recorder. The driver now derives the answer from the same harness line it already reads the cost from. [#803](https://github.com/headwater-ai/headwater/issues/803) carries what is left of that defect. The figure itself is gone: the lock moved under the recording, so the grader reads none of those four logs now.
 
 **The lock moved under two recordings in three days, and no state on either one told the documents that read them.** `headwater generate` reports a refused transcript, and the report now names every document of this corpus that links the refused recording or the result derived from it. The result carries that list as well, where a reader of a committed file meets it. So the next recording that goes stale names this record and [HW-OBL-0010](0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md) on the run that voids it, rather than leaving both standing at a discharge for a day. It reports and it fails nothing, because the remedy is a rewrite of a sentence that a person has to read.
+
+## A third recording, and a denominator of eight rather than four
+
+[The transcript of 2026-09-16](../probe-runs/regression-probe-transcript-for-2026-09-16.md) is a recording the first confirmation does not refuse, and this record discharges on it. The regression tier grew from four probes to eight between the second recording and this one, so [the result](../probe-results/regression-probe-transcript-for-2026-09-16.md) is the first pair this corpus holds over the whole current selection. `generate --check` holds the pair. The result carries a verdict for every one of the eight probes, and the rate is 3 of 8: 37.5 percent, in a 95 percent interval of 13.7 percent to 69.4 percent.
+
+**Two of the eight sessions produced an artifact rather than only reading, and both are new expectation forms since the second recording.** The `patched` probe's session ran `headwater new obligation_record` and the result names the artifact it produced, [HW-OBL-0198](0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md); the rule `section.required.missing` reported nothing over it, so the verdict is `satisfied`. The `cited` probe's session wrote [an evaluation](../evaluations/why-corpus-counts-are-derived-not-stored.md) that cites HW-DR-0049, and the verdict is `satisfied` on that ground. Both artifacts are committed corpus content, and both pass `headwater check --strict` on their own account, not only as an input the grader reads.
+
+This transcript's own commit touches no key of `.headwater/taxonomy.lock` or `.headwater/overlay.yml`, which is the ordering that voided the second recording on the day it landed. A future recording that repeats that ordering lands in the same trap this one avoided.

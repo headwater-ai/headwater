@@ -190,6 +190,8 @@ docs/evaluations/warrant-and-adjudication.md
   typed: evaluation
 docs/evaluations/what-a-check-can-know.md
   typed: evaluation
+docs/evaluations/why-corpus-counts-are-derived-not-stored.md
+  typed: evaluation
 docs/how-to/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/how-to/relocate-a-shelf.md
@@ -632,6 +634,8 @@ docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecy
   typed: obligation_record
 docs/obligations/0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md
   typed: obligation_record
+docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
@@ -640,11 +644,15 @@ docs/probe-results/regression-probe-transcript-for-2026-09-09.md
   generated: `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/regression-probe-transcript-for-2026-09-11.md
   generated: `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/regression-probe-transcript-for-2026-09-16.md
+  generated: `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-runs/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-runs/regression-probe-transcript-for-2026-09-09.md
   typed: probe_transcript
 docs/probe-runs/regression-probe-transcript-for-2026-09-11.md
+  typed: probe_transcript
+docs/probe-runs/regression-probe-transcript-for-2026-09-16.md
   typed: probe_transcript
 docs/probes/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
