@@ -227,8 +227,12 @@ anchors
     cited by HW-OBL-0172
   code_path `engine/crates/graph/src/anchors.rs` via source-tree
     cited by HW-REQ-0001
+  code_path `engine/crates/graph/src/index.rs` via source-tree
+    cited by HW-DR-0068
   code_path `engine/crates/graph/src/lib.rs` via source-tree
     cited by HW-DR-0049
+  code_path `engine/crates/graph/src/lib.rs` via source-tree
+    cited by HW-DR-0068
   code_path `engine/crates/import/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-import
   code_path `engine/crates/meta/meta-schema.yml` via source-tree

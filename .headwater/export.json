@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 453,
-      "carried": 453,
+      "in the graph": 455,
+      "carried": 455,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 645,
-      "carried": 645,
+      "in the graph": 648,
+      "carried": 648,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1911,6 +1911,36 @@
             "agency": "agent",
             "drafted_by": "claude-opus-5",
             "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md",
+        "kind": "decision",
+        "id": "HW-DR-0068",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0068",
+          "status": "current",
+          "status_since": "2026-09-16",
+          "summary": "The front-matter key `id` is the fixed, global name for the value a kind's `identifier: {scheme: …}` facet mints.",
+          "last_verified": "2026-09-16",
+          "title": "The front-matter key that carries a minted identifier is id",
+          "relations": {
+            "governs": [
+              "engine/crates/graph/src/lib.rs",
+              "engine/crates/graph/src/index.rs"
+            ],
+            "traces_to": [
+              "HW-OBL-0053"
+            ]
+          },
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
             "evidence_basis": "evidenced"
           }
         }
@@ -4489,10 +4519,10 @@
         "facets": {
           "id": "HW-OBL-0053",
           "title": "The front-matter key that carries an identifier is undeclared",
-          "status": "current",
-          "status_since": "2026-08-12",
+          "status": "discharged",
+          "status_since": "2026-09-16",
           "waiting_on": "build",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-09-16",
           "summary": "A kind declares an identifier scheme, and nothing states which key in front matter holds the minted value.",
           "provenance": {
             "warrant": "accepted",
@@ -9316,7 +9346,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 67 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 68 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
@@ -9807,6 +9837,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/graph/src/anchors.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/graph/src/index.rs",
         "resolver": "source-tree"
       },
       {
@@ -11520,6 +11555,39 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/resolve/src/package.rs",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/graph/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/graph/src/index.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0053",
+          "path": "docs/obligations/0053-the-front-matter-key-that-carries-an-identifier-is-undeclared.md",
+          "kind": "obligation_record"
         }
       },
       {

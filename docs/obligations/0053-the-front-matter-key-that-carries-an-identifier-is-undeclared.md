@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0053
 title: "The front-matter key that carries an identifier is undeclared"
-status: current
-status_since: 2026-08-12
+status: discharged
+status_since: 2026-09-16
 waiting_on: build
-last_verified: 2026-08-13
+last_verified: 2026-09-16
 summary: "A kind declares an identifier scheme, and nothing states which key in front matter holds the minted value."
 provenance:
   warrant: accepted
@@ -33,3 +33,9 @@ The language owes a declaration of the key, so that an adopter reads it rather t
 ## Discharge
 
 The guess is contained rather than closed. `headwater_graph::Config` holds the key as a parameter, and the generated identifier check takes the same parameter. So the index and the rule read one key and cannot disagree. Where that key finds nothing, the check skips and the skip quotes the key. A finding there would report the engine's assumption as the author's defect. The containment keeps the guess out of every report about a document.
+
+## Discharge, 2026-09-16
+
+**The declaration is stated, and this record closes.** [HW-DR-0068](../decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md) rules that the front-matter key `id` carries the value a kind's `identifier: {scheme: …}` facet mints, as a global fixed rule with no per-kind override. It follows the precedent [Q4](../decisions/0004-relation-storage.md) set for `relations:`. That precedent is a fixed literal key, stated once for every kind, and never a parameter left to a declaration nobody wrote.
+
+`headwater_graph::Config`'s `identifier_facet` doc comment, and the matching comment in `index.rs`, now cite HW-DR-0068 instead of naming the key an unsettled guess. `.headwater/README.md`'s guess table lost the row for this gap. The containment this record described stays exactly as built. The field is still a parameter rather than a literal. What changed is that the value it defaults to is now a ruling, and not a guess.
