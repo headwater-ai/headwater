@@ -90,6 +90,8 @@ anchors
   code_path `engine/crates/check/src/gate.rs` via source-tree
     cited by HW-IFACE-headwater-gate
   code_path `engine/crates/check/src/language.rs` via source-tree
+    cited by HW-DR-0069
+  code_path `engine/crates/check/src/language.rs` via source-tree
     cited by HW-EVAL-what-a-check-can-know
   code_path `engine/crates/check/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-check
