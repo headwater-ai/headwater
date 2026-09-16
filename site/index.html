@@ -62,6 +62,7 @@
   .navlinks a { color: var(--muted); text-decoration: none; }
   .navlinks a:hover { color: var(--accent); }
   .navlinks a.here { color: var(--fg); border-bottom: 2px solid var(--accent); }
+  .navlinks a.nav-cta { color: var(--accent); font-weight: 650; }
   .nav-toggle { display: none; }
 
   @media (max-width: 34rem) {
@@ -124,7 +125,7 @@
     color: var(--accent); margin: 0 0 1.8rem;
   }
   h1 {
-    font-size: 4rem; line-height: 1.05; letter-spacing: -0.025em;
+    font-size: 3.7rem; line-height: 1.05; letter-spacing: -0.025em;
     font-weight: 600; margin: 0 0 1.5rem; text-wrap: balance;
   }
   h1 em { color: var(--accent); }
@@ -159,7 +160,7 @@
   }
   .card-back {
     background: var(--code-bg); border: 1px solid var(--rule);
-    padding: 1.1rem 1.3rem; margin: -2rem 0 0 min(12%, 2.5rem);
+    padding: 1.1rem 1.3rem; margin: -0.75rem 0 0 min(12%, 2.5rem);
     position: relative; z-index: 1; overflow: hidden;
     max-width: calc(100% - min(12%, 2.5rem));
   }
@@ -286,6 +287,12 @@
     color: var(--muted);
   }
   .foot p { margin: 0 0 1rem; max-width: 46rem; }
+  .footgroups { display: flex; gap: 2.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
+  .footgroup { flex: 1 1 14rem; min-width: 0; }
+  .footlabel {
+    font-family: var(--sans); font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.7rem;
+  }
   .footlinks { display: flex; gap: 1.25rem; flex-wrap: wrap; }
 
   @media (max-width: 62rem) {
@@ -352,7 +359,7 @@
       <a href="/how-it-works/">How it works</a>
       <a href="/compare/">Compare</a>
       <a href="/proof/">Proof</a>
-      <a href="/tutorial/">Tutorial</a>
+      <a href="/tutorial/" class="nav-cta">Run the tutorial →</a>
     </div>
   </nav>
 </div>
@@ -371,16 +378,14 @@
         </div>
         <div class="install">
           <div><span class="dim">$</span> cargo install headwater-cli <span class="cursor" aria-hidden="true">▍</span></div>
-          <!-- v0.1.0 carries a binary and a checksum now (#707: the
-               workflow landed in #708, then a hand run of it against the
-               existing tag attached the pair, 2026-09-08). What still
-               makes this line false is narrower than before: a package
-               registry entry, which #707 named and excluded as its own
-               scope. #735 is that issue and its workflow is written
-               (`.github/workflows/publish-crates.yml`); nobody has run it,
-               because it needs a `CARGO_REGISTRY_TOKEN` this repository
-               does not hold. -->
-          <div class="note">v0.1.0 carries a binary and a checksum, but this line still does not work: <code>cargo install</code> needs a package registry entry, and #735 has not published one yet. The release page and the tutorial are the two routes that work today.</div>
+          <!-- This line works: all 23 workspace crates are on crates.io,
+               published in dependency order by
+               `.github/workflows/publish-crates.yml` (#735, still open for
+               its own remaining Done-when items). The v0.1.2 tag's run
+               (34398366170) succeeded 2026-09-09. Verified by an actual
+               `cargo install headwater-cli` into a scratch root, not only by
+               the registry listing (see #754). -->
+          <div class="note">This works: <code>cargo install headwater-cli</code> gets you the binary at whatever the newest published version is, no clone needed. It doesn't include the taxonomy package — the tutorial and the README's <em>Obtaining a named version</em> section are the two routes to that.</div>
         </div>
       </div>
       <div class="cards">
@@ -436,7 +441,7 @@ census
   <div class="bar pad">
     <div class="sechead">
       <span class="secnum">01</span>
-      <h2>Measured — headwater check on this repository, <span data-figure="run.date">2026-09-15</span></h2>
+      <h2>Measured — headwater check on this repository, <span data-figure="run.date">2026-09-16</span></h2>
       <span class="secline"></span>
     </div>
     <p style="font-size: 1.35rem; max-width: 46rem; margin: 0 0 3rem; line-height: 1.45;">Where a vendor site puts logos and percentages, this one puts the run — including the ugly number. A full board with a name against each item beats a clean one.</p>
@@ -540,7 +545,7 @@ owes `superseded_by`
       <div class="commit">
         <div class="roman">III.</div>
         <h3>AI assistants are readers too, and measured ones.</h3>
-        <p>The corpus feeds agents at intent time, read time, write time, and review time — and the system probes whether that context actually changes agent behavior, rather than assuming it does.</p>
+        <p>The corpus feeds agents at intent time, read time, write time, and review time. A probe records whether that context changed what the agent did — not whether it was shown.</p>
       </div>
     </div>
     <div style="margin-top: 3rem; border-top: 1px solid var(--rule); padding-top: 2.2rem;">
@@ -611,20 +616,39 @@ owes `superseded_by`
   </div>
 </section>
 
+<section class="tint" id="final-cta">
+  <div class="bar pad" style="text-align: center;">
+    <p style="font-size: 1.3rem; max-width: 40rem; margin: 0 auto 2rem; font-family: var(--serif);">Run it against your own corpus, and read what it can't yet answer.</p>
+    <a class="cta" href="/tutorial/">Run the tutorial →</a>
+  </div>
+</section>
+
 <footer>
   <div class="bar foot">
     <p>The corpus of this project is served here, rendered from the repository on every push to the default branch: <a href="/spec/">the specification</a>, <a href="/decisions/">the decisions</a>, <a href="/obligations/">the obligation records</a>, and <a href="/corpus.json">the descriptor</a> that each of those pages names as the machine-readable account of itself.</p>
     <p>The source of this project is <a href="https://github.com/headwater-ai/headwater">github.com/headwater-ai/headwater</a>, under Apache-2.0. The engine, the taxonomy library and the corpus these pages describe are all in it.</p>
-    <div class="footlinks">
-      <a href="/spec/">Specification</a>
-      <a href="/decisions/">Decisions</a>
-      <a href="/how-it-works/">How it works</a>
-      <a href="/compare/">Compare</a>
-      <a href="/proof/">Proof</a>
-      <a href="/tutorial/">Tutorial</a>
-      <a href="/glossary/">Glossary</a>
-      <a href="/ns/">Namespace</a>
-      <a href="/changelog/">Changelog</a>
+    <div class="footgroups">
+      <div class="footgroup">
+        <div class="footlabel">The corpus — generated from the repository</div>
+        <div class="footlinks">
+          <a href="/spec/">Specification</a>
+          <a href="/decisions/">Decisions</a>
+          <a href="/obligations/">Obligations</a>
+          <a href="/corpus.json">Descriptor</a>
+        </div>
+      </div>
+      <div class="footgroup">
+        <div class="footlabel">This site — hand-built</div>
+        <div class="footlinks">
+          <a href="/how-it-works/">How it works</a>
+          <a href="/compare/">Compare</a>
+          <a href="/proof/">Proof</a>
+          <a href="/tutorial/">Tutorial</a>
+          <a href="/glossary/">Glossary</a>
+          <a href="/ns/">Namespace</a>
+          <a href="/changelog/">Changelog</a>
+        </div>
+      </div>
     </div>
   </div>
 </footer>
