@@ -359,6 +359,22 @@ kinds:
     lifecycle: standard
     purpose: evidence
     voice: narrative
+  how_to:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: how_to_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: procedure
+    sections:
+      require:
+        - "Before you start"
+        - Steps
+        - "How to know it worked"
+    voice: declarative
   interface_contract:
     facets:
       require:
@@ -681,6 +697,11 @@ shelves:
     kind: evaluation
     path: "docs/evaluations/**"
     title: Evaluations
+  how_to:
+    homogeneous: true
+    kind: how_to
+    path: "docs/how-to/**"
+    title: "How-to guides"
   interfaces:
     homogeneous: true
     kind: interface_contract
@@ -755,6 +776,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "{namespace}-EVAL-{slug}"
+  how_to_id:
+    allocation: minted-once
+    namespace: HW
+    pattern: "{namespace}-HOW-{slug}"
   interface_contract_id:
     allocation: minted-once
     namespace: HW
@@ -826,6 +851,7 @@ projections:
       - probe_runs
       - reviews
       - tutorials
+      - how_to
       - process_decisions
     output: "{shelf}/README.md"
   - kind: shelf_sections

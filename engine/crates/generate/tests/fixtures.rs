@@ -705,19 +705,20 @@ fn this_repository_generates_its_nineteen_artifacts_and_accounts_for_the_rest() 
          document, then the redirect map, the verb index, the graph export, the \
          site navigation and the descriptor, in that order"
     );
-    // One declared shelf that holds no document (`specifications`; the
-    // `process_decisions` shelf held none for one commit, which put this
-    // literal at 8 and left `docs/process/decisions/README.md` out of the list
-    // above), one declared projection whose source this corpus does not hold,
-    // and the register. Nothing is passed over: a projection that produced no
-    // file states a reason. The other four are the declarable kinds this
-    // engine does not emit and this corpus does not declare — `relation_view`,
-    // `agent_rules`, `template` and `transcription` — which a run states
-    // whether or not a declaration named them, because the reason is a
-    // property of this engine rather than of the corpus.
+    // Two declared shelves that hold no document (`specifications` and
+    // `how_to`; the `process_decisions` shelf held none for one commit,
+    // which put this literal at 8 and left `docs/process/decisions/README.md`
+    // out of the list above), one declared projection whose source this
+    // corpus does not hold, and the register. Nothing is passed over: a
+    // projection that produced no file states a reason. The other four are
+    // the declarable kinds this engine does not emit and this corpus does
+    // not declare — `relation_view`, `agent_rules`, `template` and
+    // `transcription` — which a run states whether or not a declaration
+    // named them, because the reason is a property of this engine rather
+    // than of the corpus.
     assert_eq!(
         plan.unwritten.len(),
-        6,
+        7,
         "a projection produced neither a file nor a reason"
     );
     for unwritten in &plan.unwritten {

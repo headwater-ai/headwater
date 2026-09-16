@@ -1,4 +1,4 @@
-14 schemes
+15 schemes
 
 decision_id
   pattern    {namespace}-DR-{seq:04d}
@@ -26,6 +26,16 @@ evaluation_id
   render     HW-EVAL-<slug>
   needs      slug
   mint       HW-EVAL-a-name
+  admits     true
+  sequence   -
+  refuses    false
+
+how_to_id
+  pattern    {namespace}-HOW-{slug}
+  namespace  HW
+  render     HW-HOW-<slug>
+  needs      slug
+  mint       HW-HOW-a-name
   admits     true
   sequence   -
   refuses    false
