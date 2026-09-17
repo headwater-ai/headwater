@@ -1,4 +1,8 @@
 #!/bin/sh
+# Two clauses, and they are of different strengths on purpose.
+#
+# # The refusal: a site/* conflict nobody reviewed
+#
 # The one position that can still refuse, once `.githooks/merge-regenerate`
 # and `.githooks/commit-msg` have both already let a `site/*` conflict
 # through unreviewed.
@@ -20,6 +24,32 @@
 # would make a real gap look like it was never checked, on a clone where the
 # blocker is still true five minutes later.
 #
+# # The warning: an issue this push works on that nobody has claimed
+#
+# `.claude/agents/hw-build.md` tells the build agent to assign the issue to
+# itself and move it to In Progress before the first commit, and
+# `.claude/agents/hw-queue.md` fixes that as the build agent's job alone so
+# the claim is atomic and survives an agent that dies.
+# [HW-PD-0004](../docs/process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md)
+# is why a claim lives on the board rather than in a coordinator's context.
+#
+# None of that reaches a session working an issue by hand, which never loads
+# `hw-build.md`. That is the case
+# [HW-PD-0001](../docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md)
+# closes with: the performer of the sentence is not its reader, so it needs a
+# check rather than a reader. No prose home fixes it. `CLAUDE.md` is the file
+# every agent pays for on every dispatch and most agents never touch the
+# board, so the rule does not clear that bar.
+#
+# It warns and never refuses. An unclaimed issue is not unreviewed content
+# leaving the clone the way the clause above is; it is a board that has gone
+# stale, and the push is not the thing that harmed it. It is also the one
+# clause here that reaches the network, so every way that can go wrong — no
+# `gh`, no login, no network, a rate limit, a number that is a pull request
+# rather than an issue — is silence rather than a verdict. `gh auth status`
+# reports a secondary rate limit as an invalid token, so no failure from `gh`
+# is ever read as an answer about the board.
+#
 # Install once per clone, the same command every hook here needs:
 #     git config core.hooksPath .githooks
 
@@ -27,9 +57,8 @@ root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -n "$root" ] || exit 0
 
 pending=$(sh "$root/tools/site/ack-site-prose-reviewed.sh" 2>/dev/null)
-[ -n "$pending" ] || exit 0
-
-cat >&2 <<EOF
+if [ -n "$pending" ]; then
+	cat >&2 <<EOF
 
   Push refused: a site/* merge conflict was resolved but never reviewed.
 
@@ -41,4 +70,68 @@ $pending
 
 EOF
 
-exit 1
+	exit 1
+fi
+
+# Everything below is the warning, and it exits 0 by every path.
+
+# Run by hand with no push behind it: there is no ref batch to read and a
+# `read` against the terminal would hang the hook rather than check anything.
+[ -t 0 ] && exit 0
+
+command -v gh >/dev/null 2>&1 || exit 0
+
+zeroes=0000000000000000000000000000000000000000
+
+# `--not --remotes` is the range for a branch the remote has never seen. Where
+# the remote already holds a tip, that tip is the exact base and the walk is
+# cheaper. Both are capped: a push carrying hundreds of commits is a rebase or
+# a first push of a long branch, and reading all of it to warn about a board is
+# not worth the wait.
+numbers=$(
+	while read -r _local_ref local_sha _remote_ref remote_sha; do
+		[ -n "$local_sha" ] || continue
+		[ "$local_sha" = "$zeroes" ] && continue
+
+		if [ -n "$remote_sha" ] && [ "$remote_sha" != "$zeroes" ]; then
+			set -- "$remote_sha..$local_sha"
+		else
+			set -- "$local_sha" --not --remotes
+		fi
+
+		git log --format=%B --max-count=50 "$@" 2>/dev/null
+	done | grep -oE '#[0-9]+' | tr -d '#' | sort -un
+)
+
+[ -n "$numbers" ] || exit 0
+
+# A pull request and an issue share one number space, and `gh issue view` answers
+# for both — the `(#923)` a squash merge appends to a subject resolves as an
+# issue with no assignee, which is the exact shape of the thing being warned
+# about. The url is the discriminator and it costs no second call: a pull
+# request's ends `/pull/<n>` where an issue's ends `/issues/<n>`. Measured
+# against #923 and #819 on this repository.
+unclaimed=
+for number in $numbers; do
+	answer=$(timeout 5 gh issue view "$number" --json assignees,url --jq '"\(.url) \(.assignees | length)"' 2>/dev/null) || continue
+	url=${answer% *}
+	count=${answer##* }
+	case "$url" in
+	*/pull/*) continue ;;
+	*/issues/*) ;;
+	*) continue ;;
+	esac
+	case "$count" in
+	'' | *[!0-9]*) continue ;;
+	esac
+	[ "$count" -eq 0 ] || continue
+	unclaimed="$unclaimed $number"
+done
+
+[ -n "$unclaimed" ] || exit 0
+
+for number in $unclaimed; do
+	echo "  #$number is unassigned. Claim it: gh issue edit $number --add-assignee @me" >&2
+done
+
+exit 0
