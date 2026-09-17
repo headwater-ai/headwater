@@ -12,7 +12,7 @@
 # what a transcript kept and what it dropped.
 #
 #     tools/probe/probe-record.sh … | tools/probe/probe-transform.sh --probe PROBE-X \
-#         --session one --root . [--produced docs/x.md]…
+#         --session one --root . [--workspace /tmp/copy] [--produced docs/x.md]…
 #
 # ## What it keeps
 #
@@ -30,7 +30,7 @@
 # the block tag, and a stream also carries `rate_limit_event`, `system` and
 # `result` lines that hold no content at all.
 #
-# ## The five derivation steps, each named
+# ## The six derivation steps, each named
 #
 # A harness log carries the calls and not the rest of the contract. [Spec 15]
 # §"The values a session log omits" names the step behind each value, and each
@@ -41,6 +41,8 @@
 #   step_derive_result    the content digest of the document the call named,
 #                         in the form `headwater probe plan` prints, read from
 #                         the corpus and never from the bytes the call returned
+#   step_seed_produced    the path of every `Edit`, `Write`, `MultiEdit` and
+#                         `NotebookEdit` call, added to every `--produced` path
 #   step_derive_produced  `path`, and `result` as that same digest
 #   step_derive_cites     every identifier of this corpus in the artifact
 #   step_derive_findings  every rule that reported over the artifact
@@ -85,6 +87,7 @@ set -u
 probe=
 session=
 root=.
+workspace=
 produced_paths=
 
 while [ $# -gt 0 ]; do
@@ -92,6 +95,7 @@ while [ $# -gt 0 ]; do
         --probe) probe=${2:-}; shift 2 ;;
         --session) session=${2:-}; shift 2 ;;
         --root) root=${2:-}; shift 2 ;;
+        --workspace) workspace=${2:-}; shift 2 ;;
         --produced) produced_paths="$produced_paths${2:-}
 "; shift 2 ;;
         --answer) answer=${2:-}; shift 2 ;;
@@ -101,7 +105,7 @@ done
 answer=${answer:-}
 
 [ -n "$probe" ] && [ -n "$session" ] || {
-    echo "usage: probe-transform.sh --probe <id> --session <name> [--root <dir>] [--produced <path>]… [--answer <text>]" >&2
+    echo "usage: probe-transform.sh --probe <id> --session <name> [--root <dir>] [--workspace <dir>] [--produced <path>]… [--answer <text>]" >&2
     exit 2
 }
 command -v jq >/dev/null 2>&1 || {
@@ -170,6 +174,52 @@ step_filter_blocks_and_map_call() {
 
 step_filter_blocks_and_map_call > "$scratch/blocks.jsonl" || exit $?
 
+# The directory a produced artifact is read from. A driver runs the session in
+# a copy of the corpus and names it with `--workspace`, because an artifact the
+# session wrote lives in that copy and never in the corpus the plan was taken
+# over. With no `--workspace`, the base is the root.
+base=${workspace:-$root}
+base_abs=$(cd "$base" 2>/dev/null && pwd) || base_abs=$base
+
+# step_seed_produced: the paths the log itself says the session wrote.
+#
+# Every `tool_use` of a write-shaped tool already carries the path in its
+# structured input, and `path_of` above already extracted it to build `calls`.
+# Until #911 nothing read it back here, so `produced` held only what a driver
+# remembered to pass through `--produced`. One live session of 2026-09-17 edited
+# two files, both edits named the right ruling, and the event said `produced:
+# []` because the driver passed nothing.
+#
+# The log supplies the path and nothing else. `result`, `cites` and `findings`
+# are still read off the file, so a call the harness refused names a path whose
+# derivation reads whatever is on disk there, and a path with no file derives
+# an empty `result`, as for a call.
+#
+# A write made through `Bash` — a redirect, `sed -i`, a heredoc — names no path
+# in its input, so `path_of` returns null for it and this step cannot see it.
+# That write still needs `--produced`, which is the same blind spot `opened`
+# has for a read made through `Bash`.
+#
+# A path inside the base is written relative to it, so the path an `Edit`
+# names and the path a driver passes with `--produced` are one entry and not
+# two, and so the path matches the one `headwater check` reports under.
+step_seed_produced() {
+    jq -r 'select(.kind == "call")
+        | select(.tool == "Edit" or .tool == "Write" or .tool == "MultiEdit" or .tool == "NotebookEdit")
+        | .path // empty' < "$scratch/blocks.jsonl"
+}
+
+{
+    printf '%s' "$produced_paths"
+    step_seed_produced
+} | while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    case $file in
+        "$base_abs"/*) file=${file#"$base_abs"/} ;;
+    esac
+    printf '%s\n' "$file"
+done | awk '!seen[$0]++' > "$scratch/produced.txt"
+
 # step_derive_result.
 #
 # The digest is of the document as the corpus holds it, in the form the plan
@@ -180,7 +230,7 @@ step_derive_result() {
     file=$1
     case $file in
         /*) abs=$file ;;
-        *) abs=$root/$file ;;
+        *) abs=${2:-$root}/$file ;;
     esac
     [ -f "$abs" ] || { printf ''; return; }
     printf 'sha256:%s' "$(sha256sum < "$abs" | cut -d' ' -f1)"
@@ -192,7 +242,7 @@ step_derive_cites() {
     file=$1
     case $file in
         /*) abs=$file ;;
-        *) abs=$root/$file ;;
+        *) abs=$base/$file ;;
     esac
     [ -f "$abs" ] || return 0
     grep -oE 'HW-[A-Z]+-[0-9]{4}' "$abs" 2>/dev/null | sort -u
@@ -206,6 +256,9 @@ step_derive_cites() {
 # function passed the path positionally, which exits 1 with `unexpected
 # argument`, and it sent stderr to `/dev/null` and let the empty pipe become
 # the answer. That returned `findings: []` for every artifact, permanently.
+#
+# The run is over the base, which is the workspace where a driver named one,
+# because that is the tree that holds the artifact.
 #
 # An empty `findings` list is a claim that no rule reported over the artifact.
 # So a failure here refuses rather than writes one, on the same reasoning as
@@ -221,7 +274,7 @@ step_derive_findings() {
         exit 5
     }
     if [ ! -f "$scratch/check.json" ]; then
-        "$engine" check --root "$root" --format json > "$scratch/check.json" 2>"$scratch/check.err" || {
+        "$engine" check --root "$base" --format json > "$scratch/check.json" 2>"$scratch/check.err" || {
             echo "probe-transform: \`headwater check --format json\` failed:" >&2
             tail -3 "$scratch/check.err" >&2
             exit 5
@@ -252,12 +305,16 @@ scalar() {
     printf '%s' "$1" | jq -Rs .
 }
 
-# step_derive_produced: one entry per artifact the driver was told the session
-# produced. The transform never guesses this from the log, because a written
-# file is a fact about the filesystem and the log holds only the request.
+# step_derive_produced: one entry per path `step_seed_produced` collected. The
+# log names the path and the filesystem supplies every value derived from it.
+#
+# A path outside the base stays absolute and carries no `findings` key.
+# `headwater check` ran over the base and never read that file, so an empty
+# list would claim a check that was not made. The contract's absent key says
+# that nothing checked it, which is true.
 step_derive_produced() {
     printf '  produced:'
-    if [ -z "$produced_paths" ]; then
+    if [ ! -s "$scratch/produced.txt" ]; then
         printf ' []\n'
         return
     fi
@@ -266,11 +323,10 @@ step_derive_produced() {
     # subshell, so the `exit 5` a refused derivation raises would end that
     # subshell and leave this script writing the rest of an event it had
     # already refused.
-    printf '%s' "$produced_paths" > "$scratch/produced.txt"
     while IFS= read -r file; do
         [ -n "$file" ] || continue
         printf '    - path: %s\n' "$(scalar "$file")"
-        printf '      result: %s\n' "$(scalar "$(step_derive_result "$file")")"
+        printf '      result: %s\n' "$(scalar "$(step_derive_result "$file" "$base")")"
         cites=$(step_derive_cites "$file")
         if [ -z "$cites" ]; then
             printf '      cites: []\n'
@@ -280,6 +336,9 @@ step_derive_produced() {
                 printf '        - %s\n' "$(scalar "$id")"
             done
         fi
+        case $file in
+            /*) continue ;;
+        esac
         # A command substitution is a subshell, so the refusal has to be read
         # off the status rather than left to `exit` inside it.
         findings=$(step_derive_findings "$file") || exit $?

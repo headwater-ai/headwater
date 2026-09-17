@@ -39,6 +39,7 @@ Both parts sit outside this engine. The transform is the second half of one comp
 A harness log carries the calls and not the rest of the contract below. Each value the log omits is derived after the session by a named step. The list is prose rather than a table, because the four tables of this part are the four closed key sets and `engine/crates/probe/tests/contract.rs` counts them.
 
 - `result` on a call is the content digest of the document, in the form `headwater probe plan` prints, and never the bytes returned.
+- `path` on a produced artifact comes first from the log's own write calls, and then from any path the driver names. The next section states the rule.
 - `cites` on a produced artifact is every identifier of this corpus that appears in the artifact.
 - `findings` on a produced artifact is every rule that reported over the artifact. Both are computed the same way for every probe, and neither reads a probe.
 - The six identity members are `lock`, `tree`, `selection`, `read_set`, `seed` and `harness`, copied from the plan.
@@ -117,6 +118,12 @@ The identity of a read is the content digest of the document, in the form that `
 | `result` | the identity of the artifact, and never the bytes |
 | `cites` | every identifier of this corpus that appears in the artifact |
 | `findings` | every rule that reported over the artifact, or no key at all |
+
+**The log names the artifacts before the driver does.** Every call of `Edit`, `Write`, `MultiEdit` or `NotebookEdit` carries its path in its structured input. The transform adds each of those paths to `produced` once, and it reads `result`, `cites` and `findings` off the file itself. A driver still names an artifact with `--produced` where the log carries no structured path to point at. A path the driver names and a path the log names are one entry.
+
+The session writes in a copy of the corpus and not in the corpus. So the driver names that copy as the workspace, and the transform reads each artifact from it. A path inside the workspace is written relative to it. `headwater check` runs over the workspace, which is the tree that holds the artifact. A path outside the workspace has no `findings` key, because no check read that file.
+
+**A write through `Bash` stays invisible to this step.** A redirect, a `sed -i` or a heredoc names no path in its input, so the transform cannot find the file. That write still needs `--produced`. It is the same gap that an `opened` predicate has for a read through `Bash`.
 
 ## An empty list and an absent key are two facts, and a grader is wrong without both
 

@@ -360,6 +360,8 @@ answers=$(declared_answers "$probe")
 answer=$(step_derive_answer)
 
 # The transform reads the same stream this script wrote, on its standard input.
+# It is told the workspace because every artifact the session wrote is in that
+# copy and not in the corpus, and `produced` is read from there (#911).
 # shellcheck disable=SC2086
 sh "$root/tools/probe/probe-transform.sh" --probe "$probe" --session "$session" \
-    --root "$root" $transform_args ${answer:+--answer "$answer"} < "$raw"
+    --root "$root" --workspace "$here" $transform_args ${answer:+--answer "$answer"} < "$raw"
