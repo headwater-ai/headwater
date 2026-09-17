@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 469,
-      "carried": 469,
+      "in the graph": 472,
+      "carried": 472,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 660,
-      "carried": 660,
+      "in the graph": 664,
+      "carried": 664,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -3095,6 +3095,27 @@
               "engine/crates/cli/src/lib.rs",
               "engine/crates/cli/src/main.rs",
               "engine/crates/query/src/mcp.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/interfaces/headwater-neighbors.md",
+        "kind": "interface_contract",
+        "id": "HW-IFACE-headwater-neighbors",
+        "facets": {
+          "id": "HW-IFACE-headwater-neighbors",
+          "status": "current",
+          "status_since": "2026-09-17",
+          "summary": "How the pinned local model ranks document summaries by meaning for the shadow log, and why a model file that fails its digest stops the run.",
+          "last_verified": "2026-09-17",
+          "title": "headwater neighbors",
+          "relations": {
+            "governs": [
+              "engine/crates/cli/src/lib.rs",
+              "engine/crates/cli/src/main.rs",
+              "engine/crates/embed/src/lib.rs",
+              "engine/crates/embed/src/wordpiece.rs"
             ]
           }
         }
@@ -10114,6 +10135,16 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/embed/src/lib.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/embed/src/wordpiece.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/generate/src/derived.rs",
         "resolver": "source-tree"
       },
@@ -13453,6 +13484,50 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/query/src/mcp.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-neighbors.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-neighbors.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-neighbors.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/embed/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-neighbors.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/embed/src/wordpiece.rs",
           "resolver": "source-tree"
         }
       },

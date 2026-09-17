@@ -207,6 +207,15 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             true => fail("`route` takes a task description. Try `headwater route \"add rate limiting to the ingest API\"`"),
             false => route(root, &task.join(" "), budget, json),
         },
+        Verb::Neighbors {
+            task,
+            model,
+            top,
+            json,
+        } => match task.is_empty() {
+            true => fail("`neighbors` takes a task description. Try `headwater neighbors \"add rate limiting to the ingest API\"`"),
+            false => neighbors(root, &task.join(" "), model, top, json),
+        },
         Verb::Explain { target, json } => match target {
             None => fail("`explain` takes a path or an identifier"),
             Some(target) => explain(root, &target, json),
@@ -3185,6 +3194,113 @@ fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode
         true => print!("{}", headwater_query::json::route(&route)),
         false => print!("{}", route.render(headwater_cli::paint::stdout_color())),
     }
+    ExitCode::SUCCESS
+}
+
+/// `headwater neighbors`.
+///
+/// The shadow-mode half of HW-DR-0064. It prints the documents whose summaries
+/// sit nearest the task, with the three digests that make one run comparable
+/// to another. Unlike `route`, a model it cannot load is a refusal: there is no
+/// considered silence to report, only a run that did not happen.
+fn neighbors(
+    root: &Path,
+    task: &str,
+    model: Option<PathBuf>,
+    top: Option<usize>,
+    json: bool,
+) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let pin = match headwater_embed::Pin::read(root) {
+        Ok(pin) => pin,
+        Err(message) => return fail(&message),
+    };
+    let dir = model.unwrap_or_else(|| root.join(headwater_embed::MODELS));
+    let embedder = match headwater_embed::Model::load(&pin, &dir) {
+        Ok(embedder) => embedder,
+        Err(message) => return fail(&message),
+    };
+    let top = top.unwrap_or(10);
+
+    let surface = loaded.surface();
+    let mut cache = headwater_embed::Cache::open(root, embedder.digest());
+    let query = match embedder.embed(task) {
+        Ok(vector) => vector,
+        Err(message) => return fail(&message),
+    };
+    let mut ranked: Vec<(f32, String, String)> = Vec::new();
+    for document in surface.documents() {
+        let Some(summary) = surface.summary(&document).filter(|s| !s.trim().is_empty()) else {
+            continue;
+        };
+        let vector = match cache.vector(&embedder, &summary) {
+            Ok(vector) => vector,
+            Err(message) => return fail(&message),
+        };
+        ranked.push((
+            headwater_embed::similarity(&query, &vector),
+            document.path.to_string(),
+            headwater_hash::digest(summary.as_bytes()),
+        ));
+    }
+    cache.write(embedder.digest());
+    ranked.sort_by(|a, b| b.0.total_cmp(&a.0).then_with(|| a.1.cmp(&b.1)));
+    let considered = ranked.len();
+    ranked.truncate(top);
+
+    let tree = headwater_probe::plan::tree_digest(&loaded.census);
+    match json {
+        true => {
+            use headwater_yaml::json::Json;
+            let document = Json::object([
+                ("task", Json::string(task)),
+                ("tree_digest", Json::string(tree)),
+                ("lock_digest", Json::string(loaded.bound.digest.clone())),
+                ("model", Json::string(pin.model.clone())),
+                ("model_digest", Json::string(embedder.digest())),
+                ("considered", Json::Raw(considered.to_string())),
+                (
+                    "neighbors",
+                    Json::Array(
+                        ranked
+                            .iter()
+                            .map(|(score, path, summary)| {
+                                Json::object([
+                                    ("path", Json::string(path.clone())),
+                                    ("score", Json::Raw(format!("{score:.4}"))),
+                                    ("summary_digest", Json::string(summary.clone())),
+                                ])
+                            })
+                            .collect(),
+                    ),
+                ),
+            ]);
+            println!("{}", document.render());
+        }
+        false => {
+            println!("neighbors \"{task}\"");
+            println!("  model {} {}", pin.model, embedder.digest());
+            println!("  tree  {tree}");
+            println!("  lock  {}", loaded.bound.digest);
+            println!();
+            for (score, path, _) in &ranked {
+                println!("  {score:.4}  {path}");
+            }
+            println!(
+                "\n{} of {considered} summarized documents. Nothing an agent reads comes from this \
+                 ranking (HW-DR-0064).",
+                ranked.len()
+            );
+        }
+    }
+    eprintln!(
+        "headwater: {} of {considered} summary vectors computed, the rest read from {}",
+        cache.computed(),
+        headwater_embed::CACHE
+    );
     ExitCode::SUCCESS
 }
 

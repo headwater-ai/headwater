@@ -16,6 +16,11 @@
 # none is slower and never different.
 .headwater/cache/
 
+# The embedding model files `.headwater/embedding.yml` pins. HW-DR-0064 rules
+# that they are fetched and never committed: about 90MB, and this repository
+# configures no large-file storage. The digests in the pin are what is shared.
+.headwater/models/
+
 # What `mkdocs build` writes, per `mkdocs.yml`. It is the rendered projection of
 # the corpus and every byte of it is recomputable from the tree beside it, so
 # nothing is lost by leaving it out. It is deliberately not the MkDocs default

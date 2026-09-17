@@ -57,6 +57,10 @@ headwater-compat = { workspace = true }
 # a repository without starting a process.
 headwater-conformance = { workspace = true }
 
+# The embedding path `neighbors` runs. HW-DR-0064 keeps it out of every read
+# an agent sees, so only this verb names it.
+headwater-embed = { workspace = true }
+
 headwater-generate = { workspace = true }
 headwater-graph = { workspace = true }
 

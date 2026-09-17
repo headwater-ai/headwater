@@ -2,7 +2,7 @@
 
 # The command surface
 
-`headwater` dispatches 21 verbs. 21 of them have a contract on this shelf, and 0 have none.
+`headwater` dispatches 22 verbs. 22 of them have a contract on this shelf, and 0 have none.
 
 A verb with no contract carries a mark in the last column, and that cell is what this file is for. An index of the contracts that exist would say nothing about the verbs nobody has described yet.
 
@@ -22,6 +22,7 @@ The headings and the second column are the groups and the summaries that `headwa
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
 | `route` | resolve a task description to the documents that govern it | `headwater route` | [headwater route](headwater-route.md) |
+| `neighbors` | the documents whose summaries are nearest a task by meaning, for the shadow log | `headwater neighbors` | [headwater neighbors](headwater-neighbors.md) |
 | `explain` | why a document is the kind it is, and what it serves | `headwater explain` | [headwater explain](headwater-explain.md) |
 | `query` | listed in spec 6, and no document says what an expression is | `headwater query` | [headwater query](headwater-query.md) |
 | `capture` | read the capture-cost store back | `headwater capture` | [headwater capture](headwater-capture.md) |

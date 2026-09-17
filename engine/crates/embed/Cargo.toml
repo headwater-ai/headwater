@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-embed"
+description = "The offline embedding path HW-DR-0064 rules on: a pinned local model, checked by digest, run in pure Rust, with its vectors kept as a cache and never as a generated artifact"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The one digest function, so a model digest and a census digest agree about
+# what hashing a byte string means.
+headwater-hash = { workspace = true }
+
+# The pin file is YAML, read by the one YAML reader this engine has.
+headwater-yaml = { workspace = true }
+
+# Pure-Rust ONNX inference. HW-DR-0064 rules out `ort`, which downloads a
+# binary at build time. Pinned exactly: a minor release of tract may change a
+# kernel, and a vector that moves under an unchanged model digest is a cache
+# that lies. Its 1.91 `rust-version` is the floor #918 raised this workspace to.
+tract-onnx = "=0.23.7"
+
+# NFD decomposition, which the model's BERT tokenizer applies before it strips
+# accents.
+unicode-normalization = "0.1"
+
+[lints]
+workspace = true

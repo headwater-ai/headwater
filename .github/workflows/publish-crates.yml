@@ -126,7 +126,7 @@ jobs:
                  headwater-census headwater-graph headwater-lock headwater-check \
                  headwater-probe headwater-scaffold headwater-sweep \
                  headwater-adapter headwater-audit headwater-import \
-                 headwater-query headwater-generate headwater-compat \
+                 headwater-query headwater-generate headwater-compat headwater-embed \
                  headwater-conformance headwater-cli"
           version=$(cargo metadata --no-deps --format-version 1 |
                      python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(p["version"] for p in d["packages"] if p["name"]=="headwater-cli"))')
