@@ -16,7 +16,7 @@ cargo install headwater-cli
 
 The command needs nothing this repository ships: no clone, no toolchain floor beyond what `cargo` itself resolves from the crate's declared `rust-version`. It gets you the `headwater` binary alone, at whatever the newest published version is. It does not get you `taxonomy-source`, so a reader who also wants the base taxonomy package still needs one of the two routes below.
 
-**A fixed version, with the taxonomy package beside it.** `v0.1.2` is the newest tagged release, and the block below builds it from source. It needs a Rust toolchain at **1.90 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
+**A fixed version, with the taxonomy package beside it.** `v0.1.2` is the newest tagged release, and the block below builds it from source. It needs a Rust toolchain at **1.91 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
 
 ```
 git clone https://github.com/headwater-ai/headwater.git

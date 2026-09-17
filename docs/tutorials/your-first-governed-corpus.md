@@ -28,7 +28,7 @@ This tutorial takes an empty directory to a repository that passes `headwater ch
 You need four things.
 
 - `git`, and a name and an email address configured in it.
-- A Rust toolchain, version 1.90 or later, for `cargo install`. The floor is the highest `rust-version` in the resolved dependency graph, and `engine/Cargo.toml` declares it.
+- A Rust toolchain, version 1.91 or later, for `cargo install`. The floor is the highest `rust-version` in the resolved dependency graph, and `engine/Cargo.toml` declares it.
 - `curl`, for step 3.
 - About twenty minutes.
 

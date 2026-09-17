@@ -12,4 +12,4 @@
 # failure on `main` itself, on every branch off it, before `cargo test` ran.
 # Raising this number admits every API stabilized under it, so a raise is a
 # clippy run and not a one-line edit.
-msrv = "1.90"
+msrv = "1.91"
