@@ -124,6 +124,32 @@ hw_shadow_log() {
     # string, so the member is present on every line.
     _prompt_id=$(hw_field "$input" prompt_id) || _prompt_id=
 
+    # Step 2 of #819: the embedding path's ranking for the same text, from
+    # `headwater neighbors`, which also supplies the tree digest. The model
+    # files are shared by every worktree under the common dir, where
+    # `tools/embed/fetch-model.sh` puts them. A run that cannot load the pinned
+    # model writes `"neighbors":null`, so a line written after this step says
+    # the ranking was missing rather than never asked for.
+    _models=${HEADWATER_MODEL_DIR:-}
+    if [ -z "$_models" ]; then
+        _models=$(hw_common_dir) && _models="$_models/headwater-models" || _models=
+    fi
+    _neighbors=
+    if [ -n "$_models" ]; then
+        _neighbors=$("$engine" neighbors --root "$hw_root" --model "$_models" --json "$task" 2>/dev/null) || _neighbors=
+    fi
+    _embedding=',"neighbors":null'
+    if [ -n "$_neighbors" ]; then
+        _tree=$(printf '%s' "$_neighbors" | "$engine" json field tree_digest 2>/dev/null) || _tree=
+        _model=$(printf '%s' "$_neighbors" | "$engine" json field model_digest 2>/dev/null) || _model=
+        _tree_q=$(hw_quote "$_tree") || _tree_q='""'
+        _model_q=$(hw_quote "$_model") || _model_q='""'
+        _neighbors_q=$(hw_quote "$_neighbors") || _neighbors_q=
+        if [ -n "$_neighbors_q" ]; then
+            _embedding=$(printf ',"tree_digest":%s,"model_digest":%s,"neighbors":%s' "$_tree_q" "$_model_q" "$_neighbors_q")
+        fi
+    fi
+
     _session_q=$(hw_quote "$_session") || return 0
     _prompt_id_q=$(hw_quote "$_prompt_id") || _prompt_id_q='""'
     _root_q=$(hw_quote "$hw_root") || return 0
@@ -132,8 +158,8 @@ hw_shadow_log() {
     _version_q=$(hw_quote "$_version") || _version_q='""'
     _lock_q=$(hw_quote "$_lock") || _lock_q='""'
 
-    _line=$(printf '{"at":"%s","session":%s,"prompt_id":%s,"corpus_root":%s,"engine_version":%s,"lock_digest":%s,"task":%s,"injected":%s,"route":%s}' \
-        "$_at" "$_session_q" "$_prompt_id_q" "$_root_q" "$_version_q" "$_lock_q" "$_task_q" "$injected" "$_route_q") || return 0
+    _line=$(printf '{"at":"%s","session":%s,"prompt_id":%s,"corpus_root":%s,"engine_version":%s,"lock_digest":%s,"task":%s,"injected":%s,"route":%s%s}' \
+        "$_at" "$_session_q" "$_prompt_id_q" "$_root_q" "$_version_q" "$_lock_q" "$_task_q" "$injected" "$_route_q" "$_embedding") || return 0
 
     # The brace group is what keeps this silent, and not a stylistic choice: a
     # bare `printf ... >> "$_file" 2>/dev/null` still leaks "cannot create" to

@@ -140,6 +140,8 @@ anchors
   code_path `engine/crates/cli/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-mcp
   code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-neighbors
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-new
   code_path `engine/crates/cli/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-route
@@ -182,6 +184,8 @@ anchors
   code_path `engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-mcp
   code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-neighbors
+  code_path `engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-new
   code_path `engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-probe
@@ -219,6 +223,10 @@ anchors
     cited by HW-OBL-0176
   code_path `engine/crates/doc/src/sentences.rs` via source-tree
     cited by HW-OBL-0159
+  code_path `engine/crates/embed/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-neighbors
+  code_path `engine/crates/embed/src/wordpiece.rs` via source-tree
+    cited by HW-IFACE-headwater-neighbors
   code_path `engine/crates/generate/src/derived.rs` via source-tree
     cited by HW-DR-0063
   code_path `engine/crates/generate/src/export.rs` via source-tree

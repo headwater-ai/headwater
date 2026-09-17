@@ -70,6 +70,7 @@ Second, the test image carries `python3` where the format-and-lint image does no
 | `headwater-paint` | The terminal palette HW-DR-0045 rules on. It is a leaf because renderers sit on both sides of `headwater-check`, so a palette inside that crate is a cycle from anything below it |
 | `headwater-generate` | Writes every projection the taxonomy declares, and `generate --check` refuses a committed output that differs from what this corpus and this lock produce now |
 | `headwater-query` | The deterministic reads of the graph a run already built, as one surface that the CLI, an editor and an adapter each reach through rather than around |
+| `headwater-embed` | The offline embedding path HW-DR-0064 rules on: a pinned local model, checked by digest, run in pure Rust, with its vectors kept as a cache and never as a generated artifact |
 | `headwater-scaffold` | What `headwater new <kind>` proposes and what it refuses, which spec 12 names a correctness root because nobody reviews a scaffolded edge on its own |
 | `headwater-compat` | Compares two taxonomies over one corpus on the dimensions spec 2 fixes, so the required version bump follows the measurement rather than a publisher's guess |
 | `headwater-audit` | `taxonomy audit`: the schema measured against a corpus. Its findings are about the taxonomy rather than about any document, and it gates nothing |

@@ -525,6 +525,30 @@ pub enum Verb {
         #[arg(long, help = JSON_ALONE)]
         json: bool,
     },
+    Neighbors {
+        #[arg(
+            value_name = "task description",
+            help = "what you are about to do, in your own words. Every word after the verb is one \
+                    description, so it needs no quoting to hold together"
+        )]
+        task: Vec<String>,
+        #[arg(
+            long,
+            value_name = "dir",
+            help = "the directory holding the fetched model files the pin in \
+                    `.headwater/embedding.yml` names. `.headwater/models` by default"
+        )]
+        model: Option<PathBuf>,
+        #[arg(
+            long,
+            value_name = "n",
+            value_parser = a_budget,
+            help = "how many documents it prints, nearest first. Ten by default"
+        )]
+        top: Option<usize>,
+        #[arg(long, help = JSON_ALONE)]
+        json: bool,
+    },
     Explain {
         #[arg(
             value_name = "path|identifier",

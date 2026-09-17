@@ -578,12 +578,18 @@ if [ -x "$engine" ]; then
     shadow_dir=$(mktemp -d "${TMPDIR:-/tmp}/headwater-shadow-fixtures.XXXXXX")
     HEADWATER_SHADOW_LOG_DIR=$shadow_dir
     export HEADWATER_SHADOW_LOG_DIR
+    # Every case runs without a model unless it names one, so none of them runs
+    # inference or depends on whether this host fetched the pinned files.
+    no_model_dir="$shadow_dir.no-model"
+    mkdir -p "$no_model_dir"
+    HEADWATER_MODEL_DIR=$no_model_dir
+    export HEADWATER_MODEL_DIR
     # The sentinel is not a `.jsonl` file, so a reader that counts session
     # files never counts it, and the trap removes it on an interrupt.
     mkdir -p "$real_shadow_dir"
     sentinel="$real_shadow_dir/fixtures-sentinel-$$.keep"
     : > "$sentinel"
-    trap 'chmod u+w "$shadow_dir" 2>/dev/null; rm -rf "$shadow_dir"; rm -f "$sentinel"' EXIT INT TERM
+    trap 'chmod u+w "$shadow_dir" 2>/dev/null; rm -rf "$shadow_dir" "$no_model_dir"; rm -f "$sentinel"' EXIT INT TERM
 
     # The cheaper regression: the same payload the very first case in this
     # file already answers with `docs/spec/`, run twice with a session id and
@@ -710,6 +716,45 @@ if [ -x "$engine" ]; then
         failed=$((failed + 1))
     fi
 
+    # Step 2 of #819: the embedding column. With no loadable model the line
+    # still lands, and says the ranking is missing rather than omitting it.
+    if [ -s "$control_file" ] && tail -n 1 "$control_file" | grep -q '"neighbors":null}$'; then
+        printf 'ok   %s\n' 'a line written with no loadable model carries "neighbors":null'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'a line written with no loadable model does not end in "neighbors":null'
+        failed=$((failed + 1))
+    fi
+
+    # With the pinned files present, the hook's output is the same report and
+    # the line gains the three members. The files are 90MB and fetched by
+    # `tools/embed/fetch-model.sh`, so a host without them skips, and says so.
+    shared_models="$common/headwater-models"
+    if [ -f "$shared_models/model.onnx" ] && [ -f "$shared_models/vocab.txt" ]; then
+        embed_session="fixture-session-shadow-embed-$$"
+        embed_file="$shadow_dir/$embed_session.jsonl"
+        embed_payload="{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$embed_session\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+        HEADWATER_MODEL_DIR=$shared_models
+        expect 'a routed task with the model present hands back the report unchanged' \
+            intent.sh 0 'docs/spec/' "$embed_payload"
+        HEADWATER_MODEL_DIR=$no_model_dir
+        embed_model=$(tail -n 1 "$embed_file" 2>/dev/null | "$engine" json field model_digest 2>/dev/null)
+        embed_tree=$(tail -n 1 "$embed_file" 2>/dev/null | "$engine" json field tree_digest 2>/dev/null)
+        embed_count=$(tail -n 1 "$embed_file" 2>/dev/null | "$engine" json field neighbors 2>/dev/null | "$engine" json count neighbors 2>/dev/null)
+        case "$embed_model/$embed_tree/$embed_count" in
+            sha256:*/sha256:*/10)
+                printf 'ok   %s\n' 'the line carries the model digest, the tree digest and ten neighbors'
+                passed=$((passed + 1))
+                ;;
+            *)
+                printf 'FAIL %s\n  got model=%s tree=%s neighbors=%s\n' 'the line does not carry the embedding column' "$embed_model" "$embed_tree" "$embed_count"
+                failed=$((failed + 1))
+                ;;
+        esac
+    else
+        skip 'the embedding column with the pinned model present' "no model files at $shared_models; run tools/embed/fetch-model.sh"
+    fi
+
     if [ -e "$sentinel" ]; then
         printf 'ok   %s\n' 'the suite left the shadow log a session keeps as it found it'
         passed=$((passed + 1))
@@ -718,10 +763,10 @@ if [ -x "$engine" ]; then
         failed=$((failed + 1))
     fi
 
-    rm -rf "$shadow_dir"
+    rm -rf "$shadow_dir" "$no_model_dir"
     rm -f "$sentinel"
     rmdir "$real_shadow_dir" 2>/dev/null
-    unset HEADWATER_SHADOW_LOG_DIR
+    unset HEADWATER_SHADOW_LOG_DIR HEADWATER_MODEL_DIR
     trap - EXIT INT TERM
 else
     skip 'intent.sh shadow-log cases' 'no built engine'

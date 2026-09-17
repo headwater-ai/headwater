@@ -1,0 +1,19 @@
+# The pinned embedding model for the shadow-mode routing log (HW-DR-0064,
+# step 2 of #819). The bytes are never committed: `tools/embed/fetch-model.sh`
+# fetches each file below into an ignored directory, and `headwater neighbors`
+# refuses a file whose digest is not the one written here. The URLs name a
+# fixed Hugging Face revision, so the digests hold for as long as it exists.
+#
+# `revision` is the Hugging Face commit these files were taken from.
+# `max_tokens` is the model's own sequence limit, counting `[CLS]` and `[SEP]`.
+model: sentence-transformers/all-MiniLM-L6-v2
+revision: 1110a243fdf4706b3f48f1d95db1a4f5529b4d41
+license: Apache-2.0
+max_tokens: 256
+files:
+  model.onnx:
+    url: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/onnx/model.onnx
+    digest: sha256:6fd5d72fe4589f189f8ebc006442dbb529bb7ce38f8082112682524616046452
+  vocab.txt:
+    url: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/vocab.txt
+    digest: sha256:07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3

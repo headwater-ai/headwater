@@ -240,6 +240,8 @@ docs/interfaces/headwater-json.md
   typed: interface_contract
 docs/interfaces/headwater-mcp.md
   typed: interface_contract
+docs/interfaces/headwater-neighbors.md
+  typed: interface_contract
 docs/interfaces/headwater-new.md
   typed: interface_contract
 docs/interfaces/headwater-probe.md

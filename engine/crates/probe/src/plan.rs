@@ -454,6 +454,22 @@ pub struct Narrowing {
     pub seed: u64,
 }
 
+/// The corpus tree digest: every typed row's path and content digest, in census
+/// order. A plan and a shadow-log line both carry it, so there is one function.
+pub fn tree_digest(census: &Census) -> String {
+    let mut tree = String::new();
+    for row in &census.rows {
+        if !matches!(row.outcome, Outcome::Typed { .. }) {
+            continue;
+        }
+        tree.push_str(&row.path);
+        tree.push('\t');
+        tree.push_str(row.digest.as_deref().unwrap_or("-"));
+        tree.push('\n');
+    }
+    headwater_hash::digest(tree.as_bytes())
+}
+
 impl Plan {
     /// Take a plan over a corpus.
     ///
@@ -490,7 +506,6 @@ impl Plan {
             refusal: None,
         };
 
-        let mut tree = String::new();
         let mut probes = Vec::new();
         // The digest of every document the walk read bytes of, by path, which
         // is what a read-set member is looked up in. It comes from the same
@@ -528,15 +543,11 @@ impl Plan {
                 continue;
             };
             plan.corpus += 1;
-            tree.push_str(&row.path);
-            tree.push('\t');
-            tree.push_str(row.digest.as_deref().unwrap_or("-"));
-            tree.push('\n');
             if kind == KIND {
                 probes.push(row);
             }
         }
-        plan.tree = headwater_hash::digest(tree.as_bytes());
+        plan.tree = tree_digest(census);
 
         if probes.is_empty() {
             plan.refusal = Some(Refusal::NoProbes);

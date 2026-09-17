@@ -295,6 +295,7 @@ headwater capture     [--format text|json | --json]
 headwater sweep       plan [--under <path>]
                     | report <path> [--format text|json | --json]
 headwater route       <task description> [--json]
+headwater neighbors   <task description> [--model <dir>] [--top <n>] [--json]
 headwater query       <expression>
 headwater explain     <path|identifier> [--json]
 headwater mcp         [--now <date>] [--write]
