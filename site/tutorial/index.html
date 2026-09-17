@@ -703,7 +703,7 @@ headwater check</pre>
       <div>
         <h2><span class="n">15</span>Ask a question in your own words</h2>
         <p class="prose">A <strong>purpose</strong> is the reader intent that a kind exists to serve. The base package declares two, <code>rationale</code> and <code>behavior</code>, and the route scored your question against both before it looked at any prose. That is why the <code>summary</code> facet deserves the most care in any document. Routing serves it as the only pointer a reader gets.</p>
-        <p class="check"><span class="checkword">Check</span> <span>The last line names <code>docs/decisions/0001-store-attempts-in-postgres.md</code>.</span></p>
+        <p class="check"><span class="checkword">Check</span> <span>The pointer line names <code>docs/decisions/0001-store-attempts-in-postgres.md</code>. The line under it names the words of your question that reached that document.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">headwater route "why do we keep attempts in postgres"</pre>
@@ -714,7 +714,8 @@ headwater check</pre>
   purpose behavior 3
   purpose rationale 3
   docs/decisions/0001-store-attempts-in-postgres.md — The queue keeps every
-    delivery attempt in Postgres.</pre>
+    delivery attempt in Postgres.
+    matched attempts in postgres, rank 1 of 1</pre>
       </div>
     </div>
   </div>

@@ -481,9 +481,10 @@ route "why do we keep attempts in postgres"
   purpose rationale 3
   docs/decisions/0001-store-attempts-in-postgres.md — The queue keeps every
     delivery attempt in Postgres.
+    matched attempts in postgres, rank 1 of 1
 ```
 
-**Check.** The last line names `docs/decisions/0001-store-attempts-in-postgres.md`.
+**Check.** The pointer line names `docs/decisions/0001-store-attempts-in-postgres.md`. The line under it names the words of your question that reached that document.
 
 A **purpose** is the reader intent that a kind exists to serve. The base package declares two, `rationale` and `behavior`, and the route scored your question against both before it looked at any prose. That is why the `summary` facet deserves the most care in any document. Routing serves it as the only pointer a reader gets.
 

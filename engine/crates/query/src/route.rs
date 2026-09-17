@@ -7,6 +7,18 @@
 //! *within* the matched purpose, and derived reading precedence breaks ties."
 //! Those three steps are the three sections of this file, in that order.
 //!
+//! # Why the matched purposes take turns at the budget
+//!
+//! [HW-DR-0070](../../../../docs/decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md)
+//! amends the second step. A total order on the purpose score let the purpose
+//! that scored highest take every slot while it had candidates. On this
+//! repository's own corpus that put the answering specification part past
+//! 100th, behind a hundred obligation records. So the order within a purpose
+//! is the same as before, and the budget is filled in turns: each matched
+//! purpose offers its best remaining candidate, highest purpose score first,
+//! and inside one purpose the kinds that serve it take turns the same way. The
+//! first pointer is still the best candidate of the best purpose.
+//!
 //! # Why a purpose is matched on the terms that separate it
 //!
 //! Spec 5 grades a cue "against the alternatives that it competes with at the
@@ -142,6 +154,9 @@ pub struct Route {
     pub matched: Vec<Matched>,
     /// The pointers, in the order a reader should take them.
     pub pointers: Vec<Pointer>,
+    /// Why each pointer was offered, one entry for each pointer and in the same
+    /// order. [`Route::offers`] reads the two together.
+    pub evidence: Vec<Evidence>,
     /// How many ranked pointers the budget removed from this route.
     ///
     /// This is the answer to "were there more". A silent cut destroyed the
@@ -158,11 +173,64 @@ pub struct Route {
     pub silence: Option<Silence>,
 }
 
+/// Why a route offered one pointer.
+///
+/// It states what the route read, and never how likely the pointer is to be
+/// right. The scores behind a rank are counts of term overlap and not
+/// probabilities, so no member here is a score, and a member named for a
+/// confidence would claim a calibration that does not exist
+/// ([HW-DR-0070](../../../../docs/decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md)).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Evidence {
+    /// The task named a path this document governs. Nothing was ranked.
+    Named {
+        /// The anchors of the task that this document governs, in task order.
+        anchors: Vec<String>,
+    },
+    /// A distinctive term of the task reached the document under a matched
+    /// purpose.
+    Ranked {
+        /// The distinctive terms that reached the document, in task order.
+        terms: Vec<String>,
+        /// The place of the document in the order by purpose score and then
+        /// term score, counted from 1, before the purposes took turns.
+        rank: usize,
+        /// How many documents passed the gate, which is the length of that
+        /// order.
+        of: usize,
+    },
+}
+
+impl Evidence {
+    /// The evidence as the line under its pointer in the report.
+    pub fn render(&self) -> String {
+        match self {
+            Evidence::Named { anchors } => format!("governs {}", anchors.join(" ")),
+            Evidence::Ranked { terms, rank, of } => {
+                format!("matched {}, rank {rank} of {of}", terms.join(" "))
+            }
+        }
+    }
+}
+
 /// One candidate under a matched purpose, before the budget cuts the list.
 struct Candidate {
     pointer: Pointer,
+    /// The matched purpose it was offered under, which the turns rotate over.
+    under: String,
     purpose: u32,
     lexical: u32,
+    /// The distinctive terms that reached it.
+    terms: Vec<String>,
+}
+
+/// What one document scored against the weighted terms of a task.
+struct Scored {
+    score: u32,
+    /// Whether a separating term reached any surface.
+    separated: bool,
+    /// The separating terms that reached any surface, in task order.
+    terms: Vec<String>,
 }
 
 /// The four surfaces spec 5 lets a route read, for one document.
@@ -197,9 +265,10 @@ impl Surfaces {
     /// document that the task reached only through a term most of the corpus
     /// carries was not distinguished from anything, and offering it is a guess
     /// dressed as an answer.
-    fn score(&self, weighted: &[Weighted]) -> (u32, bool) {
+    fn score(&self, weighted: &[Weighted]) -> Scored {
         let mut score = 0;
         let mut separated = false;
+        let mut terms = Vec::new();
         for term in weighted {
             let mut surface = 0;
             if holds(&self.summary, &term.term) {
@@ -215,9 +284,16 @@ impl Surfaces {
                 surface += 1;
             }
             score += surface * term.weight;
-            separated |= surface > 0 && term.separating;
+            if surface > 0 && term.separating {
+                separated = true;
+                terms.push(term.term.clone());
+            }
         }
-        (score, separated)
+        Scored {
+            score,
+            separated,
+            terms,
+        }
     }
 }
 
@@ -233,6 +309,7 @@ impl Surface<'_> {
             anchors: Vec::new(),
             matched: Vec::new(),
             pointers: Vec::new(),
+            evidence: Vec::new(),
             withheld: 0,
             silence: None,
         };
@@ -249,8 +326,18 @@ impl Surface<'_> {
         // paths would otherwise be offered twice.
         route.anchors = self.named_anchors(task);
         let mut anchored: Vec<Pointer> = Vec::new();
+        let mut evidence: Vec<(String, Evidence)> = Vec::new();
         for anchor in &route.anchors {
             for pointer in self.governing_docs_for_path(anchor) {
+                match evidence.iter_mut().find(|(path, _)| path == &pointer.path) {
+                    Some((_, Evidence::Named { anchors })) => anchors.push(anchor.clone()),
+                    _ => evidence.push((
+                        pointer.path.clone(),
+                        Evidence::Named {
+                            anchors: vec![anchor.clone()],
+                        },
+                    )),
+                }
                 if !anchored.contains(&pointer) {
                     anchored.push(pointer);
                 }
@@ -267,7 +354,7 @@ impl Surface<'_> {
         // surfaces have to agree.
 
         if self.shape().purposes.is_empty() {
-            return route.on_anchors_alone(anchored, Silence::NoPurposes);
+            return route.on_anchors_alone(anchored, &evidence, Silence::NoPurposes);
         }
         if terms.is_empty() {
             route.silence = Some(Silence::NoTerms);
@@ -300,7 +387,7 @@ impl Surface<'_> {
             }
         }
         if route.matched.is_empty() {
-            return route.on_anchors_alone(anchored, Silence::NoPurposeMatched);
+            return route.on_anchors_alone(anchored, &evidence, Silence::NoPurposeMatched);
         }
         route
             .matched
@@ -336,8 +423,8 @@ impl Surface<'_> {
             else {
                 continue;
             };
-            let (lexical, separated) = document_surfaces.score(&weighted);
-            if !separated {
+            let scored = document_surfaces.score(&weighted);
+            if !scored.separated {
                 continue;
             }
             let pointer = self.pointer(document);
@@ -346,8 +433,10 @@ impl Surface<'_> {
             }
             candidates.push(Candidate {
                 pointer,
+                under: matched.purpose.clone(),
                 purpose: matched.score,
-                lexical,
+                lexical: scored.score,
+                terms: scored.terms,
             });
         }
         if candidates.is_empty() && anchored.is_empty() {
@@ -363,6 +452,20 @@ impl Surface<'_> {
                 .then(b.lexical.cmp(&a.lexical))
                 .then(a.pointer.path.cmp(&b.pointer.path))
         });
+        // The rank is a place in that order, taken before the turns reorder it,
+        // because it is the answer to "where did this stand overall".
+        let of = candidates.len();
+        for (place, candidate) in candidates.iter().enumerate() {
+            evidence.push((
+                candidate.pointer.path.clone(),
+                Evidence::Ranked {
+                    terms: candidate.terms.clone(),
+                    rank: place + 1,
+                    of,
+                },
+            ));
+        }
+        let mut candidates = in_turns(candidates, &route.matched);
         // The one place a budget cuts anything. It cuts `Candidate`, which is
         // the private type a ranked guess arrives in, and an anchored pointer
         // is never built into one — so no anchor can be removed here whatever
@@ -394,6 +497,7 @@ impl Surface<'_> {
         self.by_precedence(&mut offered);
         route.pointers = anchored;
         route.pointers.extend(offered);
+        route.evidence = evidence_for(&route.pointers, &evidence);
         route
     }
 
@@ -559,6 +663,84 @@ fn weights(terms: &[String], corpus: &[(Document<'_>, Surfaces)]) -> Vec<Weighte
         .collect()
 }
 
+/// The ranked candidates, in the order the budget takes them.
+///
+/// The matched purposes take turns, in the order of their scores. At its turn a
+/// purpose offers its best remaining candidate. Inside a purpose the kinds that
+/// serve it take turns the same way, in the order of their best candidate. A
+/// purpose or a kind with nothing left is passed over. So one purpose takes
+/// every slot only where no other matched purpose has a candidate, and one kind
+/// takes every slot of a purpose only where no other kind of it has one.
+///
+/// The input arrives in the total order, and every choice here is a position in
+/// it, so the result is total as well.
+fn in_turns(candidates: Vec<Candidate>, matched: &[Matched]) -> Vec<Candidate> {
+    use std::collections::VecDeque;
+    // One list of kind queues for each purpose, in the order of `matched`.
+    let mut purposes: Vec<Vec<(String, VecDeque<Candidate>)>> =
+        matched.iter().map(|_| Vec::new()).collect();
+    for candidate in candidates {
+        let Some(at) = matched
+            .iter()
+            .position(|known| known.purpose == candidate.under)
+        else {
+            continue;
+        };
+        let kinds = &mut purposes[at];
+        match kinds
+            .iter_mut()
+            .find(|(kind, _)| kind == &candidate.pointer.kind)
+        {
+            Some((_, queue)) => queue.push_back(candidate),
+            None => kinds.push((candidate.pointer.kind.clone(), VecDeque::from([candidate]))),
+        }
+    }
+    let mut turns: Vec<VecDeque<Candidate>> = purposes
+        .into_iter()
+        .map(|kinds| {
+            let mut queues: Vec<VecDeque<Candidate>> =
+                kinds.into_iter().map(|(_, queue)| queue).collect();
+            let mut order = VecDeque::new();
+            while taken_in_turn(&mut queues, |candidate| order.push_back(candidate)) {}
+            order
+        })
+        .collect();
+    let mut order = Vec::new();
+    while taken_in_turn(&mut turns, |candidate| order.push(candidate)) {}
+    order
+}
+
+/// One turn over a set of queues: the front of each queue that has one, in
+/// queue order. It answers whether anything was taken.
+fn taken_in_turn(
+    queues: &mut [std::collections::VecDeque<Candidate>],
+    mut take: impl FnMut(Candidate),
+) -> bool {
+    let mut taken = false;
+    for queue in queues {
+        if let Some(candidate) = queue.pop_front() {
+            take(candidate);
+            taken = true;
+        }
+    }
+    taken
+}
+
+/// The evidence for each pointer, in the order of the pointers.
+///
+/// A route offers a document once, so its path is the key.
+fn evidence_for(pointers: &[Pointer], known: &[(String, Evidence)]) -> Vec<Evidence> {
+    pointers
+        .iter()
+        .filter_map(|pointer| {
+            known
+                .iter()
+                .find(|(path, _)| path == &pointer.path)
+                .map(|(_, evidence)| evidence.clone())
+        })
+        .collect()
+}
+
 /// One task term, against the corpus it is asked of.
 struct Weighted {
     term: String,
@@ -594,6 +776,18 @@ fn facet_text(document: &Document<'_>) -> String {
 }
 
 impl Route {
+    /// Each pointer with the evidence for it.
+    ///
+    /// The evidence is `None` only for a route built by hand with fewer entries
+    /// than pointers. Every route [`Surface::route`] returns carries one entry
+    /// for each pointer.
+    pub fn offers(&self) -> impl Iterator<Item = (&Pointer, Option<&Evidence>)> {
+        self.pointers
+            .iter()
+            .enumerate()
+            .map(|(at, pointer)| (pointer, self.evidence.get(at)))
+    }
+
     /// Finish a route that has no ranking to do, on the pointers its anchors
     /// named.
     ///
@@ -607,7 +801,13 @@ impl Route {
     /// branch of `route` carried it whole. One copy cannot disagree with
     /// itself. This one takes no budget, so no edit here can reintroduce the
     /// cut without changing the signature.
-    fn on_anchors_alone(mut self, anchored: Vec<Pointer>, silence: Silence) -> Route {
+    fn on_anchors_alone(
+        mut self,
+        anchored: Vec<Pointer>,
+        evidence: &[(String, Evidence)],
+        silence: Silence,
+    ) -> Route {
+        self.evidence = evidence_for(&anchored, evidence);
         self.pointers = anchored;
         if self.pointers.is_empty() {
             self.silence = Some(silence);
@@ -673,7 +873,11 @@ impl Route {
         // the reset code counted as a word. So the pointer is composed plain,
         // folded, and the path — which the fold never splits, because it holds
         // no space — is painted in place afterwards.
-        for pointer in &self.pointers {
+        //
+        // The evidence line under a pointer is the task read back, so it is
+        // dim like the terms line. It carries no em dash, for the reason the
+        // withheld line below gives.
+        for (pointer, evidence) in self.offers() {
             let folded = headwater_check::fill::filled(
                 &format!("  {}\n", pointer.render()),
                 headwater_check::fill::WIDTH,
@@ -683,6 +887,15 @@ impl Route {
                 &paint(Role::Path, &pointer.path, mode),
                 1,
             ));
+            if let Some(evidence) = evidence {
+                let folded = headwater_check::fill::filled(
+                    &format!("    {}\n", evidence.render()),
+                    headwater_check::fill::WIDTH,
+                );
+                for line in folded.lines() {
+                    let _ = writeln!(out, "{}", dim(line, mode));
+                }
+            }
         }
         // Printed only where the budget removed something, so a route that cut
         // nothing renders exactly as it did before. The line carries no em dash,
@@ -766,6 +979,11 @@ mod tests {
                 summary: Some("what colors, and where the banner goes".to_string()),
                 unwarranted: false,
             }],
+            evidence: vec![Evidence::Ranked {
+                terms: vec!["rate".to_string()],
+                rank: 2,
+                of: 5,
+            }],
             withheld: 3,
             silence: None,
         }
@@ -793,6 +1011,10 @@ mod tests {
             Case {
                 what: "a pointer path is a path, cyan",
                 opens_with: "\u{1b}[36mdocs/decisions/0045-",
+            },
+            Case {
+                what: "the evidence under a pointer is the task read back, dim",
+                opens_with: "\u{1b}[2m    matched rate, rank 2 of 5",
             },
             Case {
                 what: "the withheld count is a count, dim",
@@ -843,6 +1065,72 @@ mod tests {
             stripped(&route.render(ColorMode::Ansi)),
             route.render(ColorMode::Plain)
         );
+    }
+
+    fn candidate(path: &str, kind: &str, under: &str, purpose: u32) -> Candidate {
+        let mut pointer = route().pointers[0].clone();
+        pointer.path = path.to_string();
+        pointer.kind = kind.to_string();
+        Candidate {
+            pointer,
+            under: under.to_string(),
+            purpose,
+            lexical: 0,
+            terms: Vec::new(),
+        }
+    }
+
+    /// The turns HW-DR-0070 rules, over a list already in the total order.
+    ///
+    /// The purpose that scored highest holds the first four candidates, and
+    /// before the ruling it took every slot of a budget of four. Now each
+    /// purpose offers one in turn, and inside `obligation` the second kind is
+    /// offered before the first kind offers again.
+    #[test]
+    fn the_purposes_take_turns_and_the_kinds_inside_a_purpose_do_too() {
+        let matched = [
+            Matched {
+                purpose: "obligation".to_string(),
+                score: 7,
+            },
+            Matched {
+                purpose: "behavior".to_string(),
+                score: 3,
+            },
+        ];
+        let ordered = vec![
+            candidate("o1", "obligation_record", "obligation", 7),
+            candidate("o2", "obligation_record", "obligation", 7),
+            candidate("o3", "obligation_record", "obligation", 7),
+            candidate("r1", "obligation_register", "obligation", 7),
+            candidate("s1", "design_spec", "behavior", 3),
+            candidate("i1", "interface_contract", "behavior", 3),
+        ];
+        let paths: Vec<String> = in_turns(ordered, &matched)
+            .into_iter()
+            .map(|candidate| candidate.pointer.path)
+            .collect();
+        assert_eq!(paths, ["o1", "s1", "r1", "i1", "o2", "o3"]);
+    }
+
+    /// One matched purpose with one kind keeps the order it arrived in, which
+    /// is the order every route with a single purpose had before the ruling.
+    #[test]
+    fn a_single_purpose_of_a_single_kind_keeps_its_order() {
+        let matched = [Matched {
+            purpose: "rationale".to_string(),
+            score: 4,
+        }];
+        let ordered = vec![
+            candidate("a", "decision", "rationale", 4),
+            candidate("b", "decision", "rationale", 4),
+            candidate("c", "decision", "rationale", 4),
+        ];
+        let paths: Vec<String> = in_turns(ordered, &matched)
+            .into_iter()
+            .map(|candidate| candidate.pointer.path)
+            .collect();
+        assert_eq!(paths, ["a", "b", "c"]);
     }
 
     /// A silent route returns early, above the pointer loop, and its own lines

@@ -31,7 +31,7 @@
 //! claim. A field is a thing the compiler can count and a set member is not.
 
 use crate::explain::Permitted;
-use crate::route::{Matched, Route, Silence};
+use crate::route::{Evidence, Matched, Route, Silence};
 use crate::{Explanation, Neighbour, Pointer};
 use headwater_graph::declarations::Governs;
 use headwater_yaml::json::Json;
@@ -87,7 +87,8 @@ fn of_route(route: &Route) -> Json {
         distinctive,
         anchors,
         matched,
-        pointers,
+        pointers: _,
+        evidence: _,
         withheld,
         silence,
     } = route;
@@ -104,7 +105,12 @@ fn of_route(route: &Route) -> Json {
         ),
         (
             "pointers",
-            Json::Array(pointers.iter().map(of_pointer).collect()),
+            Json::Array(
+                route
+                    .offers()
+                    .map(|(pointer, evidence)| of_offer(pointer, evidence))
+                    .collect(),
+            ),
         ),
         ("withheld", number(*withheld)),
     ];
@@ -140,6 +146,40 @@ fn of_silence(silence: &Silence) -> Json {
         ("reason", Json::string(silence.token())),
         ("says", Json::string(silence.name())),
     ])
+}
+
+/// One pointer a route offers, with the evidence for it.
+///
+/// `evidence` is an object with a `by` token. `anchor` means the task named a
+/// path the document governs, and `anchors` lists them. `terms` means a term of
+/// the task reached the document, and `terms`, `rank` and `of` state which
+/// terms and where the document stood in the order by score before the matched
+/// purposes took turns. No member is a score, and none is named for a
+/// confidence: the scores are counts of term overlap, and HW-DR-0070 rules that
+/// nothing a pointer carries may imply a calibration.
+fn of_offer(pointer: &Pointer, evidence: Option<&Evidence>) -> Json {
+    let Json::Object(mut members) = of_pointer(pointer) else {
+        unreachable!("a pointer is an object");
+    };
+    if let Some(evidence) = evidence {
+        members.push(("evidence".into(), of_evidence(evidence)));
+    }
+    Json::Object(members)
+}
+
+fn of_evidence(evidence: &Evidence) -> Json {
+    match evidence {
+        Evidence::Named { anchors } => Json::object([
+            ("by", Json::string("anchor")),
+            ("anchors", strings(anchors)),
+        ]),
+        Evidence::Ranked { terms, rank, of } => Json::object([
+            ("by", Json::string("terms")),
+            ("terms", strings(terms)),
+            ("rank", number(*rank)),
+            ("of", number(*of)),
+        ]),
+    }
 }
 
 /// One pointer.
@@ -326,6 +366,7 @@ mod tests {
             anchors: Vec::new(),
             matched: Vec::new(),
             pointers: Vec::new(),
+            evidence: Vec::new(),
             withheld: 0,
             silence: Some(silence),
         }
@@ -370,6 +411,40 @@ mod tests {
             document.contains("\"reason\": \"no_purpose_matched\""),
             "and it says which silence it is: {document}"
         );
+    }
+
+    /// Each offered pointer carries its evidence, and no member of it is a
+    /// score or names a confidence. HW-DR-0070 rules both.
+    #[test]
+    fn a_pointer_carries_evidence_and_no_member_implies_a_calibration() {
+        let mut route = silent(Silence::NoTerms);
+        route.silence = None;
+        route.pointers = vec![Pointer {
+            path: "docs/a.md".to_string(),
+            id: None,
+            kind: "decision".to_string(),
+            name: None,
+            purpose: Some("rationale".to_string()),
+            summary: Some("a summary".to_string()),
+            unwarranted: false,
+        }];
+        route.evidence = vec![Evidence::Ranked {
+            terms: vec!["xyzzy".to_string()],
+            rank: 3,
+            of: 9,
+        }];
+        let document = of_route(&route).render_pretty();
+        for expected in [
+            "\"evidence\": {",
+            "\"by\": \"terms\"",
+            "\"rank\": 3",
+            "\"of\": 9",
+        ] {
+            assert!(document.contains(expected), "{expected} in {document}");
+        }
+        for refused in ["confidence", "probability", "score\":"] {
+            assert!(!document.contains(refused), "{refused} in {document}");
+        }
     }
 
     /// The `text` member is the report, byte for byte.

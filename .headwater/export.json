@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 467,
-      "carried": 467,
+      "in the graph": 469,
+      "carried": 469,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 657,
-      "carried": 657,
+      "in the graph": 660,
+      "carried": 660,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1969,6 +1969,61 @@
             "warrant": "accepted",
             "agency": "agent",
             "drafted_by": "claude-fable-5-1",
+            "activity": "measure+draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md",
+        "kind": "decision",
+        "id": "HW-DR-0070",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-DR-0070",
+          "status": "current",
+          "status_since": "2026-09-17",
+          "summary": "The purposes a task matches take turns at the route budget, and the kinds of one purpose take turns inside it. Each pointer states the task terms that reached it and its rank in the order by score. No pointer carries a score or a confidence.",
+          "last_verified": "2026-09-17",
+          "title": "The matched purposes take turns at a route budget, and each pointer states what reached it",
+          "relations": {
+            "governs": [
+              "engine/crates/query/src/route.rs",
+              "engine/crates/query/src/json.rs"
+            ]
+          },
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md",
+        "kind": "decision",
+        "id": "HW-DR-0071",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-DR-0071",
+          "status": "current",
+          "status_since": "2026-09-17",
+          "summary": "A route does not read headings and offers no anchor inside a document. A measured heading surface never reached spec 02 or spec 03 for the task that raised the question. At every threshold, function words reached wrong anchors.",
+          "last_verified": "2026-09-17",
+          "title": "A route offers a document and never a heading inside it",
+          "relations": {
+            "governs": [
+              "engine/crates/query/src/route.rs"
+            ]
+          },
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
             "activity": "measure+draft",
             "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
@@ -9584,7 +9639,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 69 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 71 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
@@ -11848,6 +11903,39 @@
           "id": "HW-DR-0005",
           "path": "docs/decisions/0005-voice-checking-depth.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/query/src/route.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/query/src/json.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/query/src/route.rs",
+          "resolver": "source-tree"
         }
       },
       {

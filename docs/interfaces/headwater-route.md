@@ -30,7 +30,13 @@ A task that names a governed source path receives the documents that govern that
 
 The default budget is five ranked pointers. Anchored pointers are never removed by the budget. The report states how many ranked pointers the budget withheld.
 
-Text prints the task, matched purposes, pointers and any silence reason. JSON carries those values, a stable silence token where appropriate and the text report from the same run. Silence is a result, not a failure.
+The matched purposes take turns at the budget, highest score first, and each offers its best remaining document at its turn. Inside one purpose, the kinds that serve it take turns the same way. So a task that matches several purposes receives pointers from several kinds. [HW-DR-0070](../decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md) rules this.
+
+Each pointer states what reached it. An anchored pointer names the paths of the task that it governs. A ranked pointer names the distinctive task terms that reached it. It also gives its rank in the order by score before the turns. The text report prints this on a dim line under the pointer. No pointer carries a score or a confidence.
+
+Text prints the task, matched purposes, pointers with their evidence and any silence reason. JSON carries those values, a stable silence token where appropriate and the text report from the same run. Silence is a result, not a failure.
+
+In JSON, each pointer carries an `evidence` object. Its `by` member is `anchor` or `terms`. With `anchor`, `anchors` lists the named paths that the document governs. With `terms`, `terms` lists the terms that reached the document. `rank` is its place in the order by score, counted from 1, and `of` is the length of that order.
 
 ## Preconditions
 

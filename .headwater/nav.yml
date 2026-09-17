@@ -72,6 +72,8 @@ nav:
       - "The vendored package root moves under .headwater and the old root is named in a refusal": "decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md"
       - "The front-matter key that carries a minted identifier is id": "decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md"
       - "A paragraph limit counts sentences under the language rule and never words": "decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md"
+      - "The matched purposes take turns at a route budget, and each pointer states what reached it": "decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md"
+      - "A route offers a document and never a heading inside it": "decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
