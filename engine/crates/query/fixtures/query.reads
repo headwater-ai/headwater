@@ -5,10 +5,13 @@ route "why is throttling applied at the edge"
   purpose behavior 2
   query/decisions/edge-throttling.md — why throttling is applied at the edge and
     not per service
-  query/decisions/per-service-limits.md — why a per service throttling design
-    was rejected
+    matched why is throttling applied at edge, rank 1 of 3
   query/specs/asserted-notes.md — what the ingest service does about throttling,
     as nobody has checked it [asserted: nobody accepted this document]
+    matched throttling, rank 3 of 3
+  query/decisions/per-service-limits.md — why a per service throttling design
+    was rejected
+    matched why throttling, rank 2 of 3
 
 route "what does the ingest service do"
   terms what does the ingest service do
@@ -18,8 +21,10 @@ route "what does the ingest service do"
   purpose rationale 3
   query/specs/ingest.md — what the ingest service does with a request, and the
     limits it holds
+    matched what does, rank 1 of 2
   query/specs/asserted-notes.md — what the ingest service does about throttling,
     as nobody has checked it [asserted: nobody accepted this document]
+    matched what does, rank 2 of 2
 
 route "how do I rotate the keys"
   terms how do rotate the keys
@@ -28,6 +33,7 @@ route "how do I rotate the keys"
   purpose behavior 4
   query/runbooks/rotate-keys.md — how to rotate the ingest API keys after one
     leaks
+    matched how rotate keys, rank 1 of 1
 
 route "add rate limiting to src/ingest/rate_limit.rs"
   terms add rate limiting to src ingest limit rs
@@ -36,8 +42,10 @@ route "add rate limiting to src/ingest/rate_limit.rs"
   purpose procedure 1
   query/decisions/edge-throttling.md — why throttling is applied at the edge and
     not per service
+    governs src/ingest/rate_limit.rs
   query/runbooks/rotate-keys.md — how to rotate the ingest API keys after one
     leaks
+    matched to, rank 1 of 1
 
 route "deploy the cluster to another region"
   terms deploy the cluster to another region
@@ -46,6 +54,7 @@ route "deploy the cluster to another region"
   purpose procedure 1
   query/runbooks/rotate-keys.md — how to rotate the ingest API keys after one
     leaks
+    matched to, rank 1 of 1
 
 route "what may I rely on when the tide comes in"
   terms what may rely on when the tide comes in
@@ -54,12 +63,16 @@ route "what may I rely on when the tide comes in"
   purpose procedure 3
   query/specs/api-design.md — the API surface conventions, versioning and error
     shapes a service may rely on
+    matched may rely on, rank 1 of 4
   query/specs/api-errors.md — the error shapes the ingest service returns, in
     detail
+    matched in, rank 2 of 4
   query/specs/asserted-notes.md — what the ingest service does about throttling,
     as nobody has checked it [asserted: nobody accepted this document]
+    matched what, rank 3 of 4
   query/specs/ingest.md — what the ingest service does with a request, and the
     limits it holds
+    matched what, rank 4 of 4
 
 explain
   query/specs/api-design.md

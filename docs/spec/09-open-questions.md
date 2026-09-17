@@ -5,7 +5,7 @@ doc_type: decision_register
 title: Open questions, closed and redirected
 status: superseded
 status_since: 2026-08-11
-summary: "One heading for each of the 69 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
+summary: "One heading for each of the 71 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
 last_verified: 2026-08-11
 sequence: 9
 relations:
@@ -16,7 +16,7 @@ relations:
 
 # Decision records
 
-69 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+71 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -293,3 +293,11 @@ relations:
 ## A paragraph limit counts sentences under the language rule and never words
 
 [HW-DR-0069](../decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md) — No word-length rule joins the check layer. The six-sentence limit of the standard the house regime declares lands as a fifth defect of the language rule, advisory permanently. The paragraph that raised the question is a hand-kept index, and a derived list repairs it where no lexical rule reads it.
+
+## The matched purposes take turns at a route budget, and each pointer states what reached it
+
+[HW-DR-0070](../decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md) — The purposes a task matches take turns at the route budget, and the kinds of one purpose take turns inside it. Each pointer states the task terms that reached it and its rank in the order by score. No pointer carries a score or a confidence. (asserted, and no human has accepted it)
+
+## A route offers a document and never a heading inside it
+
+[HW-DR-0071](../decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md) — A route does not read headings and offers no anchor inside a document. A measured heading surface never reached spec 02 or spec 03 for the task that raised the question. At every threshold, function words reached wrong anchors. (asserted, and no human has accepted it)

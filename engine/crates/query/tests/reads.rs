@@ -419,6 +419,52 @@ fn a_task_in_this_corpus_reaches_a_document_of_it() {
     );
 }
 
+/// One purpose no longer takes every slot of the default budget.
+///
+/// The task is the one #915 records. Before HW-DR-0070 its purpose scores put
+/// `obligation` first, and the first twelve pointers of the route were all
+/// obligation records, so the default five held one kind. The property is the
+/// ruling rather than a list: the five hold more than one kind and more than
+/// one purpose, and each pointer carries the terms that reached it and its
+/// rank in the order by score.
+#[test]
+fn a_task_that_matches_several_purposes_is_offered_more_than_one_kind() {
+    let built = this_repository();
+    let surface = built.surface();
+    let route = surface.route(
+        "Decide which shelf a new document belongs on, and where its identifier comes from.",
+        Budget::default(),
+    );
+    assert!(route.matched.len() > 1, "{}", route.render(PLAIN));
+    let mut kinds: Vec<&str> = route.pointers.iter().map(|p| p.kind.as_str()).collect();
+    kinds.dedup();
+    kinds.sort_unstable();
+    kinds.dedup();
+    assert!(kinds.len() > 1, "{}", route.render(PLAIN));
+    let mut purposes: Vec<Option<&str>> = route
+        .pointers
+        .iter()
+        .map(|p| p.purpose.as_deref())
+        .collect();
+    purposes.sort_unstable();
+    purposes.dedup();
+    assert!(purposes.len() > 1, "{}", route.render(PLAIN));
+
+    assert_eq!(route.evidence.len(), route.pointers.len());
+    for evidence in &route.evidence {
+        let headwater_query::Evidence::Ranked { terms, rank, of } = evidence else {
+            panic!("no anchor was named: {}", route.render(PLAIN));
+        };
+        assert!(!terms.is_empty(), "{}", route.render(PLAIN));
+        assert!(
+            terms.iter().all(|term| route.distinctive.contains(term)),
+            "{}",
+            route.render(PLAIN)
+        );
+        assert!((1..=*of).contains(rank), "{}", route.render(PLAIN));
+    }
+}
+
 /// Derived reading precedence orders the list, and it outranks the score.
 ///
 /// Two pairs, and each one is a clause of spec 2's derivation. The satellite
