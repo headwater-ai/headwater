@@ -22,7 +22,7 @@ The headings and the second column are the groups and the summaries that `headwa
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
 | `route` | resolve a task description to the documents that govern it | `headwater route` | [headwater route](headwater-route.md) |
-| `neighbors` | the documents whose summaries are nearest a task by meaning, for the shadow log | `headwater neighbors` | [headwater neighbors](headwater-neighbors.md) |
+| `neighbors` | rank summaries by meaning against a task, for the shadow log | `headwater neighbors` | [headwater neighbors](headwater-neighbors.md) |
 | `explain` | why a document is the kind it is, and what it serves | `headwater explain` | [headwater explain](headwater-explain.md) |
 | `query` | listed in spec 6, and no document says what an expression is | `headwater query` | [headwater query](headwater-query.md) |
 | `capture` | read the capture-cost store back | `headwater capture` | [headwater capture](headwater-capture.md) |

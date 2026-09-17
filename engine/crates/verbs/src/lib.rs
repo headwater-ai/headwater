@@ -183,7 +183,7 @@ pub const VERBS: &[Verb] = &[
     Verb {
         name: "neighbors",
         group: "Reading a corpus",
-        summary: "the documents whose summaries are nearest a task by meaning, for the shadow log",
+        summary: "rank summaries by meaning against a task, for the shadow log",
         description: "Rank the documents of the corpus by how close each summary is to a task description in meaning, using the pinned local embedding model, and print the nearest ones with the tree, lock and model digests they were computed over. It is the shadow-mode half of HW-DR-0064: nothing an agent reads comes from it. The caller fetches the model bytes, and this verb refuses a run whose bytes do not match the pin. It opens no network connection.",
         words: &[],
     },

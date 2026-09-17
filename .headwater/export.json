@@ -3107,7 +3107,7 @@
           "id": "HW-IFACE-headwater-neighbors",
           "status": "current",
           "status_since": "2026-09-17",
-          "summary": "How the pinned local model ranks document summaries by meaning for the shadow log, and why a model file that fails its digest stops the run.",
+          "summary": "How the pinned local model ranks document summaries by meaning for the shadow log. A model file that fails its digest stops the run.",
           "last_verified": "2026-09-17",
           "title": "headwater neighbors",
           "relations": {

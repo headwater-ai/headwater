@@ -2,7 +2,7 @@
 id: HW-IFACE-headwater-neighbors
 status: current
 status_since: 2026-09-17
-summary: "How the pinned local model ranks document summaries by meaning for the shadow log, and why a model file that fails its digest stops the run."
+summary: "How the pinned local model ranks document summaries by meaning for the shadow log. A model file that fails its digest stops the run."
 last_verified: 2026-09-17
 title: "headwater neighbors"
 relations:
@@ -27,7 +27,7 @@ Every word after `neighbors` forms the task description.
 
 The verb reads the model pin at `.headwater/embedding.yml`. The pin names each model file by URL and by digest. The verb does not fetch a file. `tools/embed/fetch-model.sh` fetches the files. The verb calculates the digest of each file before it loads the model, and refuses a file that does not match. A verified file that has not changed since is not hashed again, as the Files table states.
 
-Inference runs locally in pure Rust. The verb opens no network connection. It calculates one unit-length vector for the task and one for each summary, and it ranks the documents by the dot product of the two vectors. A tie goes to the lower path in byte order. A document with no summary is not ranked.
+Inference runs locally in pure Rust. The verb opens no network connection. It calculates one unit-length vector for the task and one for each summary. It ranks the documents by the dot product of the two vectors. A tie goes to the lower path in byte order. A document with no summary is not ranked.
 
 The summary vectors are a cache under `.headwater/cache/embeddings/`. The model digest names the cache file, and the digest of the summary text is the key of each entry. The same model can give different vectors on different instruction sets, so a vector is a fact about one machine. No `headwater generate` emitter writes a vector.
 
@@ -52,7 +52,7 @@ The repository must carry a readable `.headwater/taxonomy.lock`, consumer declar
 
 **0** means that the verb ranked the corpus.
 
-**1** means that the task was missing, an option was invalid, the repository could not load, the pin could not be read, a model file was missing, or a model file did not match its digest. Each of these is a refusal. Standard output is empty, and one sentence on standard error gives the reason. [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules that a refusal under `--json` is not a JSON document.
+**1** means that the verb refused the run. The six reasons are these: the task was missing, an option was invalid, or the repository could not load. Or the pin could not be read, a model file was missing, or a model file did not match its digest. Standard output is empty, and one sentence on standard error gives the reason. [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules that a refusal under `--json` is not a JSON document.
 
 ## Environment
 

@@ -92,7 +92,7 @@ impl Pin {
             .and_then(|value| value.value.as_map())
             .ok_or_else(|| format!("`{PIN}` states no `files` mapping"))?;
         let mut pinned = Vec::new();
-        for entry in files.iter() {
+        for entry in files {
             let name = entry.key.value.clone();
             let fields = entry
                 .value
@@ -189,8 +189,8 @@ impl Model {
     pub fn load(pin: &Pin, dir: &Path) -> Result<Model, String> {
         let graph = verified(pin, dir, GRAPH)?;
         let vocabulary = verified(pin, dir, VOCABULARY)?;
-        let vocabulary = String::from_utf8(vocabulary)
-            .map_err(|_| format!("`{VOCABULARY}` is not UTF-8"))?;
+        let vocabulary =
+            String::from_utf8(vocabulary).map_err(|_| format!("`{VOCABULARY}` is not UTF-8"))?;
         let tokenizer = WordPiece::parse(&vocabulary)?;
         let plan = tract_onnx::onnx()
             .model_for_read(&mut graph.as_slice())
@@ -267,7 +267,11 @@ fn verified(pin: &Pin, dir: &Path, name: &str) -> Result<Vec<u8>, String> {
     // again. Any change to the length or the time hashes it, as git's index does.
     let stamp = dir.join(format!(".{name}.verified"));
     let witness = std::fs::metadata(&path).ok().and_then(|meta| {
-        let modified = meta.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?;
+        let modified = meta
+            .modified()
+            .ok()?
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()?;
         Some(format!(
             "{}\t{}\t{}.{:09}\n",
             pinned.digest,
@@ -379,8 +383,7 @@ impl Cache {
         let staged = self
             .path
             .with_extension(format!("tmp-{}", std::process::id()));
-        if std::fs::write(&staged, text).is_ok() && std::fs::rename(&staged, &self.path).is_err()
-        {
+        if std::fs::write(&staged, text).is_ok() && std::fs::rename(&staged, &self.path).is_err() {
             let _ = std::fs::remove_file(&staged);
         }
     }
@@ -439,8 +442,8 @@ mod tests {
         let pin = Pin::parse(PINNED).expect("the fixture pin parses");
         let moved_url = Pin::parse(&PINNED.replace("example.invalid", "mirror.invalid"))
             .expect("the moved pin parses");
-        let moved_bytes = Pin::parse(&PINNED.replace("6fd5d72f", "6fd5d72e"))
-            .expect("the moved pin parses");
+        let moved_bytes =
+            Pin::parse(&PINNED.replace("6fd5d72f", "6fd5d72e")).expect("the moved pin parses");
         assert_eq!(pin.digest(), moved_url.digest());
         assert_ne!(pin.digest(), moved_bytes.digest());
     }
@@ -461,7 +464,8 @@ mod tests {
 
     #[test]
     fn a_file_that_is_not_the_pinned_bytes_is_refused_before_anything_loads() {
-        let dir = std::env::temp_dir().join(format!("headwater-embed-refuse-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("headwater-embed-refuse-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("a scratch directory");
         std::fs::write(dir.join(GRAPH), b"not a model").expect("a planted file");
         let pin = Pin::parse(PINNED).expect("the fixture pin parses");
@@ -472,7 +476,8 @@ mod tests {
 
     #[test]
     fn a_stamp_that_no_longer_matches_the_file_does_not_skip_the_digest() {
-        let dir = std::env::temp_dir().join(format!("headwater-embed-stamp-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("headwater-embed-stamp-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("a scratch directory");
         std::fs::write(dir.join(GRAPH), b"not a model").expect("a planted file");
         let pin = Pin::parse(PINNED).expect("the fixture pin parses");
@@ -499,14 +504,21 @@ mod tests {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
         let pin = Pin::read(&root).expect("the committed pin parses");
         let model = Model::load(&pin, Path::new(&dir)).expect("the fetched files match the pin");
-        let eating = model.embed("A man is eating food.").expect("inference runs");
+        let eating = model
+            .embed("A man is eating food.")
+            .expect("inference runs");
         let bread = model
             .embed("A man is eating a piece of bread.")
             .expect("inference runs");
-        let baby = model.embed("The girl is carrying a baby.").expect("inference runs");
+        let baby = model
+            .embed("The girl is carrying a baby.")
+            .expect("inference runs");
         let close = similarity(&eating, &bread);
         let far = similarity(&eating, &baby);
-        assert!((close - 0.7553).abs() < 0.01, "paraphrase similarity {close}");
+        assert!(
+            (close - 0.7553).abs() < 0.01,
+            "paraphrase similarity {close}"
+        );
         assert!(far < 0.1, "unrelated similarity {far}");
     }
 

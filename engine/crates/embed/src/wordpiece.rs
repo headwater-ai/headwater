@@ -155,10 +155,7 @@ mod tests {
 
     #[test]
     fn accents_are_stripped_and_punctuation_is_a_word_of_its_own() {
-        assert_eq!(
-            vocab().encode("Naïve, route.", 256),
-            vec![2, 6, 7, 9, 8, 3]
-        );
+        assert_eq!(vocab().encode("Naïve, route.", 256), vec![2, 6, 7, 9, 8, 3]);
     }
 
     #[test]
