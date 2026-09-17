@@ -404,10 +404,9 @@ fn parse_cache(text: &str, model: &str) -> Option<BTreeMap<String, Vec<f32>>> {
             .step_by(2)
             .map(|at| u8::from_str_radix(hex.get(at..at + 2)?, 16).ok())
             .collect::<Option<_>>()?;
-        let vector = bytes
-            .chunks_exact(4)
-            .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
-            .collect();
+        // `hex.len() % 8 == 0` above leaves no remainder here.
+        let (quads, _) = bytes.as_chunks::<4>();
+        let vector = quads.iter().copied().map(f32::from_le_bytes).collect();
         entries.insert(key.to_string(), vector);
     }
     Some(entries)
