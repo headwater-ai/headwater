@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 472,
-      "carried": 472,
+      "in the graph": 473,
+      "carried": 473,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 664,
-      "carried": 664,
+      "in the graph": 665,
+      "carried": 665,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2757,6 +2757,32 @@
             "traces_to": [
               "HW-DR-0049",
               "HW-PD-0005"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/how-to/mine-the-shadow-mode-routing-log.md",
+        "kind": "how_to",
+        "id": "HW-HOW-mine-the-shadow-mode-routing-log",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-HOW-mine-the-shadow-mode-routing-log",
+          "status": "current",
+          "status_since": "2026-09-17",
+          "summary": "Join the shadow log to the session transcripts by prompt identifier, and read the deterministic route against the embedding path one prompt at a time.",
+          "last_verified": "2026-09-17",
+          "title": "Mine the shadow-mode routing log",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0064"
             ]
           }
         }
@@ -12968,6 +12994,17 @@
           "id": "HW-PD-0005",
           "path": "docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md",
           "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/how-to/mine-the-shadow-mode-routing-log.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0064",
+          "path": "docs/decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md",
+          "kind": "decision"
         }
       },
       {

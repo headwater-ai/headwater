@@ -124,6 +124,15 @@ hw_shadow_log() {
     # string, so the member is present on every line.
     _prompt_id=$(hw_field "$input" prompt_id) || _prompt_id=
 
+    # Step 3 of #819: the recorder's own name for the session it drives, which
+    # `tools/probe/probe-record.sh` exports before it starts the harness. A
+    # person's session carries none, so the member is empty on every line a
+    # person's prompt writes, and a count reads a non-empty value as a prompt
+    # that a recorder submitted. That recorder also names a log directory of
+    # its own, so the lines this names never reach the collection HW-DR-0064
+    # counts.
+    _probe_session=${HEADWATER_PROBE_SESSION:-}
+
     # Step 2 of #819: the embedding path's ranking for the same text, from
     # `headwater neighbors`, which also supplies the tree digest. The model
     # files are shared by every worktree under the common dir, where
@@ -152,14 +161,15 @@ hw_shadow_log() {
 
     _session_q=$(hw_quote "$_session") || return 0
     _prompt_id_q=$(hw_quote "$_prompt_id") || _prompt_id_q='""'
+    _probe_session_q=$(hw_quote "$_probe_session") || _probe_session_q='""'
     _root_q=$(hw_quote "$hw_root") || return 0
     _task_q=$(hw_quote "$task") || return 0
     _route_q=$(hw_quote "$route") || return 0
     _version_q=$(hw_quote "$_version") || _version_q='""'
     _lock_q=$(hw_quote "$_lock") || _lock_q='""'
 
-    _line=$(printf '{"at":"%s","session":%s,"prompt_id":%s,"corpus_root":%s,"engine_version":%s,"lock_digest":%s,"task":%s,"injected":%s,"route":%s%s}' \
-        "$_at" "$_session_q" "$_prompt_id_q" "$_root_q" "$_version_q" "$_lock_q" "$_task_q" "$injected" "$_route_q" "$_embedding") || return 0
+    _line=$(printf '{"at":"%s","session":%s,"prompt_id":%s,"probe_session":%s,"corpus_root":%s,"engine_version":%s,"lock_digest":%s,"task":%s,"injected":%s,"route":%s%s}' \
+        "$_at" "$_session_q" "$_prompt_id_q" "$_probe_session_q" "$_root_q" "$_version_q" "$_lock_q" "$_task_q" "$injected" "$_route_q" "$_embedding") || return 0
 
     # The brace group is what keeps this silent, and not a stylistic choice: a
     # bare `printf ... >> "$_file" 2>/dev/null` still leaks "cannot create" to
