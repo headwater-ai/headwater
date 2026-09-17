@@ -449,6 +449,99 @@ same "so a caller reading only the file finds no \`probe\` key to believe" "0" \
     "$(grep -c '^- probe:' "$scratch/no-engine.yaml")"
 
 # ---------------------------------------------------------------------------
+# `produced` from the log's own write-shaped calls, with no `--produced` (#911).
+#
+# One live session of 2026-09-17 edited two files, both edits named the ruling
+# the probe examined, and the event said `produced: []`. The `Edit` calls were
+# in `calls` with their paths, and nothing read those paths back into
+# `produced`, because only `--produced` fed it and the driver passed none.
+#
+# The log below holds one call of each write-shaped tool, and a `Read` and a
+# `Bash` redirect beside them. The `Read` names a path and wrote nothing. The
+# `Bash` call wrote a file and names no path, which is the gap this does not
+# close. The files sit outside the base, so this half needs no engine: an
+# artifact `headwater check` never ran over carries no `findings` key.
+# ---------------------------------------------------------------------------
+mkdir -p "$scratch/written" "$scratch/empty-base"
+printf 'The rule is [HW-DR-0049].\n' > "$scratch/written/edited.rs"
+printf 'Rests on HW-OBL-0142 and HW-DR-0049.\n' > "$scratch/written/new.md"
+printf 'no identifier\n' > "$scratch/written/multi.txt"
+printf '{}\n' > "$scratch/written/nb.ipynb"
+printf 'HW-DR-0001\n' > "$scratch/written/read.md"
+printf 'HW-DR-0002\n' > "$scratch/written/bash.md"
+w=$scratch/written
+{
+    printf '%s\n' '{"type":"system","subtype":"init","model":"claude-sonnet-5","session_id":"s8"}'
+    jq -nc --arg p "$w/read.md" '{type:"assistant",message:{content:[{type:"tool_use",id:"t1",name:"Read",input:{file_path:$p}}]}}'
+    jq -nc --arg p "$w/edited.rs" '{type:"assistant",message:{content:[{type:"tool_use",id:"t2",name:"Edit",input:{file_path:$p,old_string:"a",new_string:"b"}}]}}'
+    jq -nc --arg p "$w/new.md" '{type:"assistant",message:{content:[{type:"tool_use",id:"t3",name:"Write",input:{file_path:$p,content:"x"}}]}}'
+    jq -nc --arg p "$w/multi.txt" '{type:"assistant",message:{content:[{type:"tool_use",id:"t4",name:"MultiEdit",input:{file_path:$p,edits:[]}}]}}'
+    jq -nc --arg p "$w/nb.ipynb" '{type:"assistant",message:{content:[{type:"tool_use",id:"t5",name:"NotebookEdit",input:{notebook_path:$p,new_source:"x"}}]}}'
+    jq -nc --arg p "$w/edited.rs" '{type:"assistant",message:{content:[{type:"tool_use",id:"t6",name:"Edit",input:{file_path:$p,old_string:"b",new_string:"c"}}]}}'
+    jq -nc --arg c "cat > $w/bash.md <<EOF" '{type:"assistant",message:{content:[{type:"tool_use",id:"t7",name:"Bash",input:{command:$c}}]}}'
+} > "$scratch/writes.jsonl"
+sh "$transform" --probe PROBE-FIX-cited --session writes --root "$scratch/empty-base" \
+    < "$scratch/writes.jsonl" > "$scratch/writes.yaml" 2>"$scratch/writes.err"
+same "a log of write-shaped calls with no --produced transforms without error" "0" "$?"
+same "every write-shaped tool seeds one entry, and a file edited twice is one entry" "4" \
+    "$(grep -c '^    - path:' "$scratch/writes.yaml")"
+present "an \`Edit\` path is in \`produced\` with no --produced naming it" \
+    "    - path: \"$w/edited.rs\"" "$scratch/writes.yaml"
+present "and so is a \`Write\` path" "    - path: \"$w/new.md\"" "$scratch/writes.yaml"
+present "and a \`MultiEdit\` path" "    - path: \"$w/multi.txt\"" "$scratch/writes.yaml"
+present "and a \`NotebookEdit\` path, which is named by \`notebook_path\`" \
+    "    - path: \"$w/nb.ipynb\"" "$scratch/writes.yaml"
+absent "a \`Read\` path names a file and is not a produced artifact" \
+    "    - path: \"$w/read.md\"" "$scratch/writes.yaml"
+absent "a write through \`Bash\` names no path, so it is not seen and still needs --produced" \
+    "    - path: \"$w/bash.md\"" "$scratch/writes.yaml"
+# `cites` is read off the file the `Edit` named. The two identifiers of
+# `new.md` sit in the next entry, so the slice is bounded by it.
+same "the edited file's \`cites\` is derived from its bytes" '        - "HW-DR-0049"' \
+    "$(sed -n "\|path: \"$w/edited.rs\"|,\|path: \"$w/new.md\"|p" "$scratch/writes.yaml" | grep '^        - ')"
+same "the edited file's \`result\` is the digest of its bytes" \
+    "      result: \"sha256:$(sha256sum < "$w/edited.rs" | cut -d' ' -f1)\"" \
+    "$(grep -A1 "path: \"$w/edited.rs\"" "$scratch/writes.yaml" | grep '^      result:')"
+same "an artifact outside the base that no check ran over writes no \`findings\` key" "0" \
+    "$(grep -c '^      findings:' "$scratch/writes.yaml")"
+
+# The same log with the Bash-written file named explicitly: the two sources
+# add up, and the explicit one is not lost.
+sh "$transform" --probe PROBE-FIX-cited --session writes-and-named --root "$scratch/empty-base" \
+    --produced "$w/bash.md" --produced "$w/edited.rs" \
+    < "$scratch/writes.jsonl" > "$scratch/writes-named.yaml" 2>/dev/null
+same "--produced adds to the seeded paths, and a path named both ways is one entry" "5" \
+    "$(grep -c '^    - path:' "$scratch/writes-named.yaml")"
+
+# Inside the base, the `findings` half. The workspace is this corpus and the path is
+# absolute, as a live `Edit` names it. It has to come out relative to the base,
+# because `headwater check` reports under that form, and an absolute path there
+# would select no finding and write `findings: []` for a file with findings.
+if [ -x "$engine" ] && [ -n "${reported:-}" ]; then
+    jq -nc --arg p "$root/$reported" '{type:"assistant",message:{content:[{type:"tool_use",id:"t1",name:"Edit",input:{file_path:$p,old_string:"a",new_string:"b"}}]}}' \
+        > "$scratch/edit-in-base.body"
+    cat "$scratch/watched-nothing.jsonl" "$scratch/edit-in-base.body" > "$scratch/edit-in-base.jsonl"
+    # The root holds the engine and nothing else, so a derivation that read the
+    # root rather than the workspace finds no corpus to report over.
+    mkdir -p "$scratch/engine-only/engine/target/dev-release"
+    ln -s "$engine" "$scratch/engine-only/engine/target/dev-release/headwater"
+    sh "$transform" --probe PROBE-FIX-cited --session edit-in-base --root "$scratch/engine-only" \
+        --workspace "$root" < "$scratch/edit-in-base.jsonl" \
+        > "$scratch/edit-in-base.yaml" 2>"$scratch/edit-in-base.err"
+    same "an \`Edit\` inside the workspace derives its findings without error" "0" "$?"
+    present "and its path is written relative to the workspace" \
+        "    - path: \"$reported\"" "$scratch/edit-in-base.yaml"
+    rules=$(sed -n '/^      findings:/,/^  answer:/p' "$scratch/edit-in-base.yaml" |
+        grep -c '^        - ')
+    if [ "$rules" -gt 0 ]; then
+        pass "and its findings are the ones the engine reported over the workspace ($rules rules)"
+    else
+        fail "and its findings are the ones the engine reported over the workspace" \
+            "the engine reports over $reported and the event wrote no rule"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 # A real stream, recorded from the channel rather than written by hand.
 #
 # `tools/probe/fixtures/live-haiku-session.jsonl` is the standard output
