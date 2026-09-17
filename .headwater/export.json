@@ -7058,11 +7058,11 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0142",
-          "status": "current",
-          "status_since": "2026-09-06",
-          "last_verified": "2026-08-26",
+          "status": "discharged",
+          "status_since": "2026-09-17",
+          "last_verified": "2026-09-17",
           "title": "The obligation register states its own size by hand, and it went stale three times in two days",
-          "summary": "Spec 13 states its own item and record counts by hand, and the figure drifted three times in two days before anyone noticed.",
+          "summary": "Spec 13 named its own counts by hand and named its list membership by hand, and both drifted. A fixture now holds both in both directions, and spec 13 states neither as a number.",
           "provenance": {
             "warrant": "accepted",
             "agency": "agent",

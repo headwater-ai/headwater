@@ -1116,6 +1116,32 @@ jobs:
         # It runs `awk`, `sed` and `cmp`, builds no engine, opens no socket,
         # and writes only under a temporary directory.
         run: sh tools/repo/library-index-fixtures.sh
+      - name: The obligation register lists every current record, and no discharged one
+        # Set equality, in both directions, between `docs/obligations/*.md`
+        # (excluding `README.md`) whose `status` is not `discharged`, and the
+        # `- [HW-OBL-NNNN](...)` bullet lines of
+        # `docs/spec/13-open-obligations.md`. Measured on 2026-09-17: the
+        # shelf held 178 current and 20 discharged records, the file bulleted
+        # 181 lines, eight of them named a record that had already
+        # discharged, and five current records had no bullet line anywhere in
+        # the file. That is the register's own rule broken in both
+        # directions at once, and nothing in `headwater check --strict` or
+        # `generate --check` reads this file against the shelf to catch it.
+        #
+        # This step writes down no count of either population, because the
+        # file's own hand-typed counts are what went stale three times in two
+        # days and are the subject of
+        # [HW-OBL-0142](../../docs/obligations/0142-the-obligation-register-states-its-own-size-by-hand-and-it-went-stale-three-times-in-two-days.md).
+        # A bare mention of a discharged record in running prose, including
+        # the sanctioned "is discharged and it is not in the list below"
+        # sentence this file already uses, is deliberately outside the
+        # bulleted population, so a discharged record that leaves its bullet
+        # for that sentence is read as a repair rather than as a fresh
+        # defect.
+        #
+        # It runs `awk`, `sed`, `grep` and `comm`, builds no engine, opens no
+        # socket, and writes only under a temporary directory.
+        run: sh tools/repo/obligation-register-fixtures.sh
       - name: The composition demonstration reports the one finding it claims
         # `docs/taxonomies/diataxis/fixtures/README.md` records what happens
         # when the `reader_mode` facet of one library entry is read over
