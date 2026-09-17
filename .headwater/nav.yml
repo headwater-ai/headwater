@@ -96,6 +96,7 @@ nav:
       - "Specifying the engine": "evaluations/specifying-the-engine.md"
       - "The build order as a multi-agent system": "evaluations/the-build-order-as-a-multi-agent-system.md"
       - "The measurement layer — the Q8 and Q20 evaluation": "evaluations/the-measurement-layer.md"
+      - "The pointer probe grades a session against the router's own first pick, so a correct session that declines a wrong pointer fails": "evaluations/the-pointer-probe-grades-a-session-against-the-router-s-own-first-pick-so-a-correct-session-that-declines-a-wrong-pointer-fails.md"
       - "The serving boundary — what is advertised, what is withheld, what is written back": "evaluations/the-serving-boundary.md"
       - "The three discovery misses of 2026-09-16 have three different mechanisms, and only one is routing precision": "evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md"
       - "Theoretical foundations": "evaluations/theoretical-foundations.md"
