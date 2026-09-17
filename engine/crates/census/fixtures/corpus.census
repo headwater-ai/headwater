@@ -150,6 +150,8 @@ docs/doctrine/maturity-model.md
   untyped: no shelf pattern claims this path
 docs/evaluations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md
+  typed: evaluation
 docs/evaluations/adjacent-work.md
   typed: evaluation
 docs/evaluations/capability-bundle-address-inventory.md
@@ -650,6 +652,8 @@ docs/probe-results/regression-probe-transcript-for-2026-09-11.md
   generated: `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/regression-probe-transcript-for-2026-09-16.md
   generated: `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md
+  generated: `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/regression-probe-transcript-for-2026-09-17.md
   generated: `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-runs/README.md
@@ -659,6 +663,8 @@ docs/probe-runs/regression-probe-transcript-for-2026-09-09.md
 docs/probe-runs/regression-probe-transcript-for-2026-09-11.md
   typed: probe_transcript
 docs/probe-runs/regression-probe-transcript-for-2026-09-16.md
+  typed: probe_transcript
+docs/probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md
   typed: probe_transcript
 docs/probe-runs/regression-probe-transcript-for-2026-09-17.md
   typed: probe_transcript

@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 463,
-      "carried": 463,
+      "in the graph": 466,
+      "carried": 466,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 653,
-      "carried": 653,
+      "in the graph": 656,
+      "carried": 656,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1976,6 +1976,33 @@
         }
       },
       {
+        "path": "docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt",
+          "status": "current",
+          "status_since": "2026-09-17",
+          "summary": "Two probes leaked commentary into the section a recorder sends as the prompt, and a third declared an answer set with no output contract.",
+          "last_verified": "2026-09-17",
+          "title": "A probe task section is the prompt, so commentary under that heading is prompt",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-RUN-regression-probe-transcript-for-2026-09-16",
+              "HW-RUN-regression-probe-transcript-for-2026-09-17"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/adjacent-work.md",
         "kind": "evaluation",
         "id": "HW-EVAL-adjacent-work",
@@ -3468,8 +3495,8 @@
           "status": "current",
           "status_since": "2026-08-10",
           "waiting_on": "build",
-          "last_verified": "2026-09-16",
-          "summary": "Q17 claims a counted tombstone stops a confident report of absence, and a third run against a corpus with no tombstone recorded no answer.",
+          "last_verified": "2026-09-17",
+          "summary": "Q17 claims a counted tombstone stops a confident report of absence, and the recorder discarded the answer of both runs that reached one.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -3496,8 +3523,8 @@
           "status": "current",
           "status_since": "2026-08-10",
           "waiting_on": "build",
-          "last_verified": "2026-09-16",
-          "summary": "Q18 claims that an agent meeting the losing document first reaches the adjudication, and two runs now say that it did not.",
+          "last_verified": "2026-09-17",
+          "summary": "Q18 claims that an agent meeting the losing document reaches the adjudication, and three of four recorded sessions did, against a mis-specified probe.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -8381,6 +8408,20 @@
         }
       },
       {
+        "path": "docs/probe-results/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md",
+        "kind": "probe_result",
+        "id": "HW-RESULT-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections",
+        "facets": {
+          "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
+          "id": "HW-RESULT-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections",
+          "title": "Probe result for regression-probe-transcript-for-2026-09-17-after-the-probe-corrections",
+          "status": "current",
+          "status_since": "2026-09-17",
+          "summary": "The grade of the transcript `regression-probe-transcript-for-2026-09-17-after-the-probe-corrections`, taken over the probes this corpus declares and the version of the grader that evaluated them.",
+          "last_verified": "2026-09-17"
+        }
+      },
+      {
         "path": "docs/probe-results/regression-probe-transcript-for-2026-09-17.md",
         "kind": "probe_result",
         "id": "HW-RESULT-regression-probe-transcript-for-2026-09-17",
@@ -8437,6 +8478,21 @@
           "tier": "regression",
           "arm": "present",
           "title": "Regression probe transcript for 2026-09-16"
+        }
+      },
+      {
+        "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md",
+        "kind": "probe_transcript",
+        "id": "HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections",
+        "facets": {
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections",
+          "status": "current",
+          "status_since": "2026-09-17",
+          "summary": "Eight regression sessions ran live on claude-sonnet-5 against the read set the three corrected probes moved, which is the first graded run of those corrections rather than a re-grade of an older recording.",
+          "last_verified": "2026-09-17",
+          "tier": "regression",
+          "arm": "present",
+          "title": "Regression probe transcript for 2026-09-17 after the probe corrections"
         }
       },
       {
@@ -8600,7 +8656,8 @@
           },
           "relations": {
             "examines": [
-              "HW-REG-decisions"
+              "HW-REG-decisions",
+              "HW-DR-0008"
             ],
             "traces_to": [
               "HW-OBL-0014"
@@ -11765,6 +11822,28 @@
           "id": "HW-DR-0005",
           "path": "docs/decisions/0005-voice-checking-depth.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-16",
+          "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-16.md",
+          "kind": "probe_transcript"
+        }
+      },
+      {
+        "source": "docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-17",
+          "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-17.md",
+          "kind": "probe_transcript"
         }
       },
       {
@@ -15769,6 +15848,17 @@
           "id": "HW-REG-decisions",
           "path": "docs/spec/09-decisions.md",
           "kind": "decision_register"
+        }
+      },
+      {
+        "source": "docs/probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md",
+        "relation": "examines",
+        "written_as": "examines",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0008",
+          "path": "docs/decisions/0008-probe-cost-and-cadence.md",
+          "kind": "decision"
         }
       },
       {

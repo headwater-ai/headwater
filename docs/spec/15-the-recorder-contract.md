@@ -44,6 +44,14 @@ A harness log carries the calls and not the rest of the contract below. Each val
 - The six identity members are `lock`, `tree`, `selection`, `read_set`, `seed` and `harness`, copied from the plan.
 - `served_version` and `cost_cents` are derived from the provider metadata of the run, because a usage record carries token counts and not cents.
 
+## The prompt is the task section, and the answer is the whole final message
+
+Two values cross the boundary between a probe document and a session. The driver sends one in and it reads one out. This part fixes both, and `tools/probe/probe-record.sh` is the recorder of this repository that implements them.
+
+**The prompt is the body of the probe's `## Task` section, word for word.** The driver copies that body and sends it as the whole of the session's first turn. No other section of the probe document reaches the session. An expectation, a worked example and a paragraph of rationale are for the person who reads the probe. So a paragraph of commentary under the `## Task` heading is prompt rather than commentary. It reaches the model, it changes what `headwater route` scores, and the probe then measures a task that nobody wrote.
+
+**The answer is the whole final message, compared as one value.** The driver takes the final message of the session, trims the space around it, strips one trailing period, and folds the case. The answer is a value only where what remains equals one of the `answers` the probe declares. Every other message records `answer: null`. A message that states the reasoning and then the word carries no answer. Neither does a message that sets the word in Markdown emphasis. A driver that found the word inside prose would read the session rather than observe it, and [spec 5](05-ai-integration.md#a-transcript-is-recorded-from-outside-the-session-and-never-written-back-by-the-agent) puts that reading outside a recorder. So a probe with a closed answer set states the output form in its own task text. A probe that leaves the form open measures the shape of an answer instead of the answer.
+
 ## The engine fixes six members of the identity, and the recorder supplies the rest
 
 `headwater probe plan` composes a selection and prints the six members of the run identity that exist before any session starts. They are the lock, the corpus tree, the selection, the read set, the seed and the harness version. The plan also prints the probes selected, the task of each one, and the documents each one examines. It prints the read set that the digest covers, one line for each document.
