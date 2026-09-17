@@ -89,7 +89,7 @@ No engine change follows from this evaluation. The grader already satisfies `ope
 
 Three things a later reader checks against a fresh recording of this tier:
 
-- **The pointer probe.** Check whether the session opened `HW-OBL-0107`, and re-run the first of the two router commands above. A miss with the bare task text is a reading of a model, which neither recorded miss was.
+- **The pointer probe.** Check whether the session opened `HW-OBL-0107`, and re-run the first of the two router commands above. A miss with the bare task text is a reading of a model, which neither recorded miss was. [The evaluation of #910](the-pointer-probe-grades-a-session-against-the-router-s-own-first-pick-so-a-correct-session-that-declines-a-wrong-pointer-fails.md) shows that the first live miss over the bare text was not one. The first pointer does not answer the task.
 - **The adjudication probe.** Check which of the two examined documents the session opened. A session that opens neither is the failure the probe is for, and it has happened once.
 - **The tombstone probe.** Check whether the recorded `answer` is a value rather than `null`. A `null` after this change means the output contract did not bind. That is a reading worth having, and a different finding from the one above.
 

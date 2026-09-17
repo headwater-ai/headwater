@@ -38,6 +38,8 @@ The recorded session read `.headwater/corpus.json`, `taxonomy.yml` and `conforma
 
 ## HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens: the router was right
 
+[The evaluation of #910](the-pointer-probe-grades-a-session-against-the-router-s-own-first-pick-so-a-correct-session-that-declines-a-wrong-pointer-fails.md) corrects the reading of this section. The probe took its target from the router, so a first rank here never showed that the router was right.
+
     headwater route --root . --budget 500 --json "Decide which shelf a new document belongs on, and where its identifier comes from."
 
 `docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md` (`HW-OBL-0107`) is the document the probe expects opened. It ranks first of 217, exactly as the probe's own worked example states.

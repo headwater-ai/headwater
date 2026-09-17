@@ -2,7 +2,7 @@
 
 # Evaluations
 
-24 documents on this shelf, in the reading order this corpus derives.
+25 documents on this shelf, in the reading order this corpus derives.
 
 - [A probe task section is the prompt, so commentary under that heading is prompt](a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md) — Two probes leaked commentary into the section a recorder sends as the prompt, and a third declared an answer set with no output contract. (asserted, and no human has accepted it)
 - [Adjacent work and tooling](adjacent-work.md) — Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.
@@ -22,6 +22,7 @@
 - [Specifying the engine](specifying-the-engine.md) — `docs/spec/` is a design-spec series and nothing types the engine as a thing under test, and three traditions each supply one part of what would.
 - [The build order as a multi-agent system](the-build-order-as-a-multi-agent-system.md) — What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, the architecture that follows, what was rejected, and the numbers the next run is held against. (asserted, and no human has accepted it)
 - [The measurement layer — the Q8 and Q20 evaluation](the-measurement-layer.md) — The Q8 and Q20 evidence, which is what a probe costs, when it runs, and whether the promised instruments can produce their measurements.
+- [The pointer probe grades a session against the router's own first pick, so a correct session that declines a wrong pointer fails](the-pointer-probe-grades-a-session-against-the-router-s-own-first-pick-so-a-correct-session-that-declines-a-wrong-pointer-fails.md) — A session that declined a wrong first pointer answered correctly from two spec parts that the router ranks past 100th. (asserted, and no human has accepted it)
 - [The serving boundary — what is advertised, what is withheld, what is written back](the-serving-boundary.md) — The Q14, Q17 and Q7 evidence, which is what a corpus advertises, what it withholds, and what a tool may write back.
 - [The three discovery misses of 2026-09-16 have three different mechanisms, and only one is routing precision](the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md) — A replay of the router shows three different misses: one true precision failure, one ignored correct offer, and one target the router cannot reach. (asserted, and no human has accepted it)
 - [Theoretical foundations](theoretical-foundations.md) — Where the research literature confirms, sharpens, or contradicts the design, and what changed in the specification as a result.

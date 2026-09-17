@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 466,
-      "carried": 466,
+      "in the graph": 467,
+      "carried": 467,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 656,
-      "carried": 656,
+      "in the graph": 657,
+      "carried": 657,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2481,6 +2481,32 @@
               "HW-SPEC-engine-architecture",
               "HW-SPEC-check-layer",
               "HW-SPEC-glossary"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/evaluations/the-pointer-probe-grades-a-session-against-the-router-s-own-first-pick-so-a-correct-session-that-declines-a-wrong-pointer-fails.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-the-pointer-probe-grades-a-session-against-the-router-s-own-first-pick-so-a-correct-session-that-declines-a-wrong-pointer-fails",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-the-pointer-probe-grades-a-session-against-the-router-s-own-first-pick-so-a-correct-session-that-declines-a-wrong-pointer-fails",
+          "status": "current",
+          "status_since": "2026-09-17",
+          "summary": "A session that declined a wrong first pointer answered correctly from two spec parts that the router ranks past 100th.",
+          "last_verified": "2026-09-17",
+          "title": "The pointer probe grades a session against the router's own first pick, so a correct session that declines a wrong pointer fails",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections"
             ]
           }
         }
@@ -12416,6 +12442,17 @@
           "id": "HW-SPEC-glossary",
           "path": "docs/spec/glossary.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/the-pointer-probe-grades-a-session-against-the-router-s-own-first-pick-so-a-correct-session-that-declines-a-wrong-pointer-fails.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections",
+          "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md",
+          "kind": "probe_transcript"
         }
       },
       {
