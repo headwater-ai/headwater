@@ -436,7 +436,7 @@ same "the workflow judge sees a cargo run behind a \`cd\`, an assignment, a nest
 # 9. And the same for the container line, where two invocations share one line
 #    and only the second one is the subject.
 mkdir -p "$scratch/rd"
-sed 's/^\(.*rust:1\.[0-9]*-slim cargo test\) --locked$/\1/' \
+sed -E 's/^(.*rust:1\.[0-9]*(-slim)? cargo test) --locked$/\1/' \
     "$root/engine/README.md" >"$scratch/rd/README.md"
 bad=$(offenders "$scratch/rd/README.md" lines 'rust:1[.][0-9]+')
 same "the container judge names the test command whose flag was removed" \

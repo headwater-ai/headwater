@@ -42,12 +42,12 @@
 # cost bar the issue set: the container itself is not run in CI and this suite
 # does not run it either.
 #
-# # THE FOUR OTHER THINGS THOSE RECIPES SAY, WHICH NOTHING ELSE READS
+# # THE FIVE OTHER THINGS THOSE RECIPES SAY, WHICH NOTHING ELSE READS
 #
 # `tools/engine/build-declaration-fixtures.sh` case 6 already reads this file, one
 # occurrence at a time, for `--locked` on every cargo invocation in an image
 # line, and case 9 provokes it. That is one of the ways these recipes break.
-# This suite holds the four the page explains at length and nothing reads:
+# This suite holds the five the page explains at length and nothing reads:
 #
 #   The SECOND recipe runs `--user "$(id -u):$(id -g)"` and the first does not.
 #   Three tests set a path unwritable and require the engine to refuse it; root
@@ -68,6 +68,17 @@
 #   Neither carries `-D warnings`. `[workspace.lints.clippy]` denies a lint the
 #   pinned clippy does not know, so the flag turns `unknown lint` into an error
 #   in every crate there.
+#
+#   The two recipes pin the same Rust version in two different image variants.
+#   The format-and-lint recipe stays on `rust:<v>-slim`; the test recipe does
+#   not, since #920: `-slim` ships no VCS client, and ten tests in
+#   `crates/census/tests/merge_driver.rs` call `git` to build a scratch
+#   repository, so every one of them panicked with `git init -q -b base: No
+#   such file or directory` before that issue. `rust:<v>` (no `-slim`) is
+#   built on buildpack-deps' `-scm` variant, which installs `git` when the
+#   image itself is built, so the `--user` process the test recipe runs as
+#   reads and executes a binary that was already there rather than installing
+#   one itself.
 #
 # # THE FLOOR IS STATED IN NINE FILES, AND CASE GROUP 6 HOLDS THEM TOGETHER
 #
@@ -294,10 +305,13 @@ max_locked_rust_version() {
         tail -1
 }
 
-# image_tags FILE — the `rust:<tag>-slim` tag of every container recipe, one per
-# occurrence.
-image_tags() {
-    docker_runs "$1" | grep -oE 'rust:[0-9][0-9.]*-slim' | sed 's/^rust://; s/-slim$//'
+# image_tag_of FILE PATTERN — the `rust:<tag>` image, `-slim` or not, named in
+# the docker run recipe whose command matches PATTERN. Each recipe is selected
+# by a fragment of its own command rather than by position, so a page that
+# reordered the two blocks would still be read correctly.
+image_tag_of() {
+    docker_runs "$1" | awk -F'\t' -v pat="$2" '$2 ~ pat { print $2 }' |
+        grep -oE 'rust:[0-9][0-9.]*(-slim)?' | sed 's/^rust://'
 }
 
 echo "the floor the lock actually requires, against the image the page pins"
@@ -311,14 +325,39 @@ same "the page carries two container recipes" "2" "$runs"
 blocks=$(blocks_of "$readme" | awk -F'\t' '{ print $1 }' | sort -un | wc -l | tr -d ' ')
 more_than "the page carries indented code blocks" "2" "$blocks"
 
-# 1b. Both recipes pin the same image. Two tags that disagree is a page where
-#     half the instructions build and half do not, and 1c would then judge only
-#     whichever one it read first.
-tags=$(image_tags "$readme" | sort -u | tr '\n' ' ' | sed 's/ $//')
-tagcount=$(image_tags "$readme" | wc -l | tr -d ' ')
-same "both recipes pin one image" "2" "$tagcount"
-pin=$tags
-same "the two recipes name the same tag" "1" "$(image_tags "$readme" | sort -u | wc -l | tr -d ' ')"
+# 1b. The two recipes pin the same Rust version, in two different image
+#     variants: the format-and-lint recipe pins `-slim` and the test recipe
+#     does not. A version that disagrees between them is a page where half the
+#     instructions build and half do not, and 1c would then judge only
+#     whichever recipe it read first.
+lint_tag=$(image_tag_of "$readme" 'rustup component add')
+test_tag=$(image_tag_of "$readme" 'cargo test')
+more_than "the format-and-lint recipe names an image" "0" "$(printf '%s' "$lint_tag" | grep -c .)"
+more_than "the test recipe names an image" "0" "$(printf '%s' "$test_tag" | grep -c .)"
+
+lintver=$(printf '%s' "$lint_tag" | sed 's/-slim$//')
+testver=$(printf '%s' "$test_tag" | sed 's/-slim$//')
+same "the two recipes name the same Rust version" "$lintver" "$testver"
+pin=$lintver
+
+case "$lint_tag" in
+    *-slim) pass "the format-and-lint recipe pins a -slim image" ;;
+    *) fail "the format-and-lint recipe pins a -slim image" "got rust:$lint_tag" ;;
+esac
+
+# 1b2. THE CASE #920 FILED. `rust:<v>-slim` ships no VCS client, and ten tests
+#      in `crates/census/tests/merge_driver.rs` call `git` to build a scratch
+#      repository against it; a test recipe pinned back to `-slim` is that
+#      exact regression, and it exits 101 with no line of that file run. This
+#      suite does not run the container, for the cost reason the header of
+#      this file gives, so the judge is the tag's own shape — the `-slim`
+#      suffix names an image with no VCS client — rather than a search for the
+#      binary inside one.
+case "$test_tag" in
+    *-slim) fail "the test recipe pins an image that ships a VCS client" \
+        "rust:$test_tag is -slim, and crates/census/tests/merge_driver.rs's ten tests call \`git\`" ;;
+    *) pass "the test recipe pins an image that ships a VCS client" ;;
+esac
 
 # 1c. THE CASE. The resolved graph's floor against the pinned image.
 maxfloor=$(max_locked_rust_version "$root")
@@ -338,18 +377,20 @@ else
 fi
 
 # 1d. The judge, provoked, in both directions. A judge nobody has watched refuse
-#     anything is a judge nobody has watched work.
+#     anything is a judge nobody has watched work. The substitution keeps each
+#     occurrence's own `-slim` suffix, or its absence, so the low and high arms
+#     stay two images of the same two shapes as the page they are provoked from.
 mkdir -p "$scratch/arms"
-sed "s/rust:$pin-slim/rust:1.0-slim/g" "$readme" >"$scratch/arms/low.md"
-lowpin=$(image_tags "$scratch/arms/low.md" | sort -u)
+sed -E "s/rust:$pin(-slim)?/rust:1.0\1/g" "$readme" >"$scratch/arms/low.md"
+lowpin=$(image_tag_of "$scratch/arms/low.md" 'rustup component add' | sed 's/-slim$//')
 if ver_ge "$lowpin" "$maxfloor"; then
     fail "a pin below the lock's floor is refused" "rust:$lowpin was accepted against a floor of $maxfloor"
 else
     pass "a pin below the lock's floor is refused"
 fi
 
-sed "s/rust:$pin-slim/rust:99.0-slim/g" "$readme" >"$scratch/arms/high.md"
-highpin=$(image_tags "$scratch/arms/high.md" | sort -u)
+sed -E "s/rust:$pin(-slim)?/rust:99.0\1/g" "$readme" >"$scratch/arms/high.md"
+highpin=$(image_tag_of "$scratch/arms/high.md" 'rustup component add' | sed 's/-slim$//')
 if ver_ge "$highpin" "$maxfloor"; then
     pass "a pin above the lock's floor is accepted"
 else
