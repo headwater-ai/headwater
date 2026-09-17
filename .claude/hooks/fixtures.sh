@@ -559,15 +559,31 @@ printf '\n# intent.sh: the shadow-mode routing log HW-DR-0064 adds beside it\n'
 # change: a write failure that is not as silent as the routing decision it
 # rides beside. `intent.sh`'s own header names the shell gotcha this guards
 # against, and this is the fixture that would catch a regression back into it.
+#
+# Every case here writes to a scratch directory named through
+# `HEADWATER_SHADOW_LOG_DIR`, and never to the log a session keeps. Until #917
+# this block set `shadow_dir` to `<git common dir>/headwater-shadow-log`, the
+# real one, and removed it at the start and the end. One run of this suite at
+# 08:53Z on 2026-09-17 removed every line the hook had written since #893
+# landed the day before, which read afterwards as a hook that never wrote. The
+# first case below plants a file in the real directory and fails if the suite
+# removes it.
 if [ -x "$engine" ]; then
     common=$(git -C "$root" rev-parse --git-common-dir 2>/dev/null)
     case $common in
         /*) ;;
         *) common="$root/$common" ;;
     esac
-    shadow_dir="$common/headwater-shadow-log"
-    trap 'chmod u+w "$shadow_dir" 2>/dev/null; rm -rf "$shadow_dir"' EXIT INT TERM
-    rm -rf "$shadow_dir"
+    real_shadow_dir="$common/headwater-shadow-log"
+    shadow_dir=$(mktemp -d "${TMPDIR:-/tmp}/headwater-shadow-fixtures.XXXXXX")
+    HEADWATER_SHADOW_LOG_DIR=$shadow_dir
+    export HEADWATER_SHADOW_LOG_DIR
+    # The sentinel is not a `.jsonl` file, so a reader that counts session
+    # files never counts it, and the trap removes it on an interrupt.
+    mkdir -p "$real_shadow_dir"
+    sentinel="$real_shadow_dir/fixtures-sentinel-$$.keep"
+    : > "$sentinel"
+    trap 'chmod u+w "$shadow_dir" 2>/dev/null; rm -rf "$shadow_dir"; rm -f "$sentinel"' EXIT INT TERM
 
     # The cheaper regression: the same payload the very first case in this
     # file already answers with `docs/spec/`, run twice with a session id and
@@ -647,7 +663,65 @@ if [ -x "$engine" ]; then
         passed=$((passed + 1))
     fi
 
+    # A prompt the harness submits on a schedule reaches this hook with the
+    # same payload a typed one does. Measured on 2026-09-17 under
+    # `claude -p` 2.1.272: the payload carries `session_id`, `transcript_path`,
+    # `cwd`, `prompt_id`, `permission_mode`, `hook_event_name` and `prompt`, and
+    # the transcript does not yet hold the prompt's own line when the hook
+    # runs. The line that later says `"origin":{"kind":"human"}` is written
+    # after. So the hook records `prompt_id`, and a count joins it against the
+    # transcript. This case holds the join key.
+    joined_session="fixture-session-shadow-joined-$$"
+    joined_file="$shadow_dir/$joined_session.jsonl"
+    expect 'a prompt with a prompt id is routed as before' \
+        intent.sh 0 'docs/spec/' \
+        "{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$joined_session\",\"prompt_id\":\"fixture-prompt-$$\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+    if [ -s "$joined_file" ] && [ "$("$engine" json field prompt_id < "$joined_file" 2>/dev/null)" = "fixture-prompt-$$" ]; then
+        printf 'ok   %s\n' 'the shadow-log line carries the prompt id a count joins against the transcript'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'the shadow-log line does not carry the prompt id of the payload'
+        failed=$((failed + 1))
+    fi
+
+    # The harness moves a session's working directory whenever a `cd`
+    # persists, so a prompt typed during engine work arrives with `cwd` set to
+    # `engine/` or deeper. `HEADWATER_HOOK_ROOT` turns off the payload read, so
+    # this case unsets it and names the checkout the way the harness does.
+    sub_session="fixture-session-shadow-subdir-$$"
+    sub_file="$shadow_dir/$sub_session.jsonl"
+    sub_payload="{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$sub_session\",\"cwd\":\"$root/engine/crates\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+    sub_out=$(printf '%s' "$sub_payload" | env -u HEADWATER_HOOK_ROOT CLAUDE_PROJECT_DIR="$root" sh "$hooks/intent.sh" 2>&1)
+    case $sub_out in
+        *docs/spec/*)
+            printf 'ok   %s\n' 'a prompt whose cwd is a subdirectory of the checkout routes over the repository root'
+            passed=$((passed + 1))
+            ;;
+        *)
+            printf 'FAIL %s\n  expected output to hold docs/spec/, got:\n%s\n' 'a prompt whose cwd is a subdirectory of the checkout routes over the repository root' "$sub_out"
+            failed=$((failed + 1))
+            ;;
+    esac
+    if [ -s "$sub_file" ] && [ "$(tail -n 1 "$sub_file" | "$engine" json field corpus_root 2>/dev/null)" = "$root" ]; then
+        printf 'ok   %s\n' 'a prompt from a subdirectory leaves a line that names the repository root'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'a prompt from a subdirectory left no line naming the repository root'
+        failed=$((failed + 1))
+    fi
+
+    if [ -e "$sentinel" ]; then
+        printf 'ok   %s\n' 'the suite left the shadow log a session keeps as it found it'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'the suite removed a file from the shadow log a session keeps'
+        failed=$((failed + 1))
+    fi
+
     rm -rf "$shadow_dir"
+    rm -f "$sentinel"
+    rmdir "$real_shadow_dir" 2>/dev/null
+    unset HEADWATER_SHADOW_LOG_DIR
     trap - EXIT INT TERM
 else
     skip 'intent.sh shadow-log cases' 'no built engine'
