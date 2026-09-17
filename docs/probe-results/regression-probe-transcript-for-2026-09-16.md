@@ -40,7 +40,7 @@ A regression run in the present arm, on claude-haiku-4-5 at served version claud
 - HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks (sufficiency, expects patched)
     session regression-20260916-unmeasured-claim: satisfied — event 4: `section.required.missing` reported nothing over `docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md`
 - HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it (navigability, expects opened)
-    session regression-20260916-adjudication: not satisfied — 2 recorded calls, and none named any of the 1 document
+    session regression-20260916-adjudication: satisfied — event 5, call 2: `Read /home/james/.claude/jobs/eb30b5a4/tmp/probe170/workspace-5/docs/decisions/0008-probe-cost-and-cadence.md`
 - HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document (discovery, expects opened)
     session regression-20260916-authoring-skill: not satisfied — 29 recorded calls, and none named any of the 1 document
 - HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens (discovery, expects opened)
@@ -50,7 +50,7 @@ A regression run in the present arm, on claude-haiku-4-5 at served version claud
 
 ## The rate, and the denominator it is over
 
-3 of 8 graded sessions satisfied their expectation: 37.5%, in a 95% interval of 13.7% to 69.4%.
+4 of 8 graded sessions satisfied their expectation: 50.0%, in a 95% interval of 21.5% to 78.5%.
 The denominator is the graded sessions and never the selected probes. 0 sessions reached no verdict, and a session with no verdict is outside both halves of that fraction.
 
 An interval that overlaps the previous run's is variance and one that does not is drift. This is one arm, so it estimates no effect: an efficacy claim is a comparison of two results, and the arm each one recorded is on it.

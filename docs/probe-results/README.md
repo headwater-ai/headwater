@@ -2,9 +2,10 @@
 
 # Probe results
 
-4 documents on this shelf, in the reading order this corpus derives.
+5 documents on this shelf, in the reading order this corpus derives.
 
 - [Probe result for regression-probe-transcript-for-2026-09-09](regression-probe-transcript-for-2026-09-09.md) — The grade of the transcript `regression-probe-transcript-for-2026-09-09`, taken over the probes this corpus declares and the version of the grader that evaluated them.
 - [Probe result for regression-probe-transcript-for-2026-09-11](regression-probe-transcript-for-2026-09-11.md) — The grade of the transcript `regression-probe-transcript-for-2026-09-11`, taken over the probes this corpus declares and the version of the grader that evaluated them.
 - [Probe result for regression-probe-transcript-for-2026-09-16](regression-probe-transcript-for-2026-09-16.md) — The grade of the transcript `regression-probe-transcript-for-2026-09-16`, taken over the probes this corpus declares and the version of the grader that evaluated them.
+- [Probe result for regression-probe-transcript-for-2026-09-17-after-the-probe-corrections](regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md) — The grade of the transcript `regression-probe-transcript-for-2026-09-17-after-the-probe-corrections`, taken over the probes this corpus declares and the version of the grader that evaluated them.
 - [Probe result for regression-probe-transcript-for-2026-09-17](regression-probe-transcript-for-2026-09-17.md) — The grade of the transcript `regression-probe-transcript-for-2026-09-17`, taken over the probes this corpus declares and the version of the grader that evaluated them.

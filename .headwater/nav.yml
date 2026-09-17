@@ -78,6 +78,7 @@ nav:
       - "Every required section of every governed document has a heading": "acceptance-criteria/0002-every-required-section-of-every-governed-document-has-a-heading.md"
   - "Evaluations":
       - "Evaluations": "evaluations/README.md"
+      - "A probe task section is the prompt, so commentary under that heading is prompt": "evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md"
       - "Adjacent work and tooling": "evaluations/adjacent-work.md"
       - "The capability-bundle address inventory": "evaluations/capability-bundle-address-inventory.md"
       - "What ships in the box — a first-run walkthrough": "evaluations/default-taxonomy-first-run.md"
@@ -332,12 +333,14 @@ nav:
       - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"
       - "Probe result for regression-probe-transcript-for-2026-09-11": "probe-results/regression-probe-transcript-for-2026-09-11.md"
       - "Probe result for regression-probe-transcript-for-2026-09-16": "probe-results/regression-probe-transcript-for-2026-09-16.md"
+      - "Probe result for regression-probe-transcript-for-2026-09-17-after-the-probe-corrections": "probe-results/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md"
       - "Probe result for regression-probe-transcript-for-2026-09-17": "probe-results/regression-probe-transcript-for-2026-09-17.md"
   - "Probe runs":
       - "Probe runs": "probe-runs/README.md"
       - "Regression probe transcript for 2026-09-09": "probe-runs/regression-probe-transcript-for-2026-09-09.md"
       - "Regression probe transcript for 2026-09-11": "probe-runs/regression-probe-transcript-for-2026-09-11.md"
       - "Regression probe transcript for 2026-09-16": "probe-runs/regression-probe-transcript-for-2026-09-16.md"
+      - "Regression probe transcript for 2026-09-17 after the probe corrections": "probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md"
       - "Regression probe transcript for 2026-09-17": "probe-runs/regression-probe-transcript-for-2026-09-17.md"
   - "Probes":
       - "Probes": "probes/README.md"

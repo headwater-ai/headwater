@@ -1,24 +1,24 @@
 ---
 "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file."
-id: HW-RESULT-regression-probe-transcript-for-2026-09-17
-title: Probe result for regression-probe-transcript-for-2026-09-17
+id: HW-RESULT-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections
+title: Probe result for regression-probe-transcript-for-2026-09-17-after-the-probe-corrections
 status: current
-status_since: 2026-09-16
-summary: "The grade of the transcript `regression-probe-transcript-for-2026-09-17`, taken over the probes this corpus declares and the version of the grader that evaluated them."
-last_verified: 2026-09-16
+status_since: 2026-09-17
+summary: "The grade of the transcript `regression-probe-transcript-for-2026-09-17-after-the-probe-corrections`, taken over the probes this corpus declares and the version of the grader that evaluated them."
+last_verified: 2026-09-17
 ---
 
-# The result of docs/probe-runs/regression-probe-transcript-for-2026-09-17.md
+# The result of docs/probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md
 
-A probe result is a function of three committed inputs and of nothing else: the transcript at `docs/probe-runs/regression-probe-transcript-for-2026-09-17.md`, the expectations the probes of this corpus declare, and the version of the grader that evaluated them. Fetch the three and this file comes back.
+A probe result is a function of three committed inputs and of nothing else: the transcript at `docs/probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md`, the expectations the probes of this corpus declare, and the version of the grader that evaluated them. Fetch the three and this file comes back.
 
 ## The run this transcript recorded
 
-A regression run in the present arm, on claude-sonnet-5 at 2026-09-16.
-served version claude-sonnet-5, tree sha256:56e6e8bcf645e06dbb50ecfb4050783c7afc0e876585e7103aae58ea17877501, selection sha256:aa4aaa7375349b5c8cc667a196819166519aac3f519d436f3f237afb7923530a, read set sha256:8f891e3c74fd78d9bc1e9fab3509ff6b89eb9a132d51ca1ead9a8c6feb746b27, seed 0, harness 0.2.0.
-realized cost $3.90, which the adaptive layer reads as the cost of its own instrument.
+A regression run in the present arm, on claude-sonnet-5 at 2026-09-17.
+served version claude-sonnet-5, tree sha256:7e97122f457926c582ef46aab0b3cd4b1e886f47b9069ed1399a3019e5a04fb3, selection sha256:aa4aaa7375349b5c8cc667a196819166519aac3f519d436f3f237afb7923530a, read set sha256:e2fd3d3fb879b61681d31bc47562f4aa21e8f0c79ba44b7cba42e1b0dfa0a68f, seed 0, harness 0.2.0.
+realized cost $4.07, which the adaptive layer reads as the cost of its own instrument.
 
-8 events over 8 of the 8 probes this corpus declares, in 8 sessions and 121 tool calls.
+8 events over 8 of the 8 probes this corpus declares, in 8 sessions and 129 tool calls.
 
 The engine confirmed the taxonomy, that every member of the run identity is present, the membership of every probe named, that no key outside the closed set appears, and that a realized cost was recorded. Present is not confirmed: of the six members a plan fixes before a run, the lock is the one compared here, and it refuses the file. `headwater probe stale` compares the read set against the tree in front of it. It graded nothing: a verdict is a function of this transcript, the expectations these probes declare and a grader version, and `headwater probe grade` is the verb that holds all three.
 
@@ -32,21 +32,21 @@ A regression run in the present arm, on claude-sonnet-5 at served version claude
 ## The verdicts
 
 - HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor (discovery, expects opened)
-    session regression-20260917-cold-current: not satisfied — 18 recorded calls, and none named any of the 1 document
+    session regression-20260917b-descriptor: not satisfied — 13 recorded calls, and none named any of the 1 document
 - HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer (sufficiency, expects answered)
-    session regression-20260917-tombstone: not satisfied — the session ended with no answer
+    session regression-20260917b-tombstone: satisfied — event 2: answered `absent`
 - HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced (navigability, expects not_opened)
-    session regression-20260917-register: satisfied — 7 recorded calls, and none named any of the 1 document
+    session regression-20260917b-register: satisfied — 3 recorded calls, and none named any of the 1 document
 - HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks (sufficiency, expects patched)
-    session regression-20260917-unmeasured-claim: satisfied — event 7: `section.required.missing` reported nothing over `docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md`
+    session regression-20260917b-unmeasured: satisfied — event 4: `section.required.missing` reported nothing over `docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md`
 - HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it (navigability, expects opened)
-    session regression-20260917-adjudication: satisfied — event 4, call 4: `Read /home/james/.cache/hw-probe-live-20260917/workspace-adjudication/docs/decisions/0008-probe-cost-and-cadence.md`
+    session regression-20260917b-adjudication: satisfied — event 5, call 2: `Read /home/james/.cache/hw-probe-live-20260917b/workspace-adjudication/docs/decisions/0008-probe-cost-and-cadence.md`
 - HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document (discovery, expects opened)
-    session regression-20260917-authoring-skill: not satisfied — 11 recorded calls, and none named any of the 1 document
+    session regression-20260917b-skill-reach: not satisfied — 11 recorded calls, and none named any of the 1 document
 - HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens (discovery, expects opened)
-    session regression-20260917-pointer: not satisfied — 25 recorded calls, and none named any of the 1 document
+    session regression-20260917b-pointer: not satisfied — 16 recorded calls, and none named any of the 1 document
 - HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on (navigability, expects cited)
-    session regression-20260917-points-back: satisfied — event 8: `docs/evaluations/why-corpus-counts-are-derived-not-stored.md` cites HW-DR-0049
+    session regression-20260917b-cited: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
 
 ## The rate, and the denominator it is over
 
