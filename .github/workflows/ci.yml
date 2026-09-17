@@ -128,7 +128,7 @@ jobs:
           key: cargo-${{ runner.os }}-engine-${{ hashFiles('engine/Cargo.lock') }}
           restore-keys: cargo-${{ runner.os }}-engine-
       - name: The toolchain this build needs
-        # Rust 1.90 or later, which `[workspace.package]` in `engine/Cargo.toml`
+        # Rust 1.91 or later, which `[workspace.package]` in `engine/Cargo.toml`
         # declares and `tools/engine/engine-readme-fixtures.sh` holds against the lock.
         # This step installs current stable, which is above that floor, so the
         # floor is never exercised here — the container commands in

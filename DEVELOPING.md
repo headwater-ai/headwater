@@ -24,7 +24,7 @@ When both are built the **newer** one answers, rather than the shipped profile b
 
 ## The toolchain floor
 
-**Rust 1.90 or later.** `[workspace.package]` in `engine/Cargo.toml` declares it and every crate inherits it, so cargo refuses an older toolchain and names the crate that raised the floor. Below 1.85 the message is worse: a dependency is on edition 2024, and a cargo older than that reports `feature edition2024 is required`, names no crate, and reads like a corrupt tree. Check your toolchain first when a clean checkout will not build.
+**Rust 1.91 or later.** `[workspace.package]` in `engine/Cargo.toml` declares it and every crate inherits it, so cargo refuses an older toolchain and names the crate that raised the floor. Below 1.85 the message is worse: a dependency is on edition 2024, and a cargo older than that reports `feature edition2024 is required`, names no crate, and reads like a corrupt tree. Check your toolchain first when a clean checkout will not build.
 
 A machine that installed Rust from its distribution packages usually has neither `rustfmt` nor `clippy`. [`engine/README.md`](engine/README.md) carries two `docker run` recipes that supply both and pin the floor at the same time. They are two commands with two exit statuses, and joining them with a pipe reports only the second one.
 

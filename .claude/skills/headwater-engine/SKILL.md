@@ -30,7 +30,7 @@ The shipped profile pays a single threaded `lto = true` link that costs minutes 
 
 ## The toolchain floor
 
-Rust 1.90 or later, declared by `[workspace.package]` in `engine/Cargo.toml`. Check the toolchain first when a clean checkout will not build; [DEVELOPING.md](../../../DEVELOPING.md) says which of the two refusal messages names the crate that raised the floor and which one names nothing and reads like a corrupt tree.
+Rust 1.91 or later, declared by `[workspace.package]` in `engine/Cargo.toml`. Check the toolchain first when a clean checkout will not build; [DEVELOPING.md](../../../DEVELOPING.md) says which of the two refusal messages names the crate that raised the floor and which one names nothing and reads like a corrupt tree.
 
 A machine that installed Rust from its distribution usually has neither rustfmt nor clippy. `engine/README.md` carries the container that supplies both and pins the floor at the same time. Run it before a change to the engine is proposed: the format check and the lint are both blocking in CI, and [DEVELOPING.md](../../../DEVELOPING.md) is where every gate that blocks is named. Clippy on the current stable knows lints that the pinned floor does not, so a clean container run is not a clean CI run.
 

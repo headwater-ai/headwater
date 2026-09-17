@@ -82,7 +82,7 @@ pub fn hex(bytes: &[u8]) -> String {
 
     // `as_chunks` rather than `chunks_exact`: the chunk size is a constant here,
     // so the compiler carries the length in the type and no bounds check reaches
-    // the inner loop. It is stable from 1.88 and the workspace floor is 1.90, so
+    // the inner loop. It is stable from 1.88 and the workspace floor is 1.91, so
     // clippy's `chunks_exact_to_as_chunks` fires on the older form and `-D
     // warnings` in continuous integration turns that into a build failure.
     let (blocks, _) = padded.as_chunks::<64>();

@@ -60,15 +60,25 @@ publish = true
 # "1.90"`, and both container commands began exiting 101 before compiling a
 # line. Nothing noticed for twelve days.
 #
+# 1.91 raises the floor a second time, ahead of the dependency that needs it.
+# `tract-onnx` 0.23.7 is the pure-Rust inference crate [#819](https://github.com/headwater-ai/headwater/issues/819)
+# step 2 adds for the embedding path [HW-DR-0064](../docs/decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md)
+# rules for; its published manifest declares `rust-version = "1.91"` in the
+# `tract` workspace it inherits from, confirming that record's own figure
+# rather than only restating it. [#918](https://github.com/headwater-ai/headwater/issues/918)
+# raises the pin first, so step 2 lands with no toolchain change inside it.
+#
 # The number is the highest `rust-version` in the resolved graph rather than a
 # floor this code needs on its own: a dependency's floor is the workspace's
-# floor. `tools/engine/engine-readme-fixtures.sh` compares the two and reddens when the
+# floor, and every member inherits this one, so the resolved graph already
+# agrees with the pin before `tract-onnx` itself is added.
+# `tools/engine/engine-readme-fixtures.sh` compares the two and reddens when the
 # lock moves above the pin, which is the reading nothing performed before.
 #
 # Like `license` below, this key is an inheritance SOURCE and not an inheritance
 # rule. A member that omits `rust-version.workspace = true` reports
 # `rust_version: null` and answers to no floor at all.
-rust-version = "1.90"
+rust-version = "1.91"
 
 # The license, restated where a machine reads it. `LICENSE` at the repository
 # root is Apache 2.0, and every source file under `crates/` that is not a test
