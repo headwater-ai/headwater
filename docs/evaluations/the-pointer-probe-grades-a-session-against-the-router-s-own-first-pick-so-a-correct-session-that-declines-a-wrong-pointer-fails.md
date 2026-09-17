@@ -42,7 +42,7 @@ The route offers 220 pointers on this tree. The first twelve are all obligation 
 
 The mechanism is in `engine/crates/query/src/route.rs`. Spec 5 has the router match the purpose of each kind before it compares any text. Lexical rank orders documents only inside a matched purpose. The task scores `obligation` 7 and `behavior` 3, so every obligation record that shares a term with the task outranks every design spec. Many obligation summaries name a shelf, a scheme or an identifier, because this corpus records its gaps in those areas.
 
-This is the precision failure that [#819](https://github.com/headwater-ai/headwater/issues/819) measures. It is the same mechanism that the #896 evaluation found for the cold-agent probe. That evaluation found it with a target at 119th, and here the targets are at 120th and 126th.
+The #896 evaluation found the cold-agent probe's target at 119th, and a replay on this tree shows the same mechanism. That task scores `behavior` fifth of six purposes, so `docs/spec/12-check-layer.md` ranks 127th. It is still the first design spec in that route.
 
 ## Why the two earlier evaluations called the router right
 
@@ -79,6 +79,6 @@ A session that declines a pointer that a person judged correct is then a reading
 
 The #896 and #908 evaluations each state that the router was right for this probe. Each now carries one sentence that points here. This change edits no probe, so no read-set digest moves and no probe result goes stale.
 
-[#819](https://github.com/headwater-ai/headwater/issues/819) gains a second concrete instance, with answering documents past the 100th rank. Purpose-first ordering is the mechanism in both instances. Spec 5 and #819 own a question that this evaluation does not answer. Should a strong purpose score hide every document of a weaker purpose?
+[#915](https://github.com/headwater-ai/headwater/issues/915) owns the router change, with this task as its failing case. It asks for a ruling on two changes. The first stops one kind from filling the budget and shows why each pointer was offered. The second lets a route offer a section inside a document that covers many topics. [#819](https://github.com/headwater-ai/headwater/issues/819) does not reach either mechanism. Its shadow-mode log records what an alternative ranking would offer, and it changes nothing that a session is served.
 
 A reader who meets a failed `opened` verdict on any probe whose target came from the router checks one thing first. Does the examined document answer the task, by the judgment of a person who read it?
