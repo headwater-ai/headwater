@@ -850,6 +850,189 @@ judge 'the fail-open line names the cheaper build as well as the shipped one' 0 
     '--profile dev-release -p headwater-cli' "$out"
 mv "$hold/moved-engine" "$scratch/engine/target/release/headwater"
 
+# --- the push gate, and the board claim it warns about -----------------------
+#
+# `.githooks/pre-push` carries two clauses of different strengths: it refuses a
+# push while an unreviewed `site/*` resolution is pending, and it warns about an
+# issue the push works on that nobody has claimed. The warning reaches the
+# network, so every case here plants a `gh` on PATH rather than calling one. A
+# case that asserted silence against a real `gh` would pass on a clone with no
+# login, which is the shape of a check that cannot run reading as one that does.
+#
+# The third case is the one the real board found. A pull request and an issue
+# share one number space and `gh issue view` answers for both, so the `(#903)` a
+# squash merge appends to a subject resolves as an issue with no assignee — the
+# exact shape of the thing being warned about. Every silence here is paired with
+# the instrument that proves it is a true negative.
+
+pushes=$(mktemp -d) || exit 1
+trap 'rm -rf "$scratch" "$merges" "$pushes"' EXIT HUP INT TERM
+
+mkdir -p "$pushes/bin" "$pushes/repo/.githooks" "$pushes/repo/tools/site"
+cp "$root/.githooks/pre-push" "$pushes/repo/.githooks/"
+chmod +x "$pushes/repo/.githooks/pre-push"
+
+# No marker pending, so the refusal above stays out of the way. One case below
+# replaces this to prove the refusal still wins.
+cat > "$pushes/repo/tools/site/ack-site-prose-reviewed.sh" <<'ACK'
+#!/bin/sh
+exit 0
+ACK
+chmod +x "$pushes/repo/tools/site/ack-site-prose-reviewed.sh"
+
+# The planted `gh`. It answers exactly what the hook's own `--jq` composes, a
+# url and an assignee count, for the three numbers these cases use. Any other
+# number exits non-zero, which is the fail-open path a rate limit takes.
+cat > "$pushes/bin/gh" <<'STUB'
+#!/bin/sh
+for arg in "$@"; do
+    case $arg in
+        [0-9]*) number=$arg ;;
+    esac
+done
+case ${number:-none} in
+    901) echo "https://github.com/fixture/fixture/issues/901 0" ;;
+    902) echo "https://github.com/fixture/fixture/issues/902 1" ;;
+    903) echo "https://github.com/fixture/fixture/pull/903 0" ;;
+    *) exit 1 ;;
+esac
+STUB
+chmod +x "$pushes/bin/gh"
+
+(
+    cd "$pushes/repo" || exit 1
+    git init -q -b main .
+    git config user.name fixtures
+    git config user.email fixtures@invalid
+    echo base > a.txt
+    git add -A
+    git commit -qm "a subject naming nothing" --no-verify
+    echo one > b.txt
+    git add -A
+    git commit -qm "Work the unclaimed thing (Refs #901)" --no-verify
+    echo two > c.txt
+    git add -A
+    git commit -qm "Work the claimed thing (Refs #902)" --no-verify
+    echo three > d.txt
+    git add -A
+    git commit -qm "Land the branch (#903)" --no-verify
+) >/dev/null 2>&1
+
+at() {
+    git -C "$pushes/repo" rev-parse "$1"
+}
+
+# Feed the hook one ref line, the way git feeds it a push: the local tip and the
+# tip the remote already holds.
+push_from() {
+    (
+        cd "$pushes/repo" || exit 1
+        printf 'refs/heads/main %s refs/heads/main %s\n' "$1" "$2" |
+            PATH="$pushes/bin:$PATH" sh .githooks/pre-push origin dummy 2>&1
+    )
+}
+
+zeroes=0000000000000000000000000000000000000000
+none=$(at main~3)
+unclaimed_at=$(at main~2)
+claimed_at=$(at main~1)
+merge_at=$(at main)
+
+out=$(push_from "$unclaimed_at" "$none"); status=$?
+judge 'a push naming an issue nobody claimed warns and lets it through' 0 "$status" \
+    '#901 is unassigned' "$out"
+judge 'the warning names the one command that claims it' 0 0 \
+    'gh issue edit 901 --add-assignee @me' "$out"
+
+out=$(push_from "$claimed_at" "$unclaimed_at"); status=$?
+judge 'a push naming an issue that is already claimed says nothing' 0 "$status" '' "$out"
+refute 'and the silence is not the warning firing on the claimed number' '#902 is unassigned' "$out"
+
+out=$(push_from "$merge_at" "$claimed_at"); status=$?
+judge 'a number that is a pull request is not an unclaimed issue' 0 "$status" '' "$out"
+refute 'and the pull request number draws no warning' '#903 is unassigned' "$out"
+
+out=$(push_from "$none" "$none"); status=$?
+judge 'a range naming no number at all reaches no network and says nothing' 0 "$status" '' "$out"
+
+out=$(push_from "$zeroes" "$merge_at"); status=$?
+judge 'deleting a ref carries no commits to read' 0 "$status" '' "$out"
+
+# The instrument for the four silences above, and it runs the same range as the
+# very first case: a warning fired there, so anything that stops it firing here
+# is the lookup failing rather than the hook never reaching it.
+#
+# First failure, and the one that actually happens: a `gh` that answers with an
+# error. A secondary rate limit reports as an invalid token, so no non-zero exit
+# from `gh` is ever read as an answer about who holds an issue.
+cat > "$pushes/bin/gh" <<'STUB'
+#!/bin/sh
+echo "error: the token in the keyring is invalid" >&2
+exit 1
+STUB
+chmod +x "$pushes/bin/gh"
+out=$(push_from "$unclaimed_at" "$none"); status=$?
+judge 'a gh that errors is silence rather than a verdict about the board' 0 "$status" '' "$out"
+refute 'and an errored lookup warns about nothing it could not read' '#901 is unassigned' "$out"
+
+# Second failure: no `gh` on PATH at all, which is a different branch of the
+# hook. `gh` lives in the same directory as everything else the hook runs, so
+# removing it means a PATH holding only the tools the hook needs — and an
+# instrument that quietly held no `git` either would make this case pass by
+# never starting. The two cases below are that instrument checking itself.
+mkdir -p "$pushes/nogh"
+for tool in git sh grep sort tr timeout cat; do
+    resolved=$(command -v "$tool" 2>/dev/null)
+    case $resolved in
+        /*) ln -sf "$resolved" "$pushes/nogh/$tool" ;;
+        *) [ -x "/usr/bin/$tool" ] && ln -sf "/usr/bin/$tool" "$pushes/nogh/$tool" ;;
+    esac
+done
+sees_git=no
+sees_gh=no
+PATH="$pushes/nogh" command -v git >/dev/null 2>&1 && sees_git=yes
+PATH="$pushes/nogh" command -v gh >/dev/null 2>&1 && sees_gh=yes
+judge 'the PATH that removes gh still resolves git' 0 0 yes "$sees_git"
+judge 'and that PATH resolves no gh' 0 0 no "$sees_gh"
+
+out=$(
+    cd "$pushes/repo" || exit 1
+    printf 'refs/heads/main %s refs/heads/main %s\n' "$unclaimed_at" "$none" |
+        PATH="$pushes/nogh" sh .githooks/pre-push origin dummy 2>&1
+); status=$?
+judge 'no gh on PATH is silence rather than a verdict about the board' 0 "$status" '' "$out"
+refute 'and it does not warn about the number it could not look up' '#901 is unassigned' "$out"
+
+# Put the answering `gh` back, so the refutation in the last case means the
+# warning was preempted rather than that it had nothing to say.
+cat > "$pushes/bin/gh" <<'STUB'
+#!/bin/sh
+for arg in "$@"; do
+    case $arg in
+        [0-9]*) number=$arg ;;
+    esac
+done
+case ${number:-none} in
+    901) echo "https://github.com/fixture/fixture/issues/901 0" ;;
+    902) echo "https://github.com/fixture/fixture/issues/902 1" ;;
+    903) echo "https://github.com/fixture/fixture/pull/903 0" ;;
+    *) exit 1 ;;
+esac
+STUB
+chmod +x "$pushes/bin/gh"
+
+# The refusal still wins. A pending marker means unreviewed content is about to
+# leave the clone, and that outranks a stale board.
+cat > "$pushes/repo/tools/site/ack-site-prose-reviewed.sh" <<'ACK'
+#!/bin/sh
+echo "  site/index.html"
+ACK
+chmod +x "$pushes/repo/tools/site/ack-site-prose-reviewed.sh"
+out=$(push_from "$unclaimed_at" "$none"); status=$?
+judge 'an unreviewed site page still refuses the whole push' 1 "$status" \
+    'Push refused: a site/* merge conflict was resolved but never reviewed' "$out"
+refute 'and the refusal does not also spend a network call on the board' '#901 is unassigned' "$out"
+
 reset
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
