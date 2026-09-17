@@ -1979,7 +1979,7 @@
         "path": "docs/decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md",
         "kind": "decision",
         "id": "HW-DR-0070",
-        "warrant": "asserted",
+        "warrant": "accepted",
         "facets": {
           "id": "HW-DR-0070",
           "status": "current",
@@ -1994,10 +1994,11 @@
             ]
           },
           "provenance": {
-            "warrant": "asserted",
+            "warrant": "accepted",
             "agency": "agent",
             "drafted_by": "claude-opus-5",
             "activity": "measure+draft",
+            "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
           }
         }
@@ -2006,7 +2007,7 @@
         "path": "docs/decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md",
         "kind": "decision",
         "id": "HW-DR-0071",
-        "warrant": "asserted",
+        "warrant": "accepted",
         "facets": {
           "id": "HW-DR-0071",
           "status": "current",
@@ -2020,10 +2021,11 @@
             ]
           },
           "provenance": {
-            "warrant": "asserted",
+            "warrant": "accepted",
             "agency": "agent",
             "drafted_by": "claude-opus-5",
             "activity": "measure+draft",
+            "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
           }
         }

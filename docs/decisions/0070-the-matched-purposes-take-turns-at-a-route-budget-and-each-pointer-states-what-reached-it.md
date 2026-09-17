@@ -10,10 +10,11 @@ relations:
     - engine/crates/query/src/route.rs
     - engine/crates/query/src/json.rs
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 ---
 

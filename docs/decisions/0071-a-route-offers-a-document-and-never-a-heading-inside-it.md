@@ -9,10 +9,11 @@ relations:
   governs:
     - engine/crates/query/src/route.rs
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 ---
 

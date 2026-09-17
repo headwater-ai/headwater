@@ -296,8 +296,8 @@ relations:
 
 ## The matched purposes take turns at a route budget, and each pointer states what reached it
 
-[HW-DR-0070](../decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md) — The purposes a task matches take turns at the route budget, and the kinds of one purpose take turns inside it. Each pointer states the task terms that reached it and its rank in the order by score. No pointer carries a score or a confidence. (asserted, and no human has accepted it)
+[HW-DR-0070](../decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md) — The purposes a task matches take turns at the route budget, and the kinds of one purpose take turns inside it. Each pointer states the task terms that reached it and its rank in the order by score. No pointer carries a score or a confidence.
 
 ## A route offers a document and never a heading inside it
 
-[HW-DR-0071](../decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md) — A route does not read headings and offers no anchor inside a document. A measured heading surface never reached spec 02 or spec 03 for the task that raised the question. At every threshold, function words reached wrong anchors. (asserted, and no human has accepted it)
+[HW-DR-0071](../decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md) — A route does not read headings and offers no anchor inside a document. A measured heading surface never reached spec 02 or spec 03 for the task that raised the question. At every threshold, function words reached wrong anchors.
