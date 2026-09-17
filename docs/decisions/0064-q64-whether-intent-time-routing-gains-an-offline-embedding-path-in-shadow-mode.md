@@ -45,7 +45,7 @@ The issue also says that abandonment cannot be graded, because a transcript reco
 
 **The hook stays silent and fails open.** It writes nothing to either stream, and it exits 0 where the log path refuses a write. `.claude/hooks/fixtures.sh` observes the two streams and the status, and it observes no write, so a fixture case plants an unwritable path and expects silence.
 
-**The collection period is 1,000 person-prompt invocations or 30 days, whichever comes first, and not fewer than 58 silent ones.** At about 45 person prompts a day, 1,000 is about 22 days, and 12 percent silence gives about 120 silent prompts. That is twice the 58 per arm that `.headwater/probe.yml` already states. The period is an invariant on the log rather than a date, because a quiet month and a busy month are different amounts of evidence.
+**The collection period is 1,000 person-prompt invocations or 30 days, whichever comes first, and not fewer than 58 silent ones.** At about 45 person prompts a day, 1,000 is about 22 days, and 12 percent silence gives about 120 silent prompts. That is twice the 58 per arm that `.headwater/probe.yml` already states. The period is an invariant on the log rather than a date, because a quiet month and a busy month are different amounts of evidence. A person prompt is a line whose `prompt_id` joins a transcript line that records `"origin":{"kind":"human"}`. The hook cannot decide this when it writes, because the payload carries no origin and the transcript line arrives later. A prompt in a checkout with no built engine is outside the population, because the hook then cannot read its input.
 
 ## Consequences
 

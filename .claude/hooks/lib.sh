@@ -120,6 +120,12 @@ hw_resolve_root() {
         printf '%s' "$hw_root"
         return 0
     }
+    # The harness moves `cwd` whenever a `cd` persists, so a session doing
+    # engine work hands a hook `engine/` or deeper, where no
+    # `.headwater/taxonomy.lock` sits and every corpus verb fails (#917). The
+    # top of the work tree that holds `cwd` is the repository, and a `cwd`
+    # outside any work tree is returned as it came.
+    _top=$(git -C "$_cwd" rev-parse --show-toplevel 2>/dev/null) && [ -n "$_top" ] && _cwd=$_top
     printf '%s' "$_cwd"
 }
 
