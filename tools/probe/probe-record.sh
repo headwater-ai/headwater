@@ -318,6 +318,33 @@ command -v claude >/dev/null 2>&1 || {
 
 raw=${raw:-$(mktemp)}
 
+# Step 3 of #819. Two variables the session inherits, and both exist so that a
+# later reader of the shadow-mode log can tell this session's prompts from a
+# person's.
+#
+# `HEADWATER_PROBE_SESSION` is the name this run already carries, and
+# `.claude/hooks/intent.sh` writes it into every line it logs.
+# HW-DR-0064 counts person prompts, so a line that names a probe session is a
+# line a count subtracts rather than one it reads.
+#
+# `HEADWATER_SHADOW_LOG_DIR` sends those lines to a directory of this run
+# instead. A probe workspace carries no `.git` (#898), so the hook could find no
+# common dir there and would write nothing at all. That silence would read as a
+# hook that never ran, which is exactly the question the liveness sentence
+# below answers. A directory of this run's own makes the two distinguishable,
+# and it keeps every probe line out of the collection.
+#
+# Expect "not live" from a real run of this script. `hw_engine` looks for the
+# binary under the session's own project directory, and a probe workspace is a
+# corpus copy with no `engine/target` in it, so the hook exits before it routes.
+# That is the state this sentence records rather than one it repairs: routing a
+# probe session would change what the probe measures, because a cold agent that
+# is handed pointers is no longer cold.
+probe_log=${HEADWATER_PROBE_LOG_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/headwater-probe-shadow.XXXXXX")}
+HEADWATER_PROBE_SESSION=$session
+HEADWATER_SHADOW_LOG_DIR=$probe_log
+export HEADWATER_PROBE_SESSION HEADWATER_SHADOW_LOG_DIR
+
 # The channel. Standard output of the harness process, read by this script.
 # Never a file under `~/.claude/projects/`. The session runs in the workspace
 # the guard above cleared, so nothing it writes moves the `tree` digest the
@@ -355,6 +382,28 @@ printf 'arm: %s\n' "${arm:-present}"
 printf 'at: %s\n' "$(date -u +%Y-%m-%d)"
 printf '%s\n' "$provider" | grep '^cost_cents: '
 printf '```\n'
+
+# Whether the intent hook ran in this session, stated rather than left to a
+# reader (#917, step 3 of #819). The two committed transcripts of 2026-09-09 and
+# 2026-09-11 disagree about this, and nothing in either one says which of them
+# had a live hook. The observation is the log this run named above: a line that
+# carries this session's name is a line the hook wrote, and no line at all means
+# the hook did not reach the engine. The count is of lines rather than of files,
+# because one session may submit several prompts.
+hook_lines=0
+if [ -d "$probe_log" ]; then
+    hook_lines=$(cat "$probe_log"/*.jsonl 2>/dev/null \
+        | grep -c "\"probe_session\":\"$session\"" || true)
+fi
+printf '\n'
+if [ "$hook_lines" -gt 0 ]; then
+    printf 'The intent hook was live in this session. It wrote %s shadow-mode log %s under `probe_session: %s`, in a directory of this run rather than in the log HW-DR-0064 collects, because a probe prompt is not a person prompt.\n' \
+        "$hook_lines" "$([ "$hook_lines" = 1 ] && echo line || echo lines)" "$session"
+else
+    printf 'The intent hook was not live in this session. It wrote no shadow-mode log line under `probe_session: %s`, so no pointer reached this session before it read a file. A workspace with no built engine is the usual reason (#917).\n' \
+        "$session"
+fi
+printf '\n'
 
 answers=$(declared_answers "$probe")
 answer=$(step_derive_answer)

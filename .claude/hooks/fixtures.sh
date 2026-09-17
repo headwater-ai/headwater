@@ -716,6 +716,32 @@ if [ -x "$engine" ]; then
         failed=$((failed + 1))
     fi
 
+    # Step 3 of #819: the recorder's name for its session, which
+    # `tools/probe/probe-record.sh` exports before it starts the harness. A
+    # person's prompt carries none, and a count subtracts the lines that do.
+    probe_named_session="fixture-session-shadow-probe-$$"
+    probe_named_file="$shadow_dir/$probe_named_session.jsonl"
+    HEADWATER_PROBE_SESSION=fixture-probe-run
+    export HEADWATER_PROBE_SESSION
+    expect 'a prompt submitted under a recorder is routed as before' \
+        intent.sh 0 'docs/spec/' \
+        "{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$probe_named_session\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+    unset HEADWATER_PROBE_SESSION
+    if [ "$(tail -n 1 "$probe_named_file" 2>/dev/null | "$engine" json field probe_session 2>/dev/null)" = "fixture-probe-run" ]; then
+        printf 'ok   %s\n' 'a line written under a recorder carries the name the recorder exported'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'a line written under a recorder does not carry the recorder name'
+        failed=$((failed + 1))
+    fi
+    if [ "$(tail -n 1 "$control_file" 2>/dev/null | "$engine" json field probe_session 2>/dev/null)" = "" ]; then
+        printf 'ok   %s\n' "a person's line carries an empty recorder name rather than no member"
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' "a person's line does not carry an empty recorder name"
+        failed=$((failed + 1))
+    fi
+
     # Step 2 of #819: the embedding column. With no loadable model the line
     # still lands, and says the ranking is missing rather than omitting it.
     if [ -s "$control_file" ] && tail -n 1 "$control_file" | grep -q '"neighbors":null}$'; then

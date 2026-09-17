@@ -702,6 +702,71 @@ sh "$driver" --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md"
     --workspace "$scratch/copied-clone" >/dev/null 2>"$scratch/driver-gitdir.err"
 same "the driver refuses a workspace carrying a clone's \`.git\` directory" "4" "$?"
 
+# ---------------------------------------------------------------------------
+# Step 3 of #819: the recorder names its session, and says whether the hook ran.
+#
+# The stub harness below is the whole chain rather than a mock of it. It runs
+# the real `.claude/hooks/intent.sh` with a payload, the way a session's first
+# prompt does, and the hook reads the two variables the driver exported. So
+# these cases fail if the driver stops exporting either one, and they fail if
+# the hook stops writing the name.
+#
+# The stub names a project directory that holds a built engine, because that is
+# what decides the question. `hw_engine` looks under the session's own project
+# directory, and a probe workspace is a corpus copy with no `engine/target` in
+# it, so the hook there fails open and logs nothing. The second stub runs no
+# hook at all, which is that case and which is the 2026-09-11 recording: a
+# transcript that says nothing about why every session went unrouted.
+# ---------------------------------------------------------------------------
+if [ -x "$engine" ] && [ -f "$root/.headwater/taxonomy.lock" ]; then
+    mkdir -p "$scratch/ws" "$scratch/nomodel" "$scratch/probe-log"
+    printf 'answer the question\n' > "$scratch/task.md"
+
+    cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+# A stub harness. It submits one prompt through the real intent hook, then
+# writes the two stream lines the driver's derivations read.
+printf '{"hook_event_name":"UserPromptSubmit","session_id":"stub-session","cwd":"%s","user_input":"what does a check know about the front matter of a document"}' "$root" \\
+    | CLAUDE_PROJECT_DIR="$root" sh "$root/.claude/hooks/intent.sh" >/dev/null 2>&1
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s9"}'
+printf '%s\n' '{"type":"result","subtype":"success","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+    chmod +x "$scratch/bin/claude"
+
+    HEADWATER_PROBE_LOG_DIR="$scratch/probe-log" HEADWATER_MODEL_DIR="$scratch/nomodel" \
+        PATH="$scratch/bin:$PATH" sh "$driver" --probe PROBE-FIX-opened \
+        --session fixture-live --task-file "$scratch/task.md" \
+        --workspace "$scratch/ws" > "$scratch/live-run.md" 2>"$scratch/live-run.err"
+    same "the driver runs a session through the stub harness" "0" "$?"
+    present "the transcript states that the hook was live" \
+        "The intent hook was live in this session." "$scratch/live-run.md"
+    present "and it names the session the hook logged under" \
+        "probe_session: fixture-live" "$scratch/live-run.md"
+    logged=$(cat "$scratch/probe-log"/*.jsonl 2>/dev/null \
+        | grep -c '"probe_session":"fixture-live"' || true)
+    same "the hook wrote the recorder's name into the line it logged" "1" "$logged"
+
+    cat > "$scratch/bin/claude" <<'STUB'
+#!/bin/sh
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s10"}'
+printf '%s\n' '{"type":"result","subtype":"success","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+    chmod +x "$scratch/bin/claude"
+    rm -rf "$scratch/probe-log"
+    mkdir -p "$scratch/probe-log"
+
+    HEADWATER_PROBE_LOG_DIR="$scratch/probe-log" PATH="$scratch/bin:$PATH" \
+        sh "$driver" --probe PROBE-FIX-opened --session fixture-dead \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        > "$scratch/dead-run.md" 2>"$scratch/dead-run.err"
+    same "the driver runs a session whose harness reaches no hook" "0" "$?"
+    present "the transcript states that the hook was not live" \
+        "The intent hook was not live in this session." "$scratch/dead-run.md"
+    rm -f "$scratch/bin/claude"
+else
+    printf 'note no engine or no lock, so the liveness cases did not run.\n'
+fi
+
 present "the driver names the channel and never a file under ~/.claude/projects" \
     "output-format stream-json" "$driver"
 present "the driver requires --verbose, which the harness requires" \
