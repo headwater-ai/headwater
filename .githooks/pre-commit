@@ -42,6 +42,53 @@
 
 root=$(git rev-parse --show-toplevel) || exit 0
 
+# `core.hooksPath` is shared by every worktree of a clone, and git resolves
+# the hook it runs through that one value, whatever branch is actually
+# committing. An absolute value names one checkout, so every worktree of this
+# clone then runs that checkout's copy of this file — #925, reporting itself
+# through its own effect, because a hook that ran the wrong rules reads
+# exactly like a hook that passed.
+#
+# This closes the gap without touching the value itself, because the value is
+# not this clone's to hold still: `EnterWorktree` rewrites it to an absolute
+# path on every call and never restores it, and two sessions racing that call
+# can flip it back between a restore and the next commit (#925's own second
+# comment measured this). A fix that has to win that race has the same hole
+# the race demonstrated. So the copy `core.hooksPath` resolves to, whichever
+# checkout that is, hands off to the copy under the worktree actually making
+# the commit instead: `git rev-parse --show-toplevel` above already answers
+# that correctly regardless of where this running file sits, because git
+# always invokes a hook with the working tree it belongs to as the current
+# directory.
+#
+# `HEADWATER_HOOK_HANDOFF` stops a copy that would hand off to itself through
+# a symlink or a bind mount from re-entering this block forever. A worktree
+# whose branch carries no copy of this file of its own — a branch cut before
+# this hook existed, or before this guard was added to it — has no `own` to
+# exec, so the checkout `core.hooksPath` names keeps running its own body and
+# says so, which is the same behavior bar 3 of #925 already protects for the
+# non-worktree case, not a regression.
+# Parameter expansion rather than `dirname`/`basename`: a hardened `PATH` a
+# case below builds to prove a missing `gh` fails open carries neither, and a
+# handoff that needed them would fail closed on that `PATH` instead.
+case $0 in
+    */*) hook_dir=${0%/*} ;;
+    *) hook_dir=. ;;
+esac
+hook_name=${0##*/}
+self=$(cd "$hook_dir" 2>/dev/null && pwd -P)
+own_dir=$(cd "$root/.githooks" 2>/dev/null && pwd -P)
+handoff_fallback=
+if [ -z "${HEADWATER_HOOK_HANDOFF:-}" ] && [ "$self" != "$own_dir" ]; then
+    own="$root/.githooks/$hook_name"
+    if [ -x "$own" ]; then
+        HEADWATER_HOOK_HANDOFF=1 exec "$own" "$@"
+    fi
+    echo "headwater: this worktree carries no $hook_name of its own, so the"
+    echo "  checkout core.hooksPath names ran its copy instead."
+    handoff_fallback=1
+fi
+
 # `site/` is what Cloudflare serves as https://headwater.tools/, with no build
 # step, on every push to the default branch. `mkdocs build` cleans its
 # `site_dir` before it writes, so a configuration whose `site_dir` resolves
@@ -99,34 +146,37 @@ if [ -z "$(git config merge.headwater-regenerate.driver 2>/dev/null)" ]; then
     echo "        git config merge.headwater-regenerate.driver \".githooks/merge-regenerate %O %A %B %P\""
 fi
 
-# `core.hooksPath` is shared by every worktree of a clone, and an absolute value
-# names one checkout. A worktree on another branch then runs that checkout's
-# hook body while committing its own, which reads exactly like a gate that
-# passed: a clause the branch carries does not run, and a clause it does not
-# carry can refuse it naming a file the branch never had. A relative value
-# resolves inside the working tree the commit happens in, which is the one
-# `CLAUDE.md` instructs.
+# `core.hooksPath` is still shared by every worktree of a clone, but the
+# handoff above already makes an absolute value harmless: whichever checkout
+# it resolves to, this worktree's own body is the one that actually ran, by
+# the time this line is reached. What is left to report is hygiene rather
+# than a defect, and the wording below says so — this used to warn that the
+# wrong hook body was running, and that is no longer true whenever the
+# handoff itself found a copy to run.
 #
-# It reports and does not block, for the reason the driver above gives and for
-# one more. Nobody sets this value by hand: the `EnterWorktree` tool of the
-# harness rewrites it to an absolute path on every call and never restores it,
-# so a refusal would punish the committer for a tool the committer did not
-# choose to run. The last line says the value comes back, because a reader who
-# fixes it, watches it return and was not told stops believing the report.
-#
-# One consequence works in this clause's favor. Under an absolute value every
-# worktree runs the main checkout's copy of this file, so the report reaches a
-# worktree as soon as the main checkout carries it, whatever branch the
-# worktree is on.
+# It reports and does not block, for the reason the driver above gives and
+# for one more. Nobody sets this value by hand: the `EnterWorktree` tool of
+# the harness rewrites it to an absolute path on every call and never
+# restores it, so a refusal would punish the committer for a tool the
+# committer did not choose to run.
 hooks_path=$(git config --get core.hooksPath 2>/dev/null)
 case $hooks_path in
     /*)
-        echo "headwater: core.hooksPath is absolute ($hooks_path), so every worktree of"
-        echo "  this clone runs the hook body of that one checkout instead of its own"
-        echo "  branch's. Set it relative, once per clone:"
-        echo "        git config core.hooksPath .githooks"
-        echo "  \`EnterWorktree\` sets it absolute again on every call, so expect this"
-        echo "  line back after the next one, and set it again."
+        if [ -n "$handoff_fallback" ]; then
+            echo "headwater: core.hooksPath is absolute ($hooks_path), and this worktree"
+            echo "  carries no $hook_name of its own yet, so the checkout the value"
+            echo "  names ran its copy instead — see the line above. Set it relative,"
+            echo "  once per clone:"
+            echo "        git config core.hooksPath .githooks"
+            echo "  \`EnterWorktree\` sets it absolute again on every call."
+        else
+            echo "headwater: core.hooksPath is absolute ($hooks_path). This worktree's own"
+            echo "  hook body ran anyway, handed off from the checkout the value names, so"
+            echo "  nothing here is broken. A branch that carries no hook of its own would"
+            echo "  not get that handoff, so set the value relative anyway, once per clone:"
+            echo "        git config core.hooksPath .githooks"
+            echo "  \`EnterWorktree\` sets it absolute again on every call."
+        fi
         ;;
 esac
 

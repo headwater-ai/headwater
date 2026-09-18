@@ -28,6 +28,32 @@
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -n "$root" ] || exit 0
 
+# `core.hooksPath` is shared by every worktree of a clone, and an absolute
+# value names one checkout, so git resolves this hook to that checkout's copy
+# whatever branch just finished rewriting. `.githooks/pre-commit` carries the
+# full account of why and how this hands off to the worktree's own copy
+# instead (#925), which is the same reason `$root` above reads
+# `--show-toplevel` rather than this file's own directory.
+#
+# Parameter expansion rather than `dirname`/`basename`: the reduced `PATH`
+# `.githooks/fixtures.sh` builds for the `pre-push` case beside this one
+# carries neither, and a handoff that needed them would fail closed there.
+case $0 in
+    */*) hook_dir=${0%/*} ;;
+    *) hook_dir=. ;;
+esac
+hook_name=${0##*/}
+self=$(cd "$hook_dir" 2>/dev/null && pwd -P)
+own_dir=$(cd "$root/.githooks" 2>/dev/null && pwd -P)
+if [ -z "${HEADWATER_HOOK_HANDOFF:-}" ] && [ "$self" != "$own_dir" ]; then
+    own="$root/.githooks/$hook_name"
+    if [ -x "$own" ]; then
+        HEADWATER_HOOK_HANDOFF=1 exec "$own" "$@"
+    fi
+    echo "headwater: this worktree carries no $hook_name of its own, so the" >&2
+    echo "  checkout core.hooksPath names ran its copy instead." >&2
+fi
+
 pending=$(sh "$root/tools/site/ack-site-prose-reviewed.sh" 2>/dev/null)
 [ -n "$pending" ] || exit 0
 

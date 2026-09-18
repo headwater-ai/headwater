@@ -56,6 +56,36 @@
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -n "$root" ] || exit 0
 
+# `core.hooksPath` is shared by every worktree of a clone, and an absolute
+# value names one checkout, so git resolves this hook to that checkout's copy
+# whatever branch is actually pushing. `.githooks/pre-commit` carries the
+# full account of why and how this hands off to the worktree's own copy
+# instead (#925); this hook needs the same guard, because the refusal below
+# is a `site/*` page review this clone's own branch may or may not still
+# owe, and the checkout named by an absolute value may owe a different one
+# entirely, or none. `exec` passes the ref list this hook reads on stdin
+# through unchanged, because it replaces the process image without touching
+# any open file descriptor.
+#
+# Parameter expansion rather than `dirname`/`basename`: the case below that
+# proves a missing `gh` fails open builds a `PATH` carrying neither, and a
+# handoff that needed them would fail closed on that `PATH` instead.
+case $0 in
+    */*) hook_dir=${0%/*} ;;
+    *) hook_dir=. ;;
+esac
+hook_name=${0##*/}
+self=$(cd "$hook_dir" 2>/dev/null && pwd -P)
+own_dir=$(cd "$root/.githooks" 2>/dev/null && pwd -P)
+if [ -z "${HEADWATER_HOOK_HANDOFF:-}" ] && [ "$self" != "$own_dir" ]; then
+    own="$root/.githooks/$hook_name"
+    if [ -x "$own" ]; then
+        HEADWATER_HOOK_HANDOFF=1 exec "$own" "$@"
+    fi
+    echo "headwater: this worktree carries no $hook_name of its own, so the" >&2
+    echo "  checkout core.hooksPath names ran its copy instead." >&2
+fi
+
 pending=$(sh "$root/tools/site/ack-site-prose-reviewed.sh" 2>/dev/null)
 if [ -n "$pending" ]; then
 	cat >&2 <<EOF
