@@ -3,13 +3,14 @@ id: HW-PD-0004
 status: current
 status_since: 2026-09-07
 summary: "Workers coordinate through create-only claim files that every worktree can reach and the parent never relays, while the merge veto and a re-verification stay messages from the parent, because a peer's message carries no owner authority."
-last_verified: 2026-09-07
+last_verified: 2026-09-18
 title: "Coordination is a create-only claim, and authority stays on the tree"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-fable-5-1
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 ---
 
@@ -35,4 +36,4 @@ Authority stays on the tree. The veto, and the instruction to re-verify a delta,
 
 The parent relays nothing. A collision becomes a line in a report the parent already reads, and merge order becomes a rule the integrator applies rather than a judgment the parent makes under pressure. A fixture holds the claim's atomicity: two concurrent claimants over a scratch common directory, one of which owns and one of which records what it waits on, with no empty claim between them.
 
-A worker that dies leaves its claims in place, and the run directory is deleted when the run closes, so a stale claim lives at most one run. A wait a worker starts must not outlive the worker, and every agent definition says so, because the measured run ended with thirty orphaned waits and the oldest polled for eleven hours.
+A worker that dies leaves its claims in place. Nothing collects a run directory, so a stale claim outlives the run that made it, and [#926](https://github.com/headwater-ai/headwater/issues/926) carries the lifetime that would bound it. A wait a worker starts must not outlive the worker, and every agent definition says so, because the measured run ended with thirty orphaned waits and the oldest polled for eleven hours.

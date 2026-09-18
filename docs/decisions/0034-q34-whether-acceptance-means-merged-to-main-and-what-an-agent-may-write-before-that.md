@@ -3,7 +3,7 @@ id: HW-DR-0034
 status: current
 status_since: 2026-08-30
 summary: "Acceptance is the merge onto main. A provenance block on an unmerged branch is a proposal, so an agent may write `accepted_by` there, and stop rule 5 binds main rather than the byte."
-last_verified: 2026-08-30
+last_verified: 2026-09-18
 title: "Q34 — Whether acceptance means merged to main, and what an agent may write before that"
 provenance:
   warrant: accepted
@@ -49,6 +49,8 @@ Two further obligations bear on the second reading and neither settles it. [HW-O
 **This reading needs no actor that promotes a stamp at merge time.** The first reading needs one, because a two-stage warrant needs a write between the draft and the merge. HW-OBL-0105 records that no such actor exists in this engine. Under this ruling nothing moves the stamp. The stamp a draft carries is the stamp the merged document carries, and the merge decides whether that stamp was true.
 
 **This ruling picks between the two readings HW-OBL-0108 posed, and takes the second.** A pull request is the review. A merge is the acceptance `accepted_by` names.
+
+**A person who reads a merged record may promote it, and no agent may.** The paragraphs above rule that nothing moves a stamp between the draft and the merge. They do not fix a stamp forever, and a reader has taken them that way. [Spec 3](../spec/03-authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff) already states the act: an `asserted` document becomes `accepted` when a person reads it, sets the warrant, and names themselves. It places no condition on whether the document has merged. So a named human who reads a merged record may write `warrant: accepted` and `accepted_by` on it. An agent may not make that move on any document at any time. `warrant.promoted` counts every one of them over a change, which is the instrument spec 3 names. A bulk stamp is a finding about the review rather than about the documents.
 
 **This ruling does not reach the third practice.** [HW-OBL-0125](../obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md) records nine documents that state `warrant: proposed`, a value outside the closed set [spec 3](../spec/03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two) declares, each with an acceptor named beside it. That is a defect in the value, not a question about when acceptance happens, and this ruling leaves it for HW-OBL-0125 to settle.
 

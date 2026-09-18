@@ -1,6 +1,9 @@
 # Per-session state left by the session gate this repository retired, and
-# worktrees created by agents. The harness hooks in `.claude/hooks/` keep no
-# state at all: each one reads the tree in front of it and writes nothing.
+# worktrees created by agents. The harness hooks in `.claude/hooks/` write no
+# state into the tree: what `touch.sh` and `intent.sh` keep goes under the git
+# common dir instead, where every worktree of the clone reaches one copy and a
+# retired worktree takes none of it away. DEVELOPING.md, under "Where state
+# lives when several sessions run at once", is the map of those directories.
 .claude/state/
 .claude/worktrees/
 
