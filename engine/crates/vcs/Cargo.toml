@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-vcs"
+description = "The one crate that shells out to git, so a change manifest can be produced by a verb and not only by a hook"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+[lints]
+workspace = true

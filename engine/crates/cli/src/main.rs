@@ -197,6 +197,14 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 change,
             },
         ),
+        Verb::Change { base, out } => match (base, out) {
+            (Some(base), Some(out)) => change(root, &base, &out),
+            _ => fail(
+                "`change` takes a base revision and a directory to write into. Try `headwater \
+                 change HEAD .headwater/change` before `headwater check --change \
+                 .headwater/change/manifest`",
+            ),
+        },
         Verb::Gate {
             read_set,
             now,
@@ -4824,6 +4832,26 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
     };
     headwater_query::mcp::serve(&server, std::io::stdin().lock(), std::io::stdout().lock());
     ExitCode::SUCCESS
+}
+
+/// `headwater change`: the manifest `check --change` reads, produced from a
+/// base revision and the working tree in front of it.
+///
+/// [`headwater_vcs::produce`] is the whole of what runs: this function reads
+/// its result and turns it into the exit status and the message this binary's
+/// other verbs already use. Nothing here opens a document or resolves a
+/// taxonomy, on the terms
+/// [HW-DR-0072](../../../../docs/decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md)
+/// draws the boundary: this verb is the git plumbing, and `check --change` is
+/// the reader that stays inside the check-evaluation path spec 12 describes.
+fn change(root: &Path, base: &str, out: &Path) -> ExitCode {
+    match headwater_vcs::produce(root, base, out) {
+        Ok(manifest) => {
+            println!("{}", manifest.display());
+            ExitCode::SUCCESS
+        }
+        Err(message) => fail(&message),
+    }
 }
 
 /// `headwater gate`: the read set of an earlier run, held against this tree.

@@ -80,6 +80,12 @@ headwater-resolve = { workspace = true }
 # derived value and the assisted count are decided in the library.
 headwater-scaffold = { workspace = true }
 
+# `headwater change`. The one crate of this workspace that shells out to git,
+# on the terms HW-DR-0072 draws the boundary: the check-evaluation path reads
+# only named inputs, and a separate producer verb may run the version control
+# command that supplies them, because it sits outside that loop.
+headwater-vcs = { workspace = true }
+
 # The dispatch table. The arms below it are entered only for a first word this
 # crate carries, so an arm this list does not name never runs. `headwater
 # generate` reads the same list to write the verb index, which is why the list

@@ -284,9 +284,10 @@ A tool acquires a security obligation when it publishes a claim that a boundary 
 ### CLI
 
 ```
-headwater check       [--strict] [--fix] [--no-cache] [--now <date>]
+headwater check       [--strict] [--fix] [--no-cache] [--now <date>] [--change <manifest>]
                       [--read-set <path>] [--register <path>]
                       [--format text|json|sarif|markdown | --json]
+headwater change      <base-rev> <out-dir>
 headwater gate        --read-set <path> [--now <date>] [--json]
 headwater derived
 headwater generate    [--check]

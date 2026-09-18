@@ -461,6 +461,28 @@ pub enum Verb {
         #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]
         json: bool,
     },
+    Change {
+        // Optional here and required by the verb, on the terms `gate` already
+        // states for `--read-set`: the refusal names what a base revision is
+        // and points at the two anchors spec 12 fixes, which a
+        // missing-argument message from the parser cannot.
+        #[arg(
+            value_name = "base-rev",
+            help = "the revision to compare the working tree against. Spec 12 fixes two: the \
+                    committed `HEAD` for a working-tree hook, and the merge base of a proposed \
+                    change for a CI job. This verb runs no history walk beyond `git diff` and \
+                    `git show` against this one revision"
+        )]
+        base: Option<String>,
+        #[arg(
+            value_name = "out-dir",
+            help = "the directory to write the manifest and the prior versions into. The caller \
+                    owns this directory and removes it; this verb only ever creates inside it. \
+                    The manifest's own path, `<out-dir>/manifest`, is printed on standard output, \
+                    which is the file `headwater check --change` takes"
+        )]
+        out: Option<PathBuf>,
+    },
     Gate {
         // Optional here and required by the verb, so that the refusal a caller
         // reads is the one the verb wrote: it names what a read set is and how
