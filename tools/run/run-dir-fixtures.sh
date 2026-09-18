@@ -178,6 +178,27 @@ same '  and the other claim stands' 'engine/crates/census/fixtures/corpus.census
 third=$(sh "$tool" claim "$run" 42 issue-42 .headwater/export.json 2>&1)
 same '  and the released artifact is taken by the one that waited' 'CLAIMED: .headwater/export.json' "$(printf '%s\n' "$third" | grep '^CLAIMED')"
 
+printf '\n# end: a stale claim from a run that will never finish does not block a fresh claimant\n'
+# The decisive case. Issue 41 claims an artifact and the run that held it ends
+# without ever releasing -- the crash this issue exists for. Before `end`
+# exists to collect it, a second claimant is made to wait on a run that will
+# never finish, which is the bug: assert that first, so this fails for the
+# issue's own reason rather than for a typo.
+ended=$(sh "$tool" start ended 2>/dev/null)
+sh "$tool" claim "$ended" 41 issue-41 shared-artifact >/dev/null 2>&1
+still_waits=$(sh "$tool" claim "$ended" 42 issue-42 shared-artifact 2>&1)
+same 'before end, a fresh claimant on the abandoned artifact is made to wait' 'WAITS-ON: 41' "$(printf '%s\n' "$still_waits" | grep '^WAITS-ON:')"
+
+same 'end exits 0 and reports how many claims it dropped' 'ENDED: '"$ended"', 1 claims dropped' "$(sh "$tool" end "$ended" 2>&1)"
+same '  and the claim file is gone' 0 "$(find "$ended/claims" -type f 2>/dev/null | wc -l | tr -d ' ')"
+after=$(sh "$tool" claim "$ended" 42 issue-42 shared-artifact 2>&1)
+same '  and a fresh claimant on the same artifact is no longer made to wait' 0 "$(printf '%s\n' "$after" | grep -c '^WAITS-ON:')"
+same '  and takes the artifact outright' 'CLAIMED: shared-artifact' "$(printf '%s\n' "$after" | grep '^CLAIMED')"
+same '  and lessons.md and decisions.md survive end, unlike claims' 0 "$([ -e "$ended/lessons.md" ] && [ -e "$ended/decisions.md" ]; echo $?)"
+
+bare=$(sh "$tool" start ended-bare 2>/dev/null)
+same 'end on a directory with no claims subtree at all reports zero and does not fail' 'ENDED: '"$bare"', 0 claims dropped' "$(sh "$tool" end "$bare" 2>&1)"
+
 # This case is the reason the claim is a file and not a directory. On a host
 # whose `mkdir` is uutils coreutils, two racing `mkdir` calls on one path both
 # succeeded in 17 of 20 races while every sequential case above passed. A
