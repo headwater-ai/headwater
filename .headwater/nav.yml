@@ -118,6 +118,7 @@ nav:
   - "The command surface":
       - "The command surface": "interfaces/README.md"
       - "headwater capture": "interfaces/headwater-capture.md"
+      - "headwater change": "interfaces/headwater-change.md"
       - "headwater check": "interfaces/headwater-check.md"
       - "headwater completions": "interfaces/headwater-completions.md"
       - "headwater conformance": "interfaces/headwater-conformance.md"
