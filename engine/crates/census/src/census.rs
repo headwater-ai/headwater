@@ -486,12 +486,26 @@ impl Outcome {
             // What holds the file, rather than what this row will not do to it.
             // A reader who finds a generated file in a report is asking which
             // verb owns it, and the answer is the same for every one of them.
-            Outcome::Generated { projection, .. } => match projection {
-                Some(kind) => format!(
-                    "`{kind}`, and `headwater generate --check` holds it rather than this census"
-                ),
-                None => "`headwater generate --check` holds it rather than this census".to_string(),
-            },
+            Outcome::Generated {
+                projection, kind, ..
+            } => {
+                let held = "`headwater generate --check` holds it rather than this census";
+                match (projection, kind) {
+                    // The common case, unchanged: a marker with no resolved
+                    // kind, which is what every projection that writes a list
+                    // produces.
+                    (Some(projection), None) => format!("`{projection}`, and {held}"),
+                    (None, None) => held.to_string(),
+                    // The row #409 named: a marked file that also declared an
+                    // identity. Before this, the resolved kind was invisible
+                    // here, so a reader could not join this row back to the
+                    // kind count it is missing from.
+                    (Some(projection), Some(kind)) => {
+                        format!("`{projection}`, resolved as `{kind}`, and {held}")
+                    }
+                    (None, Some(kind)) => format!("resolved as `{kind}`, and {held}"),
+                }
+            }
             Outcome::Untyped(Untyped::NoFrontMatter) => {
                 "no front matter, so nobody has typed this file".to_string()
             }
@@ -549,16 +563,43 @@ impl Census {
             .collect()
     }
 
-    /// Counts per resolved kind, in name order.
+    /// Counts per resolved kind, in name order, over the **typed** rows only.
+    ///
+    /// A generated row that resolved a kind (see [`Outcome::node`]) is not
+    /// one of these, on purpose: this count is what a check-scoped rule
+    /// instantiates over, and a generated row reaches no check. Read
+    /// [`Census::generated_kinds`] alongside this one for the population a
+    /// kind's declaration actually names, which is the two counts summed.
     pub fn kinds(&self) -> Vec<(String, usize)> {
-        let mut names: Vec<&str> = self
-            .rows
-            .iter()
-            .filter_map(|row| match &row.outcome {
-                Outcome::Typed { kind, .. } => Some(kind.as_str()),
-                _ => None,
-            })
-            .collect();
+        Self::fold_kinds(self.rows.iter().filter_map(|row| match &row.outcome {
+            Outcome::Typed { kind, .. } => Some(kind.as_str()),
+            _ => None,
+        }))
+    }
+
+    /// Counts per resolved kind, in name order, over the **generated** rows
+    /// that declared an identity — the join [`Census::kinds`] cannot make,
+    /// because a generated row is never [`Outcome::Typed`].
+    ///
+    /// This is the other half of a kind's population. `1 typed
+    /// decision_register` plus `1 generated decision_register` is what a
+    /// reader who greps the corpus for `doc_type: decision_register` finds:
+    /// two documents. Before this, the second counted nowhere, and the
+    /// census and a grep disagreed about the same kind's population (#409).
+    pub fn generated_kinds(&self) -> Vec<(String, usize)> {
+        Self::fold_kinds(self.rows.iter().filter_map(|row| match &row.outcome {
+            Outcome::Generated {
+                kind: Some(kind), ..
+            } => Some(kind.as_str()),
+            _ => None,
+        }))
+    }
+
+    /// The fold both counts above share: sort the names, then run-length
+    /// encode them. One definition, so the two counts cannot drift into two
+    /// different notions of "how a name becomes a count".
+    fn fold_kinds<'a>(names: impl Iterator<Item = &'a str>) -> Vec<(String, usize)> {
+        let mut names: Vec<&str> = names.collect();
         names.sort_unstable();
         let mut counted: Vec<(String, usize)> = Vec::new();
         for name in names {
@@ -605,6 +646,15 @@ impl Census {
         }
         for (kind, count) in self.kinds() {
             out.push_str(&format!("  {count:5} typed {kind}\n"));
+        }
+        // A generated row that resolved a kind, printed as its own line
+        // beside the typed one rather than folded into it: the two rows
+        // reach different verbs (a check instantiates over the first and
+        // never the second), so a reader who wants the whole population
+        // sums them, and a reader who wants what a check reached reads the
+        // first line alone. See `Census::generated_kinds`.
+        for (kind, count) in self.generated_kinds() {
+            out.push_str(&format!("  {count:5} generated {kind}\n"));
         }
 
         // Each exclusion once, with the count it covers. A rule that covers
@@ -900,6 +950,44 @@ mod tests {
         // coverage account counts it where it counted it before.
         assert!(!matches!(row.outcome, Outcome::Typed { .. }));
         assert_eq!(row.outcome.class(), "generated");
+    }
+
+    /// The same row, and the two joins #409 found it missing from.
+    ///
+    /// [`Census::kinds`] folds only [`Outcome::Typed`] rows, so a generated
+    /// row that resolved a kind — this one, `decision_register` — was
+    /// invisible to the per-kind census even though [`Outcome::node`]
+    /// already treats it as a graph node under that same kind. And
+    /// [`Outcome::detail`] printed only the projection, `shelf_sections`,
+    /// never the resolved kind, so a reader looking at the row-by-row detail
+    /// could not join it back to the kind count it was missing from either.
+    #[test]
+    fn a_generated_member_reaches_the_kind_count_and_names_it_in_the_row() {
+        let census = take(&corpus(), &taxonomy());
+
+        // The join: a reader who sums `kinds()` and `generated_kinds()` for
+        // `decision_register` gets the same count a grep for
+        // `doc_type: decision_register` over this fixture tree would.
+        assert_eq!(
+            census
+                .generated_kinds()
+                .into_iter()
+                .find(|(kind, _)| kind == "decision_register"),
+            Some(("decision_register".to_string(), 1)),
+            "{:?}",
+            census.generated_kinds()
+        );
+
+        // The row: the detail line names the kind it resolved, not only the
+        // projection that wrote it.
+        let row = census
+            .rows
+            .iter()
+            .find(|row| row.path == "walk/spec/generated-register.md")
+            .expect("the fixture");
+        let detail = row.outcome.detail();
+        assert!(detail.contains("decision_register"), "{detail}");
+        assert!(detail.contains("shelf_sections"), "{detail}");
     }
 
     /// The false positive that would cost the most.
