@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 473,
-      "carried": 473,
+      "in the graph": 474,
+      "carried": 474,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2020,6 +2020,28 @@
               "engine/crates/query/src/route.rs"
             ]
           },
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md",
+        "kind": "decision",
+        "id": "HW-DR-0072",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-DR-0072",
+          "status": "current",
+          "status_since": "2026-09-17",
+          "summary": "An adopter reaches the whole governed loop through the binary. Two integration points sit outside it and the list is closed against growth. Git plumbing meets the necessity test, a network fetch is held open, and the change manifest fails it and is a defect.",
+          "last_verified": "2026-09-17",
+          "title": "The binary is the only interface an adopter must run, and every integration point outside it is declared",
           "provenance": {
             "warrant": "accepted",
             "agency": "agent",
@@ -9686,7 +9708,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 71 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 72 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {

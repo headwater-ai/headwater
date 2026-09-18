@@ -148,6 +148,8 @@ docs/decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-p
   typed: decision
 docs/decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md
   typed: decision
+docs/decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
