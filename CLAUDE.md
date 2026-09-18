@@ -4,7 +4,7 @@ This file holds only what every agent in this repository must obey, because ever
 
 ## Work in a worktree
 
-Call `EnterWorktree` at the start of every session in this repository, before reading or editing a file, unless the user has already put the session in a worktree another way. Two sessions editing the checkout the harness runs from collide, and a worktree keeps a change isolated until it is ready to commit. After `EnterWorktree`, run `git config --get core.hooksPath` and expect `.githooks`: the tool rewrites that key to an absolute path in the shared config, and a worktree with an absolute path silently runs the main checkout's hook body instead of its own.
+Call `EnterWorktree` at the start of every session in this repository, before reading or editing a file, unless the user has already put the session in a worktree another way. Two sessions editing the checkout the harness runs from collide, and a worktree keeps a change isolated until it is ready to commit. `EnterWorktree` rewrites `core.hooksPath` absolute on every call, but every `.githooks/` hook hands off to the committing worktree's own copy regardless (#925/#946), so only a branch with no copy of that hook yet runs the wrong body.
 
 ## The name is Headwater
 
