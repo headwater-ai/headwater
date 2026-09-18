@@ -56,8 +56,7 @@ pub fn produce(root: &Path, base: &str, out: &Path) -> Result<PathBuf, String> {
     }
 
     let prior_dir = out.join("prior");
-    fs::create_dir_all(&prior_dir)
-        .map_err(|error| format!("{}: {error}", prior_dir.display()))?;
+    fs::create_dir_all(&prior_dir).map_err(|error| format!("{}: {error}", prior_dir.display()))?;
     let manifest_path = out.join("manifest");
     let mut manifest = format!("{FORMAT}\n");
     let mut priors = 0usize;
@@ -138,7 +137,12 @@ fn commit_exists(root: &Path, base: &str) -> bool {
     Command::new("git")
         .arg("-C")
         .arg(root)
-        .args(["rev-parse", "--verify", "--quiet", &format!("{base}^{{commit}}")])
+        .args([
+            "rev-parse",
+            "--verify",
+            "--quiet",
+            &format!("{base}^{{commit}}"),
+        ])
         .output()
         .map(|output| output.status.success())
         .unwrap_or(false)

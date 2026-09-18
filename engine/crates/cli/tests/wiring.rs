@@ -293,7 +293,10 @@ fn a_change_the_flag_named_reaches_the_verdict_and_not_only_the_parser() {
         3,
         "one header line, one `added` line and one `prior` line:\n{manifest_text}"
     );
-    assert_eq!(lines[0], "added\tdocs/decisions/0002-added-by-the-verb-case.md");
+    assert_eq!(
+        lines[0],
+        "added\tdocs/decisions/0002-added-by-the-verb-case.md"
+    );
     assert_eq!(lines[1], "headwater change 1");
     let prior_line = lines[2];
     let mut fields = prior_line.split('\t');
