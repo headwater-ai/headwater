@@ -834,6 +834,78 @@ else
     skip 'touch.sh cases' 'no built engine'
 fi
 
+printf '\n# touch.sh collect: a session the harness marked ended is removed, a live one is not\n'
+if [ -x "$engine" ]; then
+    common=$(git -C "$root" rev-parse --git-common-dir 2>/dev/null)
+    case $common in
+        /*) ;;
+        *) common="$root/$common" ;;
+    esac
+    ended_session="fixture-session-ended-$$"
+    live_session="fixture-session-live-$$"
+    blocked_session="fixture-session-blocked-$$"
+    unknown_session="fixture-session-unknown-$$"
+    fixture_jobs=$(mktemp -d)
+    cleanup_collect() {
+        rm -rf "$common/headwater-session/$ended_session" \
+            "$common/headwater-session/$live_session" \
+            "$common/headwater-session/$blocked_session" \
+            "$common/headwater-session/$unknown_session" \
+            "$fixture_jobs"
+    }
+    trap cleanup_collect EXIT INT TERM
+
+    for s in "$ended_session" "$live_session" "$blocked_session" "$unknown_session"; do
+        mkdir -p "$common/headwater-session/$s" && : > "$common/headwater-session/$s/touched"
+    done
+
+    # A job the harness has finished: no clock read anywhere, only the
+    # `state` field `state.json` already carries.
+    mkdir -p "$fixture_jobs/job-ended"
+    printf '{"sessionId":"%s","state":"done"}' "$ended_session" > "$fixture_jobs/job-ended/state.json"
+    # A job still running has no `state.json` at all -- this is the harness's
+    # own signal for "live", and this case never writes one.
+    mkdir -p "$fixture_jobs/job-live"
+    # A job the harness paused rather than ended. It reads as still alive.
+    mkdir -p "$fixture_jobs/job-blocked"
+    printf '{"sessionId":"%s","state":"blocked"}' "$blocked_session" > "$fixture_jobs/job-blocked/state.json"
+    # $unknown_session names no job at all: a marker this cannot tell about
+    # is kept, never removed.
+
+    out=$(HEADWATER_JOBS_ROOT="$fixture_jobs" sh "$hooks/touch.sh" collect 2>&1)
+    if [ -d "$common/headwater-session/$ended_session" ]; then
+        printf 'FAIL %s\n  the marker is still there\n' 'collect removes a marker the harness reports done'
+        failed=$((failed + 1))
+    else
+        printf 'ok   %s\n' 'collect removes a marker the harness reports done'
+        passed=$((passed + 1))
+    fi
+    for s in "$live_session" "$blocked_session" "$unknown_session"; do
+        if [ -d "$common/headwater-session/$s" ]; then
+            printf 'ok   %s\n' "collect keeps $s"
+            passed=$((passed + 1))
+        else
+            printf 'FAIL %s\n  %s was removed and should not have been\n' 'collect keeps a marker it has no ended evidence for' "$s"
+            failed=$((failed + 1))
+        fi
+    done
+    case $out in
+        *"COLLECTED: $ended_session"*)
+            printf 'ok   %s\n' '  and it names the session it collected'
+            passed=$((passed + 1))
+            ;;
+        *)
+            printf 'FAIL %s\n  got:\n%s\n' '  and it names the session it collected' "$out"
+            failed=$((failed + 1))
+            ;;
+    esac
+
+    cleanup_collect
+    trap - EXIT INT TERM
+else
+    skip 'touch.sh collect cases' 'no built engine'
+fi
+
 printf '\n# review.sh, on Stop\n'
 if [ -x "$engine" ]; then
     expect 'a tree the commit gate passes lets the turn end' \

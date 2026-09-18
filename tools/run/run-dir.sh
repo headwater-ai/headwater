@@ -30,6 +30,7 @@
 #                                               claim each artifact, or say who holds it
 #     sh tools/run/run-dir.sh release <dir> <issue>  drop every claim the issue holds
 #     sh tools/run/run-dir.sh claims <dir>           every claim, one per line
+#     sh tools/run/run-dir.sh end <dir>              drop every claim, once the run has closed
 #
 # A claim is a file at `<dir>/claims/artifacts/<artifact>`, opened with
 # `set -C`, which dash implements as O_EXCL, so two parents claiming one
@@ -256,11 +257,34 @@ claims() {
     done
 }
 
+# A claim stops being meaningful the moment its run ends: the issue that held
+# it either merged (and released it already) or never will, and either way
+# nothing is still waiting to happen under that run. This drops the whole
+# `claims/` subtree rather than the run directory itself, because
+# `log.jsonl`, `findings.jsonl`, `lessons.md` and `decisions.md` are the
+# record the next run reads — `start`'s own seeding step reads `lessons.md`
+# and `decisions.md` out of the newest other directory, and a run this deleted
+# outright could stop being that newest directory's source between one run
+# ending and the next one starting. [#926] is the finding this answers: a
+# stale claim from a run that will never finish reported `WAITS-ON` against a
+# claimant that could otherwise have gone straight through.
+end() {
+    dir=$1
+    [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
+    freed=0
+    if [ -d "$dir/claims" ]; then
+        freed=$(find "$dir/claims/artifacts" -type f 2>/dev/null | wc -l | tr -d ' ')
+    fi
+    rm -rf "$dir/claims"
+    printf 'ENDED: %s, %s claims dropped\n' "$dir" "${freed:-0}"
+}
+
 case ${1:-} in
     start) shift; start "$@" ;;
     claim) [ $# -ge 5 ] || usage; shift; claim "$@" ;;
     release) [ $# -eq 3 ] || usage; release "$2" "$3" ;;
     claims) [ $# -eq 2 ] || usage; claims "$2" ;;
+    end) [ $# -eq 2 ] || usage; end "$2" ;;
     log) [ $# -eq 3 ] || usage; log "$2" "$3" ;;
     tail) [ $# -ge 2 ] || usage; tail_log "$2" "${3:-5}" ;;
     net) [ $# -eq 2 ] || usage; net "$2" ;;
