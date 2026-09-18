@@ -178,6 +178,8 @@ docs/evaluations/linkml-worked-example.md
   typed: evaluation
 docs/evaluations/n8n-worked-example.md
   typed: evaluation
+docs/evaluations/one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it.md
+  typed: evaluation
 docs/evaluations/owl-skos-worked-example.md
   typed: evaluation
 docs/evaluations/relation-storage.md
@@ -208,6 +210,8 @@ docs/evaluations/why-corpus-counts-are-derived-not-stored.md
   typed: evaluation
 docs/how-to/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/how-to/diagnose-an-isolation-failure.md
+  typed: how_to
 docs/how-to/mine-the-shadow-mode-routing-log.md
   typed: how_to
 docs/how-to/relocate-a-shelf.md

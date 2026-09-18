@@ -92,6 +92,7 @@ nav:
       - "The Q1 spike — results": "evaluations/language-spike-results.md"
       - "The Headwater taxonomy in LinkML — a worked example": "evaluations/linkml-worked-example.md"
       - "n8n as a worked instance — a corpus with no docs root": "evaluations/n8n-worked-example.md"
+      - "One clone, many agents: how this repository isolates the sessions that build it": "evaluations/one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it.md"
       - "The taxonomy in OWL and SKOS — a worked example": "evaluations/owl-skos-worked-example.md"
       - "Relation storage — the Q4 evaluation": "evaluations/relation-storage.md"
       - "Choosing the schema format — a cognitive-dimensions walkthrough": "evaluations/schema-format-walkthrough.md"
@@ -108,6 +109,7 @@ nav:
       - "Why corpus counts are derived, not stored": "evaluations/why-corpus-counts-are-derived-not-stored.md"
   - "How-to guides":
       - "How-to guides": "how-to/README.md"
+      - "Diagnose an isolation failure": "how-to/diagnose-an-isolation-failure.md"
       - "Mine the shadow-mode routing log": "how-to/mine-the-shadow-mode-routing-log.md"
       - "Relocate a shelf": "how-to/relocate-a-shelf.md"
   - "The command surface":

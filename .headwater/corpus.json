@@ -34,8 +34,8 @@
         },
         {
           "shelf": "how_to",
-          "path": "docs/how-to/mine-the-shadow-mode-routing-log.md",
-          "id": "HW-HOW-mine-the-shadow-mode-routing-log"
+          "path": "docs/how-to/diagnose-an-isolation-failure.md",
+          "id": "HW-HOW-diagnose-an-isolation-failure"
         },
         {
           "shelf": "interfaces",

@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 474,
-      "carried": 474,
+      "in the graph": 476,
+      "carried": 476,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 665,
-      "carried": 665,
+      "in the graph": 667,
+      "carried": 667,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -981,7 +981,7 @@
           "status": "current",
           "status_since": "2026-08-30",
           "summary": "Acceptance is the merge onto main. A provenance block on an unmerged branch is a proposal, so an agent may write `accepted_by` there, and stop rule 5 binds main rather than the byte.",
-          "last_verified": "2026-08-30",
+          "last_verified": "2026-09-18",
           "title": "Q34 — Whether acceptance means merged to main, and what an agent may write before that",
           "provenance": {
             "warrant": "accepted",
@@ -2365,6 +2365,32 @@
         }
       },
       {
+        "path": "docs/evaluations/one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it",
+          "status": "current",
+          "status_since": "2026-09-18",
+          "summary": "Fifteen agent sessions share one clone through four rules, and each rule was written after a failure that read as a pass.",
+          "last_verified": "2026-09-18",
+          "title": "One clone, many agents: how this repository isolates the sessions that build it",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-PD-0004"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/owl-skos-worked-example.md",
         "kind": "evaluation",
         "id": "HW-EVAL-owl-skos-worked-example",
@@ -2779,6 +2805,32 @@
             "traces_to": [
               "HW-DR-0049",
               "HW-PD-0005"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/how-to/diagnose-an-isolation-failure.md",
+        "kind": "how_to",
+        "id": "HW-HOW-diagnose-an-isolation-failure",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-HOW-diagnose-an-isolation-failure",
+          "status": "current",
+          "status_since": "2026-09-18",
+          "summary": "Five questions separate a failure of your change from a failure of the checkout it ran in, and each one is one command.",
+          "last_verified": "2026-09-18",
+          "title": "Diagnose an isolation failure",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-SPEC-harness-support"
             ]
           }
         }
@@ -8978,19 +9030,20 @@
         "path": "docs/process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md",
         "kind": "process_decision",
         "id": "HW-PD-0004",
-        "warrant": "asserted",
+        "warrant": "accepted",
         "facets": {
           "id": "HW-PD-0004",
           "status": "current",
           "status_since": "2026-09-07",
           "summary": "Workers coordinate through create-only claim files that every worktree can reach and the parent never relays, while the merge veto and a re-verification stay messages from the parent, because a peer's message carries no owner authority.",
-          "last_verified": "2026-09-07",
+          "last_verified": "2026-09-18",
           "title": "Coordination is a create-only claim, and authority stays on the tree",
           "provenance": {
-            "warrant": "asserted",
+            "warrant": "accepted",
             "agency": "agent",
             "drafted_by": "claude-fable-5-1",
             "activity": "measure+draft",
+            "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
           }
         }
@@ -12392,6 +12445,17 @@
         }
       },
       {
+        "source": "docs/evaluations/one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0004",
+          "path": "docs/process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md",
+          "kind": "process_decision"
+        }
+      },
+      {
         "source": "docs/evaluations/owl-skos-worked-example.md",
         "relation": "cites_evidence",
         "written_as": "cited_by",
@@ -13016,6 +13080,17 @@
           "id": "HW-PD-0005",
           "path": "docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md",
           "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/how-to/diagnose-an-isolation-failure.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-harness-support",
+          "path": "docs/spec/16-harness-support.md",
+          "kind": "design_spec"
         }
       },
       {
