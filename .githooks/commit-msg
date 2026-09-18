@@ -58,6 +58,35 @@
 # Install once per clone, the same command `.githooks/pre-commit` needs:
 #     git config core.hooksPath .githooks
 
+# `core.hooksPath` is shared by every worktree of a clone, and an absolute
+# value names one checkout, so git resolves this hook to that checkout's copy
+# whatever branch is actually committing or merging. `.githooks/pre-commit`
+# carries the full account of why and how this hands off to the worktree's
+# own copy instead (#925); this hook needs the same guard, because a merge
+# gate that ran the wrong branch's rules is the same defect on a different
+# hook position.
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -n "$root" ] || exit 0
+# Parameter expansion rather than `dirname`/`basename`: a hardened `PATH`
+# `.githooks/fixtures.sh` builds to prove a missing `gh` fails open carries
+# neither, and a handoff that needed them would fail closed on that `PATH`
+# instead.
+case $0 in
+    */*) hook_dir=${0%/*} ;;
+    *) hook_dir=. ;;
+esac
+hook_name=${0##*/}
+self=$(cd "$hook_dir" 2>/dev/null && pwd -P)
+own_dir=$(cd "$root/.githooks" 2>/dev/null && pwd -P)
+if [ -z "${HEADWATER_HOOK_HANDOFF:-}" ] && [ "$self" != "$own_dir" ]; then
+    own="$root/.githooks/$hook_name"
+    if [ -x "$own" ]; then
+        HEADWATER_HOOK_HANDOFF=1 exec "$own" "$@"
+    fi
+    echo "headwater: this worktree carries no $hook_name of its own, so the"
+    echo "  checkout core.hooksPath names ran its copy instead."
+fi
+
 git_dir=$(git rev-parse --git-dir 2>/dev/null) || exit 0
 [ -n "$git_dir" ] || exit 0
 
@@ -72,8 +101,10 @@ git_dir=$(git rev-parse --git-dir 2>/dev/null) || exit 0
 # `engine/crates/census/tests/merge_driver.rs`, which points a scratch
 # repository at this directory on purpose. Reading `<toplevel>/.githooks/` there
 # would find nothing and exit 0, which is a gate that cannot run reading as a
-# gate that passed.
-here=$(dirname "$0")
+# gate that passed. The handoff above already reads `$0` the same way, once
+# per hook rather than twice, so this reuses `$hook_dir` instead of a second
+# `dirname`.
+here=$hook_dir
 
 sh "$here/merged-fold-check" || exit 1
 exit 0

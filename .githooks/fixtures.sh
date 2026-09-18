@@ -809,18 +809,47 @@ judge 'the gate reports a clone with no merge driver configured' 0 0 \
 
 # And the gate reports an absolute `core.hooksPath`, which `EnterWorktree`
 # writes on every call, and says nothing about the relative one `CLAUDE.md`
-# instructs. Both arms exit 0: the value is reset by a tool the committer did
-# not run, so the gate reports it and lets the commit through. The second
-# assertion on the absolute arm is the one that matters: a report that omits
-# that the value comes back is believed exactly once.
+# instructs. Both arms exit 0. This invocation is by a relative path from
+# `$scratch` itself, so `$0` resolves inside `$scratch/.githooks` regardless
+# of what the config value holds — it never actually exercises the handoff,
+# only the report clause that reads the value after it. The worktree-pair
+# case below is what exercises the handoff itself.
 absolute_hooks=$(cd "$scratch" && git config core.hooksPath "$scratch/.githooks" && sh .githooks/pre-commit 2>&1); absolute_status=$?
 judge 'the gate reports an absolute core.hooksPath and lets the commit through' 0 "$absolute_status" \
     'core.hooksPath is absolute' "$absolute_hooks"
-judge 'and the report says the value comes back after the next EnterWorktree' 0 0 \
-    'expect this line back after the next one' "$absolute_hooks"
+judge 'and the report explains the handoff already ran this worktrees own body' 0 0 \
+    'handed off from the checkout the value names, so' "$absolute_hooks"
 relative_hooks=$(cd "$scratch" && git config core.hooksPath .githooks && sh .githooks/pre-commit 2>&1); relative_status=$?
 judge 'a relative core.hooksPath lets the commit through' 0 "$relative_status" '' "$relative_hooks"
 refute 'and says nothing about the hooks path' 'core.hooksPath is absolute' "$relative_hooks"
+
+# The decisive fixture: a real worktree pair, not the single-checkout
+# stand-in above. `git worktree add` gives the second checkout its own
+# branch and its own copy of `.githooks/pre-commit`, distinguishable from the
+# first's by one line only this case plants. `core.hooksPath` is set
+# absolute to the *main* checkout (`$scratch`), and the commit that matters
+# runs for real inside the *worktree*, through git's own hook resolution
+# rather than a hand-typed `sh .githooks/pre-commit` — that is what makes
+# this the one case that can tell which body ran. Before the handoff exists,
+# this fails for exactly that reason: the marker text is absent, not a
+# missing file or a missing engine, because the worktree carries no engine of
+# its own and the gate exits 0 either way.
+worktree=$(mktemp -d) || exit 1
+git -C "$scratch" worktree add -q -b 925-worktree-fixture "$worktree" >/dev/null 2>&1 || exit 1
+marker='headwater: fixture marker, this worktree ran its own pre-commit'
+sed -i "1a echo '$marker'" "$worktree/.githooks/pre-commit"
+git -C "$scratch" config core.hooksPath "$scratch/.githooks"
+worktree_commit=$(
+    cd "$worktree" || exit 1
+    git add .githooks/pre-commit
+    git -c user.name=fixtures -c user.email=fixtures@invalid \
+        commit -qm "the worktree commits its own differing hook body" 2>&1
+); worktree_status=$?
+git -C "$scratch" config core.hooksPath .githooks
+git -C "$scratch" worktree remove -f "$worktree" >/dev/null 2>&1
+git -C "$scratch" branch -qD 925-worktree-fixture >/dev/null 2>&1
+judge 'a worktree with core.hooksPath absolute to the main checkout still runs its own pre-commit body' \
+    0 "$worktree_status" "$marker" "$worktree_commit"
 
 # Either profile builds an engine this gate runs.
 #
@@ -1032,6 +1061,30 @@ out=$(push_from "$unclaimed_at" "$none"); status=$?
 judge 'an unreviewed site page still refuses the whole push' 1 "$status" \
     'Push refused: a site/* merge conflict was resolved but never reviewed' "$out"
 refute 'and the refusal does not also spend a network call on the board' '#901 is unassigned' "$out"
+
+# The handoff's stdin claim, proven rather than asserted from the shape of
+# `exec`. A second checkout of the same repository gets its own marked copy
+# of `.githooks/pre-push`, and the invocation below names the *main*
+# checkout's copy directly from inside that worktree — the same relationship
+# an absolute `core.hooksPath` sets up for real. The unclaimed-issue warning
+# only fires by reading the ref list this hook takes on stdin, so its
+# appearance proves standard input reached the handed-off body and not only
+# the marker line ahead of it.
+worktree_push=$(mktemp -d) || exit 1
+git -C "$pushes/repo" worktree add -q -b 925-worktree-push "$worktree_push" >/dev/null 2>&1 || exit 1
+push_marker='headwater: fixture marker, this worktree ran its own pre-push'
+sed -i "1a echo '$push_marker' >&2" "$worktree_push/.githooks/pre-push"
+out=$(
+    cd "$worktree_push" || exit 1
+    printf 'refs/heads/925-worktree-push %s refs/heads/925-worktree-push %s\n' "$unclaimed_at" "$zeroes" |
+        PATH="$pushes/bin:$PATH" sh "$pushes/repo/.githooks/pre-push" origin dummy 2>&1
+); status=$?
+git -C "$pushes/repo" worktree remove -f "$worktree_push" >/dev/null 2>&1
+git -C "$pushes/repo" branch -qD 925-worktree-push >/dev/null 2>&1
+judge 'a worktree with core.hooksPath resolving to the main checkout still runs its own pre-push body' \
+    0 "$status" "$push_marker" "$out"
+judge 'and standard input still reaches it, which the unclaimed-issue warning proves' 0 0 \
+    '#901 is unassigned' "$out"
 
 reset
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
