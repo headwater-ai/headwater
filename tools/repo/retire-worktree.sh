@@ -56,6 +56,10 @@
 # is none, and it reads `/proc` for the in-use guard and says so when there is
 # none. `HEADWATER_RETIRE_PR_STATE` names a file of `branch<TAB>STATE<TAB>oid`
 # lines that stands in for `gh`, which is how the fixtures drive the merged arm.
+#
+# It also reports free disk space on the main tree's filesystem, once before
+# anything runs and once at the end, with `df` and says so when `df` cannot
+# be read.
 
 set -u
 
@@ -79,6 +83,29 @@ here=$(pwd -P)
 
 work=$(mktemp -d) || exit 1
 trap 'rm -rf "$work"' EXIT HUP INT TERM
+
+# Free space in 1024-byte blocks on the filesystem holding the main tree,
+# which is also where every worktree this sweep can touch lives. Empty when
+# `df` cannot answer, and every call site treats that as "say nothing".
+disk_avail_kb() {
+    df -Pk "$main_tree" 2>/dev/null | awk 'NR==2 { print $4 }'
+}
+
+# A `df -Pk` figure as a human-readable size.
+human_kb() {
+    awk -v kb="${1:-0}" 'BEGIN {
+        v = kb; split("K M G T", units, " "); i = 1
+        while (v >= 1024 && i < 4) { v /= 1024; i++ }
+        printf "%.1f%s", v, units[i]
+    }'
+}
+
+pre_avail_kb=$(disk_avail_kb)
+if [ -n "$pre_avail_kb" ]; then
+    printf 'disk space on %s: %s available before\n\n' "$main_tree" "$(human_kb "$pre_avail_kb")"
+else
+    echo 'NOTE: could not read disk space (no `df`?); before/after will not be shown.' >&2
+fi
 
 # `--prune` is what makes a deleted remote branch visible as one. Without it the
 # sweep reads a stale remote and a merged branch keeps looking live.
@@ -307,3 +334,19 @@ else
     printf 'RETIRED: nothing. This was a report; re-run with --retire to act.\n'
 fi
 [ "$proc_available" = yes ] || printf 'NOTE: no /proc, so the in-use guard could not be asked.\n'
+
+if [ -n "$pre_avail_kb" ]; then
+    post_avail_kb=$(disk_avail_kb)
+    if [ -n "$post_avail_kb" ]; then
+        delta_kb=$((post_avail_kb - pre_avail_kb))
+        if [ "$delta_kb" -ge 0 ]; then
+            printf 'disk space on %s: %s available after (freed %s)\n' \
+                "$main_tree" "$(human_kb "$post_avail_kb")" "$(human_kb "$delta_kb")"
+        else
+            printf 'disk space on %s: %s available after (grew by %s; something else wrote to this filesystem during the sweep)\n' \
+                "$main_tree" "$(human_kb "$post_avail_kb")" "$(human_kb "$((0 - delta_kb))")"
+        fi
+    else
+        echo 'NOTE: could not read disk space after the sweep.' >&2
+    fi
+fi
