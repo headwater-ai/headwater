@@ -152,6 +152,8 @@ docs/decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-eve
   typed: decision
 docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md
   typed: decision
+docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -167,6 +169,8 @@ docs/evaluations/capability-bundle-address-inventory.md
 docs/evaluations/default-taxonomy-first-run.md
   typed: evaluation
 docs/evaluations/first-contact.md
+  typed: evaluation
+docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md
   typed: evaluation
 docs/evaluations/graph-export-and-federation.md
   typed: evaluation

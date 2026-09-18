@@ -14,6 +14,11 @@ provenance:
 relations:
   traces_to:
     - HW-SPEC-harness-support
+  governs:
+    - .githooks/pre-commit
+    - .claude/hooks/lib.sh
+    - tools/hw-cargo
+    - tools/repo/retire-worktree.sh
 ---
 
 # Diagnose an isolation failure

@@ -19,6 +19,8 @@ relations:
     - HW-SPEC-ai-integration
   governs:
     - .claude/settings.json
+    - .claude/hooks/fixtures.sh
+    - .claude/hooks/fixtures-live.sh
 ---
 
 # Harness support

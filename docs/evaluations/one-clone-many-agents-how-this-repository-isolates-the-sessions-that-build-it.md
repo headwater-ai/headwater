@@ -14,6 +14,21 @@ provenance:
 relations:
   traces_to:
     - HW-PD-0004
+  governs:
+    - .githooks/pre-commit
+    - .githooks/commit-msg
+    - .githooks/pre-push
+    - .githooks/post-rewrite
+    - .claude/hooks/lib.sh
+    - .claude/hooks/touch.sh
+    - tools/hw-cargo
+    - tools/cap-run
+    - tools/repo/retire-worktree.sh
+    - tools/run/run-dir.sh
+    - CLAUDE.md
+    - DEVELOPING.md
+    - .claude/skills/hw-run-policy/SKILL.md
+    - .claude/agents/hw-build.md
 ---
 
 # One clone, many agents: how this repository isolates the sessions that build it
