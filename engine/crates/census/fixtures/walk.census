@@ -8,6 +8,7 @@
       4 unwalkable
       2 typed design_spec
       1 typed evaluation
+      1 generated decision_register
 
 exclusions
       2 `walk/excluded/**`
@@ -50,7 +51,7 @@ walk/spaces and ünicode.md
 walk/spec/generated-index.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 walk/spec/generated-register.md
-  generated: `shelf_sections`, and `headwater generate --check` holds it rather than this census
+  generated: `shelf_sections`, resolved as `decision_register`, and `headwater generate --check` holds it rather than this census
 walk/spec/no-discriminator.md
   untyped: the shelf is heterogeneous and the document declares no `doc_type`
 walk/spec/no-front-matter.md

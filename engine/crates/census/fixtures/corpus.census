@@ -665,15 +665,15 @@ docs/obligations/README.md
 docs/probe-results/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/regression-probe-transcript-for-2026-09-09.md
-  generated: `probe_result`, and `headwater generate --check` holds it rather than this census
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/regression-probe-transcript-for-2026-09-11.md
-  generated: `probe_result`, and `headwater generate --check` holds it rather than this census
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/regression-probe-transcript-for-2026-09-16.md
-  generated: `probe_result`, and `headwater generate --check` holds it rather than this census
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md
-  generated: `probe_result`, and `headwater generate --check` holds it rather than this census
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/regression-probe-transcript-for-2026-09-17.md
-  generated: `probe_result`, and `headwater generate --check` holds it rather than this census
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-runs/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-runs/regression-probe-transcript-for-2026-09-09.md
@@ -761,7 +761,7 @@ docs/spec/08-design-departures.md
 docs/spec/09-decisions.md
   typed: decision_register
 docs/spec/09-open-questions.md
-  generated: `shelf_sections`, and `headwater generate --check` holds it rather than this census
+  generated: `shelf_sections`, resolved as `decision_register`, and `headwater generate --check` holds it rather than this census
 docs/spec/12-check-layer.md
   typed: design_spec
 docs/spec/13-open-obligations.md
