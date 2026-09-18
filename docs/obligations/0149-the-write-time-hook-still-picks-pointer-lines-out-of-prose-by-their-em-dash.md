@@ -13,6 +13,9 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 waiting_on: adopter
+relations:
+  governs:
+    - .claude/hooks/write.sh
 ---
 
 # The write-time hook still picks pointer lines out of prose by their em dash

@@ -10,7 +10,7 @@ Git does not install a repository's own hooks, so a fresh clone runs none of the
 
     git config core.hooksPath .githooks
 
-Keep that path relative. An absolute path makes every worktree of this repository run the main checkout's hook body instead of the one on its own branch, which is a defect that reads as the gate passing.
+Keep that path relative. Every hook under `.githooks/` hands off to the copy under the worktree that is committing, whatever this value names ([#946](https://github.com/headwater-ai/headwater/pull/946)), but a branch cut before that guard existed still runs the checkout an absolute value names, and the hook says so when it does.
 
 `.githooks/pre-commit` builds a change manifest from your working tree and then runs the engine over the corpus in strict mode. It refuses an error and reports everything else, so a commit that goes through is not a commit with nothing to answer for. Run the engine yourself to read the advisory findings.
 

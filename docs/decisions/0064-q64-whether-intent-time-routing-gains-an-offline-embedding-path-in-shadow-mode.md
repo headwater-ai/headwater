@@ -11,6 +11,9 @@ provenance:
   drafted_by: claude-opus-5
   activity: measure+draft
   evidence_basis: evidenced
+relations:
+  governs:
+    - .claude/hooks/intent.sh
 ---
 
 # Q64 — Whether intent-time routing gains an offline embedding path in shadow mode
