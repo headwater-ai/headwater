@@ -42,10 +42,28 @@
 # collects a marker it has positive evidence for, and the direction it is
 # allowed to be wrong in is keeping a marker too long, never dropping one
 # still in use.
+#
+# A session id is not proven to name one job directory alone, and this reads
+# every `state.json` that names it rather than the first: an early return on
+# the first match let one ended job's `done` answer for a second, later
+# sorting job that had not finished, which is exactly the direction this is
+# not allowed to be wrong in. `session_ended` below is ended only when every
+# job it finds for that session id agrees; one non-terminal or unreadable
+# match anywhere in the scan keeps the marker.
+#
+# What this still cannot see: a job that has never written `state.json` at
+# all carries no on-disk record of its session id — read directly off this
+# host, a running job's directory holds nothing else. A live job sharing a
+# session id with an already-`done` job is therefore indistinguishable from
+# "no other job for this session exists", because both produce zero matches
+# beyond the `done` one. Nothing in this repository can close that gap from
+# the outside; it would take the harness recording a live job's session id
+# somewhere this can read. Recorded rather than assumed away.
 . "$(dirname "$0")/lib.sh"
 
 session_ended() {
     _session=$1 _jobs=$2
+    _found=0
     for _state in "$_jobs"/*/state.json; do
         [ -f "$_state" ] || continue
         _json=$(cat "$_state") || continue
@@ -53,11 +71,11 @@ session_ended() {
         [ "$_sid" = "$_session" ] || continue
         _st=$(hw_field "$_json" state) || return 1
         case $_st in
-            done | failed | stopped) return 0 ;;
+            done | failed | stopped) _found=1 ;;
             *) return 1 ;;
         esac
     done
-    return 1
+    [ "$_found" -eq 1 ]
 }
 
 collect() {

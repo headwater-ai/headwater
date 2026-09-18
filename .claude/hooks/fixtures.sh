@@ -845,17 +845,19 @@ if [ -x "$engine" ]; then
     live_session="fixture-session-live-$$"
     blocked_session="fixture-session-blocked-$$"
     unknown_session="fixture-session-unknown-$$"
+    multi_session="fixture-session-multi-$$"
     fixture_jobs=$(mktemp -d)
     cleanup_collect() {
         rm -rf "$common/headwater-session/$ended_session" \
             "$common/headwater-session/$live_session" \
             "$common/headwater-session/$blocked_session" \
             "$common/headwater-session/$unknown_session" \
+            "$common/headwater-session/$multi_session" \
             "$fixture_jobs"
     }
     trap cleanup_collect EXIT INT TERM
 
-    for s in "$ended_session" "$live_session" "$blocked_session" "$unknown_session"; do
+    for s in "$ended_session" "$live_session" "$blocked_session" "$unknown_session" "$multi_session"; do
         mkdir -p "$common/headwater-session/$s" && : > "$common/headwater-session/$s/touched"
     done
 
@@ -872,6 +874,16 @@ if [ -x "$engine" ]; then
     # $unknown_session names no job at all: a marker this cannot tell about
     # is kept, never removed.
 
+    # The regression `hw-verify` found: one session id, two job directories.
+    # `job-multi-1-done` sorts before `job-multi-2-blocked` in the glob, and a
+    # scan that stopped at the first match would read this session as ended
+    # on `job-multi-1-done`'s word alone, never reaching the second job that
+    # says otherwise. Both are named here so a reader can see the sort order
+    # is deliberate, not incidental.
+    mkdir -p "$fixture_jobs/job-multi-1-done" "$fixture_jobs/job-multi-2-blocked"
+    printf '{"sessionId":"%s","state":"done"}' "$multi_session" > "$fixture_jobs/job-multi-1-done/state.json"
+    printf '{"sessionId":"%s","state":"blocked"}' "$multi_session" > "$fixture_jobs/job-multi-2-blocked/state.json"
+
     out=$(HEADWATER_JOBS_ROOT="$fixture_jobs" sh "$hooks/touch.sh" collect 2>&1)
     if [ -d "$common/headwater-session/$ended_session" ]; then
         printf 'FAIL %s\n  the marker is still there\n' 'collect removes a marker the harness reports done'
@@ -880,7 +892,7 @@ if [ -x "$engine" ]; then
         printf 'ok   %s\n' 'collect removes a marker the harness reports done'
         passed=$((passed + 1))
     fi
-    for s in "$live_session" "$blocked_session" "$unknown_session"; do
+    for s in "$live_session" "$blocked_session" "$unknown_session" "$multi_session"; do
         if [ -d "$common/headwater-session/$s" ]; then
             printf 'ok   %s\n' "collect keeps $s"
             passed=$((passed + 1))
