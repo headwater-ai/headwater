@@ -57,11 +57,9 @@ When both profiles are present, the newer binary answers rather than the shipped
 
     git config --get core.hooksPath
 
-The answer must be the relative `.githooks`. An absolute answer names one checkout, and git keeps this key in `.git/config`, which every worktree of the clone shares. So every worktree runs the hook body of the checkout that path names, on whatever branch that checkout holds. A branch that edits a hook cannot test its own edit. Repair it in place:
+An absolute answer names one checkout, and git keeps this key in `.git/config`, which every worktree of the clone shares. Every hook under `.githooks/` hands off to the copy under the worktree actually committing, whatever this value names ([#925](https://github.com/headwater-ai/headwater/issues/925), fixed by [#946](https://github.com/headwater-ai/headwater/pull/946)). `git rev-parse --show-toplevel`, evaluated inside the hook itself, finds that copy. The one case that still runs the wrong body is a branch with no copy of that hook at all, cut before the guard existed. The hook reports that fallback when it happens. Set the value relative anyway, once per clone, because `EnterWorktree` writes it absolute again on every call and the fallback case still needs it:
 
     git config core.hooksPath .githooks
-
-`EnterWorktree` writes the absolute value again on every call, which [#925](https://github.com/headwater-ai/headwater/issues/925) carries. Ask this question at the start of a session, and not only after a surprise.
 
 ### 3. Ask whether a compiler reused another checkout's output
 
@@ -102,6 +100,6 @@ It reports and retires nothing without `--retire`. A `KEPT` line that reads `unm
 
 ## How to know it worked
 
-Five answers, one for each step. The worktree holds an engine under `engine/target/`. `core.hooksPath` reads `.githooks`. A repeated cargo command fails the same way twice or passes, rather than failing on a path that no other command mentions. A verb names the corpus you are editing, in the count of documents it reports. `git rev-parse --show-toplevel` prints the tree whose branch `git status` names.
+Five answers, one for each step. The worktree holds an engine under `engine/target/`. Your worktree's own hook body ran, whatever `core.hooksPath` reads, and the pre-commit report on an absolute value says which case it was. A repeated cargo command fails the same way twice or passes, rather than failing on a path that no other command mentions. A verb names the corpus you are editing, in the count of documents it reports. `git rev-parse --show-toplevel` prints the tree whose branch `git status` names.
 
 One thing these five cannot prove. A gate that passes in your worktree answers for your tree alone. CI runs the same checks against the merge of your branch with `main`. Two branches that write one derived value merge with no conflict, and leave a value that is true of neither. Rebase onto `main` before you bless a recorded artifact, and read the result of the merge rather than the result of the branch.

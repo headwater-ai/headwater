@@ -36,7 +36,7 @@ The report is the four lines, and then the block:
     git fetch origin
     git worktree add "$root/.claude/worktrees/<name>" -b <branch> origin/main
 
-Leave the shared checkout on `main` and untouched. Build the engine in your worktree with `--profile dev-release`, because a fresh worktree has no engine and the commit gate then fails open. Run `git config --get core.hooksPath` and expect `.githooks`.
+Leave the shared checkout on `main` and untouched. Build the engine in your worktree with `--profile dev-release`, because a fresh worktree has no engine and the commit gate then fails open. `core.hooksPath` resolving absolute is not a correctness problem here: every `.githooks/` hook hands off to your worktree's own copy regardless of that value ([#925](https://github.com/headwater-ai/headwater/issues/925), fixed by [#946](https://github.com/headwater-ai/headwater/pull/946)).
 
 Nothing has to hold that tree open. `tools/repo/retire-worktree.sh` keeps a tree that holds no commit `origin/main` lacks, and keeps its branch with it, so a tree you have not committed to is safe from the sweep and needs no lock. Push early for the other reason, which is that only pushed commits survive your death.
 
