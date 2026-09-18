@@ -1114,11 +1114,16 @@ pub struct Report {
     /// descriptor records none at all, because an absent member is a descriptor
     /// an earlier engine wrote rather than a disagreement.
     pub producer: Option<Producer>,
+    /// A write only: the number of passes [`write_settled`] ran, where every
+    /// one of them wrote a file and the last therefore proves nothing. `None`
+    /// for a run that settled and for every `--check`.
+    pub unsettled: Option<usize>,
 }
 
 impl Report {
     pub fn has_errors(&self) -> bool {
         self.producer.is_some()
+            || self.unsettled.is_some()
             || self.wrote.iter().any(|wrote| wrote.verdict.is_error())
             || !self.orphaned.is_empty()
             || self.refused.iter().any(|refused| refused.held)
@@ -1140,6 +1145,16 @@ impl Report {
         }
         if !self.has_errors() {
             return None;
+        }
+        // Before the drift sentences, because both of them name a verb to run
+        // and running this one again is what the passes already did.
+        if let Some(passes) = self.unsettled {
+            return Some(format!(
+                "each of the {passes} passes of this run wrote a file, so the tree it left is not \
+                 one `headwater generate --check` accepts. A projection reads a value that \
+                 another projection writes, in a cycle that more passes do not settle, and that \
+                 is a defect in the declarations or in this engine rather than in the corpus"
+            ));
         }
         // Before the two below, because a refused transcript is a failure of
         // the corpus rather than of the regeneration, and the remedy for it is
@@ -1280,8 +1295,85 @@ impl Report {
 }
 
 /// Write the plan.
+///
+/// One plan, written once. `headwater generate` calls [`write_settled`]
+/// instead, because one plan is not always the tree the next plan reads.
 pub fn write(root: &Path, plan: &Plan) -> Report {
     run(root, plan, false)
+}
+
+/// The most passes [`write_settled`] runs before it says the run did not
+/// settle.
+///
+/// A chain of projections `n` deep settles in `n + 1` passes: one write per
+/// link, and one pass that writes nothing and proves it. This repository's
+/// deepest chain is two links, a `shelf_sections` summary that a `shelf_index`
+/// prints. Four passes admit one link more than that, and a run that needs a
+/// fifth is a cycle rather than a chain, which no number of passes settles.
+pub const PASSES: usize = 4;
+
+/// Write a plan, read the tree again, and repeat until a pass writes nothing.
+///
+/// # Why one pass is not enough
+///
+/// A plan reads the corpus as it is on disk, and a projection whose output
+/// declares an identity is a document of that corpus.
+/// [HW-DR-0063](../../../../docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md)
+/// has its emitter compose the summary, so a summary can carry a count that
+/// the same run changes. A second projection that prints that summary, such as
+/// the shelf index of the shelf the first output sits on, reads the value from
+/// before the run. So one pass exited 0, `generate --check` then failed, and a
+/// second pass repaired it
+/// ([#842](https://github.com/headwater-ai/headwater/issues/842)). The commit
+/// gate did not catch it, because a stale projection is no finding of `check`.
+///
+/// # Why passes, and not an order
+///
+/// Running the composing emitters first would fix the one chain known today,
+/// and only by knowing which emitter reads which value. Each new projection
+/// kind would then need a second declaration of what it reads and writes,
+/// kept in step by hand. A pass reads the tree through the same loader as every
+/// other run, so every value that one output feeds to another is covered, and
+/// the pass that writes nothing is the proof that `--check` holds the result.
+///
+/// `planned` builds a plan from the tree as it is now. The caller owns the
+/// loading, because the loader lives in the command line and a test builds its
+/// own. A pass whose write failed stops the run, since a later plan would read
+/// a tree that the failure left part written.
+///
+/// The report states each path once, with what the first pass that changed
+/// it did. The remaining sections come from the last pass, which is the one
+/// that read the settled tree.
+pub fn write_settled<E>(
+    root: &Path,
+    mut planned: impl FnMut() -> Result<Plan, E>,
+) -> Result<Report, E> {
+    let mut seen: Vec<Wrote> = Vec::new();
+    let mut pass = 0;
+    loop {
+        pass += 1;
+        let mut report = write(root, &planned()?);
+        let changed = report
+            .wrote
+            .iter()
+            .any(|wrote| matches!(wrote.verdict, Verdict::Written | Verdict::Rewritten));
+        for wrote in &report.wrote {
+            match seen.iter_mut().find(|earlier| earlier.path == wrote.path) {
+                Some(earlier) if earlier.verdict == Verdict::Unchanged => {
+                    earlier.verdict = wrote.verdict.clone();
+                }
+                Some(_) => {}
+                None => seen.push(wrote.clone()),
+            }
+        }
+        if !changed || report.has_errors() || pass == PASSES {
+            report.wrote = seen;
+            if changed && !report.has_errors() {
+                report.unsettled = Some(pass);
+            }
+            return Ok(report);
+        }
+    }
 }
 
 /// Compare the plan against what is committed, and write nothing.
@@ -1586,6 +1678,7 @@ mod paint_tests {
                 recorded: 1,
                 current: 2,
             }),
+            unsettled: None,
         }
     }
 
