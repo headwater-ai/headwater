@@ -98,9 +98,9 @@ Every number here was taken on this repository, on an eight core host with 15GB 
 
 ## What this arrangement still gets wrong
 
-Six of these are open, and two are accepted.
+Five of these are open, one is fixed, and two are accepted.
 
-- `core.hooksPath` is one key in a config that every worktree shares, and a harness tool writes it as an absolute path on every call. All fourteen worktrees on this host ran the main checkout's hook bodies on 2026-09-18. [#925](https://github.com/headwater-ai/headwater/issues/925).
+- `core.hooksPath` is one key in a config that every worktree shares, and a harness tool writes it as an absolute path on every call. All fourteen worktrees on this host ran the main checkout's hook bodies on 2026-09-18. [#946](https://github.com/headwater-ai/headwater/pull/946) fixed [#925](https://github.com/headwater-ai/headwater/issues/925) the same day. The fix is a handoff guard, not a restore. Whichever checkout the value names runs, its hook hands off to the copy under the worktree actually committing, so the value going absolute costs nothing.
 - Nothing collects the per-run and per-session state under the git common dir, and HW-PD-0004 states that a run directory is deleted when its run closes. Eight run directories from 2026-09-07 onward were still present on 2026-09-18. [#926](https://github.com/headwater-ai/headwater/issues/926).
 - A pooled target directory can link an rlib that belongs to a different worktree, under `dev-release` alone. [#849](https://github.com/headwater-ai/headwater/issues/849).
 - An agent that inherits the working directory of the agent that dispatched it builds inside a peer's tree. Four occurrences in one run. [#848](https://github.com/headwater-ai/headwater/issues/848).
