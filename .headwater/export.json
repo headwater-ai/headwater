@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 476,
-      "carried": 476,
+      "in the graph": 477,
+      "carried": 477,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 667,
-      "carried": 667,
+      "in the graph": 668,
+      "carried": 668,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2042,6 +2042,33 @@
           "summary": "An adopter reaches the whole governed loop through the binary. Two integration points sit outside it and the list is closed against growth. Git plumbing meets the necessity test, a network fetch is held open, and the change manifest fails it and is a defect.",
           "last_verified": "2026-09-17",
           "title": "The binary is the only interface an adopter must run, and every integration point outside it is declared",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md",
+        "kind": "decision",
+        "id": "HW-DR-0073",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-DR-0073",
+          "status": "current",
+          "status_since": "2026-09-18",
+          "summary": "A verification takes a minted document identifier, because a rename must not break the link and one criterion may be proved in several repositories. The anchor option loses that identity, and it would also be blind to the participation expectation until #855 lands.",
+          "last_verified": "2026-09-18",
+          "title": "A verification is a kind, and its identity is minted rather than found in the code that cites it",
+          "relations": {
+            "constrains": [
+              "HW-DR-0029"
+            ]
+          },
           "provenance": {
             "warrant": "accepted",
             "agency": "agent",
@@ -9761,7 +9788,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 72 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 73 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
@@ -12068,6 +12095,17 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/query/src/route.rs",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0029",
+          "path": "docs/decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md",
+          "kind": "decision"
         }
       },
       {

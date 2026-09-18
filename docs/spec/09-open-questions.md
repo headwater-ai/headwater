@@ -5,7 +5,7 @@ doc_type: decision_register
 title: Open questions, closed and redirected
 status: superseded
 status_since: 2026-08-11
-summary: "One heading for each of the 72 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
+summary: "One heading for each of the 73 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
 last_verified: 2026-08-11
 sequence: 9
 relations:
@@ -16,7 +16,7 @@ relations:
 
 # Decision records
 
-72 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+73 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -145,6 +145,10 @@ relations:
 ## Q28 — Whether an evaluation is governed prose
 
 [HW-DR-0028](../decisions/0028-q28-whether-an-evaluation-is-governed-prose.md) — An evaluation is governed prose, and the overlay binds the house language regime to it. The shelf carries 432 advisory findings, and the measurement that explains them is whether a rule was reading the prose when it was written rather than who wrote it.
+
+## A verification is a kind, and its identity is minted rather than found in the code that cites it
+
+[HW-DR-0073](../decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md) — A verification takes a minted document identifier, because a rename must not break the link and one criterion may be proved in several repositories. The anchor option loses that identity, and it would also be blind to the participation expectation until #855 lands.
 
 ## Q29 — Whether a corpus root may contain code, and what an interface contract may reach
 

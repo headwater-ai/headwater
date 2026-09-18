@@ -35,6 +35,7 @@ nav:
       - "Q26 — Whether terminality belongs to a state, or to a state and a regime": "decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md"
       - "Q27 — Whether a decision record is governed prose": "decisions/0027-q27-whether-a-decision-record-is-governed-prose.md"
       - "Q28 — Whether an evaluation is governed prose": "decisions/0028-q28-whether-an-evaluation-is-governed-prose.md"
+      - "A verification is a kind, and its identity is minted rather than found in the code that cites it": "decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md"
       - "Q29 — Whether a corpus root may contain code, and what an interface contract may reach": "decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md"
       - "Q30 — Whether what an obligation waits on is a state or a property, and how many values it takes": "decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md"
       - "Q31 — Whether this repository becomes public, and when": "decisions/0031-q31-whether-this-repository-becomes-public-and-when.md"
