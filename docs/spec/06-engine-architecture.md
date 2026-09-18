@@ -112,6 +112,8 @@ headwater generate            # write
 headwater generate --check    # fail if any committed output differs
 ```
 
+**One write is one run, and it can be several passes.** A generated document is a document of the corpus, so one projection can print a value that another projection writes in the same run. `headwater generate` therefore reads the tree again after it writes, and it stops at the first pass that writes nothing. That pass is what shows that `--check` accepts the tree. A run that still writes on its fourth pass exits non-zero and says so. The declarations then form a cycle, and more passes do not settle it.
+
 **Twelve projection kinds exist, and this engine emits seven of them.** The block below names all twelve, as a taxonomy writes each name. A kind under `runs` has an emitter here. A kind under `waits` has a slot that a declaration opens and no emitter fills.
 
 ```

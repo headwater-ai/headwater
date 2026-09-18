@@ -4544,27 +4544,33 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
 /// document, it is an artifact that is out of date, and the remedy is one
 /// command rather than a judgment. So a difference exits non-zero, in the way
 /// `taxonomy resolve --check` does over a stale lock.
+///
+/// A write reads the tree again after it writes, and repeats until a pass
+/// writes nothing, because one projection can print a value that another one
+/// composes in the same run (#842). [`headwater_generate::write_settled`]
+/// carries why. `--check` plans once, since it writes nothing a second plan
+/// could read.
 fn generate(root: &Path, check_only: bool) -> ExitCode {
-    let loaded = match load(root) {
-        Ok(loaded) => loaded,
-        Err(code) => return code,
+    let planned = || -> Result<headwater_generate::Plan, ExitCode> {
+        let loaded = load(root)?;
+        let projections = headwater_generate::Projections::read(&loaded.bound.taxonomy)
+            .map_err(|errors| refused("the projections", &errors))?;
+        Ok(headwater_generate::plan(
+            &loaded.surface(),
+            &loaded.census,
+            &projections,
+            &loaded.identity(),
+            &loaded.runs(root),
+            headwater_verbs::VERBS,
+        ))
     };
-    let projections = match headwater_generate::Projections::read(&loaded.bound.taxonomy) {
-        Ok(projections) => projections,
-        Err(errors) => return refused("the projections", &errors),
-    };
-    let surface = loaded.surface();
-    let plan = headwater_generate::plan(
-        &surface,
-        &loaded.census,
-        &projections,
-        &loaded.identity(),
-        &loaded.runs(root),
-        headwater_verbs::VERBS,
-    );
     let report = match check_only {
-        true => headwater_generate::check(root, &plan),
-        false => headwater_generate::write(root, &plan),
+        true => planned().map(|plan| headwater_generate::check(root, &plan)),
+        false => headwater_generate::write_settled(root, planned),
+    };
+    let report = match report {
+        Ok(report) => report,
+        Err(code) => return code,
     };
     print!("{}", report.render(headwater_cli::paint::stdout_color()));
     // Which sentence a failing run ends with is a fact about the run, and

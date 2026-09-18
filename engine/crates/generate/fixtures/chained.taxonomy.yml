@@ -1,0 +1,68 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The smallest shape in which one projection prints a value that another
+# projection composes in the same run (#842).
+#
+# The `shelf_sections` declaration writes `chained/registers/open.md` from the
+# `decisions` shelf. Its `identity` block makes that file a document, and the
+# emitter composes its summary with a count of the decisions. The file sits on
+# the `registers` shelf, and the `shelf_index` of that shelf prints the summary
+# of every document on it. So adding a decision moves a count in one output
+# that a second output reads, which is the chain this repository has between
+# `docs/spec/09-open-questions.md` and `docs/spec/README.md`.
+
+purposes:
+  rationale:
+    intent: explain why a choice was made and what it forecloses
+    answers: ["why is it this way", "what was rejected"]
+  register:
+    intent: list the members of a set so that a reader can find one
+    answers: ["what is in this set", "where is this one"]
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: superseded, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+  title:
+    role: name
+    required: false
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: decision_id}
+  register:
+    is_a: governed_document
+    purpose: register
+    identifier: {scheme: register_id}
+
+identifier_schemes:
+  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: FIX, allocation: minted-once}
+  register_id: {pattern: "REG-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+shelves:
+  decisions: {path: "chained/decisions/**", homogeneous: true, kind: decision}
+  registers: {path: "chained/registers/**", homogeneous: true, kind: register}
+
+projections:
+  - kind: shelf_sections
+    for: [decisions]
+    output: chained/registers/open.md
+    identity:
+      id: REG-FIX-open
+      kind: register
+  - {kind: shelf_index, for: [registers], output: "{shelf}/README.md"}
