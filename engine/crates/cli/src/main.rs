@@ -1746,7 +1746,7 @@ fn artifact(
             Ok(false) => {
                 return Err(fail(&format!(
                     "`--to {range}` and the artifact declares {}. The flag names the version the \
-                     caller expected, and this engine fetches nothing, so a mismatch is a wrong \
+                     caller expected, and this verb fetches nothing, so a mismatch is a wrong \
                      directory rather than a wrong number",
                     record.version
                 )))

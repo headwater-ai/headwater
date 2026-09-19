@@ -353,7 +353,7 @@ pub const VERBS: &[Verb] = &[
             Word {
                 name: "migrate",
                 summary: "apply the migration payload a published artifact ships",
-                description: "Apply the migration payload a published artifact ships, to this corpus. It takes the path of a directory somebody already fetched, because this engine fetches nothing. Without `--apply` it reports every file each step would write and writes nothing.",
+                description: "Apply the migration payload a published artifact ships, to this corpus. It takes the path of a directory somebody already fetched, because this verb fetches nothing. Without `--apply` it reports every file each step would write and writes nothing.",
             },
         ],
     },
