@@ -46,14 +46,14 @@ No document states the boundary. The eleven principles in [spec 0](../spec/00-vi
 
 ## Consequences
 
-Those instances stay out of reach until [#929](https://github.com/headwater-ai/headwater/issues/929) lands. Naming the boundary does not close the hole, and the count is the measure of what an adopter loses in the meantime.
+[#929](https://github.com/headwater-ai/headwater/issues/929) landed. `headwater change` now writes the manifest, and the change-manifest entry closes: it no longer stands as a defect against this ruling.
 
 [#892](https://github.com/headwater-ai/headwater/issues/892) gains a frame it did not have. Its question was whether merge-safety tooling ships at all. The question now is narrower. The edge is legal, and consent of the clone is the constraint on it. What remains is what ships inside it.
 
-[#930](https://github.com/headwater-ai/headwater/issues/930) follows from the same rule. The bootstrap script is a convenience over a verb that already exists, and adopter-facing prose presents it as the only route. Correcting that prose stays worth doing once `vendor` itself accepts a location, because an adopter on a mirror or an air-gapped host needs the path form either way.
+[#930](https://github.com/headwater-ai/headwater/issues/930) landed too. `README.md` and the tutorial now name the binary route first, and call the bootstrap script a convenience over it rather than the only route. Naming a location directly in `vendor`, once a distributor lands it under [HW-DR-0075](0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md), still leaves the path form worth documenting: an adopter on a mirror or an air-gapped host needs it either way.
 
-The list is closed against growth and not against a correction. [HW-DR-0075](0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) removes the second entry, and a list of one is the stronger form of this ruling rather than a retreat from it.
+The list is closed against growth and not against a correction. HW-DR-0075 removed the second entry, and a list of one is the stronger form of this ruling rather than a retreat from it.
 
-Nothing checks any of this. No rule reads adopter-facing prose for a script invocation, and the one entry above lives in this record alone. So a later contributor can add a second edge in silence, and the only guard is that this record is short enough to read. [#933](https://github.com/headwater-ai/headwater/issues/933) weighs what should assert the boundary, including the answer that nothing should.
+[#933](https://github.com/headwater-ai/headwater/issues/933) answered what should check this record's one remaining claim. A corpus-wide rule was rejected: the list holds one necessity-based entry, so a rule that reads every document for a stock lexical pattern would report zero findings by construction, the failure shape a lexical rule already takes when its targets run out. `.claude/tutorial/adopter_interface.py` checks the narrower, real risk instead: it reads `README.md` and the tutorial for a script this repository ships standing in for a verb, the shape both #929 and #930 took, and it names the bootstrap script's network fetch as the one declared exception. `.claude/tutorial/fixtures.sh` runs it in CI, so a second edge added in silence now fails a check rather than waiting on this record staying short enough to read.
 
 This record rules on what an adopter runs. It rules nothing about what this repository runs for itself. Principle 8 keeps `tools/` and `.githooks/` exactly as they are, because a corpus that governs itself needs producers that no adopter ever sees.
