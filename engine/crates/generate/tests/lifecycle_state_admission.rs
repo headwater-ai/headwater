@@ -1,0 +1,243 @@
+// SPDX-License-Identifier: Apache-2.0
+//! Whether a derived state is one the document's own kind admits.
+//!
+//! # The gap this closes
+//!
+//! [`headwater_generate::derived::standing`] computes a state two ways — from
+//! an incoming edge's `on_target.set_state`, or by falling back to the facet
+//! value whose role is `live` — and called `Shape::lifecycle_of` nowhere.
+//! `lifecycle.state.not_admitted`, the check-layer rule that reads a kind's
+//! lifecycle regime against the state a document stands in
+//! (`headwater_check::lifecycle_state::StateAdmitted`), never sees a generated
+//! document either: the census classifies a marked file `Generated`, and
+//! `over_documents` creates an instance only for a `Typed` row. So a
+//! generator could hand a document a state its own kind's regime does not
+//! name, and nothing would notice
+//! ([HW-DR-0063](../../../../docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md),
+//! [#945](https://github.com/headwater-ai/headwater/issues/945)).
+//!
+//! # The fixture
+//!
+//! `fixtures/lifecycle-regime.taxonomy.yml` declares two lifecycle regimes over
+//! one state vocabulary, the shape
+//! `headwater_check::lifecycle_state`'s own `narrow`/`wide` tests already use.
+//! Neither declaration below carries an incoming edge that sets a state, so
+//! `derived::standing`'s fallback path is what answers for both: the value
+//! whose role is `live`, which this fixture's vocabulary names `current`.
+//!
+//! `wide_notice` binds a regime that names `current`, so the declaration that
+//! writes it is written whole. `narrow_notice` binds a regime that never
+//! reaches `current`, so the same fallback computes a state that kind's own
+//! regime has no place for — the defect class HW-DR-0063 flagged: a state
+//! computed correctly against the global vocabulary and wrong against the
+//! specific kind's narrower regime.
+//!
+//! This repository's own lock cannot exercise the failing half:
+//! [HW-OBL-0196](../../../../docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md)
+//! records that all seventeen concrete kinds of `headwater/standard` bind a
+//! lifecycle regime, and of the six generated documents whose kind binds one,
+//! every one happens to stand at a state its own regime admits today. A
+//! purpose-built taxonomy is the only way to reach the defect at all.
+//!
+//! # Watched failing
+//!
+//! Before this file's change to [`headwater_generate::derived::members`], with
+//! this fixture in the tree, `a_state_the_kinds_own_regime_does_not_admit_is_refused`
+//! failed with `lifecycle-regime/notices/NARROW.md` planned and
+//! `plan.unwritten` empty: the emitter wrote `status: current` into a document
+//! of kind `narrow_notice`, whose bound regime `narrow` never reaches
+//! `current`, and said nothing.
+
+use headwater_census::census::{self, Census};
+use headwater_census::shelves::Taxonomy;
+use headwater_census::walk::Corpus;
+use headwater_check::Shape;
+use headwater_generate::{plan, Identity, Plan, Projections, Runs};
+use headwater_graph::anchors::Resolvers;
+use headwater_graph::declarations::Declarations;
+use headwater_graph::{Config, Graph};
+use headwater_query::Surface;
+use headwater_yaml::Mapping;
+use std::path::{Path, PathBuf};
+
+/// The output whose kind binds a regime that admits the fallback state.
+const WIDE: &str = "lifecycle-regime/notices/WIDE.md";
+
+/// The output whose kind binds a regime that does not.
+const NARROW: &str = "lifecycle-regime/notices/NARROW.md";
+
+fn fixtures_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
+}
+
+fn load_map(path: &Path) -> Mapping {
+    let source =
+        std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    headwater_yaml::load(&source)
+        .unwrap_or_else(|errors| panic!("{}: {errors:?}", path.display()))
+        .value
+        .as_map()
+        .unwrap_or_else(|| panic!("{} is not a mapping", path.display()))
+        .clone()
+}
+
+fn identity() -> Identity {
+    Identity {
+        corpus_root: "lifecycle-regime".to_string(),
+        exclusions: Vec::new(),
+        package: "headwater/fixture".to_string(),
+        version: "1.0.0".to_string(),
+        lock: "sha256:0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+    }
+}
+
+struct Built {
+    census: Census,
+    graph: Graph,
+    shape: Shape,
+    taxonomy: Taxonomy,
+    relations: Declarations,
+    config: Config,
+}
+
+impl Built {
+    fn over(corpus: &Corpus, root: &Mapping) -> Self {
+        let taxonomy = Taxonomy::read(root).expect("the taxonomy reads");
+        let relations = Declarations::read(root).expect("the declarations read");
+        let shape = Shape::read(root).expect("the shape reads");
+        let census = census::take(corpus, &taxonomy);
+        let graph = Graph::build(
+            &census,
+            &relations,
+            &Resolvers::over(corpus),
+            corpus,
+            &Config::default(),
+        );
+        Built {
+            census,
+            graph,
+            shape,
+            taxonomy,
+            relations,
+            config: Config::default(),
+        }
+    }
+
+    fn surface(&self) -> Surface<'_> {
+        Surface::over(
+            &self.census,
+            &self.graph,
+            &self.shape,
+            &self.taxonomy,
+            &self.relations,
+            &self.config,
+        )
+    }
+}
+
+fn plan_over_lifecycle_regime() -> Plan {
+    let corpus = Corpus::new(fixtures_dir(), "lifecycle-regime");
+    let root = load_map(&fixtures_dir().join("lifecycle-regime.taxonomy.yml"));
+    let built = Built::over(&corpus, &root);
+    let projections = Projections::read(&root).expect("the projections read");
+    plan(
+        &built.surface(),
+        &built.census,
+        &projections,
+        &identity(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    )
+}
+
+/// The quiet half: a regime that admits the fallback state writes the file.
+///
+/// Asserted first and separately from the refusal below, so that a fixture
+/// wired to always refuse — a taxonomy no document could ever satisfy —
+/// cannot pass the decisive case for the wrong reason.
+#[test]
+fn a_state_the_kinds_own_regime_admits_is_written() {
+    let plan = plan_over_lifecycle_regime();
+
+    let output = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == WIDE)
+        .unwrap_or_else(|| {
+            panic!(
+                "`{WIDE}` was not written, even though `wide_notice` binds a regime that admits \
+                 `current`, the state the fallback computes. The plan declined {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| (unwritten.at.as_str(), unwritten.reason.as_str()))
+                    .collect::<Vec<_>>()
+            )
+        });
+    assert!(
+        output.bytes.contains("status: current"),
+        "`{WIDE}` does not carry `status: current`, so this case exercises the wrong value. It \
+         reads:\n{}",
+        output.bytes
+    );
+    assert!(
+        !plan.unwritten.iter().any(|unwritten| unwritten.at == WIDE),
+        "`{WIDE}` was both written and declined, which is not a state this plan should reach"
+    );
+}
+
+/// The decisive case: the fallback computes a state `narrow_notice`'s own
+/// regime does not admit, and the declaration is refused rather than written
+/// with that state.
+///
+/// Both halves matter, on the same terms `identity_required_facets.rs` states
+/// for the facet-supply refusal: a declaration that would write a document
+/// standing at a state its kind's regime does not admit must write no
+/// document, and the reason must name the state and the kind, because the
+/// person who can act on it is reading a taxonomy source and both words are
+/// what they will search for.
+#[test]
+fn a_state_the_kinds_own_regime_does_not_admit_is_refused() {
+    let plan = plan_over_lifecycle_regime();
+
+    assert!(
+        !plan.outputs.iter().any(|output| output.path == NARROW),
+        "`{NARROW}` was written by a declaration whose kind `narrow_notice` binds a regime that \
+         never reaches `current`, the state the fallback computes. The outputs were: {:?}",
+        plan.outputs
+            .iter()
+            .map(|output| output.path.as_str())
+            .collect::<Vec<_>>()
+    );
+
+    let refusal = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == NARROW)
+        .unwrap_or_else(|| {
+            panic!(
+                "nothing reported the declaration that writes `{NARROW}`. The plan declined {} \
+                 outputs: {:?}",
+                plan.unwritten.len(),
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| unwritten.at.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    assert!(
+        refusal.reason.contains("current"),
+        "the refusal of `{NARROW}` does not name the offending state. It reads: {}",
+        refusal.reason
+    );
+    assert!(
+        refusal.reason.contains("narrow_notice"),
+        "the refusal of `{NARROW}` does not name the kind that binds the regime. It reads: {}",
+        refusal.reason
+    );
+    assert!(
+        refusal.reason.contains("narrow"),
+        "the refusal of `{NARROW}` does not name the regime that does not admit the state. It \
+         reads: {}",
+        refusal.reason
+    );
+}

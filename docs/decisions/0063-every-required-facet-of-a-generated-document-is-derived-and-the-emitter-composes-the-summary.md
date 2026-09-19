@@ -70,7 +70,7 @@ Nothing reported those nine. The reason is a gap between two mechanisms rather t
 
 **Ten of the eighteen kinds in this repository's lock declare `sections.require`, and neither generated kind is one of them.** So the section refusal reports nothing here, and `engine/crates/generate/fixtures/unheld.taxonomy.yml` is the whole of the evidence for it. That is the standing that `unrolled.taxonomy.yml` already has. `every_identity_this_repository_declares_supplies_what_this_refusal_reads` is the guard, and it prints its numerator and its denominator. A kind that gains a section contract and a generated member fails it.
 
-**One clause of the same question stays open.** `engine/crates/generate/src/derived.rs` picks a state from an incoming `on_target.set_state`, or from the facet value whose role is `live`. It does not read the `lifecycle` declaration of the kind. So whether a derived state is one that the kind's regime admits is unmeasured, and this change does not measure it.
+**One clause of the same question is [#945](https://github.com/headwater-ai/headwater/issues/945).** Whether a derived state is one that the kind's own lifecycle regime admits was unmeasured, and this change did not measure it.
 
 **Two documents of the specification series now state sequence 9.** They are `docs/spec/09-decisions.md` and the generated `docs/spec/09-open-questions.md`. Both file names carry that number, so the derived value is true of the path it was read from. The tombstone carried no sequence at all before this change, so the pair is newly visible rather than newly wrong. No rule reads a shelf layout after birth, which [HW-OBL-0106](../obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md) already records, so nothing reports the collision.
 

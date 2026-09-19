@@ -234,7 +234,8 @@ pub(crate) fn front_matter(
         out.push_str(&format!("{facet}: {name}\n"));
         written.push(facet.to_string());
     }
-    for (facet, value) in crate::derived::members(surface, identity, output, composed, &written) {
+    for (facet, value) in crate::derived::members(surface, identity, output, composed, &written)?
+    {
         out.push_str(&format!("{facet}: {value}\n"));
         written.push(facet);
     }

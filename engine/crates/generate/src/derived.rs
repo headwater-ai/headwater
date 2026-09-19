@@ -77,6 +77,25 @@
 //! reader meets them, because an index and an export carry them, and because a
 //! relation that puts a state on its target had nowhere to put one
 //! ([#227](https://github.com/headwater-ai/headwater/issues/227)).
+//!
+//! # One of them is checked, against the one thing that computed it
+//!
+//! `lifecycle.state.not_admitted` is the check-layer rule that holds a state
+//! against the lifecycle regime the document's own kind binds
+//! ([`headwater_check::lifecycle_state::StateAdmitted`]), and the census
+//! exemption above keeps it from ever instantiating over a generated document.
+//! [`standing`] is therefore the only reader left that could catch a state its
+//! own kind's regime does not name, and until
+//! [#945](https://github.com/headwater-ai/headwater/issues/945) it did not
+//! look: a kind that binds a narrower regime than the vocabulary's could
+//! receive the vocabulary's `live`-role value regardless. [`members`] now
+//! reads [`headwater_check::shape::Shape::lifecycle_of`] for the document's own
+//! kind and holds the computed state against
+//! [`headwater_check::shape::LifecycleRegime::states`] — the same set
+//! `StateAdmitted::evaluate` reads, so this module does not keep a second
+//! opinion about which states a regime names. A kind that binds no regime is
+//! unaffected: that is [HW-OBL-0196](../../../../docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md)'s
+//! question, at a different layer.
 
 use headwater_graph::declarations::Direction;
 use headwater_query::{Document, Surface};
@@ -119,13 +138,18 @@ pub(crate) struct Composed<'a> {
 /// stated once. A required facet that neither the block nor this module can
 /// answer is left out, and [`crate::identity`] refuses the declaration over
 /// what remains.
+///
+/// The one facet this can refuse outright, rather than merely leave out, is
+/// the state: a value [`standing`] computes and the kind's own lifecycle
+/// regime does not name is not a fact this document can be written to state,
+/// on the terms the module note above gives.
 pub(crate) fn members(
     surface: &Surface<'_>,
     identity: &crate::DeclaredIdentity,
     output: &str,
     composed: &Composed<'_>,
     written: &[String],
-) -> Vec<(String, String)> {
+) -> Result<Vec<(String, String)>, String> {
     let kind = identity.kind.as_str();
     let id = identity.id.as_str();
     let shape = surface.shape();
@@ -144,7 +168,10 @@ pub(crate) fn members(
         let value = if scent.as_deref() == Some(facet.as_str()) {
             Some(headwater_resolve::render::quoted(&composed.summary))
         } else if state.as_deref() == Some(facet.as_str()) {
-            standing(surface, id, output)
+            match standing(surface, id, output) {
+                Some(value) => Some(admitted(surface, kind, value)?),
+                None => None,
+            }
         } else if entered.as_deref() == Some(facet.as_str()) {
             match set_by(surface, id, output) {
                 // The state came from an incoming edge, so the date it was
@@ -162,7 +189,42 @@ pub(crate) fn members(
             out.push((facet, value));
         }
     }
-    out
+    Ok(out)
+}
+
+/// Whether the kind this document declares admits the state [`standing`]
+/// computed, against the lifecycle regime that kind binds.
+///
+/// A kind that binds no regime answers every state, on the same reading
+/// [`headwater_check::lifecycle_state::StateAdmitted::instantiates`] takes:
+/// an absent regime is a kind this rule says nothing about, and
+/// [HW-OBL-0196](../../../../docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md)
+/// is the open question about that shape, at the resolve-time layer rather
+/// than here. A regime that names no state at all is a declaration `lifecycle
+/// soundness` refuses in the resolver, and this function skips it for the
+/// same reason `StateAdmitted::evaluate` does: reporting it here would put one
+/// taxonomy defect on every generated document of every kind that binds the
+/// regime.
+fn admitted(surface: &Surface<'_>, kind: &str, state: String) -> Result<String, String> {
+    let Some(regime) = surface.shape().lifecycle_of(kind) else {
+        return Ok(state);
+    };
+    let states = regime.states();
+    if states.is_empty() || states.contains(&state.as_str()) {
+        return Ok(state);
+    }
+    let offers = states
+        .iter()
+        .map(|state| format!("`{state}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    Err(format!(
+        "derives the state `{state}` for `{kind}`, and the lifecycle regime `{}` that `{kind}` \
+         binds names no such state: a `{kind}` stands at one of {offers}. `derived::standing` \
+         computed this from the facet whose role is `live`, which is the vocabulary's answer \
+         rather than this kind's own regime's",
+        regime.name
+    ))
 }
 
 /// The documents this projection read, as the census classified them.

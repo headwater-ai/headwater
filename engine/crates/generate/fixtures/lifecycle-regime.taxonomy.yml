@@ -1,0 +1,111 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy #945's decisive fixture is written against. Two lifecycle
+# regimes bind the same state vocabulary, the way `lifecycle_state.rs`'s own
+# `narrow`/`wide` test shape does, and two kinds bind one regime each. Neither
+# kind's document carries an incoming edge that sets its state, so
+# `derived.rs`'s fallback path is what computes a value for both: the value
+# whose role is `live`. `wide_notice` binds a regime that names that value, and
+# `narrow_notice` binds one that does not, which is the shape HW-DR-0063's own
+# open paragraph names — a state computed correctly against the vocabulary and
+# wrong against the specific kind's narrower regime.
+#
+# This repository's own lock cannot exercise the failing case: every concrete
+# kind it declares binds a regime that admits every state the vocabulary
+# names, so a purpose-built taxonomy is the only way to reach the defect class
+# at all.
+
+purposes:
+  rationale:
+    intent: explain why a choice was made and what it forecloses
+    answers: ["why is it this way", "what was rejected"]
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: retired, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+  # The facet in the `name` role. `shelf_sections` reads it to head the one
+  # section this fixture's declarations write.
+  title:
+    role: name
+    required: false
+  # The discriminator of the heterogeneous shelf below.
+  doc_type:
+    values: [decision, wide_notice, narrow_notice]
+
+regimes:
+  lifecycle:
+    # Names `current`, so a document that falls back to the vocabulary's
+    # `live` value stands at a state this regime admits.
+    wide:
+      initial: draft
+      transitions: {draft: [current], current: [retired]}
+    # Never reaches `current`, so the same fallback computes a state this
+    # regime has no place for. This is the decisive half.
+    narrow:
+      initial: draft
+      transitions: {draft: [retired]}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: decision_id}
+  wide_notice:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: wide_id}
+    lifecycle: wide
+  narrow_notice:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: narrow_id}
+    lifecycle: narrow
+
+identifier_schemes:
+  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: FIX, allocation: minted-once}
+  wide_id: {pattern: "WD-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+  narrow_id: {pattern: "NR-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+shelves:
+  decisions: {path: "lifecycle-regime/decisions/**", homogeneous: true, kind: decision}
+  # Heterogeneous, so an `identity` block can pick either notice kind by its
+  # discriminator, the same shape `generate.taxonomy.yml`'s `archive` shelf
+  # uses for `guide`.
+  notices:
+    path: "lifecycle-regime/notices/**"
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [decision, wide_notice, narrow_notice]
+
+projections:
+  # The passing half: `wide_notice` binds a regime that admits the fallback
+  # state, so this declaration is written whole.
+  - kind: shelf_sections
+    for: [decisions]
+    output: lifecycle-regime/notices/WIDE.md
+    identity:
+      id: WD-FIX-wide
+      kind: wide_notice
+  # The decisive half: `narrow_notice` binds a regime that does not admit the
+  # fallback state, so this declaration is refused rather than written with a
+  # state its own kind's regime has no place for.
+  - kind: shelf_sections
+    for: [decisions]
+    output: lifecycle-regime/notices/NARROW.md
+    identity:
+      id: NR-FIX-narrow
+      kind: narrow_notice
