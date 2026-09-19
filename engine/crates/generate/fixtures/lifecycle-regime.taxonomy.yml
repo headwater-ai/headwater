@@ -1,0 +1,172 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy #945's decisive fixture is written against. Two lifecycle
+# regimes bind the same state vocabulary, the way `lifecycle_state.rs`'s own
+# `narrow`/`wide` test shape does, and two kinds bind one regime each. Neither
+# `wide_notice` nor `narrow_notice` carries an incoming edge that sets its
+# state, so `derived.rs`'s fallback path is what computes a value for both:
+# the value whose role is `live`. `wide_notice` binds a regime that names that
+# value, and `narrow_notice` binds one that does not, which is the shape
+# HW-DR-0063's own open paragraph names — a state computed correctly against
+# the vocabulary and wrong against the specific kind's narrower regime. The
+# regime is named `strict` rather than `narrow`, so a refusal that names the
+# regime cannot be satisfied by a kind name a test also asserts on.
+#
+# `edge_notice` and `bogus_notice` cover the other locus a computed state can
+# come from: an incoming edge whose relation declares `on_target.set_state`,
+# authored by the one document on the `decisions` shelf. `edge_notice` binds
+# `strict` and the edge sets `current`, which is a state the vocabulary holds
+# and this kind's own regime does not name — the same defect class as
+# `narrow_notice`, reached by the other locus. `bogus_notice` binds `wide` and
+# the edge sets `unheard_of`, a value the state facet does not admit at all,
+# which is a different defect that a lifecycle regime has no part in.
+#
+# This repository's own lock cannot exercise any of the three failing cases:
+# every concrete kind it declares binds a regime that admits every state the
+# vocabulary names, and no relation in it sets a state its target's regime, or
+# the vocabulary, does not hold. A purpose-built taxonomy is the only way to
+# reach any of the three at all.
+
+purposes:
+  rationale:
+    intent: explain why a choice was made and what it forecloses
+    answers: ["why is it this way", "what was rejected"]
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: retired, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+  # The facet in the `name` role. `shelf_sections` reads it to head the one
+  # section this fixture's declarations write.
+  title:
+    role: name
+    required: false
+  # The discriminator of the heterogeneous shelf below.
+  doc_type:
+    values: [decision, wide_notice, narrow_notice, edge_notice, bogus_notice]
+
+regimes:
+  lifecycle:
+    # Names `current`, so a document that stands at it, by fallback or by an
+    # edge, stands at a state this regime admits.
+    wide:
+      initial: draft
+      transitions: {draft: [current], current: [retired]}
+    # Never reaches `current`, so a document that stands at it by either
+    # locus stands at a state this regime has no place for.
+    strict:
+      initial: draft
+      transitions: {draft: [retired]}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: decision_id}
+  wide_notice:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: wide_id}
+    lifecycle: wide
+  narrow_notice:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: narrow_id}
+    lifecycle: strict
+  edge_notice:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: edge_id}
+    lifecycle: strict
+  bogus_notice:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: bogus_id}
+    lifecycle: wide
+
+identifier_schemes:
+  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: FIX, allocation: minted-once}
+  wide_id: {pattern: "WD-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+  narrow_id: {pattern: "NR-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+  edge_id: {pattern: "ED-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+  bogus_id: {pattern: "BG-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  # The edge locus. The one document on the `decisions` shelf declares this
+  # into `edge_notice`, and `on_target.set_state: current` is a value the
+  # vocabulary holds and `strict`, the regime `edge_notice` binds, does not.
+  flags:
+    family: governance
+    from: [decision]
+    to: [edge_notice]
+    on_target: {set_state: current}
+    inverse: flagged_by
+    reciprocal: required
+  # The vocabulary locus. `on_target.set_state: unheard_of` names no value the
+  # state facet declares at all, whatever regime `bogus_notice` binds.
+  flags_bogus:
+    family: governance
+    from: [decision]
+    to: [bogus_notice]
+    on_target: {set_state: unheard_of}
+    inverse: flagged_by_bogus
+    reciprocal: required
+
+shelves:
+  decisions: {path: "lifecycle-regime/decisions/**", homogeneous: true, kind: decision}
+  # Heterogeneous, so an `identity` block can pick any notice kind by its
+  # discriminator, the same shape `generate.taxonomy.yml`'s `archive` shelf
+  # uses for `guide`.
+  notices:
+    path: "lifecycle-regime/notices/**"
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [decision, wide_notice, narrow_notice, edge_notice, bogus_notice]
+
+projections:
+  # The passing half: `wide_notice` binds a regime that admits the fallback
+  # state, so this declaration is written whole.
+  - kind: shelf_sections
+    for: [decisions]
+    output: lifecycle-regime/notices/WIDE.md
+    identity:
+      id: WD-FIX-wide
+      kind: wide_notice
+  # The decisive half: `narrow_notice` binds a regime that does not admit the
+  # fallback state, so this declaration is refused rather than written with a
+  # state its own kind's regime has no place for.
+  - kind: shelf_sections
+    for: [decisions]
+    output: lifecycle-regime/notices/NARROW.md
+    identity:
+      id: NR-FIX-narrow
+      kind: narrow_notice
+  # The edge-locus failure: the `flags` edge from the one decision sets
+  # `current`, and `edge_notice`'s own regime `strict` has no place for it.
+  - kind: shelf_sections
+    for: [decisions]
+    output: lifecycle-regime/notices/EDGE.md
+    identity:
+      id: ED-FIX-edge
+      kind: edge_notice
+  # The vocabulary-locus failure: the `flags_bogus` edge sets `unheard_of`,
+  # which the state facet does not admit at all, independent of any regime.
+  - kind: shelf_sections
+    for: [decisions]
+    output: lifecycle-regime/notices/BOGUS.md
+    identity:
+      id: BG-FIX-bogus
+      kind: bogus_notice

@@ -77,6 +77,25 @@
 //! reader meets them, because an index and an export carry them, and because a
 //! relation that puts a state on its target had nowhere to put one
 //! ([#227](https://github.com/headwater-ai/headwater/issues/227)).
+//!
+//! # One of them is checked, against the one thing that computed it
+//!
+//! `lifecycle.state.not_admitted` is the check-layer rule that holds a state
+//! against the lifecycle regime the document's own kind binds
+//! ([`headwater_check::lifecycle_state::StateAdmitted`]), and the census
+//! exemption above keeps it from ever instantiating over a generated document.
+//! [`standing`] is therefore the only reader left that could catch a state its
+//! own kind's regime does not name, and until
+//! [#945](https://github.com/headwater-ai/headwater/issues/945) it did not
+//! look: a kind that binds a narrower regime than the vocabulary's could
+//! receive the vocabulary's `live`-role value regardless. [`members`] now
+//! reads [`headwater_check::shape::Shape::lifecycle_of`] for the document's own
+//! kind and holds the computed state against
+//! [`headwater_check::shape::LifecycleRegime::states`] — the same set
+//! `StateAdmitted::evaluate` reads, so this module does not keep a second
+//! opinion about which states a regime names. A kind that binds no regime is
+//! unaffected: that is [HW-OBL-0196](../../../../docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md)'s
+//! question, at a different layer.
 
 use headwater_graph::declarations::Direction;
 use headwater_query::{Document, Surface};
@@ -119,13 +138,18 @@ pub(crate) struct Composed<'a> {
 /// stated once. A required facet that neither the block nor this module can
 /// answer is left out, and [`crate::identity`] refuses the declaration over
 /// what remains.
+///
+/// The one facet this can refuse outright, rather than merely leave out, is
+/// the state: a value [`standing`] computes and the kind's own lifecycle
+/// regime does not name is not a fact this document can be written to state,
+/// on the terms the module note above gives.
 pub(crate) fn members(
     surface: &Surface<'_>,
     identity: &crate::DeclaredIdentity,
     output: &str,
     composed: &Composed<'_>,
     written: &[String],
-) -> Vec<(String, String)> {
+) -> Result<Vec<(String, String)>, String> {
     let kind = identity.kind.as_str();
     let id = identity.id.as_str();
     let shape = surface.shape();
@@ -144,7 +168,10 @@ pub(crate) fn members(
         let value = if scent.as_deref() == Some(facet.as_str()) {
             Some(headwater_resolve::render::quoted(&composed.summary))
         } else if state.as_deref() == Some(facet.as_str()) {
-            standing(surface, id, output)
+            match standing(surface, id, output) {
+                Some(standing) => Some(admitted(surface, kind, standing)?),
+                None => None,
+            }
         } else if entered.as_deref() == Some(facet.as_str()) {
             match set_by(surface, id, output) {
                 // The state came from an incoming edge, so the date it was
@@ -162,7 +189,98 @@ pub(crate) fn members(
             out.push((facet, value));
         }
     }
-    out
+    Ok(out)
+}
+
+/// Where a computed state came from, which a refusal over it must name.
+///
+/// A generator cannot repair a relation declaration by rewriting a vocabulary,
+/// and it cannot repair a vocabulary by rewriting a relation declaration. Two
+/// different repairs need two different reasons, so the site that produced
+/// the value travels with it rather than being re-derived from the value
+/// alone.
+enum Locus {
+    /// An incoming edge whose relation declares `on_target.set_state`, with
+    /// the paths of every document whose edge agreed, in the order
+    /// [`set_by`] finds them.
+    Edge(Vec<String>),
+    /// No such edge exists, so the value is the facet's own `live`-role
+    /// default — the vocabulary's answer rather than any relation's.
+    Fallback,
+}
+
+/// Whether the kind this document declares admits the state [`standing`]
+/// computed, against the lifecycle regime that kind binds.
+///
+/// Two refusals, and they read two different declarations. A value the state
+/// facet does not admit **at all** is [`headwater_check::lifecycle_state::Stood::NotAState`]'s
+/// case: `StateAdmitted::evaluate` skips it because `facet.value.not_permitted`
+/// owns that defect, and the census exemption means nothing else ever will for
+/// a generated document, so this function is the only reader left. It can only
+/// arise from [`Locus::Edge`]: the fallback draws its value from the facet's
+/// own vocabulary, so it can never fail this half. A value the vocabulary
+/// holds but the kind's own regime does not name is the second refusal, on the
+/// same terms `StateAdmitted::evaluate` reads: `regime.states()` is the set,
+/// unchanged from there.
+///
+/// A kind that binds no regime answers every state, on the same reading
+/// [`headwater_check::lifecycle_state::StateAdmitted::instantiates`] takes:
+/// an absent regime is a kind this rule says nothing about, and
+/// [HW-OBL-0196](../../../../docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md)
+/// is the open question about that shape, at the resolve-time layer rather
+/// than here. A regime that names no state at all is a declaration `lifecycle
+/// soundness` refuses in the resolver, and this function skips it for the
+/// same reason `StateAdmitted::evaluate` does: reporting it here would put one
+/// taxonomy defect on every generated document of every kind that binds the
+/// regime.
+fn admitted(
+    surface: &Surface<'_>,
+    kind: &str,
+    standing: (String, Locus),
+) -> Result<String, String> {
+    let (state, locus) = standing;
+    let shape = surface.shape();
+    if let Locus::Edge(ref setters) = locus {
+        if let Some(facet) = shape.facet_in_role(STATE) {
+            if !facet.values.iter().any(|value| value.value == state) {
+                return Err(format!(
+                    "derives the state `{state}` for `{kind}`, where {} declares the incoming \
+                     edge that sets it, and this taxonomy's state facet admits no such value at \
+                     all. Change the relation's `on_target.set_state`, or add `{state}` to the \
+                     state facet's own vocabulary",
+                    setters.join(", ")
+                ));
+            }
+        }
+    }
+    let Some(regime) = shape.lifecycle_of(kind) else {
+        return Ok(state);
+    };
+    let states = regime.states();
+    if states.is_empty() || states.contains(&state.as_str()) {
+        return Ok(state);
+    }
+    let offers = states
+        .iter()
+        .map(|state| format!("`{state}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let source = match locus {
+        Locus::Edge(setters) => format!(
+            "{} declares the incoming edge that sets it",
+            setters.join(", ")
+        ),
+        Locus::Fallback => {
+            "no incoming edge sets a state, so `derived::standing` fell back to the facet value \
+             whose role is `live`, this taxonomy's vocabulary-wide default"
+                .to_string()
+        }
+    };
+    Err(format!(
+        "derives the state `{state}` for `{kind}`, and the lifecycle regime `{}` that `{kind}` \
+         binds names no such state: a `{kind}` stands at one of {offers}. {source}",
+        regime.name
+    ))
 }
 
 /// The documents this projection read, as the census classified them.
@@ -195,7 +313,8 @@ fn documents<'a>(
         .collect()
 }
 
-/// The state this document stands in.
+/// The state this document stands in, and [`Locus`] names where that value
+/// came from.
 ///
 /// An incoming edge of a relation that declares `on_target.set_state` **puts**
 /// its target in that state, which is the reading
@@ -209,16 +328,18 @@ fn documents<'a>(
 /// initial state of the regime would be false about every one of them. That is
 /// also what `headwater new` writes for an authored document, which reaches
 /// `current` in the commit that creates it rather than by a movement.
-fn standing(surface: &Surface<'_>, id: &str, output: &str) -> Option<String> {
+fn standing(surface: &Surface<'_>, id: &str, output: &str) -> Option<(String, Locus)> {
     if let Some(state) = set_state(surface, id, output) {
-        return Some(state);
+        let setters = set_by(surface, id, output).unwrap_or_default();
+        return Some((state, Locus::Edge(setters)));
     }
     let facet = surface.shape().facet_in_role(STATE)?;
-    facet
+    let value = facet
         .values
         .iter()
         .find(|held| held.role.as_deref() == Some(LIVE))
-        .map(|held| held.value.clone())
+        .map(|held| held.value.clone())?;
+    Some((value, Locus::Fallback))
 }
 
 /// The state that an incoming edge puts on this document, where one does.
