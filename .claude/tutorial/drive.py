@@ -270,6 +270,17 @@ def main():
         return subprocess.run(['bash', '-c', command], cwd=cwd['at'], env=env,
                               capture_output=True, text=True)
 
+    # Every block index a command actually came from, so this run can hold
+    # `COMMAND_BLOCK_INDICES` to what it did rather than to what a comment
+    # claims it did. `adopter_interface.py` reads that constant as the
+    # tutorial's command/output boundary, and nothing before this checked
+    # that the constant and this function still agreed.
+    executed = set()
+
+    def used(index):
+        executed.add(index)
+        return blocks[index]
+
     try:
         # Before you start. `cargo install` is the one block not run.
         assert_true('before you start: headwater --version prints a number',
@@ -285,7 +296,7 @@ def main():
             compare(label, actual, blocks[index], today)
 
         # Step 1.
-        first = blocks[1].strip('\n').split('\n')
+        first = used(1).strip('\n').split('\n')
         run(first[0])
         cwd['at'] = os.path.join(scratch, 'headwater-tutorial')
         for command in first[2:]:
@@ -293,7 +304,7 @@ def main():
         whole('step 1: ls docs/decisions', run('ls docs/decisions').stdout, 2)
 
         # Step 2.
-        whole('step 2: headwater init', run(blocks[3].strip()).stdout, 4)
+        whole('step 2: headwater init', run(used(3).strip()).stdout, 4)
         compare('step 2: ls .headwater', run('ls .headwater').stdout,
                 'overlay.yml\ntaxonomy.yml', today)
 
@@ -304,13 +315,13 @@ def main():
         # never read as a defect in a step above it, and nothing below this step
         # reaches the network
         # again.
-        result = run(blocks[5].strip())
+        result = run(used(5).strip())
         cut('step 3: the account of what the script fetched', result.stdout + result.stderr, 6)
         whole('step 3: ls .headwater/packages/headwater-standard',
               run('ls .headwater/packages/headwater-standard').stdout, 7)
 
         # Step 4.
-        result = run(blocks[8].strip())
+        result = run(used(8).strip())
         whole('step 4: the first refusal', result.stdout + result.stderr, 9)
         assert_true('step 4: exit status 1', result.returncode == 1)
 
@@ -360,7 +371,7 @@ def main():
         open(path, 'w').write(source)
         whole("step 5: grep -E 'digest:|version:'",
               run("grep -E 'digest:|version:' .headwater/taxonomy.yml").stdout, 10)
-        result = run(blocks[11].strip())
+        result = run(used(11).strip())
         whole('step 5: the second refusal', result.stdout + result.stderr, 12)
         assert_true('step 5: exit status 1', result.returncode == 1)
 
@@ -371,13 +382,13 @@ def main():
         open(path, 'w').write(source.rstrip('\n')[:-len('add: {}')] + blocks[13].strip('\n') + '\n')
         whole('step 6: tail -2 .headwater/overlay.yml',
               run('tail -2 .headwater/overlay.yml').stdout, 13)
-        result = run(blocks[14].strip())
+        result = run(used(14).strip())
         whole('step 6: the lock is written', result.stdout + result.stderr, 15)
         compare('step 6: ls .headwater/taxonomy.lock',
                 run('ls .headwater/taxonomy.lock').stdout, '.headwater/taxonomy.lock', today)
 
         # Step 7.
-        result = run(blocks[16].strip())
+        result = run(used(16).strip())
         cut('step 7: the census', result.stdout, 17)
         cut('step 7: the coverage line', result.stdout, 18)
         cut('step 7: the findings line', result.stdout, 19)
@@ -385,13 +396,13 @@ def main():
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '0', today)
 
         # Step 8.
-        result = run(blocks[20].strip())
+        result = run(used(20).strip())
         cut('step 8: what the taxonomy decided', result.stdout, 21)
         whole('step 8: the document the verb wrote',
               run('cat docs/decisions/0001-store-attempts-in-postgres.md').stdout, 22)
 
         # Step 9.
-        result = run(blocks[23].strip())
+        result = run(used(23).strip())
         cut('step 9: the census', result.stdout, 24)
         cut('step 9: the coverage line', result.stdout, 25)
         whole('step 9: grep check instances',
@@ -399,7 +410,7 @@ def main():
 
         # Step 10. `headwater check` already wrote the cache's own ignore file
         # by step 9, so this step is one commit and no more.
-        for command in blocks[26].strip('\n').split('\n'):
+        for command in used(26).strip('\n').split('\n'):
             run(command)
         log = run('git log --oneline').stdout.strip()
         assert_true('step 10: one commit',
@@ -413,14 +424,14 @@ def main():
                 '*\n!.gitignore\n', today)
 
         # Step 11.
-        result = run(blocks[28].strip())
+        result = run(used(28).strip())
         cut('step 11: wrote and edited', result.stdout, 29)
         cut('step 11: the edges it proposed', result.stdout, 30)
         compare('step 11: strict exit',
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '0', today)
 
         # Step 12.
-        commands = blocks[31].strip('\n').split('\n')
+        commands = used(31).strip('\n').split('\n')
         run(commands[0])
         result = run(commands[1])
         cut('step 12: the finding', result.stdout, 32)
@@ -435,7 +446,7 @@ def main():
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '1', today)
 
         # Step 13.
-        result = run(blocks[35].strip())
+        result = run(used(35).strip())
         cut('step 13: the fix account, on standard error', result.stderr, 36)
         compare('step 13: strict exit',
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '0', today)
@@ -444,17 +455,17 @@ def main():
                   "0001-store-attempts-in-postgres.md").stdout, 37)
 
         # Step 14.
-        whole('step 14: explain', run(blocks[38].strip()).stdout, 39)
+        whole('step 14: explain', run(used(38).strip()).stdout, 39)
 
         # Step 15.
-        whole('step 15: route', run(blocks[40].strip()).stdout, 41)
+        whole('step 15: route', run(used(40).strip()).stdout, 41)
 
         # Step 16. Pinning the digest in step 5 already carried this corpus onto
         # `L0` and `L1`, unlike the copy route the page used to take, so the
         # only gap left here is `projections.current`.
-        result = run(blocks[42].strip())
+        result = run(used(42).strip())
         cut('step 16: the levels', result.stdout, 43)
-        for command in blocks[44].strip('\n').split('\n'):
+        for command in used(44).strip('\n').split('\n'):
             run(command)
         compare("step 16: grep 'L2'",
                 run("headwater conformance 2>/dev/null | grep 'L2'").stdout,
@@ -463,7 +474,19 @@ def main():
 
         # Where to go next.
         assert_true('where to go next: headwater infer exits 0',
-                    run(blocks[45].strip()).returncode == 0)
+                    run(used(45).strip()).returncode == 0)
+
+        # #933: `COMMAND_BLOCK_INDICES` is what `adopter_interface.py` trusts
+        # to know which blocks of this page are commands. Tying it to what
+        # this run actually executed, rather than leaving the two to agree
+        # by hand, is what makes a silent drift between them fail here
+        # instead of under-scanning there. Block 0 (`cargo install`) is the
+        # one command this script is told never to run, so it is added back
+        # rather than executed.
+        assert_true('every index COMMAND_BLOCK_INDICES names was run, and no other',
+                    executed | {0} == COMMAND_BLOCK_INDICES,
+                    f'executed {sorted(executed | {0})}, declared '
+                    f'{sorted(COMMAND_BLOCK_INDICES)}')
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
 
