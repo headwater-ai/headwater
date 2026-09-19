@@ -892,6 +892,16 @@ add:
     namespace: HW
     allocation: reconcile-first
 
+  # [HW-DR-0073](../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
+  # ruling 1: a verification takes an identity of its own rather than a path a
+  # rename breaks, so it takes a scheme of the same `{seq:04d}` shape as the two
+  # above. `VER` is disjoint from every literal segment this namespace already
+  # mints.
+  identifier_schemes.verification_id:
+    pattern: "{namespace}-VER-{seq:04d}"
+    namespace: HW
+    allocation: reconcile-first
+
   # The participation expectation is what makes an *absent* verifier visible. A
   # relation alone reports the edges that exist, and the argument for declaring
   # one here is that a requirement nothing verifies is a claim nobody can
@@ -953,6 +963,13 @@ add:
           severity: warn
           rationale: a requirement that nothing verifies is a claim nobody can settle
 
+  # **`acceptance-criterion-proven`, and a single `to_kind`.** `proven_by`
+  # admits exactly one target kind, unlike `verified_by` above, so the reasoning
+  # against declaring one does not carry: there is no second kind for the
+  # narrow declaration to exclude by accident, and
+  # `engine/crates/check/tests/acceptance_criterion_proven.rs` is the fixture
+  # that would catch it if a second target kind ever needed the same absence
+  # `requirement-verified` relies on.
   kinds.acceptance_criterion:
     is_a: governed_document
     purpose: requirement
@@ -964,6 +981,39 @@ add:
       require: [title, verification_method]
     sections:
       require: [Fit criterion, Method]
+    relations:
+      expect:
+        - id: acceptance-criterion-proven
+          relation: proven_by
+          to_kind: verification
+          when: {status: current}
+          within: 90d
+          since: state_entered
+          severity: warn
+          rationale: an acceptance criterion that no verification reaches is a claim nobody can settle
+
+  # [HW-DR-0073](../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
+  # ruling 1. The third artifact 29148 names, beside the acceptance criterion
+  # and the requirement: the thing that settles a criterion, given an identity
+  # of its own rather than the path `traces_to` binds by `Path::exists`. `Approach`
+  # states what the verification does and how; `What this does not cover` states
+  # the edge of that claim, on the model of `kinds.acceptance_criterion`'s
+  # `[Fit criterion, Method]` above. `purpose: evidence` and `voice: declarative`
+  # mirror `kinds.probe`, its closest sibling on the shelf list: both are a
+  # document that reports what was checked rather than what must hold. Neither
+  # is bound to the `ste_house` language regime, for the same reason `probe`,
+  # `probe_result` and `probe_transcript` are not: this repository's own governed
+  # shelves are listed in `CLAUDE.md` and this one is not among them.
+  kinds.verification:
+    is_a: governed_document
+    purpose: evidence
+    voice: declarative
+    lifecycle: standard
+    identifier: {scheme: verification_id}
+    facets:
+      require: [title]
+    sections:
+      require: [Approach, What this does not cover]
 
   # The `check-rule` resolver, which `headwater_check::anchors::Rules` supplies
   # and `main.rs` adds beside the import resolvers. A rule identifier is a
@@ -987,6 +1037,24 @@ add:
     reciprocal: required
     created_by: scaffold
 
+  # HW-DR-0073 ruling 1: a distinct relation, because `verified_by`'s `from` is
+  # fixed to `[requirement]` by Q35 and the overlay comment above states that
+  # widening it is a separate change. `acceptance_criterion` is the declaring
+  # end: it is what `--relates proven_by=<id>` accepts on `headwater new
+  # verification`, on the model of `verified_by`'s own `--relates
+  # verifies=<id>` on a new acceptance criterion. `created_by: scaffold` and
+  # `reciprocal: required` copy `verified_by`'s shape clause for clause, so one
+  # command writes both halves and a hand-written half still reaches a complete
+  # pair under `headwater check --fix`.
+  relations.proven_by:
+    family: evidence
+    from: [acceptance_criterion]
+    to:   [verification]
+    cardinality: many
+    inverse: proves
+    reciprocal: required
+    created_by: scaffold
+
   shelves.requirements:
     title: Requirements
     path: docs/requirements/**
@@ -1001,6 +1069,17 @@ add:
     path: docs/acceptance-criteria/**
     homogeneous: true
     kind: acceptance_criterion
+    layout: "{seq:04d}-{slug}.md"
+
+  # Its own shelf, disjoint from the two above for the same reason: a shared
+  # path resolves a kind by accident. HW-DR-0073 ruling 1: a verification does
+  # not unify with the assurance register (ruling 2), so it stays off
+  # `docs/decisions/` and every other register shelf too.
+  shelves.verifications:
+    title: Verifications
+    path: docs/verifications/**
+    homogeneous: true
+    kind: verification
     layout: "{seq:04d}-{slug}.md"
 
   # --- the development process ---------------------------------------------
@@ -1117,7 +1196,7 @@ add_to:
     # the index appears, with no second edit to this list by somebody who would
     # have to notice it was missing.
     - kind: shelf_index
-      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions]
+      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions]
       output: "{shelf}/README.md"
 
     # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: the

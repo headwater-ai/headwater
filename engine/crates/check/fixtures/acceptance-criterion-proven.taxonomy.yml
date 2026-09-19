@@ -1,0 +1,86 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The decisive fixture for #935 / HW-DR-0073 ruling 1: a participation
+# expectation over `acceptance_criterion`, at the near end of a new relation
+# that reaches a `verification`.
+#
+# Before this change no participation expectation stood on `acceptance_criterion`
+# at all, so a criterion nothing proves passed every run silently. This tree
+# holds the smallest shape that makes the gap visible: one relation, one
+# expectation, and three documents that differ only in the clause the
+# expectation reads. `overdue.md` is `status: current`, past the 90-day window,
+# with no `proven_by` edge, and it is the failing fixture. `inside-window.md`
+# holds the identical absence and stays silent because its window has not
+# closed. `proven.md` holds the identical age and stays silent because it
+# declares the edge.
+#
+# The `kinds.acceptance_criterion.relations.expect` block below is the
+# declaration under test. Removing it (as the first commit of this change did,
+# to prove the rule reports nothing over an undeclared expectation) leaves
+# every one of the three documents unreported, which is the state this issue
+# exists to fix.
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft,   role: initial}
+      - {value: current, role: live}
+      - {value: retired, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [retired]}
+
+identifier_schemes:
+  fixture_id: {pattern: "ACP-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+kinds:
+  acceptance_criterion:
+    identifier: {scheme: fixture_id}
+    lifecycle: standard
+    facets: {require: [status, status_since, summary]}
+    relations:
+      expect:
+        - id: acceptance-criterion-proven
+          relation: proven_by
+          to_kind: verification
+          when: {status: current}
+          within: 90d
+          since: state_entered
+          severity: warn
+          rationale: an acceptance criterion that no verification reaches is a claim nobody can settle
+
+  verification:
+    identifier: {scheme: fixture_id}
+    lifecycle: standard
+    facets: {require: [status, status_since, summary]}
+
+relations:
+  proven_by:
+    family: evidence
+    from: [acceptance_criterion]
+    to:   [verification]
+    cardinality: many
+    inverse: proves
+    reciprocal: required
+    created_by: author
+
+shelves:
+  criteria:
+    path: acceptance-criterion-proven/criteria/**
+    homogeneous: true
+    kind: acceptance_criterion
+  verifications:
+    path: acceptance-criterion-proven/verifications/**
+    homogeneous: true
+    kind: verification
