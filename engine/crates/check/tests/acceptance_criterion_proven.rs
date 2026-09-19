@@ -92,8 +92,8 @@ fn run() -> Run {
 /// it: an open window, a declared edge, and a `verification_method` the
 /// expectation does not read.
 #[test]
-fn a_criterion_no_verification_reaches_is_reported_and_the_window_the_edge_or_the_method_clears_it(
-) {
+fn a_criterion_no_verification_reaches_is_reported_and_the_window_the_edge_or_the_method_clears_it()
+{
     let run = run();
     let mut reported: Vec<&str> = run
         .findings
@@ -126,7 +126,8 @@ fn a_criterion_no_verification_reaches_is_reported_and_the_window_the_edge_or_th
         .instances
         .iter()
         .find(|instance| {
-            instance.rule == RULE && instance.at() == "acceptance-criterion-proven/criteria/inspection.md"
+            instance.rule == RULE
+                && instance.at() == "acceptance-criterion-proven/criteria/inspection.md"
         })
         .expect("the inspection fixture");
     assert!(
