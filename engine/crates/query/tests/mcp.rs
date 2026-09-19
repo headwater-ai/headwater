@@ -86,6 +86,9 @@ struct Built {
     taxonomy: Taxonomy,
     relations: Declarations,
     register: Register,
+    /// No snapshot under the fixture tree, so this is empty, on the same
+    /// terms as `claims` above.
+    observations: headwater_check::Observations,
     config: Config,
 }
 
@@ -119,6 +122,7 @@ fn fixture_tree() -> Built {
         taxonomy,
         relations,
         register,
+        observations: headwater_check::Observations::empty(),
         config: Config::default(),
     }
 }
@@ -143,6 +147,7 @@ impl Built {
             relations: &self.relations,
             config: &self.config,
             register: &self.register,
+            observations: &self.observations,
             adoption: None,
             source: "query.taxonomy.yml",
         }

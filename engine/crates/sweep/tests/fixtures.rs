@@ -266,6 +266,7 @@ fn no_check_names_the_placeholder_document_and_the_sweep_does() {
             relations: &relations,
             config: &config,
             register: &register,
+            observations: &headwater_check::Observations::empty(),
             adoption: None,
             source: "engine/crates/sweep/fixtures/sweep.taxonomy.yml",
         },
@@ -747,6 +748,7 @@ fn reciprocity_over(dir: &Path) -> Vec<String> {
             relations: &relations,
             config: &config,
             register: &register,
+            observations: &headwater_check::Observations::empty(),
             adoption: None,
             source: "engine/crates/sweep/fixtures/sweep.taxonomy.yml",
         },
@@ -900,33 +902,42 @@ fn a_relation_that_requires_one_end_prints_one_block_and_one_path() {
 
 // --- what a control cannot say about a sweep --------------------------------
 
-/// The measurement behind
-/// [HW-OBL-0114](../../../../docs/obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md).
+/// The discharge of
+/// [HW-OBL-0114](../../../../docs/obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md),
+/// by the same mechanism [#934](https://github.com/headwater-ai/headwater/issues/934)
+/// built: [`crate::observation`].
 ///
 /// `sweep.taxonomy.yml` declares one coherence obligation and one control whose
 /// mechanism is `sweep:undeclared_conflict`. The engine reads two mechanism
-/// prefixes and this is neither, so the register calls the control external and
-/// the obligation reads `verified` — from the declaration alone, with no sweep
-/// having run and none reachable from a run of the checks. A derived state has
-/// to be derived from what runs, and this one is not.
+/// prefixes and this is neither, so the register calls the control external.
+/// Before #934 that alone discharged the obligation, with no sweep having run
+/// and none reachable from a run of the checks. Now the control also needs a
+/// committed observation naming it, which nothing here writes, so the
+/// obligation reads unobserved rather than verified — the second of the three
+/// answers HW-OBL-0114 named.
 #[test]
-fn a_control_that_names_a_sweep_verifies_its_obligation_with_nothing_run() {
+fn a_control_that_names_a_sweep_discharges_nothing_with_no_observation() {
     let root = taxonomy_map();
     let register = Register::read(&root).expect("the register reads");
-    let projection = headwater_check::register::Projection::of(&register);
+    let projection =
+        headwater_check::register::Projection::of(&register, &headwater_check::Observations::empty());
     let disposed = projection
         .obligations
         .iter()
         .find(|disposed| disposed.id == "OB-SWP-1")
         .expect("the coherence obligation");
     assert!(
-        disposed.discharged(),
-        "the register no longer reads an external control as discharging, so HW-OBL-0114 \
-         is discharged and this test is what should change"
+        !disposed.discharged(),
+        "an external control with no committed observation should discharge nothing"
+    );
+    assert_eq!(
+        disposed.unobserved,
+        vec!["CT-SWP-1".to_string()],
+        "the sweep control is external and unobserved, not unimplemented"
     );
     assert!(
         disposed.unimplemented.is_empty(),
-        "the engine now reports a `sweep:` mechanism as unimplemented, which is the other \
-         repair HW-OBL-0114 admits"
+        "a `sweep:` mechanism is external, not a `check:`/`phase:` name the engine fails to \
+         recognize"
     );
 }

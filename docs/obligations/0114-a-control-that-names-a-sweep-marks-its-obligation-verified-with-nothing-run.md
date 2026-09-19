@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0114
-status: current
-status_since: 2026-08-14
+status: discharged
+status_since: 2026-09-19
 waiting_on: ruling
-summary: The register holds no coherence obligation at all, and the one mechanism that could bind the sweep to one reports it verified from the declaration alone.
-last_verified: 2026-08-14
+summary: A committed snapshot separates an external control that ran from one that only claims to, and a sweep control discharges nothing without one.
+last_verified: 2026-09-19
 title: "A control that names a sweep marks its obligation verified with nothing run"
 provenance:
   warrant: accepted
@@ -37,8 +37,8 @@ So the corpus owes one of three answers. The engine reads a `sweep:` prefix and 
 
 ## Discharge
 
-Measured on 2026-08-14, from the code and from a fixture that runs. `Register::mechanism` in `engine/crates/check/src/register.rs` returns `Mechanism::External` for any prefix outside `check:` and `phase:`. `Disposed::discharged` is `controls.len() > unimplemented.len()`, and `Projection::of` puts only an `Unimplemented` mechanism in the second list. So one external control is enough.
+[#934](https://github.com/headwater-ai/headwater/issues/934) took the second of the three answers this record named. The register now separates an external control that leaves evidence from one that does not. `crate::observation::Observations` reads a committed snapshot at `.headwater/observations.yml`. Each entry names one control and the commit it ran against, on the same offline terms the identifier claim store already reads by. `Disposed::unobserved` (`engine/crates/check/src/register.rs`) is the subset of an obligation's controls that name an external mechanism and that the snapshot does not name. `Disposed::discharged` excludes such a control. [Spec 4](../spec/04-assurance-model.md#every-obligation-has-exactly-one-disposition) states the rule. A control that names a mechanism outside the engine discharges nothing unless a committed snapshot names it and the commit it ran against.
 
-`engine/crates/sweep/fixtures/sweep.taxonomy.yml` declares `OB-SWP-1` with `class: coherence` and one control whose mechanism is `sweep:undeclared_conflict`. The test `a_control_that_names_a_sweep_verifies_its_obligation_with_nothing_run` asserts that the obligation reads discharged and that no control under it is unimplemented. No sweep ran in that test, and no run of the checks can run one.
+`engine/crates/sweep/fixtures/sweep.taxonomy.yml` still declares `OB-SWP-1` with `class: coherence` and one control, `CT-SWP-1`, whose mechanism is `sweep:undeclared_conflict`. No snapshot in that fixture tree names `CT-SWP-1`. So `a_control_that_names_a_sweep_discharges_nothing_with_no_observation` now asserts the corrected reading: the obligation is not discharged, and `CT-SWP-1` is in `unobserved` rather than in `unimplemented`. A `sweep:` name is external, not an unrecognized `check:`/`phase:` name, so the two lists stay disjoint.
 
-The count of 25 obligations, all of class `cohesion`, is over `.headwater/packages/headwater-standard/taxonomy.yml` and `.headwater/overlay.yml` on the same day. The engine's own report gives the same total under `obligations`.
+The obligation itself is unchanged: the class the sweep serves still has no member run over this corpus. What this record owed was the register's grading of that one control, and that grading is what changed. A later corpus might declare a coherence obligation whose sweep a person runs and records by hand. That corpus could still ask whether such a sweep should verify the obligation directly, rather than through a committed snapshot. No corpus here declares one, so that question stays open.

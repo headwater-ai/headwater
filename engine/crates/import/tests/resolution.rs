@@ -184,6 +184,7 @@ fn the_check_layer_reports_no_unresolved_target_over_an_imported_edge() {
             relations: &read.relations,
             config: &read.config,
             register: &register,
+            observations: &headwater_check::Observations::empty(),
             adoption: None,
             source: "taxonomy.yml",
         },

@@ -60,6 +60,7 @@ findings before
   engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance
   engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-17 carries two dispositions: CT-FIX-14 discharges it, and it also states one for itself
   engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-18 carries no disposition: CT-FIX-15 names a mechanism this engine does not implement, so nothing discharges it, and it states neither a gap nor an acceptance
+  engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-19 carries no disposition: CT-FIX-16 names a mechanism outside this engine that no committed observation names, so nothing discharges it, and it states neither a gap nor an acceptance
   engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-20 carries two dispositions: CT-FIX-17 claims to discharge it, and it also states one for itself
 
 findings after
@@ -110,4 +111,5 @@ findings after
   engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance
   engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-17 carries two dispositions: CT-FIX-14 discharges it, and it also states one for itself
   engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-18 carries no disposition: CT-FIX-15 names a mechanism this engine does not implement, so nothing discharges it, and it states neither a gap nor an acceptance
+  engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-19 carries no disposition: CT-FIX-16 names a mechanism outside this engine that no committed observation names, so nothing discharges it, and it states neither a gap nor an acceptance
   engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-20 carries two dispositions: CT-FIX-17 claims to discharge it, and it also states one for itself

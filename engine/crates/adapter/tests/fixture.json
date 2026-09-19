@@ -1385,6 +1385,18 @@
       "path": "engine/crates/check/fixtures/check.taxonomy.yml",
       "line": 0,
       "column": 0,
+      "message": "obligation OB-FIX-19 carries no disposition: CT-FIX-16 names a mechanism outside this engine that no committed observation names, so nothing discharges it, and it states neither a gap nor an acceptance",
+      "remediation": "name a mechanism this engine implements on CT-FIX-16, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "obligation.disposition.not_one",
+      "severity": "warn",
+      "obligation": "OB-FIX-11",
+      "path": "engine/crates/check/fixtures/check.taxonomy.yml",
+      "line": 0,
+      "column": 0,
       "message": "obligation OB-FIX-20 carries two dispositions: CT-FIX-17 claims to discharge it, and it also states one for itself",
       "remediation": "name a mechanism this engine implements on CT-FIX-17, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three",
       "fixable": false,

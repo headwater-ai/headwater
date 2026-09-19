@@ -175,7 +175,16 @@ This is the rule that keeps the register honest:
 
 There is no fourth state and no silence. An obligation with no disposition is itself a finding. This is the check that stops the decay of an assurance model into a list of good intentions. The register is complete by construction, or the build fails.
 
-**A control that the engine cannot run discharges nothing.** `verified` follows from a control, and a control names a mechanism. Where that mechanism names a rule or a phase that the engine does not implement, the control discharges nothing and the register says so. The obligation then takes the disposition that it states for itself. Where it states none, it carries no disposition, which is the state above. The engine supplies neither of the other two. A gap carries an owner, an acceptance carries reasoning, and the engine can write neither one. Without this rule, a taxonomy moves its whole register to `verified` with a mechanism name that reaches no code.
+**A control that the engine cannot run, or has not seen run, discharges nothing.** `verified` follows from a control, and a control names a mechanism. Where that mechanism names a rule or a phase that the engine does not implement, the control discharges nothing and the register says so. Where that mechanism names something outside the engine, the control discharges nothing unless a committed snapshot names the control and the commit it ran against. Only then does it verify what it claims. The obligation then takes the disposition that it states for itself. Where it states none, it carries no disposition, which is the state above. The engine supplies neither of the other two. A gap carries an owner, an acceptance carries reasoning, and the engine can write neither one. Without this rule, a taxonomy moves its whole register to `verified` with a mechanism name that reaches no code. The same rule stops a mechanism name that reaches no evidence that it ran. This change gives the register an observation dimension, and it flips ruling 2 of [HW-DR-0073](../decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md).
+
+**The snapshot is one file, keyed by the control it names.** `CT-021` above names `scheduled:staleness-sweep`, a mechanism this engine does not read. A run that has seen it execute records that fact at `.headwater/observations.yml`, offline and read the same way the identifier claim store is:
+
+```yaml
+CT-021:
+  commit: 8f2c1a0
+```
+
+No outcome column. The register asks only whether the pipeline ran, and pass or fail stays in the build that ran it. A repository that has never written the file has observed nothing, and every external control in it reads unobserved rather than refusing the run.
 
 **Verified is derived, and the other two are written on the obligation.** One member carries them, and it admits exactly one of `gap` and `unverifiable`:
 

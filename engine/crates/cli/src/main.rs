@@ -2966,6 +2966,11 @@ struct Loaded {
     taxonomy: Taxonomy,
     relations: Declarations,
     register: Register,
+    /// The committed observation snapshot, read off the tree beside the corpus
+    /// for the reason `claims` is: a fact about what this repository has seen
+    /// run, and not a declaration the taxonomy carries. See
+    /// [`headwater_check::observation`].
+    observations: headwater_check::Observations,
     /// The front-matter keys the graph phase reads by name. Held here, and
     /// built once, so the index and the identifier rule read an identifier from
     /// the same key. Two `Config::default()` calls would be two guesses that a
@@ -3073,6 +3078,7 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
         taxonomy,
         relations,
         register,
+        observations: headwater_check::Observations::at(root),
         config,
         claims: headwater_check::claim::Claims::at(root),
     })
@@ -3090,6 +3096,7 @@ impl Loaded {
             relations: &self.relations,
             config: &self.config,
             register: &self.register,
+            observations: &self.observations,
             adoption: self.bound.adoption.as_ref(),
             source: &self.bound.source,
         }
@@ -5443,6 +5450,7 @@ fn infer(
             relations: &loaded.relations,
             config: &loaded.config,
             register: &loaded.register,
+            observations: &loaded.observations,
             adoption: declared.as_ref(),
             source: headwater_lock::LOCK,
         },

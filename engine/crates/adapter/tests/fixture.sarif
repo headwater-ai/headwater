@@ -2719,6 +2719,35 @@
           "level": "warning",
           "kind": "fail",
           "message": {
+            "text": "obligation OB-FIX-19 carries no disposition: CT-FIX-16 names a mechanism outside this engine that no committed observation names, so nothing discharges it, and it states neither a gap nor an acceptance",
+            "markdown": "obligation OB-FIX-19 carries no disposition: CT-FIX-16 names a mechanism outside this engine that no committed observation names, so nothing discharges it, and it states neither a gap nor an acceptance\n\n**Fix:** name a mechanism this engine implements on CT-FIX-16, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "engine/crates/check/fixtures/check.taxonomy.yml"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "name a mechanism this engine implements on CT-FIX-16, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three",
+              "escape": "none",
+              "obligation": "OB-FIX-11",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "obligation.disposition.not_one",
+          "ruleIndex": 29,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
             "text": "obligation OB-FIX-20 carries two dispositions: CT-FIX-17 claims to discharge it, and it also states one for itself",
             "markdown": "obligation OB-FIX-20 carries two dispositions: CT-FIX-17 claims to discharge it, and it also states one for itself\n\n**Fix:** name a mechanism this engine implements on CT-FIX-17, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three"
           },

@@ -129,6 +129,7 @@ fn check_over(root: &Path) -> Run {
             relations: &declarations,
             config: &config,
             register: &register,
+            observations: &headwater_check::Observations::empty(),
             adoption: None,
             source: TAXONOMY,
         },

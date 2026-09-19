@@ -78,6 +78,7 @@ fn run() -> Run {
             relations: &declarations,
             config: &config,
             register: &register,
+            observations: &headwater_check::Observations::empty(),
             adoption: None,
             source: "engine/crates/check/fixtures/terminal-dependency.taxonomy.yml",
         },

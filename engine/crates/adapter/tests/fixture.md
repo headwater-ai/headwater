@@ -1,6 +1,6 @@
 ## `headwater check`
 
-56 findings, 37 of them errors across 25 of 28 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
+57 findings, 37 of them errors across 25 of 28 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
 
 **Coverage.** This run saw 28 files and classified 26 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 314 check instances, and 53 of them reached no verdict.
 
@@ -74,6 +74,7 @@
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-17 carries two dispositions: CT-FIX-14 discharges it, and it also states one for itself |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-18 carries no disposition: CT-FIX-15 names a mechanism this engine does not implement, so nothing discharges it, and it states neither a gap nor an acceptance |
+| warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-19 carries no disposition: CT-FIX-16 names a mechanism outside this engine that no committed observation names, so nothing discharges it, and it states neither a gap nor an acceptance |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-20 carries two dispositions: CT-FIX-17 claims to discharge it, and it also states one for itself |
 
 <details><summary>3 not reported: 1 migration-pending, 2 suppressed</summary>
@@ -86,4 +87,4 @@
 
 </details>
 
-28 documents in the read set, and 6 barriers that no gate carries across a merge. 27 obligations, 22 verified.
+28 documents in the read set, and 6 barriers that no gate carries across a merge. 27 obligations, 21 verified.
