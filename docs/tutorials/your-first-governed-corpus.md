@@ -97,6 +97,8 @@ The first heading names what a tree states about itself: the **corpus** is `docs
 
 ### Step 3 — Fetch the package into your tree
 
+`headwater taxonomy vendor <dir> --expect <digest>` is the whole of the vendor route Step 2 named. Point it at a package directory you have, fetched by whatever means your organization allows — the GitHub release page, a mirror, an air-gapped copy. It checks the digest and installs the result. This step fetches that directory over the network for you, then runs exactly that command. The script below does the fetching. It is a convenience over the verb, and not a substitute for it.
+
 ```
 curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/main/tools/headwater-bootstrap.sh | sh -s -- --tag taxonomy/headwater-standard/v4.2.0 --expect sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
 ```
