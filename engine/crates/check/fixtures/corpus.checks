@@ -108,6 +108,8 @@ rules, and for each the scope that binds it
     taxonomy scope, the resolved taxonomy, and no document
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
+  control.observation.invalid
+    taxonomy scope, the resolved taxonomy, and no document
   adoption.task.expired
     taxonomy scope, the resolved taxonomy, and no document
 register
@@ -131,3 +133,4 @@ register
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 0 suppressed
   facet.value.blank reaches no obligation, so it names none
+  control.observation.invalid reaches no obligation, so it names none

@@ -211,7 +211,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 32] = [
+pub const RULES: [&str; 33] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -243,6 +243,7 @@ pub const RULES: [&str; 32] = [
     coverage::RULE,
     register::DISPOSITION,
     register::MECHANISM,
+    register::OBSERVATION,
     adoption::RULE,
 ];
 
@@ -550,6 +551,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
         ),
         (
             register::MECHANISM,
+            register::SCOPE,
+            register::VERSION,
+            register::EXPORTABLE_AS,
+        ),
+        (
+            register::OBSERVATION,
             register::SCOPE,
             register::VERSION,
             register::EXPORTABLE_AS,
@@ -894,7 +901,23 @@ pub fn run(
             needs_prior: served.scope.needs_prior(),
         })
         .collect();
-    let read_set = ReadSet::of(declared.lock, ctx.now(), &rules, &instances);
+    let mut read_set = ReadSet::of(declared.lock, ctx.now(), &rules, &instances);
+    // The observation snapshot belongs to no instance, so the union above
+    // never sees it: `register::Projection::of` reads it directly, at
+    // `Grain::Taxonomy`, outside every per-document `reads` list. Added here
+    // on the same terms `crate::claim::STORE` is, so `headwater gate` catches
+    // an edit to it between the tree this run read and the tree a later gate
+    // reads: see `observation::Observations::read_set_digest`.
+    if let Some(digest) = declared.observations.read_set_digest() {
+        if let Err(at) = read_set
+            .inputs
+            .binary_search_by(|known| known.path.as_str().cmp(observation::PATH))
+        {
+            read_set
+                .inputs
+                .insert(at, Input::new(observation::PATH, digest));
+        }
+    }
 
     // What the change carried, and what the one rule that reads it made of it.
     // The promotion count is derived from the findings rather than counted

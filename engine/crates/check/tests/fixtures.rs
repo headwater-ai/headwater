@@ -1613,7 +1613,11 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // that declares the prior version at this grain.
             Grain::Corpus,
             Grain::Corpus,
-            // The two register rules, which read the taxonomy and no document.
+            // The three register rules, which read the taxonomy and no
+            // document: whether an obligation carries one disposition,
+            // whether a control names a mechanism this engine implements,
+            // and whether the committed observation snapshot itself reads.
+            Grain::Taxonomy,
             Grain::Taxonomy,
             Grain::Taxonomy,
             // `adoption.task.expired`, the same grain and for the same

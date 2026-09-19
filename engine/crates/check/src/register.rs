@@ -84,12 +84,12 @@
 //! [`crate::observation`]'s module comment states in full, and
 //! [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
 //! is the record of that gap. [`OBSERVATION`] is the narrower thing this
-//! module does check: whether the file itself could be read as one entry per
-//! control, each naming a control this taxonomy actually declares. A file
-//! that fails either test reads its entries as absent rather than as
-//! verified, the same fail-safe direction [`Disposed::unobserved`] already
-//! takes, and [`Projection::findings`] says why rather than only showing a
-//! lower count.
+//! module does check: whether the file itself could be read, whether each
+//! entry in it names a control this taxonomy actually declares, and whether
+//! any control is named more than once. A file or an entry that fails one of
+//! those tests reads as absent rather than as verified, the same fail-safe
+//! direction [`Disposed::unobserved`] already takes, and
+//! [`Projection::findings`] says why rather than only showing a lower count.
 //!
 //! So [`Disposed::disposition`] reads what this run can run, and the obligation
 //! falls to the disposition it states for itself. Where it states none, that is
@@ -147,37 +147,39 @@ pub const DISPOSITION: &str = "obligation.disposition.not_one";
 pub const MECHANISM: &str = "control.mechanism.unimplemented";
 
 /// The committed observation snapshot ([`crate::observation`]) is unreadable,
-/// malformed, or names a control this taxonomy does not declare. Deliberately
-/// **not** a member of [`crate::RULES`]: that list is the set a taxonomy binds
-/// a control to, on [`Bound`]'s own terms, and this rule reports a defect in
-/// an input file rather than an invariant a taxonomy author asserts and an
-/// obligation names. Adding it there would need a control and an obligation in
-/// the shipped base package for every corpus that resolves it, including every
-/// fixture taxonomy this workspace tests with, for a check that fires on a
-/// hand-authored file three lines long. The cost this choice pays: a finding
-/// under this rule has no `ruleIndex` in a SARIF run's `driver.rules`, because
-/// that array is [`crate::RULES`] and [`crate::Serves`] in the same order (see
-/// `the_rule_list_is_the_registry_that_ran` in `engine/crates/adapter/tests/`).
-/// `ruleId` is still on every result, which is what a consumer keys on; the
-/// index is present-value metadata this rule does not carry.
+/// malformed, names a control this taxonomy does not declare, or names one
+/// control twice. A member of [`crate::RULES`], the same as [`DISPOSITION`]
+/// and [`MECHANISM`]: `suppression::declared` reads that list as the closed
+/// set an `headwater allow=` directive may name, and `adoption::read` reads it
+/// the same way for a pending task, so a rule outside it can carry a finding
+/// that nothing can suppress or hold pending. This rule reports a defect in an
+/// input file rather than an invariant a taxonomy author asserts, so no
+/// obligation names it the way [`DISPOSITION`] and [`MECHANISM`] are named by
+/// `OB-REG-1` and `OB-REG-2`: it reports on the corpus's `.headwater/`
+/// directory rather than on a declaration inside the taxonomy, and this
+/// engine's own base package declares no obligation over that directory for
+/// any of its other rules either (the claim-store rules bind to obligations
+/// about the *documents* the store's claims serve, not about the store file
+/// itself). It carries [`SCOPE`], [`VERSION`] and [`EXPORTABLE_AS`] the same
+/// way its two siblings do, so a reader of `served` sees three consistent
+/// entries rather than one shaped differently.
 pub const OBSERVATION: &str = "control.observation.invalid";
 
-/// The grain of [`DISPOSITION`] and [`MECHANISM`]. See the module comment:
-/// neither reads a document, so neither creates an instance and neither
-/// accounts against the census. [`OBSERVATION`] is not in [`crate::RULES`],
-/// so it carries no scope, version or export target of its own: see its own
-/// doc comment for why.
+/// The grain of [`DISPOSITION`], [`MECHANISM`] and [`OBSERVATION`]. See the
+/// module comment: none reads a document, so none creates an instance and
+/// none accounts against the census.
 pub const SCOPE: Scope = Scope::taxonomy();
 
-/// Which edition of [`DISPOSITION`] and [`MECHANISM`] reached a verdict.
-/// Stated here for the reason [`crate::coverage::VERSION`] is: no trait
-/// carries it.
+/// Which edition of [`DISPOSITION`], [`MECHANISM`] and [`OBSERVATION`] reached
+/// a verdict. Stated here for the reason [`crate::coverage::VERSION`] is: no
+/// trait carries it.
 pub const VERSION: u32 = 1;
 
-/// The emitter targets [`DISPOSITION`] and [`MECHANISM`] export to, stated
-/// here for the reason [`SCOPE`] is. Empty, and not because nothing could say
-/// it: these rules are about the taxonomy rather than about a document, and a
-/// front-matter schema has no instance to hold them against.
+/// The emitter targets [`DISPOSITION`], [`MECHANISM`] and [`OBSERVATION`]
+/// export to, stated here for the reason [`SCOPE`] is. Empty, and not because
+/// nothing could say it: these rules are about the taxonomy rather than about
+/// a document, and a front-matter schema has no instance to hold them
+/// against.
 pub const EXPORTABLE_AS: crate::scope::ExportTargets = &[];
 
 /// The obligations and controls of a resolved taxonomy.
@@ -602,12 +604,24 @@ pub struct Projection {
     /// [`crate::observation::Observations::problems`], carried through so
     /// [`Projection::findings`] can report each one under [`OBSERVATION`]
     /// instead of the run reading a lower count with nothing to say why.
-    observation_problems: Vec<String>,
+    observation_problems: Vec<crate::observation::Problem>,
     /// The `control` of every entry the observation snapshot names that no
     /// control in this register declares. A taxonomy edit that drops or
     /// renames a control leaves its old snapshot entry pointing at nothing,
     /// silently, unless this is read out.
     observation_undeclared: Vec<String>,
+    /// The `control` of every entry that names a control more than one
+    /// [`crate::observation::Observation`] of the snapshot already names.
+    ///
+    /// Read off [`crate::observation::Observations::entries`] directly rather
+    /// than left to that module, because a literal duplicate key in the file
+    /// is already a [`crate::observation::Problem::File`] on the YAML loader's
+    /// own refusal, and the shape that still reaches here — two
+    /// [`crate::observation::Observation`]s of one
+    /// [`crate::observation::Observations`] sharing a control — is possible
+    /// through [`crate::observation::Observations::of`] as much as through a
+    /// file, so the check has to sit where both origins are one type.
+    observation_duplicate: Vec<String>,
 }
 
 impl Projection {
@@ -684,12 +698,27 @@ impl Projection {
             })
             .map(|entry| entry.control.clone())
             .collect();
+        // A control named more than once, reported once each: the second
+        // (and any later) occurrence is what a reader has to remove, so the
+        // first is not named again as its own duplicate.
+        let mut observation_duplicate = Vec::new();
+        for (at, entry) in observations.entries().iter().enumerate() {
+            let first_at_index = observations
+                .entries()
+                .iter()
+                .position(|earlier| earlier.control == entry.control)
+                .expect("the entry itself is in its own list");
+            if first_at_index != at && !observation_duplicate.contains(&entry.control) {
+                observation_duplicate.push(entry.control.clone());
+            }
+        }
         Projection {
             obligations,
             controls,
             unbound,
             observation_problems: observations.problems().to_vec(),
             observation_undeclared,
+            observation_duplicate,
         }
     }
 
@@ -841,6 +870,19 @@ impl Projection {
             });
         }
         for problem in &self.observation_problems {
+            let (message, remediation) = match problem {
+                crate::observation::Problem::File(message) => (
+                    message.clone(),
+                    "read `.headwater/observations.yml` by hand and repair it, or delete it: an \
+                     absent file reads as no observation, and a malformed one should read the \
+                     same way rather than silently"
+                        .to_string(),
+                ),
+                crate::observation::Problem::Entry { control, reason } => (
+                    format!("`.headwater/observations.yml` names `{control}`, and {reason}"),
+                    "remove the entry, or correct its shape".to_string(),
+                ),
+            };
             findings.push(Finding {
                 rule: OBSERVATION,
                 severity: Severity::Warn,
@@ -848,11 +890,8 @@ impl Projection {
                 path: source.to_string(),
                 line: 0,
                 column: 0,
-                message: problem.clone(),
-                remediation: "fix or remove the entry `.headwater/observations.yml` could not \
-                              read; an absent file reads as no observation, and this one should \
-                              read the same way rather than silently"
-                    .to_string(),
+                message,
+                remediation,
                 patch: None,
             });
         }
@@ -869,6 +908,21 @@ impl Projection {
                      this taxonomy declares"
                 ),
                 remediation: "remove the entry, or correct the control id it names".to_string(),
+                patch: None,
+            });
+        }
+        for control_id in &self.observation_duplicate {
+            findings.push(Finding {
+                rule: OBSERVATION,
+                severity: Severity::Warn,
+                obligation: None,
+                path: source.to_string(),
+                line: 0,
+                column: 0,
+                message: format!(
+                    "`.headwater/observations.yml` names `{control_id}` more than once"
+                ),
+                remediation: "remove every entry for the control but one".to_string(),
                 patch: None,
             });
         }
@@ -1777,6 +1831,48 @@ controls:
         );
         // The declared control's own entry still discharges: one bad entry
         // does not void a good one.
+        let disposed = &projection.obligations[0];
+        assert_eq!(disposed.disposition(), Disposition::Verified);
+    }
+
+    /// A control named twice by the observation snapshot is a finding rather
+    /// than a silent double-push. A literal duplicate key in the file is
+    /// already refused by the YAML loader before `Observations::at` sees it
+    /// (`observation::tests::a_literal_duplicate_key_is_a_whole_file_problem_via_the_loader`
+    /// pins that), so this test provokes the shape that survives that: two
+    /// [`crate::observation::Observation`]s of one
+    /// [`crate::observation::Observations`] sharing a control, which
+    /// [`crate::observation::Observations::of`] does not itself refuse.
+    #[test]
+    fn a_control_named_twice_by_the_snapshot_is_a_finding() {
+        let register = register(
+            "obligations:\n  OB-EXT-1:\n    statement: s\n\
+             controls:\n  CT-EXT-1:\n    mechanism: ci:nightly-suite\n    \
+             discharges: [OB-EXT-1]\n",
+        );
+        let observations = crate::observation::Observations::of(vec![
+            crate::observation::Observation {
+                control: "CT-EXT-1".to_string(),
+                commit: "aaa".to_string(),
+            },
+            crate::observation::Observation {
+                control: "CT-EXT-1".to_string(),
+                commit: "bbb".to_string(),
+            },
+        ]);
+        let projection = Projection::of(&register, &observations);
+        let findings = projection.findings("t.yml");
+        let observation = findings
+            .iter()
+            .find(|f| f.rule == OBSERVATION)
+            .expect("a control named twice is a finding");
+        assert!(
+            observation.message.contains("CT-EXT-1"),
+            "{}",
+            observation.message
+        );
+        // The control still discharges: a duplicate is a data-quality defect
+        // to fix, not grounds to void an otherwise good observation.
         let disposed = &projection.obligations[0];
         assert_eq!(disposed.disposition(), Disposition::Verified);
     }

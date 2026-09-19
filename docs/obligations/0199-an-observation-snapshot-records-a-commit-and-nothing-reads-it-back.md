@@ -20,7 +20,7 @@ waiting_on: build
 
 Nothing reads the commit field back. `Observations::observed` asks only whether an entry names the control, and the commit is carried and never inspected. Two consequences follow from the same gap.
 
-An entry naming a commit this repository never held discharges a control the same way an entry naming the real commit does. `CT-EXT-1: {commit: "never ran"}` and `CT-EXT-1: {commit: 8f2c1a0}` read identically to `Observations::observed`.
+An entry naming a commit this repository never held discharges a control the same way an entry naming the real commit does. `CT-EXT-1: {commit: "never ran"}` and `CT-EXT-1: {commit: 8f2c1a0}` read identically to `Observations::observed`. So does `CT-EXT-1: {commit: ""}`: the field parses as an empty string, `Observations::at` accepts it as present, and discharge follows the same way. Only an entry naming no `commit` key at all is refused, as a malformed entry.
 
 A snapshot recorded once discharges forever. If the control's mechanism, its taxonomy declaration, or the pipeline it names all change after the snapshot commit, nothing re-reads the snapshot against that change. HW-DR-0073 ruling 3 gives a verification a `suspect` state for exactly this shape of staleness. This module has no sibling state.
 
