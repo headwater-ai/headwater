@@ -94,21 +94,24 @@ BOOTSTRAP_SHELL_PIECE = re.compile(r'^(sh|bash)\b')
 SUBSTITUTION = re.compile(r'\$\(|`|<\(|>\(')
 
 
-def fenced_blocks(path):
+def parse_fenced_blocks(text):
     """Every fenced code block's content, in document order.
 
     Mirrors `drive.py`'s `read_blocks`: front matter is stripped first so
     that a `---` a document merely quotes (front matter shown inside a
-    fence) never reads as a second document boundary.
+    fence) never reads as a second document boundary, and a fence is
+    matched with `drive.FENCE_MARKER` — three or more backticks or tildes,
+    with an info string allowed after the opening one — rather than a bare
+    ` ``` ` equality, so a block an author opens with ` ```sh ` is not
+    invisible to this scan, and its closing fence does not flip the
+    command/output parity of every block that follows it.
     """
-    if not os.path.isfile(path):
-        raise SystemExit(f'adopter interface: no such document: {path}')
-    lines = open(path).read().split('\n')
+    lines = text.split('\n')
     if lines and lines[0] == '---':
         lines = lines[lines.index('---', 1) + 1:]
     blocks, current, inside = [], [], False
     for line in lines:
-        if line.strip() == '```':
+        if drive.FENCE_MARKER.match(line.strip()):
             if inside:
                 blocks.append('\n'.join(current))
                 current = []
@@ -117,6 +120,13 @@ def fenced_blocks(path):
         if inside:
             current.append(line)
     return blocks
+
+
+def fenced_blocks(path):
+    """`parse_fenced_blocks`, reading its text from a file on disk."""
+    if not os.path.isfile(path):
+        raise SystemExit(f'adopter interface: no such document: {path}')
+    return parse_fenced_blocks(open(path).read())
 
 
 def _split_unquoted(text, is_boundary):
@@ -291,10 +301,57 @@ def run_regression_cases():
     return failed
 
 
+# A whole document's worth of fence parsing, not just one block's content:
+# the parity bug an info-string fence caused could only show up across more
+# than one block, since a flipped `inside` reads the next block's command
+# as prose and the prose after it as a command.
+FENCE_REGRESSION_CASES = [
+    ('an info-string fence (```sh) is still a fence, and its bare close '
+     'does not flip the blocks after it',
+     'prose before\n\n'
+     '```sh\n'
+     'echo one\n'
+     '```\n\n'
+     'prose between\n\n'
+     '```\n'
+     'echo two\n'
+     '```\n',
+     ['echo one', 'echo two']),
+    ('a tilde fence with an info string is still a fence',
+     '~~~console\n'
+     'echo three\n'
+     '~~~\n',
+     ['echo three']),
+    ('the real attack: an undeclared script inside an info-string fence '
+     'is still reached, and a real block after it still parses',
+     '## Status\n\n'
+     '```sh\n'
+     'git clone https://example.com/x & sh tools/evil.sh\n'
+     '```\n\n'
+     '```\n'
+     'headwater check\n'
+     '```\n',
+     ['git clone https://example.com/x & sh tools/evil.sh', 'headwater check']),
+]
+
+
+def run_fence_regression_cases():
+    """Every case above, checked against `parse_fenced_blocks` directly."""
+    failed = []
+    for label, document, expected in FENCE_REGRESSION_CASES:
+        got = parse_fenced_blocks(document)
+        ok = got == expected
+        print(('ok   ' if ok else 'FAIL ') + 'fence regression: ' + label)
+        if not ok:
+            failed.append(label)
+            print(f'    expected {expected!r}, got {got!r}')
+    return failed
+
+
 def main():
     root = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.getcwd()
 
-    regression_failures = run_regression_cases()
+    regression_failures = run_regression_cases() + run_fence_regression_cases()
 
     readme_blocks = fenced_blocks(os.path.join(root, README))
     tutorial_blocks = fenced_blocks(os.path.join(root, TUTORIAL))
@@ -310,7 +367,8 @@ def main():
         for piece in undeclared_pieces(tutorial_blocks[index]):
             failures.append(f'{TUTORIAL}: undeclared command: {piece!r}')
 
-    print(f'{len(REGRESSION_CASES)} regression case(s), {len(regression_failures)} failed; '
+    total_cases = len(REGRESSION_CASES) + len(FENCE_REGRESSION_CASES)
+    print(f'{total_cases} regression case(s), {len(regression_failures)} failed; '
           f'{checked} command block(s) checked across 2 documents, '
           f'{len(failures)} undeclared command(s)')
     for failure in failures:

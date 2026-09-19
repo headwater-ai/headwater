@@ -60,6 +60,18 @@ COMMAND_BLOCK_INDICES = frozenset({
     0, 1, 3, 5, 8, 11, 14, 16, 20, 23, 26, 28, 31, 35, 38, 40, 42, 44, 45,
 })
 
+# A fence opens or closes on three or more backticks or tildes, and
+# CommonMark allows an info string after the opening one (` ```sh `,
+# ` ```console `) with no such allowance on the close. Matching only a bare
+# ` ``` ` misses every fenced block an author opens with a language tag,
+# and worse than missing that one block: the block's own closing fence,
+# still bare, then flips `inside` a second time with nothing to balance it,
+# so every block after it in the document is read with commands and output
+# swapped. `adopter_interface.py` shares this constant rather than
+# reimplementing the match, so the two documents' parsing cannot drift
+# apart on this rule the way this file's own bare-backtick check once did.
+FENCE_MARKER = re.compile(r'^(`{3,}|~{3,})')
+
 failures = []
 checks = 0
 
@@ -182,7 +194,7 @@ def read_blocks(root):
         lines = lines[lines.index('---', 1) + 1:]
     blocks, trimmed, current, inside, paragraph = [], [], [], False, ''
     for line in lines:
-        if line.strip() == '```':
+        if FENCE_MARKER.match(line.strip()):
             if inside:
                 blocks.append('\n'.join(current))
                 trimmed.append(paragraph.lstrip('*').lower().startswith('trimmed'))
