@@ -48,6 +48,18 @@ import time
 DOC = 'docs/tutorials/your-first-governed-corpus.md'
 STATED_DATE = '2026-09-09'
 
+# The indices, in document order, of every fenced block that is a command
+# rather than output. This mirrors every `run(blocks[N])` call `main()`
+# below makes, plus block 0 (`cargo install`), the one command this script
+# is told never to execute. The tutorial states its own convention in
+# *Before you start*: "A block is a command or it is output, and the two
+# look the same" — nothing but this order-based knowledge tells the two
+# apart, which is why `adopter_interface.py` imports this constant rather
+# than re-deriving it by reading the page a second, different way.
+COMMAND_BLOCK_INDICES = frozenset({
+    0, 1, 3, 5, 8, 11, 14, 16, 20, 23, 26, 28, 31, 35, 38, 40, 42, 44, 45,
+})
+
 failures = []
 checks = 0
 
