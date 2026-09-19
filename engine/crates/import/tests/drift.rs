@@ -63,6 +63,7 @@ fn run_over(scratch: &Scratch, declaration: &Declaration, cache: &mut Cache) -> 
             relations: &read.relations,
             config: &read.config,
             register: &register,
+            observations: &headwater_check::Observations::empty(),
             adoption: None,
             source: "taxonomy.yml",
         },

@@ -1063,6 +1063,7 @@ fn created_role_run() -> Run {
             relations: &declarations,
             config: &config,
             register: &register,
+            observations: &headwater_check::Observations::empty(),
             adoption: None,
             source: "engine/crates/generate/fixtures/created-role.taxonomy.yml",
         },

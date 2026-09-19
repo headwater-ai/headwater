@@ -486,6 +486,20 @@
               }
             },
             {
+              "id": "control.observation.invalid",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "adoption.task.expired",
               "shortDescription": {
                 "text": "taxonomy scope, the resolved taxonomy, and no document"
@@ -2707,6 +2721,35 @@
               "severity": "warn",
               "fixable": false,
               "remediation": "name a mechanism this engine implements on CT-FIX-15, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three",
+              "escape": "none",
+              "obligation": "OB-FIX-11",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "obligation.disposition.not_one",
+          "ruleIndex": 29,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "obligation OB-FIX-19 carries no disposition: CT-FIX-16 names a mechanism outside this engine that no committed observation names, so nothing discharges it, and it states neither a gap nor an acceptance",
+            "markdown": "obligation OB-FIX-19 carries no disposition: CT-FIX-16 names a mechanism outside this engine that no committed observation names, so nothing discharges it, and it states neither a gap nor an acceptance\n\n**Fix:** add an entry for CT-FIX-16 to `.headwater/observations.yml` naming the commit it ran against, e.g. `CT-FIX-16: {commit: <sha>}`, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "engine/crates/check/fixtures/check.taxonomy.yml"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "add an entry for CT-FIX-16 to `.headwater/observations.yml` naming the commit it ran against, e.g. `CT-FIX-16: {commit: <sha>}`, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three",
               "escape": "none",
               "obligation": "OB-FIX-11",
               "obligation_severity": "high"

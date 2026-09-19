@@ -156,6 +156,7 @@ pub mod instance;
 pub mod language;
 pub mod lifecycle_state;
 pub mod link_path;
+pub mod observation;
 pub mod paint;
 pub mod participation;
 pub mod patch;
@@ -184,6 +185,7 @@ pub use fill::{filled, WIDTH};
 pub use finding::{Finding, Severity};
 pub use gate::{Recorded, Verdict};
 pub use instance::{Input, Instance, Outcome};
+pub use observation::{Observation, Observations};
 pub use patch::Patch;
 pub use readset::{ReadSet, Rule};
 pub use register::{Bound, Register};
@@ -209,7 +211,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 32] = [
+pub const RULES: [&str; 33] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -241,6 +243,7 @@ pub const RULES: [&str; 32] = [
     coverage::RULE,
     register::DISPOSITION,
     register::MECHANISM,
+    register::OBSERVATION,
     adoption::RULE,
 ];
 
@@ -280,13 +283,21 @@ pub struct Declared<'a> {
     pub config: &'a headwater_graph::Config,
     /// Obligations and controls: the path from a rule to what it serves.
     pub register: &'a Register,
+    /// The committed snapshot of which control naming a mechanism outside
+    /// this engine has been seen to run, and at what commit.
+    ///
+    /// A fact about the corpus rather than about the taxonomy, so it is read
+    /// off the tree beside it rather than out of the resolved lock, on the
+    /// terms [`crate::claim::Claims`] already reads `.headwater/ids/` by: see
+    /// [`observation`].
+    pub observations: &'a Observations,
     /// The `adoption` block of the lock, where the lock declares one.
     ///
     /// It arrives as a mapping rather than as tasks because the lock does not
     /// know what a rule is. [`crate::adoption::read`] turns it into tasks and
     /// reports what it could not read.
     pub adoption: Option<&'a headwater_yaml::Mapping>,
-    /// Where the four above came from, as a path a reader can open.
+    /// Where the declarations above came from, as a path a reader can open.
     ///
     /// It is here because two rules of [`register`] are about the taxonomy
     /// rather than about the corpus, and a finding carries a path. For a run of
@@ -545,6 +556,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             register::EXPORTABLE_AS,
         ),
         (
+            register::OBSERVATION,
+            register::SCOPE,
+            register::VERSION,
+            register::EXPORTABLE_AS,
+        ),
+        (
             adoption::RULE,
             adoption::SCOPE,
             adoption::VERSION,
@@ -796,7 +813,7 @@ pub fn run(
 
     let coverage = Coverage::of(census, &instances);
 
-    let mut register = register::Projection::of(declared.register);
+    let mut register = register::Projection::of(declared.register, declared.observations);
 
     // Read here, ahead of the findings list it feeds, rather than beside
     // `adoption::apply` below. `adoption::expired` needs it to contribute
@@ -884,7 +901,23 @@ pub fn run(
             needs_prior: served.scope.needs_prior(),
         })
         .collect();
-    let read_set = ReadSet::of(declared.lock, ctx.now(), &rules, &instances);
+    let mut read_set = ReadSet::of(declared.lock, ctx.now(), &rules, &instances);
+    // The observation snapshot belongs to no instance, so the union above
+    // never sees it: `register::Projection::of` reads it directly, at
+    // `Grain::Taxonomy`, outside every per-document `reads` list. Added here
+    // on the same terms `crate::claim::STORE` is, so `headwater gate` catches
+    // an edit to it between the tree this run read and the tree a later gate
+    // reads: see `observation::Observations::read_set_digest`.
+    if let Some(digest) = declared.observations.read_set_digest() {
+        if let Err(at) = read_set
+            .inputs
+            .binary_search_by(|known| known.path.as_str().cmp(observation::PATH))
+        {
+            read_set
+                .inputs
+                .insert(at, Input::new(observation::PATH, digest));
+        }
+    }
 
     // What the change carried, and what the one rule that reads it made of it.
     // The promotion count is derived from the findings rather than counted

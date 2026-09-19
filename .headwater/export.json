@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 497,
-      "carried": 497,
+      "in the graph": 498,
+      "carried": 498,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -6741,11 +6741,11 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0114",
-          "status": "current",
-          "status_since": "2026-08-14",
+          "status": "discharged",
+          "status_since": "2026-09-19",
           "waiting_on": "ruling",
-          "summary": "The register holds no coherence obligation at all, and the one mechanism that could bind the sweep to one reports it verified from the declaration alone.",
-          "last_verified": "2026-08-14",
+          "summary": "A committed snapshot separates an external control that ran from one that only claims to, and a sweep control discharges nothing without one.",
+          "last_verified": "2026-09-19",
           "title": "A control that names a sweep marks its obligation verified with nothing run",
           "provenance": {
             "warrant": "accepted",
@@ -8748,6 +8748,20 @@
           "last_verified": "2026-09-16",
           "title": "Nothing states how much of a session's budget the standing instructions consume before work starts",
           "waiting_on": "measurement"
+        }
+      },
+      {
+        "path": "docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0199",
+        "facets": {
+          "id": "HW-OBL-0199",
+          "status": "current",
+          "status_since": "2026-09-19",
+          "summary": "The commit an observation snapshot names is stored and never compared. A snapshot naming a commit that never ran discharges a control exactly as well as one naming the commit that did.",
+          "last_verified": "2026-09-19",
+          "title": "An observation snapshot records a commit and nothing reads it back",
+          "waiting_on": "build"
         }
       },
       {
