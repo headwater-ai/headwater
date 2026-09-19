@@ -324,10 +324,11 @@ kinds:
           to_kind: verification
           when:
             status: current
+            verification_method: test
           within: 90d
           since: state_entered
           severity: warn
-          rationale: "an acceptance criterion that no verification reaches is a claim nobody can settle"
+          rationale: "an acceptance criterion proved by a test that no verification reaches is a claim nobody can settle"
     sections:
       require:
         - "Fit criterion"

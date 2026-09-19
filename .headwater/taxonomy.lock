@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:892b265f525b5d565b3996b33cf3cb68ce6088799a19f791a8172832ba5c8dd3
+  digest: sha256:a2d3d774841f83efde37bc378dbe90704880748e81025a9eaf89ad1d39f10390
   rules: 2
   package: headwater/standard
   version: 4.3.1
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:a1d0295f3af618bb371291f264a5f3d85925aabdd171ccea64629ee42a0e1c24
     - path: .headwater/overlay.yml
-      digest: sha256:01d6661894b7ac6456961cdd2a8d7aab04228c44010c6d5c840bce87b43f5361
+      digest: sha256:388fda26b0ac3410acf94c2cf894ff77ca0473b1667bf4afff1586966ea7b47f
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -387,10 +387,11 @@ resolved:
             to_kind: verification
             when:
               status: current
+              verification_method: test
             within: 90d
             since: state_entered
             severity: warn
-            rationale: "an acceptance criterion that no verification reaches is a claim nobody can settle"
+            rationale: "an acceptance criterion proved by a test that no verification reaches is a claim nobody can settle"
       sections:
         require:
           - "Fit criterion"

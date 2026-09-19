@@ -10,13 +10,16 @@
 //! the taxonomy declares the new relation and the expectation over it, with no
 //! new Rust rule logic.
 //!
-//! `fixtures/acceptance-criterion-proven/` holds three documents that differ
-//! only in the clause the expectation reads. `overdue.md` is `status: current`,
-//! past the 90-day window, with no `proven_by` edge, and it is the one document
-//! this rule must report. `inside-window.md` holds the identical absence and
-//! stays silent because its window is still open. `proven.md` holds the
-//! identical age and stays silent because it declares the edge to
-//! `verifications/one.md`.
+//! `fixtures/acceptance-criterion-proven/` holds four documents that differ
+//! only in the clause the expectation reads. `overdue.md` is
+//! `verification_method: test`, `status: current`, past the 90-day window,
+//! with no `proven_by` edge, and it is the one document this rule must report.
+//! `inside-window.md` holds the identical absence and stays silent because its
+//! window is still open. `proven.md` holds the identical age and stays silent
+//! because it declares the edge to `verifications/one.md`. `inspection.md`
+//! holds the identical absence and age and stays silent because its
+//! `verification_method` is `inspection` rather than `test`: HW-DR-0073 leaves
+//! that cadence open, so the expectation does not read it at all.
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
@@ -84,10 +87,12 @@ fn run() -> Run {
     )
 }
 
-/// The one document the rule must name, and the two ways the other two clear
-/// it: an open window and a declared edge.
+/// The one document the rule must name, and the three ways the others clear
+/// it: an open window, a declared edge, and a `verification_method` the
+/// expectation does not read.
 #[test]
-fn a_criterion_no_verification_reaches_is_reported_and_the_window_or_the_edge_clears_it() {
+fn a_criterion_no_verification_reaches_is_reported_and_the_window_the_edge_or_the_method_clears_it(
+) {
     let run = run();
     let mut reported: Vec<&str> = run
         .findings
@@ -99,18 +104,32 @@ fn a_criterion_no_verification_reaches_is_reported_and_the_window_or_the_edge_cl
     assert_eq!(
         reported,
         ["acceptance-criterion-proven/criteria/overdue.md"],
-        "only the criterion with no edge, past the window, is reported"
+        "only the test-method criterion with no edge, past the window, is reported"
     );
 
-    // Every criterion carries an instance, so the silence of the other two is
-    // a verdict and not an absent generation.
+    // Every criterion carries an instance, so the silence of the other three
+    // is a verdict and not an absent generation.
     let instances = run
         .instances
         .iter()
         .filter(|instance| instance.rule == RULE)
         .count();
     assert_eq!(
-        instances, 3,
+        instances, 4,
         "every acceptance_criterion document gets an instance"
+    );
+
+    // The inspection arm specifically: past the window, no edge, and silent
+    // because the expectation only reads `verification_method: test`.
+    let inspection = run
+        .instances
+        .iter()
+        .find(|instance| {
+            instance.rule == RULE && instance.at() == "acceptance-criterion-proven/criteria/inspection.md"
+        })
+        .expect("the inspection fixture");
+    assert!(
+        inspection.findings().is_empty(),
+        "an inspection criterion is outside the expectation's `when`, not merely inside its window"
     );
 }

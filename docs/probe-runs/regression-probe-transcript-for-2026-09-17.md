@@ -1,8 +1,8 @@
 ---
 id: HW-RUN-regression-probe-transcript-for-2026-09-17
 status: deprecated
-status_since: 2026-09-20
-summary: "Eight regression sessions ran against the lock of this tree, on claude-sonnet-5 rather than the haiku model every earlier run drove."
+status_since: 2026-09-19
+summary: "Eight regression sessions ran against the lock of this tree, on claude-sonnet-5 rather than the haiku model every earlier run drove. The recording is retired, because a later change moved the lock it pins."
 last_verified: 2026-09-16
 tier: regression
 arm: present

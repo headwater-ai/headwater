@@ -3,7 +3,7 @@
 id: HW-RESULT-regression-probe-transcript-for-2026-09-17
 title: Probe result for regression-probe-transcript-for-2026-09-17
 status: current
-status_since: 2026-09-20
+status_since: 2026-09-19
 summary: "The grade of the transcript `regression-probe-transcript-for-2026-09-17`, taken over the probes this corpus declares and the version of the grader that evaluated them."
 last_verified: 2026-09-16
 ---
@@ -14,9 +14,9 @@ A probe result is a function of three committed inputs and of nothing else: the 
 
 ## The run this transcript recorded
 
-This transcript recorded nothing usable: it was planned against taxonomy sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43 and this tree carries sha256:892b265f525b5d565b3996b33cf3cb68ce6088799a19f791a8172832ba5c8dd3
+This transcript recorded nothing usable: it was planned against taxonomy sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43 and this tree carries sha256:a2d3d774841f83efde37bc378dbe90704880748e81025a9eaf89ad1d39f10390
 
-This transcript reached no grader: it was planned against taxonomy sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43 and this tree carries sha256:892b265f525b5d565b3996b33cf3cb68ce6088799a19f791a8172832ba5c8dd3
+This transcript reached no grader: it was planned against taxonomy sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43 and this tree carries sha256:a2d3d774841f83efde37bc378dbe90704880748e81025a9eaf89ad1d39f10390
 
 A transcript that fails any of the five confirmations is refused whole, so there are no verdicts to report and no rate over none.
 

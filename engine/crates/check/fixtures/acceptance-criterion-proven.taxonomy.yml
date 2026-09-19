@@ -7,17 +7,22 @@
 # Before this change no participation expectation stood on `acceptance_criterion`
 # at all, so a criterion nothing proves passed every run silently. This tree
 # holds the smallest shape that makes the gap visible: one relation, one
-# expectation, and three documents that differ only in the clause the
-# expectation reads. `overdue.md` is `status: current`, past the 90-day window,
-# with no `proven_by` edge, and it is the failing fixture. `inside-window.md`
-# holds the identical absence and stays silent because its window has not
-# closed. `proven.md` holds the identical age and stays silent because it
-# declares the edge.
+# expectation, and four documents that differ only in the clause the
+# expectation reads. `overdue.md` is `verification_method: test`,
+# `status: current`, past the 90-day window, with no `proven_by` edge, and it is
+# the failing fixture. `inside-window.md` holds the identical absence and stays
+# silent because its window has not closed. `proven.md` holds the identical age
+# and stays silent because it declares the edge. `inspection.md` holds the
+# identical absence and age and stays silent because its
+# `verification_method` is not `test`, which is what the veto on PR #963 asked
+# this tree to prove: HW-DR-0073 leaves the cadence of an `inspection` or a
+# `demonstration` open, so the expectation does not read those documents at
+# all.
 #
 # The `kinds.acceptance_criterion.relations.expect` block below is the
 # declaration under test. Removing it (as the first commit of this change did,
 # to prove the rule reports nothing over an undeclared expectation) leaves
-# every one of the three documents unreported, which is the state this issue
+# every one of the four documents unreported, which is the state this issue
 # exists to fix.
 
 facets:
@@ -34,6 +39,9 @@ facets:
   summary:
     role: scent
     required: true
+  verification_method:
+    required: false
+    values: [test, inspection]
 
 regimes:
   lifecycle:
@@ -54,11 +62,11 @@ kinds:
         - id: acceptance-criterion-proven
           relation: proven_by
           to_kind: verification
-          when: {status: current}
+          when: {status: current, verification_method: test}
           within: 90d
           since: state_entered
           severity: warn
-          rationale: an acceptance criterion that no verification reaches is a claim nobody can settle
+          rationale: an acceptance criterion proved by a test that no verification reaches is a claim nobody can settle
 
   verification:
     identifier: {scheme: fixture_id}
