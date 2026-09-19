@@ -14,7 +14,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "4.3.1",
-        "lock": "sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43"
+        "lock": "sha256:892b265f525b5d565b3996b33cf3cb68ce6088799a19f791a8172832ba5c8dd3"
       },
       "entry_points": [
         {
@@ -86,6 +86,11 @@
           "shelf": "tutorials",
           "path": "docs/tutorials/your-first-governed-corpus.md",
           "id": "HW-TUT-your-first-governed-corpus"
+        },
+        {
+          "shelf": "verifications",
+          "path": "docs/verifications/0001-the-section-heading-rule-has-a-case-table-and-the-workspace-suite-runs-it-on-every-change.md",
+          "id": "HW-VER-0001"
         }
       ],
       "exports": [

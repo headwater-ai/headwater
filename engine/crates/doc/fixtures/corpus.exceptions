@@ -94,5 +94,7 @@ docs/taxonomies/standards-spec/fixtures/n8n/sweep/briefing.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/tutorials/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/verifications/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/w3id/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
