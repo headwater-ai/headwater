@@ -341,6 +341,7 @@ nav:
       - "A relation writes a state onto a kind that binds no lifecycle regime and nothing reads that pair": "obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md"
       - "A superseded document claims no reliance, and nothing measures whether a session honors that": "obligations/0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md"
       - "Nothing states how much of a session's budget the standing instructions consume before work starts": "obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md"
+      - "An observation snapshot records a commit and nothing reads it back": "obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"

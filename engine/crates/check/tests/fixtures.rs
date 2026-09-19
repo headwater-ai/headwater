@@ -127,6 +127,7 @@ fn run_at(
             relations: &declarations,
             config: &config,
             register: &register,
+            observations: &headwater_check::Observations::empty(),
             adoption,
             source,
         },

@@ -54,7 +54,7 @@
 //! control that names a mechanism that the engine does not implement, or a
 //! pipeline that does not exist, is a finding".
 //!
-//! # A control the engine cannot run discharges nothing
+//! # A control the engine cannot run, or has not seen run, discharges nothing
 //!
 //! Spec 4 reads `verified` as "one or more controls discharge it", and a
 //! control whose mechanism this engine does not implement discharges nothing:
@@ -62,6 +62,34 @@
 //! an obligation as verified, so a taxonomy could move its whole register to
 //! `15 verified` with a mechanism name that reaches no code. That is the exact
 //! claim the register exists to refuse, printed by the register.
+//!
+//! A control whose mechanism names something outside the engine is the same
+//! claim in a different shape: nothing here runs the pipeline, so nothing
+//! here has seen it run. An earlier edition counted such a control as
+//! discharging on the strength of its declaration alone, and an obligation
+//! whose only control named an external mechanism moved to `verified` with
+//! nothing read to say the mechanism had ever executed, and named nowhere in
+//! the report ([#934](https://github.com/headwater-ai/headwater/issues/934)).
+//! [`crate::observation`] is the remedy: a committed snapshot naming the
+//! control and the commit it ran against, read offline, the way
+//! [`crate::claim::Claims`] already reads a store beside it. Presence in that
+//! snapshot is what an external control now needs to discharge, and its
+//! absence is [`Disposed::unobserved`].
+//!
+//! **Presence is the whole of what this checks.** The commit a snapshot names
+//! is recorded and never compared: not against this repository's history, and
+//! not against whether the taxonomy has moved since. A snapshot naming a
+//! commit that never existed discharges exactly as well as one naming the
+//! commit that actually ran, on the same terms
+//! [`crate::observation`]'s module comment states in full, and
+//! [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
+//! is the record of that gap. [`OBSERVATION`] is the narrower thing this
+//! module does check: whether the file itself could be read as one entry per
+//! control, each naming a control this taxonomy actually declares. A file
+//! that fails either test reads its entries as absent rather than as
+//! verified, the same fail-safe direction [`Disposed::unobserved`] already
+//! takes, and [`Projection::findings`] says why rather than only showing a
+//! lower count.
 //!
 //! So [`Disposed::disposition`] reads what this run can run, and the obligation
 //! falls to the disposition it states for itself. Where it states none, that is
@@ -118,19 +146,38 @@ pub const DISPOSITION: &str = "obligation.disposition.not_one";
 /// implement, or a pipeline that does not exist, is a finding."
 pub const MECHANISM: &str = "control.mechanism.unimplemented";
 
-/// The grain of both rules above. See the module comment: neither reads a
-/// document, so neither creates an instance and neither accounts against the
-/// census.
+/// The committed observation snapshot ([`crate::observation`]) is unreadable,
+/// malformed, or names a control this taxonomy does not declare. Deliberately
+/// **not** a member of [`crate::RULES`]: that list is the set a taxonomy binds
+/// a control to, on [`Bound`]'s own terms, and this rule reports a defect in
+/// an input file rather than an invariant a taxonomy author asserts and an
+/// obligation names. Adding it there would need a control and an obligation in
+/// the shipped base package for every corpus that resolves it, including every
+/// fixture taxonomy this workspace tests with, for a check that fires on a
+/// hand-authored file three lines long. The cost this choice pays: a finding
+/// under this rule has no `ruleIndex` in a SARIF run's `driver.rules`, because
+/// that array is [`crate::RULES`] and [`crate::Serves`] in the same order (see
+/// `the_rule_list_is_the_registry_that_ran` in `engine/crates/adapter/tests/`).
+/// `ruleId` is still on every result, which is what a consumer keys on; the
+/// index is present-value metadata this rule does not carry.
+pub const OBSERVATION: &str = "control.observation.invalid";
+
+/// The grain of [`DISPOSITION`] and [`MECHANISM`]. See the module comment:
+/// neither reads a document, so neither creates an instance and neither
+/// accounts against the census. [`OBSERVATION`] is not in [`crate::RULES`],
+/// so it carries no scope, version or export target of its own: see its own
+/// doc comment for why.
 pub const SCOPE: Scope = Scope::taxonomy();
 
-/// Which edition of the two rules reached a verdict. Stated here for the
-/// reason [`crate::coverage::VERSION`] is: no trait carries it.
+/// Which edition of [`DISPOSITION`] and [`MECHANISM`] reached a verdict.
+/// Stated here for the reason [`crate::coverage::VERSION`] is: no trait
+/// carries it.
 pub const VERSION: u32 = 1;
 
-/// The emitter targets these two rules export to, stated here for the reason
-/// [`SCOPE`] is. Empty, and not because nothing could say it: these rules are
-/// about the taxonomy rather than about a document, and a front-matter schema
-/// has no instance to hold them against.
+/// The emitter targets [`DISPOSITION`] and [`MECHANISM`] export to, stated
+/// here for the reason [`SCOPE`] is. Empty, and not because nothing could say
+/// it: these rules are about the taxonomy rather than about a document, and a
+/// front-matter schema has no instance to hold them against.
 pub const EXPORTABLE_AS: crate::scope::ExportTargets = &[];
 
 /// The obligations and controls of a resolved taxonomy.
@@ -362,9 +409,11 @@ impl Register {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Disposition {
     /// One or more controls discharge it, and this engine can run at least one
-    /// of them. A control that names a mechanism the engine does not implement
-    /// discharges nothing, and it is a control only on paper: see
-    /// [`Disposed::unimplemented`].
+    /// of them, or has read a committed observation that one of them ran. A
+    /// control that names a mechanism the engine does not implement discharges
+    /// nothing, and neither does one that names a mechanism outside the engine
+    /// with no observation naming it: both are a control only on paper. See
+    /// [`Disposed::unimplemented`] and [`Disposed::unobserved`].
     Verified,
     /// Nothing discharges it, and the obligation states a gap.
     Gap,
@@ -407,6 +456,18 @@ pub struct Disposed {
     /// declaration, which is the property that makes this a run-time fact
     /// rather than a declaration defect.
     pub unimplemented: Vec<String>,
+    /// The subset of [`Disposed::controls`] whose mechanism is
+    /// [`Mechanism::External`] and that no committed observation names, in the
+    /// same order.
+    ///
+    /// The same run-time-fact property as [`Disposed::unimplemented`], and the
+    /// other half of the same defect: an earlier edition counted such a
+    /// control as discharging on the strength of its declaration alone, with
+    /// nothing the engine had read to say the mechanism had ever run. A
+    /// snapshot naming it moves the obligation to `verified` with no edit to
+    /// any declaration, the same way an implemented rule does. See
+    /// [`crate::observation`].
+    pub unobserved: Vec<String>,
     pub stated: Option<Stated>,
     /// Findings against this obligation that an author suppressed. A
     /// suppression does not undo a control, so it does not move the
@@ -425,12 +486,64 @@ pub struct Disposed {
 }
 
 impl Disposed {
-    /// Whether a control this engine can run discharges it.
+    /// Whether a control this engine can run, or has read an observation for,
+    /// discharges it.
     ///
-    /// The count rather than the list, because [`Disposed::unimplemented`] is
-    /// a subset of [`Disposed::controls`] by construction.
+    /// The count rather than the list, because [`Disposed::unimplemented`] and
+    /// [`Disposed::unobserved`] are each a subset of [`Disposed::controls`] by
+    /// construction, and the two are disjoint: a control's mechanism is
+    /// exactly one of [`Mechanism::Unimplemented`] and [`Mechanism::External`].
     pub fn discharged(&self) -> bool {
-        self.controls.len() > self.unimplemented.len()
+        self.controls.len() > self.unimplemented.len() + self.unobserved.len()
+    }
+
+    /// Why the controls that name this obligation do not discharge it, as one
+    /// clause naming every one of them and the reason it does not run. Shared
+    /// between [`Projection::findings`] and [`Projection::render`] so the two
+    /// surfaces read the two exempt classes the same way.
+    fn unresolved_reason(&self) -> String {
+        let mut parts = Vec::new();
+        if !self.unimplemented.is_empty() {
+            parts.push(format!(
+                "{} {} a mechanism this engine does not implement",
+                self.unimplemented.join(", "),
+                verb(self.unimplemented.len(), "names", "name")
+            ));
+        }
+        if !self.unobserved.is_empty() {
+            parts.push(format!(
+                "{} {} a mechanism outside this engine that no committed observation names",
+                self.unobserved.join(", "),
+                verb(self.unobserved.len(), "names", "name")
+            ));
+        }
+        parts.join(", and ")
+    }
+
+    /// The same two exempt classes as [`Disposed::unresolved_reason`], in the
+    /// grammar [`Projection::render`] reports a claim in. A second method
+    /// rather than a shared one because the two callers differ in verb
+    /// ("names"/"claims") and in what follows the clause, and reproducing that
+    /// difference by string surgery on one shared sentence would be harder to
+    /// read than writing it twice.
+    fn claim_reason(&self) -> String {
+        let mut parts = Vec::new();
+        if !self.unimplemented.is_empty() {
+            parts.push(format!(
+                "{} {} to discharge it under a mechanism this engine does not implement",
+                self.unimplemented.join(", "),
+                verb(self.unimplemented.len(), "claims", "claim")
+            ));
+        }
+        if !self.unobserved.is_empty() {
+            parts.push(format!(
+                "{} {} to discharge it under a mechanism outside this engine that no committed \
+                 observation names",
+                self.unobserved.join(", "),
+                verb(self.unobserved.len(), "claims", "claim")
+            ));
+        }
+        parts.join(", and ")
     }
 
     pub fn disposition(&self) -> Disposition {
@@ -486,16 +599,27 @@ pub struct Projection {
     /// Rules that reach no obligation, or more than one. Spec 4: "a check that
     /// cannot say which invariant it protects did not earn its place."
     pub unbound: Vec<(&'static str, Bound)>,
+    /// [`crate::observation::Observations::problems`], carried through so
+    /// [`Projection::findings`] can report each one under [`OBSERVATION`]
+    /// instead of the run reading a lower count with nothing to say why.
+    observation_problems: Vec<String>,
+    /// The `control` of every entry the observation snapshot names that no
+    /// control in this register declares. A taxonomy edit that drops or
+    /// renames a control leaves its old snapshot entry pointing at nothing,
+    /// silently, unless this is read out.
+    observation_undeclared: Vec<String>,
 }
 
 impl Projection {
-    /// The projection of one register over the rules this engine carries.
+    /// The projection of one register over the rules this engine carries, and
+    /// over the observation snapshot the corpus has committed.
     ///
     /// It takes no run, because none of this is about a run: the same two
-    /// declarations produce the same register whatever the corpus holds. What
-    /// a run adds is the escaped count, and [`Projection::escaped_from`] adds
-    /// it afterwards for a reason its comment gives.
-    pub fn of(register: &Register) -> Self {
+    /// declarations and the same snapshot produce the same register whatever
+    /// the corpus holds beyond them. What a run adds is the escaped count, and
+    /// [`Projection::escaped_from`] adds it afterwards for a reason its
+    /// comment gives.
+    pub fn of(register: &Register, observations: &crate::observation::Observations) -> Self {
         let obligations = register
             .obligations
             .iter()
@@ -513,6 +637,14 @@ impl Projection {
                         .iter()
                         .filter(|control| {
                             matches!(register.mechanism(control), Mechanism::Unimplemented(_))
+                        })
+                        .map(|control| control.id.clone())
+                        .collect(),
+                    unobserved: naming
+                        .iter()
+                        .filter(|control| {
+                            matches!(register.mechanism(control), Mechanism::External(_))
+                                && !observations.observed(&control.id)
                         })
                         .map(|control| control.id.clone())
                         .collect(),
@@ -541,10 +673,23 @@ impl Projection {
                 other => Some((*rule, other)),
             })
             .collect();
+        let observation_undeclared = observations
+            .entries()
+            .iter()
+            .filter(|entry| {
+                !register
+                    .controls
+                    .iter()
+                    .any(|control| control.id == entry.control)
+            })
+            .map(|entry| entry.control.clone())
+            .collect();
         Projection {
             obligations,
             controls,
             unbound,
+            observation_problems: observations.problems().to_vec(),
+            observation_undeclared,
         }
     }
 
@@ -595,12 +740,11 @@ impl Projection {
             let id = &obligation.id;
             // Why nothing discharges it, which is one of two sentences: no
             // control names it at all, or every control that does names a
-            // mechanism this engine cannot run.
+            // mechanism this engine cannot run or has not seen run.
             let nothing = match obligation.claimed_only() {
                 true => format!(
-                    "{} {} a mechanism this engine does not implement, so nothing discharges it",
-                    obligation.unimplemented.join(", "),
-                    verb(obligation.unimplemented.len(), "names", "name")
+                    "{}, so nothing discharges it",
+                    obligation.unresolved_reason()
                 ),
                 false => "no control discharges it".to_string(),
             };
@@ -638,16 +782,35 @@ impl Projection {
                 column: 0,
                 message,
                 // The first clause names the fix that is actually open. Where a
-                // control already claims the obligation, "give it a control" is
-                // advice the author has taken, and the mechanism is the edit.
+                // control already claims the obligation, the remedy differs by
+                // why that control does not discharge: an unimplemented
+                // mechanism needs a different name, and an unobserved one needs
+                // a snapshot naming it, not a rewrite. Where the obligation has
+                // no control at all, "give it a control" is advice the author
+                // has taken, and the mechanism is the edit.
                 remediation: format!(
                     "{}, or state `disposition: {{gap: {{owner: …}}}}` or `disposition: \
                      {{unverifiable: {{reasoning: …}}}}` on it, and exactly one of the three",
                     match obligation.claimed_only() {
-                        true => format!(
-                            "name a mechanism this engine implements on {}",
-                            obligation.unimplemented.join(", ")
-                        ),
+                        true => {
+                            let mut clauses = Vec::new();
+                            if !obligation.unimplemented.is_empty() {
+                                clauses.push(format!(
+                                    "name a mechanism this engine implements on {}",
+                                    obligation.unimplemented.join(", ")
+                                ));
+                            }
+                            if !obligation.unobserved.is_empty() {
+                                clauses.push(format!(
+                                    "add an entry for {} to `.headwater/observations.yml` \
+                                     naming the commit it ran against, e.g. `{}: {{commit: \
+                                     <sha>}}`",
+                                    obligation.unobserved.join(", "),
+                                    obligation.unobserved[0]
+                                ));
+                            }
+                            clauses.join(", or ")
+                        }
                         false => "give the obligation a control that discharges it".to_string(),
                     }
                 ),
@@ -674,6 +837,38 @@ impl Projection {
                 remediation: "name a rule this engine carries, or a phase of it, or a mechanism \
                               outside it under a prefix this engine does not read"
                     .to_string(),
+                patch: None,
+            });
+        }
+        for problem in &self.observation_problems {
+            findings.push(Finding {
+                rule: OBSERVATION,
+                severity: Severity::Warn,
+                obligation: None,
+                path: source.to_string(),
+                line: 0,
+                column: 0,
+                message: problem.clone(),
+                remediation: "fix or remove the entry `.headwater/observations.yml` could not \
+                              read; an absent file reads as no observation, and this one should \
+                              read the same way rather than silently"
+                    .to_string(),
+                patch: None,
+            });
+        }
+        for control_id in &self.observation_undeclared {
+            findings.push(Finding {
+                rule: OBSERVATION,
+                severity: Severity::Warn,
+                obligation: None,
+                path: source.to_string(),
+                line: 0,
+                column: 0,
+                message: format!(
+                    "`.headwater/observations.yml` names `{control_id}`, which no control in \
+                     this taxonomy declares"
+                ),
+                remediation: "remove the entry, or correct the control id it names".to_string(),
                 patch: None,
             });
         }
@@ -783,12 +978,7 @@ impl Projection {
             // this clause the line reads as an obligation nobody wrote a
             // control for, which is a different defect with a different fix.
             if obligation.claimed_only() {
-                let _ = write!(
-                    out,
-                    ", and {} {} to discharge it under a mechanism this engine does not implement",
-                    obligation.unimplemented.join(", "),
-                    verb(obligation.unimplemented.len(), "claims", "claim")
-                );
+                let _ = write!(out, ", and {}", obligation.claim_reason());
             }
 
             // A control claims it and it states a disposition too, so it
@@ -1304,7 +1494,7 @@ controls:
             Mechanism::Phase("census.classification".to_string())
         );
         assert_eq!(register.bound("census.classification"), Bound::Unnamed);
-        let projection = Projection::of(&register);
+        let projection = Projection::of(&register, &crate::observation::Observations::empty());
         assert_eq!(
             projection.obligations[0].disposition(),
             Disposition::Verified
@@ -1326,7 +1516,7 @@ controls:
              CT-1:\n    mechanism: check:coverage.document_unchecked\n    discharges: [OB-2]\n  \
              CT-2:\n    mechanism: check:no.such.rule\n    discharges: [OB-3]\n",
         );
-        let projection = Projection::of(&register);
+        let projection = Projection::of(&register, &crate::observation::Observations::empty());
         let findings = projection.findings("t.yml");
         let messages: Vec<&str> = findings.iter().map(|f| f.message.as_str()).collect();
         assert_eq!(findings.len(), 4, "{messages:?}");
@@ -1353,7 +1543,7 @@ controls:
             "obligations:\n  OB-1:\n    statement: s\n\
              controls:\n  CT-1:\n    mechanism: check:no.such.rule\n    discharges: [OB-1]\n",
         );
-        let projection = Projection::of(&register);
+        let projection = Projection::of(&register, &crate::observation::Observations::empty());
         let disposed = &projection.obligations[0];
         assert_eq!(disposed.controls, vec!["CT-1".to_string()]);
         assert_eq!(disposed.unimplemented, vec!["CT-1".to_string()]);
@@ -1395,7 +1585,7 @@ controls:
              CT-1:\n    mechanism: check:no.such.rule\n    discharges: [OB-1]\n  \
              CT-2:\n    mechanism: check:coverage.document_unchecked\n    discharges: [OB-1]\n",
         );
-        let projection = Projection::of(&register);
+        let projection = Projection::of(&register, &crate::observation::Observations::empty());
         assert_eq!(
             projection.obligations[0].disposition(),
             Disposition::Verified
@@ -1413,7 +1603,7 @@ controls:
             "obligations:\n  OB-1:\n    statement: s\n    disposition: {gap: {owner: o}}\n\
              controls:\n  CT-1:\n    mechanism: check:no.such.rule\n    discharges: [OB-1]\n",
         );
-        let projection = Projection::of(&register);
+        let projection = Projection::of(&register, &crate::observation::Observations::empty());
         assert_eq!(projection.obligations[0].disposition(), Disposition::Gap);
         assert!(projection.obligations[0].contradicted());
         let rendered = projection.render();
@@ -1426,17 +1616,169 @@ controls:
         );
     }
 
-    /// A mechanism under a prefix this engine does not read is not a defect.
-    /// Spec 4 declares scheduled and hook mechanisms, and the register says
-    /// only that this run did not observe one.
+    /// A mechanism under a prefix this engine does not read is not the
+    /// MECHANISM finding. Spec 4 declares scheduled and hook mechanisms, and
+    /// naming one is legitimate. It is not, on its own, verified either: the
+    /// obligation here states a gap so the one finding this test is about is
+    /// isolated from the DISPOSITION finding an unobserved, undeclared
+    /// obligation would also carry, which is a separate test's case.
     #[test]
-    fn a_mechanism_outside_this_engine_is_not_a_finding() {
+    fn a_mechanism_outside_this_engine_is_not_a_mechanism_finding() {
         let register = register(
-            "obligations:\n  OB-1:\n    statement: s\n\
+            "obligations:\n  OB-1:\n    statement: s\n    disposition: \
+             {gap: {owner: o}}\n\
              controls:\n  CT-1:\n    mechanism: scheduled:staleness-sweep\n    \
              discharges: [OB-1]\n",
         );
-        assert!(Projection::of(&register).findings("t.yml").is_empty());
+        let projection = Projection::of(&register, &crate::observation::Observations::empty());
+        let findings = projection.findings("t.yml");
+        assert!(findings.iter().all(|f| f.rule != MECHANISM), "{findings:?}");
+    }
+
+    /// The issue's own repro: a control naming a mechanism outside this
+    /// engine, with no committed observation, discharges nothing. Before this
+    /// test the register moved such an obligation to `verified` on the
+    /// strength of the declaration alone, with nothing read to say the
+    /// mechanism had ever run, and the obligation appeared nowhere in the
+    /// report by name (#934).
+    #[test]
+    fn an_external_mechanism_with_no_observation_is_not_verified() {
+        let register = register(
+            "obligations:\n  OB-EXT-BARE:\n    statement: s\n  \
+             OB-EXT-1:\n    statement: s\n\
+             controls:\n  CT-EXT-1:\n    mechanism: ci:nightly-suite\n    \
+             discharges: [OB-EXT-1]\n",
+        );
+        let observed = Projection::of(&register, &crate::observation::Observations::empty());
+        let ob_ext_1 = observed
+            .obligations
+            .iter()
+            .find(|o| o.id == "OB-EXT-1")
+            .expect("OB-EXT-1 is in the projection");
+        assert_ne!(ob_ext_1.disposition(), Disposition::Verified);
+        assert_eq!(ob_ext_1.unobserved, vec!["CT-EXT-1".to_string()]);
+        // The register names it, and not only a tally with no obligation
+        // attached to it.
+        assert!(
+            observed.render().contains("OB-EXT-1"),
+            "{}",
+            observed.render()
+        );
+
+        // A committed snapshot naming the control moves the same obligation to
+        // `verified`, with no edit to any declaration: the run-time-fact
+        // property [`Disposed::unobserved`] states for itself.
+        let seen = crate::observation::Observations::of(vec![crate::observation::Observation {
+            control: "CT-EXT-1".to_string(),
+            commit: "788885a9".to_string(),
+        }]);
+        let projection = Projection::of(&register, &seen);
+        let ob_ext_1 = projection
+            .obligations
+            .iter()
+            .find(|o| o.id == "OB-EXT-1")
+            .expect("OB-EXT-1 is in the projection");
+        assert_eq!(ob_ext_1.disposition(), Disposition::Verified);
+    }
+
+    /// The DISPOSITION finding's remediation names the control it tells the
+    /// author to fix. Before this test the join read `unimplemented` alone,
+    /// so an obligation claimed only by an unobserved (rather than an
+    /// unimplemented) control got a remediation naming no control at all.
+    #[test]
+    fn the_disposition_remediation_names_an_unobserved_control() {
+        let register = register(
+            "obligations:\n  OB-EXT-1:\n    statement: s\n\
+             controls:\n  CT-EXT-1:\n    mechanism: ci:nightly-suite\n    \
+             discharges: [OB-EXT-1]\n",
+        );
+        let projection = Projection::of(&register, &crate::observation::Observations::empty());
+        let findings = projection.findings("t.yml");
+        let disposition = findings
+            .iter()
+            .find(|f| f.rule == DISPOSITION)
+            .expect("the obligation carries no disposition, so DISPOSITION fires");
+        assert!(
+            disposition.remediation.contains("CT-EXT-1"),
+            "{}",
+            disposition.remediation
+        );
+        assert!(
+            disposition
+                .remediation
+                .contains(".headwater/observations.yml"),
+            "an unobserved control's remediation should name the file an author writes to \
+             fix it: {}",
+            disposition.remediation
+        );
+    }
+
+    /// The observation snapshot is unreadable, malformed, or names a control
+    /// nothing declares: three ways today's silence was a bug rather than a
+    /// feature, and [`OBSERVATION`] is what turns each into a finding a reader
+    /// can act on instead of a lower count with no reason attached.
+    #[test]
+    fn an_unreadable_snapshot_is_a_finding_and_not_a_silent_empty_read() {
+        let register = register(
+            "obligations:\n  OB-EXT-1:\n    statement: s\n\
+             controls:\n  CT-EXT-1:\n    mechanism: ci:nightly-suite\n    \
+             discharges: [OB-EXT-1]\n",
+        );
+        let malformed = crate::observation::Observations::malformed_for_test(
+            "the snapshot did not parse".to_string(),
+        );
+        let projection = Projection::of(&register, &malformed);
+        // Fail-safe direction: a snapshot this reader could not use discharges
+        // nothing, the same as an absent one, rather than being trusted.
+        let disposed = &projection.obligations[0];
+        assert_ne!(disposed.disposition(), Disposition::Verified);
+        let findings = projection.findings("t.yml");
+        let observation = findings
+            .iter()
+            .find(|f| f.rule == OBSERVATION)
+            .expect("an unreadable snapshot is a finding, not silence");
+        assert!(
+            observation.message.contains("the snapshot did not parse"),
+            "{}",
+            observation.message
+        );
+    }
+
+    /// An entry that names a control no control declaration in this taxonomy
+    /// carries is silent today: it never discharges anything, and nothing
+    /// says the entry is pointed at nothing.
+    #[test]
+    fn an_entry_naming_an_undeclared_control_is_a_finding() {
+        let register = register(
+            "obligations:\n  OB-EXT-1:\n    statement: s\n\
+             controls:\n  CT-EXT-1:\n    mechanism: ci:nightly-suite\n    \
+             discharges: [OB-EXT-1]\n",
+        );
+        let observations = crate::observation::Observations::of(vec![
+            crate::observation::Observation {
+                control: "CT-EXT-1".to_string(),
+                commit: "788885a9".to_string(),
+            },
+            crate::observation::Observation {
+                control: "CT-NO-SUCH-CONTROL".to_string(),
+                commit: "788885a9".to_string(),
+            },
+        ]);
+        let projection = Projection::of(&register, &observations);
+        let findings = projection.findings("t.yml");
+        let observation = findings
+            .iter()
+            .find(|f| f.rule == OBSERVATION)
+            .expect("an entry naming an undeclared control is a finding");
+        assert!(
+            observation.message.contains("CT-NO-SUCH-CONTROL"),
+            "{}",
+            observation.message
+        );
+        // The declared control's own entry still discharges: one bad entry
+        // does not void a good one.
+        let disposed = &projection.obligations[0];
+        assert_eq!(disposed.disposition(), Disposition::Verified);
     }
 
     /// A promotion record holds exactly one of spec 4's four cases, and an
@@ -1484,7 +1826,7 @@ controls:
              controls:\n  CT-1:\n    mechanism: check:coverage.document_unchecked\n    \
              discharges: [OB-1]\n",
         );
-        let mut projection = Projection::of(&register);
+        let mut projection = Projection::of(&register, &crate::observation::Observations::empty());
         projection.escaped_from(&register, &Inventory::default());
         assert_eq!(projection.obligations[0].escaped, 0);
         assert_eq!(

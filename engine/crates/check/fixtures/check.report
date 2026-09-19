@@ -109,10 +109,10 @@ rules, and for each the scope that binds it
   adoption.task.expired
     taxonomy scope, the resolved taxonomy, and no document
 register
-  27 obligations: 22 verified, 2 gap, 1 unverifiable, 2 with no disposition
+  27 obligations: 21 verified, 2 gap, 1 unverifiable, 3 with no disposition
      10 high, 9 verified
       9 medium, 7 verified
-      8 low, 6 verified
+      8 low, 5 verified
   OB-FIX-7 verified, 1 finding escaped under it
   OB-FIX-8 verified, 1 finding escaped under it
   OB-FIX-14 gap, owner the fixture tree, target a reader feedback loop, which spec 4 lists as usually absent
@@ -120,6 +120,7 @@ register
   OB-FIX-16 with no disposition
   OB-FIX-17 verified, and it states a gap as well, which is two dispositions
   OB-FIX-18 with no disposition, and CT-FIX-15 claims to discharge it under a mechanism this engine does not implement
+  OB-FIX-19 with no disposition, and CT-FIX-16 claims to discharge it under a mechanism outside this engine that no committed observation names
   OB-FIX-20 gap, owner the fixture tree, and no target, and CT-FIX-17 claims to discharge it under a mechanism this engine does not implement, which is two dispositions
   24 controls
      23 posture advisory
@@ -148,9 +149,9 @@ register
   lifecycle.deletion.not_permitted reaches no obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
   adoption.task.expired reaches no obligation, so it names none
-57 findings
+58 findings
      38 ✗ error
-     19 ▲ warn
+     20 ▲ warn
 
 instances
   facet.required.missing check/evaluations/alpha.md
@@ -948,6 +949,9 @@ engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
 engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
   obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-18 carries no disposition: CT-FIX-15 names a mechanism this engine does not implement, so nothing discharges it, and it states neither a gap nor an acceptance
   fix: name a mechanism this engine implements on CT-FIX-15, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three
+engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
+  obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-19 carries no disposition: CT-FIX-16 names a mechanism outside this engine that no committed observation names, so nothing discharges it, and it states neither a gap nor an acceptance
+  fix: add an entry for CT-FIX-16 to `.headwater/observations.yml` naming the commit it ran against, e.g. `CT-FIX-16: {commit: <sha>}`, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three
 engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
   obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-20 carries two dispositions: CT-FIX-17 claims to discharge it, and it also states one for itself
   fix: name a mechanism this engine implements on CT-FIX-17, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three

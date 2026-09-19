@@ -1,6 +1,6 @@
 ## `headwater check`
 
-55 findings, 37 of them errors across 26 of 28 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
+56 findings, 37 of them errors across 26 of 28 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
 
 **Scoped to a change.** This run was told what one change carries, so the checks that read the version a document stood at before it could run at all. 10 documents were named: 2 that the change adds, 1 with a prior version this run read, and 3 whose prior version did not read, so every check that needed one was skipped over it. The findings above are over the whole corpus, as they are in a run that names no change.
 
@@ -86,6 +86,7 @@
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-17 carries two dispositions: CT-FIX-14 discharges it, and it also states one for itself |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-18 carries no disposition: CT-FIX-15 names a mechanism this engine does not implement, so nothing discharges it, and it states neither a gap nor an acceptance |
+| warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-19 carries no disposition: CT-FIX-16 names a mechanism outside this engine that no committed observation names, so nothing discharges it, and it states neither a gap nor an acceptance |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-20 carries two dispositions: CT-FIX-17 claims to discharge it, and it also states one for itself |
 
 <details><summary>3 not reported: 1 migration-pending, 2 suppressed</summary>
@@ -98,4 +99,4 @@
 
 </details>
 
-30 documents in the read set, and 6 barriers that no gate carries across a merge. 27 obligations, 22 verified.
+30 documents in the read set, and 6 barriers that no gate carries across a merge. 27 obligations, 21 verified.
