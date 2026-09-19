@@ -1,4 +1,4 @@
-15 schemes
+16 schemes
 
 decision_id
   pattern    {namespace}-DR-{seq:04d}
@@ -149,3 +149,13 @@ tutorial_id
   admits     true
   sequence   -
   refuses    false
+
+verification_id
+  pattern    {namespace}-VER-{seq:04d}
+  namespace  HW
+  render     HW-VER-0000
+  needs      seq:4
+  mint       HW-VER-0042
+  admits     true
+  sequence   42
+  refuses    true

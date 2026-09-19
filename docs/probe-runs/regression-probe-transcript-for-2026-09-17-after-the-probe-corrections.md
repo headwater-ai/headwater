@@ -1,7 +1,7 @@
 ---
 id: HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections
-status: current
-status_since: 2026-09-17
+status: deprecated
+status_since: 2026-09-20
 summary: "Eight regression sessions ran live on claude-sonnet-5 against the read set the three corrected probes moved, which is the first graded run of those corrections rather than a re-grade of an older recording."
 last_verified: 2026-09-17
 tier: regression

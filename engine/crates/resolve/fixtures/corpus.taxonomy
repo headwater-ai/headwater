@@ -317,6 +317,17 @@ kinds:
     language: ste_house
     lifecycle: standard
     purpose: requirement
+    relations:
+      expect:
+        - id: acceptance-criterion-proven
+          relation: proven_by
+          to_kind: verification
+          when:
+            status: current
+          within: 90d
+          since: state_entered
+          severity: warn
+          rationale: "an acceptance criterion that no verification reaches is a claim nobody can settle"
     sections:
       require:
         - "Fit criterion"
@@ -558,6 +569,20 @@ kinds:
         - "The words this teaches"
         - "Where to go next"
     voice: declarative
+  verification:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: verification_id
+    is_a: governed_document
+    lifecycle: standard
+    purpose: evidence
+    sections:
+      require:
+        - Approach
+        - "What this does not cover"
+    voice: declarative
 relations:
   supersedes:
     family: succession
@@ -654,6 +679,16 @@ relations:
     to:
       - governed_document
       - code_path
+  proven_by:
+    cardinality: many
+    created_by: scaffold
+    family: evidence
+    from:
+      - acceptance_criterion
+    inverse: proves
+    reciprocal: required
+    to:
+      - verification
   records:
     cardinality: many
     created_by: generator
@@ -763,6 +798,12 @@ shelves:
     kind: tutorial
     path: "docs/tutorials/**"
     title: Tutorials
+  verifications:
+    homogeneous: true
+    kind: verification
+    layout: "{seq:04d}-{slug}.md"
+    path: "docs/verifications/**"
+    title: Verifications
 identifier_schemes:
   decision_id:
     pattern: "{namespace}-DR-{seq:04d}"
@@ -824,6 +865,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "{namespace}-TUT-{slug}"
+  verification_id:
+    allocation: reconcile-first
+    namespace: HW
+    pattern: "{namespace}-VER-{seq:04d}"
 core:
   requires:
     - facet_role: state
@@ -846,6 +891,7 @@ projections:
       - evaluations
       - requirements
       - acceptance_criteria
+      - verifications
       - probes
       - probe_results
       - probe_runs

@@ -15,8 +15,8 @@ provenance:
 relations:
   verifies:
     - HW-REQ-0002
-  traces_to:
-    - engine/crates/check/src/sections.rs
+  proven_by:
+    - HW-VER-0001
 ---
 
 # Every required section of every governed document has a heading

@@ -1110,6 +1110,10 @@ docs/tutorials/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/tutorials/your-first-governed-corpus.md
   typed: tutorial
+docs/verifications/0001-the-section-heading-rule-has-a-case-table-and-the-workspace-suite-runs-it-on-every-change.md
+  typed: verification
+docs/verifications/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/w3id/.htaccess
   not a document: not a Markdown file
 docs/w3id/README.md

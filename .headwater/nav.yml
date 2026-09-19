@@ -407,3 +407,6 @@ nav:
   - "Tutorials":
       - "Tutorials": "tutorials/README.md"
       - "Your first governed corpus": "tutorials/your-first-governed-corpus.md"
+  - "Verifications":
+      - "Verifications": "verifications/README.md"
+      - "The section-heading rule has a case table, and the workspace suite runs it on every change": "verifications/0001-the-section-heading-rule-has-a-case-table-and-the-workspace-suite-runs-it-on-every-change.md"
