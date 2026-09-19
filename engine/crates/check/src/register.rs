@@ -686,7 +686,10 @@ impl Projection {
             // control names it at all, or every control that does names a
             // mechanism this engine cannot run or has not seen run.
             let nothing = match obligation.claimed_only() {
-                true => format!("{}, so nothing discharges it", obligation.unresolved_reason()),
+                true => format!(
+                    "{}, so nothing discharges it",
+                    obligation.unresolved_reason()
+                ),
                 false => "no control discharges it".to_string(),
             };
             let message = match obligation.disposition() {

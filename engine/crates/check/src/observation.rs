@@ -130,10 +130,8 @@ mod tests {
 
     #[test]
     fn no_file_is_no_observation() {
-        let dir = std::env::temp_dir().join(format!(
-            "hw-observation-test-{}-empty",
-            std::process::id()
-        ));
+        let dir =
+            std::env::temp_dir().join(format!("hw-observation-test-{}-empty", std::process::id()));
         let _ = std::fs::create_dir_all(&dir);
         let observations = Observations::at(&dir);
         assert!(observations.entries().is_empty());

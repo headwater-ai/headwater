@@ -919,8 +919,10 @@ fn a_relation_that_requires_one_end_prints_one_block_and_one_path() {
 fn a_control_that_names_a_sweep_discharges_nothing_with_no_observation() {
     let root = taxonomy_map();
     let register = Register::read(&root).expect("the register reads");
-    let projection =
-        headwater_check::register::Projection::of(&register, &headwater_check::Observations::empty());
+    let projection = headwater_check::register::Projection::of(
+        &register,
+        &headwater_check::Observations::empty(),
+    );
     let disposed = projection
         .obligations
         .iter()
