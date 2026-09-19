@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 493,
-      "carried": 493,
+      "in the graph": 496,
+      "carried": 496,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 703,
-      "carried": 703,
+      "in the graph": 707,
+      "carried": 707,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1229,8 +1229,8 @@
           "id": "HW-DR-0042",
           "status": "current",
           "status_since": "2026-08-30",
-          "summary": "\"One screen\" is retired as a claim about a terminal and replaced by a claim about content: the first screen carries one line per entry, and the ceiling that follows from it is 60 lines.",
-          "last_verified": "2026-08-30",
+          "summary": "\"One screen\" is retired as a claim about a terminal and replaced by a claim about content: the first screen carries one line per entry, and the ceiling that follows from it is 64 lines.",
+          "last_verified": "2026-09-18",
           "title": "Q42 — What \"one screen\" means for the first help screen",
           "provenance": {
             "warrant": "accepted",
@@ -3027,6 +3027,35 @@
               "engine/crates/cli/src/lib.rs",
               "engine/crates/cli/src/main.rs",
               "engine/crates/scaffold/src/reading.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/interfaces/headwater-change.md",
+        "kind": "interface_contract",
+        "id": "HW-IFACE-headwater-change",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-IFACE-headwater-change",
+          "status": "draft",
+          "status_since": "2026-09-18",
+          "summary": "The one verb that shells out to git, and the manifest it writes for headwater check --change to read.",
+          "last_verified": "2026-09-18",
+          "title": "headwater change",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              "engine/crates/cli/src/lib.rs",
+              "engine/crates/cli/src/main.rs",
+              "engine/crates/vcs/src/lib.rs",
+              ".githooks/change-manifest"
             ]
           }
         }
@@ -9909,7 +9938,7 @@
           "id": "HW-SPEC-check-layer",
           "status": "current",
           "status_since": "2026-08-02",
-          "last_verified": "2026-08-14",
+          "last_verified": "2026-09-18",
           "summary": "What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.",
           "doc_type": "design_spec",
           "sequence": "12",
@@ -10176,6 +10205,11 @@
       {
         "anchor_kind": "code_path",
         "id": ".claude/skills/hw-run-policy/SKILL.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".githooks/change-manifest",
         "resolver": "source-tree"
       },
       {
@@ -10532,6 +10566,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/sweep/src/lib.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/vcs/src/lib.rs",
         "resolver": "source-tree"
       },
       {
@@ -13708,6 +13747,50 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/scaffold/src/reading.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-change.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-change.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-change.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/vcs/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-change.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".githooks/change-manifest",
           "resolver": "source-tree"
         }
       },

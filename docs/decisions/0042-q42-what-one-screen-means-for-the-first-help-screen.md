@@ -2,8 +2,8 @@
 id: HW-DR-0042
 status: current
 status_since: 2026-08-30
-summary: "\"One screen\" is retired as a claim about a terminal and replaced by a claim about content: the first screen carries one line per entry, and the ceiling that follows from it is 60 lines."
-last_verified: 2026-08-30
+summary: "\"One screen\" is retired as a claim about a terminal and replaced by a claim about content: the first screen carries one line per entry, and the ceiling that follows from it is 64 lines."
+last_verified: 2026-09-18
 title: "Q42 — What \"one screen\" means for the first help screen"
 provenance:
   warrant: accepted
@@ -38,7 +38,7 @@ relations:
 
 > The first screen carries one line per entry. One line per verb, one line per global flag, a two-line worked example, a name line, a usage line and a closing pointer. Nothing on the first screen is a paragraph. A reader of the first screen is choosing a verb, and the prose that explains a flag belongs on the page of the verb that will use it.
 
-**The bar is testable in two forms, and this engine holds both.** The bar itself is the entry: every global flag occupies exactly one line of the first screen. The consequence is the height: the first screen is at most 60 lines. `every_global_flag_is_one_line_on_the_first_screen` in `engine/crates/cli/tests/help.rs` holds the first, and `the_first_screen_holds_the_height_the_ruling_names` holds the second.
+**The bar is testable in two forms, and this engine holds both.** The bar itself is the entry: every global flag occupies exactly one line of the first screen. The consequence is the height: the first screen is at most 64 lines, revised from 60 on 2026-09-18 for the reason the Consequences section states. `every_global_flag_is_one_line_on_the_first_screen` in `engine/crates/cli/tests/help.rs` holds the first, and `the_first_screen_holds_the_height_the_ruling_names` holds the second.
 
 **The entry is the bar and the height is only its consequence, because the entry is what catches a flag added later.** A global flag with no entry in the table fails the case on the argument identifier that `clap` carries. An entry whose summary is too long to fit the column folds onto a second line and fails the case on the count. A height alone would pass both.
 
@@ -49,6 +49,8 @@ relations:
 ## Consequences
 
 **The measured screen is 56 lines and the ceiling is 60.** The block of five global flags went from 25 lines to five, so the screen went from 76 lines to 56. The widest line is 79 columns. `COLUMNS=120 headwater --wide --help` is 55 lines at a widest of 95. The four lines of headroom absorb a sixth verb group of two verbs, or four more verbs in the groups that exist. It is a ceiling and not a pin. It goes red when the screen stops being a list, and not when a verb arrives.
+
+**The four lines of headroom were spent by 2026-09-18, and the ceiling moved to 64.** [#929](https://github.com/headwater-ai/headwater/issues/929) added the twenty-third verb, `change`, one line under an existing group heading. `headwater_verbs::VERBS` held twenty-two verbs by then, four more than the eighteen this record measured, so the headroom this record priced was already spent on growth this record never named. The new verb is one line, under a group that already existed, and it added no paragraph and no second line to any entry. That is a verb arriving, on the terms the paragraph above draws the line by, and not the screen stopping being a list. The ceiling moves to 64, three lines of fresh headroom rather than four, because the number this record can defend is a measurement of the tree in front of it rather than a round figure chosen to last.
 
 **The summary is declared beside the description, at the flag.** `GLOBALS` in `engine/crates/cli/src/lib.rs` carries one entry per global flag, and each entry holds the `clap` identifier, the name, the one-line summary and the whole description. [HW-DR-0033](0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) rules that a flag belongs to the verb that reads it. It rules that the description of a flag is written at the declaration of that flag. A global flag is declared in that file, so its summary is declared there too. It is not declared on `headwater_verbs::Verb`, which is where the same pair is declared for a verb.
 

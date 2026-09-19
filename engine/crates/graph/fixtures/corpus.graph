@@ -53,6 +53,8 @@ anchors
     cited by HW-SPEC-ai-integration
   code_path `.claude/skills/hw-run-policy/SKILL.md` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
+  code_path `.githooks/change-manifest` via source-tree
+    cited by HW-IFACE-headwater-change
   code_path `.githooks/commit-msg` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `.githooks/merge-regenerate` via source-tree
@@ -152,6 +154,8 @@ anchors
   code_path `engine/crates/cli/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-capture
   code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-change
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-completions
   code_path `engine/crates/cli/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-conformance
@@ -191,6 +195,8 @@ anchors
     cited by HW-DR-0045
   code_path `engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-capture
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-change
   code_path `engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-check
   code_path `engine/crates/cli/src/main.rs` via source-tree
@@ -341,6 +347,8 @@ anchors
     cited by HW-DR-0024
   code_path `engine/crates/sweep/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-sweep
+  code_path `engine/crates/vcs/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-change
   code_path `engine/crates/verbs/src/lib.rs` via source-tree
     cited by HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary
   code_path `engine/crates/yaml/src/json.rs` via source-tree

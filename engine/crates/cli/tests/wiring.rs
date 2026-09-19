@@ -147,6 +147,44 @@ fn copy(from: &Path, to: &Path) {
     }
 }
 
+/// One git command, run in `dir` and held to success.
+///
+/// `headwater change` is the one verb of this binary that runs git, and this
+/// helper is not that: it is how the two cases below build the commit history
+/// they hand the verb, the way `.githooks/fixtures.sh` builds one for the
+/// commit gate. Nothing under test here shells out; the process this file
+/// starts under `Root::run` is the only one that does.
+fn git(dir: &Path, arguments: &[&str]) -> String {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(dir)
+        .args(arguments)
+        .output()
+        .expect("git runs");
+    assert!(
+        output.status.success(),
+        "git {arguments:?} failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8_lossy(&output.stdout).trim().to_string()
+}
+
+/// A directory outside `root`, for the manifest `headwater change` writes.
+///
+/// The producer names an added file for everything the working tree holds
+/// that the index does not, so an out-directory *inside* the corpus it
+/// describes would be named as a document the change adds. The two cases
+/// below write here for the reason `.githooks/fixtures.sh` writes to a second
+/// `mktemp -d`, beside the one it copies the corpus into.
+fn out_dir(label: &str) -> PathBuf {
+    let at = std::env::temp_dir().join(format!(
+        "headwater-cli-wiring-change-out-{}-{label}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&at);
+    at
+}
+
 /// `check --change` reaches the verdict, and not only the parser.
 ///
 /// The failure this holds is silent by construction. A run that carries no
@@ -206,6 +244,173 @@ fn a_change_the_flag_named_reaches_the_verdict_and_not_only_the_parser() {
         scoped.out != unscoped.out,
         "a run scoped to a change reports something a full-corpus run does not"
     );
+
+    // Done-when item 2 of #929: the verb produces the same shape of manifest
+    // that was hand-written above, over a real commit history rather than a
+    // literal string, with a known add *and* a known modify in one change —
+    // so a wrong `added` line or a dropped `prior` line fails this case. The
+    // hand-written manifest above stays exactly as it was: it is what proves
+    // the grammar is stable independent of the producer, and this is the
+    // producer.
+    let target = "docs/decisions/0001-the-warrant-a-person-set.md";
+    let accepted = std::fs::read_to_string(root.path(target)).expect("the accepted text reads");
+    std::fs::copy(&prior, root.path(target)).expect("the asserted text lands as the base version");
+    git(&root.at, &["init", "-q"]);
+    git(&root.at, &["config", "user.email", "fixtures@invalid"]);
+    git(&root.at, &["config", "user.name", "fixtures"]);
+    git(&root.at, &["add", "-A"]);
+    git(&root.at, &["commit", "-q", "-m", "base"]);
+    let base = git(&root.at, &["rev-parse", "HEAD"]);
+    // Back to the accepted version, which is the modify, plus one new
+    // document the base commit never held, which is the add.
+    std::fs::write(root.path(target), &accepted).expect("the accepted text returns");
+    std::fs::write(
+        root.path("docs/decisions/0002-added-by-the-verb-case.md"),
+        "the change this verb describes adds this file. Its own content plays no further part.\n",
+    )
+    .expect("the added file writes");
+
+    let out = out_dir("known-add-and-modify");
+    let produced = root.run(&["change", &base, &out.display().to_string()]);
+    assert_eq!(produced.code, Some(0), "{}{}", produced.out, produced.err);
+    let produced_manifest = out.join("manifest");
+    assert_eq!(
+        produced.out.trim(),
+        produced_manifest.display().to_string(),
+        "the verb prints the manifest's own path"
+    );
+
+    // Held against a hand-recorded manifest, field by field. The prior file's
+    // own name is `produce`'s to choose, so this reads it back rather than
+    // assuming `prior/1`, and confirms it holds the bytes that stood at
+    // `base` — the check a wrong `added` line or a dropped `prior` line fails.
+    let manifest_text =
+        std::fs::read_to_string(&produced_manifest).expect("the produced manifest reads");
+    let mut lines: Vec<&str> = manifest_text.lines().collect();
+    lines.sort_unstable();
+    assert_eq!(
+        lines.len(),
+        3,
+        "one header line, one `added` line and one `prior` line:\n{manifest_text}"
+    );
+    assert_eq!(
+        lines[0],
+        "added\tdocs/decisions/0002-added-by-the-verb-case.md"
+    );
+    assert_eq!(lines[1], "headwater change 1");
+    let prior_line = lines[2];
+    let mut fields = prior_line.split('\t');
+    assert_eq!(fields.next(), Some("prior"));
+    assert_eq!(fields.next(), Some(target));
+    let prior_file = fields.next().expect("a third field");
+    assert_eq!(fields.next(), None, "a fourth field: {prior_line}");
+    assert_eq!(
+        std::fs::read_to_string(prior_file).expect("the prior file reads"),
+        std::fs::read_to_string(&prior).expect("the fixture's asserted text reads"),
+        "the prior file the verb wrote holds the asserted bytes, not the accepted ones"
+    );
+
+    // And handed to `check --change`, it reaches the same verdict the
+    // hand-written manifest reached above — the tie the adjudication note
+    // asks for, so this case is not only about the manifest's own bytes.
+    let via_verb = root.run(&[
+        "check",
+        "--no-cache",
+        "--now",
+        "2026-08-01",
+        "--change",
+        &produced_manifest.display().to_string(),
+    ]);
+    assert_eq!(via_verb.code, Some(0), "{}{}", via_verb.out, via_verb.err);
+    assert!(
+        via_verb.says("1 promoted from `asserted` to `accepted`"),
+        "the manifest the verb produced reaches the same verdict as the hand-written one:\n{}",
+        via_verb.out
+    );
+
+    let _ = std::fs::remove_dir_all(&out);
+}
+
+/// The decisive fixture of #929: a corpus that carries no `.githooks/` at
+/// all still reaches `warrant.promoted` in the same run that would otherwise
+/// report it skipped, because the verb alone — not a script this repository
+/// happens to ship — produces the manifest.
+///
+/// Everything else Done-when asks for (the grammar, the hook's own header)
+/// can be right while an adopter is still stuck, because the actual defect
+/// #929 exists to close is that only *this* repository's shell script could
+/// ever produce a manifest. So the assertion that matters is not "the verb
+/// runs here", which a case run from inside this checkout would pass even
+/// if the verb secretly depended on something only this repository carries.
+/// It is that the fixture root — a fresh directory this test builds, holding
+/// none of this repository's own tooling — has no `.githooks/` to reach in
+/// the first place, and the rule still evaluates.
+#[test]
+fn a_shell_script_free_corpus_reaches_the_rule_through_the_verb_alone() {
+    let root = Root::over("change", "decisive-fixture-no-githooks");
+    assert!(
+        !root.path(".githooks").exists(),
+        "the decisive fixture carries no shell script of any kind: {}",
+        root.path(".githooks").display()
+    );
+
+    let target = "docs/decisions/0001-the-warrant-a-person-set.md";
+    let prior = fixtures().join("change-prior/0001-the-warrant-a-person-set.md");
+    let accepted = std::fs::read_to_string(root.path(target)).expect("the accepted text reads");
+    std::fs::copy(&prior, root.path(target)).expect("the asserted text lands as the base version");
+    git(&root.at, &["init", "-q"]);
+    git(&root.at, &["config", "user.email", "fixtures@invalid"]);
+    git(&root.at, &["config", "user.name", "fixtures"]);
+    git(&root.at, &["add", "-A"]);
+    git(&root.at, &["commit", "-q", "-m", "base"]);
+    let base = git(&root.at, &["rev-parse", "HEAD"]);
+    std::fs::write(root.path(target), &accepted).expect("the accepted text returns");
+
+    // Before: no manifest of any kind, and still no `.githooks/` in reach.
+    // The rule reports the instance as skipped, with the reason named.
+    let unscoped = root.run(&["check", "--no-cache", "--now", "2026-08-01"]);
+    assert_eq!(unscoped.code, Some(0), "{}{}", unscoped.out, unscoped.err);
+    let before = unscoped.out.matches("change-scoped-only").count();
+    assert!(
+        before >= 1,
+        "the rule reports at least one skip with no change described:\n{}",
+        unscoped.out
+    );
+
+    // The verb, alone, over a corpus that never had a hook to run. This is
+    // the whole of the producer step an adopter with no shell script takes.
+    let out = out_dir("decisive-fixture");
+    let produced = root.run(&["change", &base, &out.display().to_string()]);
+    assert_eq!(produced.code, Some(0), "{}{}", produced.out, produced.err);
+    let manifest = out.join("manifest");
+
+    let scoped = root.run(&[
+        "check",
+        "--no-cache",
+        "--now",
+        "2026-08-01",
+        "--change",
+        &manifest.display().to_string(),
+    ]);
+    assert_eq!(scoped.code, Some(0), "{}{}", scoped.out, scoped.err);
+    let after = scoped.out.matches("change-scoped-only").count();
+
+    // The decisive assertion: the skip count falls, and the promotion this
+    // corpus carries is evaluated rather than skipped, with the manifest the
+    // verb wrote and nothing else in reach.
+    assert!(
+        after < before,
+        "the change-scoped-only count did not fall: {before} before, {after} after\nunscoped:\n{}\nscoped:\n{}",
+        unscoped.out,
+        scoped.out
+    );
+    assert!(
+        scoped.says("1 promoted from `asserted` to `accepted`"),
+        "the promotion this corpus carries is evaluated, not skipped:\n{}",
+        scoped.out
+    );
+
+    let _ = std::fs::remove_dir_all(&out);
 }
 
 /// `probe grade` reads `Plan::gradable` and never the selection beside it.

@@ -153,6 +153,13 @@ pub const VERBS: &[Verb] = &[
         words: &[],
     },
     Verb {
+        name: "change",
+        group: "Checking a corpus",
+        summary: "write the manifest that `check --change` reads",
+        description: "Write the manifest that `check --change` reads, anchored at a base revision and the working tree in front of it. It is the git plumbing spec 12 rules out of the check-evaluation path, carried into a verb rather than left to a hook a corpus this repository does not own could never reach. It runs `git diff`, `git show` and `git ls-files` against the base revision, and nothing else in this binary runs a version control command. The manifest and the prior versions it names are written under the directory given, and the manifest's own path is printed on standard output. It refuses a base revision this clone does not hold, and a path a manifest line cannot carry without corrupting it.",
+        words: &[],
+    },
+    Verb {
         name: "gate",
         group: "Checking a corpus",
         summary: "hold an earlier run's read set against the tree in front of it",

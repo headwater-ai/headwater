@@ -24,6 +24,7 @@ members = [
     "crates/resolve",
     "crates/scaffold",
     "crates/sweep",
+    "crates/vcs",
     "crates/verbs",
     "crates/yaml",
 ]
@@ -140,6 +141,7 @@ headwater-ref = { path = "crates/ref", version = "0.2.0" }
 headwater-resolve = { path = "crates/resolve", version = "0.2.0" }
 headwater-scaffold = { path = "crates/scaffold", version = "0.2.0" }
 headwater-sweep = { path = "crates/sweep", version = "0.2.0" }
+headwater-vcs = { path = "crates/vcs", version = "0.2.0" }
 headwater-verbs = { path = "crates/verbs", version = "0.2.0" }
 headwater-yaml = { path = "crates/yaml", version = "0.2.0" }
 
