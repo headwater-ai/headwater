@@ -266,8 +266,7 @@ REGRESSION_CASES = [
      'git clone https://github.com/headwater-ai/headwater.git\n'
      'cd headwater\n'
      'git checkout v0.1.2\n'
-     'cargo build --release -p headwater-cli --manifest-path '
-     'engine/Cargo.toml --locked',
+     'cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked',
      []),
     ('step 1 scaffolding is not undeclared',
      'mkdir -p ~/headwater-tutorial/docs/decisions\n'
