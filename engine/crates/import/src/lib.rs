@@ -79,14 +79,17 @@
 //! record, and putting it in the snapshot instead would be the self-certifying
 //! move that the pin exists to refuse.
 //!
-//! # The engine never fetches
+//! # This crate never fetches
 //!
 //! [Spec 0](../../../../docs/spec/00-vision-and-scope.md#non-negotiables)
-//! forbids a network dependency at check time and no crate of this engine
-//! depends on the network. This crate takes the path of a directory that the
-//! caller already fetched and committed, on the shape `taxonomy vendor` set. A
-//! verb that takes a path opens no socket, and there is no code path here that
-//! could.
+//! forbids a network dependency at check time and no crate the checking loop
+//! reaches depends on the network. This crate takes the path of a directory
+//! that the caller already fetched and committed, on the shape `taxonomy
+//! vendor` set. A verb that takes a path opens no socket here, and there is no
+//! code path in this crate that could.
+//! [HW-DR-0075](../../../../docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)
+//! permits `vendor` to take a location too, confined to a crate this one never
+//! links.
 
 pub mod anchors;
 pub mod snapshot;

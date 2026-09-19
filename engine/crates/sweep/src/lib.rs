@@ -16,10 +16,11 @@
 //! confirm about it.
 //!
 //! The middle part is the only one that needs a model, and it is not in this
-//! binary. No code here opens a socket, and nothing in the engine does. So the
-//! build never depends on a model being reachable: an unreachable model means
-//! nobody wrote a return file, and a verb with no file to read says so and
-//! stops. That is what makes the constraint structural rather than a policy.
+//! binary. No code here opens a socket, and no crate the checking loop reaches
+//! does either. So the build never depends on a model being reachable: an
+//! unreachable model means nobody wrote a return file, and a verb with no file
+//! to read says so and stops. That is what makes the constraint structural
+//! rather than a policy.
 //!
 //! # What a sweep's output is
 //!

@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 496,
-      "carried": 496,
+      "in the graph": 497,
+      "carried": 497,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 707,
-      "carried": 707,
+      "in the graph": 708,
+      "carried": 708,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2044,8 +2044,8 @@
           "id": "HW-DR-0072",
           "status": "current",
           "status_since": "2026-09-17",
-          "summary": "An adopter reaches the whole governed loop through the binary. Two integration points sit outside it and the list is closed against growth. Git plumbing meets the necessity test, a network fetch is held open, and the change manifest fails it and is a defect.",
-          "last_verified": "2026-09-17",
+          "summary": "An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test; a network fetch left the list under HW-DR-0075; and the change manifest fails the test and is a defect.",
+          "last_verified": "2026-09-19",
           "title": "The binary is the only interface an adopter must run, and every integration point outside it is declared",
           "provenance": {
             "warrant": "accepted",
@@ -2114,6 +2114,32 @@
             "warrant": "proposed",
             "agency": "agent",
             "drafted_by": "claude-fable-5-1",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md",
+        "kind": "decision",
+        "id": "HW-DR-0075",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0075",
+          "status": "draft",
+          "status_since": "2026-09-19",
+          "summary": "`headwater taxonomy vendor` may accept a location, ruled yes with a boundary: the fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it.",
+          "last_verified": "2026-09-19",
+          "title": "The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links",
+          "relations": {
+            "constrains": [
+              "HW-DR-0072"
+            ]
+          },
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
             "activity": "measure+draft",
             "evidence_basis": "evidenced"
           }
@@ -9918,7 +9944,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 74 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 75 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
@@ -12395,6 +12421,17 @@
           "id": "HW-OBL-0105",
           "path": "docs/obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md",
           "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0072",
+          "path": "docs/decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md",
+          "kind": "decision"
         }
       },
       {

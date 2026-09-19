@@ -76,6 +76,7 @@ nav:
       - "A paragraph limit counts sentences under the language rule and never words": "decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md"
       - "The matched purposes take turns at a route budget, and each pointer states what reached it": "decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md"
       - "A route offers a document and never a heading inside it": "decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md"
+      - "The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links": "decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md"
       - "The binary is the only interface an adopter must run, and every integration point outside it is declared": "decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"

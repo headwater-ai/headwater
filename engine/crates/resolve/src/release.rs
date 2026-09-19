@@ -10,15 +10,18 @@
 //! is the digest half of that sentence, and the paragraphs below say what the
 //! digest proves and what it does not.
 //!
-//! # The engine never fetches, and that is a structural guarantee
+//! # This crate never fetches, and that is a structural guarantee
 //!
 //! [Spec 0](../../../../docs/spec/00-vision-and-scope.md#non-negotiables)
-//! forbids a network dependency at check time, and no crate of this engine
-//! depends on the network. `headwater taxonomy vendor` takes the path of a
-//! directory that the caller already fetched, by whatever moves a directory in
-//! the organization it runs in. So the guarantee is a property of the verb
-//! rather than a rule anybody polices: a verb that takes a path opens no socket,
-//! and there is no code path here that could.
+//! forbids a network dependency at check time, and no crate the checking loop
+//! reaches depends on the network. `headwater taxonomy vendor` takes the path of
+//! a directory that the caller already fetched, by whatever moves a directory in
+//! the organization it runs in. So the guarantee is a property of this crate
+//! rather than a rule anybody polices: a verb that takes a path opens no socket
+//! here, and there is no code path in this crate that could.
+//! [HW-DR-0075](../../../../docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)
+//! rules that `vendor` may accept a location too, confined to a crate this one
+//! stays free of.
 //!
 //! # What the digest proves, and what it does not
 //!

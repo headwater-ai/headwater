@@ -1119,8 +1119,9 @@ pub enum TaxonomyWord {
     Vendor {
         #[arg(
             value_name = "dir",
-            help = "the directory of an artifact somebody already fetched. This engine opens no \
-                    socket, so the verb takes a path and never a location"
+            help = "the directory of an artifact somebody already fetched. This verb opens no \
+                    socket today, so it takes a path here and never a location (HW-DR-0075 rules \
+                    that a location may reach it too, from a crate this one never links)"
         )]
         path: Option<String>,
         #[arg(
@@ -1135,15 +1136,15 @@ pub enum TaxonomyWord {
     Diff {
         #[arg(
             value_name = "dir",
-            help = "the directory of an artifact somebody already fetched. This engine opens no \
-                    socket, so the verb takes a path and never a location"
+            help = "the directory of an artifact somebody already fetched. This verb opens no \
+                    socket, so it takes a path and never a location"
         )]
         path: Option<String>,
         #[arg(
             long,
             value_name = "version",
             help = "the version the artifact is expected to be, written as a version or as a \
-                    range: `4.0.0`, or `>=4 <5` with the quoting your shell needs. This engine \
+                    range: `4.0.0`, or `>=4 <5` with the quoting your shell needs. This verb \
                     fetches nothing, so the directory decides which artifact is compared and this \
                     flag holds it to what the caller meant. It is read by the one range reader \
                     the engine has, which is what reads `requires_engine`"
@@ -1160,8 +1161,8 @@ pub enum TaxonomyWord {
     Migrate {
         #[arg(
             value_name = "dir",
-            help = "the directory of an artifact somebody already fetched. This engine opens no \
-                    socket, so the verb takes a path and never a location"
+            help = "the directory of an artifact somebody already fetched. This verb opens no \
+                    socket, so it takes a path and never a location"
         )]
         path: Option<String>,
         #[arg(

@@ -376,14 +376,14 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             Some(TaxonomyWord::Vendor { path, expect }) => match path {
                 None => fail(
                     "`taxonomy vendor` takes the path of a package somebody already fetched. \
-                     This engine opens no socket, so it checks a directory it is handed",
+                     This verb opens no socket today, so it checks a directory it is handed",
                 ),
                 Some(path) => vendor(root, Path::new(&path), expect.as_deref()),
             },
             Some(TaxonomyWord::Diff { path, to, now }) => match path {
                 None => fail(
                     "`taxonomy diff` takes the path of a published artifact somebody already \
-                     fetched. This engine opens no socket, so it compares against a directory it \
+                     fetched. This verb opens no socket, so it compares against a directory it \
                      is handed, and `--to <version>` states which version that directory is \
                      expected to be",
                 ),
@@ -397,7 +397,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             }) => match path {
                 None => fail(
                     "`taxonomy migrate` takes the path of a published artifact somebody already \
-                     fetched. This engine opens no socket, so it applies a payload it is handed, \
+                     fetched. This verb opens no socket, so it applies a payload it is handed, \
                      and `--to <version>` states which version that directory is expected to be. \
                      Without `--apply` it reports what it would write and writes nothing",
                 ),
@@ -1569,10 +1569,13 @@ fn publish(
 
 /// `headwater taxonomy vendor`.
 ///
-/// The consumer's half, and the reason it takes a path is the guarantee it
-/// keeps. Spec 0 forbids a network dependency and no crate of this engine
-/// carries one. So the fetch is the caller's, by whatever the organization uses,
-/// and this checks the bytes that arrived.
+/// The consumer's half, and the reason it takes a path today is the guarantee
+/// it keeps. Spec 0 forbids a network dependency at check time, and this
+/// function reaches nothing that carries one. So the fetch is the caller's, by
+/// whatever the organization uses, and this checks the bytes that arrived.
+/// [HW-DR-0075](../../../../docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)
+/// rules that a location may reach this verb too, resolved by a crate this one
+/// never links.
 fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
     let declared = headwater_resolve::package::consumer(root)
         .ok()
@@ -1671,9 +1674,10 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
 /// `headwater taxonomy diff`: measured compatibility between two versions, over
 /// this corpus.
 ///
-/// **It takes a directory, for the reason [`vendor`] does.** Spec 7 writes the
-/// invocation as `taxonomy diff --to 4.0.0`, and no crate of this engine opens
-/// a socket, so the artifact is one the caller already fetched. `--to` is
+/// **It takes a directory, for the reason [`vendor`] does today.** Spec 7 writes
+/// the invocation as `taxonomy diff --to 4.0.0`, and this function reaches no
+/// crate that opens a socket, so the artifact is one the caller already
+/// fetched. `--to` is
 /// therefore the assertion rather than the address: the artifact says which
 /// version it is, and the flag holds it to what the caller expected. The range
 /// reader is [`headwater_resolve::release::satisfies`], which is the one piece
