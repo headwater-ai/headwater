@@ -1,10 +1,10 @@
-558 seen, 372 classified, 372 checked, 7057 check instances
+559 seen, 373 classified, 373 checked, 7072 check instances
      20 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-16`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       1 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       1 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
-    745 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+    747 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   a check read .headwater/ids, which the census never walked
   a check read .headwater/ids, which the census never walked
 adoption
@@ -14,33 +14,33 @@ adoption
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The
       baseline held two when the linter retired. The other named a semicolon
       inside a block quotation, which the engine does not report at all, because
-      the parser hands a quoted block to no lexical rule379 documents in the read set, and 6 barriers that no gate carries across a merge
-    372 instances of facet.required.missing
-    372 instances of facet.value.not_permitted
-    372 instances of facet.value.blank
-    372 instances of identifier.pattern.not_met
-    372 instances of shelf.placement_is_primary
+      the parser hands a quoted block to no lexical rule380 documents in the read set, and 6 barriers that no gate carries across a merge
+    373 instances of facet.required.missing
+    373 instances of facet.value.not_permitted
+    373 instances of facet.value.blank
+    373 instances of identifier.pattern.not_met
+    373 instances of shelf.placement_is_primary
     708 instances of relation.target.unresolved
      89 instances of relation.reciprocity.missing
     413 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
     403 instances of warrant.evidence.unsupported
       3 instances of relation.participation.overdue
-    372 instances of relation.declaration.unusable
-    372 instances of identifier.unusable
+    373 instances of relation.declaration.unusable
+    373 instances of identifier.unusable
       1 instances of identifier.claimed_twice
       1 instances of identifier.claim.missing
       1 instances of identifier.claim.stale
-    334 instances of voice.forbidden_construction
-    352 instances of language.controlled.not_met
-    352 instances of language.retired_term.used
-    352 instances of language.source_form.not_met
-    323 instances of section.required.missing
+    335 instances of voice.forbidden_construction
+    353 instances of language.controlled.not_met
+    353 instances of language.retired_term.used
+    353 instances of language.source_form.not_met
+    324 instances of section.required.missing
       1 instances of link.fragment.unresolved
       1 instances of link.path.unresolved
-    372 instances of warrant.promoted
-    372 instances of lifecycle.transition.not_permitted
-    372 instances of lifecycle.state.not_admitted
+    373 instances of warrant.promoted
+    373 instances of lifecycle.transition.not_permitted
+    373 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
 suppressions
   0 findings hidden by 0 directives

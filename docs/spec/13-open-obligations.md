@@ -316,6 +316,7 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0196](../obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md) — A relation writes a state onto a kind that binds no lifecycle regime and nothing reads that pair
 - [HW-OBL-0197](../obligations/0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md) — A superseded document claims no reliance, and nothing measures whether a session honors that
 - [HW-OBL-0198](../obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md) — Nothing states how much of a session's budget the standing instructions consume before work starts
+- [HW-OBL-0199](../obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md) — An observation snapshot records a commit and nothing reads it back
 
 ## What the first typing of this corpus found
 

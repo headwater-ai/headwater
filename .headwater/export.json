@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 497,
-      "carried": 497,
+      "in the graph": 498,
+      "carried": 498,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -8748,6 +8748,20 @@
           "last_verified": "2026-09-16",
           "title": "Nothing states how much of a session's budget the standing instructions consume before work starts",
           "waiting_on": "measurement"
+        }
+      },
+      {
+        "path": "docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0199",
+        "facets": {
+          "id": "HW-OBL-0199",
+          "status": "current",
+          "status_since": "2026-09-19",
+          "summary": "The commit an observation snapshot names is stored and never compared. A snapshot naming a commit that never ran discharges a control exactly as well as one naming the commit that did.",
+          "last_verified": "2026-09-19",
+          "title": "An observation snapshot records a commit and nothing reads it back",
+          "waiting_on": "build"
         }
       },
       {

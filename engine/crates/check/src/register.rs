@@ -76,6 +76,21 @@
 //! snapshot is what an external control now needs to discharge, and its
 //! absence is [`Disposed::unobserved`].
 //!
+//! **Presence is the whole of what this checks.** The commit a snapshot names
+//! is recorded and never compared: not against this repository's history, and
+//! not against whether the taxonomy has moved since. A snapshot naming a
+//! commit that never existed discharges exactly as well as one naming the
+//! commit that actually ran, on the same terms
+//! [`crate::observation`]'s module comment states in full, and
+//! [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
+//! is the record of that gap. [`OBSERVATION`] is the narrower thing this
+//! module does check: whether the file itself could be read as one entry per
+//! control, each naming a control this taxonomy actually declares. A file
+//! that fails either test reads its entries as absent rather than as
+//! verified, the same fail-safe direction [`Disposed::unobserved`] already
+//! takes, and [`Projection::findings`] says why rather than only showing a
+//! lower count.
+//!
 //! So [`Disposed::disposition`] reads what this run can run, and the obligation
 //! falls to the disposition it states for itself. Where it states none, that is
 //! [`Disposition::Undeclared`], and the engine invents neither of the other
@@ -131,19 +146,38 @@ pub const DISPOSITION: &str = "obligation.disposition.not_one";
 /// implement, or a pipeline that does not exist, is a finding."
 pub const MECHANISM: &str = "control.mechanism.unimplemented";
 
-/// The grain of both rules above. See the module comment: neither reads a
-/// document, so neither creates an instance and neither accounts against the
-/// census.
+/// The committed observation snapshot ([`crate::observation`]) is unreadable,
+/// malformed, or names a control this taxonomy does not declare. Deliberately
+/// **not** a member of [`crate::RULES`]: that list is the set a taxonomy binds
+/// a control to, on [`Bound`]'s own terms, and this rule reports a defect in
+/// an input file rather than an invariant a taxonomy author asserts and an
+/// obligation names. Adding it there would need a control and an obligation in
+/// the shipped base package for every corpus that resolves it, including every
+/// fixture taxonomy this workspace tests with, for a check that fires on a
+/// hand-authored file three lines long. The cost this choice pays: a finding
+/// under this rule has no `ruleIndex` in a SARIF run's `driver.rules`, because
+/// that array is [`crate::RULES`] and [`crate::Serves`] in the same order (see
+/// `the_rule_list_is_the_registry_that_ran` in `engine/crates/adapter/tests/`).
+/// `ruleId` is still on every result, which is what a consumer keys on; the
+/// index is present-value metadata this rule does not carry.
+pub const OBSERVATION: &str = "control.observation.invalid";
+
+/// The grain of [`DISPOSITION`] and [`MECHANISM`]. See the module comment:
+/// neither reads a document, so neither creates an instance and neither
+/// accounts against the census. [`OBSERVATION`] is not in [`crate::RULES`],
+/// so it carries no scope, version or export target of its own: see its own
+/// doc comment for why.
 pub const SCOPE: Scope = Scope::taxonomy();
 
-/// Which edition of the two rules reached a verdict. Stated here for the
-/// reason [`crate::coverage::VERSION`] is: no trait carries it.
+/// Which edition of [`DISPOSITION`] and [`MECHANISM`] reached a verdict.
+/// Stated here for the reason [`crate::coverage::VERSION`] is: no trait
+/// carries it.
 pub const VERSION: u32 = 1;
 
-/// The emitter targets these two rules export to, stated here for the reason
-/// [`SCOPE`] is. Empty, and not because nothing could say it: these rules are
-/// about the taxonomy rather than about a document, and a front-matter schema
-/// has no instance to hold them against.
+/// The emitter targets [`DISPOSITION`] and [`MECHANISM`] export to, stated
+/// here for the reason [`SCOPE`] is. Empty, and not because nothing could say
+/// it: these rules are about the taxonomy rather than about a document, and a
+/// front-matter schema has no instance to hold them against.
 pub const EXPORTABLE_AS: crate::scope::ExportTargets = &[];
 
 /// The obligations and controls of a resolved taxonomy.
@@ -565,6 +599,15 @@ pub struct Projection {
     /// Rules that reach no obligation, or more than one. Spec 4: "a check that
     /// cannot say which invariant it protects did not earn its place."
     pub unbound: Vec<(&'static str, Bound)>,
+    /// [`crate::observation::Observations::problems`], carried through so
+    /// [`Projection::findings`] can report each one under [`OBSERVATION`]
+    /// instead of the run reading a lower count with nothing to say why.
+    observation_problems: Vec<String>,
+    /// The `control` of every entry the observation snapshot names that no
+    /// control in this register declares. A taxonomy edit that drops or
+    /// renames a control leaves its old snapshot entry pointing at nothing,
+    /// silently, unless this is read out.
+    observation_undeclared: Vec<String>,
 }
 
 impl Projection {
@@ -630,10 +673,23 @@ impl Projection {
                 other => Some((*rule, other)),
             })
             .collect();
+        let observation_undeclared = observations
+            .entries()
+            .iter()
+            .filter(|entry| {
+                !register
+                    .controls
+                    .iter()
+                    .any(|control| control.id == entry.control)
+            })
+            .map(|entry| entry.control.clone())
+            .collect();
         Projection {
             obligations,
             controls,
             unbound,
+            observation_problems: observations.problems().to_vec(),
+            observation_undeclared,
         }
     }
 
@@ -726,22 +782,35 @@ impl Projection {
                 column: 0,
                 message,
                 // The first clause names the fix that is actually open. Where a
-                // control already claims the obligation, "give it a control" is
-                // advice the author has taken, and the mechanism is the edit.
+                // control already claims the obligation, the remedy differs by
+                // why that control does not discharge: an unimplemented
+                // mechanism needs a different name, and an unobserved one needs
+                // a snapshot naming it, not a rewrite. Where the obligation has
+                // no control at all, "give it a control" is advice the author
+                // has taken, and the mechanism is the edit.
                 remediation: format!(
                     "{}, or state `disposition: {{gap: {{owner: …}}}}` or `disposition: \
                      {{unverifiable: {{reasoning: …}}}}` on it, and exactly one of the three",
                     match obligation.claimed_only() {
-                        true => format!(
-                            "name a mechanism this engine implements on {}",
-                            obligation
-                                .unimplemented
-                                .iter()
-                                .chain(obligation.unobserved.iter())
-                                .cloned()
-                                .collect::<Vec<_>>()
-                                .join(", ")
-                        ),
+                        true => {
+                            let mut clauses = Vec::new();
+                            if !obligation.unimplemented.is_empty() {
+                                clauses.push(format!(
+                                    "name a mechanism this engine implements on {}",
+                                    obligation.unimplemented.join(", ")
+                                ));
+                            }
+                            if !obligation.unobserved.is_empty() {
+                                clauses.push(format!(
+                                    "add an entry for {} to `.headwater/observations.yml` \
+                                     naming the commit it ran against, e.g. `{}: {{commit: \
+                                     <sha>}}`",
+                                    obligation.unobserved.join(", "),
+                                    obligation.unobserved[0]
+                                ));
+                            }
+                            clauses.join(", or ")
+                        }
                         false => "give the obligation a control that discharges it".to_string(),
                     }
                 ),
@@ -768,6 +837,38 @@ impl Projection {
                 remediation: "name a rule this engine carries, or a phase of it, or a mechanism \
                               outside it under a prefix this engine does not read"
                     .to_string(),
+                patch: None,
+            });
+        }
+        for problem in &self.observation_problems {
+            findings.push(Finding {
+                rule: OBSERVATION,
+                severity: Severity::Warn,
+                obligation: None,
+                path: source.to_string(),
+                line: 0,
+                column: 0,
+                message: problem.clone(),
+                remediation: "fix or remove the entry `.headwater/observations.yml` could not \
+                              read; an absent file reads as no observation, and this one should \
+                              read the same way rather than silently"
+                    .to_string(),
+                patch: None,
+            });
+        }
+        for control_id in &self.observation_undeclared {
+            findings.push(Finding {
+                rule: OBSERVATION,
+                severity: Severity::Warn,
+                obligation: None,
+                path: source.to_string(),
+                line: 0,
+                column: 0,
+                message: format!(
+                    "`.headwater/observations.yml` names `{control_id}`, which no control in \
+                     this taxonomy declares"
+                ),
+                remediation: "remove the entry, or correct the control id it names".to_string(),
                 patch: None,
             });
         }
@@ -1602,6 +1703,82 @@ controls:
             "{}",
             disposition.remediation
         );
+        assert!(
+            disposition
+                .remediation
+                .contains(".headwater/observations.yml"),
+            "an unobserved control's remediation should name the file an author writes to \
+             fix it: {}",
+            disposition.remediation
+        );
+    }
+
+    /// The observation snapshot is unreadable, malformed, or names a control
+    /// nothing declares: three ways today's silence was a bug rather than a
+    /// feature, and [`OBSERVATION`] is what turns each into a finding a reader
+    /// can act on instead of a lower count with no reason attached.
+    #[test]
+    fn an_unreadable_snapshot_is_a_finding_and_not_a_silent_empty_read() {
+        let register = register(
+            "obligations:\n  OB-EXT-1:\n    statement: s\n\
+             controls:\n  CT-EXT-1:\n    mechanism: ci:nightly-suite\n    \
+             discharges: [OB-EXT-1]\n",
+        );
+        let malformed = crate::observation::Observations::malformed_for_test(
+            "the snapshot did not parse".to_string(),
+        );
+        let projection = Projection::of(&register, &malformed);
+        // Fail-safe direction: a snapshot this reader could not use discharges
+        // nothing, the same as an absent one, rather than being trusted.
+        let disposed = &projection.obligations[0];
+        assert_ne!(disposed.disposition(), Disposition::Verified);
+        let findings = projection.findings("t.yml");
+        let observation = findings
+            .iter()
+            .find(|f| f.rule == OBSERVATION)
+            .expect("an unreadable snapshot is a finding, not silence");
+        assert!(
+            observation.message.contains("the snapshot did not parse"),
+            "{}",
+            observation.message
+        );
+    }
+
+    /// An entry that names a control no control declaration in this taxonomy
+    /// carries is silent today: it never discharges anything, and nothing
+    /// says the entry is pointed at nothing.
+    #[test]
+    fn an_entry_naming_an_undeclared_control_is_a_finding() {
+        let register = register(
+            "obligations:\n  OB-EXT-1:\n    statement: s\n\
+             controls:\n  CT-EXT-1:\n    mechanism: ci:nightly-suite\n    \
+             discharges: [OB-EXT-1]\n",
+        );
+        let observations = crate::observation::Observations::of(vec![
+            crate::observation::Observation {
+                control: "CT-EXT-1".to_string(),
+                commit: "788885a9".to_string(),
+            },
+            crate::observation::Observation {
+                control: "CT-NO-SUCH-CONTROL".to_string(),
+                commit: "788885a9".to_string(),
+            },
+        ]);
+        let projection = Projection::of(&register, &observations);
+        let findings = projection.findings("t.yml");
+        let observation = findings
+            .iter()
+            .find(|f| f.rule == OBSERVATION)
+            .expect("an entry naming an undeclared control is a finding");
+        assert!(
+            observation.message.contains("CT-NO-SUCH-CONTROL"),
+            "{}",
+            observation.message
+        );
+        // The declared control's own entry still discharges: one bad entry
+        // does not void a good one.
+        let disposed = &projection.obligations[0];
+        assert_eq!(disposed.disposition(), Disposition::Verified);
     }
 
     /// A promotion record holds exactly one of spec 4's four cases, and an

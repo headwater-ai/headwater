@@ -1229,7 +1229,7 @@
       "line": 0,
       "column": 0,
       "message": "obligation OB-FIX-19 carries no disposition: CT-FIX-16 names a mechanism outside this engine that no committed observation names, so nothing discharges it, and it states neither a gap nor an acceptance",
-      "remediation": "name a mechanism this engine implements on CT-FIX-16, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three",
+      "remediation": "add an entry for CT-FIX-16 to `.headwater/observations.yml` naming the commit it ran against, e.g. `CT-FIX-16: {commit: <sha>}`, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three",
       "fixable": false,
       "escape": "none"
     },
