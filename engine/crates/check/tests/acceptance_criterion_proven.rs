@@ -42,10 +42,9 @@ fn fixtures_dir() -> PathBuf {
 
 fn run() -> Run {
     let corpus = Corpus::new(fixtures_dir(), "acceptance-criterion-proven");
-    let source = std::fs::read_to_string(
-        fixtures_dir().join("acceptance-criterion-proven.taxonomy.yml"),
-    )
-    .expect("the fixture taxonomy");
+    let source =
+        std::fs::read_to_string(fixtures_dir().join("acceptance-criterion-proven.taxonomy.yml"))
+            .expect("the fixture taxonomy");
     let root = headwater_yaml::load(&source)
         .expect("the fixture taxonomy loads")
         .value
