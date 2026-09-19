@@ -15,8 +15,8 @@ provenance:
 relations:
   verifies:
     - HW-REQ-0002
-  traces_to:
-    - engine/crates/check/src/sections.rs
+  proven_by:
+    - HW-VER-0001
 ---
 
 # Every required section of every governed document has a heading
@@ -31,13 +31,13 @@ One thing the criterion does not state. The rule reads a heading, and it reads n
 
 ## Method
 
-Test. The rule has a case table in `engine/crates/check/src/sections.rs`, and the workspace suite runs it on every change to the engine.
+Test. `engine/crates/check/src/sections.rs` carries the rule and no case table of its own. The golden fixture in `engine/crates/check/tests/fixtures.rs` proves it, over the tree at `engine/crates/check/fixtures/check/`. `check/spec/08-contract-met.md` writes every heading its kind requires, and `check/spec/09-contract-missing.md` omits one. Both feed the recorded report at `engine/crates/check/fixtures/check.report`, and the test compares that report byte for byte.
 
 Two commands produce what a reader inspects.
 
-    cargo test -p headwater-check --lib sections --manifest-path engine/Cargo.toml --locked
+    cargo test -p headwater-check --test fixtures --manifest-path engine/Cargo.toml --locked
     headwater check --root . --strict
 
-The first holds the rule to its own behavior over inputs the case table states. It is what makes the method `test` rather than `inspection`: nobody reads a tree and decides. The second runs the rule over this corpus and reports what it found.
+The first holds the rule to the two fixture documents and the report they produce. That is what makes the method `test` rather than `inspection`: the fixture documents decide the verdict, not a person who reads a tree. The second command runs the rule over this corpus and reports what it found.
 
-The two are one method and not two. A rule that could report nothing would leave the second command silent over any corpus at all. A green run and a clean corpus then look the same. The case table is what separates them.
+The two are one method and not two. A rule that could report nothing would leave the second command silent over any corpus at all. A green run and a clean corpus then look the same. The fixture report is what separates them.

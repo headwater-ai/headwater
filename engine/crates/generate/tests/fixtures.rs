@@ -577,17 +577,17 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its twenty-three artifacts, and it says why for
+/// This repository generates its twenty-four artifacts, and it says why for
 /// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Thirteen of the twenty-three are shelf indexes, one per shelf that holds a
+/// **Fourteen of the twenty-four are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
-/// file until #124 filled that shelf. The other twelve are the overlay's own
+/// file until #124 filled that shelf. The other thirteen are the overlay's own
 /// entry, in the order its `for` list names them, and the specification index
 /// leads it because that is the list the root README used to carry by hand.
 /// #528 is why the seven after it are there: each of those shelf roots answered
@@ -624,7 +624,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_twenty_three_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_twenty_four_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -691,6 +691,7 @@ fn this_repository_generates_its_twenty_three_artifacts_and_accounts_for_the_res
             "docs/evaluations/README.md",
             "docs/requirements/README.md",
             "docs/acceptance-criteria/README.md",
+            "docs/verifications/README.md",
             "docs/probes/README.md",
             "docs/probe-results/README.md",
             "docs/probe-runs/README.md",

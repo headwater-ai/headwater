@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43
+  digest: sha256:a2d3d774841f83efde37bc378dbe90704880748e81025a9eaf89ad1d39f10390
   rules: 2
   package: headwater/standard
   version: 4.3.1
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:a1d0295f3af618bb371291f264a5f3d85925aabdd171ccea64629ee42a0e1c24
     - path: .headwater/overlay.yml
-      digest: sha256:ad0f5584ba2701ae3b2a4d6b1e1ab0a90806d3c4bd6e83eab35a0fcc019277f0
+      digest: sha256:388fda26b0ac3410acf94c2cf894ff77ca0473b1667bf4afff1586966ea7b47f
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -380,6 +380,18 @@ resolved:
       language: ste_house
       lifecycle: standard
       purpose: requirement
+      relations:
+        expect:
+          - id: acceptance-criterion-proven
+            relation: proven_by
+            to_kind: verification
+            when:
+              status: current
+              verification_method: test
+            within: 90d
+            since: state_entered
+            severity: warn
+            rationale: "an acceptance criterion proved by a test that no verification reaches is a claim nobody can settle"
       sections:
         require:
           - "Fit criterion"
@@ -621,6 +633,20 @@ resolved:
           - "The words this teaches"
           - "Where to go next"
       voice: declarative
+    verification:
+      facets:
+        require:
+          - title
+      identifier:
+        scheme: verification_id
+      is_a: governed_document
+      lifecycle: standard
+      purpose: evidence
+      sections:
+        require:
+          - Approach
+          - "What this does not cover"
+      voice: declarative
   relations:
     supersedes:
       family: succession
@@ -717,6 +743,16 @@ resolved:
       to:
         - governed_document
         - code_path
+    proven_by:
+      cardinality: many
+      created_by: scaffold
+      family: evidence
+      from:
+        - acceptance_criterion
+      inverse: proves
+      reciprocal: required
+      to:
+        - verification
     records:
       cardinality: many
       created_by: generator
@@ -826,6 +862,12 @@ resolved:
       kind: tutorial
       path: "docs/tutorials/**"
       title: Tutorials
+    verifications:
+      homogeneous: true
+      kind: verification
+      layout: "{seq:04d}-{slug}.md"
+      path: "docs/verifications/**"
+      title: Verifications
   identifier_schemes:
     decision_id:
       pattern: "{namespace}-DR-{seq:04d}"
@@ -887,6 +929,10 @@ resolved:
       allocation: minted-once
       namespace: HW
       pattern: "{namespace}-TUT-{slug}"
+    verification_id:
+      allocation: reconcile-first
+      namespace: HW
+      pattern: "{namespace}-VER-{seq:04d}"
   core:
     requires:
       - facet_role: state
@@ -909,6 +955,7 @@ resolved:
         - evaluations
         - requirements
         - acceptance_criteria
+        - verifications
         - probes
         - probe_results
         - probe_runs

@@ -342,6 +342,7 @@ nav:
       - "A superseded document claims no reliance, and nothing measures whether a session honors that": "obligations/0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md"
       - "Nothing states how much of a session's budget the standing instructions consume before work starts": "obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md"
       - "An observation snapshot records a commit and nothing reads it back": "obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md"
+      - "Three graded regression runs are owed a fresh recording against a moved taxonomy lock": "obligations/0200-three-graded-regression-runs-are-owed-a-fresh-recording-against-a-moved-taxonomy-lock.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"
@@ -408,3 +409,6 @@ nav:
   - "Tutorials":
       - "Tutorials": "tutorials/README.md"
       - "Your first governed corpus": "tutorials/your-first-governed-corpus.md"
+  - "Verifications":
+      - "Verifications": "verifications/README.md"
+      - "The section-heading rule has no case table, and a golden fixture report is what proves it runs": "verifications/0001-the-section-heading-rule-has-no-case-table-and-a-golden-fixture-report-is-what-proves-it-runs.md"
