@@ -95,7 +95,7 @@ fn a_criterion_no_verification_reaches_is_reported_and_the_window_or_the_edge_cl
         .filter(|finding| finding.rule == RULE)
         .map(|finding| finding.path.as_str())
         .collect();
-    reported.sort();
+    reported.sort_unstable();
     assert_eq!(
         reported,
         ["acceptance-criterion-proven/criteria/overdue.md"],
