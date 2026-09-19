@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 498,
-      "carried": 498,
+      "in the graph": 499,
+      "carried": 499,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 708,
-      "carried": 708,
+      "in the graph": 712,
+      "carried": 712,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -77,8 +77,8 @@
             "verifies": [
               "HW-REQ-0002"
             ],
-            "traces_to": [
-              "engine/crates/check/src/sections.rs"
+            "proven_by": [
+              "HW-VER-0001"
             ]
           }
         }
@@ -8765,6 +8765,35 @@
         }
       },
       {
+        "path": "docs/obligations/0200-three-graded-regression-runs-are-owed-a-fresh-recording-against-a-moved-taxonomy-lock.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0200",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0200",
+          "status": "current",
+          "status_since": "2026-09-19",
+          "summary": "Three current probe-run transcripts moved to deprecated when a taxonomy change staled their lock, and no fresh session has run against the new one.",
+          "last_verified": "2026-09-19",
+          "title": "Three graded regression runs are owed a fresh recording against a moved taxonomy lock",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "measurement",
+          "relations": {
+            "traces_to": [
+              "HW-RUN-regression-probe-transcript-for-2026-09-16",
+              "HW-RUN-regression-probe-transcript-for-2026-09-17",
+              "HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
         "kind": "probe_result",
         "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
@@ -8801,7 +8830,7 @@
           "id": "HW-RESULT-regression-probe-transcript-for-2026-09-16",
           "title": "Probe result for regression-probe-transcript-for-2026-09-16",
           "status": "current",
-          "status_since": "2026-09-16",
+          "status_since": "2026-09-19",
           "summary": "The grade of the transcript `regression-probe-transcript-for-2026-09-16`, taken over the probes this corpus declares and the version of the grader that evaluated them.",
           "last_verified": "2026-09-16"
         }
@@ -8815,7 +8844,7 @@
           "id": "HW-RESULT-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections",
           "title": "Probe result for regression-probe-transcript-for-2026-09-17-after-the-probe-corrections",
           "status": "current",
-          "status_since": "2026-09-17",
+          "status_since": "2026-09-19",
           "summary": "The grade of the transcript `regression-probe-transcript-for-2026-09-17-after-the-probe-corrections`, taken over the probes this corpus declares and the version of the grader that evaluated them.",
           "last_verified": "2026-09-17"
         }
@@ -8829,7 +8858,7 @@
           "id": "HW-RESULT-regression-probe-transcript-for-2026-09-17",
           "title": "Probe result for regression-probe-transcript-for-2026-09-17",
           "status": "current",
-          "status_since": "2026-09-16",
+          "status_since": "2026-09-19",
           "summary": "The grade of the transcript `regression-probe-transcript-for-2026-09-17`, taken over the probes this corpus declares and the version of the grader that evaluated them.",
           "last_verified": "2026-09-16"
         }
@@ -8870,9 +8899,9 @@
         "id": "HW-RUN-regression-probe-transcript-for-2026-09-16",
         "facets": {
           "id": "HW-RUN-regression-probe-transcript-for-2026-09-16",
-          "status": "current",
-          "status_since": "2026-09-16",
-          "summary": "Eight regression sessions ran against the lock of this tree, and the recorder observed every tool call each one made.",
+          "status": "deprecated",
+          "status_since": "2026-09-19",
+          "summary": "Eight regression sessions ran against the lock of this tree, and the recorder observed every tool call each one made. The recording is retired, because a later change moved the lock it pins.",
           "last_verified": "2026-09-16",
           "tier": "regression",
           "arm": "present",
@@ -8885,9 +8914,9 @@
         "id": "HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections",
         "facets": {
           "id": "HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections",
-          "status": "current",
-          "status_since": "2026-09-17",
-          "summary": "Eight regression sessions ran live on claude-sonnet-5 against the read set the three corrected probes moved, which is the first graded run of those corrections rather than a re-grade of an older recording.",
+          "status": "deprecated",
+          "status_since": "2026-09-19",
+          "summary": "Eight regression sessions ran live on claude-sonnet-5 against the read set the three corrected probes moved, which is the first graded run of those corrections rather than a re-grade of an older recording. The recording is retired, because a later change moved the lock it pins.",
           "last_verified": "2026-09-17",
           "tier": "regression",
           "arm": "present",
@@ -8900,9 +8929,9 @@
         "id": "HW-RUN-regression-probe-transcript-for-2026-09-17",
         "facets": {
           "id": "HW-RUN-regression-probe-transcript-for-2026-09-17",
-          "status": "current",
-          "status_since": "2026-09-16",
-          "summary": "Eight regression sessions ran against the lock of this tree, on claude-sonnet-5 rather than the haiku model every earlier run drove.",
+          "status": "deprecated",
+          "status_since": "2026-09-19",
+          "summary": "Eight regression sessions ran against the lock of this tree, on claude-sonnet-5 rather than the haiku model every earlier run drove. The recording is retired, because a later change moved the lock it pins.",
           "last_verified": "2026-09-16",
           "tier": "regression",
           "arm": "present",
@@ -10164,6 +10193,32 @@
             ]
           }
         }
+      },
+      {
+        "path": "docs/verifications/0001-the-section-heading-rule-has-no-case-table-and-a-golden-fixture-report-is-what-proves-it-runs.md",
+        "kind": "verification",
+        "id": "HW-VER-0001",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-VER-0001",
+          "status": "current",
+          "status_since": "2026-09-19",
+          "summary": "A golden fixture report in engine/crates/check/tests/fixtures.rs is what proves HW-AC-0002, not a per-shape case table.",
+          "last_verified": "2026-09-19",
+          "title": "The section-heading rule has no case table, and a golden fixture report is what proves it runs",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft+revise",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "proves": [
+              "HW-AC-0002"
+            ]
+          }
+        }
       }
     ],
     "anchors": [
@@ -10401,11 +10456,6 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/check/src/lifecycle_state.rs",
-        "resolver": "source-tree"
-      },
-      {
-        "anchor_kind": "code_path",
-        "id": "engine/crates/check/src/sections.rs",
         "resolver": "source-tree"
       },
       {
@@ -10789,13 +10839,13 @@
       },
       {
         "source": "docs/acceptance-criteria/0002-every-required-section-of-every-governed-document-has-a-heading.md",
-        "relation": "traces_to",
-        "written_as": "traces_to",
+        "relation": "proven_by",
+        "written_as": "proven_by",
         "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/check/src/sections.rs",
-          "resolver": "source-tree"
+          "bound": "document",
+          "id": "HW-VER-0001",
+          "path": "docs/verifications/0001-the-section-heading-rule-has-no-case-table-and-a-golden-fixture-report-is-what-proves-it-runs.md",
+          "kind": "verification"
         }
       },
       {
@@ -16816,6 +16866,39 @@
         }
       },
       {
+        "source": "docs/obligations/0200-three-graded-regression-runs-are-owed-a-fresh-recording-against-a-moved-taxonomy-lock.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-16",
+          "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-16.md",
+          "kind": "probe_transcript"
+        }
+      },
+      {
+        "source": "docs/obligations/0200-three-graded-regression-runs-are-owed-a-fresh-recording-against-a-moved-taxonomy-lock.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-17",
+          "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-17.md",
+          "kind": "probe_transcript"
+        }
+      },
+      {
+        "source": "docs/obligations/0200-three-graded-regression-runs-are-owed-a-fresh-recording-against-a-moved-taxonomy-lock.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections",
+          "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md",
+          "kind": "probe_transcript"
+        }
+      },
+      {
         "source": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "relation": "examines",
         "written_as": "examines",
@@ -18551,6 +18634,17 @@
           "id": "HW-DR-0016",
           "path": "docs/decisions/0016-public-presence.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/verifications/0001-the-section-heading-rule-has-no-case-table-and-a-golden-fixture-report-is-what-proves-it-runs.md",
+        "relation": "proven_by",
+        "written_as": "proves",
+        "target": {
+          "bound": "document",
+          "id": "HW-AC-0002",
+          "path": "docs/acceptance-criteria/0002-every-required-section-of-every-governed-document-has-a-heading.md",
+          "kind": "acceptance_criterion"
         }
       }
     ]

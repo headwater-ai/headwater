@@ -79,6 +79,7 @@ fn run() -> Run {
             config: &config,
             register: &register,
             adoption: None,
+            observations: &headwater_check::Observations::empty(),
             source: "engine/crates/check/fixtures/acceptance-criterion-proven.taxonomy.yml",
         },
         &headwater_check::claim::Claims::empty(),

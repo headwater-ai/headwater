@@ -670,6 +670,8 @@ docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing
   typed: obligation_record
 docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md
   typed: obligation_record
+docs/obligations/0200-three-graded-regression-runs-are-owed-a-fresh-recording-against-a-moved-taxonomy-lock.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
@@ -1112,7 +1114,7 @@ docs/tutorials/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/tutorials/your-first-governed-corpus.md
   typed: tutorial
-docs/verifications/0001-the-section-heading-rule-has-a-case-table-and-the-workspace-suite-runs-it-on-every-change.md
+docs/verifications/0001-the-section-heading-rule-has-no-case-table-and-a-golden-fixture-report-is-what-proves-it-runs.md
   typed: verification
 docs/verifications/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
