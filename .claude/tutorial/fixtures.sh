@@ -9,6 +9,12 @@
 # temporary directory, and diffs each result against the block the document
 # prints.
 #
+# It also runs `.claude/tutorial/adopter_interface.py` over that document and
+# `README.md`, which checks a narrower and separate claim: that neither one
+# hands a newcomer a script this repository wrote in place of the verb that
+# does the same job (HW-DR-0072, #933). That check reads no engine output, so
+# it runs first and needs no binary of its own.
+#
 # It blocks in CI. A tutorial that a newcomer cannot follow is worse than no
 # tutorial, because the newcomer concludes the tool is broken rather than the
 # page, and nothing else here reports the drift.
@@ -20,6 +26,8 @@ set -eu
 
 root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 bin=${HEADWATER_BIN:-$root/engine/target/release/headwater}
+
+python3 "$root/.claude/tutorial/adopter_interface.py" "$root"
 
 if [ ! -x "$bin" ]; then
   echo "tutorial fixtures: no engine at $bin" >&2
