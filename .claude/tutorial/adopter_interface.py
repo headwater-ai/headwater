@@ -157,12 +157,18 @@ def _split_unquoted(text, is_boundary):
 
 
 def split_chain(line):
-    """The top-level sequencing and conditional operators split a line into
-    the commands a shell actually runs one after another: `&&`, `||`, `;`."""
+    """The top-level sequencing, conditional and backgrounding operators
+    split a line into the commands a shell actually runs: `&&`, `||`, `;`,
+    and a bare `&`. A single `&` backgrounds the command before it and
+    starts the next one immediately rather than waiting on it, which is a
+    weaker guarantee than `&&` gives but still runs both — `git clone <url>
+    & sh tools/evil.sh` runs the script exactly as `git clone <url> && sh
+    tools/evil.sh` does, so the two-character check for `&&` above must
+    come first, or a real `&&` would be split as if it named two bare `&`."""
     def boundary(text, i):
         if text[i:i + 2] in ('&&', '||'):
             return 2
-        if text[i] == ';':
+        if text[i] in (';', '&'):
             return 1
         return 0
     return _split_unquoted(line, boundary)
@@ -216,8 +222,80 @@ def undeclared_pieces(block):
     return failures
 
 
+# Regression cases: every attack shape a verifier has raised against this
+# check, held here so a future edit that reopens one of them fails a run of
+# `fixtures.sh` on its own, rather than waiting for another round of attack.
+# Each entry is (label, block text, the exact undeclared pieces expected).
+REGRESSION_CASES = [
+    ('a bare undeclared command',
+     'npm install',
+     ['npm install']),
+    ('an undeclared script beside an incidental mention of the exception',
+     'tools/malicious-script.sh --do-it\n'
+     '# see tools/headwater-bootstrap.sh for comparison',
+     ['tools/malicious-script.sh --do-it']),
+    ('an undeclared script chained with &&',
+     'cd tools && ./malicious-chain.sh --do-it',
+     ['./malicious-chain.sh --do-it']),
+    ('an undeclared command chained with ;',
+     'mkdir x; npm install',
+     ['npm install']),
+    ('an undeclared script chained with && after git',
+     'git clone https://example.com/repo.git && sh tools/y.sh',
+     ['sh tools/y.sh']),
+    ('cargo allowed only for install/build, not by verb alone',
+     'cargo run --manifest-path tools/evil/Cargo.toml',
+     ['cargo run --manifest-path tools/evil/Cargo.toml']),
+    ('a command chained onto the declared exception with &&',
+     'curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/'
+     'main/tools/headwater-bootstrap.sh | sh -s -- --tag x --expect y '
+     '&& npm install',
+     ['npm install']),
+    ('an undeclared script backgrounded with a bare &',
+     'git clone https://example.com/repo.git & sh tools/evil.sh',
+     ['sh tools/evil.sh']),
+    ('the real declared exception, alone, is not undeclared',
+     'curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/'
+     'main/tools/headwater-bootstrap.sh | sh -s -- --tag '
+     'taxonomy/headwater-standard/v4.2.0 --expect sha256:961ecf2ae2c3c74',
+     []),
+    ('cargo install, the README route, is not undeclared',
+     'cargo install headwater-cli',
+     []),
+    ('the README source-build block is not undeclared',
+     'git clone https://github.com/headwater-ai/headwater.git\n'
+     'cd headwater\n'
+     'git checkout v0.1.2\n'
+     'cargo build --release -p headwater-cli --manifest-path '
+     'engine/Cargo.toml --locked',
+     []),
+    ('step 1 scaffolding is not undeclared',
+     'mkdir -p ~/headwater-tutorial/docs/decisions\n'
+     'cd ~/headwater-tutorial\n'
+     'git init\n'
+     "printf '# Store attempts in Postgres' > docs/decisions/postgres-note.md",
+     []),
+]
+
+
+def run_regression_cases():
+    """Every case above, checked against the live functions rather than
+    against a snapshot of their output. Returns the labels that failed."""
+    failed = []
+    for label, block, expected in REGRESSION_CASES:
+        got = undeclared_pieces(block)
+        ok = got == expected
+        print(('ok   ' if ok else 'FAIL ') + 'regression: ' + label)
+        if not ok:
+            failed.append(label)
+            print(f'    expected {expected!r}, got {got!r}')
+    return failed
+
+
 def main():
     root = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.getcwd()
+
+    regression_failures = run_regression_cases()
 
     readme_blocks = fenced_blocks(os.path.join(root, README))
     tutorial_blocks = fenced_blocks(os.path.join(root, TUTORIAL))
@@ -233,11 +311,12 @@ def main():
         for piece in undeclared_pieces(tutorial_blocks[index]):
             failures.append(f'{TUTORIAL}: undeclared command: {piece!r}')
 
-    print(f'{checked} command block(s) checked across 2 documents, '
+    print(f'{len(REGRESSION_CASES)} regression case(s), {len(regression_failures)} failed; '
+          f'{checked} command block(s) checked across 2 documents, '
           f'{len(failures)} undeclared command(s)')
     for failure in failures:
         print(' - ' + failure)
-    return 1 if failures else 0
+    return 1 if (failures or regression_failures) else 0
 
 
 if __name__ == '__main__':
