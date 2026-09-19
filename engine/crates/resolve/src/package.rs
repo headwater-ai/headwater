@@ -28,9 +28,12 @@
 //! pin. How the directory got there is [`publish`] and [`vendor`]: a publisher
 //! writes an artifact with a digest over every file in it, a caller moves that
 //! artifact by whatever the organization already uses, and `vendor` checks it
-//! against the digest this repository pinned before anything is installed. The
-//! engine opens no socket at any point, which is why the verb takes a path
+//! against the digest this repository pinned before anything is installed. This
+//! crate opens no socket at any point, which is why the verb takes a path
 //! rather than a location.
+//! [HW-DR-0075](../../../../docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)
+//! rules that a location may reach `vendor` too, confined to a crate this one
+//! never links.
 //!
 //! [`crate::release`] holds the record and argues what its digest proves.
 
@@ -3486,9 +3489,12 @@ fn doctrine_at(
 /// Check a fetched artifact against the digest this repository pinned, and
 /// install it under `.headwater/packages/`.
 ///
-/// The caller fetched it. This engine has no idea where from and cannot ask:
-/// no crate of it depends on the network, and a verb that took a location
-/// rather than a path is the one change that would end that guarantee.
+/// The caller fetched it. This function has no idea where from and cannot ask:
+/// this crate depends on nothing that opens a socket.
+/// [HW-DR-0075](../../../../docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)
+/// rules that `headwater taxonomy vendor` may take a location too, and confines
+/// that fetch to a crate this one never links; a location, once accepted,
+/// resolves to a local path before this function ever runs.
 ///
 /// The pin is the argument of the check and it is never derived from the
 /// artifact. A `vendor` with no pin is a fetch nobody checked, so it refuses and

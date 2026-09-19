@@ -92,8 +92,11 @@
 //!    and the gate asks for a regeneration. That is a fact about the corpus
 //!    rather than about a session, and it moves no exit status toward a
 //!    model's answer.
-//! 4. **No socket.** No crate of this engine depends on the network, and
+//! 4. **No socket.** No crate this gate reaches depends on the network, and
 //!    nothing here opens one.
+//!    [HW-DR-0075](../../../../docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)
+//!    permits a bootstrap verb to, confined to a crate this gate never reaches,
+//!    so this enforcement is unaffected.
 //!
 //! # The harness fails closed, and a refusal is the cheaper error
 //!

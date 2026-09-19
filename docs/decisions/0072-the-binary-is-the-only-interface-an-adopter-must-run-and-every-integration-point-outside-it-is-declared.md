@@ -2,8 +2,8 @@
 id: HW-DR-0072
 status: current
 status_since: 2026-09-17
-summary: "An adopter reaches the whole governed loop through the binary. Two integration points sit outside it and the list is closed against growth. Git plumbing meets the necessity test, a network fetch is held open, and the change manifest fails it and is a defect."
-last_verified: 2026-09-17
+summary: "An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test; a network fetch left the list under HW-DR-0075; and the change manifest fails the test and is a defect."
+last_verified: 2026-09-19
 title: "The binary is the only interface an adopter must run, and every integration point outside it is declared"
 provenance:
   warrant: accepted
@@ -32,12 +32,13 @@ No document states the boundary. The eleven principles in [spec 0](../spec/00-vi
 
 **An adopter runs the binary for every operation of the governed loop.** The loop is what reads the corpus, checks it, writes it and resolves its taxonomy. A corpus owner reaches all of it through `headwater`, and this repository proposes no script to an adopter for any part of it.
 
-**Two integration points sit outside the binary. This list is closed against growth.**
+**One integration point sits outside the binary. This list is closed against growth.**
 
 - **Git plumbing.** A merge driver, a merge attribute and a hook are things git runs. Git does not take an executable from a repository without the consent of the clone, so the engine cannot install one. [#892](https://github.com/headwater-ai/headwater/issues/892) rules on what ships inside this edge.
-- **A network fetch.** `headwater taxonomy vendor` takes a path and never a location, because no crate of this engine opens a socket. This entry is the weaker of the two, and it is held open rather than settled. The no-socket property serves the checking loop, which has to answer the same way on every run and on a machine with no network. A bootstrap verb runs at setup and never inside that loop, so that reason does not reach it. The digest in `--expect` is what makes a fetch safe, whoever performs it. [#932](https://github.com/headwater-ai/headwater/issues/932) rules on it. A ruling that the verb may take a location removes this entry and leaves one.
 
-**The test for the edge is necessity and never convenience.** An integration point is legal here only where the binary cannot do the work without the loss of a property the corpus depends on. Git plumbing meets the test, because consent of the clone is not a property this engine can grant itself. The network fetch has not met it yet. The entry above cites a property of the engine rather than a reason that a bootstrap verb must carry it. A point that fails this test is a defect, and a missing verb is a gap to file rather than an exception to grant.
+**A network fetch left this list.** `headwater taxonomy vendor` took a path and never a location, on the ground that no crate of this engine opened a socket. [HW-DR-0075](0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) rules that the no-socket property serves the checking loop alone, that a bootstrap verb runs outside that loop, and that the digest in `--expect` already makes a fetch safe whoever performs it. `vendor` may accept a location once a distributor lands it, confined to a crate only the CLI links, so this is a correction of the entry rather than an exception granted to it.
+
+**The test for the edge is necessity and never convenience.** An integration point is legal here only where the binary cannot do the work without the loss of a property the corpus depends on. Git plumbing meets the test, because consent of the clone is not a property this engine can grant itself. A point that fails this test is a defect, and a missing verb is a gap to file rather than an exception to grant.
 
 **The change manifest fails the test.** Nothing stops a verb from writing one, and spec 12 already fixes the two anchors it needs. [#929](https://github.com/headwater-ai/headwater/issues/929) carries it as a defect of the command surface.
 
@@ -49,10 +50,10 @@ Those instances stay out of reach until [#929](https://github.com/headwater-ai/h
 
 [#892](https://github.com/headwater-ai/headwater/issues/892) gains a frame it did not have. Its question was whether merge-safety tooling ships at all. The question now is narrower. The edge is legal, and consent of the clone is the constraint on it. What remains is what ships inside it.
 
-[#930](https://github.com/headwater-ai/headwater/issues/930) follows from the same rule. The bootstrap script is a convenience over a verb that already exists, and adopter-facing prose presents it as the only route. That is worth correcting whatever [#932](https://github.com/headwater-ai/headwater/issues/932) rules, because an adopter on a mirror or an air-gapped host needs the path form either way.
+[#930](https://github.com/headwater-ai/headwater/issues/930) follows from the same rule. The bootstrap script is a convenience over a verb that already exists, and adopter-facing prose presents it as the only route. Correcting that prose stays worth doing once `vendor` itself accepts a location, because an adopter on a mirror or an air-gapped host needs the path form either way.
 
-The list is closed against growth and not against a correction. [#932](https://github.com/headwater-ai/headwater/issues/932) can remove the second entry, and a list of one is the stronger form of this ruling rather than a retreat from it.
+The list is closed against growth and not against a correction. [HW-DR-0075](0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) removes the second entry, and a list of one is the stronger form of this ruling rather than a retreat from it.
 
-Nothing checks any of this. No rule reads adopter-facing prose for a script invocation, and the two entries above live in this record alone. So a later contributor can add a third edge in silence, and the only guard is that this record is short enough to read. [#933](https://github.com/headwater-ai/headwater/issues/933) weighs what should assert the boundary, including the answer that nothing should.
+Nothing checks any of this. No rule reads adopter-facing prose for a script invocation, and the one entry above lives in this record alone. So a later contributor can add a second edge in silence, and the only guard is that this record is short enough to read. [#933](https://github.com/headwater-ai/headwater/issues/933) weighs what should assert the boundary, including the answer that nothing should.
 
 This record rules on what an adopter runs. It rules nothing about what this repository runs for itself. Principle 8 keeps `tools/` and `.githooks/` exactly as they are, because a corpus that governs itself needs producers that no adopter ever sees.

@@ -343,7 +343,7 @@ pub const VERBS: &[Verb] = &[
             Word {
                 name: "vendor",
                 summary: "check a fetched artifact against the pinned digest",
-                description: "Check an artifact that somebody already fetched against the digest this repository pinned, and install it under `.headwater/packages/`. It refuses an artifact that is not the pinned one, and it names every file that moved. Nothing here fetches: no crate of this engine depends on the network, so the verb takes the path of a directory and never a location.",
+                description: "Check an artifact that somebody already fetched against the digest this repository pinned, and install it under `.headwater/packages/`. It refuses an artifact that is not the pinned one, and it names every file that moved. Nothing here fetches: this verb depends on nothing that opens a socket, so it takes the path of a directory and never a location.",
             },
             Word {
                 name: "diff",
@@ -353,7 +353,7 @@ pub const VERBS: &[Verb] = &[
             Word {
                 name: "migrate",
                 summary: "apply the migration payload a published artifact ships",
-                description: "Apply the migration payload a published artifact ships, to this corpus. It takes the path of a directory somebody already fetched, because this engine fetches nothing. Without `--apply` it reports every file each step would write and writes nothing.",
+                description: "Apply the migration payload a published artifact ships, to this corpus. It takes the path of a directory somebody already fetched, because this verb fetches nothing. Without `--apply` it reports every file each step would write and writes nothing.",
             },
         ],
     },

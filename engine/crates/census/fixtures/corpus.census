@@ -154,6 +154,8 @@ docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-t
   typed: decision
 docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md
   typed: decision
+docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md

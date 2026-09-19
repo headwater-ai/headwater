@@ -5,7 +5,7 @@ doc_type: decision_register
 title: Open questions, closed and redirected
 status: superseded
 status_since: 2026-08-11
-summary: "One heading for each of the 74 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
+summary: "One heading for each of the 75 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
 last_verified: 2026-08-11
 sequence: 9
 relations:
@@ -16,7 +16,7 @@ relations:
 
 # Decision records
 
-74 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+75 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -310,6 +310,10 @@ relations:
 
 [HW-DR-0071](../decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md) — A route does not read headings and offers no anchor inside a document. A measured heading surface never reached spec 02 or spec 03 for the task that raised the question. At every threshold, function words reached wrong anchors.
 
+## The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links
+
+[HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) — `headwater taxonomy vendor` may accept a location, ruled yes with a boundary: the fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it. (asserted, and no human has accepted it)
+
 ## The binary is the only interface an adopter must run, and every integration point outside it is declared
 
-[HW-DR-0072](../decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) — An adopter reaches the whole governed loop through the binary. Two integration points sit outside it and the list is closed against growth. Git plumbing meets the necessity test, a network fetch is held open, and the change manifest fails it and is a defect.
+[HW-DR-0072](../decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) — An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test; a network fetch left the list under HW-DR-0075; and the change manifest fails the test and is a defect.

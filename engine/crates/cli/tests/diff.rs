@@ -567,7 +567,7 @@ fn an_overlay_address_the_new_base_takes_is_the_addressability_dimension() {
 
 /// `--to` is the assertion and never the address.
 ///
-/// This engine fetches nothing, so the directory decides which artifact is
+/// This verb fetches nothing, so the directory decides which artifact is
 /// compared. A flag that named a version the directory is not is a wrong
 /// directory, and a run that measured it anyway would report a comparison the
 /// caller did not ask for.

@@ -1,0 +1,53 @@
+---
+id: HW-DR-0075
+status: draft
+status_since: 2026-09-19
+summary: "`headwater taxonomy vendor` may accept a location, ruled yes with a boundary: the fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it."
+last_verified: 2026-09-19
+title: "The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links"
+relations:
+  constrains:
+    - HW-DR-0072
+provenance:
+  warrant: asserted
+  agency: agent
+  drafted_by: claude-sonnet-5
+  activity: measure+draft
+  evidence_basis: evidenced
+---
+
+# The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links
+
+## Context
+
+[HW-DR-0072](0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) names a network fetch as the weaker of two integration points an adopter reaches outside the binary, and holds it open rather than settled. The entry rests on one property: "no crate of this engine opens a socket." [#932](https://github.com/headwater-ai/headwater/issues/932) was filed against that entry itself, because the record cites the property rather than arguing that a bootstrap verb must inherit it, and asks whether `headwater taxonomy vendor` may take a location as well as a path.
+
+The property serves the checking loop. [Spec 0](../spec/00-vision-and-scope.md#non-negotiables) states the actual non-negotiable at line 117: "No network dependency at check time." `headwater check` has to answer the same way on every run and on a machine with no network, because a corpus owner may run it disconnected and expects one verdict. `vendor` runs once, at setup or at an upgrade, never inside that loop. The sentences that generalize the checking-loop property to the whole engine are broader than what spec 0 requires, and that gap is what #932 was filed to name.
+
+`--expect` already carries the digest that would make a fetch safe. A fetch the engine performs and a fetch `tools/headwater-bootstrap.sh` performs are checked by the same comparison against the same pinned value, so the safety property does not distinguish who dials out.
+
+An exhaustive grep for the property's wording, run against this branch, finds it stated in ten places across seven files, not the three #932 names: `engine/crates/probe/src/lib.rs:95`, `engine/crates/import/src/lib.rs:86` and `:88`, `engine/crates/import/src/snapshot.rs:27`, `engine/crates/resolve/src/package.rs:32` and `:3490`, `engine/crates/resolve/src/release.rs:17` and `:20`, `engine/crates/verbs/src/lib.rs:339`, and doc comments on four functions in `engine/crates/cli/src/main.rs` (`vendor`, `taxonomy diff`, `probe plan`, `probe grade`). The `vendor` implementation itself lives in `engine/crates/resolve/` (`package.rs`, `release.rs`), which `cli` and `verbs` dispatch to. `probe` and `import` do not implement `vendor` at all; their sentences restate an engine-wide claim rather than state a fact their own crate depends on.
+
+## Decision
+
+**A bootstrap verb may reach the network. `headwater taxonomy vendor` may accept a location as well as a path, once a distributor lands it.** The determinism argument that grounds the no-socket property does not reach a verb that runs outside the checking loop, and the digest already pins what a fetch, by any hand, is checked against.
+
+**The capability is confined to a crate only the CLI binary links.** `vendor`'s existing contract, that it checks bytes it is handed against a pinned digest, stays exactly what `engine/crates/resolve/` does: that crate keeps taking a path and stays socket-free. A location on the CLI's `vendor` invocation resolves through a new crate that `engine/crates/cli/` alone depends on; that crate fetches to a local path and hands the result to `resolve` unchanged. `probe` and `import` call neither `resolve`'s vendor path nor the new crate, so their sentences describe a fact that stays true of their own crate without correction. This is the option the issue names as a separate crate that only the CLI links, and it is preferred over a location on `vendor` with no such boundary, because only this shape leaves the library crates' own claims true rather than requiring a rewrite of an unrelated crate's documentation for a change that crate has no part in.
+
+**This ruling settles denotation, not the build.** Whether the new crate's HTTP and TLS dependency compiles into every CLI build by default, or only under a feature a distributor opts into, is an engineering choice for whoever lands the fetch, weighed against the cost the issue's case against names: a dependency that falls on every build of the CLI today has none. That choice does not change which crates may claim to be socket-free, so it is out of scope for this record.
+
+**Implementing the fetch is out of scope for this record and for #932.** This is a ruling-and-correction change: it corrects [HW-DR-0072](0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md)'s second entry and the sentences that overstate the engine-wide property. A new dependency, a new crate and a CLI grammar change are a materially larger, separately reviewable surface, and land as [#959](https://github.com/headwater-ai/headwater/issues/959) instead. That issue moves [the `vendor` grammar row](../interfaces/headwater-taxonomy.md) and the CLI grammar block spec 6 carries, alongside the crate and the code; neither moves here, because `vendor`'s contract takes only a path until that issue lands.
+
+**HW-DR-0072's closed list falls to one entry.** The network-fetch bullet leaves the list of integration points an adopter reaches outside the binary; git plumbing is what remains. A list of one is the stronger form of that ruling, as HW-DR-0072 itself already anticipated.
+
+## Consequences
+
+**HW-DR-0072 is edited to remove its network-fetch bullet and to cross-reference this record**, rather than to reword the bullet with a narrower reason, because the ruling is yes.
+
+**The ten sentences the grep found are corrected in the same change**, not the three #932 names, and a broader sweep for the same claim in the same run found and corrected several more the named grep did not reach. `probe/src/lib.rs`, `import/src/lib.rs` and `import/snapshot.rs` keep stating that their own crate opens no socket, because that stays true; only the claim that generalizes to "no crate of this engine" is removed or narrowed to the crates it still describes. `resolve/package.rs` and `resolve/release.rs` are corrected the same way: the crate that implements `vendor` today stays socket-free, and its doc comments say so without claiming the property for crates it does not constrain. `verbs/lib.rs:339`'s `vendor` description and the doc comments and `#[arg(help = …)]` strings in `cli/src/lib.rs` and `cli/src/main.rs` are corrected to state that a location is a future capability confined to a crate the CLI alone links, not that no crate of the engine ever will. **Some of what moved is real `--help` and `--about` text, confirmed live against the built binary, not only doc comments**: `cli/src/lib.rs`'s `#[arg(help = …)]` strings reach a caller directly, and `verbs/lib.rs`'s `description` field reaches one through `.about(word.description)`. `docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md` rows 27 and 60 quote the pre-edit wording of exactly the two strings this change touches (the `diff --to` help and the `vendor` description). That document is a point-in-time record by this repository's own convention and stays as written; nothing mechanically breaks, because no fixture asserts any of the 64 strings byte-for-byte outside three unrelated cases in `wiring.rs`, but a reader who wants the current wording reads the source, not that record, from this commit on.
+
+**The probe harness's argument is checked rather than assumed to survive.** `probe/src/lib.rs:95` lists "No socket" as one of the properties the harness's own claims rest on. That property is unchanged for `probe` itself; the harness never calls `vendor`, `resolve`, or the future fetch crate, so its argument holds under this ruling without amendment.
+
+**[#930](https://github.com/headwater-ai/headwater/issues/930), the documentation half, is unaffected by this record alone.** It can still close the moment `vendor` itself accepts a location; until then, the path form is what adopter-facing prose points to, on a proxy, a mirror or an air-gapped host as much as anywhere else, per HW-DR-0072's own note that a location is additive and never a replacement for the path form.
+
+**[#959](https://github.com/headwater-ai/headwater/issues/959), the follow-up issue that implements the fetch, inherits this record's boundary as a constraint, not as a suggestion.** A `resolve`, `probe` or `import` crate that grows a network dependency to satisfy that issue is the defect this record was written to prevent, and a reviewer of that issue checks the crate graph against it.
