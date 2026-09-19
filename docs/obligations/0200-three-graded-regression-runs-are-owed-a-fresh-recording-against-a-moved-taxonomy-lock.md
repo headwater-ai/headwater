@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[#935](https://github.com/headwater-ai/headwater/issues/935) declares a `verification` kind and a relation over it. That change moves `.headwater/taxonomy.lock`. Three probe-run transcripts stood at `current` and pinned the digest from before that move: 2026-09-16, 2026-09-17, and 2026-09-17-after-the-probe-corrections. `headwater generate --check` refuses to regenerate a `current` transcript's result against a digest the transcript was not planned against. Its own refusal names two remedies: record the session again, or retire the transcript to a terminal state. This corpus took the second remedy, so all three now stand at `deprecated`.
+[PR #963](https://github.com/headwater-ai/headwater/pull/963) (issue [#935](https://github.com/headwater-ai/headwater/issues/935)) declares a `verification` kind and a relation over it. That change moves `.headwater/taxonomy.lock`. Three probe-run transcripts stood at `current` and pinned the digest from before that move: 2026-09-16, 2026-09-17, and 2026-09-17-after-the-probe-corrections. `headwater generate --check` refuses to regenerate a `current` transcript's result against a digest the transcript was not planned against. Its own refusal names two remedies: record the session again, or retire the transcript to a terminal state. This corpus took the second remedy, so all three now stand at `deprecated`.
 
 The remedy taken says nothing was re-verified. It says only that nobody may rely on the old recording anymore. [HW-DR-0062](../decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md) separates a transcript's state from a re-run of it. This record states the second half that ruling implies: a state change is not a measurement.
 
