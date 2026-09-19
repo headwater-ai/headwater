@@ -16,37 +16,66 @@
 //! ([HW-DR-0063](../../../../docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md),
 //! [#945](https://github.com/headwater-ai/headwater/issues/945)).
 //!
+//! A computed state has two possible loci — an incoming edge's
+//! `on_target.set_state`, or the fallback — and a refusal has to name whichever
+//! one produced the value, because the repair differs: a relation declaration,
+//! a taxonomy's state facet, or (for the regime-admission defect) either
+//! locus against the kind's own regime. [`headwater_generate::derived::Locus`]
+//! is what carries that distinction from `standing` to `admitted`.
+//!
 //! # The fixture
 //!
 //! `fixtures/lifecycle-regime.taxonomy.yml` declares two lifecycle regimes over
 //! one state vocabulary, the shape
-//! `headwater_check::lifecycle_state`'s own `narrow`/`wide` tests already use.
-//! Neither declaration below carries an incoming edge that sets a state, so
-//! `derived::standing`'s fallback path is what answers for both: the value
-//! whose role is `live`, which this fixture's vocabulary names `current`.
+//! `headwater_check::lifecycle_state`'s own `narrow`/`wide` tests already use,
+//! renamed here to `wide` and `strict` so that a refusal naming the regime
+//! cannot be satisfied by a kind name a test also asserts on.
 //!
+//! `wide_notice` and `narrow_notice` carry no incoming edge that sets a state,
+//! so `derived::standing`'s fallback path is what answers for both: the value
+//! whose role is `live`, which this fixture's vocabulary names `current`.
 //! `wide_notice` binds a regime that names `current`, so the declaration that
-//! writes it is written whole. `narrow_notice` binds a regime that never
+//! writes it is written whole. `narrow_notice` binds `strict`, which never
 //! reaches `current`, so the same fallback computes a state that kind's own
 //! regime has no place for — the defect class HW-DR-0063 flagged: a state
 //! computed correctly against the global vocabulary and wrong against the
 //! specific kind's narrower regime.
 //!
-//! This repository's own lock cannot exercise the failing half:
+//! `edge_notice` and `bogus_notice` reach the same two defect classes through
+//! the other locus. The one document on the `decisions` shelf declares
+//! `flags: [ED-FIX-edge]` and `flags_bogus: [BG-FIX-bogus]`, and the two
+//! relations' `on_target.set_state` are what `derived::standing` reads before
+//! it ever falls back. `flags` sets `current`, which the vocabulary holds and
+//! `edge_notice`'s own regime `strict` does not name — the regime-admission
+//! defect again, this time from an edge, and a refusal over it must name the
+//! edge and not the fallback the document never reached. `flags_bogus` sets
+//! `unheard_of`, which the state facet does not admit at all, whatever regime
+//! `bogus_notice` binds — a different defect that a lifecycle regime has no
+//! part in, and a refusal over it must not talk about a regime at all.
+//!
+//! This repository's own lock cannot exercise any of the three failing cases:
 //! [HW-OBL-0196](../../../../docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md)
 //! records that all seventeen concrete kinds of `headwater/standard` bind a
-//! lifecycle regime, and of the six generated documents whose kind binds one,
-//! every one happens to stand at a state its own regime admits today. A
-//! purpose-built taxonomy is the only way to reach the defect at all.
+//! lifecycle regime, of the six generated documents whose kind binds one every
+//! one happens to stand at a state its own regime admits today, and no
+//! relation in this repository's lock sets a state its target's regime, or the
+//! vocabulary, does not hold. A purpose-built taxonomy is the only way to
+//! reach any of the three at all.
 //!
 //! # Watched failing
 //!
-//! Before this file's change to [`headwater_generate::derived::members`], with
-//! this fixture in the tree, `a_state_the_kinds_own_regime_does_not_admit_is_refused`
-//! failed with `lifecycle-regime/notices/NARROW.md` planned and
-//! `plan.unwritten` empty: the emitter wrote `status: current` into a document
-//! of kind `narrow_notice`, whose bound regime `narrow` never reaches
-//! `current`, and said nothing.
+//! Before [`headwater_generate::derived::members`] read a kind's lifecycle
+//! regime at all, with an earlier form of this fixture in the tree (a
+//! `narrow` regime bound by `narrow_notice` alone, no edge-locus cases),
+//! `a_state_the_kinds_own_regime_does_not_admit_is_refused` failed with
+//! `lifecycle-regime/notices/NARROW.md` planned and `plan.unwritten` empty:
+//! the emitter wrote `status: current` into a document of kind
+//! `narrow_notice`, whose bound regime never reaches `current`, and said
+//! nothing. A second-opinion review of that change found the edge locus
+//! untested and a regime-name assertion that a kind name already satisfied
+//! trivially; `a_state_a_relation_sets_that_the_kinds_own_regime_does_not_admit_is_refused_and_names_the_edge`
+//! and `a_state_a_relation_sets_that_the_vocabulary_does_not_admit_at_all_is_refused_and_names_the_facet_not_a_regime`
+//! below, and the `strict` rename, are what closed that.
 
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
@@ -63,8 +92,17 @@ use std::path::{Path, PathBuf};
 /// The output whose kind binds a regime that admits the fallback state.
 const WIDE: &str = "lifecycle-regime/notices/WIDE.md";
 
-/// The output whose kind binds a regime that does not.
+/// The output whose kind binds a regime that does not admit the fallback
+/// state.
 const NARROW: &str = "lifecycle-regime/notices/NARROW.md";
+
+/// The output whose kind binds a regime that does not admit the state an
+/// incoming edge sets.
+const EDGE: &str = "lifecycle-regime/notices/EDGE.md";
+
+/// The output whose kind's incoming edge sets a state the vocabulary does not
+/// admit at all.
+const BOGUS: &str = "lifecycle-regime/notices/BOGUS.md";
 
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
@@ -235,8 +273,138 @@ fn a_state_the_kinds_own_regime_does_not_admit_is_refused() {
         refusal.reason
     );
     assert!(
-        refusal.reason.contains("narrow"),
+        refusal.reason.contains("strict"),
         "the refusal of `{NARROW}` does not name the regime that does not admit the state. It \
+         reads: {}",
+        refusal.reason
+    );
+}
+
+/// The other locus, over the same defect class: an incoming edge, rather than
+/// the fallback, sets a state the kind's own regime does not admit.
+///
+/// `edge_notice`'s document never reaches `derived::standing`'s fallback at
+/// all — the `flags` edge from the one decision answers first — so a refusal
+/// that named the `live`-role fallback here would be naming a path this
+/// document never took. The reason must name the edge instead, and it must
+/// not repeat the fallback's own wording.
+#[test]
+fn a_state_a_relation_sets_that_the_kinds_own_regime_does_not_admit_is_refused_and_names_the_edge()
+{
+    let plan = plan_over_lifecycle_regime();
+
+    assert!(
+        !plan.outputs.iter().any(|output| output.path == EDGE),
+        "`{EDGE}` was written by a declaration whose kind `edge_notice` binds a regime that never \
+         reaches `current`, the state the `flags` edge sets. The outputs were: {:?}",
+        plan.outputs
+            .iter()
+            .map(|output| output.path.as_str())
+            .collect::<Vec<_>>()
+    );
+
+    let refusal = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == EDGE)
+        .unwrap_or_else(|| {
+            panic!(
+                "nothing reported the declaration that writes `{EDGE}`. The plan declined {} \
+                 outputs: {:?}",
+                plan.unwritten.len(),
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| unwritten.at.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    assert!(
+        refusal.reason.contains("current"),
+        "the refusal of `{EDGE}` does not name the offending state. It reads: {}",
+        refusal.reason
+    );
+    assert!(
+        refusal.reason.contains("edge_notice"),
+        "the refusal of `{EDGE}` does not name the kind that binds the regime. It reads: {}",
+        refusal.reason
+    );
+    assert!(
+        refusal.reason.contains("strict"),
+        "the refusal of `{EDGE}` does not name the regime that does not admit the state. It \
+         reads: {}",
+        refusal.reason
+    );
+    assert!(
+        refusal
+            .reason
+            .contains("lifecycle-regime/decisions/0001-first-decision.md"),
+        "the refusal of `{EDGE}` does not name the document whose edge set the state, so a \
+         reader cannot find the relation declaration to change. It reads: {}",
+        refusal.reason
+    );
+    assert!(
+        !refusal.reason.contains("`live`"),
+        "the refusal of `{EDGE}` names the fallback's `live`-role wording, but this document's \
+         state came from the `flags` edge and never reached the fallback. It reads: {}",
+        refusal.reason
+    );
+}
+
+/// The vocabulary locus: an incoming edge sets a state the state facet does
+/// not admit at all, which is a different defect from a regime that does not
+/// name a state the vocabulary holds, and needs a different reason.
+///
+/// `StateAdmitted::evaluate` skips this class as [`Stood::NotAState`] over a
+/// committed document, because `facet.value.not_permitted` owns it; the
+/// census exemption means nothing else ever reads it for a generated one, so
+/// this refusal is the only place the defect surfaces at all. The reason must
+/// name the facet and the value, and it must not talk about a lifecycle
+/// regime, because `bogus_notice`'s own regime is not what is wrong here.
+#[test]
+fn a_state_a_relation_sets_that_the_vocabulary_does_not_admit_at_all_is_refused_and_names_the_facet_not_a_regime(
+) {
+    let plan = plan_over_lifecycle_regime();
+
+    assert!(
+        !plan.outputs.iter().any(|output| output.path == BOGUS),
+        "`{BOGUS}` was written by a declaration whose `flags_bogus` edge sets `unheard_of`, a \
+         value the state facet does not admit at all. The outputs were: {:?}",
+        plan.outputs
+            .iter()
+            .map(|output| output.path.as_str())
+            .collect::<Vec<_>>()
+    );
+
+    let refusal = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == BOGUS)
+        .unwrap_or_else(|| {
+            panic!(
+                "nothing reported the declaration that writes `{BOGUS}`. The plan declined {} \
+                 outputs: {:?}",
+                plan.unwritten.len(),
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| unwritten.at.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    assert!(
+        refusal.reason.contains("unheard_of"),
+        "the refusal of `{BOGUS}` does not name the offending value. It reads: {}",
+        refusal.reason
+    );
+    assert!(
+        refusal.reason.contains("state facet"),
+        "the refusal of `{BOGUS}` does not name the state facet as the thing that does not admit \
+         the value. It reads: {}",
+        refusal.reason
+    );
+    assert!(
+        !refusal.reason.contains("lifecycle regime"),
+        "the refusal of `{BOGUS}` talks about a lifecycle regime, but a value outside the \
+         vocabulary is outside every regime over it and the regime is not the defect here. It \
          reads: {}",
         refusal.reason
     );
