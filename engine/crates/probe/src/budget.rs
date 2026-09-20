@@ -289,10 +289,11 @@ tiers:
 
     #[test]
     fn a_sweep_tier_is_refused_a_sweep_has_no_run_identity_to_price() {
-        // HW-DR-0076: a budget prices a run with a run identity, a pinned
-        // model, and a committed transcript. A sweep has none of the three,
-        // so it is not a tier this file may declare. This guards against a
-        // later change adding one without reopening that ruling.
+        // HW-DR-0076: a budget prices a run whose identity is fixed before it
+        // starts, and that commits a transcript. A sweep fixes only one of
+        // the six run-identity members (the taxonomy lock) and commits no
+        // transcript, so it is not a tier this file may declare. This guards
+        // against a later change adding one without reopening that ruling.
         let source = format!(
             "{GOOD}  sweep:\n    budget_cents: 2000\n    session_cost_cents: 4\n    \
              repetitions: 1\n    arms: [present]\n"
@@ -300,7 +301,7 @@ tiers:
         assert_eq!(
             Budgets::read(&source),
             Err(Unreadable::UnknownTier("sweep".to_string())),
-            "a sweep pins no model and commits no transcript, so no budget prices it"
+            "a sweep fixes only the lock and commits no transcript, so no budget prices it"
         );
     }
 

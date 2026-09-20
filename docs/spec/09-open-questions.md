@@ -318,6 +318,6 @@ relations:
 
 [HW-DR-0072](../decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) — An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test; a network fetch left the list under HW-DR-0075; and the change manifest fails the test and is a defect.
 
-## A probe budget prices a run with a pinned model and a committed transcript, and a sweep has neither
+## A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither
 
-[HW-DR-0076](../decisions/0076-a-probe-budget-prices-a-run-with-a-pinned-model-and-a-committed-transcript-and-a-sweep-has-neither.md) — Rules that a budget prices a run identity a probe has and a sweep does not, names the sweep outside every tier, and states where .headwater/probe.yml lives and why. (asserted, and no human has accepted it)
+[HW-DR-0076](../decisions/0076-a-probe-budget-prices-a-run-with-a-pinned-model-and-a-committed-transcript-and-a-sweep-has-neither.md) — Rules that a budget prices a run identity a probe has and a sweep does not, and names the sweep outside every tier. States where .headwater/probe.yml lives and why. (asserted, and no human has accepted it)
