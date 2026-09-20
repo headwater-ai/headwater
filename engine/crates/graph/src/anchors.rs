@@ -632,8 +632,12 @@ mod tests {
         let after = resolver.resolve(".claude/hooks/**");
         std::fs::remove_dir_all(&dir).ok();
 
-        let (Binding::Resolved { matched: before, .. }, Binding::Resolved { matched: after, .. }) =
-            (&before, &after)
+        let (
+            Binding::Resolved {
+                matched: before, ..
+            },
+            Binding::Resolved { matched: after, .. },
+        ) = (&before, &after)
         else {
             panic!("both resolve: {before:?} {after:?}");
         };

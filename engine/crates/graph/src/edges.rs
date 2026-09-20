@@ -740,9 +740,7 @@ fn bind(
                     revision,
                     matched,
                 } => (normalized, excluded_by, revision, matched),
-                _ => unreachable!(
-                    "withheld handled above, and unresolved never reaches `claimed`"
-                ),
+                _ => unreachable!("withheld handled above, and unresolved never reaches `claimed`"),
             })
             .collect();
         // HW-DR-0074: "the identity of an anchor node is its normalized
