@@ -1035,6 +1035,26 @@ add:
   # control and an edge that name one rule name one thing.
   anchors.check_rule: {resolver: check-rule}
 
+  # [HW-DR-0073](../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
+  # ruling 4: a `comment-scan` resolver ships in the binary, and the pattern it
+  # looks for stays in configuration rather than in the engine. `pattern` here
+  # is the one member `anchor.pattern` in `engine/crates/meta/meta-schema.yml`
+  # adds for this purpose, read by `headwater_graph::anchors::CommentScan` and
+  # by no rule of the taxonomy language itself. The value is the literal
+  # prefix a comment's citation must open with, and it is a prefix rather than
+  # the fuller `{namespace}-VER-{seq:04d}` template `identifier_schemes.verification_id`
+  # already declares, because every scheme this corpus mints is disjoint from
+  # every other one by its literal segment — the identifier integrity rule
+  # `taxonomy validate` runs guarantees exactly that — so a token opening with
+  # `HW-VER-` cannot be a citation of any other scheme.
+  #
+  # A corpus that declares this anchor kind with no `pattern`, or that
+  # declares no anchor kind naming `comment-scan` at all, gets no
+  # `comment-scan` resolver: `engine/crates/cli/src/main.rs` registers one only
+  # where both are present, which is what keeps the convention out of the
+  # engine rather than merely out of this file.
+  anchors.test_site: {resolver: comment-scan, pattern: "HW-VER-"}
+
   # `check_rule` at the target end, and the `from` end stays at `requirement`.
   # Q35 says `verified_by` names both kinds at its `from` end, and the block
   # above states why one endpoint is the right reading here. Widening `from` is

@@ -272,6 +272,9 @@ anchors:
     resolver: source-tree
   check_rule:
     resolver: check-rule
+  test_site:
+    pattern: HW-VER-
+    resolver: comment-scan
 kinds:
   governed_document:
     abstract: true

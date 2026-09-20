@@ -42,7 +42,7 @@
 //! and Q19 rules that the shape of a snapshot is a property of its resolver.
 
 use headwater_census::walk::{Corpus, Exclusion};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// What a resolver made of one anchor string.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -197,6 +197,173 @@ impl Resolver for SourceTree {
     }
 }
 
+/// The `comment-scan` resolver: a path binds only where a comment inside it
+/// cites an identifier this corpus has minted.
+///
+/// [HW-DR-0073](../../../../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
+/// ruling 4: "A `comment-scan` resolver ships in the binary. The default
+/// reads a pattern declared in the overlay, so the convention stays in
+/// configuration and out of the engine." [`AnchorKind::pattern`](crate::declarations::AnchorKind::pattern)
+/// is that declaration, and `engine/crates/cli/src/main.rs` is where a
+/// corpus that declares no pattern for this resolver ends up with none
+/// registered, because there is nothing there to build one from.
+///
+/// # It reads bytes, and that is the whole argument the amendment rests on
+///
+/// [`SourceTree::resolve`] calls `Path::exists` and never opens the file.
+/// This resolver opens it, and calls [`crate::comments::rust_comment_text`]
+/// on what it reads, which is the one primitive this file and
+/// `headwater_check::fragment::comment_links` both call rather than each
+/// hand-rolling a Rust comment tokenizer. So a `governs` edge onto a
+/// `test_site` anchor is the first anchor binding in this engine whose
+/// verdict is a function of the bytes at the target, and never only of
+/// whether the target exists.
+///
+/// # The pattern is a prefix, and the reason is the namespace rule
+///
+/// A resolved identifier scheme in this corpus is disjoint from every other
+/// scheme's literal segment (`.headwater/overlay.yml`'s own words: "no two
+/// schemes admit one string"). So a candidate token that starts with the
+/// declared prefix cannot be mistaken for an identifier of a different
+/// scheme, and a prefix is enough: this resolver does not have to parse the
+/// rest of an identifier scheme's `{namespace}-VER-{seq:04d}` template to
+/// tell a citation from ordinary prose.
+///
+/// # What "minted" means here, and why this reads no document
+///
+/// [HW-DR-0054](../../../../docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)
+/// gives a minted identifier a file of its own at
+/// `.headwater/ids/<scheme>/<identifier>`, written once, before any document
+/// graph exists. [`Resolvers::over`] and every call to [`Resolvers::with`] run
+/// before this crate builds an [`crate::index::Index`] over the census, so a
+/// resolver built at this point cannot ask the graph whether an identifier is
+/// real. The claim store answers the same question from disk, at the same
+/// time every other resolver is built, which is the property
+/// [`CommentScan::claimed`] uses.
+#[derive(Clone, Debug)]
+pub struct CommentScan {
+    base: PathBuf,
+    /// The literal segment a citation must open with. Read from
+    /// [`AnchorKind::pattern`](crate::declarations::AnchorKind::pattern), and
+    /// never compiled in.
+    prefix: String,
+    /// Every identifier this corpus has a claim file for, of any scheme. The
+    /// prefix above is what tells one scheme's citations from another's, so
+    /// this set does not need to be scoped to one scheme itself.
+    minted: std::collections::BTreeSet<String>,
+}
+
+impl CommentScan {
+    pub fn new(
+        base: impl Into<PathBuf>,
+        prefix: impl Into<String>,
+        minted: std::collections::BTreeSet<String>,
+    ) -> Self {
+        Self {
+            base: base.into(),
+            prefix: prefix.into(),
+            minted,
+        }
+    }
+
+    /// Every identifier this repository's claim store holds, read fresh off
+    /// disk. [`crate::declarations::AnchorKind`]'s own doc comment states why
+    /// this cannot instead be a lookup into the document graph.
+    ///
+    /// A repository with no store yet, or no `.headwater/ids` directory at
+    /// all, answers the empty set rather than an error: an empty corpus has
+    /// minted nothing, and that is a fact rather than a defect this resolver
+    /// exists to report.
+    pub fn claimed(base: &Path) -> std::collections::BTreeSet<String> {
+        let mut out = std::collections::BTreeSet::new();
+        let Ok(schemes) = std::fs::read_dir(base.join(".headwater/ids")) else {
+            return out;
+        };
+        for scheme in schemes.flatten() {
+            let Ok(entries) = std::fs::read_dir(scheme.path()) else {
+                continue;
+            };
+            for entry in entries.flatten() {
+                if let Some(name) = entry.file_name().to_str() {
+                    out.insert(name.to_string());
+                }
+            }
+        }
+        out
+    }
+
+    /// The identifier-shaped tokens of `text` that open with `prefix`: a
+    /// maximal run of ASCII letters, digits and hyphens, with a trailing
+    /// hyphen trimmed off so that a sentence's punctuation is not read as
+    /// part of the token that precedes it.
+    fn candidates<'a>(text: &'a str, prefix: &str) -> Vec<&'a str> {
+        let bytes = text.as_bytes();
+        let mut out = Vec::new();
+        let mut i = 0;
+        while i < bytes.len() {
+            if (bytes[i] as char).is_ascii_alphanumeric() {
+                let start = i;
+                while i < bytes.len()
+                    && ((bytes[i] as char).is_ascii_alphanumeric() || bytes[i] == b'-')
+                {
+                    i += 1;
+                }
+                let mut end = i;
+                while end > start && bytes[end - 1] == b'-' {
+                    end -= 1;
+                }
+                let token = &text[start..end];
+                if token.starts_with(prefix) {
+                    out.push(token);
+                }
+            } else {
+                i += 1;
+            }
+        }
+        out
+    }
+}
+
+impl Resolver for CommentScan {
+    fn name(&self) -> &str {
+        "comment-scan"
+    }
+
+    fn resolve(&self, raw: &str) -> Binding {
+        let normalized = match normalize(raw) {
+            Ok(normalized) => normalized,
+            Err(why) => return Binding::Unresolved(why),
+        };
+
+        let Ok(source) = std::fs::read_to_string(self.base.join(&normalized)) else {
+            return Binding::Unresolved(format!("no `{normalized}` in the source tree"));
+        };
+
+        let text = crate::comments::rust_comment_text(&source);
+        let Some(candidate) = Self::candidates(&text, &self.prefix).into_iter().next() else {
+            return Binding::Unresolved(format!(
+                "no comment in `{normalized}` cites an identifier starting `{}`",
+                self.prefix
+            ));
+        };
+
+        if self.minted.contains(candidate) {
+            Binding::Resolved {
+                normalized,
+                excluded_by: None,
+                // A claim file names no revision, and neither does the
+                // source tree it sits beside. See `SourceTree::resolve`.
+                revision: None,
+            }
+        } else {
+            Binding::Unresolved(format!(
+                "`{candidate}`, cited in `{normalized}`, is shaped like an identifier this \
+                 corpus mints, and no document mints it"
+            ))
+        }
+    }
+}
+
 /// Normalize a repository path.
 ///
 /// The rules are written out rather than delegated to a path library, and the
@@ -342,5 +509,103 @@ mod tests {
             panic!("the file is there, so the anchor resolves");
         };
         assert_eq!(excluded_by.as_deref(), Some("src/**"));
+    }
+
+    /// A directory nothing else in this process writes into, on the same
+    /// terms `engine/crates/check/src/fragment.rs`'s `comment_links` tests
+    /// take: cargo runs a target's cases as threads of one process, so the
+    /// pid alone is not a key.
+    fn scratch(name: &str) -> PathBuf {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("a clock later than the epoch")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "headwater-comment-scan-{name}-{}-{nanos}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).expect("a scratch directory");
+        dir
+    }
+
+    /// The decisive fixture: one file, two comments, and the resolver's
+    /// verdict flips on the identifier the second line cites rather than on
+    /// anything about the file itself.
+    #[test]
+    fn a_citation_shaped_like_an_identifier_this_corpus_mints_and_unminted_is_refused_and_named() {
+        let dir = scratch("unminted");
+        std::fs::write(dir.join("sample.rs"), "//! proves HW-VER-9999\nfn f() {}\n")
+            .expect("a fixture file");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
+        );
+        let Binding::Unresolved(why) = resolver.resolve("sample.rs") else {
+            panic!("an unminted citation resolved");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(why.contains("HW-VER-9999"), "{why}");
+        assert!(why.contains("no document mints it"), "{why}");
+    }
+
+    #[test]
+    fn a_citation_of_a_minted_identifier_resolves() {
+        let dir = scratch("minted");
+        std::fs::write(dir.join("sample.rs"), "//! proves HW-VER-0001\nfn f() {}\n")
+            .expect("a fixture file");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
+        );
+        let outcome = resolver.resolve("sample.rs");
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(matches!(outcome, Binding::Resolved { .. }), "{outcome:?}");
+    }
+
+    #[test]
+    fn a_file_with_no_citation_is_refused_and_says_so() {
+        let dir = scratch("no-citation");
+        std::fs::write(dir.join("sample.rs"), "//! nothing here cites anything\n")
+            .expect("a fixture file");
+
+        let resolver = CommentScan::new(&dir, "HW-VER-", std::collections::BTreeSet::new());
+        let Binding::Unresolved(why) = resolver.resolve("sample.rs") else {
+            panic!("a file with no citation resolved");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(why.contains("no comment"), "{why}");
+    }
+
+    /// A citation inside a string literal is not a comment, exactly as
+    /// `headwater_check::fragment::comment_links` already holds for a link.
+    /// This is the one behavior [`CommentScan`] shares with that module by
+    /// calling the same primitive rather than by agreeing with it twice.
+    #[test]
+    fn a_citation_inside_a_string_literal_is_not_a_comment() {
+        let dir = scratch("string-literal");
+        std::fs::write(
+            dir.join("sample.rs"),
+            "let s = \"HW-VER-0001\"; // no citation here\n",
+        )
+        .expect("a fixture file");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
+        );
+        let Binding::Unresolved(why) = resolver.resolve("sample.rs") else {
+            panic!("a citation inside a string literal resolved");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(why.contains("no comment"), "{why}");
     }
 }
