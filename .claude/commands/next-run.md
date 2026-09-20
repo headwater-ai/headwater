@@ -11,7 +11,7 @@ Run `$ARGUMENTS` iterations (default 20) of the Headwater build order. You are t
 
 This is the canonical statement. Every other file cites it rather than restating it, and so do `.claude/commands/next.md` and `.claude/agents/headwater-product-owner.md`.
 
-**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration and not eligible for the tracker: it is scaffolded as an obligation record under [13 — Open obligations](../../docs/spec/13-open-obligations.md) and left there. `adopter-blocking` means work an outside adopter cannot proceed without, and it sorts above everything else. This command generates issues by construction: the evaluation records a day of 45 filed and 16 closed.
+**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration and not eligible for the tracker: it is scaffolded as an obligation record under [13 — Open obligations](../../docs/spec/13-open-obligations.md) and left there. `adopter-blocking` means work an outside adopter cannot proceed without, and it sorts above everything else. A run files no issue: a finding goes to its `intake.md` (`hw-run-policy`).
 
 ## The doctrine
 
@@ -42,7 +42,7 @@ Ten lines the parent of a build-order run obeys on every turn. `.claude/commands
 4. **On a build report.** Dispatch `hw-verify` with the branch, the pull request number, the adjudication note, and the attacks you chose from the `hw-verification-bar` skill. Choosing the attacks is the judgment you keep; running them is not.
 5. **On a verify report.** `VERDICT: PASS` is your cue to rule. If you merge, append the ruling to the integrator queue and dispatch the next adjudicate in the same turn. `VERDICT: FAIL` is the veto below.
 6. **The integrator slot.** Depth one. When nothing is integrating and the queue holds a ruling, dispatch a fresh `hw-integrate` with the pull request, the ruling and the footprint the adjudicator declared. Never a second one while the first runs, and never one long-lived integrator ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
-7. **Every fifth merge**, dispatch `headwater-product-owner` again.
+7. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`: it rules on intake.
 
 ## The veto
 
