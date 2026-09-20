@@ -238,8 +238,9 @@ The three classes above do not exhaust the nineteen decisions that carry open wo
 
 This paragraph read eighteen for sixteen iterations, and the number is nineteen. Nineteen of the twenty-one decisions are cited somewhere in the four classes. The two that are not are [Q1](09-decisions.md#q1--implementation-language) and [Q10](09-decisions.md#q10--naming). The [redirect map](09-open-questions.md) states that nothing stays open under either one, so the two records agree.
 
+[HW-OBL-0092](../obligations/0092-how-a-probe-reaches-a-harvesting-tier-and-what-a-transcript.md) is discharged and it is not in the list below. Two of its three threads closed earlier, by #165 and by #515. [HW-DR-0076](../decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md) rules the third. A budget prices a run whose identity is fixed before it starts, and that commits a transcript. It does not price every mechanism that reaches a model.
+
 - [HW-OBL-0091](../obligations/0091-the-friction-signal-that-q4-narrowed-is-still-unread.md) — The friction signal that Q4 narrowed is still unread
-- [HW-OBL-0092](../obligations/0092-how-a-probe-reaches-a-harvesting-tier-and-what-a-transcript.md) — How a probe reaches a harvesting tier, and what a transcript costs to keep
 - [HW-OBL-0093](../obligations/0093-whether-a-harvesting-tier-owes-conformance-rules-of-its-own.md) — Whether a harvesting tier owes conformance rules of its own
 - [HW-OBL-0094](../obligations/0094-where-a-commercial-tier-could-sit-and-how-thin-the-trademark.md) — Where a commercial tier could sit, and how thin the trademark position is
 - [HW-OBL-0095](../obligations/0095-whether-the-rdf-emitter-carries-owl-inverseof.md) — Whether the RDF emitter carries `owl:inverseOf`
