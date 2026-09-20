@@ -3066,6 +3066,31 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
         };
     }
 
+    // `comment-scan`: registered only where a declared anchor kind names it and
+    // carries a pattern. HW-DR-0073 ruling 4 puts that pattern in the overlay
+    // rather than in this binary, so a corpus that declares neither ends up
+    // with the same two resolvers it had before this branch existed, and
+    // `headwater_graph::anchors::CommentScan`'s own doc comment states why the
+    // claim store rather than the graph answers what is minted.
+    if let Some(pattern) = relations
+        .anchors
+        .iter()
+        .find(|anchor| anchor.resolver == "comment-scan")
+        .and_then(|anchor| anchor.pattern.clone())
+    {
+        let minted = headwater_graph::anchors::CommentScan::claimed(root);
+        resolvers = match resolvers.with(Box::new(headwater_graph::anchors::CommentScan::new(
+            root, pattern, minted,
+        ))) {
+            Ok(resolvers) => resolvers,
+            Err(why) => {
+                eprintln!("headwater: {}", err("the resolver set is ambiguous"));
+                eprintln!("{}", indent(&err(&why)));
+                return Err(ExitCode::FAILURE);
+            }
+        };
+    }
+
     let census = census::take(&corpus, &taxonomy);
     let config = Config::default();
     let graph = Graph::build(&census, &relations, &resolvers, &corpus, &config);

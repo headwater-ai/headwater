@@ -61,12 +61,20 @@ meta_schema: headwater/taxonomy
 # validates under this one, because a member that is absent is a kind that
 # narrows nothing, so it is a minor by the rule above.
 #
+# 0.6.0 adds `anchor.pattern`, an optional member that a resolver reads at its
+# own discretion. HW-DR-0073 ruling 4 puts the comment-scan resolver's pattern
+# in configuration and out of the engine, and an anchor kind is the one place a
+# corpus already names which resolver owns an identity, so the pattern travels
+# beside it rather than in a fourteenth root this file would have to add. Every
+# source that validated under 0.5.0 validates under this one, because the
+# member is absent wherever a source did not write it, so it is a minor.
+#
 # No consumer compares this value against anything. `fixtures/schema.record`
 # carries it, so a bump shows up in a diff, and nothing refuses a source for
 # the version it was written against. So the position of a digit here is a
 # statement to a reader and never a gate: the removal above is refused at the
 # member and never at the version.
-version: 0.5.0
+version: 0.6.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
@@ -302,6 +310,13 @@ definitions:
   anchor:
     members:
       resolver: {scalar: string, required: true}
+      # A resolver-specific configuration string, read by the one resolver
+      # named above and by no rule of this schema. `comment-scan` is the first
+      # resolver that reads it: the string it names is what the resolver looks
+      # for in a comment, and the corpus that declares it is the corpus that
+      # turns the resolver on. A resolver that needs no such string, such as
+      # `source-tree` or `check-rule`, leaves this absent.
+      pattern: {scalar: string}
 
   # --- shelves --------------------------------------------------------------
 
