@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 505,
-      "carried": 505,
+      "in the graph": 506,
+      "carried": 506,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 717,
-      "carried": 717,
+      "in the graph": 719,
+      "carried": 719,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2220,6 +2220,27 @@
               "HW-OBL-0183"
             ]
           },
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md",
+        "kind": "decision",
+        "id": "HW-DR-0079",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0079",
+          "status": "current",
+          "status_since": "2026-09-21",
+          "summary": "A full entry that serves neither core purpose names or extends a core-serving kind, and a facet-only entry ships no templates/ directory.",
+          "last_verified": "2026-09-21",
+          "title": "Criterion 5 admits naming or extending a core-serving kind, and a facet-only entry ships no templates directory under criterion 2",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
@@ -8563,11 +8584,16 @@
         "facets": {
           "id": "HW-OBL-0186",
           "status": "current",
-          "status_since": "2026-09-11",
-          "summary": "A facet-only entry declares no kind, so the worked corpus and the templates slot that the anatomy asks for have no stated content.",
-          "last_verified": "2026-09-11",
+          "status_since": "2026-09-21",
+          "summary": "The templates half is ruled by HW-DR-0079. What stays open is criterion 4: whether a facet-only entry's worked corpus, typed under a borrowed kind, is a demonstration or a borrowing.",
+          "last_verified": "2026-09-21",
           "title": "A facet-only entry has no kind, and the entry anatomy asks for two things that presume one",
           "waiting_on": "ruling",
+          "relations": {
+            "traces_to": [
+              "HW-DR-0079"
+            ]
+          },
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
@@ -8716,12 +8742,17 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0193",
-          "status": "current",
-          "status_since": "2026-09-11",
-          "summary": "Criterion 5 escapes only a facet-only overlay, so a full entry with a third reader intent has no reading of it.",
-          "last_verified": "2026-09-11",
+          "status": "discharged",
+          "status_since": "2026-09-21",
+          "summary": "HW-DR-0079 rules that a full entry names or extends a core-serving kind, and states which reading each of the three affected entries takes.",
+          "last_verified": "2026-09-21",
           "title": "Admission criterion 5 has no reading for an entry that serves neither core purpose",
           "waiting_on": "ruling",
+          "relations": {
+            "traces_to": [
+              "HW-DR-0079"
+            ]
+          },
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
@@ -10093,7 +10124,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 78 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 79 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
@@ -17058,6 +17089,28 @@
           "bound": "document",
           "id": "HW-DR-0078",
           "path": "docs/decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0186-a-facet-only-entry-has-no-kind-and-the-entry-anatomy-asks-for-two-things-that-presume-one.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0079",
+          "path": "docs/decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0079",
+          "path": "docs/decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md",
           "kind": "decision"
         }
       },
