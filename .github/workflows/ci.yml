@@ -1043,10 +1043,17 @@ jobs:
         # `docs/interfaces/README.md`.
         #
         # What this step holds is the referential integrity of that page —
-        # every relative link and every fragment resolving — together with four
-        # claims the page makes about itself: the opening image at 1280 by 640
-        # under 1 MB, every GitHub URL naming the owner and repository the
-        # remote names, the exclusive or below, and no count of milestones.
+        # every relative link and every fragment resolving — together with
+        # six claims the page makes about itself: the opening image at 1280
+        # by 640 under 1 MB, every GitHub URL naming the owner and repository
+        # the remote names, the exclusive or below, no count of milestones,
+        # the command the page tells a newcomer to run, and a recorded
+        # terminal demonstration carrying a visible `recorded on YYYY-MM-DD`
+        # marker beside it (HW-DR-0078). The sixth is a text check on the
+        # README beside the embed, not a check of the GIF itself: nothing
+        # here regenerates or compares the frozen numbers a recording would
+        # freeze, because HW-DR-0078 accepts that as disclosed rather than
+        # held.
         #
         # What it does NOT hold is the prose. A British spelling, a
         # contraction, a hard-wrapped paragraph, a retired term and `headwater`

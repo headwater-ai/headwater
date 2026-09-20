@@ -18,6 +18,7 @@ nav:
       - "Q13 — LinkML and SHACL as substrate": "decisions/0013-linkml-and-shacl-as-substrate.md"
       - "Q14 — Discovery surface": "decisions/0014-discovery-surface.md"
       - "Q15 — A synthesized content tier": "decisions/0015-a-synthesized-content-tier.md"
+      - "A recorded terminal demonstration may show a frozen number behind a recorded-on-date marker": "decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md"
       - "Q61 — How a recorded terminal demonstration is held against a run": "decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md"
       - "Q39 — How a figure reaches a hand-built page": "decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md"
       - "Q50 — Where the visual register of the hand-built pages lives": "decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md"
