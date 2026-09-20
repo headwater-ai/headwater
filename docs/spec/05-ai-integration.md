@@ -22,11 +22,7 @@ relations:
     - HW-EVAL-theoretical-foundations
     - HW-EVAL-warrant-and-adjudication
   governs:
-    - .claude/hooks/lib.sh
-    - .claude/hooks/intent.sh
-    - .claude/hooks/write.sh
-    - .claude/hooks/touch.sh
-    - .claude/hooks/review.sh
+    - .claude/hooks/**
     - .claude/skills/fixtures.sh
     - .claude/skills/headwater-authoring/SKILL.md
     - .claude/skills/headwater-taxonomy/SKILL.md
@@ -120,7 +116,7 @@ When a budget binds, the engine **drops satellites before nuclei**. A generated 
 ### Write-time hooks
 
 - **Backfill** — at creation time, when it is cheap, the engine completes the front matter, identifier, and required sections of a new document against its kind. `headwater new` is that completion. It derives the shelf, the facets, the identifier and the sections from the committed lock, and it refuses rather than guessing. So the hook at this moment refuses a raw write of a document that does not exist yet, and names the verb. It refuses creation alone, because an edit to a document that already carries front matter is what [`check --fix`](12-check-layer.md#fixability) and the commit gate hold.
-- **Impact detection** — a document can declare that it governs code. An edit to that code raises an advisory prompt that names the specific documents at risk. The prompt names each document by its path and by the declared name, which for an `interface_contract` is the command a caller types. The prompt is advisory on purpose: a blocking gate here trains people to write "no doc impact" reflexively, and that destroys the signal. `governing_docs_for_path` answers by equality against the string each edge reached, so a document reaches the paths it names and no path under one of them. [HW-OBL-0104](../obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) holds what an author pays for that.
+- **Impact detection** — a document can declare that it governs code. An edit to that code raises an advisory prompt that names the specific documents at risk. The prompt names each document by its path and by the declared name, which for an `interface_contract` is the command a caller types. The prompt is advisory on purpose: a blocking gate here trains people to write "no doc impact" reflexively, and that destroys the signal. A `governs` anchor is a pattern in the shelf language, or a list of them, and `governing_docs_for_path` matches the edited path against every pattern of every anchor, so a document reaches every entry a pattern admits and no other ([HW-DR-0074](../decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)). A pattern with no wildcard names one entry, itself, exactly as a bare path always has.
 
 ### Review-time checks
 

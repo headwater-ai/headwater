@@ -171,6 +171,12 @@ pub struct Neighbour {
     pub cue_is_declared: bool,
     /// Which end governs the reading of the pair, derived and never declared.
     pub governs: Governs,
+    /// How many tree entries the far end reaches, in total and per pattern,
+    /// where the far end is an anchor. `None` for a document target: a
+    /// document's identity is not a pattern, and `headwater explain` states
+    /// this as the denominator [HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)
+    /// records as absent ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
+    pub reach: Option<headwater_graph::Reach>,
 }
 
 impl<'a> Surface<'a> {
@@ -317,24 +323,28 @@ impl<'a> Surface<'a> {
 
     /// The documents that govern a path: spec 5's `governing_docs_for_path`.
     ///
-    /// The path is matched against what an edge reached rather than against a
-    /// pattern, so a resolver that normalizes two spellings of one target makes
-    /// both spellings answer here. The relation has to be one whose source
-    /// governs, which is spec 2's derivation and not a name this function
-    /// knows: an adopter who declares a governance relation of their own gets
-    /// it for nothing.
+    /// [HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md):
+    /// "a query about a path matches the path against every pattern of every
+    /// anchor and never against the string." A `code_path` anchor's target is
+    /// one entry when it names one path with no wildcard, so this reaches the
+    /// same edges it always did for one of those; it reaches every edge whose
+    /// pattern (or list of patterns) admits `path`. A document target still
+    /// answers by equality: a document's own identity is one identifier and
+    /// never a pattern. The relation has to be one whose source governs, which
+    /// is spec 2's derivation and not a name this function knows: an adopter
+    /// who declares a governance relation of their own gets it for nothing.
     pub fn governing_docs_for_path(&self, path: &str) -> Vec<Pointer> {
         let mut pointers: Vec<Pointer> = Vec::new();
         for edge in &self.graph.edges {
             if self.governs_of(edge) != Governs::Source {
                 continue;
             }
-            let reached = match &edge.target {
-                Target::Anchor { normalized, .. } => normalized.as_str(),
-                Target::Document { path, .. } => path.as_str(),
-                _ => continue,
+            let reaches = match &edge.target {
+                anchor @ Target::Anchor { .. } => anchor.reaches(path),
+                Target::Document { path: target, .. } => target == path,
+                _ => false,
             };
-            if reached != path {
+            if !reaches {
                 continue;
             }
             let Some(document) = self.find(&edge.source.path) else {
@@ -411,7 +421,14 @@ impl<'a> Surface<'a> {
                 .or_else(|| pointer.as_ref().and_then(|pointer| pointer.summary.clone())),
             target: match inbound {
                 true => edge.source.path.clone(),
-                false => edge.normalized_target(),
+                // The human-facing join, not the identity: `Target::resolution`
+                // and `Edge::normalized_target` key a cache and a duplicate-edge
+                // check, and a list anchor's identity is not written for a
+                // reader (see `Target::anchor_display`).
+                false => edge
+                    .target
+                    .anchor_display()
+                    .unwrap_or_else(|| edge.normalized_target()),
             },
             governs: match (self.governs_of(edge), inbound) {
                 (Governs::Neither, _) => Governs::Neither,
@@ -420,6 +437,10 @@ impl<'a> Surface<'a> {
                 // the end that governs is the other one.
                 (Governs::Source, true) => Governs::Target,
                 (Governs::Target, true) => Governs::Source,
+            },
+            reach: match inbound {
+                true => None,
+                false => edge.target.reach(),
             },
             pointer,
         }
@@ -550,6 +571,31 @@ impl Neighbour {
             Governs::Target => " [that document governs the reading]",
             Governs::Neither => "",
         });
+        // HW-DR-0074: the denominator HW-OBL-0104 recorded as absent — how
+        // many entries an anchor reaches, in total and per pattern it holds.
+        if let Some(reach) = &self.reach {
+            match reach.members.as_slice() {
+                [_] => {
+                    let _ = write!(
+                        line,
+                        " (reaches {} {})",
+                        reach.total,
+                        match reach.total {
+                            1 => "entry",
+                            _ => "entries",
+                        }
+                    );
+                }
+                members => {
+                    let breakdown = members
+                        .iter()
+                        .map(|(pattern, count)| format!("{pattern}: {count}"))
+                        .collect::<Vec<String>>()
+                        .join(", ");
+                    let _ = write!(line, " (reaches {} entries — {breakdown})", reach.total);
+                }
+            }
+        }
         line
     }
 }

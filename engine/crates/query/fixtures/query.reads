@@ -43,6 +43,9 @@ route "add rate limiting to src/ingest/rate_limit.rs"
   query/decisions/edge-throttling.md — why throttling is applied at the edge and
     not per service
     governs src/ingest/rate_limit.rs
+  query/specs/ingest.md — what the ingest service does with a request, and the
+    limits it holds
+    governs src/ingest/rate_limit.rs
   query/runbooks/rotate-keys.md — how to rotate the ingest API keys after one
     leaks
     matched to, rank 1 of 1
@@ -108,7 +111,9 @@ explain
     may declare is_alternative_to to decision
     to DR-FIX-0007 supersedes — why a per service throttling design was rejected
       (the target's own summary) [this document governs the reading]
-    to src/ingest/rate_limit.rs governs [this document governs the reading]
+    to src/ingest/mod.rs, src/ingest/rate_limit.rs governs [this document governs
+      the reading] (reaches 2 entries — src/ingest/mod.rs: 1,
+      src/ingest/rate_limit.rs: 1)
     from query/decisions/per-service-limits.md superseded_by — why a per service
       throttling design was rejected (the target's own summary) [this document
       governs the reading]
@@ -135,5 +140,8 @@ resolve_identifier
 
 governing_docs_for_path
   src/ingest/rate_limit.rs — query/decisions/edge-throttling.md — why throttling is applied at the edge and not per service
+  src/ingest/rate_limit.rs — query/specs/ingest.md — what the ingest service does with a request, and the limits it holds
+  src/ingest/mod.rs — query/decisions/edge-throttling.md — why throttling is applied at the edge and not per service
+  src/ingest/mod.rs — query/specs/ingest.md — what the ingest service does with a request, and the limits it holds
   src/ingest — query/specs/ingest.md — what the ingest service does with a request, and the limits it holds
   src/nothing.rs is governed by nothing

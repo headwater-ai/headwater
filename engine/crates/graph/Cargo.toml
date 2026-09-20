@@ -29,5 +29,11 @@ headwater-yaml = { workspace = true }
 # a declaration means and never on the act of resolving one.
 headwater-resolve = { workspace = true }
 
+# The `code_path` anchor's raw value is a pattern in this crate's language, or
+# a list of them (HW-DR-0074). `headwater-census` already depends on it for
+# shelf and exclusion patterns, so this is not a new construct in the
+# workspace, only a new crate reaching for one that already exists.
+headwater-meta = { workspace = true }
+
 [lints]
 workspace = true

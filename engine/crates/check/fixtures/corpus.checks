@@ -1,4 +1,4 @@
-564 seen, 377 classified, 377 checked, 7149 check instances
+564 seen, 377 classified, 377 checked, 7148 check instances
      21 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       3 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-16`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
@@ -20,7 +20,7 @@ adoption
     377 instances of facet.value.blank
     377 instances of identifier.pattern.not_met
     377 instances of shelf.placement_is_primary
-    714 instances of relation.target.unresolved
+    713 instances of relation.target.unresolved
      90 instances of relation.reciprocity.missing
     419 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal

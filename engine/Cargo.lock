@@ -621,6 +621,7 @@ version = "0.2.0"
 dependencies = [
  "headwater-census",
  "headwater-doc",
+ "headwater-meta",
  "headwater-resolve",
  "headwater-yaml",
 ]

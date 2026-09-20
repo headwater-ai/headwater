@@ -202,7 +202,6 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0089](../obligations/0089-a-profile-names-its-rules-and-never-states-them.md) — A profile names its rules and never states them
 - [HW-OBL-0090](../obligations/0090-one-rule-carries-four-sub-rules-and-a-suppression.md) — One rule carries four sub-rules, and a suppression cannot separate them
 - [HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md) — The front-matter half of a patch has no writer
-- [HW-OBL-0104](../obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) — A `governs` edge reaches the path it names and nothing under it
 - [HW-OBL-0105](../obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) — Nothing plays the `hook` role that two relations name as their author
 - [HW-OBL-0106](../obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md) — A shelf layout names a file at birth, and no rule reads it
 - [HW-OBL-0107](../obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md) — The base package ships a kind that the scaffolder refuses to write

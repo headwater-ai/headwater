@@ -12,6 +12,7 @@ relations:
     - engine/crates/query/src/lib.rs
     - engine/crates/query/src/explain.rs
     - engine/crates/query/src/json.rs
+    - engine/crates/graph/src/edges.rs
     - engine/crates/census/src/walk.rs
 ---
 
@@ -29,7 +30,7 @@ The target is a path under the corpus root or an identifier declared by a docume
 
 An untyped document can still be explained. Its derivation states the step that stopped classification, and its kind-dependent fields are empty because no kind requires them.
 
-The text report follows the order above. JSON carries the same fields in a document with its own shape version. A related edge states its direction, target, cue, governing end and the far document pointer where one exists.
+The text report follows the order above. JSON carries the same fields in a document with its own shape version. A related edge states its direction, target, cue, governing end and the far document pointer where one exists. A `governs` edge onto a `code_path` anchor also states how many tree entries the anchor reaches, in total and for each pattern it holds ([HW-DR-0074](../decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)). JSON carries this as a `reach` member with `total` and `members`. The text report writes it in parentheses after the edge.
 
 **The text report renders the palette [HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md) rules on, when standard output is a terminal.** The path is cyan, and the repeated labels — `kind`, `purpose`, `summary`, `warrant`, `requires the facets`, `requires the sections`, `may declare` — are dim, the same way on every run. JSON never colors: `--json` selects a machine format regardless of the stream. `--no-color` forces the plain text this verb already wrote before this decision.
 

@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 501,
-      "carried": 501,
+      "in the graph": 503,
+      "carried": 503,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 714,
-      "carried": 714,
+      "in the graph": 713,
+      "carried": 713,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2088,13 +2088,13 @@
         "path": "docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md",
         "kind": "decision",
         "id": "HW-DR-0074",
-        "warrant": "proposed",
+        "warrant": "accepted",
         "facets": {
           "id": "HW-DR-0074",
-          "status": "draft",
-          "status_since": "2026-09-18",
+          "status": "current",
+          "status_since": "2026-09-20",
           "summary": "A `code_path` anchor is a pattern in the shelf language or a list of them, and a bare path matches one entry. An edge binds when every pattern matches at least one entry, and a query matches a path against the patterns.",
-          "last_verified": "2026-09-18",
+          "last_verified": "2026-09-20",
           "title": "A code path anchor is a pattern over the tree, and it binds when the pattern matches at least one entry",
           "relations": {
             "constrains": [
@@ -2102,8 +2102,10 @@
             ],
             "governs": [
               "engine/crates/graph/src/anchors.rs",
+              "engine/crates/graph/src/edges.rs",
               "engine/crates/meta/src/pattern.rs",
-              "engine/crates/query/src/lib.rs"
+              "engine/crates/query/src/lib.rs",
+              "engine/crates/query/src/route.rs"
             ],
             "traces_to": [
               "HW-OBL-0104",
@@ -2111,9 +2113,10 @@
             ]
           },
           "provenance": {
-            "warrant": "proposed",
+            "warrant": "accepted",
             "agency": "agent",
             "drafted_by": "claude-fable-5-1",
+            "accepted_by": "j.baxter",
             "activity": "measure+draft",
             "evidence_basis": "evidenced"
           }
@@ -3241,6 +3244,7 @@
               "engine/crates/query/src/lib.rs",
               "engine/crates/query/src/explain.rs",
               "engine/crates/query/src/json.rs",
+              "engine/crates/graph/src/edges.rs",
               "engine/crates/census/src/walk.rs"
             ]
           }
@@ -6499,10 +6503,10 @@
         "facets": {
           "id": "HW-OBL-0104",
           "title": "A governs edge reaches the path it names and nothing under it",
-          "status": "current",
-          "status_since": "2026-08-13",
+          "status": "discharged",
+          "status_since": "2026-09-20",
           "waiting_on": "ruling",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-09-20",
           "summary": "Impact detection compares the edited path against the anchor by equality, so an edge onto a directory answers for no file inside it.",
           "provenance": {
             "warrant": "accepted",
@@ -9863,11 +9867,7 @@
               "HW-EVAL-warrant-and-adjudication"
             ],
             "governs": [
-              ".claude/hooks/lib.sh",
-              ".claude/hooks/intent.sh",
-              ".claude/hooks/write.sh",
-              ".claude/hooks/touch.sh",
-              ".claude/hooks/review.sh",
+              ".claude/hooks/**",
               ".claude/skills/fixtures.sh",
               ".claude/skills/headwater-authoring/SKILL.md",
               ".claude/skills/headwater-taxonomy/SKILL.md",
@@ -10288,6 +10288,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": ".claude/hooks/**",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": ".claude/hooks/fixtures-live.sh",
         "resolver": "source-tree"
       },
@@ -10610,6 +10615,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/graph/src/anchors.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/graph/src/edges.rs",
         "resolver": "source-tree"
       },
       {
@@ -12499,6 +12509,17 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
+          "id": "engine/crates/graph/src/edges.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
           "id": "engine/crates/meta/src/pattern.rs",
           "resolver": "source-tree"
         }
@@ -12511,6 +12532,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/query/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/query/src/route.rs",
           "resolver": "source-tree"
         }
       },
@@ -14150,6 +14182,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/query/src/json.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-explain.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/graph/src/edges.rs",
           "resolver": "source-tree"
         }
       },
@@ -17999,51 +18042,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": ".claude/hooks/lib.sh",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/spec/05-ai-integration.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": ".claude/hooks/intent.sh",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/spec/05-ai-integration.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": ".claude/hooks/write.sh",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/spec/05-ai-integration.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": ".claude/hooks/touch.sh",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/spec/05-ai-integration.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": ".claude/hooks/review.sh",
+          "id": ".claude/hooks/**",
           "resolver": "source-tree"
         }
       },

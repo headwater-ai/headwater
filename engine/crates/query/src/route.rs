@@ -506,17 +506,29 @@ impl Surface<'_> {
     /// A word of the task is normalized by the same function the resolver used,
     /// and a hit is an exact match against a node the graph already holds. That
     /// is why no lexical score competes with it: nothing was inferred.
+    /// [HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md):
+    /// "the anchor half of `headwater route` match[es] by `Pattern::matches`
+    /// over every pattern of every anchor and never by string equality." A
+    /// task names a real path, never the pattern (or list of patterns) an
+    /// anchor is written as, so what has to hold is whether some anchor's
+    /// pattern set *reaches* the word, not whether the word spells an
+    /// anchor's own identity.
     fn named_anchors(&self, task: &str) -> Vec<String> {
         let mut found: Vec<String> = Vec::new();
-        let nodes = self.graph.anchor_nodes();
         for word in task.split_whitespace() {
             let word = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '/' && c != '.');
             let Ok(normalized) = headwater_graph::anchors::normalize(word) else {
                 continue;
             };
-            if nodes.iter().any(|node| node.normalized == normalized)
-                && !found.contains(&normalized)
-            {
+            if found.contains(&normalized) {
+                continue;
+            }
+            let reached = self
+                .graph
+                .edges
+                .iter()
+                .any(|edge| edge.target.reaches(&normalized));
+            if reached {
                 found.push(normalized);
             }
         }
@@ -561,8 +573,12 @@ impl Surface<'_> {
             if edge.source.path != document.path {
                 continue;
             }
-            if let Target::Anchor { normalized, .. } = &edge.target {
-                text.push_str(normalized);
+            // `anchor_display`, not `normalized`: this text feeds term
+            // matching, and a list anchor's identity encoding is digits and
+            // colons that would read as spurious terms — see
+            // `Target::anchor_display`.
+            if let Some(display) = edge.target.anchor_display() {
+                text.push_str(&display);
                 text.push(' ');
             }
         }

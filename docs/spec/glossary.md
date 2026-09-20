@@ -377,7 +377,7 @@ The declared pattern, namespace, and allocation policy of a stable identifier. I
 
 ### Impact detection
 
-A write-time hook. An edit to code that a document governs raises an advisory prompt that names the documents at risk. It stays advisory, because a gate here teaches people to write "no doc impact" by reflex. See [spec 5](05-ai-integration.md#write-time-hooks).
+A write-time hook. An edit to code that a document governs raises an advisory prompt that names the documents at risk. A `governs` edge names a pattern, or a list of them, and the edited path is at risk where some pattern admits it, not only where it spells the anchor's own text. It stays advisory, because a gate here teaches people to write "no doc impact" by reflex. See [spec 5](05-ai-integration.md#write-time-hooks).
 
 ### Interview
 

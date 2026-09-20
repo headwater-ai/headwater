@@ -46,6 +46,7 @@ use crate::declarations::{Declarations, Direction};
 use crate::index::Index;
 use crate::Config;
 use headwater_census::census::Census;
+use headwater_meta::pattern::Pattern;
 use headwater_yaml::{Entry, Mapping, Span, Value};
 
 /// A declared edge, resolved.
@@ -128,13 +129,34 @@ pub enum Target {
     Anchor {
         anchor_kind: String,
         resolver: String,
+        /// The identity of the anchor node: the normalized patterns, sorted,
+        /// and joined by `, ` where there is more than one
+        /// ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
+        /// A value with no wildcard is one pattern, so this is that one
+        /// normalized string, exactly as before a pattern language reached
+        /// this anchor kind.
         normalized: String,
-        /// The corpus exclusion that claims the target, when one does.
+        /// The corpus exclusion that claims the target, when one does. Only
+        /// ever set for a single, literal pattern: a list, or a pattern with a
+        /// wildcard, drops an excluded hit from its matched set instead of
+        /// naming one exclusion for the whole anchor. See
+        /// [`crate::anchors::Binding::Resolved`].
         excluded_by: Option<String>,
         /// What the resolver's source says the target is at now, carried
         /// through from [`crate::anchors::Binding::Resolved`]. `None` for every
-        /// resolver but a committed snapshot's.
+        /// resolver but a committed snapshot's, and for every anchor that
+        /// holds more than one pattern: a snapshot resolver names one item at
+        /// one revision, and this ruling admits a list only where the
+        /// resolver is `source-tree`.
         revision: Option<String>,
+        /// One entry per pattern the anchor holds, in the identity order
+        /// above. A value with no wildcard is one anchor with one member here.
+        /// `headwater explain` reads each member's own matched count, and the
+        /// union of every member's matched set is what a cached verdict has to
+        /// hold in its key ([HW-OBL-0117](../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md)):
+        /// [`Target::resolution`] is the derived `Debug` of this whole
+        /// variant, so this field reaching the key needs no separate wiring.
+        patterns: Vec<PatternMember>,
     },
     /// The source withheld the target under a declared export filter. Never a
     /// defect, and never counted as one.
@@ -144,6 +166,16 @@ pub enum Target {
     },
     /// Nothing bound it, and the variant says whose defect that is.
     Unbound(Unbound),
+}
+
+/// One pattern of an anchor, with what it reached.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PatternMember {
+    /// The pattern as the resolver normalized it.
+    pub pattern: String,
+    /// The tree entries this one pattern matched, sorted and with no
+    /// duplicate, straight from [`crate::anchors::Binding::Resolved::matched`].
+    pub matched: Vec<String>,
 }
 
 /// Why a target bound to nothing. The set is closed, and two of its members
@@ -338,6 +370,80 @@ impl Target {
     pub fn resolution(&self) -> String {
         format!("{self:?}")
     }
+
+    /// Whether this anchor's pattern set reaches `path`: some pattern it holds
+    /// matches it.
+    ///
+    /// [HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md):
+    /// "A query about a path matches the path against every pattern of every
+    /// anchor and never against the string." This recompiles each pattern
+    /// rather than reading [`PatternMember::matched`], so it answers for a
+    /// path this run never resolved an edge onto, and not only for the ones a
+    /// resolver already walked.
+    pub fn reaches(&self, path: &str) -> bool {
+        match self {
+            Target::Anchor { patterns, .. } => patterns
+                .iter()
+                .any(|member| Pattern::new(&member.pattern).matches(path)),
+            _ => false,
+        }
+    }
+
+    /// How many tree entries this anchor reaches, in total and per pattern —
+    /// the denominator [HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)
+    /// records as absent, and `headwater explain` is what reports it.
+    pub fn reach(&self) -> Option<Reach> {
+        let Target::Anchor { patterns, .. } = self else {
+            return None;
+        };
+        let mut total: Vec<&str> = patterns
+            .iter()
+            .flat_map(|member| member.matched.iter().map(String::as_str))
+            .collect();
+        total.sort_unstable();
+        total.dedup();
+        Some(Reach {
+            total: total.len(),
+            members: patterns
+                .iter()
+                .map(|member| (member.pattern.clone(), member.matched.len()))
+                .collect(),
+        })
+    }
+
+    /// The patterns of an anchor, sorted and joined by `, `, for a reader
+    /// rather than for identity. `None` for every other variant.
+    ///
+    /// `Target::Anchor.normalized` is not this: for two or more patterns it
+    /// is an encoding chosen so that two different lists can never share one
+    /// value (see `crate::edges::encode_list_identity`), and that guarantee
+    /// is worth nothing to a person reading a rendered edge. A caller that
+    /// prints an anchor for a human — `headwater explain`, `headwater route`,
+    /// the MCP tools built on both — reaches for this instead. A caller that
+    /// needs the identity a cache key or a duplicate-edge check can trust
+    /// reaches for `normalized`, unchanged.
+    pub fn anchor_display(&self) -> Option<String> {
+        let Target::Anchor { patterns, .. } = self else {
+            return None;
+        };
+        Some(
+            patterns
+                .iter()
+                .map(|member| member.pattern.as_str())
+                .collect::<Vec<&str>>()
+                .join(", "),
+        )
+    }
+}
+
+/// How many entries an anchor reaches, in total and per pattern it holds.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Reach {
+    /// The size of the union across every pattern the anchor holds.
+    pub total: usize,
+    /// One pair per pattern, in the anchor's own order: the pattern, and how
+    /// many entries it alone matched.
+    pub members: Vec<(String, usize)>,
 }
 
 /// Resolve every `relations:` block of the census into edges.
@@ -455,11 +561,20 @@ fn read_relation_entry(
         _ => vec![&entry.value],
     };
 
+    // Whether every kind this entry may reach is an anchor kind. A list is the
+    // pattern language's own "or a list of them"
+    // ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)),
+    // and a document target is one identifier, never a set, so a list is
+    // admitted only where nothing here could resolve to a document.
+    let anchor_only = permitted
+        .iter()
+        .all(|kind| declarations.anchor(kind).is_some());
+
     for item in items {
-        let (raw_target, attributes, span) = match &item.value {
-            Value::Scalar(scalar) => (scalar.text.clone(), Vec::new(), item.span),
-            Value::Map(map) => match target_of(map) {
-                Some((target, span)) => (target, instance_attributes(map), span),
+        let (raws, attributes, span): (Vec<String>, Vec<Entry>, Span) = match &item.value {
+            Value::Scalar(scalar) => (vec![scalar.text.clone()], Vec::new(), item.span),
+            Value::Map(map) => match target_of(map, anchor_only) {
+                Some((raws, span)) => (raws, instance_attributes(map), span),
                 None => {
                     problems.push(Reported {
                         path: source.path.clone(),
@@ -471,6 +586,35 @@ fn read_relation_entry(
                     continue;
                 }
             },
+            // A list in the place of the string: one anchor over several
+            // patterns, admitted only where the endpoint is an anchor kind. A
+            // document target stays one identifier, so a nested list there is
+            // refused exactly as it always was.
+            Value::Seq(members) if anchor_only => {
+                let mut raws = Vec::new();
+                let mut every_member_a_scalar = true;
+                for member in members {
+                    match member.value.as_scalar() {
+                        Some(scalar) => raws.push(scalar.text.clone()),
+                        None => {
+                            every_member_a_scalar = false;
+                            break;
+                        }
+                    }
+                }
+                if !every_member_a_scalar || raws.is_empty() {
+                    problems.push(Reported {
+                        path: source.path.clone(),
+                        span: Some(item.span),
+                        problem: Problem::EntryNotUsable {
+                            relation: name.clone(),
+                            found: item.value.kind_name(),
+                        },
+                    });
+                    continue;
+                }
+                (raws, Vec::new(), item.span)
+            }
             Value::Seq(_) => {
                 problems.push(Reported {
                     path: source.path.clone(),
@@ -484,7 +628,8 @@ fn read_relation_entry(
             }
         };
 
-        let target = bind(&raw_target, permitted, index, declarations, resolvers);
+        let raw_target = raws.join(", ");
+        let target = bind(&raws, permitted, index, declarations, resolvers);
         let edge = Edge {
             source: source.clone(),
             name: name.clone(),
@@ -515,9 +660,54 @@ fn read_relation_entry(
     }
 }
 
-/// Bind one target string, in the order the module comment states.
+/// One member of a claimed anchor's [`Binding::Resolved`], carried as a named
+/// type rather than a tuple so that a reader — and clippy's
+/// `type_complexity` lint — sees what each position means.
+struct Resolved {
+    normalized: String,
+    excluded_by: Option<String>,
+    revision: Option<String>,
+    matched: Vec<String>,
+}
+
+/// An identity for two or more sorted patterns, injective over their content.
+///
+/// A plain joined string is not: `["a", "b, c"]` and `["a, b", "c"]` both
+/// sort and join on `, ` to `"a, b, c"`, so two different lists would share
+/// one node, one `RepeatedTriple` count and one `anchor_nodes()` entry. Each
+/// pattern here is prefixed with its own byte length instead, so the one
+/// place a delimiter could appear is inside a length prefix's own digits,
+/// which a colon closes before any pattern byte is read — the boundary
+/// between two members never depends on what either member's bytes are.
+///
+/// This is `format!("{}:{pattern}", pattern.len())` per member, concatenated
+/// with nothing between them: a caller that wants to reconstruct the list
+/// reads the digits up to the next `:`, takes that many bytes as one pattern,
+/// and repeats.
+///
+/// It is not proven injective against every literal, single-pattern
+/// identity: a real path could in principle spell a valid encoding of some
+/// other list (a file named `1:a1:b`, matching the encoding of `["a", "b"]`,
+/// is legal on this engine's target filesystems). No pattern in this
+/// repository does, encoding a list is the one case this function is for,
+/// and a single pattern never reaches it — see the `[member]` arm beside
+/// every call site.
+fn encode_list_identity(patterns: &[&str]) -> String {
+    patterns
+        .iter()
+        .map(|pattern| format!("{}:{pattern}", pattern.len()))
+        .collect()
+}
+
+/// Bind one target: a single string, or the several patterns of a list anchor
+/// admitted where the endpoint is anchor-only
+/// ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
+/// `raws` is never empty. A single entry is bound in the order the module
+/// comment states, unchanged from before a list existed; a list is bound only
+/// against an anchor kind, and only where every pattern it holds binds under
+/// the same one.
 fn bind(
-    raw: &str,
+    raws: &[String],
     permitted: &[String],
     index: &Index,
     declarations: &Declarations,
@@ -529,20 +719,22 @@ fn bind(
         .collect();
     let admits_a_document = permitted.len() > anchor_kinds.len();
 
-    if admits_a_document {
-        if let Some(node) = index.node(raw) {
-            return Target::Document {
-                id: node.id.clone(),
-                path: node.path.clone(),
-                kind: node.kind.clone().unwrap_or_default(),
-            };
+    if let [raw] = raws {
+        if admits_a_document {
+            if let Some(node) = index.node(raw) {
+                return Target::Document {
+                    id: node.id.clone(),
+                    path: node.path.clone(),
+                    kind: node.kind.clone().unwrap_or_default(),
+                };
+            }
         }
     }
 
     // Every anchor kind the declaration admits, asked in declaration order. A
-    // string that two of them claim has two identities, and identity is the
-    // one thing an anchor carries.
-    let mut claimed: Vec<(&str, Binding)> = Vec::new();
+    // string (or a list of them) that two anchor kinds both claim has two
+    // identities, and identity is the one thing an anchor carries.
+    let mut claimed: Vec<(&str, Vec<Binding>)> = Vec::new();
     let mut refusals: Vec<Unbound> = Vec::new();
     for anchor in &anchor_kinds {
         let Some(resolver) = resolvers.get(&anchor.resolver) else {
@@ -552,14 +744,31 @@ fn bind(
             });
             continue;
         };
-        match resolver.resolve(raw) {
-            binding @ (Binding::Resolved { .. } | Binding::Withheld { .. }) => {
-                claimed.push((&anchor.name, binding));
+        let mut bindings = Vec::with_capacity(raws.len());
+        let mut dead: Option<Unbound> = None;
+        for raw in raws {
+            match resolver.resolve(raw) {
+                binding @ (Binding::Resolved { .. } | Binding::Withheld { .. }) => {
+                    bindings.push(binding);
+                }
+                // A list with one dead member is reported for that member,
+                // and the first dead member found stops the search: the rest
+                // add no information a repair of this one does not also need.
+                Binding::Unresolved(why) => {
+                    dead = Some(Unbound::AnchorUnresolved {
+                        anchor_kind: anchor.name.clone(),
+                        why: match raws.len() {
+                            1 => why,
+                            _ => format!("`{raw}` {why}"),
+                        },
+                    });
+                    break;
+                }
             }
-            Binding::Unresolved(why) => refusals.push(Unbound::AnchorUnresolved {
-                anchor_kind: anchor.name.clone(),
-                why,
-            }),
+        }
+        match dead {
+            Some(unbound) => refusals.push(unbound),
+            None => claimed.push((&anchor.name, bindings)),
         }
     }
 
@@ -568,33 +777,96 @@ fn bind(
             anchor_kinds: claimed.iter().map(|(name, _)| name.to_string()).collect(),
         });
     }
-    if let Some((anchor_kind, binding)) = claimed.pop() {
-        return match binding {
-            Binding::Resolved {
-                normalized,
-                excluded_by,
-                revision,
-            } => Target::Anchor {
-                anchor_kind: anchor_kind.to_string(),
-                resolver: declarations
-                    .anchor(anchor_kind)
-                    .map(|anchor| anchor.resolver.clone())
-                    .unwrap_or_default(),
-                normalized,
-                excluded_by,
-                revision,
-            },
-            Binding::Withheld { profile } => Target::Withheld {
+    if let Some((anchor_kind, bindings)) = claimed.pop() {
+        // A withheld member withholds the whole anchor: withholding is a
+        // per-item decision no export filter states over a set yet (M6), so
+        // one withheld pattern cannot be silently dropped from the union.
+        if let Some(profile) = bindings.iter().find_map(|binding| match binding {
+            Binding::Withheld { profile } => Some(profile.clone()),
+            _ => None,
+        }) {
+            return Target::Withheld {
                 anchor_kind: anchor_kind.to_string(),
                 profile,
-            },
-            Binding::Unresolved(_) => unreachable!("an unresolved binding never reaches `claimed`"),
+            };
+        }
+
+        // Every remaining binding is `Resolved`: `Withheld` was just handled,
+        // and a `Binding::Unresolved` never reaches `claimed` in the first
+        // place — the loop above turns the first one into a refusal instead.
+        let mut resolved: Vec<Resolved> = bindings
+            .into_iter()
+            .map(|binding| match binding {
+                Binding::Resolved {
+                    normalized,
+                    excluded_by,
+                    revision,
+                    matched,
+                } => Resolved {
+                    normalized,
+                    excluded_by,
+                    revision,
+                    matched,
+                },
+                _ => unreachable!("withheld handled above, and unresolved never reaches `claimed`"),
+            })
+            .collect();
+        // HW-DR-0074: "the identity of an anchor node is its normalized
+        // patterns, sorted." One list written in two orders is one node.
+        resolved.sort_by(|a, b| a.normalized.cmp(&b.normalized));
+
+        // A single pattern's identity is the pattern itself, unchanged: every
+        // edge this corpus already declares keeps the identity it has. A list
+        // needs an identity that tells two different lists apart, which a
+        // plain joined string cannot promise — see `encode_list_identity`.
+        // `Target::anchor_display` is the human-facing join, kept separate on
+        // purpose, and it is what a renderer should reach for instead of this
+        // field.
+        let normalized = match resolved.as_slice() {
+            [member] => member.normalized.clone(),
+            members => encode_list_identity(
+                &members
+                    .iter()
+                    .map(|member| member.normalized.as_str())
+                    .collect::<Vec<&str>>(),
+            ),
+        };
+        // A single, literal pattern keeps the one exclusion note it carried
+        // before a list existed. A list, or a wildcard pattern, drops an
+        // excluded hit from the matched count instead of naming one exclusion
+        // for the whole set — see `PatternMember` and `Binding::Resolved`.
+        let (excluded_by, revision) = match resolved.as_slice() {
+            [member] => (member.excluded_by.clone(), member.revision.clone()),
+            _ => (None, None),
+        };
+        let patterns = resolved
+            .into_iter()
+            .map(|member| PatternMember {
+                pattern: member.normalized,
+                matched: member.matched,
+            })
+            .collect();
+
+        return Target::Anchor {
+            anchor_kind: anchor_kind.to_string(),
+            resolver: declarations
+                .anchor(anchor_kind)
+                .map(|anchor| anchor.resolver.clone())
+                .unwrap_or_default(),
+            normalized,
+            excluded_by,
+            revision,
+            patterns,
         };
     }
 
     // Nothing bound it. Whose defect that is depends on whether a document
-    // carries the identifier and the census gave it no kind.
+    // carries the identifier and the census gave it no kind. A list never
+    // reaches this branch as a document: the caller admits one only where
+    // every permitted kind is an anchor, so `admits_a_document` is always
+    // false there.
     if admits_a_document {
+        let raw = raws.first().map(String::as_str).unwrap_or_default();
         if let Some(near) = index.near_miss(raw) {
             if let Some(entry) = index.by_path(&near.path) {
                 return Target::Unbound(Unbound::NotTyped {
@@ -621,10 +893,27 @@ fn bind(
 }
 
 /// The `to` of a mapping entry, with the span a finding anchors to.
-fn target_of(map: &Mapping) -> Option<(String, Span)> {
+fn target_of(map: &Mapping, anchor_only: bool) -> Option<(Vec<String>, Span)> {
     let to = map.get("to")?;
-    let scalar = to.value.as_scalar()?;
-    Some((scalar.text.clone(), to.span))
+    if let Some(scalar) = to.value.as_scalar() {
+        return Some((vec![scalar.text.clone()], to.span));
+    }
+    // A list in the place of the string, admitted only where the endpoint is
+    // an anchor kind — see the caller's `anchor_only` and HW-DR-0074.
+    if anchor_only {
+        if let Value::Seq(members) = &to.value {
+            let raws: Option<Vec<String>> = members
+                .iter()
+                .map(|member| member.value.as_scalar().map(|scalar| scalar.text.clone()))
+                .collect();
+            if let Some(raws) = raws {
+                if !raws.is_empty() {
+                    return Some((raws, to.span));
+                }
+            }
+        }
+    }
+    None
 }
 
 /// Every key of the entry except `to`.
@@ -669,6 +958,10 @@ mod tests {
             normalized: ".claude/hooks/lib.sh".to_string(),
             excluded_by: None,
             revision: None,
+            patterns: vec![PatternMember {
+                pattern: ".claude/hooks/lib.sh".to_string(),
+                matched: vec![".claude/hooks/lib.sh".to_string()],
+            }],
         }
     }
 
@@ -681,6 +974,10 @@ mod tests {
             normalized: "12345".to_string(),
             excluded_by: None,
             revision: Some(revision.to_string()),
+            patterns: vec![PatternMember {
+                pattern: "12345".to_string(),
+                matched: vec!["12345".to_string()],
+            }],
         }
     }
 
@@ -730,6 +1027,10 @@ mod tests {
             normalized: ".claude/hooks/lib.sh".to_string(),
             excluded_by: Some("engine/**".to_string()),
             revision: None,
+            patterns: vec![PatternMember {
+                pattern: ".claude/hooks/lib.sh".to_string(),
+                matched: vec![".claude/hooks/lib.sh".to_string()],
+            }],
         };
         let others = [
             excluded,
@@ -766,6 +1067,42 @@ mod tests {
                 "two bindings share one value: {text}"
             );
             seen.push(text);
+        }
+    }
+
+    /// The collision a plain `, `-joined identity admits: two different
+    /// lists, sorted, that join to one identical string because one member
+    /// holds the separator text. `encode_list_identity` has to tell them
+    /// apart, which `, `-joining them never could.
+    #[test]
+    fn two_different_lists_never_share_one_identity_even_when_a_member_holds_the_join_text() {
+        let left = encode_list_identity(&["a", "b, c"]);
+        let right = encode_list_identity(&["a, b", "c"]);
+        assert_ne!(
+            left, right,
+            "both lists sort and join to \"a, b, c\" under a plain join"
+        );
+    }
+
+    /// The general property behind the case above: any two different sorted
+    /// pattern lists encode to two different identities.
+    #[test]
+    fn encode_list_identity_is_injective_over_a_table_of_adversarial_lists() {
+        let lists: [&[&str]; 6] = [
+            &["a", "b"],
+            &["a", "b, c"],
+            &["a, b", "c"],
+            &["a", "b", "c"],
+            &[",", ":"],
+            &["1:a", "b"],
+        ];
+        let mut seen = std::collections::BTreeSet::new();
+        for list in lists {
+            let encoded = encode_list_identity(list);
+            assert!(
+                seen.insert(encoded.clone()),
+                "two different lists share one identity: {encoded}"
+            );
         }
     }
 }
