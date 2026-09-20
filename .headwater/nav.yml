@@ -81,6 +81,7 @@ nav:
       - "The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links": "decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md"
       - "The binary is the only interface an adopter must run, and every integration point outside it is declared": "decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md"
       - "A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither": "decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md"
+      - "Q65 — the corpus dashboard ships free and self-hosted, with tenant isolation stated as a data-model constraint from day one": "decisions/0079-q65-the-corpus-dashboard-ships-free-and-self-hosted-with-tenant-isolation-stated-as-a-data-model-constraint-from-day-one.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"

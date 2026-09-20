@@ -162,6 +162,8 @@ docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-mu
   typed: decision
 docs/decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md
   typed: decision
+docs/decisions/0079-q65-the-corpus-dashboard-ships-free-and-self-hosted-with-tenant-isolation-stated-as-a-data-model-constraint-from-day-one.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
