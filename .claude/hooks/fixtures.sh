@@ -35,6 +35,7 @@ engine=$(hw_engine) || engine="$root/engine/target/release/headwater"
 passed=0
 failed=0
 skipped=0
+skipped_engine=0
 
 # The same, in the negative: run a hook and assert its output does NOT contain
 # a substring. `expect` holds what a refusal says; this holds what it must not
@@ -95,6 +96,12 @@ expect() {
 skip() {
     printf 'skip %s (%s)\n' "$1" "$2"
     skipped=$((skipped + 1))
+    # Counted apart, because the two reasons a case skips are not the same
+    # fact. A missing engine is a caller's mistake and CI asserts against it
+    # below. A missing embedding model is expected on a hosted runner, which
+    # fetches no model, and it must not be read as one.
+    [ "$2" = 'no built engine' ] && skipped_engine=$((skipped_engine + 1))
+    return 0
 }
 
 # A stand-in for the engine, writing one document of this runner's choosing.
@@ -1202,19 +1209,38 @@ expect 'an input that will not parse is silent rather than an error' \
     'not json at all, but it does contain the word sleep'
 
 printf '\n%s passed, %s failed, %s skipped\n' "$passed" "$failed" "$skipped"
-[ "$failed" -eq 0 ] || exit 1
-
-# A skip is not a pass, and a caller that knows an engine should be there says
-# so. CI builds one at `ci.yml` line 342 and runs this suite 1,000 lines later,
-# so every case that calls the engine runs there today — but nothing asserted
-# it. Reorder that build, move it to another job, or drop it, and every such
-# case prints `skip` and this suite exits 0 having tested nothing. That is the
-# same silent-success shape the `wait.sh` block exists to argue against, so it
-# does not get to live in the suite that holds it.
-if [ -n "${HEADWATER_FIXTURES_REQUIRE_ENGINE:-}" ] && [ "$skipped" -ne 0 ]; then
-    printf 'FAIL %s case(s) skipped while HEADWATER_FIXTURES_REQUIRE_ENGINE is set\n' "$skipped"
-    printf '  an engine was expected at this point and none was found\n'
+# A caller that knows an engine should be there says so, and this answers
+# before the failure count below, because it explains that count rather than
+# competing with it.
+#
+# What a missing engine actually does here, measured rather than assumed: the
+# suite reports 23 passed, 5 failed and 9 skipped, and exits 1. It does not go
+# green. Five `write.sh` cases assert a refusal and get silence from a hook
+# that fails open, so they fail outright. The remaining engine cases sit behind
+# an `[ -x "$engine" ]` guard and skip. Anyone reading that output cold sees
+# five broken refusals and starts debugging a hook, which is what happened to
+# the session that first ran this suite without an engine.
+#
+# So this line is a diagnosis, not a gate that a green run depends on. It names
+# the cause above the symptom. It is also the thing that keeps the gate honest
+# if those five cases are ever moved behind the same guard the other nine sit
+# behind, because then nothing would fail and the suite would exit 0 having
+# tested almost nothing.
+#
+# It counts the skips whose reason is a missing engine and no others. A hosted
+# runner fetches no embedding model, so the shadow-log case skips there every
+# time and always will; the first cut of this guard counted that one too and
+# failed an otherwise green CI run on it.
+if [ -n "${HEADWATER_FIXTURES_REQUIRE_ENGINE:-}" ] && [ "$skipped_engine" -ne 0 ]; then
+    printf 'FAIL %s case(s) skipped for want of an engine while HEADWATER_FIXTURES_REQUIRE_ENGINE is set\n' "$skipped_engine"
+    printf '  an engine was expected at this point and none was found;\n'
+    printf '  any failures above are most likely that and not a broken hook\n'
     exit 1
 fi
-[ "$skipped" -eq 0 ] || printf 'Build the engine to run the skipped cases:\n  cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked\n'
+
+[ "$failed" -eq 0 ] || exit 1
+# Named against the engine count, not the total: a skip for want of an
+# embedding model is not answered by building the engine, and saying so sent
+# at least one reader to the wrong remedy.
+[ "$skipped_engine" -eq 0 ] || printf 'Build the engine to run the skipped cases:\n  cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked\n'
 exit 0
