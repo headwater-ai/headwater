@@ -1884,6 +1884,7 @@ fn the_read_set_of_an_instance_comes_from_the_view_and_not_from_the_check() {
         &census,
         &graph,
         &Digests::of(&census),
+        &headwater_check::Observations::empty(),
         &pinned(),
         &mut Cache::disabled(),
     );

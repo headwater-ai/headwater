@@ -111,7 +111,7 @@ rules, and for each the scope that binds it
   adoption.task.expired
     taxonomy scope, the resolved taxonomy, and no document
   relation.target.verification.suspect
-    edge scope, one relation instance and both endpoints
+    edge scope, one relation instance and both endpoints, and the committed observation snapshot
 register
   27 obligations: 21 verified, 2 gap, 1 unverifiable, 3 with no disposition
      10 high, 9 verified

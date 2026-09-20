@@ -208,6 +208,7 @@ pub struct Scope {
     needs_clock: bool,
     needs_prior: bool,
     needs_claims: bool,
+    needs_observations: bool,
 }
 
 impl Scope {
@@ -224,10 +225,11 @@ impl Scope {
             needs_clock,
             needs_prior,
             needs_claims: false,
+            needs_observations: false,
         }
     }
 
-    pub(crate) const fn edge(needs_clock: bool) -> Self {
+    pub(crate) const fn edge(needs_clock: bool, needs_observations: bool) -> Self {
         Scope {
             grain: Grain::Edge,
             needs_body: false,
@@ -235,6 +237,7 @@ impl Scope {
             needs_clock,
             needs_prior: false,
             needs_claims: false,
+            needs_observations,
         }
     }
 
@@ -246,6 +249,7 @@ impl Scope {
             needs_clock,
             needs_prior: false,
             needs_claims: false,
+            needs_observations: false,
         }
     }
 
@@ -257,6 +261,7 @@ impl Scope {
             needs_clock: false,
             needs_prior,
             needs_claims,
+            needs_observations: false,
         }
     }
 
@@ -268,6 +273,7 @@ impl Scope {
             needs_clock: false,
             needs_prior: false,
             needs_claims: false,
+            needs_observations: false,
         }
     }
 
@@ -316,6 +322,26 @@ impl Scope {
     /// names.
     pub fn needs_claims(&self) -> bool {
         self.needs_claims
+    }
+
+    /// Whether an instance of this scope receives the committed observation
+    /// snapshot, and so whether its cache key carries the flag and its read
+    /// set carries the snapshot's digest. One fact, both uses, as the clock
+    /// is.
+    ///
+    /// The snapshot is not one of the edge's two endpoints, so neither
+    /// endpoint's digest moves when only the snapshot changes: it reaches an
+    /// instance through this flag and through nothing else, on
+    /// [`Scope::needs_claims`]'s own terms. A flag that changed what an
+    /// instance read and did not reach the key is the correctness bug
+    /// [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+    /// names, and it is the bug [#937](https://github.com/headwater-ai/headwater/issues/937)
+    /// found live: a rule reading [`crate::observation::Observations`]
+    /// straight from its own struct field, with no input in its read set to
+    /// show for it, is cached against a key that cannot see an edit to the
+    /// file it just read.
+    pub fn needs_observations(&self) -> bool {
+        self.needs_observations
     }
 
     /// The scope as one line of a report, in spec 12's own words for the
@@ -370,6 +396,13 @@ impl Scope {
             true => ", and the identifier claim store",
             false => "",
         };
+        // The other input outside the corpus, named on [`Scope::needs_claims`]'s
+        // own terms: a reader who asks how a rule reaches the committed
+        // observation snapshot beside its two endpoints reads the answer here.
+        let observations = match self.needs_observations {
+            true => ", and the committed observation snapshot",
+            false => "",
+        };
         // Spec 12 calls the corpus-scoped checks the barriers, and the word is
         // last so that it reads as a statement about the scope rather than
         // about the inputs listed before it.
@@ -378,7 +411,7 @@ impl Scope {
             _ => "",
         };
         format!(
-            "{} scope, {carries}{phase_a}{clock}{prior}{claims}{barrier}",
+            "{} scope, {carries}{phase_a}{clock}{prior}{claims}{observations}{barrier}",
             self.grain.name()
         )
     }
@@ -483,6 +516,14 @@ pub trait EdgeCheck {
     const EXPORTABLE_AS: ExportTargets = &[];
     /// As [`DocumentCheck::NEEDS_CLOCK`].
     const NEEDS_CLOCK: bool = false;
+    /// As [`CorpusCheck::NEEDS_CLAIMS`], for the committed observation
+    /// snapshot rather than the claim store: a rule that reads
+    /// [`crate::observation::Observations`] declares it here, so the
+    /// snapshot's digest joins this rule's own per-instance read set and its
+    /// cache key, on [`Scope::needs_observations`]'s terms. A rule that reads
+    /// the snapshot without setting this is cached against a key that never
+    /// moves when the file it read does.
+    const NEEDS_OBSERVATIONS: bool = false;
     /// What one instance of this check covers. See [`EdgeUnit`].
     ///
     /// The trait declares it, and the runner does not pass it. The reason is
@@ -626,7 +667,7 @@ pub fn document_scope<C: DocumentCheck>() -> Scope {
 
 /// The scope of an edge-scoped check, derived from its trait.
 pub fn edge_scope<C: EdgeCheck>() -> Scope {
-    Scope::edge(C::NEEDS_CLOCK)
+    Scope::edge(C::NEEDS_CLOCK, C::NEEDS_OBSERVATIONS)
 }
 
 /// The scope of a neighbourhood-scoped check, derived from its trait.
@@ -1412,11 +1453,19 @@ pub fn over_documents<C: DocumentCheck>(
 /// One function rather than two, because the grouping is the only difference
 /// and everything after it — the view, the read set, the key, the cache — has
 /// to be the same for both. Two functions is where the two would drift.
+///
+/// `observations` is handed to every caller on [`over_corpus`]'s own terms for
+/// `claims`: a check that does not set [`EdgeCheck::NEEDS_OBSERVATIONS`] pays
+/// nothing for it and never sees it in its read set, and one that does gets
+/// the snapshot's digest folded into its own per-instance key rather than only
+/// into the run's top-level read set, which is where [#937](https://github.com/headwater-ai/headwater/issues/937)
+/// found it missing.
 pub fn over_edges<C: EdgeCheck>(
     check: &C,
     census: &Census,
     graph: &Graph,
     digests: &Digests,
+    observations: &crate::observation::Observations,
     ctx: &Context,
     cache: &mut Cache,
 ) -> Vec<Instance> {
@@ -1464,7 +1513,20 @@ pub fn over_edges<C: EdgeCheck>(
         // The triple is the identity Q4 gives an edge, and it is what tells
         // two instances apart that read the same two documents. One pair of
         // documents can carry two relations, and their read sets are equal.
-        let reads = view.reads().to_vec();
+        let mut reads = view.reads().to_vec();
+        // The one input outside the two endpoints, added only where the check
+        // declared it, on [`Scope::needs_claims`]'s own terms: an absent
+        // snapshot adds nothing (it is not an input this run read), an
+        // unreadable one adds the path with no digest (which `Cache::key`
+        // refuses to key on, so the instance is evaluated fresh every run
+        // until the file is readable again), and a read one adds its digest,
+        // so an edit to `.headwater/observations.yml` is an edit this
+        // instance's own key can see.
+        if C::NEEDS_OBSERVATIONS {
+            if let Some(digest) = observations.read_set_digest() {
+                reads.push(Input::new(crate::observation::PATH, digest));
+            }
+        }
         // The one scope that reaches a resolver. See [`crate::cache`]: the
         // identity of an anchor edge is the same string on both sides of the
         // change that falsifies its verdict, so the binding is named in the key

@@ -45,6 +45,12 @@ const VERIFICATION_ID: &str = "ACP-FIX-verification-one";
 const CRITERION_PATH: &str = "acceptance-criterion-proven/criteria/proven.md";
 const SNAPSHOT_COMMIT: &str = "788885a9";
 
+/// The lock string every run and every [`Cache::at`] in this file shares, so a
+/// cache built for one call reads back for the next: [`Cache::key`] folds the
+/// lock into every key it computes, and a cache built against a different
+/// string could never hit regardless of what this file proves.
+const LOCK: &str = "sha256:verification-suspect-fixture";
+
 /// The same pinned date `tests/acceptance_criterion_proven.rs` uses. No
 /// window in this fixture matters to `verification::RULE`, so any date would
 /// do; the shared constant is so a reader of both files reads one clock.
@@ -86,6 +92,13 @@ fn copy_tree(from: &Path, to: &Path) {
 }
 
 fn run_over(root: &Path, observations: &Observations) -> Run {
+    run_over_with(root, observations, &mut Cache::disabled())
+}
+
+/// As [`run_over`], over a caller-supplied cache rather than always
+/// [`Cache::disabled`]. [`warm_cache_sees_an_edited_snapshot_without_no_cache`]
+/// is the one caller that needs a cache surviving across two calls.
+fn run_over_with(root: &Path, observations: &Observations, cache: &mut Cache) -> Run {
     let corpus = Corpus::new(root, "acceptance-criterion-proven");
     let source = std::fs::read_to_string(
         shipped_fixtures_dir().join("acceptance-criterion-proven.taxonomy.yml"),
@@ -115,7 +128,7 @@ fn run_over(root: &Path, observations: &Observations) -> Run {
         &taken,
         &graph,
         &Declared {
-            lock: "sha256:verification-suspect-fixture",
+            lock: LOCK,
             taxonomy: &taxonomy,
             shape: &shape,
             relations: &declarations,
@@ -127,7 +140,7 @@ fn run_over(root: &Path, observations: &Observations) -> Run {
         },
         &headwater_check::claim::Claims::empty(),
         &Context::at(Date::parse(PINNED).expect("the pinned date")),
-        &mut Cache::disabled(),
+        cache,
     )
 }
 
@@ -230,6 +243,152 @@ fn the_same_snapshot_after_the_criterion_changes_is_suspect() {
         reported[0].message.contains(SNAPSHOT_COMMIT),
         "{}",
         reported[0].message
+    );
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// The cache-key regression: a warm `.headwater/cache` has to see an edit to
+/// `.headwater/observations.yml` on its own, with no `--no-cache` and no
+/// cache clear between runs. `Cache::disabled()` above never exercises the
+/// cache at all, so none of the three tests above could have caught this: the
+/// bug this proves fixed is a rule reading [`Observations`] straight from its
+/// own struct field, with no input in its per-instance read set to show for
+/// it, so `Cache::key` folded neither the file's absence nor its digest into
+/// the key and served the first verdict forever.
+///
+/// Three runs, one persisted cache, on the same terms the manual differential
+/// in this issue's veto used against the real corpus:
+///
+/// 1. Cold: no snapshot on disk, an empty cache. `declared`, a miss, and the
+///    verdict is written to the cache file this call leaves behind.
+/// 2. Warm, after a mismatched snapshot: the file now names the verification
+///    with a digest that does not match the criterion's bytes. A *new*
+///    [`Cache`] reads the file run 1 wrote. Before the fix, this instance's
+///    key was unchanged (neither endpoint's digest moved), so it served run
+///    1's cached `declared` verdict and reported nothing. After the fix, the
+///    snapshot's own digest is part of the key, so this is a miss too, and
+///    the run reports `suspect`.
+/// 3. Warm, after the finding's own recommended fix: the snapshot is
+///    corrected to the criterion's real current digest — exactly what
+///    [`crate::verification::remediation`]'s text tells an author to do.
+///    Another new [`Cache`] reads what run 2 wrote. This is a third distinct
+///    key (a third distinct file content), so it is a third miss, and the
+///    verdict returns to a pass.
+///
+/// A cache report of nonzero hits on runs 2 and 3, against strictly fewer
+/// misses than the cold run 1, is the second half of the proof: the fix
+/// reaches exactly the instances the snapshot's change implicates, and
+/// re-runs nothing else.
+///
+/// `.headwater/observations.yml` is written to disk and read back with
+/// [`Observations::at`] rather than built in memory with [`Observations::of`],
+/// which is the one detail that makes this a cache test and not a repeat of
+/// the three above. [`Observations::at`] records a digest of the bytes it
+/// read ([`Observations::read_set_digest`]); [`Observations::of`] carries no
+/// path and so no digest at all, which is the correct behavior for a snapshot
+/// that never touched a disk, and it is exactly why a version of this test
+/// built on it could never have shown this key moving.
+#[test]
+fn warm_cache_sees_an_edited_snapshot_without_no_cache() {
+    let root = scratch_corpus("cache-differential");
+    let criterion_path = root.join(CRITERION_PATH);
+    let current_digest =
+        headwater_hash::digest(&std::fs::read(&criterion_path).expect("the criterion reads"));
+    let snapshot_path = root.join(".headwater").join("observations.yml");
+    std::fs::create_dir_all(snapshot_path.parent().expect("a parent")).expect("the dir creates");
+
+    // Run 1: cold cache, no snapshot at all. `declared`, and every instance in
+    // this small fixture tree is a miss, because the cache started empty.
+    let mut cache = Cache::at(&root, LOCK);
+    let run1 = run_over_with(&root, &Observations::at(&root), &mut cache);
+    assert!(
+        findings_of(&run1).is_empty(),
+        "run 1 (no snapshot) is declared, not suspect: {:?}",
+        findings_of(&run1)
+    );
+    let cold = cache.report();
+    assert_eq!(
+        cold.hits, 0,
+        "run 1 is the first run over this cache file, so nothing in it is a \
+         hit yet: {cold:?}"
+    );
+    cache.write(&root);
+
+    // Run 2: a new `Cache` reads what run 1 wrote. The snapshot now names the
+    // verification with a digest that does not match the criterion's bytes —
+    // a mismatch a person could as easily have typed by hand as fabricated.
+    std::fs::write(
+        &snapshot_path,
+        format!(
+            "{VERIFICATION_ID}:\n  kind: verification\n  commit: {SNAPSHOT_COMMIT}\n  \
+             criterion_digest: \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"\n"
+        ),
+    )
+    .expect("the snapshot writes");
+    let mut cache = Cache::at(&root, LOCK);
+    let run2 = run_over_with(&root, &Observations::at(&root), &mut cache);
+    let reported = findings_of(&run2);
+    assert_eq!(
+        reported.len(),
+        1,
+        "run 2 (warm cache, mismatched snapshot) has to report suspect on its \
+         own, with no `--no-cache`: {reported:?}"
+    );
+    assert!(
+        reported[0].message.contains(VERIFICATION_ID),
+        "{}",
+        reported[0].message
+    );
+    assert!(
+        reported[0].message.contains("suspect"),
+        "{}",
+        reported[0].message
+    );
+    let warm = cache.report();
+    assert!(
+        warm.hits > 0,
+        "run 2 has to be genuinely warm — most of this tree's instances read \
+         nothing that moved between run 1 and run 2, so most of them are \
+         hits — or this proves nothing about the cache at all: {warm:?}"
+    );
+    assert!(
+        warm.misses < cold.misses,
+        "run 2 reads a warm cache, so it misses on strictly fewer instances \
+         than the cold run 1 did, and the verification rule's own instance is \
+         still one of them: cold {cold:?}, warm {warm:?}"
+    );
+    cache.write(&root);
+
+    // Run 3: a third new `Cache` reads what run 2 wrote. The snapshot is
+    // corrected to the criterion's real digest today — the finding's own
+    // remediation text, followed exactly.
+    std::fs::write(
+        &snapshot_path,
+        format!(
+            "{VERIFICATION_ID}:\n  kind: verification\n  commit: {SNAPSHOT_COMMIT}\n  \
+             criterion_digest: \"{current_digest}\"\n"
+        ),
+    )
+    .expect("the snapshot writes");
+    let mut cache = Cache::at(&root, LOCK);
+    let run3 = run_over_with(&root, &Observations::at(&root), &mut cache);
+    assert!(
+        findings_of(&run3).is_empty(),
+        "run 3 (warm cache, corrected snapshot) returns to a pass on its own: {:?}",
+        findings_of(&run3)
+    );
+    let corrected_report = cache.report();
+    assert!(
+        corrected_report.hits > 0,
+        "run 3 is warm too: {corrected_report:?}"
+    );
+    assert!(
+        corrected_report.misses < cold.misses,
+        "a third distinct snapshot is a third distinct key, so this is a miss \
+         and not run 2's cached `suspect` verdict surviving past its own fix, \
+         and it is still nowhere near a full re-run: cold {cold:?}, corrected \
+         {corrected_report:?}"
     );
 
     let _ = std::fs::remove_dir_all(&root);

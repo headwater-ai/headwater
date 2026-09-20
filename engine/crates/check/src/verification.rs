@@ -117,6 +117,12 @@ impl EdgeCheck for Verified<'_> {
     /// Both ends have to be documents: the rule reads a content digest at
     /// each of them.
     const UNIT: EdgeUnit = EdgeUnit::Pair;
+    /// This rule reads [`Observations`] directly in [`Verified::evaluate`],
+    /// so its cache key has to carry the snapshot's digest or an edit to
+    /// `.headwater/observations.yml` with no other document moving would
+    /// never be seen again after the first cache write. See
+    /// [`crate::scope::EdgeCheck::NEEDS_OBSERVATIONS`].
+    const NEEDS_OBSERVATIONS: bool = true;
 
     /// A relation reaching [`TARGET_KIND`], and no other.
     fn instantiates(&self, relation: &str) -> bool {

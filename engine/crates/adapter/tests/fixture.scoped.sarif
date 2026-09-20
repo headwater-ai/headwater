@@ -516,7 +516,7 @@
             {
               "id": "relation.target.verification.suspect",
               "shortDescription": {
-                "text": "edge scope, one relation instance and both endpoints"
+                "text": "edge scope, one relation instance and both endpoints, and the committed observation snapshot"
               },
               "properties": {
                 "headwater": {

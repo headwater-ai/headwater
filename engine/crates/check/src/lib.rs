@@ -717,35 +717,67 @@ pub fn run(
     ));
     instances.extend(scope::over_documents(&placement, census, graph, ctx, cache));
     instances.extend(scope::over_edges(
-        &targets, census, graph, &digests, ctx, cache,
+        &targets,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
     ));
     instances.extend(scope::over_edges(
-        &suspect, census, graph, &digests, ctx, cache,
+        &suspect,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
     ));
     instances.extend(scope::over_edges(
         &reciprocity,
         census,
         graph,
         &digests,
+        declared.observations,
         ctx,
         cache,
     ));
     instances.extend(scope::over_edges(
-        &endpoints, census, graph, &digests, ctx, cache,
+        &endpoints,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
     ));
     instances.extend(scope::over_edges(
         &dependency,
         census,
         graph,
         &digests,
+        declared.observations,
         ctx,
         cache,
     ));
     instances.extend(scope::over_edges(
-        &basis, census, graph, &digests, ctx, cache,
+        &basis,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
     ));
     instances.extend(scope::over_edges(
-        &verified, census, graph, &digests, ctx, cache,
+        &verified,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
     ));
     instances.extend(scope::over_neighbourhoods(
         &participation,
