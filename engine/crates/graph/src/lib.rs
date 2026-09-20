@@ -62,7 +62,7 @@ pub mod index;
 pub mod links;
 
 pub use declarations::{Declarations, Direction, Reciprocal};
-pub use edges::{Edge, Target, Unbound};
+pub use edges::{Edge, Reach, Target, Unbound};
 pub use index::{Index, Node};
 
 use headwater_census::census::Census;
@@ -202,8 +202,11 @@ impl Graph {
                 excluded_by,
                 // An anchor node is one entry per identity, and a revision is a
                 // property of one state of that identity rather than of the
-                // node. `Target::resolution` is where it has to appear.
+                // node. `Target::resolution` is where it has to appear. Every
+                // pattern the anchor holds is folded into `normalized`
+                // already, and `Target::reach` is where a caller reads them.
                 revision: _,
+                patterns: _,
             } = &edge.target
             else {
                 continue;
@@ -469,6 +472,7 @@ impl Graph {
                 normalized,
                 excluded_by,
                 revision: _,
+                patterns: _,
             } = &edge.target
             else {
                 continue;

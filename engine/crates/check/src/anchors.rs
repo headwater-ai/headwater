@@ -114,6 +114,7 @@ impl Resolver for Rules {
             // The identity is the string the engine ships, so the normalized
             // form is that string and never a form this resolver invented.
             true => Binding::Resolved {
+                matched: vec![id.to_string()],
                 normalized: id.to_string(),
                 excluded_by: None,
                 // A rule template is at no revision. It moves with the binary,
@@ -155,6 +156,7 @@ mod tests {
         assert_eq!(
             over().resolve("section.required.missing"),
             Binding::Resolved {
+                matched: vec!["section.required.missing".to_string()],
                 normalized: "section.required.missing".to_string(),
                 excluded_by: None,
                 revision: None,
@@ -169,6 +171,7 @@ mod tests {
         assert_eq!(
             over().resolve("  language.retired_term.used\n"),
             Binding::Resolved {
+                matched: vec!["language.retired_term.used".to_string()],
                 normalized: "language.retired_term.used".to_string(),
                 excluded_by: None,
                 revision: None,

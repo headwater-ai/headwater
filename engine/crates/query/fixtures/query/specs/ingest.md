@@ -8,7 +8,7 @@ provenance:
   accepted_by: the fixture tree
 relations:
   governs:
-    - src/ingest
+    - src/ingest/**
 ---
 
 # Ingest

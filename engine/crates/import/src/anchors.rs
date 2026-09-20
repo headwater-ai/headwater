@@ -135,6 +135,7 @@ impl Resolver for Items {
             // and it is the only thing in the answer that can move while the
             // identity stands still.
             Some((_, revision)) => Binding::Resolved {
+                matched: vec![id.to_string()],
                 normalized: id.to_string(),
                 excluded_by: None,
                 revision: Some(revision.clone()),
@@ -239,6 +240,7 @@ snapshot:
         assert_eq!(
             items.resolve("12345"),
             Binding::Resolved {
+                matched: vec!["12345".to_string()],
                 normalized: "12345".to_string(),
                 excluded_by: None,
                 revision: Some("7".to_string()),

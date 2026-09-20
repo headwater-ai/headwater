@@ -117,6 +117,41 @@ impl Pattern {
         (leading, literal_chars)
     }
 
+    /// Whether this pattern names one path outright: no `**` and no glob
+    /// segment anywhere in it.
+    ///
+    /// [HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)
+    /// keeps a value with no wildcard resolving exactly as it did before a
+    /// pattern language reached the `code_path` anchor: a literal path is
+    /// tested with a filesystem `exists`, and a search over the tree runs only
+    /// for a pattern that actually holds one.
+    pub fn is_literal(&self) -> bool {
+        self.segments
+            .iter()
+            .all(|segment| matches!(segment, Segment::Literal(_)))
+    }
+
+    /// The leading run of literal segments, joined with `/`.
+    ///
+    /// This is where a search for this pattern's matches has to start: no path
+    /// this pattern admits lies outside it, because every segment before the
+    /// first wildcard is fixed. A pattern with no literal segment at all (one
+    /// that opens with `**`) answers the empty string, and a search rooted
+    /// there walks the whole tree the resolver was given — a cost this
+    /// repository's own patterns never pay, because every one of them opens on
+    /// a literal directory.
+    pub fn literal_prefix(&self) -> String {
+        self.segments
+            .iter()
+            .take_while(|segment| matches!(segment, Segment::Literal(_)))
+            .map(|segment| match segment {
+                Segment::Literal(text) => text.as_str(),
+                _ => unreachable!("stopped at the first non-literal segment"),
+            })
+            .collect::<Vec<&str>>()
+            .join("/")
+    }
+
     /// Whether some path exists that both patterns match.
     ///
     /// This is emptiness of an intersection rather than a match, and it is
@@ -322,6 +357,27 @@ mod tests {
                     );
                 }
             }
+        }
+    }
+
+    #[test]
+    fn a_pattern_with_no_wildcard_is_literal_and_a_prefix_of_itself() {
+        let pattern = Pattern::new(".claude/hooks");
+        assert!(pattern.is_literal());
+        assert_eq!(pattern.literal_prefix(), ".claude/hooks");
+    }
+
+    #[test]
+    fn a_wildcard_pattern_is_not_literal_and_its_prefix_stops_before_the_wildcard() {
+        for (source, prefix) in [
+            (".claude/hooks/**", ".claude/hooks"),
+            ("docs/spec/*.md", "docs/spec"),
+            ("docs/**/README.md", "docs"),
+            ("**", ""),
+        ] {
+            let pattern = Pattern::new(source);
+            assert!(!pattern.is_literal(), "{source}");
+            assert_eq!(pattern.literal_prefix(), prefix, "{source}");
         }
     }
 

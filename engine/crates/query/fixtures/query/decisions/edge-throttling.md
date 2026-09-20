@@ -10,7 +10,7 @@ relations:
   supersedes:
     - DR-FIX-0007
   governs:
-    - src/ingest/rate_limit.rs
+    - [src/ingest/rate_limit.rs, src/ingest/mod.rs]
 ---
 
 # Throttling at the edge

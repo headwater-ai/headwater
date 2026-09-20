@@ -193,7 +193,18 @@ fn reads(surface: &Surface<'_>) -> String {
     }
 
     out.push_str("\ngoverning_docs_for_path\n");
-    for path in ["src/ingest/rate_limit.rs", "src/ingest", "src/nothing.rs"] {
+    for path in [
+        "src/ingest/rate_limit.rs",
+        // A member of the list `query/decisions/edge-throttling.md` now
+        // governs alongside `src/ingest/rate_limit.rs`
+        // (HW-DR-0074: "a list is one anchor ... its matched set is the union
+        // of what its members match"), and also a path `query/specs/ingest.md`
+        // reaches only because its anchor is a pattern now: two anchors that
+        // both match one file are two nodes, and this is that file.
+        "src/ingest/mod.rs",
+        "src/ingest",
+        "src/nothing.rs",
+    ] {
         let governing = surface.governing_docs_for_path(path);
         match governing.is_empty() {
             true => {

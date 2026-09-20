@@ -41,7 +41,8 @@
 //! preference: the alternative moves the snapshot format into the graph crate,
 //! and Q19 rules that the shape of a snapshot is a property of its resolver.
 
-use headwater_census::walk::{Corpus, Exclusion};
+use headwater_census::walk::{Corpus, Entry, EntryKind, Exclusion};
+use headwater_meta::pattern::Pattern;
 use std::path::{Path, PathBuf};
 
 /// What a resolver made of one anchor string.
@@ -51,6 +52,19 @@ pub enum Binding {
         /// The normalized string. Two spellings of one target normalize to one
         /// value, and that value is the node's identity.
         normalized: String,
+        /// The tree entries this one anchor string matched, sorted and with no
+        /// duplicate, and never empty for a binding this variant carries.
+        ///
+        /// [HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md):
+        /// a value with no wildcard names one entry, itself, so this is
+        /// `vec![normalized.clone()]` there. A pattern with a wildcard names
+        /// however many entries the tree holds under it, excluding an entry a
+        /// corpus exclusion claims. `headwater explain` reads this for the
+        /// count a reader is owed, and [`crate::edges::Target::resolution`]
+        /// renders it into a cache key, so a file added or removed under a
+        /// governed subtree is a different key
+        /// ([HW-OBL-0117](../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md)).
+        matched: Vec<String>,
         /// Set when the target lies under a path the corpus declared is not
         /// corpus content. The anchor still resolves: the file is there, and a
         /// `governs` edge over it is the thing write-time impact detection
@@ -177,22 +191,56 @@ impl Resolver for SourceTree {
             Err(why) => return Binding::Unresolved(why),
         };
 
-        if !self.base.join(&normalized).exists() {
-            return Binding::Unresolved(format!("no `{normalized}` in the source tree"));
+        let pattern = Pattern::new(&normalized);
+        if pattern.is_literal() {
+            // Unchanged from before a pattern language reached this resolver:
+            // one `exists` call, and the one entry this value names is itself.
+            if !self.base.join(&normalized).exists() {
+                return Binding::Unresolved(format!("no `{normalized}` in the source tree"));
+            }
+
+            let excluded_by = self
+                .exclusions
+                .iter()
+                .find(|exclusion| exclusion.pattern.matches(&normalized))
+                .map(|exclusion| exclusion.pattern.source().to_string());
+
+            return Binding::Resolved {
+                matched: vec![normalized.clone()],
+                normalized,
+                excluded_by,
+                // A path in a working tree is at no revision this resolver can
+                // name. See the field.
+                revision: None,
+            };
         }
 
-        let excluded_by = self
-            .exclusions
-            .iter()
-            .find(|exclusion| exclusion.pattern.matches(&normalized))
-            .map(|exclusion| exclusion.pattern.source().to_string());
+        // A pattern with a wildcard: search the one subtree no path it admits
+        // can lie outside of, and keep every non-excluded entry it matches.
+        // HW-DR-0074: "the resolver reads the tree once, not once per edge."
+        let prefix = pattern.literal_prefix();
+        let scoped = Corpus::new(self.base.clone(), &prefix).excluding(self.exclusions.clone());
+        let mut matched: Vec<String> = headwater_census::walk::walk(&scoped)
+            .into_iter()
+            .filter(|entry: &Entry| entry.excluded_by.is_none())
+            .filter(|entry| matches!(entry.kind, EntryKind::File | EntryKind::Symlink { .. }))
+            .map(|entry| entry.path)
+            .filter(|path| pattern.matches(path))
+            .collect();
+        matched.sort();
+        matched.dedup();
+
+        if matched.is_empty() {
+            return Binding::Unresolved(format!(
+                "no entry in the source tree matches `{normalized}`"
+            ));
+        }
 
         Binding::Resolved {
             normalized,
-            excluded_by,
-            // A path in a working tree is at no revision this resolver can
-            // name. See the field.
+            excluded_by: None,
             revision: None,
+            matched,
         }
     }
 }
@@ -349,6 +397,7 @@ impl Resolver for CommentScan {
 
         if self.minted.contains(candidate) {
             Binding::Resolved {
+                matched: vec![normalized.clone()],
                 normalized,
                 excluded_by: None,
                 // A claim file names no revision, and neither does the
@@ -461,6 +510,160 @@ mod tests {
             panic!("a path that is not there resolved");
         };
         assert!(why.contains("src/invented.rs"), "{why}");
+    }
+
+    /// A directory this test builds and tears down, so the pattern fixtures
+    /// below do not depend on the shape of this crate's own `src/` staying
+    /// still. Mirrors `scratch` below, which the `CommentScan` tests already
+    /// use for the same reason.
+    fn pattern_fixture(name: &str) -> PathBuf {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("a clock later than the epoch")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "headwater-source-tree-pattern-{name}-{}-{nanos}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(dir.join(".claude/hooks")).expect("a fixture tree");
+        std::fs::create_dir_all(dir.join(".claude/hooks-disabled")).expect("a fixture tree");
+        std::fs::write(dir.join(".claude/hooks/write.sh"), "#!/bin/sh\n").expect("a fixture file");
+        std::fs::write(dir.join(".claude/hooks-disabled/write.sh"), "#!/bin/sh\n")
+            .expect("a fixture file");
+        dir
+    }
+
+    /// The decisive fixture HW-DR-0074 names: a naive prefix test, or a bare
+    /// `starts_with`, passes `.claude/hooks-disabled/write.sh` for an anchor
+    /// written `.claude/hooks/**`, and this is the one case that catches it in
+    /// either direction.
+    #[test]
+    fn a_wildcard_anchor_reaches_its_own_subtree_and_never_a_sibling_that_shares_a_prefix() {
+        let dir = pattern_fixture("boundary");
+        let resolver = SourceTree {
+            base: dir.clone(),
+            exclusions: Vec::new(),
+        };
+
+        let Binding::Resolved { matched, .. } = resolver.resolve(".claude/hooks/**") else {
+            panic!("the pattern matches a real file under it");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert_eq!(matched, vec![".claude/hooks/write.sh".to_string()]);
+        assert!(
+            !matched.contains(&".claude/hooks-disabled/write.sh".to_string()),
+            "{matched:?}"
+        );
+    }
+
+    /// A directory named with no wildcard matches the directory entry alone,
+    /// which is the existing, unchanged behavior a value with no wildcard
+    /// keeps under HW-DR-0074.
+    #[test]
+    fn a_bare_directory_matches_the_directory_and_nothing_under_it() {
+        let dir = pattern_fixture("bare-directory");
+        let resolver = SourceTree {
+            base: dir.clone(),
+            exclusions: Vec::new(),
+        };
+
+        let Binding::Resolved { matched, .. } = resolver.resolve(".claude/hooks") else {
+            panic!("the directory is there, so the anchor resolves");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert_eq!(matched, vec![".claude/hooks".to_string()]);
+    }
+
+    /// A pattern that matches no entry is unresolved and names itself, exactly
+    /// as a path that is not in the tree does today.
+    #[test]
+    fn a_pattern_that_matches_no_entry_is_unresolved_and_names_the_pattern() {
+        let dir = pattern_fixture("no-match");
+        let resolver = SourceTree {
+            base: dir.clone(),
+            exclusions: Vec::new(),
+        };
+
+        let Binding::Unresolved(why) = resolver.resolve(".claude/nothing-here/*.sh") else {
+            panic!("a pattern with no match resolved");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(why.contains(".claude/nothing-here/*.sh"), "{why}");
+    }
+
+    /// An entry the corpus excludes does not count as a match, so a pattern
+    /// whose every hit is excluded is unresolved rather than resolved on the
+    /// strength of a file the corpus has said is not its content.
+    #[test]
+    fn an_excluded_entry_is_not_a_match() {
+        let dir = pattern_fixture("excluded");
+        let resolver = SourceTree {
+            base: dir.clone(),
+            exclusions: vec![Exclusion::new(".claude/hooks/**", "a fixture exclusion")],
+        };
+
+        let Binding::Unresolved(why) = resolver.resolve(".claude/hooks/**") else {
+            panic!("every match is excluded, so the pattern should not resolve");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(why.contains(".claude/hooks/**"), "{why}");
+    }
+
+    /// [HW-OBL-0117](../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md):
+    /// a file added under a governed `**` anchor is a different matched set,
+    /// and [`crate::edges::Target::resolution`] is the derived `Debug` of the
+    /// whole binding, so a cache keyed on it goes cold rather than serving the
+    /// verdict of the tree before the file arrived.
+    #[test]
+    fn a_file_added_under_a_wildcard_anchor_changes_the_matched_set_and_so_the_cache_key() {
+        let dir = pattern_fixture("cache-key");
+        let resolver = SourceTree {
+            base: dir.clone(),
+            exclusions: Vec::new(),
+        };
+
+        let before = resolver.resolve(".claude/hooks/**");
+        std::fs::write(dir.join(".claude/hooks/second.sh"), "#!/bin/sh\n")
+            .expect("a second fixture file");
+        let after = resolver.resolve(".claude/hooks/**");
+        std::fs::remove_dir_all(&dir).ok();
+
+        let (Binding::Resolved { matched: before, .. }, Binding::Resolved { matched: after, .. }) =
+            (&before, &after)
+        else {
+            panic!("both resolve: {before:?} {after:?}");
+        };
+        assert_ne!(
+            before, after,
+            "a file added under the pattern left the matched set unchanged"
+        );
+        assert_eq!(after.len(), before.len() + 1, "{after:?}");
+
+        // The property a cache key rests on: two `Target::Anchor` bindings
+        // that hold two different matched sets render two different
+        // resolutions, which is what makes a warm cache miss rather than
+        // serve the answer the tree gave before the file arrived.
+        let member = |matched: &[String]| crate::edges::PatternMember {
+            pattern: ".claude/hooks/**".to_string(),
+            matched: matched.to_vec(),
+        };
+        let anchor = |matched: &[String]| crate::edges::Target::Anchor {
+            anchor_kind: "code_path".to_string(),
+            resolver: "source-tree".to_string(),
+            normalized: ".claude/hooks/**".to_string(),
+            excluded_by: None,
+            revision: None,
+            patterns: vec![member(matched)],
+        };
+        assert_ne!(
+            anchor(before).resolution(),
+            anchor(after).resolution(),
+            "the cache key would serve a stale verdict across the new file"
+        );
     }
 
     /// A resolver that answers whatever it was built to answer, so that the set

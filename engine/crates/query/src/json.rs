@@ -316,6 +316,7 @@ fn of_neighbour(neighbour: &Neighbour) -> Json {
         cue,
         cue_is_declared,
         governs,
+        reach,
     } = neighbour;
     let mut members: Vec<(&'static str, Json)> = vec![
         ("relation", Json::string(relation.clone())),
@@ -337,7 +338,34 @@ fn of_neighbour(neighbour: &Neighbour) -> Json {
             Governs::Neither => "neither",
         }),
     ));
+    if let Some(reach) = reach {
+        members.push(("reach", of_reach(reach)));
+    }
     Json::object(members)
+}
+
+/// How many entries an anchor reaches, in total and per pattern —
+/// [HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)'s
+/// denominator, so a client reads the same count a terminal renders.
+fn of_reach(reach: &headwater_graph::Reach) -> Json {
+    Json::object([
+        ("total", number(reach.total)),
+        (
+            "members",
+            Json::Array(
+                reach
+                    .members
+                    .iter()
+                    .map(|(pattern, count)| {
+                        Json::object([
+                            ("pattern", Json::string(pattern.clone())),
+                            ("matched", number(*count)),
+                        ])
+                    })
+                    .collect(),
+            ),
+        ),
+    ])
 }
 
 fn strings(values: &[String]) -> Json {
