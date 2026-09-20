@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 503,
-      "carried": 503,
+      "in the graph": 504,
+      "carried": 504,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2739,7 +2739,7 @@
           "status": "current",
           "status_since": "2026-09-07",
           "summary": "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, the architecture that follows, what was rejected, and the numbers the next run is held against.",
-          "last_verified": "2026-09-08",
+          "last_verified": "2026-09-20",
           "title": "The build order as a multi-agent system",
           "provenance": {
             "warrant": "asserted",
@@ -9364,6 +9364,27 @@
             "warrant": "asserted",
             "agency": "agent",
             "drafted_by": "claude-fable-5-1",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0007",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0007",
+          "status": "current",
+          "status_since": "2026-09-20",
+          "summary": "A wait that might outlive the five-minute prompt-cache lifetime is wrapped in a timeout under it and re-issued on return, so a background wait still ends the turn without paying to rewrite a context the cache would otherwise have kept warm.",
+          "last_verified": "2026-09-20",
+          "title": "A background wait caps below the cache lifetime and re-issues itself",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
             "activity": "measure+draft",
             "evidence_basis": "evidenced"
           }

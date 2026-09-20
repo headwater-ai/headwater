@@ -732,6 +732,8 @@ docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-
   typed: process_decision
 docs/process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md
   typed: process_decision
+docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md
+  typed: process_decision
 docs/process/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md

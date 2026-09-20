@@ -22,6 +22,17 @@
 # tables together say both what a turn was for and what it ran. A row is the
 # calls in that group, the distinct turns that made one, the cache reads
 # those turns re-read, and that as a share of the whole session's cache reads.
+#
+# A fourth line follows the tables: the turns whose cache write outweighed
+# their cache read after a gap past the five-minute prompt-cache lifetime, the
+# tokens they rewrote, and what that cost at Sonnet 5's cache-write rate,
+# $2.50 per million tokens against $0.20 to have read the same tokens back.
+# #983 measured why the class matters: a wait that ends the turn for longer
+# than the cache holds a copy comes back to a discarded one and pays to write
+# the whole context again rather than read it, twelve and a half times the
+# price, and thirteen such wake-ups in one run cost $14.85 of a $130.73 total.
+# A transcript with no timestamp on a turn reports zero rather than guessing.
+#
 # A fleet section follows the tables, read from the agent transcripts the
 # harness writes beside the session file: the share of the span with no agent
 # in flight, the mean number in flight, the gap around each compaction, and
@@ -55,19 +66,28 @@ command -v jq >/dev/null 2>&1 || {
 # parent never made. `strip_heredocs` removes the span below, once, before
 # either table reads `.cmd`, so a call is judged on what it runs.
 
-# One record per turn: id, cache reads, and the tool calls the turn made.
+# One record per turn: id, cache reads, cache writes, timestamp, and the tool
+# calls the turn made. `group_by(.id)` would answer the three tables above,
+# which only sum and count, but the expiry class below reads the gap between
+# one turn and the next, so the turns have to stay in the order the file
+# wrote them. A message's lines are written together, so a reduce that folds
+# a line into the previous turn when the id repeats and opens a new one when
+# it does not keeps that order at one pass.
 turns=$(jq -c -n '
     def strip_heredocs:
         gsub("<<-?[ \t]*['"'"'\"]?(?<marker>[A-Za-z_][A-Za-z0-9_]*)['"'"'\"]?\n(?:(?!^\\k<marker>$).)*\n[ \t]*\\k<marker>";
              ""; "sm");
-    [inputs
-     | select(.type == "assistant")
-     | {id: .message.id,
-        cr: (.message.usage.cache_read_input_tokens // 0),
-        tools: [.message.content[]? | select(.type == "tool_use")
-                | {name: .name, cmd: (.input.command // "" | strip_heredocs)}]}]
-    | group_by(.id)
-    | map({id: .[0].id, cr: .[0].cr, tools: (map(.tools) | add)})
+    reduce (inputs | select(.type == "assistant")) as $l
+        ([];
+         ({id: $l.message.id,
+           cr: ($l.message.usage.cache_read_input_tokens // 0),
+           cw: ($l.message.usage.cache_creation_input_tokens // 0),
+           ts: ($l.timestamp // null),
+           tools: [$l.message.content[]? | select(.type == "tool_use")
+                   | {name: .name, cmd: (.input.command // "" | strip_heredocs)}]}) as $t
+         | if length > 0 and .[-1].id == $t.id
+           then .[-1].tools += $t.tools
+           else . + [$t] end)
 ' "$file")
 
 total_turns=$(printf '%s' "$turns" | jq 'length')
@@ -144,6 +164,29 @@ table 'Bash, by what the command mentions (a call can be in several rows)' '
        | map(select(. as $p | $c | test("(^|[^A-Za-z0-9_/.-])" + $p))))
     end'
 
+# The cache lifetime is five minutes: past that much silence the harness
+# discards its copy of a turn's context, and the turn that ends up reading
+# the notification pays to write the whole thing back rather than to read it.
+# A turn is in this class when its cache write outweighs its cache read and
+# the gap since the previous turn passed that lifetime; the write rate is
+# Sonnet 5's, $2.00 per million input tokens times the API's 1.25x for a
+# cache write, because that is what the run's agents run under.
+cache_lifetime_s=300
+write_rate_per_mtok=2.50
+expiry=$(printf '%s' "$turns" | jq -c --argjson lifetime "$cache_lifetime_s" '
+    def ts: sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601;
+    [.[] | select(.ts != null)] as $timed
+    | [range(1; $timed | length) as $i
+       | $timed[$i] as $cur | $timed[$i - 1] as $prev
+       | (($cur.ts | ts) - ($prev.ts | ts)) as $gap
+       | select($gap > $lifetime and $cur.cw > $cur.cr)
+       | $cur.cw]
+    | {n: length, tokens: (add // 0)}
+')
+expiry_n=$(printf '%s' "$expiry" | jq '.n')
+expiry_tokens=$(printf '%s' "$expiry" | jq '.tokens')
+expiry_cost=$(awk -v t="$expiry_tokens" -v r="$write_rate_per_mtok" 'BEGIN { printf "%.2f", t * r / 1000000 }')
+printf '\nexpiry-class wake-ups %s  tokens rewritten %s  cost $%s\n' "$expiry_n" "$expiry_tokens" "$expiry_cost"
 
 # The fleet: what the agents this session dispatched were doing while its
 # turns were spent. The harness writes each agent's own transcript beside the

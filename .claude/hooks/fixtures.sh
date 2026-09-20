@@ -1120,6 +1120,15 @@ if [ -x "$engine" ]; then
     expect 'a run watch is refused with no loop around it' \
         wait.sh 0 '"permissionDecision":"deny"' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"gh run watch 35480000000 --exit-status"}}'
+    expect 'the foreground refusal states the cache-lifetime bound a background wait must not outlive' \
+        wait.sh 0 'outlives the prompt cache' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done"}}'
+    expect '  and names the remedy, a bounded wait that re-issues itself' \
+        wait.sh 0 'timeout 240' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done"}}'
+    refute 'the pgrep refusal does not also state the cache-lifetime bound, which belongs to the other remedy' \
+        wait.sh 'outlives the prompt cache' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! pgrep -f \"cargo test\" >/dev/null; do sleep 30; done"}}'
 
     expect 'a loop that waits on a pgrep literal is refused for a different reason' \
         wait.sh 0 'can never exit' \

@@ -92,6 +92,37 @@ same 'the real call outside the heredoc still files as its own verb' 'gh pr 1 1 
 same 'the mentions table does not count a poll word quoted inside the body' 'gh pr 1 1 1000 50%' "$(hmrow 'gh pr')"
 same '  the by-tool table counts both calls' 'Bash 2 2 2000 100%' "$(hrow Bash)"
 
+same 'a transcript with no timestamps reports no expiry class, not an error' \
+    'expiry-class wake-ups 0  tokens rewritten 0  cost $0.00' \
+    "$(printf '%s\n' "$out" | grep '^expiry-class')"
+same '  the same holds for a transcript with no cache-creation field at all' \
+    'expiry-class wake-ups 0  tokens rewritten 0  cost $0.00' \
+    "$(printf '%s\n' "$hout" | grep '^expiry-class')"
+
+# The expiry class. Five turns forty seconds to seven minutes apart. e1 opens
+# the cache; e2 rereads it thirty seconds later, well inside the five-minute
+# lifetime, so it is not this class even though nothing else about it is
+# unusual. e3 arrives six minutes and thirty seconds after e2, past the
+# lifetime, and its cache write of 500000 outweighs its cache read of 1000:
+# the harness discarded the copy e2 left, and e3 paid to write it again. e4
+# rereads it ten seconds later, inside the lifetime once more. e5 arrives
+# seven minutes and fifty seconds after e4, past the lifetime again, with the
+# same 500000-token rewrite. The two expired turns total 1,000,000 tokens,
+# which at $2.50 a million is $2.50.
+cat > "$scratch/expiry.jsonl" <<'EOF'
+{"type":"assistant","timestamp":"2026-01-01T00:00:00.000Z","message":{"id":"e1","usage":{"cache_read_input_tokens":0,"cache_creation_input_tokens":50000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo start"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:00:30.000Z","message":{"id":"e2","usage":{"cache_read_input_tokens":50000,"cache_creation_input_tokens":0},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo warm"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:07:00.000Z","message":{"id":"e3","usage":{"cache_read_input_tokens":1000,"cache_creation_input_tokens":500000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo woke"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:07:10.000Z","message":{"id":"e4","usage":{"cache_read_input_tokens":501000,"cache_creation_input_tokens":0},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo warm again"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:15:00.000Z","message":{"id":"e5","usage":{"cache_read_input_tokens":2000,"cache_creation_input_tokens":500000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo woke again"}}]}}
+EOF
+
+eout=$(sh "$tool" "$scratch/expiry.jsonl" 2>&1); status=$?
+same 'the expiry census exits 0' 0 "$status"
+same 'a rewrite past the cache lifetime is counted, a reread inside it is not' \
+    'expiry-class wake-ups 2  tokens rewritten 1000000  cost $2.50' \
+    "$(printf '%s\n' "$eout" | grep '^expiry-class')"
+
 # The fleet. A parent that dispatches a builder at 00:00 and a verifier at
 # 00:10, rules at 00:45 with no tool call, compacts at 00:50, dispatches an
 # integrator at 01:00, and at 01:10 dispatches a type the harness refuses. The
@@ -136,6 +167,9 @@ EOF
 
 fout=$(sh "$tool" "$scratch/fleet.jsonl" 2>&1); status=$?
 same 'the fleet census exits 0' 0 "$status"
+same '  timestamps with no cache-creation field are still no expiry class' \
+    'expiry-class wake-ups 0  tokens rewritten 0  cost $0.00' \
+    "$(printf '%s\n' "$fout" | grep '^expiry-class')"
 fleet() { printf '%s\n' "$fout" | awk -v g="$1" 'on && $1 == g { print; exit } /^fleet$/ { on = 1 }' | tr -s ' '; }
 same 'agents are counted from the transcripts, a refused dispatch is not one, and depth two is set aside' 'dispatched 4 by Agent calls, 3 agents at depth one, 1 deeper' "$(fleet dispatched)"
 same 'the span runs from the first agent to the last' 'span 1.3 h from the first agent'"'"'s start to the last agent'"'"'s end' "$(fleet span)"
