@@ -371,11 +371,11 @@ if [ -x "$engine" ]; then
     expect 'an edit to a path nothing governs is silent' \
         write.sh 0 '' \
         '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
-    # HW-OBL-0104. A `governs` edge reaches the path it names and no path
-    # under it, so this fixture records the silence rather than asserting the
-    # containment that a reader of spec 5 expects.
-    expect 'a path under a governed directory is silent, which HW-OBL-0104 holds' \
-        write.sh 0 '' \
+    # HW-DR-0074 discharged HW-OBL-0104: a `code_path` anchor is a pattern, and
+    # spec 5 now governs `.claude/hooks/**` rather than five files by name, so
+    # a new file under that directory is named too.
+    expect 'a path under a governed pattern names the document, per HW-DR-0074' \
+        write.sh 0 'docs/spec/05-ai-integration.md' \
         '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/nothing-governs-this.sh"}}'
 
     # An `interface_contract` over a crate. This is the same position reaching a
@@ -402,11 +402,11 @@ if [ -x "$engine" ]; then
         write.sh 0 'docs/interfaces/headwater-sweep.md' \
         '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/cli/src/main.rs"}}'
 
-    # HW-OBL-0104 over a crate. `runner.rs` sits in the directory of a file a
-    # contract governs and no edge reaches it, so it answers nothing. This is
-    # the same silence the case above records, at the place a reader is most
-    # likely to expect containment.
-    expect 'a file beside a governed crate file is silent, which HW-OBL-0104 holds' \
+    # `runner.rs` sits beside a file `docs/interfaces/headwater-check.md`
+    # governs by a literal, one-file anchor. HW-DR-0074 lets an author widen
+    # that anchor to a pattern; this contract has not been rewritten to one,
+    # so the edge still answers for no file beside the one it names.
+    expect 'a file beside a governed crate file is silent, until its contract adopts a pattern' \
         write.sh 0 '' \
         '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/runner.rs"}}'
 else

@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0104
 title: "A governs edge reaches the path it names and nothing under it"
-status: current
-status_since: 2026-08-13
+status: discharged
+status_since: 2026-09-20
 waiting_on: ruling
-last_verified: 2026-08-13
+last_verified: 2026-09-20
 summary: "Impact detection compares the edited path against the anchor by equality, so an edge onto a directory answers for no file inside it."
 provenance:
   warrant: accepted
@@ -48,10 +48,8 @@ The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) calls 
 
 ## Discharge
 
-A ruling on the denotation, and the fixtures that hold it.
+**This record is discharged, and the ruling admitted a subtree.** [HW-DR-0074](../decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md) rules that a `code_path` anchor's raw value is a pattern in the language of `headwater_meta::pattern`, or a list of such patterns. `governing_docs_for_path` matches the asked path against every pattern of every anchor, and never against the string an edge reached. A pattern with no wildcard resolves exactly as a bare path always has. So this closes with no edge in the corpus forced to change.
 
-Where the ruling keeps equality, spec 5 and the glossary owe one sentence. It says that an author declares one edge for each governed file. The [maturity model](../doctrine/maturity-model.md) owes it too. That document asks an adopter to install the write-time hooks, and says nothing about what an adopter then declares.
+**The containment test and the failing fixtures this record asked for.** `engine/crates/graph/src/anchors.rs` holds a fixture over the pattern `.claude/hooks/**`. Its tree carries both `.claude/hooks/write.sh` and `.claude/hooks-disabled/write.sh`. The pattern reaches the first and never the second. That is the naive-prefix-test failure this record named. `engine/crates/query/tests/reads.rs` holds the query-layer proof over a real corpus. One document's pattern anchor now reaches a file under it that an equality match never could. A second document's list anchor reaches both members it names.
 
-Where the ruling admits a subtree, `governing_docs_for_path` owes a containment test and three failing fixtures. They are a path equal to the anchor, a path under it, and a path that shares a prefix with the anchor and leaves it. `.claude/hooks` against `.claude/hooks-disabled/write.sh` is the third, and a naive prefix test passes it wrongly.
-
-Either ruling closes this record. The corpus states no answer today, and the four edges this repository declares are what the absent answer costs.
+**Four edges for one fact is not what the corpus pays now.** An author who governs a directory of forty files writes one pattern instead. An author with several files already governed by hand may join them into one list anchor, at their own pace. Nothing in this ruling rewrites an edge nobody chose to change.

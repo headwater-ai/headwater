@@ -1,24 +1,27 @@
 ---
 id: HW-DR-0074
-status: draft
-status_since: 2026-09-18
+status: current
+status_since: 2026-09-20
 summary: "A `code_path` anchor is a pattern in the shelf language or a list of them, and a bare path matches one entry. An edge binds when every pattern matches at least one entry, and a query matches a path against the patterns."
-last_verified: 2026-09-18
+last_verified: 2026-09-20
 title: "A code path anchor is a pattern over the tree, and it binds when the pattern matches at least one entry"
 relations:
   constrains:
     - HW-DR-0029
   governs:
     - engine/crates/graph/src/anchors.rs
+    - engine/crates/graph/src/edges.rs
     - engine/crates/meta/src/pattern.rs
     - engine/crates/query/src/lib.rs
+    - engine/crates/query/src/route.rs
   traces_to:
     - HW-OBL-0104
     - HW-OBL-0105
 provenance:
-  warrant: proposed
+  warrant: accepted
   agency: agent
   drafted_by: claude-fable-5-1
+  accepted_by: j.baxter
   activity: measure+draft
   evidence_basis: evidenced
 ---

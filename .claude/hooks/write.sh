@@ -11,11 +11,13 @@
 #                            refuses the raw write and names the verb.
 #
 #   PostToolUse Write|Edit   impact detection. A document may declare that it
-#                            governs a code path. An edit to that path raises an
-#                            advisory prompt that names the documents at risk.
-#                            Spec 5 makes it advisory on purpose: a gate here
-#                            trains an author to answer "no doc impact" by
-#                            reflex, and that destroys the signal.
+#                            governs a code path, written as a pattern or as a
+#                            list of them (HW-DR-0074), and an edit to any path
+#                            a pattern admits raises an advisory prompt that
+#                            names the documents at risk. Spec 5 makes it
+#                            advisory on purpose: a gate here trains an author
+#                            to answer "no doc impact" by reflex, and that
+#                            destroys the signal.
 #
 # What it passes to the engine: one path. What it gets back: for the refusal,
 # the classification `headwater explain` reports on standard error for a path
