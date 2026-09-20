@@ -2,7 +2,7 @@
 id: HW-OBL-0199
 status: current
 status_since: 2026-09-19
-summary: A control's commit is still stored and never compared. #937 gave a verification the freshness check a control still lacks, and a plausible-commit syntax check; whether a commit is a real ancestor of the tree stays unread for both, and that needs an owner's ruling on widening the manifest boundary.
+summary: "A control's commit is still stored and never compared. Issue 937 gave a verification the freshness check a control still lacks, and a plausible-commit syntax check. Whether a commit is a real ancestor of the tree stays unread for both, and that needs an owner's ruling on widening the manifest boundary."
 last_verified: 2026-09-20
 title: "An observation snapshot records a commit and nothing reads it back"
 waiting_on: ruling
