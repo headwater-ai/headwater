@@ -242,7 +242,7 @@ It also sets the investment priority. Effort belongs in **oracles and traceabili
 
 ## I. LeanCTX — our file format, none of our TBox
 
-[LeanCTX](https://github.com/yvgude/lean-ctx) is a context-engineering layer for coding agents: a local Rust binary that sits between an agent and the model and compresses what passes through. Apache-2.0, ~3.5k stars, created March 2026, with near-daily releases. Its pitch is token economics. The features are read modes, AST-aware compression, and a shell hook that compresses `git` and `docker` output. It also has a proxy that compresses every request, and a property graph over *code* (imports, calls, exports).
+[LeanCTX](https://github.com/yvgude/lean-ctx) is a context-engineering layer for coding agents: a local Rust binary that sits between an agent and the model and compresses what passes through. Apache-2.0, ~3.5k stars as read on 2026-08-04, created March 2026, with near-daily releases. Its pitch is token economics. The features are read modes, AST-aware compression, and a shell hook that compresses `git` and `docker` output. It also has a proxy that compresses every request, and a property graph over *code* (imports, calls, exports).
 
 It is not a documentation system, and its own `VISION.md` confirms this rather than merely omits it: no documentation corpora, no taxonomy, no schema validation. Where it says **governance** it means governance *of the agent*, not governance of a corpus. That means policy over what an agent may see, signed evidence of what it saw, and compliance reports. That distinction is important to hold, because the word will soon be contested and the two meanings have almost nothing in common.
 
@@ -344,7 +344,7 @@ Two declarations that currently have no operational story acquire one here. `cre
 
 [Serena](https://github.com/oraios/serena) is an MCP toolkit for coding agents, MIT-licensed, created in March 2025, with 27.8k stars. It gives an agent symbol-level navigation and editing through language servers, which is not our subject. The adjacent part is its **memory system**: Markdown files that an agent writes into `.serena/memories/` and commits with the code.
 
-Scale changes how we should read it. LeanCTX (§I) has about 3.5k stars, and Serena has near eight times that number. This is not one team's local convention. It is a shape that a large number of agent-assisted repositories now carry.
+Scale changes how we should read it. LeanCTX (§I) has about 3.5k stars, dated there, and Serena has near eight times that number. This is not one team's local convention. It is a shape that a large number of agent-assisted repositories now carry.
 
 ### L.1 The fourth arrival, and the first one with its reasons written down
 
