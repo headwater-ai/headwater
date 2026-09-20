@@ -13,7 +13,7 @@
 
 taxonomy:
   package: headwater/standard
-  version: 4.3.1
+  version: 4.4.0
   bundles: [design-spec, evidence-and-obligation]
   overlay: .headwater/overlay.yml
 

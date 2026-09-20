@@ -30,6 +30,16 @@
 # names both files, both keys and both names.
 
 taxonomy: headwater/standard
+# 4.4.0 adds `cue` as an instance attribute of `traces_to`, source-owned.
+# [Q20](../../docs/decisions/0020-where-scent-lives.md) puts the routing cue on
+# the referring end of a relation instance, and until now no relation this
+# package declares carried anywhere to write one, so a corpus that adopts this
+# package alone could not author a cue at all — [HW-OBL-0023](../../docs/obligations/0023-no-corpus-has-authored-enough-cues-to-grade.md)
+# is that gap, unmeasured because nothing could close it. Nothing removed and
+# nothing already declared changes meaning: a consumer that writes no `cue:`
+# under an existing `traces_to` entry meets nothing new, so this is a minor by
+# the same reasoning 3.3.0 gives for `verified_revision` below.
+#
 # 4.0.0 adds `facets.title`, in the `name` role, and this file declares it on no
 # kind. The facet-role registry of spec 2 is closed at five members and four of
 # them had a facet here; this is the fifth. The decision-record entry declared
@@ -138,7 +148,7 @@ taxonomy: headwater/standard
 # The two are required to agree: `resolve::package::agrees` refuses the package
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
-version: 4.3.1
+version: 4.4.0
 
 purposes:
   rationale:
@@ -319,6 +329,14 @@ relations:
     from: [governed_document]
     to:   [governed_document, code_path]
     created_by: hook
+    # Q20 puts a cue on the referring end of a relation instance. `traces_to`
+    # is the one relation of this package whose `to` set already reaches
+    # plain prose (`governed_document`) rather than only an anchor, so it is
+    # the one instance a hand-added cue can sit beside without a second
+    # relation existing only to carry it. `owner: source` matches Q20: the
+    # document that names the target is the one that states why.
+    attributes:
+      cue: {type: string, owner: source}
 
 # `layout` names the file that `headwater new` writes on the shelf. The decision
 # shelf carries one because the tradition numbers its files, and `{seq}` is the

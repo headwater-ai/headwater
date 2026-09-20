@@ -15,7 +15,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - HW-DR-0020
+    - to: HW-DR-0020
+      cue: "The ruling that lets a hand-written cue exist at all, and the reason none has been authored to grade yet."
 ---
 
 # A cue has no measured effect on traversal precision

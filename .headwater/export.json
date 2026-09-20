@@ -4024,7 +4024,10 @@
           },
           "relations": {
             "traces_to": [
-              "HW-DR-0020"
+              {
+                "to": "HW-DR-0020",
+                "cue": "The ruling that lets a hand-written cue exist at all, and the reason none has been authored to grade yet."
+              }
             ]
           }
         }
@@ -14952,6 +14955,9 @@
           "id": "HW-DR-0020",
           "path": "docs/decisions/0020-where-scent-lives.md",
           "kind": "decision"
+        },
+        "attributes": {
+          "cue": "The ruling that lets a hand-written cue exist at all, and the reason none has been authored to grade yet."
         }
       },
       {
