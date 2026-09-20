@@ -119,7 +119,9 @@ fn an_unminted_citation_fails_and_a_minted_one_passes() {
     let finding = run
         .findings
         .iter()
-        .find(|finding| finding.rule == RULE && finding.path.starts_with("comment-scan-target/unminted/"))
+        .find(|finding| {
+            finding.rule == RULE && finding.path.starts_with("comment-scan-target/unminted/")
+        })
         .expect("the unminted arm reported the rule");
     assert!(
         finding.message.contains("HW-VER-9999"),

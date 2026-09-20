@@ -535,11 +535,8 @@ mod tests {
     #[test]
     fn a_citation_shaped_like_an_identifier_this_corpus_mints_and_unminted_is_refused_and_named() {
         let dir = scratch("unminted");
-        std::fs::write(
-            dir.join("sample.rs"),
-            "//! proves HW-VER-9999\nfn f() {}\n",
-        )
-        .expect("a fixture file");
+        std::fs::write(dir.join("sample.rs"), "//! proves HW-VER-9999\nfn f() {}\n")
+            .expect("a fixture file");
 
         let resolver = CommentScan::new(
             &dir,
@@ -558,11 +555,8 @@ mod tests {
     #[test]
     fn a_citation_of_a_minted_identifier_resolves() {
         let dir = scratch("minted");
-        std::fs::write(
-            dir.join("sample.rs"),
-            "//! proves HW-VER-0001\nfn f() {}\n",
-        )
-        .expect("a fixture file");
+        std::fs::write(dir.join("sample.rs"), "//! proves HW-VER-0001\nfn f() {}\n")
+            .expect("a fixture file");
 
         let resolver = CommentScan::new(
             &dir,
