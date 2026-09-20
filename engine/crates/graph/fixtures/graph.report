@@ -1,9 +1,9 @@
-7 nodes, 13 declared edge halves
+9 nodes, 16 declared edge halves
       6 to a document
-      3 to an anchor
-      4 unbound
-12 prose links
-      6 to a corpus file
+      5 to an anchor
+      5 unbound
+13 prose links
+      7 to a corpus file
       1 to this document
       1 outside the repository
       4 broken
@@ -12,6 +12,7 @@
       1 carrying a fragment into another corpus document
 
 anchors
+      2 code_path `graph.report, graph.taxonomy.yml` via source-tree
       1 code_path `graph.taxonomy.yml` via source-tree
       1 code_path `graph/excluded/note.md` via source-tree
         inside `graph/excluded/**`, which this corpus declares is not corpus content
@@ -32,6 +33,10 @@ nodes
     graph/spec/04-twin.md
   design_spec SPEC-FIX-generated
     graph/spec/06-generated-register.md
+  design_spec SPEC-FIX-list-anchor
+    graph/spec/07-list-anchor.md
+  design_spec SPEC-FIX-list-anchor-reordered
+    graph/spec/08-list-anchor-reordered.md
 
 edges
   EVAL-FIX-alpha --cited_by--> SPEC-FIX-first
@@ -60,6 +65,12 @@ edges
     evaluation at graph/evaluations/alpha.md
   SPEC-FIX-generated --traces_to--> SPEC-FIX-first
     design_spec at graph/spec/00-first.md
+  SPEC-FIX-list-anchor --governs--> graph.report, graph.taxonomy.yml
+    code_path via source-tree
+  SPEC-FIX-list-anchor --governs--> graph/no-such-file.rs, graph.report
+    unbound: `code_path`: `graph/no-such-file.rs` no `graph/no-such-file.rs` in the source tree
+  SPEC-FIX-list-anchor-reordered --governs--> graph.report, graph.taxonomy.yml
+    code_path via source-tree
 
 links
   graph/notes/loose.md -> a%20spaced.md
@@ -86,6 +97,8 @@ links
     an address outside the repository
   graph/spec/00-first.md -> #the-well-formed-document
     this document
+  graph/spec/08-list-anchor-reordered.md -> 07-list-anchor.md
+    graph/spec/07-list-anchor.md (typed)
 
 graph/notes/loose.md:11:26
   link: `a%20missing.md` no `graph/notes/a%20missing.md` in the repository
@@ -121,3 +134,5 @@ graph/spec/04-twin.md:2:1
   identifier: `SPEC-FIX-first` is also declared on graph/spec/00-first.md, and an identifier is never reused
 graph/spec/05-sequence-identifier.md:2:1
   identifier: the identifier is not a scalar, and an identifier is a word
+graph/spec/07-list-anchor.md:7:7
+  edge: `governs` -> graph/no-such-file.rs, graph.report `code_path`: `graph/no-such-file.rs` no `graph/no-such-file.rs` in the source tree
