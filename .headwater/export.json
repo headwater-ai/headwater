@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 504,
-      "carried": 504,
+      "in the graph": 505,
+      "carried": 505,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 713,
-      "carried": 713,
+      "in the graph": 717,
+      "carried": 717,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1763,6 +1763,9 @@
             ],
             "traces_to": [
               "docs/tutorials/your-first-governed-corpus.md"
+            ],
+            "superseded_by": [
+              "HW-DR-0078"
             ]
           }
         }
@@ -2193,6 +2196,35 @@
             "drafted_by": "claude-fable-5-1",
             "activity": "measure+draft",
             "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md",
+        "kind": "decision",
+        "id": "HW-DR-0078",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0078",
+          "status": "current",
+          "status_since": "2026-09-20",
+          "summary": "The owner relaxed principle 11 for one asset. A front-page recording may show a number a live run does not produce, if a recorded-on-<date> marker stands beside it. Nothing compares that number against a later run.",
+          "last_verified": "2026-09-20",
+          "title": "A recorded terminal demonstration may show a frozen number behind a recorded-on-date marker",
+          "relations": {
+            "supersedes": [
+              "HW-DR-0061"
+            ],
+            "traces_to": [
+              "HW-OBL-0183"
+            ]
+          },
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "measure+draft",
             "evidence_basis": "evidenced"
           }
         }
@@ -8460,13 +8492,14 @@
           "id": "HW-OBL-0183",
           "status": "current",
           "status_since": "2026-09-11",
-          "summary": "Every figure check of this repository reads text. A number frozen inside a committed GIF or cast is held by nothing, and the recording bars of #601 stay open.",
-          "last_verified": "2026-09-11",
+          "summary": "The recording thread of this record is narrowed by HW-DR-0078: disclosure, not a compare, closes #601's binary asset. What holds a DIFFERENT committed binary asset against a run, one with no ruling of its own, is still nothing.",
+          "last_verified": "2026-09-20",
           "title": "No mechanism holds a committed binary asset against a run",
           "waiting_on": "build",
           "relations": {
             "traces_to": [
-              "HW-DR-0061"
+              "HW-DR-0061",
+              "HW-DR-0078"
             ]
           },
           "provenance": {
@@ -10060,7 +10093,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 77 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 78 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
@@ -12329,6 +12362,17 @@
         }
       },
       {
+        "source": "docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md",
+        "relation": "supersedes",
+        "written_as": "superseded_by",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0078",
+          "path": "docs/decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md",
+          "kind": "decision"
+        }
+      },
+      {
         "source": "docs/decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md",
         "relation": "traces_to",
         "written_as": "traces_to",
@@ -12623,6 +12667,28 @@
           "id": "HW-DR-0049",
           "path": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md",
+        "relation": "supersedes",
+        "written_as": "supersedes",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0061",
+          "path": "docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0183",
+          "path": "docs/obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md",
+          "kind": "obligation_record"
         }
       },
       {
@@ -16981,6 +17047,17 @@
           "bound": "document",
           "id": "HW-DR-0061",
           "path": "docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0078",
+          "path": "docs/decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md",
           "kind": "decision"
         }
       },

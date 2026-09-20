@@ -16,6 +16,8 @@ relations:
     - HW-DR-0039
   traces_to:
     - docs/tutorials/your-first-governed-corpus.md
+  superseded_by:
+    - HW-DR-0078
 ---
 
 # Q61 — How a recorded terminal demonstration is held against a run

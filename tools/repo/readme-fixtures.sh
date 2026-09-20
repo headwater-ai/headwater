@@ -468,6 +468,37 @@ image_judge() {
     wc -l <"$scratch/images" | tr -d ' '
 }
 
+# recording_judge FILE — offenders, then a tail line holding the count of
+# recording embeds read. [HW-DR-0078](../../docs/decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md)
+# relaxes principle 11 for exactly one asset, a recorded terminal
+# demonstration in animated GIF form (HW-DR-0061 names the format), PROVIDED a
+# visible `recorded on YYYY-MM-DD` marker sits beside it. The marker is the
+# whole mechanism: nothing here opens the GIF or reads a count inside it, so
+# an embed is a recording candidate by extension alone, and the window this
+# judge reads is two lines either side of the embed line — a caption printed
+# on the very next line, or one blank line down, or above the embed instead of
+# below it, all read as adjacent; a marker three lines away or more is not
+# "beside" the embed in any reading and is a miss, not a near thing.
+recording_judge() {
+    rj_file=$1
+    rj_n=0
+    images_of "$rj_file" >"$scratch/recordings"
+    while IFS='	' read -r line target; do
+        case $target in
+            *.gif|*.GIF|*.Gif) ;;
+            *) continue ;;
+        esac
+        rj_n=$((rj_n + 1))
+        rj_lo=$((line - 2))
+        [ "$rj_lo" -lt 1 ] && rj_lo=1
+        rj_hi=$((line + 2))
+        if ! sed -n "${rj_lo},${rj_hi}p" "$rj_file" | grep -qEi 'recorded on [0-9]{4}-[0-9]{2}-[0-9]{2}'; then
+            echo "$line: $target  no \`recorded on YYYY-MM-DD\` marker within two lines"
+        fi
+    done <"$scratch/recordings"
+    echo "$rj_n"
+}
+
 # repo_slug REMOTE-URL — `owner/repository`, from either transport.
 repo_slug() {
     rs=$1
@@ -2147,6 +2178,47 @@ else
     fail "  the judges above are provoked" \
         "the arms did not run: no \`.github/workflows/release-taxonomy.yml\` to check"
 fi
+
+echo
+echo "the recorded terminal demonstration, and its frozen-snapshot marker"
+
+# Group 9. HW-DR-0078 relaxes principle 11 for exactly one asset, a recorded
+# terminal demonstration, PROVIDED a visible `recorded on YYYY-MM-DD` marker
+# sits beside it. Nothing regenerates or compares the frozen counts inside the
+# GIF against a later run — that comparison is what HW-DR-0061 asked for and
+# HW-DR-0078 withdrew. Disclosure is the whole mechanism, so the marker itself
+# is the one thing left to hold, and this group holds it: a recording embed
+# with no marker beside it fails the build, the same as a broken link does.
+
+# 9a. The population, over the real page. The README carries no recording
+#     embed yet (Done-when item 4 of #601 stays open on tooling absence), so
+#     this reads zero offenders over zero embeds — the same "read the real
+#     page and report zero" shape group 2 and group 3 open with, and it goes
+#     red on its own the day a GIF lands with no marker beside it.
+recording_judge "$readme" >"$scratch/recordings.out"
+bad=$(sed '$d' "$scratch/recordings.out")
+same "the real page carries no recording embed with a missing marker" "" "$bad"
+
+# 9b. THE DECISIVE CASE OF THIS GROUP, provoked before any real recording
+#     exists. This is the case #601 exists for: a frozen, undisclosed number
+#     reaching the front page. It has to fail for the right reason before the
+#     recording itself can be built, because nothing else in this suite reads
+#     a GIF or the text beside one.
+printf '%s\n' '![headwater check, run against the tutorial corpus](demo.gif)' >"$scratch/recording-missing.md"
+got=$(recording_judge "$scratch/recording-missing.md" | sed '$d' | tr '\n' '|')
+same "a recording embed with no marker fails" \
+    "1: demo.gif  no \`recorded on YYYY-MM-DD\` marker within two lines|" \
+    "$got"
+
+# 9c. The other shape: a marker beside the embed passes, so a judge that
+#     stopped working cannot be told from a page that is right by reading the
+#     case name alone.
+printf '%s\n' \
+    '![headwater check, run against the tutorial corpus](demo.gif)' \
+    '' \
+    '*Recorded on 2026-09-21.*' >"$scratch/recording-marked.md"
+got=$(recording_judge "$scratch/recording-marked.md" | sed '$d' | tr '\n' '|')
+same "  and a recording embed with a marker beside it passes" "" "$got"
 
 echo
 echo "$passed passed, $failed failed"
