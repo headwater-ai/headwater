@@ -165,7 +165,13 @@ pub enum Problem {
     /// the same identifier in the same population — because that check has
     /// to hold for [`Observations::of`] too, which this module never
     /// validates.
-    Entry { control: String, reason: String },
+    ///
+    /// The field is `id` and not `control`, because the entry this names
+    /// may be either kind: a verification entry that fails its own shape
+    /// check (a missing `criterion_digest`, an implausible `commit`) is not
+    /// a control, and a field that called it one would mislabel it in the
+    /// one place a reader meets it, the rendered finding.
+    Entry { id: String, reason: String },
 }
 
 /// The observation snapshot of one corpus, read once at the start of a run.
@@ -318,7 +324,7 @@ impl Observations {
             let id = &entry.key.value;
             let Value::Map(fields) = &entry.value.value else {
                 problems.push(Problem::Entry {
-                    control: id.clone(),
+                    id: id.clone(),
                     reason: "it names no mapping under the identifier".to_string(),
                 });
                 continue;
@@ -334,7 +340,7 @@ impl Observations {
                 "control" => {
                     let Some(commit) = text_field("commit") else {
                         problems.push(Problem::Entry {
-                            control: id.clone(),
+                            id: id.clone(),
                             reason: "it names no `commit`".to_string(),
                         });
                         continue;
@@ -347,21 +353,21 @@ impl Observations {
                 "verification" => {
                     let Some(commit) = text_field("commit") else {
                         problems.push(Problem::Entry {
-                            control: id.clone(),
+                            id: id.clone(),
                             reason: "it names no `commit`".to_string(),
                         });
                         continue;
                     };
                     let Some(criterion_digest) = text_field("criterion_digest") else {
                         problems.push(Problem::Entry {
-                            control: id.clone(),
+                            id: id.clone(),
                             reason: "it names no `criterion_digest`".to_string(),
                         });
                         continue;
                     };
                     if !plausible_commit(&commit) {
                         problems.push(Problem::Entry {
-                            control: id.clone(),
+                            id: id.clone(),
                             reason: format!(
                                 "its `commit` (`{commit}`) does not read as a plausible commit \
                                  reference, so it cannot be treated as observed"
@@ -377,7 +383,7 @@ impl Observations {
                 }
                 other => {
                     problems.push(Problem::Entry {
-                        control: id.clone(),
+                        id: id.clone(),
                         reason: format!(
                             "it names `kind: {other}`, which is neither `control` nor \
                              `verification`"
@@ -646,7 +652,7 @@ mod tests {
         assert_eq!(
             observations.problems()[0],
             Problem::Entry {
-                control: "CT-EXT-2".to_string(),
+                id: "CT-EXT-2".to_string(),
                 reason: "it names no `commit`".to_string(),
             }
         );
@@ -738,7 +744,7 @@ mod tests {
         assert_eq!(
             observations.problems(),
             &[Problem::Entry {
-                control: "FIX-VER-0001".to_string(),
+                id: "FIX-VER-0001".to_string(),
                 reason: "it names no `criterion_digest`".to_string(),
             }]
         );

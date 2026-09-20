@@ -883,8 +883,8 @@ impl Projection {
                      same way rather than silently"
                         .to_string(),
                 ),
-                crate::observation::Problem::Entry { control, reason } => (
-                    format!("`.headwater/observations.yml` names `{control}`, and {reason}"),
+                crate::observation::Problem::Entry { id, reason } => (
+                    format!("`.headwater/observations.yml` names `{id}`, and {reason}"),
                     "remove the entry, or correct its shape".to_string(),
                 ),
             };
