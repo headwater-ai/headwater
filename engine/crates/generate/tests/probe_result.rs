@@ -583,10 +583,16 @@ cost_cents: 25
 #[test]
 fn two_arms_of_one_campaign_disagreeing_on_refused_sessions_fail_the_run() {
     let at = copied("campaign-arms");
-    std::fs::write(at.join("runs/probe-runs/campaign-present.md"), CAMPAIGN_PRESENT)
-        .expect("the present-arm transcript lands");
-    std::fs::write(at.join("runs/probe-runs/campaign-absent.md"), CAMPAIGN_ABSENT)
-        .expect("the absent-arm transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the present-arm transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-absent.md"),
+        CAMPAIGN_ABSENT,
+    )
+    .expect("the absent-arm transcript lands");
 
     let plan = plan_over(&at);
     let mismatched = match plan.mismatched_arms.as_slice() {
@@ -608,14 +614,14 @@ fn two_arms_of_one_campaign_disagreeing_on_refused_sessions_fail_the_run() {
         "a campaign pair whose refused-session counts disagree is a defective run"
     );
     assert!(
-        report.remedy().is_some_and(|remedy| remedy.contains("refused-session counts disagree")),
+        report
+            .remedy()
+            .is_some_and(|remedy| remedy.contains("refused-session counts disagree")),
         "the run's remedy does not name the mismatch: {:?}",
         report.remedy()
     );
     assert!(
-        report
-            .render(ColorMode::Plain)
-            .contains("mismatched arms"),
+        report.render(ColorMode::Plain).contains("mismatched arms"),
         "the run prints the mismatch where a reader of the run sees it"
     );
 }
