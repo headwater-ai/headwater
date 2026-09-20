@@ -636,6 +636,16 @@ fn read_relation_entry(
     }
 }
 
+/// One member of a claimed anchor's [`Binding::Resolved`], carried as a named
+/// type rather than a tuple so that a reader — and clippy's
+/// `type_complexity` lint — sees what each position means.
+struct Resolved {
+    normalized: String,
+    excluded_by: Option<String>,
+    revision: Option<String>,
+    matched: Vec<String>,
+}
+
 /// Bind one target: a single string, or the several patterns of a list anchor
 /// admitted where the endpoint is anchor-only
 /// ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
@@ -731,7 +741,7 @@ fn bind(
         // Every remaining binding is `Resolved`: `Withheld` was just handled,
         // and a `Binding::Unresolved` never reaches `claimed` in the first
         // place — the loop above turns the first one into a refusal instead.
-        let mut resolved: Vec<(String, Option<String>, Option<String>, Vec<String>)> = bindings
+        let mut resolved: Vec<Resolved> = bindings
             .into_iter()
             .map(|binding| match binding {
                 Binding::Resolved {
@@ -739,13 +749,18 @@ fn bind(
                     excluded_by,
                     revision,
                     matched,
-                } => (normalized, excluded_by, revision, matched),
+                } => Resolved {
+                    normalized,
+                    excluded_by,
+                    revision,
+                    matched,
+                },
                 _ => unreachable!("withheld handled above, and unresolved never reaches `claimed`"),
             })
             .collect();
         // HW-DR-0074: "the identity of an anchor node is its normalized
         // patterns, sorted." One list written in two orders is one node.
-        resolved.sort_by(|a, b| a.0.cmp(&b.0));
+        resolved.sort_by(|a, b| a.normalized.cmp(&b.normalized));
 
         // `, ` rather than a newline: this string reaches a human unchanged
         // through `Edge::normalized_target` and `Neighbour::render`, and a raw
@@ -753,7 +768,7 @@ fn bind(
         // than as one anchor's several patterns.
         let normalized = resolved
             .iter()
-            .map(|(pattern, ..)| pattern.as_str())
+            .map(|member| member.normalized.as_str())
             .collect::<Vec<&str>>()
             .join(", ");
         // A single, literal pattern keeps the one exclusion note it carried
@@ -761,12 +776,15 @@ fn bind(
         // excluded hit from the matched count instead of naming one exclusion
         // for the whole set — see `PatternMember` and `Binding::Resolved`.
         let (excluded_by, revision) = match resolved.as_slice() {
-            [(_, excluded_by, revision, _)] => (excluded_by.clone(), revision.clone()),
+            [member] => (member.excluded_by.clone(), member.revision.clone()),
             _ => (None, None),
         };
         let patterns = resolved
             .into_iter()
-            .map(|(pattern, _, _, matched)| PatternMember { pattern, matched })
+            .map(|member| PatternMember {
+                pattern: member.normalized,
+                matched: member.matched,
+            })
             .collect();
 
         return Target::Anchor {
