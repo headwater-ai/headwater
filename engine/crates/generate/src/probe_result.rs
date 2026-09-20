@@ -345,7 +345,7 @@ fn pair_arms(campaign: &[(String, headwater_probe::intake::Identity, usize)], pl
             )
         })
         .collect();
-    keys.sort();
+    keys.sort_unstable();
     keys.dedup();
 
     for (selection, model, served_version) in keys {
