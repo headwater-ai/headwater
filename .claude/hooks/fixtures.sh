@@ -1075,7 +1075,114 @@ else
     skip 'review.sh cases that call the engine' 'no built engine'
 fi
 
+printf '\n# wait.sh, on PreToolUse: a foreground wait\n'
+if [ -x "$engine" ]; then
+    expect 'an until loop that sleeps is refused, and the refusal names the flag' \
+        wait.sh 0 'run_in_background' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! kill -0 1234 2>/dev/null; do sleep 30; done"}}'
+    expect 'the refusal is a deny decision the harness can act on' \
+        wait.sh 0 '"permissionDecision":"deny"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done"}}'
+    expect 'a while loop is refused the same way' \
+        wait.sh 0 '"permissionDecision":"deny"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"while kill -0 1234 2>/dev/null; do sleep 20; done; echo done"}}'
+    expect 'a loop that sleeps fifteen is refused too, because the interval never said how long the wait would be' \
+        wait.sh 0 '"permissionDecision":"deny"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ ! -d /proc/3472820 ]; do sleep 15; done"}}'
+    expect 'a run watch is refused with no loop around it' \
+        wait.sh 0 '"permissionDecision":"deny"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"gh run watch 35480000000 --exit-status"}}'
+
+    expect 'a loop that waits on a pgrep literal is refused for a different reason' \
+        wait.sh 0 'can never exit' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! pgrep -f \"cargo test --workspace\" >/dev/null; do sleep 30; done"}}'
+    expect 'that refusal names the two waits that do work' \
+        wait.sh 0 'kill -0' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! pgrep -af \"hw-cargo build\" >/dev/null; do sleep 20; done"}}'
+    expect 'a pgrep loop already in the background is still refused, because backgrounding hides it' \
+        wait.sh 0 '"permissionDecision":"deny"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! pgrep -f \"cargo test\" >/dev/null; do sleep 30; done","run_in_background":true}}'
+    expect 'a pgrep outside a loop is not a wait and passes' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"pgrep -af cargo | head -5"}}'
+    expect 'the positive form, a while loop that runs WHILE pgrep finds it, is refused too' \
+        wait.sh 0 'can never exit' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"while pgrep -f \"cargo build --profile\" >/dev/null; do sleep 10; done"}}'
+    expect 'a pgrep nested in a command substitution is refused, though it looks nothing like the plain form' \
+        wait.sh 0 'can never exit' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ ! -d /proc/$(pgrep -f '"'"'hw-cargo test'"'"' | head -1) ]; do sleep 30; done"}}'
+    expect 'the recommended kill -0 remedy is still refused when its pid comes from a pgrep literal' \
+        wait.sh 0 'can never exit' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! kill -0 $(pgrep -f \"cargo.*headwater-cli\" | head -1) 2>/dev/null; do sleep 30; done"}}'
+    expect 'an unquoted pgrep pattern is refused, because the assignment is in the same command line' \
+        wait.sh 0 'can never exit' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"pat=cargo-build; until ! pgrep -f $pat >/dev/null; do sleep 30; done"}}'
+    expect 'the refusal says a marker wait must also end with the agent that started it' \
+        wait.sh 0 'nobody is left to end' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! pgrep -f \"cargo test\" >/dev/null; do sleep 30; done"}}'
+    expect 'run_in_background absent entirely is refused, not only run_in_background false' \
+        wait.sh 0 '"permissionDecision":"deny"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done","timeout":600000}}'
+    expect 'run_in_background false is refused the same as absent' \
+        wait.sh 0 '"permissionDecision":"deny"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done","run_in_background":false}}'
+    expect 'a sleep with a unit suffix is refused, because the rule is the shape and not the number' \
+        wait.sh 0 '"permissionDecision":"deny"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 2m; done"}}'
+    expect 'a one-second poll of a local file is refused too, and this case is here to say that was chosen' \
+        wait.sh 0 '"permissionDecision":"deny"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/appears-in-200ms ]; do sleep 1; done"}}'
+    expect 'a run watch already in the background passes' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"gh run watch 35480000000 --exit-status","run_in_background":true}}'
+    expect 'a bare sleep with no loop around it is not a wait and passes' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sleep 30; echo awake"}}'
+    expect 'an empty command string is silent' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":""}}'
+    expect 'the same wait already in the background passes' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! kill -0 1234 2>/dev/null; do sleep 30; done","run_in_background":true}}'
+    expect 'a heredoc that writes a wait into a script is not itself a wait' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"cat > /tmp/wait-ci.sh <<SCRIPT\nwhile true; do sleep 30; done\nSCRIPT"}}'
+    expect 'a tool_input with no command at all is silent' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"timeout":600000}}'
+else
+    skip 'wait.sh cases that call the engine' 'no built engine'
+fi
+
+# The cheap gate and the parse failure answer without an engine, so they run
+# whether or not one was built. A payload with no `sleep` and no run watch in it
+# never reaches `hw_field`, which is the whole point of reading the raw input
+# first: this hook is the only one that matches `Bash`, and `Bash` is most of
+# what a run does.
+expect 'a command with neither in it never starts the engine' \
+    wait.sh 0 '' \
+    '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"ls -la /tmp"}}'
+expect 'a build run in the foreground with no loop around it is not caught, and says nothing' \
+    wait.sh 0 '' \
+    '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"cargo test --workspace --manifest-path engine/Cargo.toml"}}'
+expect 'an input that will not parse is silent rather than an error' \
+    wait.sh 0 '' \
+    'not json at all, but it does contain the word sleep'
+
 printf '\n%s passed, %s failed, %s skipped\n' "$passed" "$failed" "$skipped"
 [ "$failed" -eq 0 ] || exit 1
+
+# A skip is not a pass, and a caller that knows an engine should be there says
+# so. CI builds one at `ci.yml` line 342 and runs this suite 1,000 lines later,
+# so every case that calls the engine runs there today — but nothing asserted
+# it. Reorder that build, move it to another job, or drop it, and every such
+# case prints `skip` and this suite exits 0 having tested nothing. That is the
+# same silent-success shape the `wait.sh` block exists to argue against, so it
+# does not get to live in the suite that holds it.
+if [ -n "${HEADWATER_FIXTURES_REQUIRE_ENGINE:-}" ] && [ "$skipped" -ne 0 ]; then
+    printf 'FAIL %s case(s) skipped while HEADWATER_FIXTURES_REQUIRE_ENGINE is set\n' "$skipped"
+    printf '  an engine was expected at this point and none was found\n'
+    exit 1
+fi
 [ "$skipped" -eq 0 ] || printf 'Build the engine to run the skipped cases:\n  cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked\n'
 exit 0

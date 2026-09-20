@@ -46,7 +46,7 @@ Nothing has to hold that tree open. `tools/repo/retire-worktree.sh` keeps a tree
 
 **Before you open the pull request**, rebase onto `origin/main`, rebuild the engine, then run `headwater generate` and re-bless the recorded fixtures, and read that diff. A binary built before the rebase writes what the previous engine produced, and `headwater check --strict` passes it because the same binary wrote and checked it.
 
-**After you open it, wait for CI once**, with `gh run watch <id> --exit-status` or an `until` loop at thirty seconds, and repair a Format, Lint or unblessed-fixture failure yourself before you report. Seven of ten vetoes in one run were exactly those, and each one bought a fresh verifier at twenty minutes. A red CI you cannot repair is the first line of your report, not a pull request handed on.
+**After you open it, wait for CI once**, with `gh run watch <id> --exit-status` or an `until` loop at thirty seconds, started with `run_in_background: true`, and repair a Format, Lint or unblessed-fixture failure yourself before you report. Seven of ten vetoes in one run were exactly those, and each one bought a fresh verifier at twenty minutes. A red CI you cannot repair is the first line of your report, not a pull request handed on.
 
 **A `waits-on` line in your dispatch is the integrator's to honor, not yours to build around.** Build against `origin/main` as it stands; the integrator merges the awaited change first and rebases yours behind it. Do not rebase onto another agent's unmerged branch.
 
@@ -58,5 +58,5 @@ Nothing has to hold that tree open. `tools/repo/retire-worktree.sh` keeps a tree
 - **You never run a generating verb in the shared checkout.** A regenerate there while a merge lands is the silent bad merge from the other direction.
 - **You never write into the parent's instruments.** Your scratch directory is `$CLAUDE_JOB_DIR/tmp/issue-<N>/`; anything under `parent-only/` is off limits, and agents have opened it 24 times across 80 iterations while being told not to.
 - **You never report a number without its denominator**, and you never re-use one you did not derive.
-- **You never leave a blocking loop running past your own exit.** A background build gets its wait decided in the same breath it is launched, and the wait ends with you.
+- **You never leave a blocking loop running past your own exit.** A background build gets its wait decided in the same breath it is launched, and the wait ends with you. Start that wait with `run_in_background: true`, because a foreground one dies at ten minutes and returns `moved to the background (ID: ...)`, which says nothing about the build. Waiting a second time on what that line names is the re-ask that spent 7.8 hours in run `cc7cc6c6`.
 - **You never start a second issue.**

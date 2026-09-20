@@ -38,7 +38,7 @@ Build the engine there with `--profile dev-release` before any engine verb, and 
 
 **When your check contradicts the build note, suspect your check first.** Across four runs the verifier was wrong more often than the builder. Name the denominator before you report a delta.
 
-**Wait on the pull request yourself.** `mergeable` is a field GitHub computes after you ask, so spend one blocking wait and never a check per turn:
+**Wait on the pull request yourself.** `mergeable` is a field GitHub computes after you ask, so spend one blocking wait and never a check per turn. Start it with `run_in_background: true`, so that the wait survives the ten-minute cap on a foreground call and its completion notification is what wakes you:
 
     until [ "$(gh pr view <N> --json mergeable -q .mergeable)" != "UNKNOWN" ]; do sleep 30; done
 
