@@ -44,8 +44,45 @@ tiers:
     repetitions: 58
     arms: [present, absent]
 
-# `session_cost_cents` is a declared number and not a measured one. No probe run
-# has happened in this repository, so no realized cost has ever been recorded
-# against it and there is nothing to fit it to. Every transcript records the
-# cost the run realized, and the two numbers become comparable on the first run
-# — which is the only route from a guess to an estimate.
+# The absent arm names a declared ablation (spec 5, "the counterfactual is not
+# a category, it is an arm of every probe... the absent arm names a declared
+# ablation, so what 'corpus absent' removed is a recorded fact"). This is that
+# record.
+#
+# **What "absent" removes.** `CLAUDE.md`, `.claude/`, `.githooks/` and
+# `.headwater/`, and nothing else. Those four are the whole of what delivers
+# this repository's governance to a session: the standing instructions, the
+# skills and agent definitions the harness reads, the commit-time enforcement,
+# and the taxonomy, cache and probe declarations the engine resolves against.
+# Removing them leaves a session with no orchestration prose to read, no skill
+# to invoke, no hook to run and no working `headwater` binary to route or
+# explain with, because `headwater check`, `route` and `explain` all read
+# `.headwater/taxonomy.lock` and refuse with nothing to resolve. `docs/`, the
+# corpus content every probe examines, is untouched: a probe's target
+# document has to exist in both arms, or the two arms are not measuring the
+# same task. `engine/` and `tools/` are untouched for the same reason.
+#
+# **How the tree is produced.** `sh tools/probe/ablate.sh <workspace>` takes a
+# present-arm workspace — the full copy outside this repository that
+# `tools/probe/probe-record.sh` already requires — and deletes the four paths
+# above from it, in place. It refuses a workspace inside this repository's own
+# checkout, the guard `probe-record.sh` already applies to the same argument,
+# because ablating a real checkout is not what an absent-arm workspace is for.
+#
+# `session_cost_cents` was a declared number and not a measured one until the
+# first regression run gave it something to fit against. Two committed
+# regression-tier transcripts now carry a realized cost over eight probes
+# each: 390 cents and 407 cents, or 48.75 and 50.875 cents per session against
+# the 25 declared above — roughly double.
+#
+# The campaign tier's own count (8 probes, both arms, 58 repetitions)
+# therefore projects two figures and not one. At the declared rate:
+# 8 x 2 x 58 x $0.25 = $232.00 against the $50.00 ceiling above, which is what
+# refuses the plan today. At the realized rate: roughly
+# 8 x 2 x 58 x $0.50 = $464.00 — about four times the $116.00 an earlier
+# draft of the issue that asked for this comparison cited, before #531 added
+# four probes and before a live regression run gave the declared rate
+# anything to be measured against. Neither figure is written into
+# `budget_cents` here: the campaign tier's own comment above already rules
+# that the ceiling moves only when a person agrees to spend more, and #980 is
+# where that agreement is asked for.
