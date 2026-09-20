@@ -512,6 +512,20 @@
                   "exportable_as": []
                 }
               }
+            },
+            {
+              "id": "relation.target.verification.suspect",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
             }
           ]
         }
