@@ -11,7 +11,7 @@
 //! declaration of spec 7 and a taxonomy is not what decides how much a run may
 //! cost. So it is `.headwater/probe.yml`, beside the lock and beside the cache.
 //!
-//! [HW-DR-0076](../../../../docs/decisions/0076-a-probe-budget-prices-a-run-with-a-pinned-model-and-a-committed-transcript-and-a-sweep-has-neither.md)
+//! [HW-DR-0076](../../../../docs/decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md)
 //! rules that this file stays here and does not move. What no ruling may do is
 //! remove the number, because a harness with no budget is a harness that cannot
 //! fail closed.

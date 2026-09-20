@@ -320,4 +320,4 @@ relations:
 
 ## A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither
 
-[HW-DR-0076](../decisions/0076-a-probe-budget-prices-a-run-with-a-pinned-model-and-a-committed-transcript-and-a-sweep-has-neither.md) — Rules that a budget prices a run identity a probe has and a sweep does not, and names the sweep outside every tier. States where .headwater/probe.yml lives and why. (asserted, and no human has accepted it)
+[HW-DR-0076](../decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md) — Rules that a budget prices a run identity a probe has and a sweep does not, and names the sweep outside every tier. States where .headwater/probe.yml lives and why. (asserted, and no human has accepted it)
