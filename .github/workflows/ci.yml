@@ -1425,6 +1425,14 @@ jobs:
         # Last but one, because it plants one document under `docs/obligations/`
         # to make the review hook refuse, and removes it again. Every step above
         # reads the corpus, and none of them may see it.
+        #
+        # `HEADWATER_FIXTURES_REQUIRE_ENGINE` makes a skipped case fail here.
+        # Most cases in that suite call the engine, and the suite skips them
+        # rather than failing when there is none, so this job passed green on
+        # the strength of a `cargo build` a thousand lines above it that nothing
+        # tied it to. Move or drop that build and this step now says so.
+        env:
+          HEADWATER_FIXTURES_REQUIRE_ENGINE: '1'
         run: sh .claude/hooks/fixtures.sh
       - name: The skills say what this engine does
         # `.claude/skills/` and `.claude/agents/` sit outside the corpus root
