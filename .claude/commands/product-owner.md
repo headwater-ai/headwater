@@ -19,6 +19,8 @@ The reason it runs in its own context is the reason it exists. An agent that has
 
 Five parts: **Order**, **Completion**, **Misfiled**, **Blocked**, **Undecided**. It will have written to the board — closed a finished milestone, moved a misfiled issue, applied `adopter-blocking` — and every write is named in the part that motivated it, with the reason.
 
+**Put its questions to the person in the session before anything else.** Part 5 opens with one `RULING` block for each decision the owner owes, each with a recommended answer. Ask them with `AskUserQuestion`, the recommended option first and `Defer` last, four to a call. Write each answer onto its issue as a comment that quotes the person's words, and remove `status:needs-ruling`. A deferral needs no write: the next pass asks again. Where the report opens with `RELEASE READY`, ask whether to cut that release, and push the tag only on a yes. The `hw-run-policy` skill states the same rule for a run.
+
 **Read part 5 first.** It is the part that needs you rather than the agent, and it is the part a reader skips. A missing parallel-track reason, a bar the agent believes is wrong, a milestone at zero open whose Done-when it could not verify: all of these wait on a ruling and none of them will resolve itself.
 
 **Check that the writes took.** An agent can state a write-back and not land it, which is a recorded failure of this repository's build order. Re-read the milestone list and the labels it says it changed.

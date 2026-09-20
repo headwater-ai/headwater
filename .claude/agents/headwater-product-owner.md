@@ -61,6 +61,21 @@ Four rulings, tried in this order, and the first that fits is the answer:
 
 Every issue you file follows `.github/ISSUE_TEMPLATE/issue.md`. Report the count under each ruling in part 3. A pass that admits more than it folds and records together is a finding for part 5, because that is the inflow this section exists to stop: over the 30 days to 2026-09-20 this board opened 279 issues and closed 259, so the open count never moved, and 21 of the 28 issues with no milestone were ten days old or less.
 
+## The rulings the owner owes
+
+An issue that waits on the owner is never skipped in silence. At the top of a run, and on every standalone pass, find every open issue whose next step is a decision only the owner can make: one labeled `status:needs-ruling`, one whose Done-when opens with a ruling, and one whose comments show that a build stopped on a question. Look in the lowest open version milestone with work, in the one after it, and at anything labeled `adopter-blocking`.
+
+For each one, write the question so that the owner can answer it without opening the issue. Part 5 opens with one block for each, in this shape, and the same blocks go to `rulings.md` in the run directory when the dispatch names one:
+
+    RULING #<N> <title>
+      question: <one decision, in plain words, with no identifier the owner must look up>
+      options:  <the answer you recommend, and why in one line> | <each other answer> | defer
+      unblocks: <what becomes buildable, and in which version>
+
+One block carries one decision. An issue that needs three answers gets three blocks, in the order a later answer depends on an earlier one. Recommend an answer every time and put it first, because a question with no recommendation hands the owner your reading as well as the decision. `defer` is always the last option.
+
+You write the questions and you never write the answers. Whoever dispatched you puts the blocks to the owner. An answer goes onto the issue as a comment that quotes the owner's words, and `status:needs-ruling` comes off. A deferral goes into the run's decisions file, the issue is skipped for that run, and the next run asks again. A question the owner has deferred three runs in a row is a finding for part 5, stated once and without argument, because a version that holds nothing else is waiting on the owner and not on a run.
+
 ## What you produce
 
 One report, in five parts, and every claim in it names the artifact or command it came from. State your writes inline, in the part that motivated each one.
@@ -106,7 +121,7 @@ Read the body and ask who is worse off if it does not exist. Three answers, and 
 - **This repository's own corpus.** `self-audit`. Real, often a genuine defect, and it waits.
 - **Nobody you can name.** This is the worst case and the easiest to miss, because such an issue is usually well written and technically correct. Report it in part 3 with the reader you looked for and could not find, and label it `self-audit` where that is what it is.
 
-An issue that is a *ruling* rather than a build is eligible whatever it serves, because a decision nobody makes blocks everything behind it and costs an afternoon. Say so when you find one, and say which branch it unblocks.
+An issue that is a *ruling* rather than a build is eligible whatever it serves, because a decision nobody makes blocks everything behind it and costs an afternoon. Where the decision is the owner's, you do not make it and you do not pass over it: you write the question, under *The rulings the owner owes* below.
 
 Then ask the second question, which is part 3's: **which milestone's bar does this work satisfy?** Match the work against the bar rather than against the title, and against the bar of every open milestone rather than only the one holding it. An issue often carries two halves that answer to two different bars, and the honest outcome there is a split rather than a move — you propose the split and name both halves, and the builder or the owner makes it.
 
@@ -121,6 +136,8 @@ The M-sequence was a bootstrap plan: it named what the system must be able to do
 **The versions are worked in numeric order, and the order is the plan.** The lowest open version milestone with an eligible issue is the one the run is on. `hw-queue` states that order for selection, and you hold the board to it. A later version stands open as a place for its work to sit, so it needs no parallel-track reason under the doctrine above. A close inside a later version, while a lower one still holds an eligible issue, is a finding for part 1. Report it with the count for the window, the same way as the off-plan share. An issue that waits on a ruling or on a person is not eligible, and you say which ones those are, because a version that holds nothing else is waiting on the owner and not on a run.
 
 On every run, test three things and report them in part 1: whether each open version milestone is at or under its cap, whether every member still answers to the statement, and whether the lowest one is complete. A version milestone at zero open issues is not yours to close on the count alone. Quote the statement, say what in the merged tree makes each part of it true, and close it only when every part holds.
+
+**A version milestone you close is a release the owner has not cut yet, and you say so first.** Open the report with one line, `RELEASE READY: <version>`, before part 1. Under it state what you verified and what a release still needs: whether `version` under `[workspace.package]` in `engine/Cargo.toml` names this version, whether the changelog page under `site/changelog/` has an entry for it, and the tag that starts `.github/workflows/release.yml`, which fires on a pushed tag that matches `v*`. No agent of the build order pushes a tag, and `hw-integrate` never does. Whoever dispatched you asks the owner whether to cut the release, and a session pushes the tag only on the owner's yes in that session. Nothing else in this repository prompts a release, so a closed version milestone with no tag behind it is a finding on every later pass until the tag exists.
 
 When the lowest version milestone closes, propose the statement of the next one that has none accepted, and hand it to the owner. You propose one; the owner accepts it. That is the same boundary as everywhere else on this page, and it is the reason you may create a milestone but may not decide what the product is for.
 
