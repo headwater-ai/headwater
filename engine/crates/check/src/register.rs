@@ -687,31 +687,36 @@ impl Projection {
                 other => Some((*rule, other)),
             })
             .collect();
+        // Only a `crate::observation::Observation::Control` entry is checked
+        // against this taxonomy's own controls: this register reads
+        // `controls:`/`obligations:` out of a resolved taxonomy and never a
+        // corpus document, so it has no list of declared verifications to
+        // check a `crate::observation::Observation::Verification` entry
+        // against. That check belongs to whatever reads the corpus graph —
+        // see `crate::verification` — and is not silently skipped: an
+        // undeclared verification is still a document nothing's `proven_by`
+        // reaches, which is a different rule's finding.
         let observation_undeclared = observations
             .entries()
             .iter()
-            .filter(|entry| {
+            .filter_map(|entry| match entry {
+                crate::observation::Observation::Control { control, .. } => Some(control),
+                crate::observation::Observation::Verification { .. } => None,
+            })
+            .filter(|control| {
                 !register
                     .controls
                     .iter()
-                    .any(|control| control.id == entry.control)
+                    .any(|declared| &declared.id == *control)
             })
-            .map(|entry| entry.control.clone())
+            .cloned()
             .collect();
-        // A control named more than once, reported once each: the second
-        // (and any later) occurrence is what a reader has to remove, so the
-        // first is not named again as its own duplicate.
-        let mut observation_duplicate = Vec::new();
-        for (at, entry) in observations.entries().iter().enumerate() {
-            let first_at_index = observations
-                .entries()
-                .iter()
-                .position(|earlier| earlier.control == entry.control)
-                .expect("the entry itself is in its own list");
-            if first_at_index != at && !observation_duplicate.contains(&entry.control) {
-                observation_duplicate.push(entry.control.clone());
-            }
-        }
+        // An identifier named more than once within its own population (a
+        // control or a verification), reported once each: the second (and
+        // any later) occurrence is what a reader has to remove, so the first
+        // is not named again as its own duplicate. Kept apart by population
+        // so that a control id and a verification id never falsely collide.
+        let observation_duplicate = crate::observation::duplicate_ids(observations.entries());
         Projection {
             obligations,
             controls,
@@ -1722,7 +1727,7 @@ controls:
         // A committed snapshot naming the control moves the same obligation to
         // `verified`, with no edit to any declaration: the run-time-fact
         // property [`Disposed::unobserved`] states for itself.
-        let seen = crate::observation::Observations::of(vec![crate::observation::Observation {
+        let seen = crate::observation::Observations::of(vec![crate::observation::Observation::Control {
             control: "CT-EXT-1".to_string(),
             commit: "788885a9".to_string(),
         }]);
@@ -1809,11 +1814,11 @@ controls:
              discharges: [OB-EXT-1]\n",
         );
         let observations = crate::observation::Observations::of(vec![
-            crate::observation::Observation {
+            crate::observation::Observation::Control {
                 control: "CT-EXT-1".to_string(),
                 commit: "788885a9".to_string(),
             },
-            crate::observation::Observation {
+            crate::observation::Observation::Control {
                 control: "CT-NO-SUCH-CONTROL".to_string(),
                 commit: "788885a9".to_string(),
             },
@@ -1851,11 +1856,11 @@ controls:
              discharges: [OB-EXT-1]\n",
         );
         let observations = crate::observation::Observations::of(vec![
-            crate::observation::Observation {
+            crate::observation::Observation::Control {
                 control: "CT-EXT-1".to_string(),
                 commit: "aaa".to_string(),
             },
-            crate::observation::Observation {
+            crate::observation::Observation::Control {
                 control: "CT-EXT-1".to_string(),
                 commit: "bbb".to_string(),
             },

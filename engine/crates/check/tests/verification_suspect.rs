@@ -56,12 +56,14 @@ fn shipped_fixtures_dir() -> PathBuf {
 
 /// Copy `fixtures/acceptance-criterion-proven/` into a scratch directory this
 /// test owns, so editing the criterion's bytes below never touches the
-/// checked-in fixture. Keyed by the test's own pid, on
+/// checked-in fixture. Keyed by the caller's own name and the process id, on
 /// `engine/crates/vcs/src/lib.rs`'s own precedent: cargo runs the cases of one
-/// target as threads of one process.
-fn scratch_corpus() -> PathBuf {
+/// target as threads of one process, so the pid alone is not unique across the
+/// three tests in this file and one's cleanup raced another's read the first
+/// time this test ran.
+fn scratch_corpus(label: &str) -> PathBuf {
     let root = std::env::temp_dir().join(format!(
-        "hw-verification-suspect-test-{}",
+        "hw-verification-suspect-test-{label}-{}",
         std::process::id()
     ));
     let _ = std::fs::remove_dir_all(&root);
@@ -136,7 +138,7 @@ fn findings_of(run: &Run) -> Vec<&headwater_check::finding::Finding> {
 /// State 1: no snapshot names the verification. `declared`, and a pass.
 #[test]
 fn no_snapshot_is_declared_and_not_a_finding() {
-    let root = scratch_corpus();
+    let root = scratch_corpus("declared");
     let run = run_over(&root, &Observations::empty());
     assert!(
         findings_of(&run).is_empty(),
@@ -150,7 +152,7 @@ fn no_snapshot_is_declared_and_not_a_finding() {
 /// it stands today. `observed at <commit>`, and a pass.
 #[test]
 fn a_snapshot_matching_the_criterions_current_digest_is_observed_and_not_a_finding() {
-    let root = scratch_corpus();
+    let root = scratch_corpus("observed");
     let digest =
         headwater_hash::digest(&std::fs::read(root.join(CRITERION_PATH)).expect("the criterion reads"));
     let observations = Observations::of(vec![Observation::Verification {
@@ -172,7 +174,7 @@ fn a_snapshot_matching_the_criterions_current_digest_is_observed_and_not_a_findi
 /// reports it — the run that shows the comparison is live.
 #[test]
 fn the_same_snapshot_after_the_criterion_changes_is_suspect() {
-    let root = scratch_corpus();
+    let root = scratch_corpus("suspect");
     let criterion_path = root.join(CRITERION_PATH);
     let digest = headwater_hash::digest(&std::fs::read(&criterion_path).expect("the criterion reads"));
     let observations = Observations::of(vec![Observation::Verification {

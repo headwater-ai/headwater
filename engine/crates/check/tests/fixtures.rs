@@ -1624,6 +1624,11 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // reason: it is a fact about the lock rather than about a
             // document, so it creates no instance either.
             Grain::Taxonomy,
+            // `relation.target.verification.suspect`, edge grained like
+            // `basis::RULE`: the criterion is at one end and the
+            // verification's snapshot entry is read against the digest of the
+            // other.
+            Grain::Edge,
         ]
     );
     let bodies: Vec<&str> = run

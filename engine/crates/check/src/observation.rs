@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The committed observation snapshot: which control naming a mechanism
-//! outside this engine has actually been seen to run, and at what commit.
+//! outside this engine has actually been seen to run, and at what commit, and
+//! which verification the corpus has seen a build settle.
 //!
 //! [Spec 4](../../../../docs/spec/04-assurance-model.md#every-obligation-has-exactly-one-disposition)
 //! rules that such a control discharges nothing on its own: the register can
 //! read that a taxonomy *declared* the binding, and it cannot read that the
-//! pipeline *ran*. This file is the second half. [HW-DR-0073](../../../../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
-//! ruling 3 is the design this module follows: a snapshot names an identifier
-//! and the commit it ran against, with no outcome column, and the engine
-//! reads it offline against a pin. #937 extends the same shape to carry a
-//! verification's observation; this module carries a control's, which is the
-//! half #934 owns.
+//! pipeline *ran*. [`Observation::Control`] is that half, and #934 shipped it.
+//! [`Observation::Verification`] is #937's extension of the same shape to a
+//! verification's own observation, on the terms
+//! [HW-DR-0073](../../../../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
+//! ruling 3 states: "the corpus records observation and freshness, and never
+//! an outcome." One file, one reader, one read-set path: a control and a
+//! verification are the same claim in different populations, and
+//! [`Observations`] is where both are read so that a caller never has two
+//! parsers to keep in step.
 //!
 //! # Where it lives, and why a run tolerates its absence
 //!
@@ -22,21 +26,22 @@
 //! unobserved, and the alternative is a verb that refuses a corpus over a file
 //! that names no obligation and no control.
 //!
-//! # What this reads, and what spec 4 does not promise
+//! # What a control entry reads, and what spec 4 does not promise
 //!
 //! It reads whether a control is named, and nothing about the commit beside
-//! it. `Observations::observed` compares the control key alone; the `commit`
-//! field is stored and never inspected, so a snapshot naming a commit that
-//! never existed discharges exactly as well as one naming the commit that
-//! ran. [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
-//! is the record of that gap, including the empty-string case. This is
-//! narrower than a verification's `suspect` state, which compares the commit
-//! a snapshot recorded against the commit that last changed the criterion it
-//! proves: that comparison needs a document's history to walk, and a control
-//! is a line in a taxonomy, not a document on a shelf. Spec 4's own sentence
-//! says only that a snapshot "names the control and the commit it ran
-//! against" — a claim about what the file holds, not a claim that the engine
-//! verifies either half of it.
+//! it. [`Observations::observed`] compares the control key alone; the
+//! `commit` field of a control entry is stored and never inspected, so a
+//! snapshot naming a commit that never existed discharges exactly as well as
+//! one naming the commit that ran. [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
+//! is the record of that gap for a control, including the empty-string case.
+//! A verification entry is narrower than that, on purpose: a control is a
+//! line in a taxonomy, and comparing its commit against anything would need a
+//! history to walk that this crate never opens. A verification names a
+//! document on a shelf, and the criterion it proves is a second document on a
+//! shelf, so a verification entry can compare content instead of asking a
+//! question only a version-control command could answer. See
+//! [`Observation::Verification`] and [`plausible_commit`] for the shape that
+//! comparison takes and the boundary it stays inside of.
 //!
 //! # Absent, unreadable and malformed are three different reports
 //!
@@ -54,6 +59,18 @@
 //! one-entry case, because the two need different remediation: a caller
 //! cannot "remove the entry" of a file that never parsed into entries at all.
 //!
+//! A verification entry that fails one of its own two extra tests — no
+//! `criterion_digest`, or a `commit` that does not read as a plausible commit
+//! reference — is the same one-entry case: [`Problem::Entry`] names it rather
+//! than letting it read as silently `declared`, which is what
+//! [`Observations::verification`] would otherwise report and which is the
+//! silent acceptance [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
+//! names as its own example for a control's empty-string commit. This engine
+//! still cannot say whether a plausible-looking commit is an ancestor of the
+//! tree in front of it — that fact needs a version-control command, and
+//! [`plausible_commit`]'s own comment says why this module stays on its side
+//! of that line.
+//!
 //! # What a gate needs, beside what a run needs
 //!
 //! [`PATH`] is this file named the way [`crate::claim::STORE`] names the
@@ -70,28 +87,84 @@
 use headwater_yaml::Value;
 use std::path::Path;
 
-/// One control's recorded observation.
+/// One entry of a committed observation snapshot.
+///
+/// A control and a verification share a file and a reader, and never a shape:
+/// the module comment says why the two ask different questions. `kind:
+/// control` (or no `kind` at all, for every snapshot #934 already wrote) reads
+/// as [`Observation::Control`]. `kind: verification` reads as
+/// [`Observation::Verification`], and only there.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Observation {
-    pub control: String,
-    pub commit: String,
+pub enum Observation {
+    /// #934's shape: an external control, and the commit it ran at. The
+    /// commit is stored and never compared: see the module comment.
+    Control { control: String, commit: String },
+    /// #937's shape: a verification, the commit it was observed at, and the
+    /// digest of the acceptance criterion it proves, taken at the moment the
+    /// snapshot was written. [`Observations::verification`] compares that
+    /// digest against the criterion's digest today, which is what
+    /// [HW-DR-0073](../../../../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
+    /// ruling 3 calls DOORS rule P.6: a verification is suspect once the
+    /// criterion it proves changed after the snapshot.
+    Verification {
+        verification: String,
+        commit: String,
+        criterion_digest: String,
+    },
+}
+
+impl Observation {
+    /// The identifier this entry names, whichever population it is drawn
+    /// from. A lookup keyed on the string alone, the way
+    /// [`Observations::observed`] and [`Observations::verification`] both need
+    /// one.
+    pub fn id(&self) -> &str {
+        match self {
+            Observation::Control { control, .. } => control,
+            Observation::Verification { verification, .. } => verification,
+        }
+    }
+
+    /// The commit either shape names. Provenance for a control (never
+    /// compared, see the module comment) and provenance plus half of the
+    /// freshness test for a verification.
+    pub fn commit(&self) -> &str {
+        match self {
+            Observation::Control { commit, .. } => commit,
+            Observation::Verification { commit, .. } => commit,
+        }
+    }
+
+    /// A discriminator for grouping, so a duplicate check can tell a control
+    /// entry and a verification entry apart even where the two id spaces ever
+    /// collided on one string. Not exposed beyond this crate: a caller outside
+    /// it should match on the enum instead of a label.
+    fn population(&self) -> &'static str {
+        match self {
+            Observation::Control { .. } => "control",
+            Observation::Verification { .. } => "verification",
+        }
+    }
 }
 
 /// What [`Observations::at`] could not use, kept apart by shape because the
 /// two need different remediation.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Problem {
-    /// The whole file: unreadable, unparsable, or not a mapping of control id
-    /// to entry. No entry in it reads, because there is no entry to read.
+    /// The whole file: unreadable, unparsable, or not a mapping of an
+    /// identifier to an entry. No entry in it reads, because there is no
+    /// entry to read.
     File(String),
-    /// One entry inside a file that otherwise read: a malformed shape, or no
-    /// `commit`. The rest of the file's entries still read. A duplicate
-    /// control is not raised here: the YAML loader already refuses a literal
-    /// duplicate key before this reader sees one, and
-    /// [`crate::register::Projection`] catches the shape that survives that —
-    /// two [`Observation`]s of one [`Observations`] naming the same
-    /// control — because that check has to hold for [`Observations::of`] too,
-    /// which this module never validates.
+    /// One entry inside a file that otherwise read: a malformed shape, a
+    /// missing field either kind requires, or a verification whose `commit`
+    /// does not read as a plausible commit reference. The rest of the file's
+    /// entries still read. A duplicate identifier is not raised here: the
+    /// YAML loader already refuses a literal duplicate key before this reader
+    /// sees one, and [`crate::register::Projection`] catches the shape that
+    /// survives that — two [`Observation`]s of one [`Observations`] naming
+    /// the same identifier in the same population — because that check has
+    /// to hold for [`Observations::of`] too, which this module never
+    /// validates.
     Entry { control: String, reason: String },
 }
 
@@ -134,6 +207,31 @@ pub const PATH: &str = ".headwater/observations.yml";
 /// The file a run reads, beside the claim store and the taxonomy lock.
 const FILE: &str = "observations.yml";
 
+/// Whether `commit` reads as a plausible commit reference: non-empty, all
+/// hexadecimal digits, and within the length a short or a full SHA takes.
+///
+/// This is a syntax check and never a version-control query. It catches the
+/// empty string [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
+/// names as a control's own accepted gap, and a label that was never a commit
+/// at all — `"nonexistent"`, `""`, a path, a sentence. It does not, and
+/// cannot from here, tell a fabricated but hex-looking commit apart from one
+/// that is a real ancestor of the tree in front of this run: that fact needs
+/// `git merge-base --is-ancestor` or its equivalent, which is a command this
+/// crate does not run ([spec 12](../../../../docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)'s
+/// boundary, restated in [`crate::change`]'s own module comment). Answering
+/// that question for real needs a fact carried in from outside this crate —
+/// a manifest, the way a change's prior version already is — and that is a
+/// widening of the boundary this module stays inside of today. This function
+/// is the narrower, honest thing this module can check without it, and
+/// [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
+/// says so rather than leaving the gap unnamed.
+fn plausible_commit(commit: &str) -> bool {
+    !commit.is_empty()
+        && commit.len() <= 40
+        && commit.chars().all(|c| c.is_ascii_hexdigit())
+        && commit.len() >= 4
+}
+
 impl Observations {
     /// No snapshot. A corpus that has never written one reads this way, and so
     /// does a run whose caller did not offer one.
@@ -160,10 +258,10 @@ impl Observations {
     /// every external control unobserved rather than refusing to run.
     /// Present but unreadable, unparsable, or holding a shape this reader
     /// cannot use is different: entries still read as absent for
-    /// [`Observations::observed`] (fail toward "not yet verified" rather than
-    /// toward trusting a file this reader could not check), and
-    /// [`Observations::problems`] carries one for each so a run says why
-    /// rather than only showing a lower count.
+    /// [`Observations::observed`] and [`Observations::verification`] (fail
+    /// toward "not yet verified" rather than toward trusting a file this
+    /// reader could not check), and [`Observations::problems`] carries one for
+    /// each so a run says why rather than only showing a lower count.
     pub fn at(root: &Path) -> Self {
         let path = root.join(".headwater").join(FILE);
         let text = match std::fs::read_to_string(&path) {
@@ -176,7 +274,8 @@ impl Observations {
                     entries: Vec::new(),
                     problems: vec![Problem::File(format!(
                         "`.headwater/{FILE}` exists and could not be read: {error}. Every \
-                         control it would have named reads unobserved rather than verified."
+                         control or verification it would have named reads unobserved rather \
+                         than verified."
                     ))],
                     presence: Presence::Unreadable,
                 };
@@ -193,8 +292,9 @@ impl Observations {
                 return Observations {
                     entries: Vec::new(),
                     problems: vec![Problem::File(format!(
-                        "`.headwater/{FILE}` did not parse as YAML: {}. Every control it would \
-                         have named reads unobserved rather than verified.",
+                        "`.headwater/{FILE}` did not parse as YAML: {}. Every control or \
+                         verification it would have named reads unobserved rather than \
+                         verified.",
                         message.trim_end().replace('\n', "; ")
                     ))],
                     presence,
@@ -205,8 +305,9 @@ impl Observations {
             return Observations {
                 entries: Vec::new(),
                 problems: vec![Problem::File(format!(
-                    "`.headwater/{FILE}`'s top level is not a mapping of control id to entry. \
-                     Every control it would have named reads unobserved rather than verified."
+                    "`.headwater/{FILE}`'s top level is not a mapping of an identifier to an \
+                     entry. Every control or verification it would have named reads unobserved \
+                     rather than verified."
                 ))],
                 presence,
             };
@@ -214,29 +315,76 @@ impl Observations {
         let mut entries: Vec<Observation> = Vec::new();
         let mut problems = Vec::new();
         for entry in map {
-            let control = &entry.key.value;
+            let id = &entry.key.value;
             let Value::Map(fields) = &entry.value.value else {
                 problems.push(Problem::Entry {
-                    control: control.clone(),
-                    reason: "it names no mapping under the control id".to_string(),
+                    control: id.clone(),
+                    reason: "it names no mapping under the identifier".to_string(),
                 });
                 continue;
             };
-            let Some(commit) = fields
-                .get("commit")
-                .and_then(|node| node.value.as_scalar())
-                .map(|scalar| scalar.text.clone())
-            else {
-                problems.push(Problem::Entry {
-                    control: control.clone(),
-                    reason: "it names no `commit`".to_string(),
-                });
-                continue;
+            let text_field = |name: &str| {
+                fields
+                    .get(name)
+                    .and_then(|node| node.value.as_scalar())
+                    .map(|scalar| scalar.text.clone())
             };
-            entries.push(Observation {
-                control: control.clone(),
-                commit,
-            });
+            let kind = text_field("kind").unwrap_or_else(|| "control".to_string());
+            match kind.as_str() {
+                "control" => {
+                    let Some(commit) = text_field("commit") else {
+                        problems.push(Problem::Entry {
+                            control: id.clone(),
+                            reason: "it names no `commit`".to_string(),
+                        });
+                        continue;
+                    };
+                    entries.push(Observation::Control {
+                        control: id.clone(),
+                        commit,
+                    });
+                }
+                "verification" => {
+                    let Some(commit) = text_field("commit") else {
+                        problems.push(Problem::Entry {
+                            control: id.clone(),
+                            reason: "it names no `commit`".to_string(),
+                        });
+                        continue;
+                    };
+                    let Some(criterion_digest) = text_field("criterion_digest") else {
+                        problems.push(Problem::Entry {
+                            control: id.clone(),
+                            reason: "it names no `criterion_digest`".to_string(),
+                        });
+                        continue;
+                    };
+                    if !plausible_commit(&commit) {
+                        problems.push(Problem::Entry {
+                            control: id.clone(),
+                            reason: format!(
+                                "its `commit` (`{commit}`) does not read as a plausible commit \
+                                 reference, so it cannot be treated as observed"
+                            ),
+                        });
+                        continue;
+                    }
+                    entries.push(Observation::Verification {
+                        verification: id.clone(),
+                        commit,
+                        criterion_digest,
+                    });
+                }
+                other => {
+                    problems.push(Problem::Entry {
+                        control: id.clone(),
+                        reason: format!(
+                            "it names `kind: {other}`, which is neither `control` nor \
+                             `verification`"
+                        ),
+                    });
+                }
+            }
         }
         Observations {
             entries,
@@ -247,9 +395,31 @@ impl Observations {
 
     /// Whether a committed snapshot names this control at all. It does not
     /// compare the commit the snapshot recorded against the tree in front of
-    /// it: see the module comment for why that half is not here.
+    /// it: see the module comment for why that half is not here. Reads only
+    /// [`Observation::Control`] entries: a verification sharing this string by
+    /// coincidence is a different population, on [`Observations::verification`]'s
+    /// own terms.
     pub fn observed(&self, control: &str) -> bool {
-        self.entries.iter().any(|entry| entry.control == control)
+        self.entries.iter().any(|entry| {
+            matches!(entry, Observation::Control { control: id, .. } if id == control)
+        })
+    }
+
+    /// What a committed snapshot says about one verification: the commit it
+    /// was observed at, and the digest of the criterion it proved then, where
+    /// a snapshot names it. `None` where no snapshot names it, which is
+    /// [`Observations::of`]'s and [`Observations::at`]'s own `declared` case,
+    /// on [HW-DR-0073](../../../../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
+    /// ruling 3's naming.
+    pub fn verification(&self, id: &str) -> Option<(&str, &str)> {
+        self.entries.iter().find_map(|entry| match entry {
+            Observation::Verification {
+                verification,
+                commit,
+                criterion_digest,
+            } if verification == id => Some((commit.as_str(), criterion_digest.as_str())),
+            _ => None,
+        })
     }
 
     pub fn entries(&self) -> &[Observation] {
@@ -292,13 +462,31 @@ impl Observations {
     }
 }
 
+/// A duplicate identifier within one population: two [`Observation`]s that
+/// name the same id and the same [`Observation::population`]. Shared between
+/// [`crate::register::Projection::of`] and this module's own tests so the two
+/// read one rule rather than two.
+pub(crate) fn duplicate_ids(entries: &[Observation]) -> Vec<String> {
+    let mut duplicate = Vec::new();
+    for (at, entry) in entries.iter().enumerate() {
+        let first_at = entries
+            .iter()
+            .position(|earlier| earlier.id() == entry.id() && earlier.population() == entry.population())
+            .expect("the entry itself is in its own list");
+        if first_at != at && !duplicate.contains(&entry.id().to_string()) {
+            duplicate.push(entry.id().to_string());
+        }
+    }
+    duplicate
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn a_control_the_snapshot_names_is_observed() {
-        let observations = Observations::of(vec![Observation {
+        let observations = Observations::of(vec![Observation::Control {
             control: "CT-EXT-1".to_string(),
             commit: "788885a9".to_string(),
         }]);
@@ -341,7 +529,7 @@ mod tests {
         .expect("the fixture writes");
         let observations = Observations::at(&dir);
         assert!(observations.observed("CT-EXT-1"));
-        assert_eq!(observations.entries()[0].commit, "788885a9");
+        assert_eq!(observations.entries()[0].commit(), "788885a9");
         assert!(observations.problems().is_empty());
         assert!(
             matches!(observations.read_set_digest(), Some(Some(_))),
@@ -469,7 +657,7 @@ mod tests {
     /// pins that refusal on the loader's own terms). This module raises
     /// nothing extra for it: it is the same "did not parse as YAML" path as
     /// any other syntax error. What this module cannot see this way is two
-    /// [`Observation`]s of one [`Observations`] sharing a control by
+    /// [`Observation`]s of one [`Observations`] sharing an identifier by
     /// construction rather than by file syntax, which is why
     /// `crate::register`'s duplicate check reads [`Observations::entries`]
     /// directly instead of trusting this reader to have ruled it out.
@@ -493,5 +681,141 @@ mod tests {
         );
         assert!(matches!(observations.problems()[0], Problem::File(_)));
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// The decisive fixture for #937: a verification observed at a commit,
+    /// with the criterion's digest at snapshot time recorded beside it, reads
+    /// `observed`. The same snapshot against a criterion digest that has since
+    /// moved reads `suspect` on the same data, because
+    /// [`Observations::verification`] only ever reports what the snapshot
+    /// said — the comparison against "now" is the caller's, in
+    /// `crate::verification`.
+    #[test]
+    fn a_verification_entry_reads_its_commit_and_criterion_digest_back() {
+        let dir = std::env::temp_dir().join(format!(
+            "hw-observation-test-{}-verification",
+            std::process::id()
+        ));
+        let _ = std::fs::create_dir_all(dir.join(".headwater"));
+        std::fs::write(
+            dir.join(".headwater").join(FILE),
+            "FIX-VER-0001:\n  kind: verification\n  commit: 788885a9\n  criterion_digest: \
+             abc123\n",
+        )
+        .expect("the fixture writes");
+        let observations = Observations::at(&dir);
+        assert!(observations.problems().is_empty(), "{:?}", observations.problems());
+        assert_eq!(
+            observations.verification("FIX-VER-0001"),
+            Some(("788885a9", "abc123"))
+        );
+        assert_eq!(observations.verification("FIX-VER-9999"), None);
+        // A control lookup does not cross into the verification population.
+        assert!(!observations.observed("FIX-VER-0001"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_verification_entry_with_no_criterion_digest_is_an_entry_problem() {
+        let dir = std::env::temp_dir().join(format!(
+            "hw-observation-test-{}-verification-nodigest",
+            std::process::id()
+        ));
+        let _ = std::fs::create_dir_all(dir.join(".headwater"));
+        std::fs::write(
+            dir.join(".headwater").join(FILE),
+            "FIX-VER-0001:\n  kind: verification\n  commit: 788885a9\n",
+        )
+        .expect("the fixture writes");
+        let observations = Observations::at(&dir);
+        assert_eq!(observations.verification("FIX-VER-0001"), None);
+        assert_eq!(
+            observations.problems(),
+            &[Problem::Entry {
+                control: "FIX-VER-0001".to_string(),
+                reason: "it names no `criterion_digest`".to_string(),
+            }]
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// The second decisive fixture: a fabricated, non-hex commit on a
+    /// verification entry is a problem, not a silent `declared`. This is the
+    /// narrowing of [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
+    /// this change makes: the empty-string case that obligation names as a
+    /// control's own accepted gap does not repeat for a verification.
+    #[test]
+    fn a_verification_entry_with_an_implausible_commit_is_an_entry_problem() {
+        let dir = std::env::temp_dir().join(format!(
+            "hw-observation-test-{}-verification-badcommit",
+            std::process::id()
+        ));
+        let _ = std::fs::create_dir_all(dir.join(".headwater"));
+        std::fs::write(
+            dir.join(".headwater").join(FILE),
+            "FIX-VER-0001:\n  kind: verification\n  commit: \"\"\n  criterion_digest: abc123\n",
+        )
+        .expect("the fixture writes");
+        let observations = Observations::at(&dir);
+        assert_eq!(observations.verification("FIX-VER-0001"), None);
+        assert_eq!(observations.problems().len(), 1, "{:?}", observations.problems());
+        let Problem::Entry { reason, .. } = &observations.problems()[0] else {
+            panic!("{:?}", observations.problems());
+        };
+        assert!(reason.contains("plausible commit reference"), "{reason}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_unrecognized_kind_is_an_entry_problem() {
+        let dir = std::env::temp_dir().join(format!(
+            "hw-observation-test-{}-badkind",
+            std::process::id()
+        ));
+        let _ = std::fs::create_dir_all(dir.join(".headwater"));
+        std::fs::write(
+            dir.join(".headwater").join(FILE),
+            "FIX-VER-0001:\n  kind: unknown\n  commit: 788885a9\n",
+        )
+        .expect("the fixture writes");
+        let observations = Observations::at(&dir);
+        assert!(observations.entries().is_empty());
+        assert_eq!(observations.problems().len(), 1, "{:?}", observations.problems());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn plausible_commit_accepts_hex_and_refuses_everything_else() {
+        assert!(plausible_commit("788885a9"));
+        assert!(plausible_commit(
+            "788885a9788885a9788885a9788885a9788885a9"[..40].as_ref()
+        ));
+        assert!(!plausible_commit(""));
+        assert!(!plausible_commit("nonexistent-commit"));
+        assert!(!plausible_commit("abc")); // shorter than a short SHA
+        assert!(!plausible_commit(&"a".repeat(41))); // longer than a full SHA
+    }
+
+    #[test]
+    fn duplicate_ids_reads_within_one_population_and_not_across_two() {
+        let entries = vec![
+            Observation::Control {
+                control: "SAME-ID".to_string(),
+                commit: "aaa1".to_string(),
+            },
+            Observation::Verification {
+                verification: "SAME-ID".to_string(),
+                commit: "bbb2".to_string(),
+                criterion_digest: "digest".to_string(),
+            },
+            Observation::Control {
+                control: "SAME-ID".to_string(),
+                commit: "ccc3".to_string(),
+            },
+        ];
+        // Two `Control` entries share `SAME-ID`, so it is a duplicate. The
+        // `Verification` entry shares the string but not the population, and
+        // does not itself introduce a second report of it.
+        assert_eq!(duplicate_ids(&entries), vec!["SAME-ID".to_string()]);
     }
 }

@@ -1,4 +1,4 @@
-562 seen, 375 classified, 375 checked, 7114 check instances
+562 seen, 375 classified, 375 checked, 7115 check instances
      21 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       3 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-16`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
@@ -42,6 +42,7 @@ adoption
     375 instances of lifecycle.transition.not_permitted
     375 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
+      1 instances of relation.target.verification.suspect
 suppressions
   0 findings hidden by 0 directives
       2 matched no finding
@@ -112,6 +113,8 @@ rules, and for each the scope that binds it
     taxonomy scope, the resolved taxonomy, and no document
   adoption.task.expired
     taxonomy scope, the resolved taxonomy, and no document
+  relation.target.verification.suspect
+    edge scope, one relation instance and both endpoints
 register
   36 obligations: 33 verified, 2 gap, 1 unverifiable, 0 with no disposition
      14 high, 13 verified
@@ -134,3 +137,4 @@ register
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 0 suppressed
   facet.value.blank reaches no obligation, so it names none
   control.observation.invalid reaches no obligation, so it names none
+  relation.target.verification.suspect reaches no obligation, so it names none

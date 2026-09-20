@@ -848,6 +848,7 @@ pub struct EdgeEnd<'a> {
     pub kind: &'a str,
     facets: Option<&'a Mapping>,
     generated: bool,
+    digest: Option<&'a str>,
 }
 
 impl<'a> EdgeEnd<'a> {
@@ -876,6 +877,18 @@ impl<'a> EdgeEnd<'a> {
     /// takes the pair.
     pub fn generated(&self) -> bool {
         self.generated
+    }
+
+    /// The census's own digest of the bytes at this end, and nothing where
+    /// the census read none.
+    ///
+    /// The same digest [`Digests::input`] carries into the read set, so a
+    /// rule that compares it against a value recorded elsewhere — a
+    /// committed observation snapshot, for [`crate::verification`] — is
+    /// comparing against the exact bytes this run's read set already keys
+    /// on, rather than opening the file a second time.
+    pub fn digest(&self) -> Option<&'a str> {
+        self.digest
     }
 }
 
@@ -925,21 +938,24 @@ impl<'a> EdgeView<'a> {
         // about which end of one edge is which.
         let ends = match &anchor.target {
             Target::Document { id, path, kind } => {
-                let (writer_facets, writer_generated) = read_at(census, &anchor.source.path);
+                let (writer_facets, writer_generated, writer_digest) =
+                    read_at(census, &anchor.source.path);
                 let writer = EdgeEnd {
                     id: &anchor.source.id,
                     path: &anchor.source.path,
                     kind: &anchor.source.kind,
                     facets: writer_facets,
                     generated: writer_generated,
+                    digest: writer_digest,
                 };
-                let (other_facets, other_generated) = read_at(census, path);
+                let (other_facets, other_generated, other_digest) = read_at(census, path);
                 let other = EdgeEnd {
                     id,
                     path,
                     kind,
                     facets: other_facets,
                     generated: other_generated,
+                    digest: other_digest,
                 };
                 Some(match anchor.direction {
                     Direction::AsDeclared => (writer, other),
@@ -1245,13 +1261,14 @@ impl Digests {
     }
 }
 
-/// What the census holds for one path: the front matter it parsed, and whether
-/// this engine wrote the file.
+/// What the census holds for one path: the front matter it parsed, whether
+/// this engine wrote the file, and the digest of the bytes it read there.
 ///
 /// Nothing for the front matter where the census parsed none, which is an
 /// absence rather than empty front matter. `false` for the marker where the
 /// census walked no such path at all, because a path outside the census is a
-/// path this engine has no record of writing.
+/// path this engine has no record of writing. Nothing for the digest on the
+/// same terms: a path the walk never reached carries no bytes to hash.
 ///
 /// The census is the one reader of the corpus, and this is the second lookup
 /// into it from an edge-scoped view. [`Digests`] is the first, and it binary
@@ -1259,19 +1276,20 @@ impl Digests {
 /// census rather than copying, so it takes the census by reference at the point
 /// of use instead of being built once.
 ///
-/// One lookup returns both facts rather than two functions searching the same
-/// list twice, and the pair is what [`EdgeEnd`] carries.
-fn read_at<'a>(census: &'a Census, path: &str) -> (Option<&'a Mapping>, bool) {
+/// One lookup returns all three facts rather than three functions searching
+/// the same list, and the tuple is what [`EdgeEnd`] carries.
+fn read_at<'a>(census: &'a Census, path: &str) -> (Option<&'a Mapping>, bool, Option<&'a str>) {
     let Ok(index) = census
         .rows
         .binary_search_by(|row| row.path.as_str().cmp(path))
     else {
-        return (None, false);
+        return (None, false, None);
     };
     let row = &census.rows[index];
     (
         row.document.as_ref().map(|document| &document.facets),
         matches!(row.outcome, Classification::Generated { .. }),
+        row.digest.as_deref(),
     )
 }
 
