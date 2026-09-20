@@ -738,7 +738,10 @@ fn an_ambiguous_pair_is_reported_rather_than_silently_zipped_by_path_order() {
             "runs/probe-runs/campaign-present.md".to_string(),
         ]
     );
-    assert_eq!(ambiguous.absent, vec!["runs/probe-runs/campaign-absent.md".to_string()]);
+    assert_eq!(
+        ambiguous.absent,
+        vec!["runs/probe-runs/campaign-absent.md".to_string()]
+    );
 
     let report = write(&at, &plan);
     assert!(
