@@ -5,6 +5,8 @@ anchors
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `.claude/commands/next-run.md` via source-tree
     cited by HW-OBL-0177
+  code_path `.claude/hooks/**` via source-tree
+    cited by HW-SPEC-ai-integration
   code_path `.claude/hooks/fixtures-live.sh` via source-tree
     cited by HW-SPEC-harness-support
   code_path `.claude/hooks/fixtures.sh` via source-tree
@@ -15,30 +17,20 @@ anchors
     cited by HW-DR-0064
   code_path `.claude/hooks/intent.sh` via source-tree
     cited by HW-EVAL-governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it
-  code_path `.claude/hooks/intent.sh` via source-tree
-    cited by HW-SPEC-ai-integration
   code_path `.claude/hooks/lib.sh` via source-tree
     cited by HW-DR-0055
   code_path `.claude/hooks/lib.sh` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `.claude/hooks/lib.sh` via source-tree
     cited by HW-HOW-diagnose-an-isolation-failure
-  code_path `.claude/hooks/lib.sh` via source-tree
-    cited by HW-SPEC-ai-integration
   code_path `.claude/hooks/review.sh` via source-tree
     cited by HW-DR-0055
-  code_path `.claude/hooks/review.sh` via source-tree
-    cited by HW-SPEC-ai-integration
   code_path `.claude/hooks/touch.sh` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
-  code_path `.claude/hooks/touch.sh` via source-tree
-    cited by HW-SPEC-ai-integration
   code_path `.claude/hooks/write.sh` via source-tree
     cited by HW-EVAL-governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it
   code_path `.claude/hooks/write.sh` via source-tree
     cited by HW-OBL-0149
-  code_path `.claude/hooks/write.sh` via source-tree
-    cited by HW-SPEC-ai-integration
   code_path `.claude/settings.json` via source-tree
     cited by HW-SPEC-harness-support
   code_path `.claude/skills/fixtures.sh` via source-tree
@@ -279,6 +271,10 @@ anchors
     cited by HW-DR-0074
   code_path `engine/crates/graph/src/anchors.rs` via source-tree
     cited by HW-REQ-0001
+  code_path `engine/crates/graph/src/edges.rs` via source-tree
+    cited by HW-DR-0074
+  code_path `engine/crates/graph/src/edges.rs` via source-tree
+    cited by HW-IFACE-headwater-explain
   code_path `engine/crates/graph/src/index.rs` via source-tree
     cited by HW-DR-0068
   code_path `engine/crates/graph/src/lib.rs` via source-tree
@@ -319,6 +315,8 @@ anchors
     cited by HW-DR-0070
   code_path `engine/crates/query/src/route.rs` via source-tree
     cited by HW-DR-0071
+  code_path `engine/crates/query/src/route.rs` via source-tree
+    cited by HW-DR-0074
   code_path `engine/crates/query/src/route.rs` via source-tree
     cited by HW-IFACE-headwater-route
   code_path `engine/crates/resolve/src/lib.rs` via source-tree
