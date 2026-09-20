@@ -36,6 +36,27 @@ passed=0
 failed=0
 skipped=0
 
+# The same, in the negative: run a hook and assert its output does NOT contain
+# a substring. `expect` holds what a refusal says; this holds what it must not
+# say. `wait.sh` refuses two shapes for two reasons and offers two different
+# remedies, and one of those remedies makes the other shape worse, so a case
+# that pins them apart is worth as much as either case that pins them down.
+refute() {
+    name=$1 script=$2 substring=$3 payload=$4
+    out=$(printf '%s' "$payload" | sh "$hooks/$script" 2>&1)
+    case $out in
+        *"$substring"*)
+            printf 'FAIL %s\n  output should not contain %s, and does:\n%s\n' \
+                "$name" "$substring" "$out"
+            failed=$((failed + 1))
+            ;;
+        *)
+            printf 'ok   %s\n' "$name"
+            passed=$((passed + 1))
+            ;;
+    esac
+}
+
 # Run a hook with a JSON object on standard input, and hold the result against
 # an expected exit status and an expected substring of the output. An empty
 # expectation asserts that the hook wrote nothing at all.
@@ -1132,6 +1153,17 @@ if [ -x "$engine" ]; then
     expect 'a one-second poll of a local file is refused too, and this case is here to say that was chosen' \
         wait.sh 0 '"permissionDecision":"deny"' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/appears-in-200ms ]; do sleep 1; done"}}'
+    refute 'the pgrep refusal does not also offer the cap remedy, which would make this shape immortal' \
+        wait.sh 'capped at ten minutes.
+
+When the cap' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! pgrep -f \"cargo test\" >/dev/null; do sleep 30; done"}}'
+    refute 'the foreground refusal does not claim the wait can never exit' \
+        wait.sh 'can never exit' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done"}}'
+    expect 'the heredoc silence is not vacuous: the same wait without the cat is refused' \
+        wait.sh 0 '"permissionDecision":"deny"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"while true; do sleep 30; done"}}'
     expect 'a run watch already in the background passes' \
         wait.sh 0 '' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"gh run watch 35480000000 --exit-status","run_in_background":true}}'
