@@ -2,7 +2,7 @@
 
 # Decision records
 
-75 documents on this shelf, in the reading order this corpus derives.
+76 documents on this shelf, in the reading order this corpus derives.
 
 - [Q1 — Implementation language](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [Q2 — Schema format](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -79,3 +79,4 @@
 - [A route offers a document and never a heading inside it](0071-a-route-offers-a-document-and-never-a-heading-inside-it.md) — A route does not read headings and offers no anchor inside a document. A measured heading surface never reached spec 02 or spec 03 for the task that raised the question. At every threshold, function words reached wrong anchors.
 - [The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links](0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) — `headwater taxonomy vendor` may accept a location, ruled yes with a boundary: the fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it. (asserted, and no human has accepted it)
 - [The binary is the only interface an adopter must run, and every integration point outside it is declared](0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) — An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test; a network fetch left the list under HW-DR-0075; and the change manifest fails the test and is a defect.
+- [A probe budget prices a run with a pinned model and a committed transcript, and a sweep has neither](0076-a-probe-budget-prices-a-run-with-a-pinned-model-and-a-committed-transcript-and-a-sweep-has-neither.md) — Rules that a budget prices a run identity a probe has and a sweep does not, names the sweep outside every tier, and states where .headwater/probe.yml lives and why. (asserted, and no human has accepted it)

@@ -11,8 +11,8 @@
 //! declaration of spec 7 and a taxonomy is not what decides how much a run may
 //! cost. So it is `.headwater/probe.yml`, beside the lock and beside the cache.
 //!
-//! [#87](https://github.com/headwater-ai/headwater/issues/87) owns the two
-//! tiers and their cadence, and it may move this file. What it may not do is
+//! [HW-DR-0076](../../../../docs/decisions/0076-a-probe-budget-prices-a-run-with-a-pinned-model-and-a-committed-transcript-and-a-sweep-has-neither.md)
+//! rules that this file stays here and does not move. What no ruling may do is
 //! remove the number, because a harness with no budget is a harness that cannot
 //! fail closed.
 //!
@@ -284,6 +284,23 @@ tiers:
             Budgets::read(&source),
             Err(Unreadable::CampaignHasOneArm),
             "a campaign estimates a difference and one arm estimates none"
+        );
+    }
+
+    #[test]
+    fn a_sweep_tier_is_refused_a_sweep_has_no_run_identity_to_price() {
+        // HW-DR-0076: a budget prices a run with a run identity, a pinned
+        // model, and a committed transcript. A sweep has none of the three,
+        // so it is not a tier this file may declare. This guards against a
+        // later change adding one without reopening that ruling.
+        let source = format!(
+            "{GOOD}  sweep:\n    budget_cents: 2000\n    session_cost_cents: 4\n    \
+             repetitions: 1\n    arms: [present]\n"
+        );
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::UnknownTier("sweep".to_string())),
+            "a sweep pins no model and commits no transcript, so no budget prices it"
         );
     }
 

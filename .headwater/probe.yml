@@ -7,9 +7,9 @@
 # the repository that runs the probes and not a fact about any document: nothing
 # classifies it, no language regime binds it and no rule reads it. It is here
 # rather than in `.headwater/taxonomy.yml` because a taxonomy does not decide
-# how much money a run may cost. Issue #87 owns the two tiers and their cadence
-# and may move this file; what it may not do is remove the number, because a
-# harness with no ceiling cannot fail closed.
+# how much money a run may cost. HW-DR-0076 rules that this file stays here and
+# does not move; what no ruling may do is remove the number, because a harness
+# with no ceiling cannot fail closed.
 #
 # Every field is required and none has a default. A default would be this engine
 # choosing how much to spend.
