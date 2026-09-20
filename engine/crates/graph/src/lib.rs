@@ -55,6 +55,7 @@
 //! ```
 
 pub mod anchors;
+pub mod comments;
 pub mod declarations;
 pub mod edges;
 pub mod index;

@@ -1,4 +1,4 @@
-headwater/taxonomy 0.5.0
+headwater/taxonomy 0.6.0
 
 declarations
   taxonomy (required) scalar:string
@@ -59,6 +59,7 @@ declarations
         both map of scalar:string
   anchors map of members
       resolver (required) scalar:string
+      pattern scalar:string
   shelves map of members
       path (required) scalar:string
       homogeneous (required) scalar:boolean

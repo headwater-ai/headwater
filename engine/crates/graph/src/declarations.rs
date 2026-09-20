@@ -188,6 +188,12 @@ pub struct AnchorKind {
     /// The single component that owns identity for this anchor type
     /// ([spec 2](../../../../docs/spec/02-taxonomy-model.md#behavior-at-the-limits)).
     pub resolver: String,
+    /// A configuration string the named resolver reads at its own discretion,
+    /// and that this crate does not interpret. `comment-scan` is the first
+    /// resolver that reads one: the caller that builds a [`crate::anchors::CommentScan`]
+    /// is the one place it is read, and the meta-schema comment on
+    /// `anchor.pattern` states why it lives here rather than in a new root.
+    pub pattern: Option<String>,
     pub span: Span,
 }
 
@@ -411,9 +417,15 @@ fn read_anchor(name: &str, value: &Value, span: Span) -> Result<AnchorKind, Decl
             span,
         })?;
 
+    let pattern = map
+        .get("pattern")
+        .and_then(|value| value.value.as_scalar())
+        .map(|scalar| scalar.text.clone());
+
     Ok(AnchorKind {
         name: name.to_string(),
         resolver,
+        pattern,
         span,
     })
 }

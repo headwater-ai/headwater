@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The smallest shape that exercises `headwater_graph::anchors::CommentScan`
+# end to end: one kind whose `governs` reaches a `test_site` anchor, and two
+# documents whose target files differ in one line only, the comment each one
+# carries. `unminted/sample.rs` cites an identifier this taxonomy's own list
+# does not hold, and `minted/sample.rs` cites the one it does. Both files are
+# otherwise identical, so a difference in what `headwater_check::run` reports
+# for the two can come from nothing but the resolver reading that one line.
+#
+# `Resolvers::over` is not enough here: `comment-scan` is not `source-tree`, so
+# this file's test builds a `Resolvers` set by hand, with a
+# [`headwater_graph::anchors::CommentScan`] over a fixed "minted" set rather
+# than one read from a claim store on disk. `engine/crates/cli/src/main.rs` is
+# what reads the claim store for a real run; this tree holds the behavior the
+# resolver has once it is built, which is `headwater_check::run`'s business.
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft,   role: initial}
+      - {value: current, role: live}
+      - {value: retired, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [retired]}
+
+identifier_schemes:
+  fixture_id: {pattern: "CS-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+anchors:
+  test_site: {resolver: comment-scan}
+
+kinds:
+  verification_fixture:
+    identifier: {scheme: fixture_id}
+    lifecycle: standard
+    facets: {require: [status, status_since, summary]}
+
+relations:
+  governs:
+    family: governance
+    from: [verification_fixture]
+    to:   [test_site]
+    cardinality: many
+    created_by: author
+
+shelves:
+  verification_fixtures:
+    path: comment-scan-target/**
+    homogeneous: true
+    kind: verification_fixture
