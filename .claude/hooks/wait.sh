@@ -129,6 +129,8 @@ When the cap is reached the harness moves this loop into the background and answ
 
 Re-issue this same command with \`run_in_background: true\`. There is no cap on it, the loop exits on its own condition however long that takes, and its completion notification is what wakes you. Do not then wait on it again.
 
+A background wait that runs longer than about five minutes outlives the prompt cache, and the turn that reads its notification pays to write the whole context back rather than to read it, at roughly twelve times the cost. Run \`9ab3be93\` paid \$14.85 that way in one four-hour stretch. Wrap a wait that might run that long in \`timeout 240\`, so it exits on its own before the cache would have, and re-issue it if the condition still is not met: the wrapped loop has already ended by then, so this is not the re-issue the line above forbids, which is about a loop the harness itself only moved to the background and is still running.
+
 Every loop that waits belongs in the background, whatever it sleeps for."
 quoted=$(hw_quote "$reason") || exit 0
 printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":%s}}\n' "$quoted"

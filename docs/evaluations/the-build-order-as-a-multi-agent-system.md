@@ -3,7 +3,7 @@ id: HW-EVAL-the-build-order-as-a-multi-agent-system
 status: current
 status_since: 2026-09-07
 summary: "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, the architecture that follows, what was rejected, and the numbers the next run is held against."
-last_verified: 2026-09-08
+last_verified: 2026-09-20
 title: "The build order as a multi-agent system"
 provenance:
   warrant: asserted
@@ -64,6 +64,8 @@ Pull request #685 measured the same parent's polling. It made 76 `gh pr view` an
 The unit of cost is therefore a parent turn at the parent's full context, and not a token. The same finding rules out the obvious remedy: a fresh agent dispatched to make one poll is worse than the poll, because the dispatch is itself a parent turn at the same context, with a prompt on top. A dispatch pays only when it retires more parent turns than it costs. [HW-PD-0003](../process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) is that rule.
 
 Counting repeated calls does not find this class. The 76 calls covered 43 pull requests at about one and a half calls each, and no shape repeated more than 40 times. An earlier incident, 232 identical calls in twelve minutes, was visible from any angle. This one was visible only by grouping shell calls by purpose and reading the total.
+
+Session `9ab3be93` measured a second class at the same unit of cost, a parent turn at full context, this time paid on the way out of a wait rather than on the way through a poll. Thirteen turns across three builders read a background-task notification after their own wait had run longer than the prompt cache holds a copy of an agent's context, about five minutes, and each one paid to write the whole context back rather than to read it, at 1.25 times the input rate against 0.1 times. The three builders rewrote 3.72M, 1.48M and 0.74M tokens across six, five and two such gaps each, $14.85 of the run's $130.73 total, 11.4%. A wait that came back inside the cache lifetime instead would have cost about $3.84 in cache reads over roughly 32 extra turns. [HW-PD-0007](../process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md) bounds a background wait under that lifetime and re-issues it on return, and `tools/run/run-census.sh` reports the class directly so the next run is held to a number rather than to this record.
 
 ## What the following run added
 
