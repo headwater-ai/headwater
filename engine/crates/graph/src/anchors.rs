@@ -335,9 +335,8 @@ impl Resolver for CommentScan {
             Err(why) => return Binding::Unresolved(why),
         };
 
-        let source = match std::fs::read_to_string(self.base.join(&normalized)) {
-            Ok(source) => source,
-            Err(_) => return Binding::Unresolved(format!("no `{normalized}` in the source tree")),
+        let Ok(source) = std::fs::read_to_string(self.base.join(&normalized)) else {
+            return Binding::Unresolved(format!("no `{normalized}` in the source tree"));
         };
 
         let text = crate::comments::rust_comment_text(&source);
