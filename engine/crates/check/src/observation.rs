@@ -400,9 +400,9 @@ impl Observations {
     /// coincidence is a different population, on [`Observations::verification`]'s
     /// own terms.
     pub fn observed(&self, control: &str) -> bool {
-        self.entries.iter().any(|entry| {
-            matches!(entry, Observation::Control { control: id, .. } if id == control)
-        })
+        self.entries
+            .iter()
+            .any(|entry| matches!(entry, Observation::Control { control: id, .. } if id == control))
     }
 
     /// What a committed snapshot says about one verification: the commit it
@@ -471,7 +471,9 @@ pub(crate) fn duplicate_ids(entries: &[Observation]) -> Vec<String> {
     for (at, entry) in entries.iter().enumerate() {
         let first_at = entries
             .iter()
-            .position(|earlier| earlier.id() == entry.id() && earlier.population() == entry.population())
+            .position(|earlier| {
+                earlier.id() == entry.id() && earlier.population() == entry.population()
+            })
             .expect("the entry itself is in its own list");
         if first_at != at && !duplicate.contains(&entry.id().to_string()) {
             duplicate.push(entry.id().to_string());
@@ -704,7 +706,11 @@ mod tests {
         )
         .expect("the fixture writes");
         let observations = Observations::at(&dir);
-        assert!(observations.problems().is_empty(), "{:?}", observations.problems());
+        assert!(
+            observations.problems().is_empty(),
+            "{:?}",
+            observations.problems()
+        );
         assert_eq!(
             observations.verification("FIX-VER-0001"),
             Some(("788885a9", "abc123"))
@@ -758,7 +764,12 @@ mod tests {
         .expect("the fixture writes");
         let observations = Observations::at(&dir);
         assert_eq!(observations.verification("FIX-VER-0001"), None);
-        assert_eq!(observations.problems().len(), 1, "{:?}", observations.problems());
+        assert_eq!(
+            observations.problems().len(),
+            1,
+            "{:?}",
+            observations.problems()
+        );
         let Problem::Entry { reason, .. } = &observations.problems()[0] else {
             panic!("{:?}", observations.problems());
         };
@@ -780,7 +791,12 @@ mod tests {
         .expect("the fixture writes");
         let observations = Observations::at(&dir);
         assert!(observations.entries().is_empty());
-        assert_eq!(observations.problems().len(), 1, "{:?}", observations.problems());
+        assert_eq!(
+            observations.problems().len(),
+            1,
+            "{:?}",
+            observations.problems()
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

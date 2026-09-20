@@ -1727,10 +1727,11 @@ controls:
         // A committed snapshot naming the control moves the same obligation to
         // `verified`, with no edit to any declaration: the run-time-fact
         // property [`Disposed::unobserved`] states for itself.
-        let seen = crate::observation::Observations::of(vec![crate::observation::Observation::Control {
-            control: "CT-EXT-1".to_string(),
-            commit: "788885a9".to_string(),
-        }]);
+        let seen =
+            crate::observation::Observations::of(vec![crate::observation::Observation::Control {
+                control: "CT-EXT-1".to_string(),
+                commit: "788885a9".to_string(),
+            }]);
         let projection = Projection::of(&register, &seen);
         let ob_ext_1 = projection
             .obligations

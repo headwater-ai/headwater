@@ -153,8 +153,9 @@ fn no_snapshot_is_declared_and_not_a_finding() {
 #[test]
 fn a_snapshot_matching_the_criterions_current_digest_is_observed_and_not_a_finding() {
     let root = scratch_corpus("observed");
-    let digest =
-        headwater_hash::digest(&std::fs::read(root.join(CRITERION_PATH)).expect("the criterion reads"));
+    let digest = headwater_hash::digest(
+        &std::fs::read(root.join(CRITERION_PATH)).expect("the criterion reads"),
+    );
     let observations = Observations::of(vec![Observation::Verification {
         verification: VERIFICATION_ID.to_string(),
         commit: SNAPSHOT_COMMIT.to_string(),
@@ -176,7 +177,8 @@ fn a_snapshot_matching_the_criterions_current_digest_is_observed_and_not_a_findi
 fn the_same_snapshot_after_the_criterion_changes_is_suspect() {
     let root = scratch_corpus("suspect");
     let criterion_path = root.join(CRITERION_PATH);
-    let digest = headwater_hash::digest(&std::fs::read(&criterion_path).expect("the criterion reads"));
+    let digest =
+        headwater_hash::digest(&std::fs::read(&criterion_path).expect("the criterion reads"));
     let observations = Observations::of(vec![Observation::Verification {
         verification: VERIFICATION_ID.to_string(),
         commit: SNAPSHOT_COMMIT.to_string(),
@@ -200,7 +202,10 @@ fn the_same_snapshot_after_the_criterion_changes_is_suspect() {
         "summary: past the window and reaches a verification",
         "summary: past the window and reaches a verification, reworded after the snapshot",
     );
-    assert_ne!(edited, original, "the replacement actually changed the text");
+    assert_ne!(
+        edited, original,
+        "the replacement actually changed the text"
+    );
     std::fs::write(&criterion_path, &edited).expect("the criterion writes");
 
     let after = run_over(&root, &observations);
