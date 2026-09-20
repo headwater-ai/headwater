@@ -64,7 +64,8 @@
 //! instrument as a change in the corpus.
 
 use crate::{
-    Declaration, DeclaredIdentity, Identity, Kind, MismatchedArms, Output, Plan, Runs, Unwritten,
+    AmbiguousArms, Declaration, DeclaredIdentity, Identity, Kind, MismatchedArms, Output, Plan,
+    Runs, Unwritten,
 };
 use headwater_census::census::{Census, Outcome};
 use headwater_check::lifecycle_state::{Standing, StateFacet, Stood};
@@ -312,7 +313,8 @@ pub(crate) fn emit(
 
 /// Every campaign transcript this run graded, paired present against absent
 /// within the selection, model and served version the two arms share, and
-/// reported where the refused-session counts of the pair disagree.
+/// reported where the refused-session counts of the pair disagree — or where
+/// no pair could be chosen at all.
 ///
 /// # Why the key is the three of them and not the tier alone
 ///
@@ -324,16 +326,21 @@ pub(crate) fn emit(
 /// of the run identity spec 5 pins before a run starts, and this is the same
 /// key [`provenance`] already reads the first of for one transcript.
 ///
-/// # Why a pair and not a whole group
+/// # A pair is chosen only where one is unambiguous
 ///
 /// A corpus may hold more than one present or more than one absent transcript
 /// under one key, once an earlier pair is retired and a fresh one recorded
-/// beside it. Sorting each arm's list by path and pairing by position is
-/// deterministic without needing a rule for which of several transcripts is
-/// "the" one: a corpus with one pair per arm, which is every corpus this
-/// engine has seen, pairs the only two paths there are, and a stale extra
-/// transcript is silently unpaired rather than compared against the wrong
-/// partner.
+/// beside it. Nothing in the run identity says which present transcript
+/// belongs with which absent one beyond the three members above, so once
+/// either side holds more than one transcript there is no key left to pair
+/// by. Sorting each side by path and pairing by position used to stand in
+/// for that missing key, and it is wrong: a stale transcript left beside its
+/// replacement zips against whichever transcript of the other arm happens to
+/// sort next to it, and the genuine pair — the two a reader actually means
+/// to compare — never reaches the comparison below at all. So this reports
+/// the ambiguity instead, as [`AmbiguousArms`], and chooses no pair. Zero or
+/// one transcript on a side is not ambiguous: zero means nothing to compare
+/// yet, and exactly one on each side is the only case with a pair to choose.
 fn pair_arms(campaign: &[(String, headwater_probe::intake::Identity, usize)], plan: &mut Plan) {
     let mut keys: Vec<(&str, &str, &str)> = campaign
         .iter()
@@ -364,16 +371,31 @@ fn pair_arms(campaign: &[(String, headwater_probe::intake::Identity, usize)], pl
         };
         let present = of_arm(Arm::Present);
         let absent = of_arm(Arm::Absent);
-        for (present, absent) in present.iter().zip(absent.iter()) {
-            if present.2 != absent.2 {
-                plan.mismatched_arms.push(MismatchedArms {
+        match (present.as_slice(), absent.as_slice()) {
+            // Nothing to compare on one side yet. Not ambiguous: a corpus
+            // with only a present-arm transcript recorded is every corpus
+            // this engine has seen today.
+            ([], _) | (_, []) => {}
+            ([present], [absent]) => {
+                if present.2 != absent.2 {
+                    plan.mismatched_arms.push(MismatchedArms {
+                        selection: selection.to_string(),
+                        model: model.to_string(),
+                        served_version: served_version.to_string(),
+                        present: present.0.clone(),
+                        absent: absent.0.clone(),
+                        present_refused: present.2,
+                        absent_refused: absent.2,
+                    });
+                }
+            }
+            (present, absent) => {
+                plan.ambiguous_arms.push(AmbiguousArms {
                     selection: selection.to_string(),
                     model: model.to_string(),
                     served_version: served_version.to_string(),
-                    present: present.0.clone(),
-                    absent: absent.0.clone(),
-                    present_refused: present.2,
-                    absent_refused: absent.2,
+                    present: present.iter().map(|entry| entry.0.clone()).collect(),
+                    absent: absent.iter().map(|entry| entry.0.clone()).collect(),
                 });
             }
         }

@@ -626,6 +626,131 @@ fn two_arms_of_one_campaign_disagreeing_on_refused_sessions_fail_the_run() {
     );
 }
 
+/// A second present-arm transcript under the same key as
+/// [`CAMPAIGN_PRESENT`], sharing its identity and carrying the same refused
+/// count as [`CAMPAIGN_ABSENT`] (one) — the shape that let the old
+/// sort-and-zip pairing call a run clean while the genuine pair,
+/// [`CAMPAIGN_PRESENT`] against [`CAMPAIGN_ABSENT`], actually disagreed:
+/// zipped by position, this transcript's own `1` matched the absent
+/// transcript's `1` and the real present transcript's `0` was never
+/// compared against anything.
+const CAMPAIGN_PRESENT_AGAIN: &str = "\
+---
+id: RUN-FIX-campaign-present-again
+status: current
+status_since: 2026-09-20
+summary: A second present-arm campaign session under the same key as the first, standing in for a stale transcript left beside its replacement.
+tier: campaign
+arm: present
+---
+
+# A second recorded campaign session, present arm
+
+## Run identity
+
+```yaml
+model: a-model
+served_version: a-model-20260701
+tree: sha256:fixture-tree
+lock: sha256:fixture
+selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
+read_set: sha256:e8c65e754bbaffdf1e27684483ca8d23fbca37d804d298d58cb5086c3947dacf
+seed: 1
+harness: 0.2.0
+tier: campaign
+arm: present
+at: 2026-09-20
+cost_cents: 25
+```
+
+## Events
+
+```yaml
+- probe: PROBE-FIX-opened
+  session: nothing-watched
+  produced: []
+  answer: null
+- probe: PROBE-FIX-answered
+  session: watched
+  calls: []
+  produced: []
+  answer: \"no\"
+```
+";
+
+/// A second campaign fixture proves the shape [`AmbiguousArms`] exists for:
+/// three transcripts under one key, two present and one absent, where the
+/// path-sorted zip a corpus once used would pair the *extra* present
+/// transcript against the real absent one — `campaign-present-again.md`
+/// sorts before `campaign-present.md` (`-` sorts before `.`) — and leave the
+/// genuine pair, `campaign-present.md` against `campaign-absent.md`, never
+/// compared at all despite the real disagreement between them recorded in
+/// [`two_arms_of_one_campaign_disagreeing_on_refused_sessions_fail_the_run`].
+///
+/// This runs red under the sort-and-zip pairing this file's first version
+/// shipped with: `plan.mismatched_arms` came back empty and
+/// `report.has_errors()` was `false`, because the extra transcript zipped
+/// against the absent one instead (both grade clean, so nothing mismatched)
+/// and the genuine present/absent pair was silently unpaired. It passes
+/// under [`AmbiguousArms`], which refuses to guess a pairing once either
+/// side holds more than one transcript, and fails the run over the
+/// ambiguity instead of silently narrowing to a pair that hides it.
+#[test]
+fn an_ambiguous_pair_is_reported_rather_than_silently_zipped_by_path_order() {
+    let at = copied("campaign-arms-ambiguous");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the present-arm transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-absent.md"),
+        CAMPAIGN_ABSENT,
+    )
+    .expect("the absent-arm transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present-again.md"),
+        CAMPAIGN_PRESENT_AGAIN,
+    )
+    .expect("the second present-arm transcript lands");
+
+    let plan = plan_over(&at);
+    assert!(
+        plan.mismatched_arms.is_empty(),
+        "an ambiguous key is reported as ambiguous, not narrowed to a pairing that might hide a \
+         real mismatch: {:?}",
+        plan.mismatched_arms
+    );
+    let ambiguous = match plan.ambiguous_arms.as_slice() {
+        [one] => one,
+        other => panic!(
+            "the plan reported {} ambiguous groups, not one: {:?}",
+            other.len(),
+            other
+        ),
+    };
+    let mut present = ambiguous.present.clone();
+    present.sort();
+    assert_eq!(
+        present,
+        vec![
+            "runs/probe-runs/campaign-present-again.md".to_string(),
+            "runs/probe-runs/campaign-present.md".to_string(),
+        ]
+    );
+    assert_eq!(ambiguous.absent, vec!["runs/probe-runs/campaign-absent.md".to_string()]);
+
+    let report = write(&at, &plan);
+    assert!(
+        report.has_errors(),
+        "an ambiguous pairing is a defective run, not a silently narrowed one"
+    );
+    assert!(
+        report.render(ColorMode::Plain).contains("ambiguous arms"),
+        "the run prints the ambiguity where a reader of the run sees it"
+    );
+}
+
 /// A corpus with no transcript writes no result, and the plan says why.
 ///
 /// This is the state of this repository, and the reason the reason is a

@@ -738,6 +738,66 @@ impl MismatchedArms {
     }
 }
 
+/// One campaign key — one selection, model and served version — whose
+/// present or absent side carries more than one transcript.
+///
+/// # Why this is reported rather than paired by path order
+///
+/// The pairing this type guards against sorted each arm's transcripts by
+/// path and zipped them by position. A stale or re-recorded transcript left
+/// beside its replacement is a real shape a corpus takes, not a contrived
+/// one, and once it landed the extra transcript zipped against whichever
+/// transcript of the other arm happened to sort next to it. The genuine
+/// pair — the two transcripts a reader actually means to compare — then
+/// never reached [`MismatchedArms`] at all, and a run with a real
+/// refused-count disagreement between them could report none.
+///
+/// Nothing in the run identity spec 5 fixes before a run names which present
+/// transcript pairs with which absent one beyond the selection, the model
+/// and the served version. So once either side of one key holds more than
+/// one transcript, there is no key left to pair by, and guessing is what
+/// this type exists to refuse: it is reported and it always fails the run,
+/// the same posture [`MismatchedArms`] takes and for the same reason — no
+/// state either transcript declares is the remedy for it, and the remedy is
+/// retiring the stale transcript rather than an edit to either document.
+#[derive(Clone, Debug)]
+pub struct AmbiguousArms {
+    /// The selection digest every transcript under this key shares.
+    pub selection: String,
+    pub model: String,
+    pub served_version: String,
+    /// Every present-arm transcript under this key, in path order.
+    pub present: Vec<String>,
+    /// Every absent-arm transcript under this key, in path order.
+    pub absent: Vec<String>,
+}
+
+impl AmbiguousArms {
+    /// The line a run prints under the key.
+    pub fn line(&self) -> String {
+        format!(
+            "selection `{}` on `{}` at `{}` carries {} and {}, and more than one transcript on \
+             either side is not a pair this run can compare without guessing which present \
+             transcript belongs with which absent one: present [{}], absent [{}]",
+            self.selection,
+            self.model,
+            self.served_version,
+            count(self.present.len(), "present-arm transcript"),
+            count(self.absent.len(), "absent-arm transcript"),
+            self.present.join(", "),
+            self.absent.join(", "),
+        )
+    }
+}
+
+/// A count and its noun.
+fn count(how_many: usize, noun: &str) -> String {
+    match how_many {
+        1 => format!("1 {noun}"),
+        other => format!("{other} {noun}s"),
+    }
+}
+
 /// Everything one run would write, and everything it would not.
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
@@ -750,6 +810,10 @@ pub struct Plan {
     /// Paired campaign transcripts whose refused-session counts disagree
     /// between arms. See [`MismatchedArms`].
     pub mismatched_arms: Vec<MismatchedArms>,
+    /// Campaign keys whose present or absent side could not be paired at all,
+    /// because one of them holds more than one transcript. See
+    /// [`AmbiguousArms`].
+    pub ambiguous_arms: Vec<AmbiguousArms>,
     /// Marked files inside the corpus root that no output claims. Empty for a
     /// plan that covers a subset of the declarations, because a subset cannot
     /// tell a file it does not write from a file nobody writes: see
@@ -1165,6 +1229,9 @@ pub struct Report {
     /// Carried from the plan, for the reason `refused` is. See
     /// [`MismatchedArms`].
     pub mismatched_arms: Vec<MismatchedArms>,
+    /// Carried from the plan, for the reason `refused` is. See
+    /// [`AmbiguousArms`].
+    pub ambiguous_arms: Vec<AmbiguousArms>,
     /// Marked files no declaration writes. An error in both directions of the
     /// verb: `generate` does not delete files, so writing the plan does not
     /// clear one.
@@ -1190,6 +1257,7 @@ impl Report {
             || !self.orphaned.is_empty()
             || self.refused.iter().any(|refused| refused.held)
             || !self.mismatched_arms.is_empty()
+            || !self.ambiguous_arms.is_empty()
     }
 
     /// The one sentence a failing run ends with, or `None` where it did not
@@ -1217,6 +1285,17 @@ impl Report {
                  one `headwater generate --check` accepts. A projection reads a value that \
                  another projection writes, in a cycle that more passes do not settle, and that \
                  is a defect in the declarations or in this engine rather than in the corpus"
+            ));
+        }
+        // Before the mismatch branch below and for the same reason one hop
+        // earlier: an ambiguous key is what stops a pairing from being
+        // chosen at all, and it is checked before a mismatch between a
+        // pairing this run did manage to choose.
+        if let Some(ambiguous) = self.ambiguous_arms.first() {
+            return Some(format!(
+                "{}. Retire the stale or superseded transcript on whichever side carries more \
+                 than one, so a pair this run can compare is the only one left",
+                ambiguous.line()
             ));
         }
         // Before the refused-transcript branch and for the same reason: a
@@ -1343,6 +1422,19 @@ impl Report {
                     paint(Role::Path, &mismatched.absent, mode)
                 ));
                 out.push_str(&dim(&format!("    {}", mismatched.line()), mode));
+                out.push('\n');
+            }
+        }
+        if !self.ambiguous_arms.is_empty() {
+            out.push('\n');
+            out.push_str(&paint(Role::Heading, "ambiguous arms", mode));
+            out.push('\n');
+            for ambiguous in &self.ambiguous_arms {
+                out.push_str(&format!(
+                    "  {}\n",
+                    paint(Role::Path, &ambiguous.selection, mode)
+                ));
+                out.push_str(&dim(&format!("    {}", ambiguous.line()), mode));
                 out.push('\n');
             }
         }
@@ -1499,6 +1591,7 @@ fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
         orphaned: plan.orphaned.clone(),
         refused: plan.refused.clone(),
         mismatched_arms: plan.mismatched_arms.clone(),
+        ambiguous_arms: plan.ambiguous_arms.clone(),
         producer,
         ..Report::default()
     };
@@ -1766,6 +1859,16 @@ mod paint_tests {
                 present_refused: 0,
                 absent_refused: 1,
             }],
+            ambiguous_arms: vec![AmbiguousArms {
+                selection: "sha256:another-selection".to_string(),
+                model: "a-model".to_string(),
+                served_version: "a-model-20260701".to_string(),
+                present: vec![
+                    "docs/probe-runs/campaign-present-a.md".to_string(),
+                    "docs/probe-runs/campaign-present-b.md".to_string(),
+                ],
+                absent: vec!["docs/probe-runs/campaign-absent-a.md".to_string()],
+            }],
             orphaned: vec![Orphaned {
                 path: "docs/stale-index.md".to_string(),
                 kind: Some("shelf_index".to_string()),
@@ -1810,6 +1913,10 @@ mod paint_tests {
             Case {
                 what: "the mismatched-arms block is a heading",
                 opens_with: "\u{1b}[1mmismatched arms\u{1b}[0m\n",
+            },
+            Case {
+                what: "the ambiguous-arms block is a heading",
+                opens_with: "\u{1b}[1mambiguous arms\u{1b}[0m\n",
             },
             Case {
                 what: "the orphan block is a heading",

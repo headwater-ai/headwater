@@ -25,18 +25,28 @@ set -eu
 # `cd` and `pwd` are builtins and `dirname` is not. Resolving the root with a
 # parameter expansion means the refusal below reaches its message on a host
 # with nothing on `PATH` at all.
+#
+# `pwd -P` and never bare `pwd`. Bare `pwd` on this host's `/bin/sh` (dash)
+# prints the logical path, symlinks intact, so a workspace argument that is
+# itself a symlink into this checkout — or that reaches one through an
+# ancestor directory — would never match the prefix check below, and the
+# `rm -rf` after it would then follow that symlink and delete the real
+# `CLAUDE.md`, `.claude/`, `.githooks/` and `.headwater/` it resolves to.
+# `pwd -P` asks the kernel for the physical directory instead, which
+# resolves every symlink in the path, root and workspace alike, before
+# either is compared or deleted.
 case $0 in
     */*) invoked_from=${0%/*} ;;
     *) invoked_from=. ;;
 esac
-root=$(cd "$invoked_from/../.." && pwd)
+root=$(cd "$invoked_from/../.." && pwd -P)
 
 workspace=${1:-}
 [ -n "$workspace" ] || {
     echo "usage: sh tools/probe/ablate.sh <workspace>" >&2
     exit 2
 }
-here=$(cd "$workspace" 2>/dev/null && pwd) || {
+here=$(cd "$workspace" 2>/dev/null && pwd -P) || {
     echo "ablate: no workspace directory at $workspace" >&2
     exit 2
 }
