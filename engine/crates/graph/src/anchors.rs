@@ -285,8 +285,8 @@ impl Resolver for SourceTree {
             match walked.get(&prefix) {
                 Some(entries) => Rc::clone(entries),
                 None => {
-                    let scoped = Corpus::new(self.base.clone(), &prefix)
-                        .excluding(self.exclusions.clone());
+                    let scoped =
+                        Corpus::new(self.base.clone(), &prefix).excluding(self.exclusions.clone());
                     let entries = Rc::new(headwater_census::walk::walk(&scoped));
                     walked.insert(prefix.clone(), Rc::clone(&entries));
                     entries

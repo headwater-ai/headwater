@@ -494,7 +494,9 @@ impl Graph {
             };
             citations.push((
                 normalized.clone(),
-                edge.target.anchor_display().unwrap_or_else(|| normalized.clone()),
+                edge.target
+                    .anchor_display()
+                    .unwrap_or_else(|| normalized.clone()),
                 edge.source.id.clone(),
                 anchor_kind.clone(),
                 resolver.clone(),
