@@ -175,6 +175,7 @@ pub mod suppression;
 pub mod suspect;
 pub mod target;
 pub mod transition;
+pub mod verification;
 pub mod voice;
 
 pub use adoption::Ledger;
@@ -211,7 +212,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 33] = [
+pub const RULES: [&str; 34] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -245,6 +246,7 @@ pub const RULES: [&str; 33] = [
     register::MECHANISM,
     register::OBSERVATION,
     adoption::RULE,
+    verification::RULE,
 ];
 
 /// The declarations one run reads, from a taxonomy that is already resolved.
@@ -567,6 +569,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             adoption::VERSION,
             adoption::EXPORTABLE_AS,
         ),
+        (
+            verification::RULE,
+            scope::edge_scope::<verification::Verified<'_>>(),
+            scope::edge_version::<verification::Verified<'_>>(),
+            scope::edge_exports::<verification::Verified<'_>>(),
+        ),
     ]
 }
 
@@ -641,6 +649,12 @@ pub fn run(
     // pair: the claim is at one end and the warrant is at the other. See
     // [`basis`].
     let basis = basis::Basis::over(declared.relations);
+    // A verification's freshness against the criterion it proves, over the
+    // relations that reach a `verification` kind, and against the committed
+    // observation snapshot. Edge-scoped for [`basis`]'s own reason: the
+    // criterion is at one end and the verification's snapshot entry names the
+    // other. See [`verification`].
+    let verified = verification::Verified::over(declared.relations, declared.observations);
     let participation = participation::Participation::over(declared.shape, declared.relations);
     let declarations = declaration::Unusable::over(declared.relations, declared.shape);
     let identities = identity::Identity::over(
@@ -703,32 +717,67 @@ pub fn run(
     ));
     instances.extend(scope::over_documents(&placement, census, graph, ctx, cache));
     instances.extend(scope::over_edges(
-        &targets, census, graph, &digests, ctx, cache,
+        &targets,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
     ));
     instances.extend(scope::over_edges(
-        &suspect, census, graph, &digests, ctx, cache,
+        &suspect,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
     ));
     instances.extend(scope::over_edges(
         &reciprocity,
         census,
         graph,
         &digests,
+        declared.observations,
         ctx,
         cache,
     ));
     instances.extend(scope::over_edges(
-        &endpoints, census, graph, &digests, ctx, cache,
+        &endpoints,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
     ));
     instances.extend(scope::over_edges(
         &dependency,
         census,
         graph,
         &digests,
+        declared.observations,
         ctx,
         cache,
     ));
     instances.extend(scope::over_edges(
-        &basis, census, graph, &digests, ctx, cache,
+        &basis,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_edges(
+        &verified,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
     ));
     instances.extend(scope::over_neighbourhoods(
         &participation,

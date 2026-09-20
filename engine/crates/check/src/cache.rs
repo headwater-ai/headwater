@@ -340,13 +340,14 @@ impl Cache {
         text.push_str(&format!("rule {rule}\n"));
         text.push_str(&format!("version {version}\n"));
         text.push_str(&format!(
-            "scope {} body={} phase_a={} clock={} prior={} claims={}\n",
+            "scope {} body={} phase_a={} clock={} prior={} claims={} observations={}\n",
             scope.grain().name(),
             scope.needs_body(),
             scope.needs_phase_a(),
             scope.needs_clock(),
             scope.needs_prior(),
-            scope.needs_claims()
+            scope.needs_claims(),
+            scope.needs_observations()
         ));
         // The one injected value, and it is written exactly when the scope
         // admits it to the view. A scope that declares the clock and was handed
@@ -768,7 +769,7 @@ mod tests {
             cache().plain_key(
                 "r",
                 1,
-                Scope::edge(false),
+                Scope::edge(false, false),
                 "a.md",
                 &inputs(Some("sha256:one")),
                 None,
@@ -1033,7 +1034,7 @@ mod tests {
     /// [HW-OBL-0117]: ../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md
     #[test]
     fn two_bindings_of_one_anchor_are_two_keys_and_neither_is_unkeyed() {
-        let scope = Scope::edge(false);
+        let scope = Scope::edge(false, false);
         let target = "HW-SPEC-ai-integration\u{1f}governs\u{1f}.claude/hooks/lib.sh";
         let key = |resolution: Option<&str>| {
             cache().key(

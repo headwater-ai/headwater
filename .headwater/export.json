@@ -8758,10 +8758,10 @@
           "id": "HW-OBL-0199",
           "status": "current",
           "status_since": "2026-09-19",
-          "summary": "The commit an observation snapshot names is stored and never compared. A snapshot naming a commit that never ran discharges a control exactly as well as one naming the commit that did.",
-          "last_verified": "2026-09-19",
+          "summary": "A control's commit is still stored and never compared. Issue 937 gave a verification the freshness check a control still lacks, and a plausible-commit syntax check. Whether a commit is a real ancestor of the tree stays unread for both, and that needs an owner's ruling on widening the manifest boundary.",
+          "last_verified": "2026-09-20",
           "title": "An observation snapshot records a commit and nothing reads it back",
-          "waiting_on": "build"
+          "waiting_on": "ruling"
         }
       },
       {
