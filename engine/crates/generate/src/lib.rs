@@ -682,6 +682,62 @@ impl RefusedTranscript {
     }
 }
 
+/// Two campaign transcripts of one selection, model and served version, one
+/// per arm, whose refused-session counts disagree.
+///
+/// # A campaign is a comparison of two results
+///
+/// The issue that asked for this type states the rule for one transcript
+/// against itself: "A difference in refused sessions between arms is a defect
+/// of the run and not a finding." Four of the six intake refusals are
+/// conditions of the recorder and not of the session, so an arm whose recorder
+/// wrote fewer keys reports a rate over fewer sessions, and pooling the two
+/// arms as though their denominators agreed would read a difference in the
+/// recorder as a difference in the corpus. Nothing read two transcripts
+/// together before this type existed, so nothing enforced that rule between
+/// two arms; this is the enforcement, taken over
+/// [`headwater_probe::grade::Results::refused`] on each side of the pair.
+///
+/// # This always fails the run
+///
+/// Unlike [`RefusedTranscript`], no state a transcript declares releases it. A
+/// state names whether a reader may rely on one recording, and this is not a
+/// claim about one recording: it is a claim that two recordings compare, and
+/// the remedy is a fresh pair rather than an edit to either document's
+/// `status`.
+#[derive(Clone, Debug)]
+pub struct MismatchedArms {
+    /// The selection digest both transcripts share.
+    pub selection: String,
+    pub model: String,
+    pub served_version: String,
+    /// The present-arm transcript, relative to the corpus root.
+    pub present: String,
+    /// The absent-arm transcript, relative to the corpus root.
+    pub absent: String,
+    pub present_refused: usize,
+    pub absent_refused: usize,
+}
+
+impl MismatchedArms {
+    /// The line a run prints under the pair.
+    pub fn line(&self) -> String {
+        format!(
+            "`{}` (present) and `{}` (absent) share selection `{}` on `{}` at `{}`, and their \
+             refused-session counts disagree: {} against {}. A difference in refused sessions \
+             between arms is a defect of the run and not a finding, so this run fails rather \
+             than pooling two results over denominators nobody declared equal",
+            self.present,
+            self.absent,
+            self.selection,
+            self.model,
+            self.served_version,
+            self.present_refused,
+            self.absent_refused,
+        )
+    }
+}
+
 /// Everything one run would write, and everything it would not.
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
@@ -691,6 +747,9 @@ pub struct Plan {
     /// because the refusal is what the file says; this is the run saying it
     /// too.
     pub refused: Vec<RefusedTranscript>,
+    /// Paired campaign transcripts whose refused-session counts disagree
+    /// between arms. See [`MismatchedArms`].
+    pub mismatched_arms: Vec<MismatchedArms>,
     /// Marked files inside the corpus root that no output claims. Empty for a
     /// plan that covers a subset of the declarations, because a subset cannot
     /// tell a file it does not write from a file nobody writes: see
@@ -1103,6 +1162,9 @@ pub struct Report {
     /// Carried from the plan, because a reader of a run reads a report and
     /// never a plan.
     pub refused: Vec<RefusedTranscript>,
+    /// Carried from the plan, for the reason `refused` is. See
+    /// [`MismatchedArms`].
+    pub mismatched_arms: Vec<MismatchedArms>,
     /// Marked files no declaration writes. An error in both directions of the
     /// verb: `generate` does not delete files, so writing the plan does not
     /// clear one.
@@ -1127,6 +1189,7 @@ impl Report {
             || self.wrote.iter().any(|wrote| wrote.verdict.is_error())
             || !self.orphaned.is_empty()
             || self.refused.iter().any(|refused| refused.held)
+            || !self.mismatched_arms.is_empty()
     }
 
     /// The one sentence a failing run ends with, or `None` where it did not
@@ -1154,6 +1217,17 @@ impl Report {
                  one `headwater generate --check` accepts. A projection reads a value that \
                  another projection writes, in a cycle that more passes do not settle, and that \
                  is a defect in the declarations or in this engine rather than in the corpus"
+            ));
+        }
+        // Before the refused-transcript branch and for the same reason: a
+        // mismatch between two arms is a failure of the corpus and not of the
+        // regeneration, and no state either transcript declares is the remedy
+        // for it.
+        if let Some(mismatched) = self.mismatched_arms.first() {
+            return Some(format!(
+                "{}. Record a fresh pair whose refused sessions agree, or find why the recorder \
+                 wrote fewer keys for one arm",
+                mismatched.line()
             ));
         }
         // Before the two below, because a refused transcript is a failure of
@@ -1255,6 +1329,20 @@ impl Report {
                     paint(Role::Path, &refused.transcript, mode)
                 ));
                 out.push_str(&dim(&format!("    {}", refused.line()), mode));
+                out.push('\n');
+            }
+        }
+        if !self.mismatched_arms.is_empty() {
+            out.push('\n');
+            out.push_str(&paint(Role::Heading, "mismatched arms", mode));
+            out.push('\n');
+            for mismatched in &self.mismatched_arms {
+                out.push_str(&format!(
+                    "  {} / {}\n",
+                    paint(Role::Path, &mismatched.present, mode),
+                    paint(Role::Path, &mismatched.absent, mode)
+                ));
+                out.push_str(&dim(&format!("    {}", mismatched.line()), mode));
                 out.push('\n');
             }
         }
@@ -1410,6 +1498,7 @@ fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
         unwritten: plan.unwritten.clone(),
         orphaned: plan.orphaned.clone(),
         refused: plan.refused.clone(),
+        mismatched_arms: plan.mismatched_arms.clone(),
         producer,
         ..Report::default()
     };
@@ -1668,6 +1757,15 @@ mod paint_tests {
                 // the cases below would then paint a line nobody writes.
                 readers: vec!["docs/obligations/0010-a-record.md".to_string()],
             }],
+            mismatched_arms: vec![MismatchedArms {
+                selection: "sha256:selection".to_string(),
+                model: "a-model".to_string(),
+                served_version: "a-model-20260701".to_string(),
+                present: "docs/probe-runs/campaign-present.md".to_string(),
+                absent: "docs/probe-runs/campaign-absent.md".to_string(),
+                present_refused: 0,
+                absent_refused: 1,
+            }],
             orphaned: vec![Orphaned {
                 path: "docs/stale-index.md".to_string(),
                 kind: Some("shelf_index".to_string()),
@@ -1708,6 +1806,10 @@ mod paint_tests {
             Case {
                 what: "a verdict line is already-stated context, dim",
                 opens_with: "\u{1b}[2m    ",
+            },
+            Case {
+                what: "the mismatched-arms block is a heading",
+                opens_with: "\u{1b}[1mmismatched arms\u{1b}[0m\n",
             },
             Case {
                 what: "the orphan block is a heading",

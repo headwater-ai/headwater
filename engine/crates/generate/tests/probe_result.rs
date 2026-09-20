@@ -471,6 +471,155 @@ fn a_result_reports_whether_the_selection_it_recorded_is_the_one_this_corpus_com
     );
 }
 
+/// A present-arm campaign transcript that grades clean: no refused session.
+const CAMPAIGN_PRESENT: &str = "\
+---
+id: RUN-FIX-campaign-present
+status: current
+status_since: 2026-09-20
+summary: One recorded campaign session of the present arm, standing beside its absent-arm pair.
+tier: campaign
+arm: present
+---
+
+# One recorded campaign session, present arm
+
+## Run identity
+
+```yaml
+model: a-model
+served_version: a-model-20260701
+tree: sha256:fixture-tree
+lock: sha256:fixture
+selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
+read_set: sha256:e8c65e754bbaffdf1e27684483ca8d23fbca37d804d298d58cb5086c3947dacf
+seed: 0
+harness: 0.2.0
+tier: campaign
+arm: present
+at: 2026-09-20
+cost_cents: 25
+```
+
+## Events
+
+```yaml
+- probe: PROBE-FIX-opened
+  session: watched
+  calls:
+    - tool: read
+      argument: /home/runner/repo/runs/probes/0002-answered.md
+      result: sha256:728adf39f9e72aac6e6e685d9efd960927709e5286c887ba13a8a8ea5b3f3f75
+  produced: []
+  answer: null
+- probe: PROBE-FIX-answered
+  session: watched
+  calls: []
+  produced: []
+  answer: \"no\"
+```
+";
+
+/// The same pair, the absent arm: one probe's session recorded no `calls`
+/// key at all, which the present-arm transcript above does not.
+const CAMPAIGN_ABSENT: &str = "\
+---
+id: RUN-FIX-campaign-absent
+status: current
+status_since: 2026-09-20
+summary: One recorded campaign session of the absent arm, standing beside its present-arm pair.
+tier: campaign
+arm: absent
+---
+
+# One recorded campaign session, absent arm
+
+## Run identity
+
+```yaml
+model: a-model
+served_version: a-model-20260701
+tree: sha256:fixture-tree
+lock: sha256:fixture
+selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
+read_set: sha256:e8c65e754bbaffdf1e27684483ca8d23fbca37d804d298d58cb5086c3947dacf
+seed: 0
+harness: 0.2.0
+tier: campaign
+arm: absent
+at: 2026-09-20
+cost_cents: 25
+```
+
+## Events
+
+```yaml
+- probe: PROBE-FIX-opened
+  session: nothing-watched
+  produced: []
+  answer: null
+- probe: PROBE-FIX-answered
+  session: watched
+  calls: []
+  produced: []
+  answer: \"no\"
+```
+";
+
+/// The decisive fixture for the two-arm comparison: two campaign transcripts
+/// that share one selection digest, one model and one served version, where
+/// one records a refused session the other does not.
+///
+/// [The module the issue points at](https://github.com/headwater-ai/headwater/blob/main/docs/spec/05-ai-integration.md)
+/// already states the rule for one transcript against itself: "A difference
+/// in refused sessions between arms is a defect of the run and not a
+/// finding." Nothing before this test read two transcripts together at all,
+/// so nothing enforced that rule between two arms — the plan wrote two
+/// results with two different denominators and called the run clean.
+///
+/// This runs red before `Plan::mismatched_arms` existed: no field on a plan
+/// carried a pairing at all, so the comparison this test asserts had no code
+/// path to reach.
+#[test]
+fn two_arms_of_one_campaign_disagreeing_on_refused_sessions_fail_the_run() {
+    let at = copied("campaign-arms");
+    std::fs::write(at.join("runs/probe-runs/campaign-present.md"), CAMPAIGN_PRESENT)
+        .expect("the present-arm transcript lands");
+    std::fs::write(at.join("runs/probe-runs/campaign-absent.md"), CAMPAIGN_ABSENT)
+        .expect("the absent-arm transcript lands");
+
+    let plan = plan_over(&at);
+    let mismatched = match plan.mismatched_arms.as_slice() {
+        [one] => one,
+        other => panic!(
+            "the plan reported {} mismatched pairs, not one: {:?}",
+            other.len(),
+            other
+        ),
+    };
+    assert_eq!(mismatched.present, "runs/probe-runs/campaign-present.md");
+    assert_eq!(mismatched.absent, "runs/probe-runs/campaign-absent.md");
+    assert_eq!(mismatched.present_refused, 0);
+    assert_eq!(mismatched.absent_refused, 1);
+
+    let report = write(&at, &plan);
+    assert!(
+        report.has_errors(),
+        "a campaign pair whose refused-session counts disagree is a defective run"
+    );
+    assert!(
+        report.remedy().is_some_and(|remedy| remedy.contains("refused-session counts disagree")),
+        "the run's remedy does not name the mismatch: {:?}",
+        report.remedy()
+    );
+    assert!(
+        report
+            .render(ColorMode::Plain)
+            .contains("mismatched arms"),
+        "the run prints the mismatch where a reader of the run sees it"
+    );
+}
+
 /// A corpus with no transcript writes no result, and the plan says why.
 ///
 /// This is the state of this repository, and the reason the reason is a

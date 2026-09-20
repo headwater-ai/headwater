@@ -63,12 +63,15 @@
 //! and a series that averaged over two of them would report a change in the
 //! instrument as a change in the corpus.
 
-use crate::{Declaration, DeclaredIdentity, Identity, Kind, Output, Plan, Runs, Unwritten};
+use crate::{
+    Declaration, DeclaredIdentity, Identity, Kind, MismatchedArms, Output, Plan, Runs, Unwritten,
+};
 use headwater_census::census::{Census, Outcome};
 use headwater_check::lifecycle_state::{Standing, StateFacet, Stood};
 use headwater_graph::links::Binding;
 use headwater_probe::grade::Results;
 use headwater_probe::intake::{Record, Tree};
+use headwater_probe::{Arm, Tier};
 use headwater_query::Surface;
 
 use crate::RefusedTranscript;
@@ -189,6 +192,13 @@ pub(crate) fn emit(
         config: surface.config(),
         lock: &identity.lock,
     };
+    // Every campaign transcript this run graded cleanly, carried past the loop
+    // below so that [`pair_arms`] can compare an arm against the other arm of
+    // its own pair once every transcript has a grade. A transcript the intake
+    // refused whole contributes nothing here: `RefusedTranscript` already
+    // fails the run over it, and a refused transcript's `Results::refused()`
+    // is zero by construction rather than a count of anything graded.
+    let mut campaign: Vec<(String, headwater_probe::intake::Identity, usize)> = Vec::new();
     for (path, promoted) in committed {
         let stem = stem(path);
         let output = declaration.output.replace(RUN, &stem);
@@ -252,6 +262,11 @@ pub(crate) fn emit(
 
         let record = Record::read(&transcript.source, &tree);
         let results = Results::over(&record, &runs.selected);
+        if let (Some(identity), None) = (&record.identity, &record.refusal) {
+            if identity.tier == Tier::Campaign {
+                campaign.push((path.to_string(), identity.clone(), results.refused()));
+            }
+        }
         // Who reads a refusal, which the state of the recording does not
         // answer. Taken for a refused transcript alone: a result that carries
         // verdicts costs a reader nothing, and a list of readers on every
@@ -291,6 +306,77 @@ pub(crate) fn emit(
             kind: Kind::ProbeResult,
             bytes,
         });
+    }
+    pair_arms(&campaign, plan);
+}
+
+/// Every campaign transcript this run graded, paired present against absent
+/// within the selection, model and served version the two arms share, and
+/// reported where the refused-session counts of the pair disagree.
+///
+/// # Why the key is the three of them and not the tier alone
+///
+/// `tier: campaign` alone says two transcripts belong to one kind of run,
+/// never that they belong to *one* run of it: a second campaign, recorded
+/// later against a different pinned model, is a different comparison and
+/// pooling it with the first would compare four results as though they were
+/// two. The selection, the model and the served version are the three members
+/// of the run identity spec 5 pins before a run starts, and this is the same
+/// key [`provenance`] already reads the first of for one transcript.
+///
+/// # Why a pair and not a whole group
+///
+/// A corpus may hold more than one present or more than one absent transcript
+/// under one key, once an earlier pair is retired and a fresh one recorded
+/// beside it. Sorting each arm's list by path and pairing by position is
+/// deterministic without needing a rule for which of several transcripts is
+/// "the" one: a corpus with one pair per arm, which is every corpus this
+/// engine has seen, pairs the only two paths there are, and a stale extra
+/// transcript is silently unpaired rather than compared against the wrong
+/// partner.
+fn pair_arms(campaign: &[(String, headwater_probe::intake::Identity, usize)], plan: &mut Plan) {
+    let mut keys: Vec<(&str, &str, &str)> = campaign
+        .iter()
+        .map(|(_, identity, _)| {
+            (
+                identity.selection.as_str(),
+                identity.model.as_str(),
+                identity.served_version.as_str(),
+            )
+        })
+        .collect();
+    keys.sort();
+    keys.dedup();
+
+    for (selection, model, served_version) in keys {
+        let of_arm = |arm: Arm| {
+            let mut found: Vec<&(String, headwater_probe::intake::Identity, usize)> = campaign
+                .iter()
+                .filter(|(_, identity, _)| {
+                    identity.selection == selection
+                        && identity.model == model
+                        && identity.served_version == served_version
+                        && identity.arm == arm
+                })
+                .collect();
+            found.sort_by(|a, b| a.0.cmp(&b.0));
+            found
+        };
+        let present = of_arm(Arm::Present);
+        let absent = of_arm(Arm::Absent);
+        for (present, absent) in present.iter().zip(absent.iter()) {
+            if present.2 != absent.2 {
+                plan.mismatched_arms.push(MismatchedArms {
+                    selection: selection.to_string(),
+                    model: model.to_string(),
+                    served_version: served_version.to_string(),
+                    present: present.0.clone(),
+                    absent: absent.0.clone(),
+                    present_refused: present.2,
+                    absent_refused: absent.2,
+                });
+            }
+        }
     }
 }
 
