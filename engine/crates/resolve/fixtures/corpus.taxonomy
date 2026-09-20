@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.3.1
+version: 4.4.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -635,6 +635,10 @@ relations:
       - governed_document
       - code_path
     created_by: hook
+    attributes:
+      cue:
+        type: string
+        owner: source
   applied_in:
     created_by: scaffold
     family: evidence
