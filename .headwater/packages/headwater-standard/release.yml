@@ -26,12 +26,12 @@ release:
   package: headwater/standard
   version: 4.4.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:9b5d3d84f0cfeaf7efbbceaa75f66b8d06cb2d028f4746e7ce95dbfea7a4cbff
+  digest: sha256:747fdbc0cd14bbbe5d6bb756509ea675df98ac79a2a68b1cb0169ce356379a79
   members:
     - path: assemblies/starter/assembly.yml
       digest: sha256:337a67289262198d17a6fef2a19fcd83ebbb4444bbbd9c4cee6de3469bf6557a
     - path: bundles/README.md
-      digest: sha256:ee1bd770902e4c2c81787f14fa35a66bd39cc168efae6c3f4a2fe70ab7cd5cc7
+      digest: sha256:fbf16886ce67dc3cb3fb9c61f88cb061ee97b23743f35b8bb6cc7f126fd87f06
     - path: bundles/brd-prd/bundle.yml
       digest: sha256:af0637e7fd79d135b52d6eeca56eeeae9f3d1c1d0790669df0469fb13ca604a8
     - path: bundles/brd-prd/doctrine.md

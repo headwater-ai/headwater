@@ -37,3 +37,5 @@ The [`standards-spec` entry](../taxonomies/standards-spec/doctrine.md#findings) 
 The [`brd-prd` entry](../taxonomies/brd-prd/doctrine.md#findings) supplies a third data point, at [line 173](https://github.com/headwater-ai/headwater/blob/5fb9518/docs/taxonomies/brd-prd/doctrine.md#L173). The sketch lists `procedure`, `standards`, `evidence`, `proposals`, `operations` and `compliance`. None of them is a requirements cluster. `proposals` is the nearest, and a requirement is accepted work rather than a proposal.
 
 This item is data or a deferred component, so the first real adopter is the evidence rather than a further argument.
+
+The [candidate backlog subsection](../taxonomies/README.md#the-candidate-backlog-and-what-became-of-it) of the library index now states the guess in full and records what became of two promoted candidates.
