@@ -185,7 +185,7 @@ pub struct SourceTree {
     /// ([HW-OBL-0117](../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md)),
     /// and this one does not touch it: a fresh process still reads a fresh
     /// tree, because it builds a fresh `SourceTree`.
-    walked: RefCell<HashMap<String, Rc<Vec<Entry>>>>,
+    walked: RefCell<HashMap<String, Rc<[Entry]>>>,
 }
 
 impl SourceTree {
@@ -287,7 +287,7 @@ impl Resolver for SourceTree {
                 None => {
                     let scoped =
                         Corpus::new(self.base.clone(), &prefix).excluding(self.exclusions.clone());
-                    let entries = Rc::new(headwater_census::walk::walk(&scoped));
+                    let entries: Rc<[Entry]> = headwater_census::walk::walk(&scoped).into();
                     walked.insert(prefix.clone(), Rc::clone(&entries));
                     entries
                 }
