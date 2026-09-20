@@ -43,7 +43,10 @@
 
 use headwater_census::walk::{Corpus, Entry, EntryKind, Exclusion};
 use headwater_meta::pattern::Pattern;
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 /// What a resolver made of one anchor string.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -169,6 +172,20 @@ pub struct SourceTree {
     base: PathBuf,
     /// The corpus exclusions, so that a hit inside one says so.
     exclusions: Vec<Exclusion>,
+    /// Every subtree this resolver has already walked in this run, keyed by
+    /// the literal prefix a wildcard pattern rooted the walk at.
+    ///
+    /// [HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md):
+    /// "the resolver reads the tree once, not once per edge." Two edges whose
+    /// patterns share a prefix, or one prefix a list anchor names twice, walk
+    /// the filesystem once between them. The cache is scoped to this
+    /// resolver's own lifetime — one `headwater check` process builds one
+    /// [`Resolvers`] and so one `SourceTree` — and it never crosses a run.
+    /// That is the cache `.headwater/cache/checks` answers for
+    /// ([HW-OBL-0117](../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md)),
+    /// and this one does not touch it: a fresh process still reads a fresh
+    /// tree, because it builds a fresh `SourceTree`.
+    walked: RefCell<HashMap<String, Rc<Vec<Entry>>>>,
 }
 
 impl SourceTree {
@@ -176,6 +193,7 @@ impl SourceTree {
         Self {
             base: corpus.base.clone(),
             exclusions: corpus.exclusions.clone(),
+            walked: RefCell::new(HashMap::new()),
         }
     }
 }
@@ -195,6 +213,26 @@ impl Resolver for SourceTree {
         if pattern.is_literal() {
             // Unchanged from before a pattern language reached this resolver:
             // one `exists` call, and the one entry this value names is itself.
+            //
+            // This is also the one case where an excluded target still
+            // resolves rather than counting as no match. The two branches
+            // answer two different questions. This one already confirmed the
+            // target *exists* — `exists()` just returned true — so it reports
+            // what the corpus says about that real file, which is metadata
+            // ("declared not to be content") and never a reason to call the
+            // edge broken: `excluded_by` carries the note, and a document
+            // that governs an excluded file keeps governing it, which is the
+            // behavior every edge onto one already had before this ruling and
+            // HW-DR-0074's Decision section keeps ("every edge this corpus
+            // declares keeps the meaning it has"). The wildcard branch below
+            // is answering a coverage question instead — does *some* real,
+            // included entry back this claim at all — and there "an entry the
+            // corpus excludes is not a match" is exactly the rule HW-DR-0074
+            // states, because a set with only excluded entries in it is the
+            // stale, over-broad claim `relation.target.unresolved` exists to
+            // raise. Changing this branch to match that rule would break a
+            // value with no wildcard resolving "exactly as it does on
+            // `origin/main` today", which the issue's Done-when requires.
             if !self.base.join(&normalized).exists() {
                 return Binding::Unresolved(format!("no `{normalized}` in the source tree"));
             }
@@ -217,14 +255,49 @@ impl Resolver for SourceTree {
 
         // A pattern with a wildcard: search the one subtree no path it admits
         // can lie outside of, and keep every non-excluded entry it matches.
-        // HW-DR-0074: "the resolver reads the tree once, not once per edge."
         let prefix = pattern.literal_prefix();
-        let scoped = Corpus::new(self.base.clone(), &prefix).excluding(self.exclusions.clone());
-        let mut matched: Vec<String> = headwater_census::walk::walk(&scoped)
-            .into_iter()
-            .filter(|entry: &Entry| entry.excluded_by.is_none())
+        if prefix.is_empty() {
+            // A pattern that opens with `**` or `*` fixes no leading segment,
+            // so the one subtree "no path it admits can lie outside of" is
+            // the whole tree this resolver was given — every repository this
+            // engine has ever measured opens every one of its own patterns on
+            // a literal directory (see `Pattern::literal_prefix`'s doc
+            // comment), and a walk with no root also has no way to write a
+            // relative path for what it finds: `headwater_census::walk`'s
+            // `descend` starts one level of recursion in with an empty
+            // `prefix` and unconditionally writes `{prefix}/{name}`, which is
+            // `/name` rather than `name` for every entry at the top of that
+            // walk. Refused rather than fixed with a leading-separator strip,
+            // because the cost this shape pays even fixed — a walk of
+            // everything under the repository root, `.git` and every
+            // `target/` included — is the one this repository's own patterns
+            // never pay and a caller almost certainly did not mean to.
+            return Binding::Unresolved(format!(
+                "`{normalized}` opens with a wildcard, and no literal segment bounds the search; \
+                 write a literal directory before the first `*` or `**`"
+            ));
+        }
+        // HW-DR-0074: "the resolver reads the tree once, not once per edge."
+        // Two patterns that share a prefix — two edges, or two members of one
+        // list — walk the filesystem once between them rather than once each.
+        let entries = {
+            let mut walked = self.walked.borrow_mut();
+            match walked.get(&prefix) {
+                Some(entries) => Rc::clone(entries),
+                None => {
+                    let scoped = Corpus::new(self.base.clone(), &prefix)
+                        .excluding(self.exclusions.clone());
+                    let entries = Rc::new(headwater_census::walk::walk(&scoped));
+                    walked.insert(prefix.clone(), Rc::clone(&entries));
+                    entries
+                }
+            }
+        };
+        let mut matched: Vec<String> = entries
+            .iter()
+            .filter(|entry: &&Entry| entry.excluded_by.is_none())
             .filter(|entry| matches!(entry.kind, EntryKind::File | EntryKind::Symlink { .. }))
-            .map(|entry| entry.path)
+            .map(|entry| entry.path.clone())
             .filter(|path| pattern.matches(path))
             .collect();
         matched.sort();
@@ -501,6 +574,7 @@ mod tests {
         let resolver = SourceTree {
             base: PathBuf::from(env!("CARGO_MANIFEST_DIR")),
             exclusions: Vec::new(),
+            walked: RefCell::new(HashMap::new()),
         };
         assert!(matches!(
             resolver.resolve("Cargo.toml"),
@@ -543,6 +617,7 @@ mod tests {
         let resolver = SourceTree {
             base: dir.clone(),
             exclusions: Vec::new(),
+            walked: RefCell::new(HashMap::new()),
         };
 
         let Binding::Resolved { matched, .. } = resolver.resolve(".claude/hooks/**") else {
@@ -566,6 +641,7 @@ mod tests {
         let resolver = SourceTree {
             base: dir.clone(),
             exclusions: Vec::new(),
+            walked: RefCell::new(HashMap::new()),
         };
 
         let Binding::Resolved { matched, .. } = resolver.resolve(".claude/hooks") else {
@@ -584,6 +660,7 @@ mod tests {
         let resolver = SourceTree {
             base: dir.clone(),
             exclusions: Vec::new(),
+            walked: RefCell::new(HashMap::new()),
         };
 
         let Binding::Unresolved(why) = resolver.resolve(".claude/nothing-here/*.sh") else {
@@ -592,6 +669,30 @@ mod tests {
         std::fs::remove_dir_all(&dir).ok();
 
         assert!(why.contains(".claude/nothing-here/*.sh"), "{why}");
+    }
+
+    /// A pattern with no literal segment before its first wildcard is
+    /// refused rather than walked. `literal_prefix()` answers `""` there, and
+    /// a walk rooted at that empty prefix is the one case
+    /// `headwater_census::walk::descend` writes a leading `/` for every entry
+    /// at its top level: it starts one recursion in with `prefix = ""` and
+    /// unconditionally writes `{prefix}/{name}`.
+    #[test]
+    fn a_pattern_with_no_literal_prefix_is_refused_rather_than_walked_from_the_root() {
+        let dir = pattern_fixture("no-prefix");
+        let resolver = SourceTree {
+            base: dir.clone(),
+            exclusions: Vec::new(),
+            walked: RefCell::new(HashMap::new()),
+        };
+
+        let Binding::Unresolved(why) = resolver.resolve("**/write.sh") else {
+            panic!("a pattern with no literal prefix resolved");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(why.contains("**/write.sh"), "{why}");
+        assert!(why.contains("wildcard"), "{why}");
     }
 
     /// An entry the corpus excludes does not count as a match, so a pattern
@@ -603,6 +704,7 @@ mod tests {
         let resolver = SourceTree {
             base: dir.clone(),
             exclusions: vec![Exclusion::new(".claude/hooks/**", "a fixture exclusion")],
+            walked: RefCell::new(HashMap::new()),
         };
 
         let Binding::Unresolved(why) = resolver.resolve(".claude/hooks/**") else {
@@ -621,15 +723,22 @@ mod tests {
     #[test]
     fn a_file_added_under_a_wildcard_anchor_changes_the_matched_set_and_so_the_cache_key() {
         let dir = pattern_fixture("cache-key");
-        let resolver = SourceTree {
+        let build = || SourceTree {
             base: dir.clone(),
             exclusions: Vec::new(),
+            walked: RefCell::new(HashMap::new()),
         };
 
-        let before = resolver.resolve(".claude/hooks/**");
+        // Two resolvers, not one asked twice: `SourceTree::walked` caches a
+        // walk for its own lifetime, and one `headwater check` process builds
+        // one `SourceTree` (see the field's doc comment). What this proves —
+        // a stale in-process cache never masking the file that arrived
+        // between two runs — needs the tree read by a resolver each run
+        // actually builds fresh, exactly as two runs would.
+        let before = build().resolve(".claude/hooks/**");
         std::fs::write(dir.join(".claude/hooks/second.sh"), "#!/bin/sh\n")
             .expect("a second fixture file");
-        let after = resolver.resolve(".claude/hooks/**");
+        let after = build().resolve(".claude/hooks/**");
         std::fs::remove_dir_all(&dir).ok();
 
         let (
@@ -667,6 +776,49 @@ mod tests {
             anchor(before).resolution(),
             anchor(after).resolution(),
             "the cache key would serve a stale verdict across the new file"
+        );
+    }
+
+    /// The positive half of the claim above: within one resolver's own
+    /// lifetime, a second pattern over a prefix already walked reads the
+    /// cached entries rather than the tree. Proven by mutating the tree
+    /// *without* building a second `SourceTree` and showing the answer does
+    /// not move — the one case that tells "cached" apart from "read fresh and
+    /// happened to agree".
+    #[test]
+    fn two_patterns_that_share_a_prefix_walk_the_tree_once() {
+        let dir = pattern_fixture("shared-prefix");
+        let resolver = SourceTree {
+            base: dir.clone(),
+            exclusions: Vec::new(),
+            walked: RefCell::new(HashMap::new()),
+        };
+
+        // Same prefix (`.claude/hooks`) as the pattern below, asked first so
+        // the walk lands in the cache under that key.
+        let first = resolver.resolve(".claude/hooks/**");
+        let Binding::Resolved { matched: first, .. } = first else {
+            panic!("the pattern matches a real file under it");
+        };
+        assert_eq!(first, vec![".claude/hooks/write.sh".to_string()]);
+
+        // A file arrives, but on the same resolver instance: a fresh walk
+        // would see it, and the cached one must not.
+        std::fs::write(dir.join(".claude/hooks/second.sh"), "#!/bin/sh\n")
+            .expect("a second fixture file");
+        let second = resolver.resolve(".claude/hooks/*.sh");
+        std::fs::remove_dir_all(&dir).ok();
+        let Binding::Resolved {
+            matched: second, ..
+        } = second
+        else {
+            panic!("the pattern matches a real file under it");
+        };
+        assert_eq!(
+            second,
+            vec![".claude/hooks/write.sh".to_string()],
+            "a second pattern over the same prefix re-walked the tree instead of reading the \
+             cache, and so saw the file the first call could not have"
         );
     }
 
@@ -711,6 +863,7 @@ mod tests {
         let resolver = SourceTree {
             base: PathBuf::from(env!("CARGO_MANIFEST_DIR")),
             exclusions: vec![Exclusion::new("src/**", "a fixture exclusion")],
+            walked: RefCell::new(HashMap::new()),
         };
         let Binding::Resolved { excluded_by, .. } = resolver.resolve("src/anchors.rs") else {
             panic!("the file is there, so the anchor resolves");

@@ -410,6 +410,30 @@ impl Target {
                 .collect(),
         })
     }
+
+    /// The patterns of an anchor, sorted and joined by `, `, for a reader
+    /// rather than for identity. `None` for every other variant.
+    ///
+    /// `Target::Anchor.normalized` is not this: for two or more patterns it
+    /// is an encoding chosen so that two different lists can never share one
+    /// value (see `crate::edges::encode_list_identity`), and that guarantee
+    /// is worth nothing to a person reading a rendered edge. A caller that
+    /// prints an anchor for a human — `headwater explain`, `headwater route`,
+    /// the MCP tools built on both — reaches for this instead. A caller that
+    /// needs the identity a cache key or a duplicate-edge check can trust
+    /// reaches for `normalized`, unchanged.
+    pub fn anchor_display(&self) -> Option<String> {
+        let Target::Anchor { patterns, .. } = self else {
+            return None;
+        };
+        Some(
+            patterns
+                .iter()
+                .map(|member| member.pattern.as_str())
+                .collect::<Vec<&str>>()
+                .join(", "),
+        )
+    }
 }
 
 /// How many entries an anchor reaches, in total and per pattern it holds.
@@ -646,6 +670,35 @@ struct Resolved {
     matched: Vec<String>,
 }
 
+/// An identity for two or more sorted patterns, injective over their content.
+///
+/// A plain joined string is not: `["a", "b, c"]` and `["a, b", "c"]` both
+/// sort and join on `, ` to `"a, b, c"`, so two different lists would share
+/// one node, one `RepeatedTriple` count and one `anchor_nodes()` entry. Each
+/// pattern here is prefixed with its own byte length instead, so the one
+/// place a delimiter could appear is inside a length prefix's own digits,
+/// which a colon closes before any pattern byte is read — the boundary
+/// between two members never depends on what either member's bytes are.
+///
+/// This is `format!("{}:{pattern}", pattern.len())` per member, concatenated
+/// with nothing between them: a caller that wants to reconstruct the list
+/// reads the digits up to the next `:`, takes that many bytes as one pattern,
+/// and repeats.
+///
+/// It is not proven injective against every literal, single-pattern
+/// identity: a real path could in principle spell a valid encoding of some
+/// other list (a file named `1:a1:b`, matching the encoding of `["a", "b"]`,
+/// is legal on this engine's target filesystems). No pattern in this
+/// repository does, encoding a list is the one case this function is for,
+/// and a single pattern never reaches it — see the `[member]` arm beside
+/// every call site.
+fn encode_list_identity(patterns: &[&str]) -> String {
+    patterns
+        .iter()
+        .map(|pattern| format!("{}:{pattern}", pattern.len()))
+        .collect()
+}
+
 /// Bind one target: a single string, or the several patterns of a list anchor
 /// admitted where the endpoint is anchor-only
 /// ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
@@ -762,15 +815,22 @@ fn bind(
         // patterns, sorted." One list written in two orders is one node.
         resolved.sort_by(|a, b| a.normalized.cmp(&b.normalized));
 
-        // `, ` rather than a newline: this string reaches a human unchanged
-        // through `Edge::normalized_target` and `Neighbour::render`, and a raw
-        // newline inside one printed line reads as a rendering defect rather
-        // than as one anchor's several patterns.
-        let normalized = resolved
-            .iter()
-            .map(|member| member.normalized.as_str())
-            .collect::<Vec<&str>>()
-            .join(", ");
+        // A single pattern's identity is the pattern itself, unchanged: every
+        // edge this corpus already declares keeps the identity it has. A list
+        // needs an identity that tells two different lists apart, which a
+        // plain joined string cannot promise — see `encode_list_identity`.
+        // `Target::anchor_display` is the human-facing join, kept separate on
+        // purpose, and it is what a renderer should reach for instead of this
+        // field.
+        let normalized = match resolved.as_slice() {
+            [member] => member.normalized.clone(),
+            members => encode_list_identity(
+                &members
+                    .iter()
+                    .map(|member| member.normalized.as_str())
+                    .collect::<Vec<&str>>(),
+            ),
+        };
         // A single, literal pattern keeps the one exclusion note it carried
         // before a list existed. A list, or a wildcard pattern, drops an
         // excluded hit from the matched count instead of naming one exclusion
@@ -1007,6 +1067,42 @@ mod tests {
                 "two bindings share one value: {text}"
             );
             seen.push(text);
+        }
+    }
+
+    /// The collision a plain `, `-joined identity admits: two different
+    /// lists, sorted, that join to one identical string because one member
+    /// holds the separator text. `encode_list_identity` has to tell them
+    /// apart, which `, `-joining them never could.
+    #[test]
+    fn two_different_lists_never_share_one_identity_even_when_a_member_holds_the_join_text() {
+        let left = encode_list_identity(&["a", "b, c"]);
+        let right = encode_list_identity(&["a, b", "c"]);
+        assert_ne!(
+            left, right,
+            "both lists sort and join to \"a, b, c\" under a plain join"
+        );
+    }
+
+    /// The general property behind the case above: any two different sorted
+    /// pattern lists encode to two different identities.
+    #[test]
+    fn encode_list_identity_is_injective_over_a_table_of_adversarial_lists() {
+        let lists: [&[&str]; 6] = [
+            &["a", "b"],
+            &["a", "b, c"],
+            &["a, b", "c"],
+            &["a", "b", "c"],
+            &[",", ":"],
+            &["1:a", "b"],
+        ];
+        let mut seen = std::collections::BTreeSet::new();
+        for list in lists {
+            let encoded = encode_list_identity(list);
+            assert!(
+                seen.insert(encoded.clone()),
+                "two different lists share one identity: {encoded}"
+            );
         }
     }
 }

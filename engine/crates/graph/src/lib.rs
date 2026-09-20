@@ -141,6 +141,11 @@ pub struct AnchorNode {
     pub anchor_kind: String,
     pub resolver: String,
     pub normalized: String,
+    /// The patterns this node holds, sorted and joined by `, `, for a caller
+    /// that renders this node to a reader rather than keying an identity or
+    /// an exported node with it — see `Target::anchor_display`. Equal to
+    /// `normalized` for a single pattern, where the two never differ.
+    pub display: String,
     pub excluded_by: Option<String>,
     pub edges: usize,
 }
@@ -220,6 +225,10 @@ impl Graph {
                     anchor_kind: anchor_kind.clone(),
                     resolver: resolver.clone(),
                     normalized: normalized.clone(),
+                    display: edge
+                        .target
+                        .anchor_display()
+                        .unwrap_or_else(|| normalized.clone()),
                     excluded_by: excluded_by.clone(),
                     edges: 1,
                 }),
@@ -376,7 +385,7 @@ impl Graph {
                 let _ = writeln!(
                     out,
                     "  {:5} {} `{}` via {}",
-                    node.edges, node.anchor_kind, node.normalized, node.resolver
+                    node.edges, node.anchor_kind, node.display, node.resolver
                 );
                 if let Some(pattern) = node.excluded_by {
                     let _ = writeln!(
@@ -464,7 +473,13 @@ impl Graph {
         // and then of the document that cites it. Both keys are needed: the
         // anchor alone leaves the lines of one anchor in edge-discovery order,
         // which is not stable under an edit elsewhere in the corpus.
-        let mut citations: Vec<(String, String, String, String, Option<String>)> = Vec::new();
+        // Sorted, and printed, on two different strings of one edge: the
+        // identity orders the rows so an edit elsewhere in the corpus cannot
+        // reshuffle them, and the display string is what a reader sees —
+        // `Target::anchor_display`'s doc comment states why those are not one
+        // string for a list anchor.
+        let mut citations: Vec<(String, String, String, String, String, Option<String>)> =
+            Vec::new();
         for edge in &self.edges {
             let Target::Anchor {
                 anchor_kind,
@@ -479,6 +494,7 @@ impl Graph {
             };
             citations.push((
                 normalized.clone(),
+                edge.target.anchor_display().unwrap_or_else(|| normalized.clone()),
                 edge.source.id.clone(),
                 anchor_kind.clone(),
                 resolver.clone(),
@@ -488,10 +504,10 @@ impl Graph {
         citations.sort();
         if !citations.is_empty() {
             out.push_str("anchors\n");
-            for (normalized, source, anchor_kind, resolver, excluded_by) in citations {
+            for (_, display, source, anchor_kind, resolver, excluded_by) in citations {
                 let _ = writeln!(
                     out,
-                    "  {anchor_kind} `{normalized}` via {resolver}\n    cited by {source}"
+                    "  {anchor_kind} `{display}` via {resolver}\n    cited by {source}"
                 );
                 if let Some(pattern) = excluded_by {
                     let _ = writeln!(

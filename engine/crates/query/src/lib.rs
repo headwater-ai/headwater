@@ -421,7 +421,14 @@ impl<'a> Surface<'a> {
                 .or_else(|| pointer.as_ref().and_then(|pointer| pointer.summary.clone())),
             target: match inbound {
                 true => edge.source.path.clone(),
-                false => edge.normalized_target(),
+                // The human-facing join, not the identity: `Target::resolution`
+                // and `Edge::normalized_target` key a cache and a duplicate-edge
+                // check, and a list anchor's identity is not written for a
+                // reader (see `Target::anchor_display`).
+                false => edge
+                    .target
+                    .anchor_display()
+                    .unwrap_or_else(|| edge.normalized_target()),
             },
             governs: match (self.governs_of(edge), inbound) {
                 (Governs::Neither, _) => Governs::Neither,

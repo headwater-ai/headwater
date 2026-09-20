@@ -573,8 +573,12 @@ impl Surface<'_> {
             if edge.source.path != document.path {
                 continue;
             }
-            if let Target::Anchor { normalized, .. } = &edge.target {
-                text.push_str(normalized);
+            // `anchor_display`, not `normalized`: this text feeds term
+            // matching, and a list anchor's identity encoding is digits and
+            // colons that would read as spurious terms — see
+            // `Target::anchor_display`.
+            if let Some(display) = edge.target.anchor_display() {
+                text.push_str(&display);
                 text.push(' ');
             }
         }

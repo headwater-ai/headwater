@@ -65,11 +65,11 @@ edges
     evaluation at graph/evaluations/alpha.md
   SPEC-FIX-generated --traces_to--> SPEC-FIX-first
     design_spec at graph/spec/00-first.md
-  SPEC-FIX-list-anchor --governs--> graph.report, graph.taxonomy.yml
+  SPEC-FIX-list-anchor --governs--> 12:graph.report18:graph.taxonomy.yml
     code_path via source-tree
   SPEC-FIX-list-anchor --governs--> graph/no-such-file.rs, graph.report
     unbound: `code_path`: `graph/no-such-file.rs` no `graph/no-such-file.rs` in the source tree
-  SPEC-FIX-list-anchor-reordered --governs--> graph.report, graph.taxonomy.yml
+  SPEC-FIX-list-anchor-reordered --governs--> 12:graph.report18:graph.taxonomy.yml
     code_path via source-tree
 
 links
