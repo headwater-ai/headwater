@@ -1149,6 +1149,32 @@ jobs:
         # It runs `awk`, `sed`, `grep` and `comm`, builds no engine, opens no
         # socket, and writes only under a temporary directory.
         run: sh tools/repo/obligation-register-fixtures.sh
+      - name: No script under .claude/ or tools/ names one build profile and skips the other
+        # `engine/.cargo/config.toml` ships `dev-release-cli` as the fast
+        # build this repository tells a session to build, and
+        # `tools/repo/resolve-engine.sh` (`tools/repo/resolve_engine.py` for
+        # the one Python consumer) is the one place that finds either
+        # profile, the newer one answering (#647). Nine consumers already
+        # carried the same four lines as their own independent copy, and
+        # three — `.claude/tutorial/fixtures.sh`, `.claude/tutorial/drive.py`
+        # and `tools/taxonomy/n8n-fixtures.sh` — carried only the `release`
+        # half, and so reported "no engine" against a worktree built the way
+        # this repository's own documentation recommends.
+        #
+        # This step reddens the day a forty-third script repeats that: it
+        # scans every `*.sh` and `*.py` file under `.claude/` and `tools/` for
+        # the literal `target/release/headwater`, and fails on any match that
+        # neither carries the `dev-release` literal inline nor references the
+        # shared resolver, unless the file is one of two named, reasoned
+        # exceptions (a Node addon path that is not this binary, and a
+        # synthetic CI-workflow fixture string). `.githooks/` is never
+        # scanned; its own scripts state on themselves why the git-hook half
+        # keeps its own copy rather than depending on a file outside that
+        # directory.
+        #
+        # It runs `grep` and `find`, builds no engine, opens no socket, and
+        # writes only under a temporary directory.
+        run: sh tools/repo/engine-resolver-fixtures.sh
       - name: The composition demonstration reports the one finding it claims
         # `docs/taxonomies/diataxis/fixtures/README.md` records what happens
         # when the `reader_mode` facet of one library entry is read over
