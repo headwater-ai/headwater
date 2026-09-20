@@ -213,8 +213,7 @@ fn the_same_snapshot_after_the_criterion_changes_is_suspect() {
     assert_eq!(
         reported.len(),
         1,
-        "the changed criterion is reported exactly once: {:?}",
-        reported
+        "the changed criterion is reported exactly once: {reported:?}"
     );
     assert_eq!(reported[0].path, CRITERION_PATH);
     assert!(
