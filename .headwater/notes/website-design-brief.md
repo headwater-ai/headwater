@@ -47,7 +47,7 @@ The owner named LeanCTX and TrustGraph. **Neither is a competitor**, and the spe
 
 ### LeanCTX — shares the file format, none of the type system
 
-[LeanCTX](https://github.com/yvgude/lean-ctx) is a context-engineering layer for coding agents: one local Rust binary between agent and model that compresses what passes through. Apache-2.0, ~3.6k GitHub stars, 261k installs claimed, created March 2026, near-daily releases, roughly nine-tenths of commits from one author.
+[LeanCTX](https://github.com/yvgude/lean-ctx) is a context-engineering layer for coding agents: one local Rust binary between agent and model that compresses what passes through. Apache-2.0, created March 2026, near-daily releases, roughly nine-tenths of commits from one author.
 
 - **The overlap is the Open Knowledge Format**, which LeanCTX defines and exports to. HW-EVAL-adjacent-work §I already rules: *"LeanCTX has our file format and none of our TBox… a shared serialization costs us nothing and threatens nothing."* Q13 places an OKF emitter **fifth** in the emitter order, triggered by LeanCTX as the named consumer.
 - **Their pitch is token economics** (60–90% fewer tokens). Headwater's is whether the documents are *true*. Different layer, and the site should say so in one sentence rather than avoid the name.
