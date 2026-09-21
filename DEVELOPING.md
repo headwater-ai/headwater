@@ -154,6 +154,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/engine/build-declaration-fixtures.sh
     sh tools/engine/color-fixtures.sh
     sh tools/repo/decision-record-fixtures.sh
+    sh tools/repo/decision-register-fixtures.sh
     sh tools/repo/developing-fixtures.sh
     sh tools/repo/diataxis-facet-fixtures.sh
     sh tools/repo/diataxis-fixtures.sh
