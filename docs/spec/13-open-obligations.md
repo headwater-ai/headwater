@@ -220,7 +220,6 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0127](../obligations/0127-a-deletion-is-invisible-where-the-version-that-stood-there-does-not-parse.md) — A deletion is invisible where the version that stood there does not parse
 - [HW-OBL-0128](../obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md) — Nothing holds a crate to having a contract under a root that excludes it
 - [HW-OBL-0129](../obligations/0129-spec-12-calls-two-phase-a-outcomes-structural-findings-and-the-engine-emits-none.md) — Spec 12 calls two Phase A outcomes structural findings, and the engine emits none
-- [HW-OBL-0186](../obligations/0186-a-facet-only-entry-has-no-kind-and-the-entry-anatomy-asks-for-two-things-that-presume-one.md) — A facet-only entry has no kind, and the entry anatomy asks for two things that presume one
 - [HW-OBL-0187](../obligations/0187-the-registered-deviation-edge-of-the-compliance-tradition-cannot-be-declared.md) — The registered-deviation edge of the compliance tradition cannot be declared
 - [HW-OBL-0188](../obligations/0188-the-negative-compliance-edge-and-the-governance-precedence-clause-contradict.md) — The negative compliance edge and the governance precedence clause contradict
 - [HW-OBL-0189](../obligations/0189-a-base-shelf-path-is-closed-to-every-later-entry-over-the-same-ground.md) — A base shelf path is closed to every later entry over the same ground
@@ -231,6 +230,8 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0195](../obligations/0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md) — A requirement has no identity, so a descoped requirement has no form
 
 [HW-OBL-0193](../obligations/0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md) is discharged and it is not in the list above. [HW-DR-0079](../decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md) rules that a full entry which serves neither core purpose with a kind of its own names the base declaration that serves the purpose, or extends a base kind that already serves it. `decision-record` and `brd-prd` each take one of those two readings.
+
+[HW-OBL-0186](../obligations/0186-a-facet-only-entry-has-no-kind-and-the-entry-anatomy-asks-for-two-things-that-presume-one.md) is discharged and it is not in the list above. The [library index](../taxonomies/README.md) now states criterion 4's own reading. A facet-only entry's worked corpus borrows a kind from another entry. It names the kind it borrows, and it demonstrates its own facet, not the borrowed kind's purpose. The `diataxis` entry took this reading before the criterion stated it, and its record carries the reason.
 
 ## What else each decision left open
 
