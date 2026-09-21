@@ -1126,6 +1126,9 @@ if [ -x "$engine" ]; then
     expect '  and names the remedy, a bounded wait that re-issues itself' \
         wait.sh 0 'timeout 240' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done"}}'
+    expect '  and exempts the parent, whose cache lives an hour' \
+        wait.sh 0 'the parent waits by ending its turn' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done"}}'
     refute 'the pgrep refusal does not also state the cache-lifetime bound, which belongs to the other remedy' \
         wait.sh 'outlives the prompt cache' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! pgrep -f \"cargo test\" >/dev/null; do sleep 30; done"}}'

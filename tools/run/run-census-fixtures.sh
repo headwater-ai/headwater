@@ -123,6 +123,25 @@ same 'a rewrite past the cache lifetime is counted, a reread inside it is not' \
     'expiry-class wake-ups 2  tokens rewritten 1000000  cost $2.50' \
     "$(printf '%s\n' "$eout" | grep '^expiry-class')"
 
+# The one-hour lifetime. A parent writes to the one-hour cache, and a gap
+# that would expire a subagent's copy leaves its copy warm. p1 opens the
+# cache. p2 arrives twenty minutes later and writes 300000 tokens against a
+# read of 1000, which is a large new tool result and not an expiry, because
+# twenty minutes is inside the parent's lifetime. p3 arrives seventy minutes
+# after p2, past the hour, and rewrites 500000 tokens. So one turn is in the
+# class, and at the one-hour rate of $4.00 a million it cost $2.00.
+cat > "$scratch/hour.jsonl" <<'EOF'
+{"type":"assistant","timestamp":"2026-01-01T00:00:00.000Z","message":{"id":"p1","usage":{"cache_read_input_tokens":0,"cache_creation_input_tokens":50000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":50000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:20:00.000Z","message":{"id":"p2","usage":{"cache_read_input_tokens":1000,"cache_creation_input_tokens":300000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":300000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
+{"type":"assistant","timestamp":"2026-01-01T01:30:00.000Z","message":{"id":"p3","usage":{"cache_read_input_tokens":2000,"cache_creation_input_tokens":500000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":500000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
+EOF
+
+pout=$(sh "$tool" "$scratch/hour.jsonl" 2>&1); status=$?
+same 'the one-hour census exits 0' 0 "$status"
+same 'a one-hour turn expires past the hour, not past five minutes, at the one-hour rate' \
+    'expiry-class wake-ups 1  tokens rewritten 500000  cost $2.00' \
+    "$(printf '%s\n' "$pout" | grep '^expiry-class')"
+
 # The fleet. A parent that dispatches a builder at 00:00 and a verifier at
 # 00:10, rules at 00:45 with no tool call, compacts at 00:50, dispatches an
 # integrator at 01:00, and at 01:10 dispatches a type the harness refuses. The
