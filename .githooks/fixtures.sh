@@ -612,6 +612,77 @@ out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
 judge 'a clock-partition entry that no run measures is refused' 1 "$status" \
     'the clock partition names rules.fired, which this run does not measure' "$out"
 
+# Membership in the clock partition used to be excuse enough on its own: a
+# difference in one of the eight was reported and never failed, whether or not
+# a dated mechanism actually lapsed (#823, and the reproductions at #816 and
+# #822). A tree edit that moves one of these eight, with no adoption task and
+# no suppression directive anywhere near expiring, has to fail exactly as any
+# of the 26 gated figures would.
+reset
+printf '\nThis sentence is written to run past the limit that the house profile sets for descriptive text, and it keeps going for long enough that a reader loses the thread of the clause.\n' \
+    >> "$scratch/docs/spec/02-taxonomy-model.md"
+out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
+judge 'a tree-caused change to a clock-exempt figure is refused, not excused as clock only' \
+    1 "$status" 'stale findings.reported in' "$out"
+refute 'and it is not labeled clock only' 'clock only findings.reported' "$out"
+
+# The companion case the design has to keep protecting: a tree nobody touched,
+# with the clock past a live suppression directive's `until`. The directive
+# and the finding it hides are already part of the tree the page was written
+# against; only the calendar moves between then (`G0`, read off the page's own
+# `run.date`) and now. `--check` must still exit 0, labeled `clock only`, or a
+# fix that just deleted the exemption would pass the case above and break the
+# one this script exists to protect.
+reset
+printf '\nThis sentence is written to run past the limit that the house profile sets for descriptive text, and it keeps going for long enough that a reader loses the thread of the clause. <!-- headwater allow=language.controlled.not_met scope=block until=2020-01-01 reason=false_positive note=this fixture, a directive already lapsed by the time this suite runs -->\n' \
+    >> "$scratch/docs/spec/02-taxonomy-model.md"
+g0json=$("$engine" check --root "$scratch" --json --now 2019-06-01 2>/dev/null)
+g0raised=$(printf '%s' "$g0json" | jq '.findings | length')
+g0reported=$(printf '%s' "$g0json" | jq '[.findings[] | select(.escape != "suppression")] | length')
+g0suppressed=$(printf '%s' "$g0json" | jq '[.findings[] | select(.escape == "suppression")] | length')
+g0advisory=$(printf '%s' "$g0json" | jq '[.findings[] | select(.escape != "suppression" and .severity == "warn")] | length')
+g0errors=$(printf '%s' "$g0json" | jq '[.findings[] | select(.escape != "suppression" and .severity == "error")] | length')
+g0directives=$(cd "$scratch" && "$engine" check --root . --now 2019-06-01 2>/dev/null \
+    | sed -n 's/.*[0-9]* findings hidden by \([0-9]*\) directives.*/\1/p')
+# The page as it stood at G0: what a run on 2019-06-01, against this tree,
+# actually saw. Written by hand here, never by the script under test.
+sed -i 's#data-figure="run.date">[^<]*<#data-figure="run.date">2019-06-01<#' \
+    "$scratch/site/index.html" "$scratch/site/proof/index.html" "$scratch/site/how-it-works/index.html"
+sed -i "s#data-figure=\"findings.reported\">[^<]*<#data-figure=\"findings.reported\">$g0reported<#" \
+    "$scratch/site/index.html" "$scratch/site/proof/index.html"
+sed -i "s#data-figure=\"findings.suppressed\">[^<]*<#data-figure=\"findings.suppressed\">$g0suppressed<#" \
+    "$scratch/site/index.html" "$scratch/site/proof/index.html"
+sed -i "s#data-figure=\"findings.raised\">[^<]*<#data-figure=\"findings.raised\">$g0raised<#" \
+    "$scratch/site/proof/index.html"
+sed -i "s#data-figure=\"findings.errors\">[^<]*<#data-figure=\"findings.errors\">$g0errors<#" \
+    "$scratch/site/index.html" "$scratch/site/proof/index.html"
+sed -i "s#data-figure=\"findings.advisory\">[^<]*<#data-figure=\"findings.advisory\">$g0advisory<#" \
+    "$scratch/site/proof/index.html"
+sed -i "s#data-figure=\"findings.directives\">[^<]*<#data-figure=\"findings.directives\">$g0directives<#" \
+    "$scratch/site/proof/index.html"
+out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
+judge 'a tree nobody touched, with the clock past a directive'"'"'s until, still exits 0' \
+    0 "$status" '0 stale' "$out"
+judge 'and the reported-count difference is labeled clock only' 0 "$status" \
+    'clock only findings.reported' "$out"
+refute 'and nothing is reported as an ordinary stale figure' 'stale findings' "$out"
+
+# The verb-count sentence pluralizes "verb(s)" and "has"/"have" each on its own
+# count, singular at exactly 1 (#811, folded in from the same file). "1 has
+# none" is the correct rendering of an uncontracted count of exactly 1, and a
+# pattern that reads the plural alone matches neither the total nor the two
+# has/have clauses on such a tree, and refuses every run over it.
+reset
+sed -i 's/`headwater` dispatches 23 verbs\. 23 of them have a contract on this shelf, and 0 have none\./`headwater` dispatches 23 verbs. 22 of them have a contract on this shelf, and 1 has none./' \
+    "$scratch/docs/interfaces/README.md"
+grep -q '1 has none' "$scratch/docs/interfaces/README.md" || {
+    printf 'FAIL setup: docs/interfaces/README.md did not move to the singular form\n'
+    exit 1
+}
+out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --print 2>&1); status=$?
+judge 'a verb count whose uncontracted figure is exactly 1 is read rather than refused' \
+    0 "$status" 'verbs.nocontract  1' "$out"
+
 # The engine behind the tree. Every case above measures with whatever binary is
 # under `engine/target/`, and until #679 nothing asked whether that binary was
 # older than the engine sources beside it. A binary that predates a rule counts
