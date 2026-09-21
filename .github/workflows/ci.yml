@@ -51,6 +51,31 @@
 # minutes on a public repository are unmetered, and there is no cost
 # argument left for spending them on code nobody here has reviewed yet.
 #
+# For a pull request opened from a branch of this repository there is no
+# `pull_request` run to route: both jobs skip it, because the `push` run on
+# the same commit has already answered, and a check-run reports onto the head
+# SHA under the same name whichever event produced it. The `engine` job
+# carries why that is sound to write as a condition on the work when it would
+# not be sound as a condition on the runner. The `pull_request` trigger stays
+# for the fork case, where it is the only run there is.
+#
+# What that gives up, stated rather than discovered later: a `push` run checks
+# out the branch, so a pull request is now tested at its head and never at its
+# merge with `main`. The run it replaces did check out `refs/pull/N/merge`,
+# but it tested that merge only as `main` stood at the last push to the head.
+# `pull_request` fires on `opened`, `synchronize` and `reopened`, and all
+# three are about the head; a base branch that moves afterwards recomputes the
+# merge ref and starts no run, so the green check was never recomputed. Of the
+# eight pull requests merged before this change, four went in with a head one
+# commit behind `main`, which means that check had certified a composition
+# that never landed. The run on `main` is the composition check, it always
+# was, and the paragraph above `concurrency` is why it is the one run this
+# file never cancels. Spec 12 already rules this the ordinary race
+# (`docs/spec/12-check-layer.md`, "Hook and CI can disagree only when the
+# mainline moved"). Turning `strict_required_status_checks_policy` on in the
+# `Protect main` ruleset is what would close it, at the cost of re-running
+# every branch that a merge leaves behind, and it is off on purpose.
+#
 #   gh variable set CI_RUNNER --body '["self-hosted", "headwater"]'  # opt in, push events only
 #   gh variable delete CI_RUNNER                                    # back to ubuntu-latest
 #   gh variable list                                                # which one is live
@@ -115,13 +140,20 @@ on:
 # other. `github.ref` is `refs/pull/N/merge` on a pull request and
 # `refs/heads/main` on a push, which separates them without a second key.
 #
-# Cancellation is for pull requests only. A run on `main` is the only thing
+# Cancellation is for every ref but `main`. A run on `main` is the only thing
 # that reads the composition of merges, so two merges landing a minute apart
 # must produce two verdicts rather than one; cancelling the first would lose
 # the only check that ever sees that pair together.
+#
+# This test read `github.event_name == 'pull_request'` until the jobs below
+# started skipping the duplicate `pull_request` run, and that reading exempted
+# from cancellation exactly the runs that occupy the self-hosted runner. The
+# queue the paragraph above describes is made of push runs. Naming the ref
+# rather than the event cancels a superseded run whichever event started it,
+# and keeps every run on `main`.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -129,6 +161,26 @@ permissions:
 jobs:
   engine:
     name: Engine tests
+    # A pull request opened from a branch of this repository already has a
+    # `push` run on the same commit, and that run is the one the ruleset
+    # reads: a check-run attaches to the head SHA whichever event started it,
+    # under the same name. So the `pull_request` run for such a branch builds
+    # the same tree a second time. This skips it. A job skipped by its own
+    # `if` reports success to a required status check, which is what keeps
+    # `Protect main` satisfiable; a workflow skipped by a trigger filter does
+    # not, and leaves the check pending forever, which is why the
+    # `pull_request` trigger above stays.
+    #
+    # This decides which of two runs does the work, never which runner a run
+    # may use. `runs-on` below remains the only place self-hosted eligibility
+    # is decided, and that is why reading `head.repo.full_name` is sound here
+    # and would not be there. The field comes from the webhook and a pull
+    # request's author cannot forge it, but the author does own this file on
+    # their own fork, so a fork can delete this line. A fork that deletes it
+    # gets the run it would have got anyway: `ubuntu-latest`, behind the same
+    # approval click. A condition that can only remove work grants a fork
+    # nothing it did not already hold.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     # `CI_RUNNER` is only read on a `push`, and its own unset fallback is
     # `ubuntu-latest`: the self-hosted labels are an opt-in the variable has
     # to name explicitly (`gh variable set CI_RUNNER --body '["self-hosted",
@@ -355,9 +407,11 @@ jobs:
 
   headwater:
     name: headwater check (advisory)
-    # Same expression as the `engine` job above, and the same reason: see
-    # the top-of-file comment on why `push` is the only trigger this file
+    # Both expressions are the `engine` job's, and so are both reasons: that
+    # job carries why a same-repo pull request skips here, and the
+    # top-of-file comment carries why `push` is the only trigger this file
     # trusts with the self-hosted label.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ${{ github.event_name == 'push' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
       - uses: actions/checkout@v4
@@ -1413,16 +1467,26 @@ jobs:
         # after it would otherwise fail the comparison at the end for a reason
         # that has nothing to do with the cache.
         run: echo "HEADWATER_NOW=$(date -u +%F)" >> "$GITHUB_ENV"
-      - name: The change this pull request carries
+      - name: The change this branch carries
         # The reading that this repository has never taken. Two rules declare
         # `needs_prior`, and an instance of one reaches no verdict in a run that
         # carries no change: 382 of 3498 instances report `change-scoped-only`
         # on a full-corpus run, which every step above is.
         #
-        # The anchor is the base of the pull request, which is what spec 12
+        # The anchor is the merge base with `main`, which is what spec 12
         # fixes for a proposed change. `.githooks/pre-commit` passes `HEAD`
         # instead, which is the other anchor that sentence names, so the commit
         # gate and this step ask the same rules two different questions.
+        #
+        # It read `github.event.pull_request.base.sha` while this step ran only
+        # on the `pull_request` event, and that named the same commit for a
+        # reason that does not survive the move to the `push` run: a
+        # `pull_request` run checks out `refs/pull/N/merge`, whose two parents
+        # are the head and that very SHA, so the base tip and the merge base
+        # were one commit. A `push` run checks out the branch itself, where a
+        # base tip that has moved is neither. Asking git for the merge base
+        # names spec 12's anchor on both events, and needs no field from the
+        # event payload to do it.
         #
         # Advisory, like the check above it and for the same reason. What
         # `warrant.promoted` produces is a count, and
@@ -1433,8 +1497,13 @@ jobs:
         # that blocks on it, and a pull request whose commits went through that
         # gate has already answered it.
         #
-        # Only on a pull request. A push to `main` has no proposed change to be
+        # Every ref but `main`. A push to `main` has no proposed change to be
         # the base of, and the changes in it were each described at the commit.
+        # What reaches here is a branch push, which is the run that answers for
+        # a pull request opened from this repository, and a fork's
+        # `pull_request` run, which is the only run such a pull request gets.
+        # Naming the ref rather than the event is what carries this step across
+        # the consolidation the top of this file describes.
         #
         # Its position is part of its correctness. The producer names every file
         # the index does not track, because an author's new document is one of
@@ -1457,9 +1526,11 @@ jobs:
         # corpus: it says the change could not be described, and a step that
         # went green on that would report a promotion count of zero over a
         # reading nobody took, which is the whole shape this exists to close.
-        if: github.event_name == 'pull_request'
+        if: github.ref != 'refs/heads/main'
         run: |
-          manifest=$(sh .githooks/change-manifest "${{ github.event.pull_request.base.sha }}" "$RUNNER_TEMP/change")
+          base=$(git merge-base origin/main HEAD)
+          echo "the merge base with main is $base"
+          manifest=$(sh .githooks/change-manifest "$base" "$RUNNER_TEMP/change")
           ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" \
             --change "$manifest" --format markdown > change.md
           # Onto the step log as well as into the summary. A step that writes
@@ -1467,7 +1538,7 @@ jobs:
           # this prints are the two numbers the reading is for.
           grep -E '^\*\*Scoped to a change\.\*\*|promoted from' change.md
           {
-            echo '## The change this pull request carries'
+            echo '## The change this branch carries'
             echo
             echo '<details><summary>the run, scoped to the change</summary>'
             echo

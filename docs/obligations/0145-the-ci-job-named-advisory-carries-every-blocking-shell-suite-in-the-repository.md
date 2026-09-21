@@ -23,7 +23,7 @@ An agent building issue #314 read a pull request's CI result and checked which o
 
 ## Obligation
 
-The job carries sixteen steps. Three are setup: checkout, the toolchain, and cargo build. Two of the working steps carry an advisory posture in their own comments. One is named `Check this corpus` and the other `The change this pull request carries`. No step anywhere in the file has continue-on-error. Every step, advisory ones included, fails the job when its command exits non-zero. So advisory here means only that those two steps exit zero in the presence of findings, not that the job tolerates their failure.
+The job carries sixteen steps. Three are setup: checkout, the toolchain, and cargo build. Two of the working steps carry an advisory posture in their own comments. One is named `Check this corpus` and the other `The change this branch carries`. No step anywhere in the file has continue-on-error. Every step, advisory ones included, fails the job when its command exits non-zero. So advisory here means only that those two steps exit zero in the presence of findings, not that the job tolerates their failure.
 
 - The commit gate fixture suite, `sh .githooks/fixtures.sh` at line 111, covers seventeen cases over the gate and its change-manifest producer.
 - The lock check at line 112 runs `taxonomy resolve --check` against the committed lock.
