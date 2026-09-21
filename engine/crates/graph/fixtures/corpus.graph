@@ -29,6 +29,8 @@ anchors
     cited by HW-DR-0055
   code_path `.claude/hooks/touch.sh` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
+  code_path `.claude/hooks/wait.sh` via source-tree
+    cited by HW-PD-0007
   code_path `.claude/hooks/write.sh` via source-tree
     cited by HW-EVAL-governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it
   code_path `.claude/hooks/write.sh` via source-tree
@@ -43,6 +45,8 @@ anchors
     cited by HW-DR-0024
   code_path `.claude/skills/hw-run-policy/SKILL.md` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
+  code_path `.claude/skills/hw-run-policy/SKILL.md` via source-tree
+    cited by HW-PD-0007
   code_path `.claude/tutorial/fixtures.sh` via source-tree
     cited by HW-DR-0061
   code_path `.gitattributes` via source-tree
@@ -417,6 +421,8 @@ anchors
     cited by HW-HOW-diagnose-an-isolation-failure
   code_path `tools/run/run-census.sh` via source-tree
     cited by HW-PD-0003
+  code_path `tools/run/run-census.sh` via source-tree
+    cited by HW-PD-0007
   code_path `tools/run/run-dir.sh` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `tools/site/assemble-site.sh` via source-tree

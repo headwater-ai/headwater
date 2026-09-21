@@ -24,9 +24,10 @@
 # those turns re-read, and that as a share of the whole session's cache reads.
 #
 # A fourth line follows the tables: the turns whose cache write outweighed
-# their cache read after a gap past the five-minute prompt-cache lifetime, the
-# tokens they rewrote, and what that cost at Sonnet 5's cache-write rate,
-# $2.50 per million tokens against $0.20 to have read the same tokens back.
+# their cache read after a gap past the prompt-cache lifetime, the tokens they
+# rewrote, and what that cost at Sonnet 5's cache-write rate, $2.50 per
+# million tokens for the five-minute lifetime and $4.00 for the one-hour one,
+# against $0.20 to have read the same tokens back.
 # #983 measured why the class matters: a wait that ends the turn for longer
 # than the cache holds a copy comes back to a discarded one and pays to write
 # the whole context again rather than read it, twelve and a half times the
@@ -82,6 +83,7 @@ turns=$(jq -c -n '
          ({id: $l.message.id,
            cr: ($l.message.usage.cache_read_input_tokens // 0),
            cw: ($l.message.usage.cache_creation_input_tokens // 0),
+           cw1h: ($l.message.usage.cache_creation.ephemeral_1h_input_tokens // 0),
            ts: ($l.timestamp // null),
            tools: [$l.message.content[]? | select(.type == "tool_use")
                    | {name: .name, cmd: (.input.command // "" | strip_heredocs)}]}) as $t
@@ -164,28 +166,32 @@ table 'Bash, by what the command mentions (a call can be in several rows)' '
        | map(select(. as $p | $c | test("(^|[^A-Za-z0-9_/.-])" + $p))))
     end'
 
-# The cache lifetime is five minutes: past that much silence the harness
-# discards its copy of a turn's context, and the turn that ends up reading
-# the notification pays to write the whole thing back rather than to read it.
-# A turn is in this class when its cache write outweighs its cache read and
-# the gap since the previous turn passed that lifetime; the write rate is
-# Sonnet 5's, $2.00 per million input tokens times the API's 1.25x for a
-# cache write, because that is what the run's agents run under.
-cache_lifetime_s=300
-write_rate_per_mtok=2.50
-expiry=$(printf '%s' "$turns" | jq -c --argjson lifetime "$cache_lifetime_s" '
+# Past the cache lifetime the harness discards its copy of a turn's context,
+# and the turn that ends up reading the notification pays to write the whole
+# thing back rather than to read it. The lifetime is not one number. A
+# subagent writes to the five-minute cache and the parent to the one-hour one,
+# which HW-PD-0007 measured on 2026-09-21, and each usage record says which
+# in `cache_creation`. A turn that wrote to the one-hour cache is held to
+# 3600 seconds, and every other turn to 300, which is also the reading of a
+# transcript that predates the split. A turn is in this class when its cache
+# write outweighs its cache read and the gap since the previous turn passed
+# its own lifetime. The write rates are Sonnet 5's, $2.00 per million input
+# tokens times the API's 1.25x for a five-minute write and 2x for a one-hour
+# write, because that is what the run's agents run under.
+expiry=$(printf '%s' "$turns" | jq -c '
     def ts: sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601;
     [.[] | select(.ts != null)] as $timed
     | [range(1; $timed | length) as $i
        | $timed[$i] as $cur | $timed[$i - 1] as $prev
        | (($cur.ts | ts) - ($prev.ts | ts)) as $gap
+       | (if $cur.cw1h > 0 then 3600 else 300 end) as $lifetime
        | select($gap > $lifetime and $cur.cw > $cur.cr)
-       | $cur.cw]
-    | {n: length, tokens: (add // 0)}
+       | {tokens: $cur.cw, cost: ((($cur.cw - $cur.cw1h) * 2.50 + $cur.cw1h * 4.00) / 1000000)}]
+    | {n: length, tokens: (map(.tokens) | add // 0), cost: (map(.cost) | add // 0)}
 ')
 expiry_n=$(printf '%s' "$expiry" | jq '.n')
 expiry_tokens=$(printf '%s' "$expiry" | jq '.tokens')
-expiry_cost=$(awk -v t="$expiry_tokens" -v r="$write_rate_per_mtok" 'BEGIN { printf "%.2f", t * r / 1000000 }')
+expiry_cost=$(printf '%s' "$expiry" | jq -r '.cost' | awk '{ printf "%.2f", $1 }')
 printf '\nexpiry-class wake-ups %s  tokens rewritten %s  cost $%s\n' "$expiry_n" "$expiry_tokens" "$expiry_cost"
 
 # The fleet: what the agents this session dispatched were doing while its

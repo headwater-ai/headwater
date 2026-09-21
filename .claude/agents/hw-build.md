@@ -44,7 +44,7 @@ Nothing has to hold that tree open. `tools/repo/retire-worktree.sh` keeps a tree
 
 **The bar is the Done-when, not the title.** An honest split is a success condition: when the issue is more than lands in one pull request, split it on the board, take the first sound piece, file the remainder with an `## ELI5` section per `.github/ISSUE_TEMPLATE/issue.md`, and return `Refs #N`.
 
-**Before you open the pull request**, rebase onto `origin/main`, rebuild the engine, then run `headwater generate` and re-bless the recorded fixtures, and read that diff. A binary built before the rebase writes what the previous engine produced, and `headwater check --strict` passes it because the same binary wrote and checked it.
+**Before you open the pull request**, rebase onto `origin/main`, rebuild the engine, then run `headwater generate` and re-bless the recorded fixtures, and read that diff. Then run the whole suite once, `sh tools/hw-cargo test --workspace --manifest-path engine/Cargo.toml`, which is the one workspace-wide run a build owes before its pull request. A binary built before the rebase writes what the previous engine produced, and `headwater check --strict` passes it because the same binary wrote and checked it.
 
 **After you open it, wait for CI once**, with `gh run watch <id> --exit-status` or an `until` loop at thirty seconds, started with `run_in_background: true`, and repair a Format, Lint or unblessed-fixture failure yourself before you report. Seven of ten vetoes in one run were exactly those, and each one bought a fresh verifier at twenty minutes. A red CI you cannot repair is the first line of your report, not a pull request handed on.
 
