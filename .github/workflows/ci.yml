@@ -23,106 +23,49 @@
 # than a count of two: an action from anywhere else runs code nobody here
 # reviews, on every push, with a token in the environment.
 #
-# Which runner a job takes depends on how the run was created, never on a
-# value a pull request can flip. `github.event_name` comes from the webhook
-# that started the run, and a fork cannot make that webhook say `push`: a
-# `push` event fires only for a ref actually written to this repository,
-# which needs write access nobody outside this project holds. A
-# `pull_request` event, by contrast, evaluates the workflow file as the
-# pull request's own author wrote it — including this file — so no
-# condition written here can stop a hostile fork from deleting this very
-# line in its own copy and hardcoding `self-hosted` in its place. What
-# actually stops that run from executing is this repository's fork-PR
-# approval setting (`fork_pr_contributor_approval: all_external_contributors`,
-# the strictest GitHub offers): every run started by someone outside this
-# repository holds for a manual click before anything on it runs. Never give
-# that click to a run whose diff touches `.github/` without reading the diff
-# first — that is the actual boundary, and no expression below substitutes
-# for reading it.
+# Where a job runs, what this file trusts, and what it tests before a merge
+# are stated as a whole in docs/evaluations/two-triggers-one-verdict-how-this-
+# repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md, with the
+# measurements behind each rule. This header keeps only what an editor of
+# this file must obey. Read that document before changing any of them.
 #
-# So self-hosted eligibility is written as `github.event_name == 'push'`,
-# never as a check on which repository opened the pull request: the latter
-# lives in a field the pull request's own author controls, the former does
-# not. `CI_RUNNER` selects the labels for a push-triggered run, and an unset
-# variable now falls back to `ubuntu-latest` — the reverse of the read this
-# comment gave before this repository had a self-hosted runner to consider.
-# A `pull_request`-triggered run takes `ubuntu-latest` unconditionally, with
-# no variable read at all: this repository is public, GitHub-hosted Actions
-# minutes on a public repository are unmetered, and there is no cost
-# argument left for spending them on code nobody here has reviewed yet.
+# 1. `runs-on` decides self-hosted eligibility on `github.event_name` and on
+#    nothing else. Never key it on which repository opened a pull request,
+#    or on any field a pull request's author can influence. A fork runs its
+#    own copy of this file, so no condition here defends against one.
 #
-# For a pull request opened from a branch of this repository there is no
-# `pull_request` run to route: both jobs skip it, because the `push` run on
-# the same commit has already answered, and a check-run reports onto the head
-# SHA under the same name whichever event produced it. The `engine` job
-# carries why that is sound to write as a condition on the work when it would
-# not be sound as a condition on the runner. The `pull_request` trigger stays
-# for the fork case, where it is the only run there is.
+# 2. The real boundary is `fork_pr_contributor_approval:
+#    all_external_contributors`, which holds every outside run for a manual
+#    click. Never approve a run whose diff touches `.github/` without reading
+#    that diff first. No expression in this file substitutes for reading it.
 #
-# What that gives up, stated rather than discovered later: a `push` run checks
-# out the branch, so a pull request is now tested at its head and never at its
-# merge with `main`. The run it replaces did check out `refs/pull/N/merge`,
-# but it tested that merge only as `main` stood at the last push to the head.
-# `pull_request` fires on `opened`, `synchronize` and `reopened`, and all
-# three are about the head; a base branch that moves afterwards recomputes the
-# merge ref and starts no run, so the green check was never recomputed. Of the
-# eight pull requests merged before this change, four went in with a head one
-# commit behind `main`, which means that check had certified a composition
-# that never landed. The run on `main` is the composition check, it always
-# was, and the paragraph above `concurrency` is why it is the one run this
-# file never cancels. Spec 12 already rules this the ordinary race
-# (`docs/spec/12-check-layer.md`, "Hook and CI can disagree only when the
-# mainline moved"). Turning `strict_required_status_checks_policy` on in the
-# `Protect main` ruleset is what would close it, at the cost of re-running
-# every branch that a merge leaves behind, and it is off on purpose.
+# 3. A condition may take work away and must never grant it. The job-level
+#    `if:` below is sound only because deleting it gives a fork the run it
+#    already had. Do not replace the `pull_request` trigger with a filter:
+#    a skipped workflow leaves a required check pending forever.
+#
+# 4. Job names stay literals. GitHub does not evaluate an expression in a
+#    job name for a job it skips, and prints the source text instead.
+#
+# 5. `engine/target` is never carried between self-hosted jobs. Two
+#    attempts broke `actions/checkout` and then `.githooks/fixtures.sh`.
+#    sccache is what makes a cold target directory cheap.
+#
+# `runner.environment` reads `self-hosted` on the container and tells the two
+# runners apart wherever a step differs between them. `--break-system-packages`
+# on each `pip install --user` below is what the self-hosted image's PEP 668
+# Python needs, and pip accepts it where PEP 668 does not apply.
 #
 #   gh variable set CI_RUNNER --body '["self-hosted", "headwater"]'  # opt in, push events only
 #   gh variable delete CI_RUNNER                                    # back to ubuntu-latest
 #   gh variable list                                                # which one is live
-#
-# The self-hosted runner itself is a single ephemeral container per job (see
-# the `github-runner` role in the `ansible-config` repository), never a job
-# that keeps state past its own run. `push` is the only trusted trigger this
-# file has, and "trusted" here means "written by someone with commit access
-# to this repository", not "read by a person before it ran": the build-order
-# agents push branches and open pull requests before anything of theirs is
-# reviewed. A dependency a `cargo build` pulls in can still run arbitrary
-# code as that push's own `build.rs`, so the container is what bounds a
-# compromised dependency to one job's cache volumes and a network policy
-# that reaches nowhere on this host or its LAN — it is not a claim that
-# everything reaching this runner was read first.
-#
-# Both images carry a rustup-managed stable toolchain rather than a distro one,
-# so the pinned floor is still what the container command in
-# `engine/README.md` is for. `--break-system-packages` on every
-# `pip install --user` below is what a PEP 668 Python needs, which the
-# self-hosted runner's image is and which the comment ahead of the `mkdocs`
-# install already names as a thing a contributor hits reproducing this
-# locally. pip accepts the flag where PEP 668 does not apply, so it costs the
-# hosted image nothing.
-#
-# A hosted job restores a cargo cache and a pip cache, and the self-hosted
-# runner takes neither, and caches a different thing in a different way. Its
-# `~/.cargo/registry` and its sccache directory are bind mounts that outlive
-# each job's container, so restoring a GitHub Actions cache over them would
-# be an upload and a download in place of a directory that is already
-# correct. Its `engine/target` is NOT carried across jobs and must not be:
-# two attempts to do it broke `actions/checkout` and then
-# `.githooks/fixtures.sh` in turn (the `github-runner` role in
-# `ansible-config` records both, and what sccache does instead). So a
-# self-hosted job always builds into a cold target directory, and sccache
-# is what makes that cheap. `runner.environment` is what tells the two
-# runners apart, and it reads `self-hosted` for this container exactly as it
-# would for a bare-metal self-hosted runner — nothing here distinguishes the
-# two, because this repository has only ever had the containerized one.
 
 name: CI
 
-# `branches: ['**']` rather than `[main]`: a feature-branch push is exactly
-# the trusted-but-unreviewed case the block above describes, and it is also
-# the case this runner exists to make fast. What makes a `push` eligible for
-# self-hosted at all is that it is a `push`, regardless of which branch it
-# lands on — see above.
+# `branches: ['**']` rather than `[main]`: a feature-branch push is written by
+# someone with commit access and read by nobody yet, which is the case the
+# self-hosted container exists to bound and to make fast. What makes a `push`
+# eligible for self-hosted is that it is a `push`, whichever branch it lands on.
 on:
   push:
     branches: ['**']
@@ -143,14 +86,9 @@ on:
 # Cancellation is for every ref but `main`. A run on `main` is the only thing
 # that reads the composition of merges, so two merges landing a minute apart
 # must produce two verdicts rather than one; cancelling the first would lose
-# the only check that ever sees that pair together.
-#
-# This test read `github.event_name == 'pull_request'` until the jobs below
-# started skipping the duplicate `pull_request` run, and that reading exempted
-# from cancellation exactly the runs that occupy the self-hosted runner. The
-# queue the paragraph above describes is made of push runs. Naming the ref
-# rather than the event cancels a superseded run whichever event started it,
-# and keeps every run on `main`.
+# the only check that ever sees that pair together. Key it on the ref and never
+# on the event: keyed on the event, it exempted exactly the push runs that
+# occupy the self-hosted runner.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
@@ -160,46 +98,16 @@ permissions:
 
 jobs:
   engine:
-    # This name is a context the `Protect main` ruleset requires. A same-repo
-    # pull request now puts two check-runs of it on one commit: this job's
-    # real conclusion from the `push` run, and the skipped one from the
-    # `pull_request` run below. That is safe, because GitHub reads two
-    # check-runs of one name conjunctively rather than latest-wins. Its own
-    # troubleshooting page states the rule for a name shared by two sources
-    # ("both must pass"), and the failure it documents for duplicate job names
-    # is a blocked merge rather than a masked one. Three superseded commits on
-    # #999 and #1001 carry a failing `push` run beside a succeeding or
-    # cancelled `pull_request` run, in both completion orders, and the
-    # combined state is `FAILURE` in every one.
-    #
-    # Do not try to dodge the duplicate by making this name an expression that
-    # renames the skipped job. That was tried on 2026-09-21 and reverted the
-    # same hour: `jobs.<job_id>.name` does accept the `github` context and the
-    # `push` run evaluated it correctly, but GitHub does not evaluate the
-    # expression for a job it skips. Both skipped check-runs reported with the
-    # raw expression text as their name, on the pull request page, on every
-    # pull request. The commit that did it and the commit that undid it are
-    # both on this branch, with the measurement in the second one.
+    # A context the `Protect main` ruleset requires, so it stays a literal
+    # (header rule 4). A same-repo pull request puts two check-runs of it on
+    # one commit, and GitHub reads the pair conjunctively: a skipped one never
+    # masks a failed one. The evaluation the header names carries the
+    # measurement.
     name: Engine tests
-    # A pull request opened from a branch of this repository already has a
-    # `push` run on the same commit, and that run is the one the ruleset
-    # reads: a check-run attaches to the head SHA whichever event started it,
-    # under the same name. So the `pull_request` run for such a branch builds
-    # the same tree a second time. This skips it. A job skipped by its own
-    # `if` reports success to a required status check, which is what keeps
-    # `Protect main` satisfiable; a workflow skipped by a trigger filter does
-    # not, and leaves the check pending forever, which is why the
-    # `pull_request` trigger above stays.
-    #
-    # This decides which of two runs does the work, never which runner a run
-    # may use. `runs-on` below remains the only place self-hosted eligibility
-    # is decided, and that is why reading `head.repo.full_name` is sound here
-    # and would not be there. The field comes from the webhook and a pull
-    # request's author cannot forge it, but the author does own this file on
-    # their own fork, so a fork can delete this line. A fork that deletes it
-    # gets the run it would have got anyway: `ubuntu-latest`, behind the same
-    # approval click. A condition that can only remove work grants a fork
-    # nothing it did not already hold.
+    # Skips the `pull_request` run for a branch of this repository, whose
+    # `push` run on the same commit already answered. It takes work away and
+    # grants none (header rule 3), which is why it may read a pull request
+    # field here and `runs-on` below may not.
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     # `CI_RUNNER` is only read on a `push`, and its own unset fallback is
     # `ubuntu-latest`: the self-hosted labels are an opt-in the variable has

@@ -114,6 +114,7 @@ nav:
       - "The serving boundary — what is advertised, what is withheld, what is written back": "evaluations/the-serving-boundary.md"
       - "The three discovery misses of 2026-09-16 have three different mechanisms, and only one is routing precision": "evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md"
       - "Theoretical foundations": "evaluations/theoretical-foundations.md"
+      - "Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts": "evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md"
       - "Warrant — what stands behind a document, and who vouched for it": "evaluations/warrant-and-adjudication.md"
       - "What a check can know — the Q5 and Q21 evaluation": "evaluations/what-a-check-can-know.md"
       - "Why corpus counts are derived, not stored": "evaluations/why-corpus-counts-are-derived-not-stored.md"
