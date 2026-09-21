@@ -473,13 +473,12 @@ impl Graph {
         // and then of the document that cites it. Both keys are needed: the
         // anchor alone leaves the lines of one anchor in edge-discovery order,
         // which is not stable under an edit elsewhere in the corpus.
-        // Sorted, and printed, on two different strings of one edge: the
-        // identity orders the rows so an edit elsewhere in the corpus cannot
-        // reshuffle them, and the display string is what a reader sees —
-        // `Target::anchor_display`'s doc comment states why those are not one
-        // string for a list anchor.
-        let mut citations: Vec<(String, String, String, String, String, Option<String>)> =
-            Vec::new();
+        // The rows sort on the line a reader sees, so the recorded file reads
+        // in order. A list anchor's identity is length-prefixed and sorts
+        // apart from its display (`Target::anchor_display`'s doc comment says
+        // why the two differ), so the identity only breaks a tie between two
+        // lists whose displays are equal.
+        let mut citations: Vec<(String, String, String, Option<String>)> = Vec::new();
         for edge in &self.edges {
             let Target::Anchor {
                 anchor_kind,
@@ -492,25 +491,22 @@ impl Graph {
             else {
                 continue;
             };
+            let display = edge
+                .target
+                .anchor_display()
+                .unwrap_or_else(|| normalized.clone());
             citations.push((
+                format!("  {anchor_kind} `{display}` via {resolver}"),
                 normalized.clone(),
-                edge.target
-                    .anchor_display()
-                    .unwrap_or_else(|| normalized.clone()),
                 edge.source.id.clone(),
-                anchor_kind.clone(),
-                resolver.clone(),
                 excluded_by.clone(),
             ));
         }
         citations.sort();
         if !citations.is_empty() {
             out.push_str("anchors\n");
-            for (_, display, source, anchor_kind, resolver, excluded_by) in citations {
-                let _ = writeln!(
-                    out,
-                    "  {anchor_kind} `{display}` via {resolver}\n    cited by {source}"
-                );
+            for (line, _, source, excluded_by) in citations {
+                let _ = writeln!(out, "{line}\n    cited by {source}");
                 if let Some(pattern) = excluded_by {
                     let _ = writeln!(
                         out,

@@ -11,6 +11,9 @@ provenance:
   drafted_by: claude-fable-5-1
   activity: measure+draft
   evidence_basis: evidenced
+relations:
+  governs:
+    - .claude/commands/next-run.md
 ---
 
 # Orchestration prose has one owner per sentence

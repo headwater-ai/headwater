@@ -13,6 +13,8 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  governs:
+    - .headwater/corpus.json
   traces_to:
     - HW-EVAL-the-serving-boundary
 ---

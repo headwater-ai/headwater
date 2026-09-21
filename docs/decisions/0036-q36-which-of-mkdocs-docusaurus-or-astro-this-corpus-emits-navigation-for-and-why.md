@@ -13,6 +13,9 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  governs:
+    - mkdocs.yml
+    - .headwater/nav.yml
   traces_to:
     - HW-SPEC-vision-and-scope
     - HW-SPEC-taxonomy-model

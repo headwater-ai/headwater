@@ -14,6 +14,8 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  governs:
+    - engine/crates/check/src/scope.rs
   traces_to:
     - HW-SPEC-check-layer
     - HW-SPEC-assurance-model

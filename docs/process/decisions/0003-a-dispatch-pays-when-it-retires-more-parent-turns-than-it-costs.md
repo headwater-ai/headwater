@@ -11,6 +11,9 @@ provenance:
   drafted_by: claude-fable-5-1
   activity: measure+draft
   evidence_basis: evidenced
+relations:
+  governs:
+    - tools/run/run-census.sh
 ---
 
 # A dispatch pays when it retires more parent turns than it costs

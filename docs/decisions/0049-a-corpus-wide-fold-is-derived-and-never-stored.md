@@ -12,6 +12,8 @@ provenance:
   activity: measure+draft
   evidence_basis: evidenced
 relations:
+  governs:
+    - .gitattributes
   traces_to:
     - HW-EVAL-what-a-check-can-know
     - engine/crates/census/src/census.rs

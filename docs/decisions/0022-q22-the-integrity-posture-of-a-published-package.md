@@ -13,6 +13,8 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  governs:
+    - engine/crates/resolve/tests/publish.rs
   traces_to:
     - HW-SPEC-distribution-and-federation
 ---

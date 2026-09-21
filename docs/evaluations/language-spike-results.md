@@ -13,6 +13,8 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  governs:
+    - tools/engine/language-spike/**
   cited_by:
     - HW-REG-decisions
     - HW-SPEC-engine-architecture

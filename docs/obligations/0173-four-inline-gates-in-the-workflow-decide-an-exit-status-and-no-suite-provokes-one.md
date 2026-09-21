@@ -13,6 +13,8 @@ provenance:
   activity: measure+draft
   evidence_basis: evidenced
 relations:
+  governs:
+    - .github/workflows/ci.yml
   traces_to:
     - .github/workflows/ci.yml
     - HW-OBL-0145

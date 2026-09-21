@@ -7,12 +7,13 @@ last_verified: 2026-09-07
 title: "headwater taxonomy"
 relations:
   governs:
-    - engine/crates/cli/src/lib.rs
-    - engine/crates/cli/src/main.rs
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/resolve/src/lib.rs
     - engine/crates/audit/src/lib.rs
     - engine/crates/audit/src/reading.rs
     - engine/crates/compat/src/lib.rs
+    - .headwater/taxonomy.lock
+    - .headwater/adoption.jsonl
 ---
 
 # headwater taxonomy

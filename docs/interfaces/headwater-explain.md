@@ -7,8 +7,7 @@ last_verified: 2026-09-12
 title: "headwater explain"
 relations:
   governs:
-    - engine/crates/cli/src/lib.rs
-    - engine/crates/cli/src/main.rs
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/query/src/lib.rs
     - engine/crates/query/src/explain.rs
     - engine/crates/query/src/json.rs

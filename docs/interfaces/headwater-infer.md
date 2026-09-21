@@ -7,8 +7,8 @@ last_verified: 2026-08-25
 title: "headwater infer"
 relations:
   governs:
-    - engine/crates/cli/src/lib.rs
-    - engine/crates/cli/src/main.rs
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
+    - .headwater/taxonomy.lock
 ---
 
 # headwater infer

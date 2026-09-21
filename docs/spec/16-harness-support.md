@@ -21,6 +21,7 @@ relations:
     - .claude/settings.json
     - .claude/hooks/fixtures.sh
     - .claude/hooks/fixtures-live.sh
+    - AGENTS.md
 ---
 
 # Harness support

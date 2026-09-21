@@ -12,6 +12,8 @@ provenance:
   activity: measure+draft
   evidence_basis: evidenced
 relations:
+  governs:
+    - taxonomy-source/headwater-standard/assemblies/starter/assembly.yml
   traces_to:
     - HW-DR-0044
     - HW-DR-0003

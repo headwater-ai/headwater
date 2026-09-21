@@ -13,8 +13,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   governs:
-    - engine/crates/cli/src/lib.rs
-    - engine/crates/cli/src/main.rs
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/vcs/src/lib.rs
     - .githooks/change-manifest
 ---

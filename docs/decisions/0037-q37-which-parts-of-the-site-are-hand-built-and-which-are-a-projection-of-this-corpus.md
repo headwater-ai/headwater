@@ -24,6 +24,7 @@ relations:
     - site/tutorial/index.html
     - site/glossary/index.html
     - site/changelog/index.html
+    - site/**
   traces_to:
     - .headwater/notes/website-design-brief.md
 ---

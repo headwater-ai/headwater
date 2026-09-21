@@ -7,7 +7,7 @@ last_verified: 2026-09-06
 title: "headwater json"
 relations:
   governs:
-    - engine/crates/cli/src/main.rs
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/yaml/src/json.rs
 ---
 

@@ -14,6 +14,8 @@ provenance:
   activity: draft
   evidence_basis: evidenced
 relations:
+  governs:
+    - tools/probe/probe-record.sh
   traces_to:
     - HW-SPEC-ai-integration
 ---

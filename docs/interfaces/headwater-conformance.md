@@ -7,8 +7,7 @@ last_verified: 2026-09-07
 title: "headwater conformance"
 relations:
   governs:
-    - engine/crates/cli/src/lib.rs
-    - engine/crates/cli/src/main.rs
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/conformance/src/lib.rs
     - engine/crates/conformance/src/render.rs
     - engine/crates/conformance/src/json.rs

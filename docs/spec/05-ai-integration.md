@@ -23,9 +23,7 @@ relations:
     - HW-EVAL-warrant-and-adjudication
   governs:
     - .claude/hooks/**
-    - .claude/skills/fixtures.sh
-    - .claude/skills/headwater-authoring/SKILL.md
-    - .claude/skills/headwater-taxonomy/SKILL.md
+    - [.claude/skills/fixtures.sh, .claude/skills/headwater-authoring/SKILL.md, .claude/skills/headwater-taxonomy/SKILL.md]
     - .claude/agents/headwater-maintainer.md
 ---
 

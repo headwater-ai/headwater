@@ -12,6 +12,8 @@ provenance:
   activity: draft+revise
   evidence_basis: evidenced
 relations:
+  governs:
+    - engine/crates/check/tests/fixtures.rs
   proves:
     - HW-AC-0002
 ---
