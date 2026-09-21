@@ -227,9 +227,10 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0190](../obligations/0190-a-voice-regime-carries-a-forbid-list-so-a-normative-keyword-rule-has-no-form.md) — A voice regime carries a forbid list, so a normative keyword rule has no form
 - [HW-OBL-0191](../obligations/0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md) — An unknown discriminator value removes a document from every check and no gate reports it
 - [HW-OBL-0192](../obligations/0192-assumptions-that-a-library-entry-takes-where-the-specification-does-not-speak.md) — Assumptions that a library entry takes where the specification does not speak
-- [HW-OBL-0193](../obligations/0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md) — Admission criterion 5 has no reading for an entry that serves neither core purpose
 - [HW-OBL-0194](../obligations/0194-the-base-ships-one-voice-regime-and-a-prospective-document-has-none.md) — The base ships one voice regime and a prospective document has none
 - [HW-OBL-0195](../obligations/0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md) — A requirement has no identity, so a descoped requirement has no form
+
+[HW-OBL-0193](../obligations/0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md) is discharged and it is not in the list above. [HW-DR-0079](../decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md) rules that a full entry which serves neither core purpose with a kind of its own names the base declaration that serves the purpose, or extends a base kind that already serves it. `decision-record` and `brd-prd` each take one of those two readings.
 
 ## What else each decision left open
 

@@ -1,11 +1,14 @@
 ---
 id: HW-OBL-0193
-status: current
-status_since: 2026-09-11
-summary: "Criterion 5 escapes only a facet-only overlay, so a full entry with a third reader intent has no reading of it."
-last_verified: 2026-09-11
+status: discharged
+status_since: 2026-09-21
+summary: "HW-DR-0079 rules that a full entry names or extends a core-serving kind, and states which reading each of the three affected entries takes."
+last_verified: 2026-09-21
 title: "Admission criterion 5 has no reading for an entry that serves neither core purpose"
 waiting_on: ruling
+relations:
+  traces_to:
+    - HW-DR-0079
 provenance:
   warrant: asserted
   agency: agent
@@ -33,3 +36,7 @@ The owner owes a wording of criterion 5 that either admits an entry with a third
 ## Discharge
 
 This record discharges when criterion 5 states what it asks of an entry that serves neither core purpose, with the reason. A ruling that the present wording is correct discharges it as fully as a ruling that changes the wording. Either one says which reading the two entries should take.
+
+## Discharge, 2026-09-21
+
+**[HW-DR-0079](../decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md) states the reading, and this record closes.** A full entry that serves neither core purpose with a kind of its own now satisfies criterion 5 in one of two ways. It names the base declaration that serves each purpose, or it extends a base kind that already serves it. `decision-record` takes the second reading and `brd-prd` takes the first. `evidence-and-obligation` takes neither, and its admission stays refused on criteria 1 and 4, unchanged by this ruling. The [library index](../taxonomies/README.md#admission-criteria) carries the reworded criterion.
