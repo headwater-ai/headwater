@@ -8611,9 +8611,9 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0186",
-          "status": "current",
+          "status": "discharged",
           "status_since": "2026-09-21",
-          "summary": "The templates half is ruled by HW-DR-0079. What stays open is criterion 4: whether a facet-only entry's worked corpus, typed under a borrowed kind, is a demonstration or a borrowing.",
+          "summary": "HW-DR-0079 rules the templates half, and criterion 4 now says a facet-only entry's corpus borrows a kind and demonstrates the facet, not the kind.",
           "last_verified": "2026-09-21",
           "title": "A facet-only entry has no kind, and the entry anatomy asks for two things that presume one",
           "waiting_on": "ruling",

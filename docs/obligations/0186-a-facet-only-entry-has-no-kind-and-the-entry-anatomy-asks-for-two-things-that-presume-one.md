@@ -1,8 +1,8 @@
 ---
 id: HW-OBL-0186
-status: current
+status: discharged
 status_since: 2026-09-21
-summary: "The templates half is ruled by HW-DR-0079. What stays open is criterion 4: whether a facet-only entry's worked corpus, typed under a borrowed kind, is a demonstration or a borrowing."
+summary: "HW-DR-0079 rules the templates half, and criterion 4 now says a facet-only entry's corpus borrows a kind and demonstrates the facet, not the kind."
 last_verified: 2026-09-21
 title: "A facet-only entry has no kind, and the entry anatomy asks for two things that presume one"
 waiting_on: ruling
@@ -44,3 +44,9 @@ The same hole in criterion 4 is the half of [#520](https://github.com/headwater-
 **The criterion-2 half discharged on 2026-09-21.** [HW-DR-0079](../decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md) states what a facet-only entry ships under criterion 2, with the reason, and the library index carries it.
 
 **The criterion-4 half stays open.** This record discharges the rest of it when the library index states what a facet-only entry's worked corpus counts as under criterion 4. The worked corpus of a facet-only entry types every page under a kind that another entry owns. The section contract of that kind then reaches the page. Whoever rules on criterion 4 states whether that is a demonstration or a borrowing. A ruling that calls it a borrowing needs a form for a corpus that demonstrates facets alone.
+
+## Discharge, 2026-09-21
+
+**The criterion-4 half is ruled, and this record closes.** It is a borrowing, not a demonstration of the borrowed kind. The [library index](../taxonomies/README.md#admission-criteria) now states criterion 4's own reading for a facet-only entry's worked corpus. The corpus types pages under a kind it borrows from another entry, and it names that kind. It demonstrates the entry's own facet, not the borrowed kind's purpose.
+
+The `diataxis` entry is the case this record measured. Its fixture corpus types every mode page as `specification`, and it carries the base kind's `Scope` and `Behavior` headings. It demonstrates the `diataxis` facets those pages carry, not the `specification` kind's own purpose. A reviewer could already read this in the entry's own doctrine. The library index now states it as a reading of criterion 4 itself. So a second facet-only entry meets a stated form, not an unread gap.
