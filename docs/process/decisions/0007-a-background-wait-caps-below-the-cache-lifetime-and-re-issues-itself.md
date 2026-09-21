@@ -11,6 +11,11 @@ provenance:
   drafted_by: claude-sonnet-5
   activity: measure+draft
   evidence_basis: evidenced
+relations:
+  governs:
+    - .claude/hooks/wait.sh
+    - tools/run/run-census.sh
+    - .claude/skills/hw-run-policy/SKILL.md
 ---
 
 # A background wait caps below the cache lifetime and re-issues itself
