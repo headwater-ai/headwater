@@ -13,7 +13,7 @@
 #
 # `engine/.cargo/config.toml` ships `dev-release-cli` as the fast build the
 # build order recommends, and it writes `engine/target/dev-release/headwater`.
-# Nine consumers under `.claude/` and `tools/` already looked for either
+# Thirteen consumers under `.claude/` and `tools/` already looked for either
 # profile, each as its own copy of the same four lines, and three did not look
 # for `dev-release` at all: `.claude/tutorial/fixtures.sh`,
 # `.claude/tutorial/drive.py` and `tools/taxonomy/n8n-fixtures.sh` reported "no
@@ -24,17 +24,29 @@
 #
 # # WHAT EACH JUDGE READS
 #
-# THE POPULATION is every `*.sh` and `*.py` file under `.claude/` and `tools/`
-# (this suite excludes only its own worktree copy under
-# `.claude/worktrees/**`, which is a checked-out branch and not this
-# repository's own tree) whose bytes contain the literal
-# `target/release/headwater`. `.githooks/` is a sibling of both and is never
-# scanned, because `.githooks/pre-commit`, `.githooks/fixtures.sh` and the two
-# scripts beside them carry their own copy of the check on purpose — a
-# git hook runs from whatever tree `core.hooksPath` names, and must not depend
-# on a file outside `.githooks/` that a clone might not have fetched yet. Their
-# own comments state that reason; this suite does not restate it by scanning
-# them too.
+# THE POPULATION is every file under `.claude/` and `tools/` (this suite
+# excludes only its own worktree copy under `.claude/worktrees/**`, which is
+# a checked-out branch and not this repository's own tree) that `is_script`
+# counts and whose bytes contain the literal `target/release/headwater`.
+# `is_script` is a `.sh`/`.py` suffix, an executable bit or a `#!` opening —
+# not a name pattern, because this repository ships real no-extension POSIX
+# shell scripts in this same scope (`tools/cap-run`, `tools/hw-cargo`, both
+# executable and both starting `#!/bin/sh`), and a `*.sh`/`*.py` name filter
+# is exactly what this suite shipped with and had to widen: a planted stub in
+# that shape passed the day this suite landed, because `find` never looked at
+# a file `find -name '*.sh' -o -name '*.py'` does not match. The same
+# widening first swept in `.claude/skills/headwater-engine/SKILL.md`, a
+# documentation page whose own invocation example quotes the literal in
+# prose; `is_script` excludes it correctly, because that file is neither
+# executable nor `.sh`/`.py` nor shebang-opened, which is the same three-part
+# test every real script in this population passes.
+#
+# `.githooks/` is a sibling of both and is never scanned, because
+# `.githooks/pre-commit`, `.githooks/fixtures.sh` and the two scripts beside
+# them carry their own copy of the check on purpose — a git hook runs from
+# whatever tree `core.hooksPath` names, and must not depend on a file outside
+# `.githooks/` that a clone might not have fetched yet. Their own comments
+# state that reason; this suite does not restate it by scanning them too.
 #
 # A member of the population is COMPLIANT when any of the following holds:
 #
@@ -115,6 +127,24 @@ allowed() {
     esac
 }
 
+# is_script ROOT NAME — true when the file at ROOT/NAME is something this
+# suite treats as a script rather than as prose that happens to quote a path.
+# `.sh` and `.py` still count by name, and so does a `.claude/skills/*.md`
+# code block that quotes an example invocation NOT because it is prose (it
+# is), but because it fails both tests below and this comment records why it
+# is meant to. Beyond the two named suffixes, a file counts when it is
+# executable or opens with `#!`, which is what a real no-extension script in
+# this scope looks like: `tools/cap-run` and `tools/hw-cargo` are both, and
+# neither carries a name pattern this suite could have matched instead.
+is_script() {
+    case $2 in
+        *.sh | *.py) return 0 ;;
+    esac
+    [ -x "$1/$2" ] && return 0
+    [ "$(head -c 2 "$1/$2" 2>/dev/null)" = '#!' ] && return 0
+    return 1
+}
+
 # compliant ROOT NAME — true when the file at ROOT/NAME is a compliant member
 # of the population: allowlisted, carrying the `dev-release` literal, or
 # referencing the shared resolver.
@@ -128,14 +158,15 @@ compliant() {
 }
 
 # population ROOT — one path per line, relative to ROOT, under
-# ROOT/.claude and ROOT/tools (excluding ROOT/.claude/worktrees) whose bytes
-# contain the literal `target/release/headwater`.
+# ROOT/.claude and ROOT/tools (excluding ROOT/.claude/worktrees), that
+# `is_script` counts and whose bytes contain the literal
+# `target/release/headwater`.
 population() {
     (
         cd "$1" || exit 1
-        find .claude tools \( -name '*.sh' -o -name '*.py' \) -type f \
-            -not -path './.claude/worktrees/*' 2>/dev/null
+        find .claude tools -type f -not -path './.claude/worktrees/*' 2>/dev/null
     ) | while IFS= read -r p; do
+        is_script "$1" "$p" || continue
         grep -qF 'target/release/headwater' "$1/$p" 2>/dev/null && printf '%s\n' "$p"
     done | sort
 }
@@ -189,6 +220,41 @@ EOF
 bad_scratch=$(noncompliant "$scratch/tree")
 same "a new single-profile script reddens the guard, by name" \
     ".claude/hooks/new-consumer.sh" "$bad_scratch"
+
+# The same shape, with no file extension at all — the decisive case for the
+# extension filter this suite shipped with and then had to remove. `find
+# .claude tools -name '*.sh' -o -name '*.py'` never looked at a file named
+# plainly, the way `tools/cap-run` and `tools/hw-cargo` really are named, so a
+# planted stub in exactly this shape passed a version of this suite that
+# scanned by name pattern instead of by directory alone.
+cat >"$scratch/tree/tools/repo/no-ext-stub" <<'EOF'
+#!/bin/sh
+bin="$root/engine/target/release/headwater"
+EOF
+same "a new single-profile script with no file extension also reddens the guard, by name" \
+    "tools/repo/no-ext-stub" "$(noncompliant "$scratch/tree" | grep -Fx 'tools/repo/no-ext-stub')"
+rm -f "$scratch/tree/tools/repo/no-ext-stub"
+
+# The other half of `is_script`: no shebang, but the executable bit set. A
+# no-extension script written without one still reddens.
+printf 'bin="$root/engine/target/release/headwater"\n' >"$scratch/tree/tools/repo/exec-no-shebang-stub"
+chmod +x "$scratch/tree/tools/repo/exec-no-shebang-stub"
+same "an executable no-extension file with no shebang also reddens the guard, by name" \
+    "tools/repo/exec-no-shebang-stub" "$(noncompliant "$scratch/tree" | grep -Fx 'tools/repo/exec-no-shebang-stub')"
+rm -f "$scratch/tree/tools/repo/exec-no-shebang-stub"
+
+# A documentation page that quotes the same path in prose is neither
+# executable, `.sh`/`.py`, nor shebang-opened, and `is_script` excludes it
+# from the population entirely — it never reaches `compliant` at all, and a
+# doc that shows the release path as a worked example is not asked to also
+# explain `dev-release`. This is the shape of
+# `.claude/skills/headwater-engine/SKILL.md`, which the widened scan first
+# swept in by accident.
+printf '# An example\n\n    engine/target/release/headwater check --root .\n' \
+    >"$scratch/tree/tools/repo/example.md"
+same "a non-executable, non-shebang file naming the path in prose is not in the population at all" \
+    "" "$(population "$scratch/tree" | grep -Fx 'tools/repo/example.md')"
+rm -f "$scratch/tree/tools/repo/example.md"
 
 # Repair it the first sanctioned way: carry the dev-release literal inline,
 # the way the nine pre-existing correct consumers do.
