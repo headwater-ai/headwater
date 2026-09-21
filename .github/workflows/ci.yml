@@ -23,81 +23,49 @@
 # than a count of two: an action from anywhere else runs code nobody here
 # reviews, on every push, with a token in the environment.
 #
-# Which runner a job takes depends on how the run was created, never on a
-# value a pull request can flip. `github.event_name` comes from the webhook
-# that started the run, and a fork cannot make that webhook say `push`: a
-# `push` event fires only for a ref actually written to this repository,
-# which needs write access nobody outside this project holds. A
-# `pull_request` event, by contrast, evaluates the workflow file as the
-# pull request's own author wrote it — including this file — so no
-# condition written here can stop a hostile fork from deleting this very
-# line in its own copy and hardcoding `self-hosted` in its place. What
-# actually stops that run from executing is this repository's fork-PR
-# approval setting (`fork_pr_contributor_approval: all_external_contributors`,
-# the strictest GitHub offers): every run started by someone outside this
-# repository holds for a manual click before anything on it runs. Never give
-# that click to a run whose diff touches `.github/` without reading the diff
-# first — that is the actual boundary, and no expression below substitutes
-# for reading it.
+# Where a job runs, what this file trusts, and what it tests before a merge
+# are stated as a whole in docs/evaluations/two-triggers-one-verdict-how-this-
+# repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md, with the
+# measurements behind each rule. This header keeps only what an editor of
+# this file must obey. Read that document before changing any of them.
 #
-# So self-hosted eligibility is written as `github.event_name == 'push'`,
-# never as a check on which repository opened the pull request: the latter
-# lives in a field the pull request's own author controls, the former does
-# not. `CI_RUNNER` selects the labels for a push-triggered run, and an unset
-# variable now falls back to `ubuntu-latest` — the reverse of the read this
-# comment gave before this repository had a self-hosted runner to consider.
-# A `pull_request`-triggered run takes `ubuntu-latest` unconditionally, with
-# no variable read at all: this repository is public, GitHub-hosted Actions
-# minutes on a public repository are unmetered, and there is no cost
-# argument left for spending them on code nobody here has reviewed yet.
+# 1. `runs-on` decides self-hosted eligibility on `github.event_name` and on
+#    nothing else. Never key it on which repository opened a pull request,
+#    or on any field a pull request's author can influence. A fork runs its
+#    own copy of this file, so no condition here defends against one.
+#
+# 2. The real boundary is `fork_pr_contributor_approval:
+#    all_external_contributors`, which holds every outside run for a manual
+#    click. Never approve a run whose diff touches `.github/` without reading
+#    that diff first. No expression in this file substitutes for reading it.
+#
+# 3. A condition may take work away and must never grant it. The job-level
+#    `if:` below is sound only because deleting it gives a fork the run it
+#    already had. Do not replace the `pull_request` trigger with a filter:
+#    a skipped workflow leaves a required check pending forever.
+#
+# 4. Job names stay literals. GitHub does not evaluate an expression in a
+#    job name for a job it skips, and prints the source text instead.
+#
+# 5. `engine/target` is never carried between self-hosted jobs. Two
+#    attempts broke `actions/checkout` and then `.githooks/fixtures.sh`.
+#    sccache is what makes a cold target directory cheap.
+#
+# `runner.environment` reads `self-hosted` on the container and tells the two
+# runners apart wherever a step differs between them. `--break-system-packages`
+# on each `pip install --user` below is what the self-hosted image's PEP 668
+# Python needs, and pip accepts it where PEP 668 does not apply.
 #
 #   gh variable set CI_RUNNER --body '["self-hosted", "headwater"]'  # opt in, push events only
 #   gh variable delete CI_RUNNER                                    # back to ubuntu-latest
 #   gh variable list                                                # which one is live
-#
-# The self-hosted runner itself is a single ephemeral container per job (see
-# the `github-runner` role in the `ansible-config` repository), never a job
-# that keeps state past its own run. `push` is the only trusted trigger this
-# file has, and "trusted" here means "written by someone with commit access
-# to this repository", not "read by a person before it ran": the build-order
-# agents push branches and open pull requests before anything of theirs is
-# reviewed. A dependency a `cargo build` pulls in can still run arbitrary
-# code as that push's own `build.rs`, so the container is what bounds a
-# compromised dependency to one job's cache volumes and a network policy
-# that reaches nowhere on this host or its LAN — it is not a claim that
-# everything reaching this runner was read first.
-#
-# Both images carry a rustup-managed stable toolchain rather than a distro one,
-# so the pinned floor is still what the container command in
-# `engine/README.md` is for. `--break-system-packages` on every
-# `pip install --user` below is what a PEP 668 Python needs, which the
-# self-hosted runner's image is and which the comment ahead of the `mkdocs`
-# install already names as a thing a contributor hits reproducing this
-# locally. pip accepts the flag where PEP 668 does not apply, so it costs the
-# hosted image nothing.
-#
-# A hosted job restores a cargo cache and a pip cache, and the self-hosted
-# runner takes neither, and caches a different thing in a different way. Its
-# `~/.cargo/registry` and its sccache directory are bind mounts that outlive
-# each job's container, so restoring a GitHub Actions cache over them would
-# be an upload and a download in place of a directory that is already
-# correct. Its `engine/target` is NOT carried across jobs and must not be:
-# two attempts to do it broke `actions/checkout` and then
-# `.githooks/fixtures.sh` in turn (the `github-runner` role in
-# `ansible-config` records both, and what sccache does instead). So a
-# self-hosted job always builds into a cold target directory, and sccache
-# is what makes that cheap. `runner.environment` is what tells the two
-# runners apart, and it reads `self-hosted` for this container exactly as it
-# would for a bare-metal self-hosted runner — nothing here distinguishes the
-# two, because this repository has only ever had the containerized one.
 
 name: CI
 
-# `branches: ['**']` rather than `[main]`: a feature-branch push is exactly
-# the trusted-but-unreviewed case the block above describes, and it is also
-# the case this runner exists to make fast. What makes a `push` eligible for
-# self-hosted at all is that it is a `push`, regardless of which branch it
-# lands on — see above.
+# `branches: ['**']` rather than `[main]`: a feature-branch push is written by
+# someone with commit access and read by nobody yet, which is the case the
+# self-hosted container exists to bound and to make fast. What makes a `push`
+# eligible for self-hosted is that it is a `push`, whichever branch it lands on.
 on:
   push:
     branches: ['**']
@@ -115,20 +83,32 @@ on:
 # other. `github.ref` is `refs/pull/N/merge` on a pull request and
 # `refs/heads/main` on a push, which separates them without a second key.
 #
-# Cancellation is for pull requests only. A run on `main` is the only thing
+# Cancellation is for every ref but `main`. A run on `main` is the only thing
 # that reads the composition of merges, so two merges landing a minute apart
 # must produce two verdicts rather than one; cancelling the first would lose
-# the only check that ever sees that pair together.
+# the only check that ever sees that pair together. Key it on the ref and never
+# on the event: keyed on the event, it exempted exactly the push runs that
+# occupy the self-hosted runner.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
 
 jobs:
   engine:
+    # A context the `Protect main` ruleset requires, so it stays a literal
+    # (header rule 4). A same-repo pull request puts two check-runs of it on
+    # one commit, and GitHub reads the pair conjunctively: a skipped one never
+    # masks a failed one. The evaluation the header names carries the
+    # measurement.
     name: Engine tests
+    # Skips the `pull_request` run for a branch of this repository, whose
+    # `push` run on the same commit already answered. It takes work away and
+    # grants none (header rule 3), which is why it may read a pull request
+    # field here and `runs-on` below may not.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     # `CI_RUNNER` is only read on a `push`, and its own unset fallback is
     # `ubuntu-latest`: the self-hosted labels are an opt-in the variable has
     # to name explicitly (`gh variable set CI_RUNNER --body '["self-hosted",
@@ -277,7 +257,7 @@ jobs:
       - name: A real mount point, on the self-hosted runner's own container
         # The container this job runs in is started with `--tmpfs
         # /home/runner/hw-mount:size=64m,uid=<runner uid>,gid=<runner
-        # gid>,mode=0755` (see the `github-runner` role in `ansible-config`),
+        # gid>,mode=0755` by whatever provisions the runner,
         # so route 1's tmpfs already exists before the runner process starts
         # — there is no `sudo` in this image to make one from inside the
         # job, and `mount` needs a capability Docker drops by default. This
@@ -291,7 +271,7 @@ jobs:
         # parent directory — `/mnt` is root-owned in this image, `/home/
         # runner` is this container's own runner user's home (`Permission
         # denied (os error 13)` making `/mnt/hw-mount~staging`, hit for real
-        # on mediaserver3's fourth smoke-test job).
+        # on the runner's fourth trial job).
         if: runner.environment == 'self-hosted'
         run: echo "HEADWATER_MOUNT_POINT=/home/runner/hw-mount" >> "$GITHUB_ENV"
       - name: Test
@@ -354,10 +334,13 @@ jobs:
         run: sudo umount "$RUNNER_TEMP/mount-point" 2>/dev/null || true
 
   headwater:
+    # The `engine` job carries why this name is a literal and must stay one.
     name: headwater check (advisory)
-    # Same expression as the `engine` job above, and the same reason: see
-    # the top-of-file comment on why `push` is the only trigger this file
+    # Both expressions are the `engine` job's, and so are both reasons: that
+    # job carries why a same-repo pull request skips here, and the
+    # top-of-file comment carries why `push` is the only trigger this file
     # trusts with the self-hosted label.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ${{ github.event_name == 'push' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
       - uses: actions/checkout@v4
@@ -1413,16 +1396,26 @@ jobs:
         # after it would otherwise fail the comparison at the end for a reason
         # that has nothing to do with the cache.
         run: echo "HEADWATER_NOW=$(date -u +%F)" >> "$GITHUB_ENV"
-      - name: The change this pull request carries
+      - name: The change this branch carries
         # The reading that this repository has never taken. Two rules declare
         # `needs_prior`, and an instance of one reaches no verdict in a run that
         # carries no change: 382 of 3498 instances report `change-scoped-only`
         # on a full-corpus run, which every step above is.
         #
-        # The anchor is the base of the pull request, which is what spec 12
+        # The anchor is the merge base with `main`, which is what spec 12
         # fixes for a proposed change. `.githooks/pre-commit` passes `HEAD`
         # instead, which is the other anchor that sentence names, so the commit
         # gate and this step ask the same rules two different questions.
+        #
+        # It read `github.event.pull_request.base.sha` while this step ran only
+        # on the `pull_request` event, and that named the same commit for a
+        # reason that does not survive the move to the `push` run: a
+        # `pull_request` run checks out `refs/pull/N/merge`, whose two parents
+        # are the head and that very SHA, so the base tip and the merge base
+        # were one commit. A `push` run checks out the branch itself, where a
+        # base tip that has moved is neither. Asking git for the merge base
+        # names spec 12's anchor on both events, and needs no field from the
+        # event payload to do it.
         #
         # Advisory, like the check above it and for the same reason. What
         # `warrant.promoted` produces is a count, and
@@ -1433,8 +1426,13 @@ jobs:
         # that blocks on it, and a pull request whose commits went through that
         # gate has already answered it.
         #
-        # Only on a pull request. A push to `main` has no proposed change to be
+        # Every ref but `main`. A push to `main` has no proposed change to be
         # the base of, and the changes in it were each described at the commit.
+        # What reaches here is a branch push, which is the run that answers for
+        # a pull request opened from this repository, and a fork's
+        # `pull_request` run, which is the only run such a pull request gets.
+        # Naming the ref rather than the event is what carries this step across
+        # the consolidation the top of this file describes.
         #
         # Its position is part of its correctness. The producer names every file
         # the index does not track, because an author's new document is one of
@@ -1457,9 +1455,11 @@ jobs:
         # corpus: it says the change could not be described, and a step that
         # went green on that would report a promotion count of zero over a
         # reading nobody took, which is the whole shape this exists to close.
-        if: github.event_name == 'pull_request'
+        if: github.ref != 'refs/heads/main'
         run: |
-          manifest=$(sh .githooks/change-manifest "${{ github.event.pull_request.base.sha }}" "$RUNNER_TEMP/change")
+          base=$(git merge-base origin/main HEAD)
+          echo "the merge base with main is $base"
+          manifest=$(sh .githooks/change-manifest "$base" "$RUNNER_TEMP/change")
           ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" \
             --change "$manifest" --format markdown > change.md
           # Onto the step log as well as into the summary. A step that writes
@@ -1467,7 +1467,7 @@ jobs:
           # this prints are the two numbers the reading is for.
           grep -E '^\*\*Scoped to a change\.\*\*|promoted from' change.md
           {
-            echo '## The change this pull request carries'
+            echo '## The change this branch carries'
             echo
             echo '<details><summary>the run, scoped to the change</summary>'
             echo

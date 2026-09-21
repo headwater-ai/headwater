@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 508,
-      "carried": 508,
+      "in the graph": 509,
+      "carried": 509,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 719,
-      "carried": 719,
+      "in the graph": 720,
+      "carried": 720,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -3003,6 +3003,32 @@
               "HW-SPEC-ai-integration",
               "HW-SPEC-check-layer",
               "HW-SPEC-glossary"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts",
+          "status": "current",
+          "status_since": "2026-09-21",
+          "summary": "The event that started a run decides which of two machines it takes, and every other condition in the workflow can only take work away.",
+          "last_verified": "2026-09-21",
+          "title": "Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              ".github/workflows/ci.yml"
             ]
           }
         }
@@ -7694,7 +7720,7 @@
           "id": "HW-OBL-0145",
           "status": "current",
           "status_since": "2026-09-06",
-          "last_verified": "2026-08-26",
+          "last_verified": "2026-09-21",
           "title": "The CI job named \\\"(advisory)\\\" carries every blocking shell suite in the repository",
           "summary": "The CI job named advisory blocks on eleven of its own steps, not the two its name describes.",
           "provenance": {
@@ -8138,7 +8164,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "The ruleset on the default branch requires zero approving reviews, which is the posture HW-DR-0034 named as the thing that erases its line. The corpus owes a ruling.",
-          "last_verified": "2026-09-06",
+          "last_verified": "2026-09-21",
           "title": "The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it",
           "waiting_on": "ruling",
           "provenance": {
@@ -13810,6 +13836,17 @@
           "id": "HW-SPEC-glossary",
           "path": "docs/spec/glossary.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/ci.yml",
+          "resolver": "source-tree"
         }
       },
       {
