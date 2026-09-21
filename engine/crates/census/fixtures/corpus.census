@@ -872,6 +872,8 @@ docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0009-dependen
   excluded: docs/taxonomies/**
 docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0010-hardened-cross-repo-ci-for-fork-pr-tests.md
   excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/sources/sysl/root.md
+  excluded: docs/taxonomies/**
 docs/taxonomies/decision-record/templates/decision.md
   excluded: docs/taxonomies/**
 docs/taxonomies/decision-record/templates/obligation_record.md

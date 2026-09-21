@@ -1,4 +1,4 @@
-568 seen, 381 classified, 381 checked, 7231 check instances
+569 seen, 381 classified, 381 checked, 7231 check instances
      21 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       3 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-16`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
