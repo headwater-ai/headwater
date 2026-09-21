@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 509,
-      "carried": 509,
+      "in the graph": 535,
+      "carried": 535,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 720,
-      "carried": 720,
+      "in the graph": 733,
+      "carried": 733,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -370,6 +370,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              "LICENSE"
+            ],
             "traces_to": [
               "HW-EVAL-first-contact"
             ]
@@ -453,6 +456,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              ".headwater/corpus.json"
+            ],
             "traces_to": [
               "HW-EVAL-the-serving-boundary"
             ]
@@ -669,6 +675,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              "engine/crates/resolve/tests/publish.rs"
+            ],
             "traces_to": [
               "HW-SPEC-distribution-and-federation"
             ]
@@ -966,7 +975,9 @@
           "relations": {
             "governs": [
               "engine/crates/cli/Cargo.toml",
-              "engine/crates/cli/src/lib.rs"
+              "engine/crates/cli/src/lib.rs",
+              "engine/crates/cli/tests/wiring.rs",
+              "engine/crates/cli/tests/verbs.rs"
             ]
           }
         }
@@ -1048,6 +1059,10 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              "mkdocs.yml",
+              ".headwater/nav.yml"
+            ],
             "traces_to": [
               "HW-SPEC-vision-and-scope",
               "HW-SPEC-taxonomy-model",
@@ -1088,7 +1103,8 @@
               "site/proof/index.html",
               "site/tutorial/index.html",
               "site/glossary/index.html",
-              "site/changelog/index.html"
+              "site/changelog/index.html",
+              "site/**"
             ],
             "traces_to": [
               ".headwater/notes/website-design-brief.md"
@@ -1444,7 +1460,8 @@
             ],
             "governs": [
               "tools/site/sitemap.py",
-              "tools/site/refresh-crawler-files.sh"
+              "tools/site/refresh-crawler-files.sh",
+              ".githooks/fixtures.sh"
             ]
           }
         }
@@ -1469,6 +1486,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              ".gitattributes"
+            ],
             "traces_to": [
               "HW-EVAL-what-a-check-can-know",
               "engine/crates/census/src/census.rs",
@@ -1588,6 +1608,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              "taxonomy-source/headwater-standard/assemblies/starter/assembly.yml"
+            ],
             "traces_to": [
               "HW-DR-0044",
               "HW-DR-0003"
@@ -1758,6 +1781,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              ".claude/tutorial/fixtures.sh"
+            ],
             "constrains": [
               "HW-DR-0039"
             ],
@@ -1911,7 +1937,8 @@
           "title": "The vendored package root moves under .headwater and the old root is named in a refusal",
           "relations": {
             "governs": [
-              "engine/crates/resolve/src/package.rs"
+              "engine/crates/resolve/src/package.rs",
+              ".headwater/packages"
             ]
           },
           "provenance": {
@@ -2057,6 +2084,12 @@
             "activity": "measure+draft",
             "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              "README.md",
+              "tools/headwater-bootstrap.sh"
+            ]
           }
         }
       },
@@ -2169,6 +2202,11 @@
             "drafted_by": "claude-sonnet-5",
             "activity": "measure+draft",
             "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              ".headwater/probe.yml"
+            ]
           }
         }
       },
@@ -2582,6 +2620,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              "tools/engine/language-spike/**"
+            ],
             "cited_by": [
               "HW-REG-decisions",
               "HW-SPEC-engine-architecture",
@@ -3229,9 +3270,12 @@
           "title": "headwater capture",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
-              "engine/crates/scaffold/src/reading.rs"
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
+              "engine/crates/scaffold/src/reading.rs",
+              ".headwater/capture-cost.jsonl"
             ]
           }
         }
@@ -3257,8 +3301,10 @@
           },
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/vcs/src/lib.rs",
               ".githooks/change-manifest"
             ]
@@ -3286,7 +3332,10 @@
           },
           "relations": {
             "governs": [
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/check/src/lib.rs"
             ]
           }
@@ -3305,8 +3354,10 @@
           "title": "headwater completions",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs"
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ]
             ]
           }
         }
@@ -3324,8 +3375,10 @@
           "title": "headwater conformance",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/conformance/src/lib.rs",
               "engine/crates/conformance/src/render.rs",
               "engine/crates/conformance/src/json.rs"
@@ -3347,8 +3400,10 @@
           "relations": {
             "governs": [
               "engine/crates/census/src/derived.rs",
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs"
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ]
             ]
           }
         }
@@ -3366,8 +3421,10 @@
           "title": "headwater explain",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/query/src/lib.rs",
               "engine/crates/query/src/explain.rs",
               "engine/crates/query/src/json.rs",
@@ -3390,8 +3447,10 @@
           "title": "headwater export",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/generate/src/export.rs"
             ]
           }
@@ -3410,8 +3469,10 @@
           "title": "headwater gate",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/check/src/gate.rs"
             ]
           }
@@ -3430,9 +3491,12 @@
           "title": "headwater generate",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
-              "engine/crates/generate/src/lib.rs"
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
+              "engine/crates/generate/src/lib.rs",
+              ".headwater/corpus.json"
             ]
           }
         }
@@ -3450,8 +3514,10 @@
           "title": "headwater help",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/cli/src/paint.rs"
             ],
             "traces_to": [
@@ -3473,8 +3539,10 @@
           "title": "headwater import",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/import/src/lib.rs"
             ]
           }
@@ -3493,8 +3561,11 @@
           "title": "headwater infer",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs"
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
+              ".headwater/taxonomy.lock"
             ]
           }
         }
@@ -3512,8 +3583,10 @@
           "title": "headwater init",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs"
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ]
             ]
           }
         }
@@ -3531,7 +3604,10 @@
           "title": "headwater json",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/yaml/src/json.rs"
             ]
           }
@@ -3550,8 +3626,10 @@
           "title": "headwater mcp",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/query/src/mcp.rs"
             ]
           }
@@ -3570,8 +3648,10 @@
           "title": "headwater neighbors",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/embed/src/lib.rs",
               "engine/crates/embed/src/wordpiece.rs"
             ]
@@ -3591,9 +3671,12 @@
           "title": "headwater new",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
-              "engine/crates/scaffold/src/lib.rs"
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
+              "engine/crates/scaffold/src/lib.rs",
+              ".headwater/capture-cost.jsonl"
             ]
           }
         }
@@ -3611,8 +3694,12 @@
           "title": "headwater probe",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/main.rs",
-              "engine/crates/probe/src/lib.rs"
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
+              "engine/crates/probe/src/lib.rs",
+              ".headwater/probe.yml"
             ]
           }
         }
@@ -3630,7 +3717,10 @@
           "title": "headwater query",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/query/src/lib.rs"
             ]
           }
@@ -3649,8 +3739,10 @@
           "title": "headwater route",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/query/src/lib.rs",
               "engine/crates/query/src/route.rs",
               "engine/crates/query/src/json.rs"
@@ -3679,8 +3771,12 @@
           },
           "relations": {
             "governs": [
-              "engine/crates/cli/src/main.rs",
-              "engine/crates/sweep/src/lib.rs"
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
+              "engine/crates/sweep/src/lib.rs",
+              "engine/crates/cli/tests/sweep.rs"
             ]
           }
         }
@@ -3698,12 +3794,16 @@
           "title": "headwater taxonomy",
           "relations": {
             "governs": [
-              "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs",
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
               "engine/crates/resolve/src/lib.rs",
               "engine/crates/audit/src/lib.rs",
               "engine/crates/audit/src/reading.rs",
-              "engine/crates/compat/src/lib.rs"
+              "engine/crates/compat/src/lib.rs",
+              ".headwater/taxonomy.lock",
+              ".headwater/adoption.jsonl"
             ]
           }
         }
@@ -5712,6 +5812,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              "engine/crates/check/src/scope.rs"
+            ],
             "traces_to": [
               "HW-SPEC-check-layer",
               "HW-SPEC-assurance-model"
@@ -8336,6 +8439,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              ".github/workflows/ci.yml"
+            ],
             "traces_to": [
               ".github/workflows/ci.yml",
               "HW-OBL-0145"
@@ -9402,6 +9508,11 @@
             "drafted_by": "claude-fable-5-1",
             "activity": "measure+draft",
             "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              ".claude/commands/next-run.md"
+            ]
           }
         }
       },
@@ -9444,6 +9555,11 @@
             "drafted_by": "claude-fable-5-1",
             "activity": "measure+draft",
             "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              "tools/run/run-census.sh"
+            ]
           }
         }
       },
@@ -10031,9 +10147,11 @@
             ],
             "governs": [
               ".claude/hooks/**",
-              ".claude/skills/fixtures.sh",
-              ".claude/skills/headwater-authoring/SKILL.md",
-              ".claude/skills/headwater-taxonomy/SKILL.md",
+              [
+                ".claude/skills/fixtures.sh",
+                ".claude/skills/headwater-authoring/SKILL.md",
+                ".claude/skills/headwater-taxonomy/SKILL.md"
+              ],
               ".claude/agents/headwater-maintainer.md"
             ]
           }
@@ -10105,6 +10223,12 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              [
+                "taxonomy-source/headwater-standard",
+                ".headwater/packages/headwater-standard"
+              ]
+            ],
             "cites_evidence": [
               "HW-EVAL-adjacent-work",
               "HW-EVAL-default-taxonomy-first-run",
@@ -10301,6 +10425,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              "tools/probe/probe-record.sh"
+            ],
             "traces_to": [
               "HW-SPEC-ai-integration"
             ]
@@ -10336,7 +10463,8 @@
             "governs": [
               ".claude/settings.json",
               ".claude/hooks/fixtures.sh",
-              ".claude/hooks/fixtures-live.sh"
+              ".claude/hooks/fixtures-live.sh",
+              "AGENTS.md"
             ]
           }
         }
@@ -10422,6 +10550,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              "engine/crates/check/tests/fixtures.rs"
+            ],
             "proves": [
               "HW-AC-0002"
             ]
@@ -10492,11 +10623,6 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": ".claude/skills/fixtures.sh",
-        "resolver": "source-tree"
-      },
-      {
-        "anchor_kind": "code_path",
         "id": ".claude/skills/headwater-authoring/SKILL.md",
         "resolver": "source-tree"
       },
@@ -10507,12 +10633,17 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": ".claude/skills/headwater-taxonomy/SKILL.md",
+        "id": ".claude/skills/hw-run-policy/SKILL.md",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": ".claude/skills/hw-run-policy/SKILL.md",
+        "id": ".claude/tutorial/fixtures.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".gitattributes",
         "resolver": "source-tree"
       },
       {
@@ -10523,6 +10654,11 @@
       {
         "anchor_kind": "code_path",
         "id": ".githooks/commit-msg",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".githooks/fixtures.sh",
         "resolver": "source-tree"
       },
       {
@@ -10552,6 +10688,26 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": ".headwater/adoption.jsonl",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".headwater/capture-cost.jsonl",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".headwater/corpus.json",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".headwater/nav.yml",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": ".headwater/notes/website-design-brief.md",
         "resolver": "source-tree"
       },
@@ -10562,12 +10718,47 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": ".headwater/packages",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": ".headwater/packages/headwater-standard/taxonomy.yml",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
+        "id": ".headwater/probe.yml",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".headwater/taxonomy.lock",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": ".headwater/taxonomy.yml",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "26:.claude/skills/fixtures.sh43:.claude/skills/headwater-authoring/SKILL.md42:.claude/skills/headwater-taxonomy/SKILL.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "38:.headwater/packages/headwater-standard34:taxonomy-source/headwater-standard",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "AGENTS.md",
         "resolver": "source-tree"
       },
       {
@@ -10578,6 +10769,16 @@
       {
         "anchor_kind": "code_path",
         "id": "DEVELOPING.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "LICENSE",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "README.md",
         "resolver": "source-tree"
       },
       {
@@ -10673,7 +10874,17 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/check/src/scope.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/check/src/voice.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/check/tests/fixtures.rs",
         "resolver": "source-tree"
       },
       {
@@ -10704,6 +10915,16 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/cli/tests/json.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/sweep.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/verbs.rs",
         "resolver": "source-tree"
       },
       {
@@ -10858,6 +11079,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/resolve/tests/publish.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/scaffold/src/lib.rs",
         "resolver": "source-tree"
       },
@@ -10893,6 +11119,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "mkdocs.yml",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "mkdocs/hooks/site_tokens.py",
         "resolver": "source-tree"
       },
@@ -10910,6 +11141,11 @@
         "anchor_kind": "check_rule",
         "id": "section.required.missing",
         "resolver": "check-rule"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "site/**",
+        "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
@@ -10958,6 +11194,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "taxonomy-source/headwater-standard/assemblies/starter/assembly.yml",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "taxonomy-source/headwater-standard/package.yml",
         "resolver": "source-tree"
       },
@@ -10968,12 +11209,27 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "tools/engine/language-spike/**",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "tools/engine/language-spike/build.sh",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
+        "id": "tools/headwater-bootstrap.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "tools/hw-cargo",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/probe/probe-record.sh",
         "resolver": "source-tree"
       },
       {
@@ -10984,6 +11240,11 @@
       {
         "anchor_kind": "code_path",
         "id": "tools/repo/retire-worktree.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/run/run-census.sh",
         "resolver": "source-tree"
       },
       {
@@ -11178,6 +11439,17 @@
       },
       {
         "source": "docs/decisions/0011-license-and-distribution-posture.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "LICENSE",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0011-license-and-distribution-posture.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -11229,6 +11501,17 @@
           "id": "HW-EVAL-shacl-worked-example",
           "path": "docs/evaluations/shacl-worked-example.md",
           "kind": "evaluation"
+        }
+      },
+      {
+        "source": "docs/decisions/0014-discovery-surface.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".headwater/corpus.json",
+          "resolver": "source-tree"
         }
       },
       {
@@ -11317,6 +11600,17 @@
           "id": "HW-EVAL-what-a-check-can-know",
           "path": "docs/evaluations/what-a-check-can-know.md",
           "kind": "evaluation"
+        }
+      },
+      {
+        "source": "docs/decisions/0022-q22-the-integrity-posture-of-a-published-package.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/resolve/tests/publish.rs",
+          "resolver": "source-tree"
         }
       },
       {
@@ -11529,6 +11823,28 @@
         }
       },
       {
+        "source": "docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/wiring.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/verbs.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md",
         "relation": "traces_to",
         "written_as": "traces_to",
@@ -11570,6 +11886,28 @@
           "id": "HW-SPEC-engine-architecture",
           "path": "docs/spec/06-engine-architecture.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "mkdocs.yml",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".headwater/nav.yml",
+          "resolver": "source-tree"
         }
       },
       {
@@ -11701,6 +12039,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "site/changelog/index.html",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/**",
           "resolver": "source-tree"
         }
       },
@@ -12222,6 +12571,28 @@
         }
       },
       {
+        "source": "docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".githooks/fixtures.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".gitattributes",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
         "relation": "traces_to",
         "written_as": "traces_to",
@@ -12377,6 +12748,17 @@
       },
       {
         "source": "docs/decisions/0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "taxonomy-source/headwater-standard/assemblies/starter/assembly.yml",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -12438,6 +12820,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": ".claude/hooks/review.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/tutorial/fixtures.sh",
           "resolver": "source-tree"
         }
       },
@@ -12552,6 +12945,17 @@
         }
       },
       {
+        "source": "docs/decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".headwater/packages",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md",
         "relation": "governs",
         "written_as": "governs",
@@ -12636,6 +13040,28 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/query/src/route.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "README.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/headwater-bootstrap.sh",
           "resolver": "source-tree"
         }
       },
@@ -12747,6 +13173,17 @@
           "id": "HW-DR-0072",
           "path": "docs/decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".headwater/probe.yml",
+          "resolver": "source-tree"
         }
       },
       {
@@ -13198,6 +13635,17 @@
           "id": "HW-REG-decisions",
           "path": "docs/spec/09-decisions.md",
           "kind": "decision_register"
+        }
+      },
+      {
+        "source": "docs/evaluations/language-spike-results.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/engine/language-spike/**",
+          "resolver": "source-tree"
         }
       },
       {
@@ -14142,18 +14590,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-capture.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14169,13 +14606,13 @@
         }
       },
       {
-        "source": "docs/interfaces/headwater-change.md",
+        "source": "docs/interfaces/headwater-capture.md",
         "relation": "governs",
         "written_as": "governs",
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
+          "id": ".headwater/capture-cost.jsonl",
           "resolver": "source-tree"
         }
       },
@@ -14186,7 +14623,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14219,7 +14656,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14241,18 +14678,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-completions.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14263,18 +14689,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-conformance.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14329,18 +14744,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-derived.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14351,18 +14755,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-explain.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14428,18 +14821,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-export.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14461,18 +14843,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-gate.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14494,18 +14865,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-generate.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14521,13 +14881,13 @@
         }
       },
       {
-        "source": "docs/interfaces/headwater-help.md",
+        "source": "docs/interfaces/headwater-generate.md",
         "relation": "governs",
         "written_as": "governs",
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
+          "id": ".headwater/corpus.json",
           "resolver": "source-tree"
         }
       },
@@ -14538,7 +14898,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14571,18 +14931,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-import.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14604,7 +14953,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14615,7 +14964,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": ".headwater/taxonomy.lock",
           "resolver": "source-tree"
         }
       },
@@ -14626,18 +14975,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-init.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14648,7 +14986,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14670,18 +15008,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-mcp.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14703,18 +15030,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-neighbors.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14747,18 +15063,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-new.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14774,13 +15079,24 @@
         }
       },
       {
+        "source": "docs/interfaces/headwater-new.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".headwater/capture-cost.jsonl",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/interfaces/headwater-probe.md",
         "relation": "governs",
         "written_as": "governs",
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14796,13 +15112,24 @@
         }
       },
       {
+        "source": "docs/interfaces/headwater-probe.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".headwater/probe.yml",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/interfaces/headwater-query.md",
         "relation": "governs",
         "written_as": "governs",
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14824,18 +15151,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-route.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14879,7 +15195,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14895,13 +15211,13 @@
         }
       },
       {
-        "source": "docs/interfaces/headwater-taxonomy.md",
+        "source": "docs/interfaces/headwater-sweep.md",
         "relation": "governs",
         "written_as": "governs",
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/lib.rs",
+          "id": "engine/crates/cli/tests/sweep.rs",
           "resolver": "source-tree"
         }
       },
@@ -14912,7 +15228,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "engine/crates/cli/src/main.rs",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },
@@ -14957,6 +15273,28 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/compat/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-taxonomy.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".headwater/taxonomy.lock",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-taxonomy.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".headwater/adoption.jsonl",
           "resolver": "source-tree"
         }
       },
@@ -15951,6 +16289,17 @@
           "id": "HW-SPEC-authoring-and-lifecycle",
           "path": "docs/spec/03-authoring-and-lifecycle.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/obligations/0071-a-corpus-scoped-check-makes-the-coverage-rule-unreachable.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/scope.rs",
+          "resolver": "source-tree"
         }
       },
       {
@@ -17044,6 +17393,17 @@
       },
       {
         "source": "docs/obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/ci.yml",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -17436,6 +17796,28 @@
           "id": "HW-OBL-0105",
           "path": "docs/obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md",
           "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/commands/next-run.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/run/run-census.sh",
+          "resolver": "source-tree"
         }
       },
       {
@@ -18314,29 +18696,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": ".claude/skills/fixtures.sh",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/spec/05-ai-integration.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": ".claude/skills/headwater-authoring/SKILL.md",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/spec/05-ai-integration.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": ".claude/skills/headwater-taxonomy/SKILL.md",
+          "id": "26:.claude/skills/fixtures.sh43:.claude/skills/headwater-authoring/SKILL.md42:.claude/skills/headwater-taxonomy/SKILL.md",
           "resolver": "source-tree"
         }
       },
@@ -18448,6 +18808,17 @@
           "id": "HW-EVAL-what-a-check-can-know",
           "path": "docs/evaluations/what-a-check-can-know.md",
           "kind": "evaluation"
+        }
+      },
+      {
+        "source": "docs/spec/07-distribution-and-federation.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "38:.headwater/packages/headwater-standard34:taxonomy-source/headwater-standard",
+          "resolver": "source-tree"
         }
       },
       {
@@ -18815,6 +19186,17 @@
       },
       {
         "source": "docs/spec/15-the-recorder-contract.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/probe/probe-record.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/15-the-recorder-contract.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -18865,6 +19247,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": ".claude/hooks/fixtures-live.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/16-harness-support.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "AGENTS.md",
           "resolver": "source-tree"
         }
       },
@@ -18943,6 +19336,17 @@
           "id": "HW-DR-0016",
           "path": "docs/decisions/0016-public-presence.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/verifications/0001-the-section-heading-rule-has-no-case-table-and-a-golden-fixture-report-is-what-proves-it-runs.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/tests/fixtures.rs",
+          "resolver": "source-tree"
         }
       },
       {

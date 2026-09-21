@@ -13,6 +13,8 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  governs:
+    - LICENSE
   traces_to:
     - HW-EVAL-first-contact
 ---

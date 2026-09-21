@@ -15,6 +15,8 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  governs:
+    - [taxonomy-source/headwater-standard, .headwater/packages/headwater-standard]
   cites_evidence:
     - HW-EVAL-adjacent-work
     - HW-EVAL-default-taxonomy-first-run

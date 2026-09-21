@@ -7,8 +7,7 @@ last_verified: 2026-08-30
 title: "headwater help"
 relations:
   governs:
-    - engine/crates/cli/src/lib.rs
-    - engine/crates/cli/src/main.rs
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/cli/src/paint.rs
   traces_to:
     - HW-DR-0045

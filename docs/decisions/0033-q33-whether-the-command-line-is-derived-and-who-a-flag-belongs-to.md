@@ -16,6 +16,8 @@ relations:
   governs:
     - engine/crates/cli/Cargo.toml
     - engine/crates/cli/src/lib.rs
+    - engine/crates/cli/tests/wiring.rs
+    - engine/crates/cli/tests/verbs.rs
 ---
 
 # Q33 — Whether the command line is derived, and who a flag belongs to

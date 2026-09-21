@@ -12,6 +12,10 @@ provenance:
   activity: measure+draft
   accepted_by: j.baxter
   evidence_basis: evidenced
+relations:
+  governs:
+    - README.md
+    - tools/headwater-bootstrap.sh
 ---
 
 # The binary is the only interface an adopter must run, and every integration point outside it is declared

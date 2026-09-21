@@ -8,6 +8,7 @@ title: "The vendored package root moves under .headwater and the old root is nam
 relations:
   governs:
     - engine/crates/resolve/src/package.rs
+    - .headwater/packages
 provenance:
   warrant: asserted
   agency: agent

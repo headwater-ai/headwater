@@ -7,9 +7,9 @@ last_verified: 2026-09-12
 title: "headwater generate"
 relations:
   governs:
-    - engine/crates/cli/src/lib.rs
-    - engine/crates/cli/src/main.rs
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/generate/src/lib.rs
+    - .headwater/corpus.json
 ---
 
 # headwater generate

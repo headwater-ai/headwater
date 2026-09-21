@@ -20,6 +20,7 @@ relations:
   governs:
     - tools/site/sitemap.py
     - tools/site/refresh-crawler-files.sh
+    - .githooks/fixtures.sh
 ---
 
 # The served sitemap is derived from the served directory

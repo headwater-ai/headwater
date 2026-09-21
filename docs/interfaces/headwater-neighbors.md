@@ -7,8 +7,7 @@ last_verified: 2026-09-17
 title: "headwater neighbors"
 relations:
   governs:
-    - engine/crates/cli/src/lib.rs
-    - engine/crates/cli/src/main.rs
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/embed/src/lib.rs
     - engine/crates/embed/src/wordpiece.rs
 ---

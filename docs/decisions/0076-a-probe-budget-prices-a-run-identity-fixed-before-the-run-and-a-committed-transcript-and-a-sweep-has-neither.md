@@ -11,6 +11,9 @@ provenance:
   drafted_by: claude-sonnet-5
   activity: measure+draft
   evidence_basis: evidenced
+relations:
+  governs:
+    - .headwater/probe.yml
 ---
 
 # A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither

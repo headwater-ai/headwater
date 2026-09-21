@@ -13,8 +13,9 @@ provenance:
   evidence_basis: evidenced
 relations:
   governs:
-    - engine/crates/cli/src/main.rs
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/sweep/src/lib.rs
+    - engine/crates/cli/tests/sweep.rs
 ---
 
 # headwater sweep

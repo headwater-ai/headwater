@@ -7,7 +7,7 @@ last_verified: 2026-08-25
 title: "headwater query"
 relations:
   governs:
-    - engine/crates/cli/src/main.rs
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/query/src/lib.rs
 ---
 

@@ -7,8 +7,9 @@ last_verified: 2026-08-25
 title: "headwater probe"
 relations:
   governs:
-    - engine/crates/cli/src/main.rs
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/probe/src/lib.rs
+    - .headwater/probe.yml
 ---
 
 # headwater probe

@@ -12,6 +12,8 @@ provenance:
   activity: measure+draft
   evidence_basis: evidenced
 relations:
+  governs:
+    - .claude/tutorial/fixtures.sh
   constrains:
     - HW-DR-0039
   traces_to:
