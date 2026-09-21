@@ -88,8 +88,7 @@ def today_reading(clock=time.time):
     whole day count since the Unix epoch, in UTC, with no zone applied at
     all. `datetime.date.today()` reads the process's *local* calendar
     instead, which names a different day than the engine's for part of every
-    day in any zone ahead of UTC — `Australia/Brisbane`, this machine's own
-    zone, included. So this function mirrors the engine's arithmetic on the
+    day in any zone ahead of UTC. So this function mirrors the engine's arithmetic on the
     epoch second count rather than reading a local clock of any kind, and the
     two can no longer disagree.
 

@@ -2,7 +2,7 @@
 
 # Evaluations
 
-27 documents on this shelf, in the reading order this corpus derives.
+28 documents on this shelf, in the reading order this corpus derives.
 
 - [A probe task section is the prompt, so commentary under that heading is prompt](a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md) — Two probes leaked commentary into the section a recorder sends as the prompt, and a third declared an answer set with no output contract. (asserted, and no human has accepted it)
 - [Adjacent work and tooling](adjacent-work.md) — Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.
@@ -28,6 +28,7 @@
 - [The serving boundary — what is advertised, what is withheld, what is written back](the-serving-boundary.md) — The Q14, Q17 and Q7 evidence, which is what a corpus advertises, what it withholds, and what a tool may write back.
 - [The three discovery misses of 2026-09-16 have three different mechanisms, and only one is routing precision](the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md) — A replay of the router shows three different misses: one true precision failure, one ignored correct offer, and one target the router cannot reach. (asserted, and no human has accepted it)
 - [Theoretical foundations](theoretical-foundations.md) — Where the research literature confirms, sharpens, or contradicts the design, and what changed in the specification as a result.
+- [Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts](two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md) — The event that started a run decides which of two machines it takes, and every other condition in the workflow can only take work away. (asserted, and no human has accepted it)
 - [Warrant — what stands behind a document, and who vouched for it](warrant-and-adjudication.md) — The Q15, Q19 and Q18 evidence, which is what stands behind a document, who vouched for it, and how a disagreement is settled.
 - [What a check can know — the Q5 and Q21 evaluation](what-a-check-can-know.md) — The Q5 and Q21 evidence, which measures what a lexical checker gets wrong on the checker that this repository already runs.
 - [Why corpus counts are derived, not stored](why-corpus-counts-are-derived-not-stored.md) — Counts over the whole corpus are computed when read, not kept in committed files. Stored counts cause silent merge failures when two branches write the same total but the merged tree holds a different number. (asserted, and no human has accepted it)

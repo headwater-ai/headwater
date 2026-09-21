@@ -222,6 +222,8 @@ docs/evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-m
   typed: evaluation
 docs/evaluations/theoretical-foundations.md
   typed: evaluation
+docs/evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md
+  typed: evaluation
 docs/evaluations/warrant-and-adjudication.md
   typed: evaluation
 docs/evaluations/what-a-check-can-know.md
