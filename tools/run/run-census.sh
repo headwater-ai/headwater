@@ -186,7 +186,7 @@ expiry=$(printf '%s' "$turns" | jq -c '
        | (($cur.ts | ts) - ($prev.ts | ts)) as $gap
        | (if $cur.cw1h > 0 then 3600 else 300 end) as $lifetime
        | select($gap > $lifetime and $cur.cw > $cur.cr)
-       | {tokens: $cur.cw, cost: (($cur.cw - $cur.cw1h) * 2.50 + $cur.cw1h * 4.00) / 1000000}]
+       | {tokens: $cur.cw, cost: ((($cur.cw - $cur.cw1h) * 2.50 + $cur.cw1h * 4.00) / 1000000)}]
     | {n: length, tokens: (map(.tokens) | add // 0), cost: (map(.cost) | add // 0)}
 ')
 expiry_n=$(printf '%s' "$expiry" | jq '.n')
