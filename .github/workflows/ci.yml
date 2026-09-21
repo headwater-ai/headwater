@@ -257,7 +257,7 @@ jobs:
       - name: A real mount point, on the self-hosted runner's own container
         # The container this job runs in is started with `--tmpfs
         # /home/runner/hw-mount:size=64m,uid=<runner uid>,gid=<runner
-        # gid>,mode=0755` (see the `github-runner` role in `ansible-config`),
+        # gid>,mode=0755` by whatever provisions the runner,
         # so route 1's tmpfs already exists before the runner process starts
         # — there is no `sudo` in this image to make one from inside the
         # job, and `mount` needs a capability Docker drops by default. This
@@ -271,7 +271,7 @@ jobs:
         # parent directory — `/mnt` is root-owned in this image, `/home/
         # runner` is this container's own runner user's home (`Permission
         # denied (os error 13)` making `/mnt/hw-mount~staging`, hit for real
-        # on mediaserver3's fourth smoke-test job).
+        # on the runner's fourth trial job).
         if: runner.environment == 'self-hosted'
         run: echo "HEADWATER_MOUNT_POINT=/home/runner/hw-mount" >> "$GITHUB_ENV"
       - name: Test
