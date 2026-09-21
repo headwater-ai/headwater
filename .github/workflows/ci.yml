@@ -285,16 +285,24 @@ jobs:
           echo "HEADWATER_MOUNT_POINT=$RUNNER_TEMP/mount-point" >> "$GITHUB_ENV"
       - name: A real mount point, on the self-hosted runner's own container
         # The container this job runs in is started with `--tmpfs
-        # /mnt/hw-mount:size=64m,uid=<runner uid>,gid=<runner gid>,mode=0755`
-        # (see the `github-runner` role in `ansible-config`), so route 1's
-        # tmpfs already exists before the runner process starts — there is
-        # no `sudo` in this image to make one from inside the job, and
-        # `mount` needs a capability Docker drops by default. This step only
-        # names the path the container already gave it; naming the same
-        # `HEADWATER_MOUNT_POINT` variable is what keeps
+        # /home/runner/hw-mount:size=64m,uid=<runner uid>,gid=<runner
+        # gid>,mode=0755` (see the `github-runner` role in `ansible-config`),
+        # so route 1's tmpfs already exists before the runner process starts
+        # — there is no `sudo` in this image to make one from inside the
+        # job, and `mount` needs a capability Docker drops by default. This
+        # step only names the path the container already gave it; naming
+        # the same `HEADWATER_MOUNT_POINT` variable is what keeps
         # `killed_publish.rs` unable to tell the two routes apart.
+        #
+        # Under /home/runner, not /mnt: the atomic-publish case in that
+        # suite creates a staging directory as a sibling of the mount point
+        # (`<mount>~staging`), which needs write access to the mount's own
+        # parent directory — `/mnt` is root-owned in this image, `/home/
+        # runner` is this container's own runner user's home (`Permission
+        # denied (os error 13)` making `/mnt/hw-mount~staging`, hit for real
+        # on mediaserver3's fourth smoke-test job).
         if: runner.environment == 'self-hosted'
-        run: echo "HEADWATER_MOUNT_POINT=/mnt/hw-mount" >> "$GITHUB_ENV"
+        run: echo "HEADWATER_MOUNT_POINT=/home/runner/hw-mount" >> "$GITHUB_ENV"
       - name: Test
         run: cargo test --locked --workspace --exclude headwater-resolve
         working-directory: engine
