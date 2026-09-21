@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 507,
-      "carried": 507,
+      "in the graph": 508,
+      "carried": 508,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 721,
-      "carried": 721,
+      "in the graph": 719,
+      "carried": 719,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2273,6 +2273,27 @@
             "drafted_by": "claude-sonnet-5",
             "activity": "draft+revise",
             "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0081-the-hand-authored-decision-register-indexes-a-subset-of-the-shelf-and-stops-asserting-it-supersedes-the-complete-one.md",
+        "kind": "decision",
+        "id": "HW-DR-0081",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0081",
+          "status": "current",
+          "status_since": "2026-09-21",
+          "summary": "The hand register keeps a curated selection of headings and drops its `supersedes` edge over the generated register, which stays the complete list.",
+          "last_verified": "2026-09-21",
+          "title": "The hand-authored decision register indexes a subset of the shelf, and stops asserting it supersedes the complete one",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
             "evidence_basis": "evidenced"
           }
         }
@@ -10119,9 +10140,6 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
-            "supersedes": [
-              "HW-REG-open-questions"
-            ],
             "cites_evidence": [
               "HW-EVAL-adjacent-work",
               "HW-EVAL-default-taxonomy-first-run",
@@ -10152,12 +10170,11 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 80 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 81 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
             "superseded_by": [
-              "HW-REG-decisions",
               "HW-REG-open-obligations"
             ]
           }
@@ -18464,17 +18481,6 @@
       },
       {
         "source": "docs/spec/09-decisions.md",
-        "relation": "supersedes",
-        "written_as": "supersedes",
-        "target": {
-          "bound": "document",
-          "id": "HW-REG-open-questions",
-          "path": "docs/spec/09-open-questions.md",
-          "kind": "decision_register"
-        }
-      },
-      {
-        "source": "docs/spec/09-decisions.md",
         "relation": "cites_evidence",
         "written_as": "cites_evidence",
         "target": {
@@ -18625,17 +18631,6 @@
           "id": "HW-EVAL-what-a-check-can-know",
           "path": "docs/evaluations/what-a-check-can-know.md",
           "kind": "evaluation"
-        }
-      },
-      {
-        "source": "docs/spec/09-open-questions.md",
-        "relation": "supersedes",
-        "written_as": "superseded_by",
-        "target": {
-          "bound": "document",
-          "id": "HW-REG-decisions",
-          "path": "docs/spec/09-decisions.md",
-          "kind": "decision_register"
         }
       },
       {
