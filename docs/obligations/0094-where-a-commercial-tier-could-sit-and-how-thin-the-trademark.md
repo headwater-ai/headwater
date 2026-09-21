@@ -4,7 +4,7 @@ title: "Where a commercial tier could sit, and how thin the trademark position i
 status: current
 status_since: 2026-08-11
 waiting_on: ruling
-last_verified: 2026-08-13
+last_verified: 2026-09-21
 summary: "Q11 holds the question of where a commercial tier could sit rather than answering it, and the trademark position is deliberately thin."
 provenance:
   warrant: accepted
@@ -16,6 +16,7 @@ provenance:
 relations:
   traces_to:
     - HW-DR-0011
+    - HW-DR-0080
 ---
 
 # Where a commercial tier could sit, and how thin the trademark position is
@@ -31,3 +32,5 @@ Where a commercial tier could sit, which that entry holds rather than answers.
 ## Discharge
 
 The trademark position is also deliberately thin, and a registration or a transfer would change it. Neither has happened.
+
+[Q66](../decisions/0080-q66-the-corpus-dashboard-ships-free-and-self-hosted-with-tenant-isolation-stated-as-a-data-model-constraint-from-day-one.md) narrows one instance of this question: the corpus-staleness dashboard ([#505](https://github.com/headwater-ai/headwater/issues/505)) ships free and self-hosted, with no hosted form now. It does not settle where a commercial tier sits generally, so this obligation stays open.

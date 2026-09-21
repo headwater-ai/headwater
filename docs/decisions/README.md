@@ -2,7 +2,7 @@
 
 # Decision records
 
-79 documents on this shelf, in the reading order this corpus derives.
+80 documents on this shelf, in the reading order this corpus derives.
 
 - [Q1 — Implementation language](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [Q2 — Schema format](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -83,3 +83,4 @@
 - [The binary is the only interface an adopter must run, and every integration point outside it is declared](0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) — An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test; a network fetch left the list under HW-DR-0075; and the change manifest fails the test and is a defect.
 - [A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither](0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md) — Rules that a budget prices a run identity a probe has and a sweep does not, and names the sweep outside every tier. States where .headwater/probe.yml lives and why. (asserted, and no human has accepted it)
 - [Criterion 5 admits naming or extending a core-serving kind, and a facet-only entry ships no templates directory under criterion 2](0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md) — A full entry that serves neither core purpose names or extends a core-serving kind, and a facet-only entry ships no templates/ directory. (asserted, and no human has accepted it)
+- [Q66 — the corpus dashboard ships free and self-hosted, with tenant isolation stated as a data-model constraint from day one](0080-q66-the-corpus-dashboard-ships-free-and-self-hosted-with-tenant-isolation-stated-as-a-data-model-constraint-from-day-one.md) — The corpus-staleness dashboard (#505) ships as a free, self-hosted companion tool, with no hosted form now. Its data model carries a corpus identity on every row from day one, so a later hosted form is an addition rather than a rewrite.

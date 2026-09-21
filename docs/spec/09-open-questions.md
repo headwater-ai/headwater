@@ -5,7 +5,7 @@ doc_type: decision_register
 title: Open questions, closed and redirected
 status: superseded
 status_since: 2026-08-11
-summary: "One heading for each of the 79 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
+summary: "One heading for each of the 80 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
 last_verified: 2026-08-11
 sequence: 9
 relations:
@@ -16,7 +16,7 @@ relations:
 
 # Decision records
 
-79 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+80 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -333,3 +333,7 @@ relations:
 ## Criterion 5 admits naming or extending a core-serving kind, and a facet-only entry ships no templates directory under criterion 2
 
 [HW-DR-0079](../decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md) — A full entry that serves neither core purpose names or extends a core-serving kind, and a facet-only entry ships no templates/ directory. (asserted, and no human has accepted it)
+
+## Q66 — the corpus dashboard ships free and self-hosted, with tenant isolation stated as a data-model constraint from day one
+
+[HW-DR-0080](../decisions/0080-q66-the-corpus-dashboard-ships-free-and-self-hosted-with-tenant-isolation-stated-as-a-data-model-constraint-from-day-one.md) — The corpus-staleness dashboard (#505) ships as a free, self-hosted companion tool, with no hosted form now. Its data model carries a corpus identity on every row from day one, so a later hosted form is an addition rather than a rewrite.

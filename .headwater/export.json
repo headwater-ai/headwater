@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 506,
-      "carried": 506,
+      "in the graph": 507,
+      "carried": 507,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 719,
-      "carried": 719,
+      "in the graph": 721,
+      "carried": 721,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2246,6 +2246,33 @@
             "agency": "agent",
             "drafted_by": "claude-sonnet-5",
             "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0080-q66-the-corpus-dashboard-ships-free-and-self-hosted-with-tenant-isolation-stated-as-a-data-model-constraint-from-day-one.md",
+        "kind": "decision",
+        "id": "HW-DR-0080",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-DR-0080",
+          "status": "current",
+          "status_since": "2026-09-21",
+          "summary": "The corpus-staleness dashboard (#505) ships as a free, self-hosted companion tool, with no hosted form now. Its data model carries a corpus identity on every row from day one, so a later hosted form is an addition rather than a rewrite.",
+          "last_verified": "2026-09-21",
+          "title": "Q66 — the corpus dashboard ships free and self-hosted, with tenant isolation stated as a data-model constraint from day one",
+          "relations": {
+            "traces_to": [
+              "HW-DR-0011"
+            ]
+          },
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft+revise",
+            "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
           }
         }
@@ -6277,7 +6304,7 @@
           "status": "current",
           "status_since": "2026-08-11",
           "waiting_on": "ruling",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-09-21",
           "summary": "Q11 holds the question of where a commercial tier could sit rather than answering it, and the trademark position is deliberately thin.",
           "provenance": {
             "warrant": "accepted",
@@ -6289,7 +6316,8 @@
           },
           "relations": {
             "traces_to": [
-              "HW-DR-0011"
+              "HW-DR-0011",
+              "HW-DR-0080"
             ]
           }
         }
@@ -10124,7 +10152,7 @@
           "title": "Open questions, closed and redirected",
           "status": "superseded",
           "status_since": "2026-08-11",
-          "summary": "One heading for each of the 79 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
+          "summary": "One heading for each of the 80 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file.",
           "last_verified": "2026-08-11",
           "sequence": "9",
           "relations": {
@@ -12720,6 +12748,17 @@
           "id": "HW-OBL-0183",
           "path": "docs/obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md",
           "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/decisions/0080-q66-the-corpus-dashboard-ships-free-and-self-hosted-with-tenant-isolation-stated-as-a-data-model-constraint-from-day-one.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0011",
+          "path": "docs/decisions/0011-license-and-distribution-posture.md",
+          "kind": "decision"
         }
       },
       {
@@ -16187,6 +16226,17 @@
           "bound": "document",
           "id": "HW-DR-0011",
           "path": "docs/decisions/0011-license-and-distribution-posture.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0094-where-a-commercial-tier-could-sit-and-how-thin-the-trademark.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0080",
+          "path": "docs/decisions/0080-q66-the-corpus-dashboard-ships-free-and-self-hosted-with-tenant-isolation-stated-as-a-data-model-constraint-from-day-one.md",
           "kind": "decision"
         }
       },
