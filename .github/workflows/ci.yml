@@ -160,25 +160,27 @@ permissions:
 
 jobs:
   engine:
-    # This name is a context the `Protect main` ruleset requires, so exactly
-    # one run per commit should carry it. The job below is skipped on a pull
-    # request opened from this repository, and a job skipped by its own `if`
-    # still reports a check-run; naming it something the ruleset does not read
-    # keeps the `push` run the sole answer to `Engine tests` on that commit.
-    # A fork's pull request has no `push` run here, so it keeps the required
-    # name and answers alone. A job name is an expression like any other, and
-    # `github` is one of the contexts `jobs.<job_id>.name` may read.
+    # This name is a context the `Protect main` ruleset requires. A same-repo
+    # pull request now puts two check-runs of it on one commit: this job's
+    # real conclusion from the `push` run, and the skipped one from the
+    # `pull_request` run below. That is safe, because GitHub reads two
+    # check-runs of one name conjunctively rather than latest-wins. Its own
+    # troubleshooting page states the rule for a name shared by two sources
+    # ("both must pass"), and the failure it documents for duplicate job names
+    # is a blocked merge rather than a masked one. Three superseded commits on
+    # #999 and #1001 carry a failing `push` run beside a succeeding or
+    # cancelled `pull_request` run, in both completion orders, and the
+    # combined state is `FAILURE` in every one.
     #
-    # Two check-runs of one name on one commit are read conjunctively, not
-    # latest-wins, so this is tidiness rather than a repair: a `push` run that
-    # failed was never maskable by a `pull_request` run that skipped. Three
-    # superseded commits on #999 and #1001 carry that disagreeing pair in both
-    # completion orders, and the combined state is `FAILURE` in every one.
-    # What the rename does buy is the queued case: while a `push` run waits
-    # for a runner, the required context is absent rather than satisfied by a
-    # skip, and the pull request blocks on `Expected` instead of resting on
-    # how a pending duplicate aggregates.
-    name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && 'Engine tests (answered by the push run)' || 'Engine tests' }}
+    # Do not try to dodge the duplicate by making this name an expression that
+    # renames the skipped job. That was tried on 2026-09-21 and reverted the
+    # same hour: `jobs.<job_id>.name` does accept the `github` context and the
+    # `push` run evaluated it correctly, but GitHub does not evaluate the
+    # expression for a job it skips. Both skipped check-runs reported with the
+    # raw expression text as their name, on the pull request page, on every
+    # pull request. The commit that did it and the commit that undid it are
+    # both on this branch, with the measurement in the second one.
+    name: Engine tests
     # A pull request opened from a branch of this repository already has a
     # `push` run on the same commit, and that run is the one the ruleset
     # reads: a check-run attaches to the head SHA whichever event started it,
@@ -424,8 +426,8 @@ jobs:
         run: sudo umount "$RUNNER_TEMP/mount-point" 2>/dev/null || true
 
   headwater:
-    # The `engine` job carries why this name is an expression.
-    name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && 'headwater check (advisory) (answered by the push run)' || 'headwater check (advisory)' }}
+    # The `engine` job carries why this name is a literal and must stay one.
+    name: headwater check (advisory)
     # Both expressions are the `engine` job's, and so are both reasons: that
     # job carries why a same-repo pull request skips here, and the
     # top-of-file comment carries why `push` is the only trigger this file
