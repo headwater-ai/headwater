@@ -1,7 +1,8 @@
 #!/bin/sh
-# What holds the external corpus of the `decision-record` entry: the 10 ADRs of
-# `UKGovernmentBEIS/inspect_evals`, vendored at a pin, assembled into a corpus
-# root at each run, and typed by the entry.
+# What holds the external corpora of the `decision-record` entry: the 10 ADRs
+# of `UKGovernmentBEIS/inspect_evals` typed at `decision`, and Sysl's
+# `docs/ideas/root.md` typed at `obligation_record`. Both are vendored at a
+# pin, assembled into one corpus root at each run, and typed by the entry.
 #
 # Run it from anywhere:
 #     sh tools/repo/decision-record-fixtures.sh
@@ -32,51 +33,78 @@
 # Criterion 4 of `docs/taxonomies/README.md` asks for "at least one external
 # real or realistic corpus, typed by the entry and recorded with its source,
 # revision, paths, and run". It asks for a recorded run. It does not ask for a
-# clean one, and the run is not clean. The denominators are printed and
-# asserted by nothing, because a finding count is a property of somebody else's
-# prose and a suite that asserted it would redden the day a rule of the engine
-# widened or the day the pin moved.
+# clean one, and the first population's run is not clean, and the second
+# population's is not either, for a different reason each time. The
+# denominators are printed and asserted by nothing, because a finding count is
+# a property of somebody else's prose and a suite that asserted it would
+# redden the day a rule of the engine widened or the day a pin moved.
 #
-# ONE FINDING CLASS IS ASSERTED, and it is the one that is a claim about the
-# tradition rather than about one team's prose. `section.required.missing` must
-# be reported for no document here. The entry's doctrine says that Nygard's
-# three sections are a convention the tradition carries, so a real ADR log
-# ought to satisfy a contract written from it. A run that started reporting a
-# missing section would be evidence against the entry, and that is worth a red
-# suite. `diataxis-site` refused all 4 of its 4 external documents on this same
-# rule, which is why the contrast is worth holding.
+# ONE FINDING CLASS IS ASSERTED FOR THE FIRST POPULATION, and it is the one
+# that is a claim about the tradition rather than about one team's prose.
+# `section.required.missing` must be reported for no document of the
+# `inspect-evals` corpus. The entry's doctrine says that Nygard's three
+# sections are a convention the ADR tradition carries, so a real ADR log ought
+# to satisfy a contract written from it. A run that started reporting a
+# missing section there would be evidence against the entry, and that is worth
+# a red suite. `diataxis-site` refused all 4 of its 4 external documents on
+# this same rule, which is why the contrast is worth holding.
+#
+# THE SECOND POPULATION MAKES NO SUCH CLAIM. Sysl's `docs/ideas/root.md` is a
+# bare bullet list under one heading, with no Context, Obligation or Discharge
+# anywhere in it, because Sysl's `docs/ideas/` tradition has no proposal
+# convention at all — that absence is the reason this document was chosen.
+# `section.required.missing` on this document is recorded, not asserted, and
+# it is not repaired: rewriting the vendored file to carry the headings the
+# rule wants would defeat the reason an external corpus is worth vendoring in
+# the first place.
 #
 # # WHAT EACH JUDGE READS
 #
 # No file name, kind name, shelf path, identifier, date or expected count is
 # written in this file. Every population is enumerated out of a declaration:
 #
-#   THE SOURCE ROWS come from the source table of `fixtures/README.md`, between
-#   its `### Source, revision and paths` heading and the next `###`: one row
-#   per pinned file, naming the kind, the shelf, the source, the assembled path
-#   and the digest.
+#   THE SOURCE ROWS come from every "### Source, revision and paths" heading of
+#   `fixtures/README.md`, in the order they appear: one row per pinned file,
+#   naming the kind, the shelf, the source, the assembled path, the digest, and
+#   which heading occurrence it came from. A source table names one population;
+#   two headings of that exact text name two, and this runner does not care how
+#   many there are.
 #
 #   THE STATUS MAP comes from the table under `### The status map` on the same
 #   page: the prose the corpus writes, and the state the front matter carries.
-#   A `## Status` value that matches no row fails the run.
+#   It applies only to a source whose own file carries a `## Status` heading. A
+#   source with none, which is every row of the second population, carries no
+#   status convention to map, and the runner writes a constant instead — the
+#   same treatment `summary` already gets below.
 #
-#   THE PIN AND ITS DATE come from the metadata table under the same first
-#   heading, so a re-pin moves one page and the run follows it.
+#   THE PIN AND ITS DATE come from the metadata table under each occurrence of
+#   the first heading, so a re-pin of either population moves one page and the
+#   run follows it.
 #
 #   THE DECLARED KINDS AND THE DECLARED LIFECYCLE STATES come from the
 #   `.headwater/taxonomy.lock` that the scratch root resolves, which is what
 #   the engine itself reads.
 #
-#   THE IDENTIFIER of each assembled document is built from the `pattern` of
-#   `identifier_schemes.decision_id` in that lock, with the sequence read off
-#   the file name.
+#   THE IDENTIFIER SCHEME of a kind comes from `kinds.<kind>.identifier.scheme`
+#   of that same lock, and the pattern comes from that scheme's own entry
+#   under `identifier_schemes`. Neither a scheme name nor a pattern is written
+#   here for either population.
 #
-#   `status_since` comes from each document's own `## Date` heading.
+#   THE SEQUENCE NUMBER of each assembled document is its ordinal position
+#   among the source-table rows that share its kind, not a digit read off a
+#   file name — Sysl's `root.md` carries none, and a table row is a table row
+#   whatever its source is named.
 #
-# ONE VALUE IS A CONSTANT THIS RUNNER WRITES, AND IT IS A FINDING. `summary` is
-# required on every `governed_document` and the tradition supplies nothing that
-# derives one. `fixtures/README.md` carries that as a result rather than as a
-# defect in their writing.
+#   `status_since` comes from each document's own `## Date` heading where it
+#   has one, and from its population's own pin date where it does not.
+#
+# ONE VALUE IS A CONSTANT THE RUNNER WRITES, AND IT IS A FINDING. `summary` is
+# required on every `governed_document` and nothing in either tradition
+# supplies one. `fixtures/README.md` carries that as a result rather than as a
+# defect in their writing. `waiting_on` is the same shape for the second
+# population alone: `obligation_record` requires it, no source names one, and
+# the runner writes `build`, because a bare list of things nobody has coded yet
+# is the textbook case that value guards.
 #
 # # THE POPULATION GUARDS, WHICH ARE NOT COUNTS
 #
@@ -97,6 +125,7 @@ entry=docs/taxonomies/decision-record
 fixtures="$root/$entry/fixtures"
 readme="$fixtures/README.md"
 vendored="$fixtures/sources/inspect-evals"
+sysl_vendored="$fixtures/sources/sysl"
 
 engine=""
 if [ -x "$root/engine/target/release/headwater" ]; then
@@ -115,9 +144,9 @@ if [ -z "$engine" ]; then
     exit 1
 fi
 
-for needed in "$readme" "$vendored/adr" "$vendored/LICENSE"; do
+for needed in "$readme" "$vendored/adr" "$vendored/LICENSE" "$sysl_vendored/root.md"; do
     if [ ! -e "$needed" ]; then
-        echo "missing $needed, so the cases over the external corpus cannot run." >&2
+        echo "missing $needed, so the cases over the external corpora cannot run." >&2
         exit 1
     fi
 done
@@ -149,17 +178,20 @@ judge() { # name, expected, actual
 
 # --- the populations, read out of the declarations -------------------------
 
-# The source table: kind, shelf, source, assembled path, digest. Only the rows
-# between the first `###` heading of the external section and the next one.
+# The source table of every population: kind, shelf, source, assembled path,
+# digest, and which occurrence of the heading it belongs to (1 for the first
+# population, 2 for the second, and so on). Two occurrences of the exact same
+# heading text is what makes a second population a population rather than an
+# edit to the first.
 source_rows() {
     awk -F'|' '
-        /^### Source, revision and paths/ { here = 1; next }
+        /^### Source, revision and paths/ { n++; here = 1; next }
         /^### / { here = 0 }
         here && /^\|/ {
             k = $2; sh = $3; s = $4; d = $5; g = $6
             gsub(/[ `]/, "", k); gsub(/[ `]/, "", sh)
             gsub(/[ `]/, "", s); gsub(/[ `]/, "", d); gsub(/[ `]/, "", g)
-            if (s ~ /^sources\//) { print k "\t" sh "\t" s "\t" d "\t" g }
+            if (s ~ /^sources\//) { print k "\t" sh "\t" s "\t" d "\t" g "\t" n }
         }
     ' "$readme"
 }
@@ -177,10 +209,11 @@ status_rows() {
     ' "$readme"
 }
 
-# The pin and the date it was taken, out of the metadata table.
-pin_field() { # 1 = the word the row opens with
-    awk -F'|' -v want="$1" '
-        /^### Source, revision and paths/ { here = 1; next }
+# A field from the Nth occurrence of the "### Source, revision and paths"
+# heading's own metadata table. 1 = which occurrence, 2 = the row's label.
+pin_field_n() {
+    awk -F'|' -v idx="$1" -v want="$2" '
+        /^### Source, revision and paths/ { n++; here = (n == idx); next }
         /^### / { here = 0 }
         here && /^\|/ {
             a = $2; gsub(/^ +| +$/, "", a)
@@ -224,6 +257,41 @@ lock_pattern() { # 1 = lock, 2 = scheme
             p = $0; sub(/^[^:]*: */, "", p); gsub(/["]/, "", p); gsub(/ *$/, "", p)
             print p; exit
         }
+    ' "$1"
+}
+
+# The `identifier.scheme` a kind declares, out of a written lock. This is what
+# lets two kinds of two different populations share one runner: neither a
+# scheme name nor a pattern is written in this file, only the kind name the
+# source table already carries.
+lock_kind_scheme() { # 1 = lock, 2 = kind
+    awk -v want="$2" '
+        /^  kinds:/ { here = 1; next }
+        /^  [a-z_]+:/ { here = 0 }
+        here && $0 ~ "^    " want ":" { hit = 1; next }
+        here && /^    [a-z_]+:/ { hit = 0 }
+        hit && /^      identifier:/ { inid = 1; next }
+        hit && /^      [a-z_]+:/ { inid = 0 }
+        inid && /scheme:/ {
+            s = $0; sub(/^ *scheme: */, "", s); gsub(/["]/, "", s); gsub(/ *$/, "", s)
+            print s; exit
+        }
+    ' "$1"
+}
+
+# A kind's own required-facets list, out of a written lock. Used only to ask
+# "does this kind require `waiting_on`", so that the assembler writes it where
+# the taxonomy asks for it and nowhere else, with no kind name compared.
+lock_requires_facet() { # 1 = lock, 2 = kind, 3 = facet
+    awk -v want="$2" -v facet="$3" '
+        /^  kinds:/ { here = 1; next }
+        /^  [a-z_]+:/ { here = 0 }
+        here && $0 ~ "^    " want ":" { hit = 1; next }
+        here && /^    [a-z_]+:/ { hit = 0 }
+        hit && /^      facets:/ { inf = 1; next }
+        hit && /^      [a-z_]+:/ { inf = 0 }
+        inf && $0 ~ ("- " facet "$") { found = 1 }
+        END { if (found) print "yes" }
     ' "$1"
 }
 
@@ -273,6 +341,8 @@ make_root() {
 }
 
 # The `## Status` value of a source file: the first non-empty line under it.
+# Empty where the source carries no such heading, which is itself a reading:
+# that source's population states no status convention to map.
 status_of() {
     awk '/^## Status/ { seen = 1; next }
          seen && NF { print; exit }' "$1"
@@ -294,7 +364,10 @@ rows=$(source_rows)
 row_floor=$(printf '%s\n' "$rows" | grep -c . || true)
 smap=$(status_rows)
 smap_floor=$(printf '%s\n' "$smap" | grep -c . || true)
-files=$(find "$vendored/adr" -name '*.md' | sed "s|^$fixtures/||" | sort)
+# Every vendored file under any population's own `sources/` tree, not just the
+# first population's `adr/` subdirectory, so a second population's file is a
+# member of this cross-check rather than an unmatched row of the table.
+files=$(find "$fixtures/sources" -type f ! -name 'LICENSE' | sed "s|^$fixtures/||" | sort)
 file_floor=$(printf '%s\n' "$files" | grep -c . || true)
 
 echo "decision-record external fixtures, against $engine"
@@ -333,8 +406,10 @@ echo
 echo "case group 2 — the pinned bytes are the bytes the table seals"
 # This is the half of the pinning that can fail on the content of a source.
 # An edit to a vendored file moves the recorded denominators without moving any
-# other assertion here, and this case is what stops that being silent.
-printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k sh src dest digest; do
+# other assertion here, and this case is what stops that being silent. It runs
+# over every row of every population, because a source table row is a source
+# table row whichever population declared it.
+printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k sh src dest digest pop; do
     [ -n "$src" ] || continue
     if [ -z "$digest" ]; then
         echo "  FAIL  $src: the source table records no digest"
@@ -356,7 +431,7 @@ digests_bad=$(grep -c '^fail$' "$scratch/digests" 2>/dev/null | head -n 1)
 passed=$((passed + ${digests_ok:-0}))
 failed=$((failed + ${digests_bad:-0}))
 
-license_digest=$(pin_field 'SHA-256 of `sources/inspect-evals/LICENSE`' | tr -d '` ')
+license_digest=$(pin_field_n 1 'SHA-256 of `sources/inspect-evals/LICENSE`' | tr -d '` ')
 read_license=$(sha256sum "$vendored/LICENSE" | cut -d' ' -f1)
 judge "the vendored LICENSE is the file the metadata table seals" \
     "$license_digest" "$read_license"
@@ -391,11 +466,15 @@ judge "every state the status map targets is a declared lifecycle state" "" \
     "$(comm -23 "$scratch/mapped-states" "$scratch/declared-states" | tr '\n' ' ' | sed 's/ *$//')"
 
 echo
-echo "case group 4 — the status map reaches every document, and what it drops"
+echo "case group 4 — the status map reaches every document that declares one, and what it drops"
 : > "$scratch/statuses"
-printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k sh src dest digest; do
+printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k sh src dest digest pop; do
     [ -n "$src" ] || continue
     raw=$(status_of "$fixtures/$src")
+    # A source with no `## Status` heading carries no status convention to
+    # map. That is Sysl's `root.md`, and it is a reading rather than a defect:
+    # this population's own assembly, below, writes a constant instead.
+    [ -n "$raw" ] || continue
     : > "$scratch/hits"
     printf '%s\n' "$smap" | while IFS="$(printf '\t')" read -r prose state; do
         [ -n "$prose" ] || continue
@@ -416,7 +495,7 @@ printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k sh src dest digest;
     fi
 done
 unmapped=$(awk -F'\t' '$3 == "UNMAPPED" { print $1 }' "$scratch/statuses" | tr '\n' ' ' | sed 's/ *$//')
-judge "every status value in the corpus matches a row of the status map" "" "$unmapped"
+judge "every status value a source states matches a row of the status map" "" "$unmapped"
 mapped=$(grep -c . "$scratch/statuses" 2>/dev/null | head -n 1)
 lossy_n=$(awk -F'\t' '$3 == "yes"' "$scratch/statuses" | grep -c . || true)
 echo "  recorded, not asserted: ${lossy_n:-0} of ${mapped:-0} statuses lost a clause to the map"
@@ -424,32 +503,67 @@ awk -F'\t' '$3 == "yes" { printf "    %s  [%s] -> %s\n", $1, $4, $2 }' "$scratch
 
 echo
 echo "case group 5 — the corpus, assembled with front matter and no other edit"
-pattern=$(lock_pattern "$lock" decision_id)
-namespace=$(sed -n 's/^  identifier_schemes\.decision_id\.namespace: *//p' "$corpus/.headwater/overlay.yml")
-verified=$(pin_field Pin | sed -n 's/.*committed \([0-9][0-9-]*\)T.*/\1/p')
-if [ -z "$pattern" ]; then
-    fail "the identifier pattern and the pin date come from declarations" "no decision_id pattern in $lock"
-elif [ -z "$namespace" ]; then
-    fail "the identifier pattern and the pin date come from declarations" "no namespace in the scratch overlay"
-elif [ -z "$verified" ]; then
-    fail "the identifier pattern and the pin date come from declarations" "no ISO date in the Pin row"
+: > "$scratch/idcheck"
+printf '%s\n' "$rows" | cut -f1 | sort -u | while read -r k; do
+    [ -n "$k" ] || continue
+    scheme=$(lock_kind_scheme "$lock" "$k")
+    pattern=$(lock_pattern "$lock" "$scheme")
+    namespace=$(sed -n "s/^  identifier_schemes\.${scheme}\.namespace: *//p" "$corpus/.headwater/overlay.yml")
+    if [ -z "$scheme" ] || [ -z "$pattern" ] || [ -z "$namespace" ]; then
+        echo "  FAIL  the identifier pattern for $k comes from its declared scheme"
+        echo "          scheme=[$scheme] pattern=[$pattern] namespace=[$namespace]"
+        echo fail >> "$scratch/idcheck"
+    else
+        echo "  ok    the identifier pattern for $k comes from its declared scheme ($scheme, $pattern)"
+        echo ok >> "$scratch/idcheck"
+    fi
+done
+idok=$(grep -c '^ok$' "$scratch/idcheck" 2>/dev/null | head -n 1)
+idbad=$(grep -c '^fail$' "$scratch/idcheck" 2>/dev/null | head -n 1)
+passed=$((passed + ${idok:-0}))
+failed=$((failed + ${idbad:-0}))
+
+verified1=$(pin_field_n 1 Pin | sed -n 's/.*committed \([0-9][0-9-]*\)T.*/\1/p')
+if [ -z "$verified1" ]; then
+    fail "the pin date of the first population's metadata is readable" "no ISO date in its Pin row"
 else
-    pass "the identifier pattern and the pin date come from declarations ($pattern, $verified)"
+    pass "the pin date of the first population's metadata is readable ($verified1)"
 fi
+
 rm -rf "$corpus/docs"
-printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k sh src dest digest; do
+: > "$scratch/seqctr"
+printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k sh src dest digest pop; do
     [ -n "$src" ] || continue
-    seq=$(basename "$src" | sed 's/^\([0-9]*\).*/\1/')
+    last=$(awk -F'\t' -v k="$k" '$1 == k { v = $2 } END { print v + 0 }' "$scratch/seqctr")
+    n=$((last + 1))
+    printf '%s\t%s\n' "$k" "$n" >> "$scratch/seqctr"
+    seq=$(printf '%04d' "$n")
+    scheme=$(lock_kind_scheme "$lock" "$k")
+    pattern=$(lock_pattern "$lock" "$scheme")
+    namespace=$(sed -n "s/^  identifier_schemes\.${scheme}\.namespace: *//p" "$corpus/.headwater/overlay.yml")
     id=$(printf '%s' "$pattern" | sed -e "s/{namespace}/$namespace/" -e "s/{seq:04d}/$seq/")
-    state=$(awk -F'\t' -v s="$src" '$1 == s { print $2; exit }' "$scratch/statuses")
-    since=$(date_of "$fixtures/$src")
+    raw=$(status_of "$fixtures/$src")
+    if [ -n "$raw" ]; then
+        state=$(awk -F'\t' -v s="$src" '$1 == s { print $2; exit }' "$scratch/statuses")
+        since=$(date_of "$fixtures/$src")
+        verified="$verified1"
+    else
+        # No status convention in this source at all. The runner writes the
+        # constants below, the same way it already writes `summary`: `draft`
+        # because nothing here has been reviewed and accepted by anyone, and
+        # the population's own pin date stands in for a date the source does
+        # not carry.
+        state=draft
+        since=$(pin_field_n "$pop" Pin | sed -n 's/.*committed \([0-9][0-9-]*\)T.*/\1/p')
+        verified="$since"
+    fi
     title=$(title_of "$fixtures/$src" | sed 's/\\/\\\\/g; s/"/\\"/g')
     mkdir -p "$(dirname "$corpus/$dest")"
     # An adopter that mints an identifier claims it, so the assembler does
     # too. Without this the run reports one `identifier.claim.missing` per
     # document, which is a defect of the assembly and not of their prose.
-    mkdir -p "$corpus/.headwater/ids/decision_id"
-    printf '%s\n' "$dest" > "$corpus/.headwater/ids/decision_id/$id"
+    mkdir -p "$corpus/.headwater/ids/$scheme"
+    printf '%s\n' "$dest" > "$corpus/.headwater/ids/$scheme/$id"
     {
         printf -- '---\n'
         printf 'id: %s\n' "$id"
@@ -457,14 +571,17 @@ printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k sh src dest digest;
         printf 'status: %s\n' "$state"
         printf 'status_since: %s\n' "$since"
         printf 'last_verified: %s\n' "$verified"
-        printf 'summary: A pinned external decision record, assembled with front matter and no other edit.\n'
+        printf 'summary: A pinned external %s record, assembled with front matter and no other edit.\n' "$k"
+        if [ "$(lock_requires_facet "$lock" "$k" waiting_on)" = "yes" ]; then
+            printf 'waiting_on: build\n'
+        fi
         printf -- '---\n\n'
         cat "$fixtures/$src"
     } > "$corpus/$dest"
 done
 
 # Byte identity, which is the assertion the whole group rests on.
-printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k sh src dest digest; do
+printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r k sh src dest digest pop; do
     [ -n "$src" ] || continue
     if [ ! -f "$corpus/$dest" ]; then
         echo "  FAIL  $dest was not assembled"
@@ -490,7 +607,7 @@ passed=$((passed + ${bytes_ok:-0}))
 failed=$((failed + ${bytes_bad:-0}))
 
 echo
-echo "case group 6 — the corpus types, and the section contract holds"
+echo "case group 6 — the corpus types, kind by kind"
 (cd "$corpus" && "$engine" check --no-cache) > "$scratch/check.out" 2> "$scratch/check.err"
 extcode=$?
 docs=$(sed -n 's/^ *\([0-9][0-9]*\) files under the corpus root$/\1/p' "$scratch/check.out" | head -n 1)
@@ -500,17 +617,54 @@ if [ "${docs:-0}" -eq 0 ]; then
 else
     pass "the assembled corpus holds at least one document (${docs} read)"
 fi
-judge "every document of the external corpus is typed" "${docs:-0}" "${typed:-0}"
-onekind=$(printf '%s\n' "$rows" | cut -f1 | sort -u | head -n 1)
-atkind=$(sed -n "s/^ *\([0-9][0-9]*\) typed $onekind$/\1/p" "$scratch/check.out" | head -n 1)
-judge "every one of them types at $onekind" "${typed:-0}" "${atkind:-0}"
-# Two readings, and the second is what stops a silent skip reading as a pass.
-# The report's finding lines name a rule with its obligation in parentheses;
-# its check-instance block says how many times the rule ran.
-missing=$(grep -c 'section.required.missing (OB-' "$scratch/check.out" || true)
+judge "every document of every external population is typed" "${docs:-0}" "${typed:-0}"
+# Every kind the source table names types its own row count, not just the
+# first kind's — this is what makes the assertion hold with one population or
+# with several.
+: > "$scratch/kindcheck"
+printf '%s\n' "$rows" | cut -f1 | sort -u | while read -r k; do
+    [ -n "$k" ] || continue
+    want=$(printf '%s\n' "$rows" | awk -F'\t' -v k="$k" '$1 == k' | grep -c .)
+    got=$(sed -n "s/^ *\([0-9][0-9]*\) typed $k\$/\1/p" "$scratch/check.out" | head -n 1)
+    if [ "$want" = "${got:-0}" ]; then
+        echo "  ok    every one of the $want row(s) of kind $k types at $k"
+        echo ok >> "$scratch/kindcheck"
+    else
+        echo "  FAIL  every one of the $want row(s) of kind $k types at $k"
+        echo "          expected [$want], read [${got:-0}]"
+        echo fail >> "$scratch/kindcheck"
+    fi
+done
+kindok=$(grep -c '^ok$' "$scratch/kindcheck" 2>/dev/null | head -n 1)
+kindbad=$(grep -c '^fail$' "$scratch/kindcheck" 2>/dev/null | head -n 1)
+passed=$((passed + ${kindok:-0}))
+failed=$((failed + ${kindbad:-0}))
+
+echo
+echo "case group 7 — the section contract: asserted on the first population, recorded on the second"
+# Attribute each `section.required.missing` finding to the document named on
+# the "path ✗ error"/"path ▲ warn" header line above it, so that a corpus with
+# two populations can hold the first to its proven claim without the second's
+# honest, unrepaired gap reddening a suite that expects it.
+awk '
+    /(✗ error|▲ warn)$/ { path = $0; sub(/ (✗ error|▲ warn)$/, "", path); sub(/^ +/, "", path); next }
+    /section\.required\.missing \(OB-/ { print path }
+' "$scratch/check.out" > "$scratch/missing-by-doc"
 ran=$(sed -n 's/^ *\([0-9][0-9]*\) instances of section.required.missing$/\1/p' "$scratch/check.out" | head -n 1)
-judge "no document of this corpus is missing a required section" "0" "${missing:-0}"
-judge "and the section rule ran over every document of it" "${docs:-0}" "${ran:-0}"
+judge "the section rule ran over every document of every population" "${docs:-0}" "${ran:-0}"
+
+sort -u "$scratch/missing-by-doc" > "$scratch/missing-by-doc.sorted" 2>/dev/null || : > "$scratch/missing-by-doc.sorted"
+printf '%s\n' "$rows" | awk -F'\t' '$1 == "decision" { print $4 }' | sort -u > "$scratch/decision-dests"
+missing_decision=$(comm -12 "$scratch/decision-dests" "$scratch/missing-by-doc.sorted" | grep -c . || true)
+judge "no document of the first (inspect-evals) population is missing a required section" "0" "${missing_decision:-0}"
+
+printf '%s\n' "$rows" | awk -F'\t' '$1 != "decision" { print $4 }' | sort -u > "$scratch/other-dests"
+other_total=$(printf '%s\n' "$rows" | awk -F'\t' '$1 != "decision"' | grep -c . || true)
+if [ "${other_total:-0}" -gt 0 ]; then
+    missing_other_docs=$(comm -12 "$scratch/other-dests" "$scratch/missing-by-doc.sorted" | grep -c . || true)
+    missing_other_findings=$(grep -Ff "$scratch/other-dests" "$scratch/missing-by-doc" 2>/dev/null | grep -c . || true)
+    echo "  recorded, not asserted: ${missing_other_docs:-0} of ${other_total} documents outside the first population are missing a required section (${missing_other_findings:-0} finding(s)), and it is not repaired"
+fi
 
 (cd "$corpus" && "$engine" check --strict --no-cache) > "$scratch/strict.out" 2> "$scratch/strict.err"
 strictcode=$?

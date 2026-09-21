@@ -160,3 +160,34 @@ The fourth Done-when box of [#488](https://github.com/headwater-ai/headwater/iss
 **A run inside the assembled corpus answers a different question, and its answer is not a defect in their prose.** 8 of the 15 point out of `adr/`, so a corpus root that holds the 10 files alone cannot resolve them and `headwater check` reports `link.path.unresolved`. That is a property of lifting files out of a repository, recorded rather than repaired, and it is the same distinction the [`diataxis-site` run record](../../diataxis-site/fixtures/README.md#the-run-record-that-criterion-4-asks-for) draws. The question the issue asked is the upstream one, and the upstream answer is 15 of 15.
 
 **The cross-reference convention the issue describes is mostly prose that no tool can follow.** No file carries a `## Related ADRs` heading; `0007` carries the literal words as a prose lead-in on one line. Across the set there are 21 textual `ADR-00NN` references, of which 10 are each file's own identifier in its `#` title. Of the 11 that point at another record, 7 are markdown links and 4 are bare text. A cross-reference written as bare text is invisible to a link checker on either side of the fence.
+
+## The second external corpus of criterion 4: Sysl's `docs/ideas/root.md`
+
+Everything above this line types at `decision`. This section is `obligation_record`'s, and it exists for a different reason than `inspect_evals` does. `obligation_record` requires the `waiting_on` facet and a `Context`/`Obligation`/`Discharge` section contract, and no invented fixture can test whether a real tradition satisfies either, because one set of people wrote the rules and the prose. An ADR log is the wrong source to ask, because it already has a proposal convention of its own. Sysl's `docs/ideas/` is the corpus this library named for that reason: it has no proposal convention at all, and `root.md` is a bare bullet list under one heading with no status, no date and no section that Nygard or this entry would recognize. It is vendored unedited for exactly that reason, and the run below is what a real "we should build this someday" list looks like against a kind that asks it to be an obligation record.
+
+### Source, revision and paths
+
+| | |
+|---|---|
+| Upstream | [`anz-bank/sysl`](https://github.com/anz-bank/sysl) |
+| License | Apache-2.0, so the vendored copy below is clean with attribution. `root.md` carries no per-file notice of its own, and this table cites the upstream repository rather than vendoring a second `LICENSE`: the two cases this population runs, the digest seal and the byte-identity check, both read the vendored file and neither reads a license file |
+| Pin | `43c498362ce2951e7f7442430f52f780e8bb0b56`, committed 2020-03-16T23:49:31Z on `master` |
+| Paths | `docs/ideas/root.md` at that commit, unedited |
+
+The runner reads the table below the same way it reads the first population's. A file under `sources/sysl/` with no row here fails the run, and a row naming a file that is not there fails it too.
+
+| Kind | Shelf | Pinned source | Assembled path | SHA-256 of the pinned file |
+|---|---|---|---|---|
+| `obligation_record` | `obligations` | `sources/sysl/root.md` | `docs/obligations/0001-sysl-root.md` | `929eb54ffcb176294558f037997a87f44aec84c22d0f4e74682b263d6502f3df` |
+
+### What this source has none of, and what the runner writes in its place
+
+`root.md` carries no `## Status` heading and no `## Date` heading, so it states no value the first population's status map could read even if this table pointed one at it. The runner writes `status: draft`, on the reading that nothing in this list has been proposed to anyone, let alone accepted, and it takes the pin date above as both `status_since` and `last_verified`, standing in for a date the source itself does not carry.
+
+`obligation_record` also requires `waiting_on`, closed to `ruling`, `build`, `measurement` and `adopter`, and `root.md` names none of them: it is prose, not a taxonomy document. Three of its four bullets are literal, unimplemented syntax proposals ("allow for file name extension...", "specify paths relative to root...", "allow for filenames rather than modules..."), which is the textbook case the guidance on `build` describes — "the answer is known and somebody has to write the code or the prose." The runner writes `waiting_on: build`, the same treatment `summary` already gets on the first population: a value the kind requires and the tradition's own prose does not supply.
+
+### The run record for this population, recorded and not repaired
+
+Criterion 4 asks for a recorded run, not a clean one, and this population is the one this library's doctrine keeps for that reading rather than for a passing section contract. `root.md`'s single `### Future enhancement ideas` heading is not `Context`, `Obligation` or `Discharge`, and rewriting it to read as one would defeat the reason this source was chosen over an ADR log that already has a convention. The [case table](#the-case-table) below asserts the section contract only over the first population; this population's own section-contract result is printed by the runner and recorded here rather than asserted, on the same reading `diataxis-site` already established for a kind whose section contract a real source was never written to satisfy.
+
+Recorded on 2026-09-21 by `sh tools/repo/decision-record-fixtures.sh`, against engine 0.2.0 and `headwater/standard` 4.4.0: 1 of 1 document typed at `obligation_record`, and 3 of 3 required sections (`Context`, `Obligation`, `Discharge`) reported missing — `section.required.missing` fires once per absent heading, and `root.md` carries none of the three. This is not a defect in the runner's assembly: it is the honest measurement of a source with no proposal convention, checked against a kind that expects one, and it is the answer the issue that named this source asked for.
