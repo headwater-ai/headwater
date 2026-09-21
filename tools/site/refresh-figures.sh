@@ -55,23 +55,37 @@
 # WHAT `--check` COMPARES, AND WHAT IT DOES NOT
 #
 #   `--check` compares the 26 figures that are a function of the corpus and the
-#   lock. Eight are a function of the clock as well, and those are reported and
-#   never failed. `headwater generate` already states this rule of its own
-#   `coverage_report` projection, in the sentence it prints on every run:
+#   lock. Eight are also a function of the clock: `run.date` and the seven that
+#   read the findings list, `findings.raised`, `findings.reported`,
+#   `findings.suppressed`, `findings.errors`, `findings.advisory`,
+#   `findings.directives` and `rules.fired`. Two dated mechanisms move a
+#   finding between reported and suppressed with no file touched, and both are
+#   in this engine: `check/src/adoption.rs` retires a migration task at
+#   `task.until < now`, and `check/src/suppression.rs` expires an escape
+#   directive at `suppression.until < now`. `headwater generate` already
+#   states this rule of its own `coverage_report` projection, in the sentence
+#   it prints on every run:
 #
 #     "its content is a function of the clock as well as of the corpus and the
 #      lock, because a migration task lapses and a suppression expires on a
 #      date. A committed copy would fail this check on a morning when nothing
 #      changed."
 #
-#   The eight are `run.date` and the seven that read the findings list:
-#   `findings.raised`, `findings.reported`, `findings.suppressed`,
-#   `findings.errors`, `findings.advisory`, `findings.directives` and
-#   `rules.fired`. Two dated mechanisms move a finding between reported and
-#   suppressed with no file touched, and both are in this engine:
-#   `check/src/adoption.rs` retires a migration task at `task.until < now`, and
-#   `check/src/suppression.rs` expires an escape directive at
-#   `suppression.until < now`.
+#   These eight are reported rather than failed only where the clock is the
+#   reason they moved. A change to one of them that a tree edit caused is an
+#   ordinary stale figure, and `--check` fails it exactly as it fails any of
+#   the 26. Membership in the eight is necessary and not sufficient (#823):
+#   the earlier form of this script excused a difference in one of the eight
+#   whenever the key name was one of them, whether or not a dated mechanism
+#   had actually lapsed, and #816 and #822 both shipped a false figure that way.
+#
+#   The distinguishing measurement runs the engine a second time, at the date
+#   the page currently states (`G0`), against the tree in front of you. If
+#   `G0`'s value for a clock key equals what the page states, the tree has not
+#   moved on that key since the page was written, and today's value differing
+#   from the page is explained by the clock alone: the label `clock only`
+#   applies. If `G0` disagrees with what the page states, the tree moved that
+#   key independent of the clock, and the label does not apply.
 #
 #   Measured on 2026-09-06, each arm on a tree that nothing else touched:
 #
@@ -86,7 +100,9 @@
 #   exits 0 on both sides of it. So on the morning a directive lapses, a gate
 #   over these figures is the only thing that goes red, on a tree nobody
 #   touched, saying a page disagrees with a run. `until` is required on every
-#   directive, so every directive reaches that morning.
+#   directive, so every directive reaches that morning. `G0` for that morning
+#   equals what the page states, on both of the seven findings-derived keys and
+#   on `run.date`, so the two-run measurement still excuses it.
 #
 #   The page's claim is that these numbers came from a run on the date beside
 #   them, and that claim stays true. Write mode rewrites all eight on every
@@ -214,10 +230,10 @@ trap 'rm -rf "$WORK"' EXIT
 "$HW" check --root . > "$WORK/check.txt" 2>/dev/null || true
 "$HW" conformance --root . > "$WORK/conformance.txt" 2>/dev/null || true
 
-python3 - "$MODE" "$WORK" <<'PY'
-import json, re, sys, pathlib
+python3 - "$MODE" "$WORK" "$HW" <<'PY'
+import json, re, subprocess, sys, pathlib
 
-mode, work = sys.argv[1], pathlib.Path(sys.argv[2])
+mode, work, hw = sys.argv[1], pathlib.Path(sys.argv[2]), sys.argv[3]
 root = pathlib.Path.cwd()
 
 check = json.loads((work / "check.json").read_text())
@@ -318,9 +334,14 @@ put("taxonomy.lock", check["taxonomy"]["lock"][:19] + "…",
 put("run.date", check["clock"], "check --json .clock")
 
 # --- 6. the command surface, from the generated verb index ----------------
+# `verb_index.rs` renders "verb"/"verbs" and "has"/"have" each on its own
+# count, singular at exactly 1, so a corpus whose contracted or uncontracted
+# count is exactly 1 writes "1 has a contract" or "1 has none" (#811). The
+# pattern read both instead of the plural alone, which matched neither and
+# refused every run over such a tree.
 verbs = (root / "docs/interfaces/README.md").read_text()
-m = re.search(r"dispatches (\d+) verbs\. (\d+) of them have a contract on this"
-              r" shelf, and (\d+) have none", verbs)
+m = re.search(r"dispatches (\d+) verbs?\. (\d+) of them (?:has|have) a "
+              r"contract on this shelf, and (\d+) (?:has|have) none", verbs)
 if not m:
     sys.exit("refresh-figures.sh: docs/interfaces/README.md does not state a "
              "verb count in the form this script reads")
@@ -381,9 +402,97 @@ if mode == "print":
         print("%-*s  %-12s  %s" % (width, k, fig[k], src[k]))
     raise SystemExit(0)
 
+rel = lambda p: p.relative_to(root)
+
+# The partition. A figure is gateable where it is a function of the corpus and
+# the lock, and these eight are not: each one reads the clock, or reads the
+# findings list, and two dated mechanisms move a finding between reported and
+# suppressed with the tree untouched. An adoption task lapses
+# (`check/src/adoption.rs`, `task.until < now`) and an escape directive expires
+# (`check/src/suppression.rs`, `suppression.until < now`). `rules.fired` counts
+# distinct rule names among the findings, so it moves with them.
+#
+# Membership in this set is necessary and never sufficient (#823): a
+# difference in one of these eight is excused only where the clock is the
+# reason it moved, which the G0 measurement below decides. The other 26 keys
+# are gateable outright. See WHAT `--check` COMPARES above for the measurement
+# behind this list, and why it is eight rather than one.
+CLOCK_KEYS = {
+    "run.date",
+    "findings.raised", "findings.reported", "findings.suppressed",
+    "findings.errors", "findings.advisory", "findings.directives",
+    "rules.fired",
+}
+
+# The partition names keys, so it goes stale the moment one is renamed. This is
+# that list held against the run rather than trusted, the same way the page
+# denominator below is.
+missing = sorted(CLOCK_KEYS - set(fig))
+if missing:
+    sys.exit("refresh-figures.sh: the clock partition names %s, which this run "
+             "does not measure" % ", ".join(missing))
+
+# The G0 measurement (#823). A clock-key figure's page states the date it was
+# run beside it, `run.date`. Running this engine again at that date, against
+# the *current* tree, answers what a run on the page's own claimed date would
+# see today. Where that answer agrees with what the page states, the tree has
+# not moved on that key since the page was written, and today's own value
+# differing from the page is the clock alone. Where it disagrees, the tree
+# moved that key independent of the clock, and the figure is ordinary stale.
+#
+# Today's own run answers for today's own date at no extra cost: the common
+# case is a page nobody has let go stale, where the page's `run.date` already
+# is today's, and this returns `fig` unchanged rather than spending a second
+# process on a question already answered.
+_g0_cache = {}
+
+
+def measure_g0(date):
+    if date == fig["run.date"]:
+        return fig
+    if date in _g0_cache:
+        return _g0_cache[date]
+    cj = subprocess.run([hw, "check", "--root", ".", "--json", "--now", date],
+                        capture_output=True, text=True).stdout
+    ct = subprocess.run([hw, "check", "--root", ".", "--now", date],
+                        capture_output=True, text=True).stdout
+    try:
+        data = json.loads(cj)
+    except ValueError:
+        sys.exit("refresh-figures.sh: `headwater check --now %s --json` wrote "
+                 "nothing this script can read as JSON" % date)
+    findings = data["findings"]
+    suppressed = [f for f in findings if f.get("escape") == "suppression"]
+    reported = [f for f in findings if f.get("escape") != "suppression"]
+    m = re.search(r"^\s*(\d+) findings hidden by (\d+) directives\s*$", ct, re.M)
+    if not m:
+        sys.exit("refresh-figures.sh: no suppressions block in `headwater "
+                 "check --now %s`" % date)
+    g0 = {
+        "run.date": data["clock"],
+        "findings.raised": str(len(findings)),
+        "findings.reported": str(len(reported)),
+        "findings.suppressed": str(len(suppressed)),
+        "findings.errors": str(len([f for f in reported if f["severity"] == "error"])),
+        "findings.advisory": str(len([f for f in reported if f["severity"] == "warn"])),
+        "findings.directives": m.group(2),
+        "rules.fired": str(len({f["rule"] for f in findings})),
+    }
+    _g0_cache[date] = g0
+    return g0
+
+
 used, stale, unknown = set(), [], []
+page_dates = {}
 for page in pages:
     before = page.read_text()
+
+    # Read off before anything below rewrites it. A page that carries any of
+    # the seven findings-derived clock keys carries `run.date` too, which the
+    # classification step below checks rather than assumes.
+    page_date_m = re.search(
+        r'<(\w+)\b[^>]*\bdata-figure="run\.date"[^>]*>([^<]*)</\1>', before)
+    page_dates[page] = page_date_m.group(2) if page_date_m else None
 
     def sub(m):
         key = m.group(3)
@@ -399,34 +508,26 @@ for page in pages:
     if mode == "write" and after != before:
         page.write_text(after)
 
-# The partition. A figure is gateable where it is a function of the corpus and
-# the lock, and these eight are not: each one reads the clock, or reads the
-# findings list, and two dated mechanisms move a finding between reported and
-# suppressed with the tree untouched. An adoption task lapses
-# (`check/src/adoption.rs`, `task.until < now`) and an escape directive expires
-# (`check/src/suppression.rs`, `suppression.until < now`). `rules.fired` counts
-# distinct rule names among the findings, so it moves with them.
-#
-# The other 26 keys are gateable. See WHAT `--check` COMPARES above for the
-# measurement behind this list, and why it is eight rather than one.
-CLOCK_KEYS = {
-    "run.date",
-    "findings.raised", "findings.reported", "findings.suppressed",
-    "findings.errors", "findings.advisory", "findings.directives",
-    "rules.fired",
-}
-
-# The partition names keys, so it goes stale the moment one is renamed. This is
-# that list held against the run rather than trusted, the same way the page
-# denominator below is.
-missing = sorted(CLOCK_KEYS - set(fig))
-if missing:
-    sys.exit("refresh-figures.sh: the clock partition names %s, which this run "
-             "does not measure" % ", ".join(missing))
-stale_measured = [s for s in stale if s[1] not in CLOCK_KEYS]
-stale_clock = [s for s in stale if s[1] in CLOCK_KEYS]
-
-rel = lambda p: p.relative_to(root)
+# Classify each stale clock-key figure by cause rather than by name. `run.date`
+# is the clock itself, so a difference in it has no tree cause to check for.
+# Every other clock key is checked against G0: `was`, here, is the value the
+# page stated before this run touched it, which is the one side of the G0
+# comparison that a rewrite has not yet erased.
+stale_measured, stale_clock = [], []
+for entry in stale:
+    page, key, was, _now = entry
+    if key not in CLOCK_KEYS:
+        stale_measured.append(entry)
+        continue
+    if key == "run.date":
+        stale_clock.append(entry)
+        continue
+    date = page_dates.get(page)
+    if date is None:
+        sys.exit("refresh-figures.sh: %s carries %s but no run.date span this "
+                 "script can read, so it cannot tell the clock from the tree"
+                 % (rel(page), key))
+    (stale_clock if measure_g0(date)[key] == was else stale_measured).append(entry)
 
 
 def collapse(occurrences):
