@@ -1,10 +1,10 @@
 ---
-id: HW-DR-0079
+id: HW-DR-0080
 status: current
 status_since: 2026-09-21
 summary: "The corpus-staleness dashboard (#505) ships as a free, self-hosted companion tool, with no hosted form now. Its data model carries a corpus identity on every row from day one, so a later hosted form is an addition rather than a rewrite."
 last_verified: 2026-09-21
-title: "Q65 — the corpus dashboard ships free and self-hosted, with tenant isolation stated as a data-model constraint from day one"
+title: "Q66 — the corpus dashboard ships free and self-hosted, with tenant isolation stated as a data-model constraint from day one"
 relations:
   traces_to:
     - HW-DR-0011
@@ -17,7 +17,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# Q65 — the corpus dashboard ships free and self-hosted, with tenant isolation stated as a data-model constraint from day one
+# Q66 — the corpus dashboard ships free and self-hosted, with tenant isolation stated as a data-model constraint from day one
 
 ## Context
 
