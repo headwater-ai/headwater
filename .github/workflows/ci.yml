@@ -1224,6 +1224,27 @@ jobs:
         # It runs `awk`, `sed`, `grep` and `comm`, builds no engine, opens no
         # socket, and writes only under a temporary directory.
         run: sh tools/repo/obligation-register-fixtures.sh
+      - name: The decision register names no record the shelf lacks, and claims no completeness it does not have
+        # `docs/spec/09-decisions.md` named 37 of the 80 records on
+        # `docs/decisions/*.md` on 2026-09-21 and still declared
+        # `supersedes: HW-REG-open-questions`, an edge that claims a
+        # completeness it did not have against the generated register, which
+        # `headwater generate` holds whole against the shelf. Two readers
+        # relied on the hand register's last heading to pick the next
+        # decision number on 2026-09-11 and both minted `HW-DR-0044`, a
+        # number the shelf already carried.
+        # [HW-DR-0081](../../docs/decisions/0081-the-hand-authored-decision-register-indexes-a-subset-of-the-shelf-and-stops-asserting-it-supersedes-the-complete-one.md)
+        # rules that the hand register stays a curated selection and stops
+        # making that claim. This step holds the ruling: every record the
+        # register cites by identifier still exists on the shelf, and the
+        # register's front matter never again declares the `supersedes` edge
+        # that misled the two readers above. It does not require every shelf
+        # record to have a heading here, because the ruling says that is not
+        # what this file is for.
+        #
+        # It runs `awk`, `sed` and `comm`, builds no engine, opens no socket,
+        # and writes only under a temporary directory.
+        run: sh tools/repo/decision-register-fixtures.sh
       - name: No script under .claude/ or tools/ names one build profile and skips the other
         # `engine/.cargo/config.toml` ships `dev-release-cli` as the fast
         # build this repository tells a session to build, and

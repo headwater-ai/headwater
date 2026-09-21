@@ -826,7 +826,6 @@ fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
         "id: HW-REG-open-questions",
         "doc_type: decision_register",
         "  superseded_by:",
-        "    - HW-REG-decisions",
         "    - HW-REG-open-obligations",
     ] {
         assert!(
