@@ -7694,7 +7694,7 @@
           "id": "HW-OBL-0145",
           "status": "current",
           "status_since": "2026-09-06",
-          "last_verified": "2026-08-26",
+          "last_verified": "2026-09-21",
           "title": "The CI job named \\\"(advisory)\\\" carries every blocking shell suite in the repository",
           "summary": "The CI job named advisory blocks on eleven of its own steps, not the two its name describes.",
           "provenance": {
@@ -8138,7 +8138,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "The ruleset on the default branch requires zero approving reviews, which is the posture HW-DR-0034 named as the thing that erases its line. The corpus owes a ruling.",
-          "last_verified": "2026-09-06",
+          "last_verified": "2026-09-21",
           "title": "The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it",
           "waiting_on": "ruling",
           "provenance": {
