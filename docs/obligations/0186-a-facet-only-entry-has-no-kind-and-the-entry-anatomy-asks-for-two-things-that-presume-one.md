@@ -1,11 +1,14 @@
 ---
 id: HW-OBL-0186
 status: current
-status_since: 2026-09-11
-summary: "A facet-only entry declares no kind, so the worked corpus and the templates slot that the anatomy asks for have no stated content."
-last_verified: 2026-09-11
+status_since: 2026-09-21
+summary: "The templates half is ruled by HW-DR-0079. What stays open is criterion 4: whether a facet-only entry's worked corpus, typed under a borrowed kind, is a demonstration or a borrowing."
+last_verified: 2026-09-21
 title: "A facet-only entry has no kind, and the entry anatomy asks for two things that presume one"
 waiting_on: ruling
+relations:
+  traces_to:
+    - HW-DR-0079
 provenance:
   warrant: asserted
   agency: agent
@@ -28,14 +31,16 @@ The [entry anatomy](../taxonomies/README.md#what-an-entry-ships) asks every entr
 
 ## Obligation
 
-The owner owes one sentence in criterion 2 and one in criterion 4 of the [library index](../taxonomies/README.md#admission-criteria). Each one says what a partial entry ships in that slot. Three answers are open, and this record prefers none of them. The anatomy may bind the concrete kinds an entry declares, which makes an absent `templates/` correct. The anatomy may bind the kinds an entry's corpus uses, which asks `diataxis` for templates over kinds another entry owns. Or a partial entry may take a reduced anatomy, which the index then names.
+**The criterion-2 half is answered.** [HW-DR-0079](../decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md) rules that a facet-only entry that adds no concrete kind ships `templates/` absent entirely. It also rules that an entry that extends a base kind it did not add may ship a template fragment for that kind. The [library index](../taxonomies/README.md#what-an-entry-ships) carries both sentences now.
 
-The same hole in criterion 2 is one of the two readings that [#520](https://github.com/headwater-ai/headwater/issues/520) carries. That issue asks what criteria 2 and 5 mean for an entry that is not a whole tradition. This record is the criterion-2 half. It states the gap as an obligation of the corpus rather than as an issue number. A reader who follows a citation to an open issue arrives at the question rather than at the answer.
+**The criterion-4 half stays open.** The owner still owes a sentence in criterion 4 of the library index. Criterion 4 asks every entry for a worked instance corpus. The `diataxis` fixture corpus has no kind of its own to type a document as, and it takes `decision` and `specification` from the base instead. Every mode page in it is therefore a `specification`. It carries the `Scope` and `Behavior` headings of the base, which a tutorial page does not take naturally. Whoever rules on criterion 4 states whether that borrowing counts as a demonstration of the base's kinds or as a borrowing the anatomy must name.
 
-**Nothing measures either slot.** Criteria 3, 6 and 7 became mechanical when the resolver landed. Criteria 2 and 4 read a directory listing, and no verb reads one. A reviewer reads the anatomy by hand against the entry in front of them. So a second facet-only entry takes the same reading again, with no record that the first one took it.
+The same hole in criterion 4 is the half of [#520](https://github.com/headwater-ai/headwater/issues/520) that decision [HW-DR-0079](../decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md) does not reach. That decision rules criteria 2 and 5. It does not rule criterion 4. This record states the gap as an obligation of the corpus rather than as an issue number. A reader who follows a citation to an open issue arrives at the question rather than at the answer.
+
+**Nothing measures criterion 4's slot.** Criteria 3, 6 and 7 became mechanical when the resolver landed. Criterion 4 reads a directory listing, and no verb reads one. A reviewer reads the anatomy by hand against the entry in front of them. So a second facet-only entry takes the same reading again, with no record that the first one took it.
 
 ## Discharge
 
-This record discharges when the library index states what a facet-only entry ships under criterion 2 and under criterion 4. The statement carries its reason. A ruling that the present shape is correct discharges this record as fully as a ruling that refuses the shape. What stands open is the silence rather than either answer.
+**The criterion-2 half discharged on 2026-09-21.** [HW-DR-0079](../decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md) states what a facet-only entry ships under criterion 2, with the reason, and the library index carries it.
 
-A second and smaller item stands behind it. The worked corpus of a facet-only entry types every page under a kind that another entry owns. The section contract of that kind then reaches the page. Whoever rules on criterion 4 states whether that is a demonstration or a borrowing. A ruling that calls it a borrowing needs a form for a corpus that demonstrates facets alone.
+**The criterion-4 half stays open.** This record discharges the rest of it when the library index states what a facet-only entry's worked corpus counts as under criterion 4. The worked corpus of a facet-only entry types every page under a kind that another entry owns. The section contract of that kind then reaches the page. Whoever rules on criterion 4 states whether that is a demonstration or a borrowing. A ruling that calls it a borrowing needs a form for a corpus that demonstrates facets alone.

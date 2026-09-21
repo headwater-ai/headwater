@@ -23,14 +23,24 @@
 #
 # It writes nothing inside this checkout: every scratch root is under a
 # temporary directory, and the directory is removed at the end.
+# The engine this suite drives, resolved the way `tools/repo/resolve-engine.sh`
+# resolves it: either profile counts and the newer answers, `HEADWATER_BIN`
+# still overrides both. This suite read the `release` path alone until #647,
+# so a worktree built the way the build order tells a session to build it —
+# `--profile dev-release` and not `--release` — had no `release` binary and
+# this suite reported "no engine" against a real one sitting beside it.
 set -eu
 
 root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-bin=${HEADWATER_BIN:-$root/engine/target/release/headwater}
+. "$root/tools/repo/resolve-engine.sh"
+bin=${HEADWATER_BIN:-}
+if [ -z "$bin" ]; then
+  bin=$(hw_resolve_engine_bin "$root") || bin=
+fi
 
-if [ ! -x "$bin" ]; then
-  echo "n8n fixtures: no engine at $bin" >&2
-  echo "  build one with: cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
+if [ -z "$bin" ] || [ ! -x "$bin" ]; then
+  echo "n8n fixtures:" >&2
+  hw_resolve_engine_missing_message "$root" >&2
   exit 1
 fi
 

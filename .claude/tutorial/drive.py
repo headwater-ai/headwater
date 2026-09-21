@@ -45,6 +45,9 @@ import sys
 import tempfile
 import time
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools', 'repo'))
+import resolve_engine  # noqa: E402 — path must be set first
+
 DOC = 'docs/tutorials/your-first-governed-corpus.md'
 STATED_DATE = '2026-09-09'
 
@@ -252,9 +255,9 @@ def assert_true(label, condition, detail=''):
 
 def main():
     root = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.getcwd()
-    binary = os.environ.get('HEADWATER_BIN') or os.path.join(root, 'engine/target/release/headwater')
-    if not os.access(binary, os.X_OK):
-        raise SystemExit('tutorial: no engine at ' + binary)
+    binary = os.environ.get('HEADWATER_BIN') or resolve_engine.resolve_engine_bin(root)
+    if not binary or not os.access(binary, os.X_OK):
+        raise SystemExit('tutorial: ' + resolve_engine.missing_message(root))
 
     blocks, trimmed = read_blocks(root)
     if len(blocks) != 46:
