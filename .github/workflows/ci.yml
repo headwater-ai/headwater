@@ -23,44 +23,79 @@
 # than a count of two: an action from anywhere else runs code nobody here
 # reviews, on every push, with a token in the environment.
 #
-# Which runner both jobs take is a repository variable rather than a value
-# written here, so moving between the self-hosted runner and `ubuntu-latest`
-# costs no commit and no pull request. `CI_RUNNER` holds a JSON list of
-# labels, and an unset variable means the self-hosted runner:
+# Which runner a job takes depends on how the run was created, never on a
+# value a pull request can flip. `github.event_name` comes from the webhook
+# that started the run, and a fork cannot make that webhook say `push`: a
+# `push` event fires only for a ref actually written to this repository,
+# which needs write access nobody outside this project holds. A
+# `pull_request` event, by contrast, evaluates the workflow file as the
+# pull request's own author wrote it — including this file — so no
+# condition written here can stop a hostile fork from deleting this very
+# line in its own copy and hardcoding `self-hosted` in its place. What
+# actually stops that run from executing is this repository's fork-PR
+# approval setting (`fork_pr_contributor_approval: all_external_contributors`,
+# the strictest GitHub offers): every run started by someone outside this
+# repository holds for a manual click before anything on it runs. Never give
+# that click to a run whose diff touches `.github/` without reading the diff
+# first — that is the actual boundary, and no expression below substitutes
+# for reading it.
 #
-#   gh variable set CI_RUNNER --body '["ubuntu-latest"]'   # GitHub-hosted
-#   gh variable delete CI_RUNNER                           # self-hosted again
-#   gh variable list                                       # which one is live
+# So self-hosted eligibility is written as `github.event_name == 'push'`,
+# never as a check on which repository opened the pull request: the latter
+# lives in a field the pull request's own author controls, the former does
+# not. `CI_RUNNER` selects the labels for a push-triggered run, and an unset
+# variable now falls back to `ubuntu-latest` — the reverse of the read this
+# comment gave before this repository had a self-hosted runner to consider.
+# A `pull_request`-triggered run takes `ubuntu-latest` unconditionally, with
+# no variable read at all: this repository is public, GitHub-hosted Actions
+# minutes on a public repository are unmetered, and there is no cost
+# argument left for spending them on code nobody here has reviewed yet.
 #
-# The self-hosted runner is the default because a GitHub-hosted job spends the
-# org's included Actions minutes (2,000/month on the Free plan), and the
-# spending limit defaults to $0, which refuses such a job outright rather than
-# billing it. A self-hosted runner's compute is not metered against that limit
-# at all. The hosted image answers a different question: it takes 20 concurrent
-# jobs on this plan where the self-hosted runner takes one, so several branches
-# under review at once are a reason to spend minutes that one branch is not.
+#   gh variable set CI_RUNNER --body '["self-hosted", "headwater"]'  # opt in, push events only
+#   gh variable delete CI_RUNNER                                    # back to ubuntu-latest
+#   gh variable list                                                # which one is live
+#
+# The self-hosted runner itself is a single ephemeral container per job (see
+# the `github-runner` role in the `ansible-config` repository), never a job
+# that keeps state past its own run. `push` is the only trusted trigger this
+# file has, and "trusted" here means "written by someone with commit access
+# to this repository", not "read by a person before it ran": the build-order
+# agents push branches and open pull requests before anything of theirs is
+# reviewed. A dependency a `cargo build` pulls in can still run arbitrary
+# code as that push's own `build.rs`, so the container is what bounds a
+# compromised dependency to one job's cache volumes and a network policy
+# that reaches nowhere on this host or its LAN — it is not a claim that
+# everything reaching this runner was read first.
 #
 # Both images carry a rustup-managed stable toolchain rather than a distro one,
 # so the pinned floor is still what the container command in
 # `engine/README.md` is for. `--break-system-packages` on every
 # `pip install --user` below is what a PEP 668 Python needs, which the
-# self-hosted runner is and which the comment ahead of the `mkdocs` install
-# already names as a thing a contributor hits reproducing this locally. pip
-# accepts the flag where PEP 668 does not apply, so it costs the hosted image
-# nothing.
+# self-hosted runner's image is and which the comment ahead of the `mkdocs`
+# install already names as a thing a contributor hits reproducing this
+# locally. pip accepts the flag where PEP 668 does not apply, so it costs the
+# hosted image nothing.
 #
 # A hosted job restores a cargo cache and a pip cache, and the self-hosted
-# runner takes neither: `~/.cargo` and `engine/target` already persist on its
-# disk, so restoring them there would be an upload and a download in place of
-# a directory that is already correct. `runner.environment` is what tells the
-# two apart. So a hosted minute estimate is a cold build on the first run of a
-# lock file and a warm one after it.
+# runner takes neither: its `~/.cargo` and `engine/target` are named Docker
+# volumes that persist across the ephemeral containers built from them, so
+# restoring a GitHub Actions cache there would be an upload and a download in
+# place of a directory that is already correct. `runner.environment` is what
+# tells the two apart, and it reads `self-hosted` for this container exactly
+# as it would for a bare-metal self-hosted runner — nothing here
+# distinguishes the two, because this repository has only ever had the
+# containerized one.
 
 name: CI
 
+# `branches: ['**']` rather than `[main]`: a feature-branch push is exactly
+# the trusted-but-unreviewed case the block above describes, and it is also
+# the case this runner exists to make fast. What makes a `push` eligible for
+# self-hosted at all is that it is a `push`, regardless of which branch it
+# lands on — see above.
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
 
 # On the self-hosted runner a superseded run is not merely wasted compute: one
@@ -89,12 +124,17 @@ permissions:
 jobs:
   engine:
     name: Engine tests
-    # This literal is only the unset-variable fallback. Read the live value
-    # with `gh variable list` before treating either name as fact, and before
-    # reading a missing check-suite as a dead runner: a pull request that has
-    # gone `CONFLICTING` against a moved `main` gets no check-suite at all,
-    # on either runner, which looks the same from here.
-    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["self-hosted", "headwater"]') }}
+    # `CI_RUNNER` is only read on a `push`, and its own unset fallback is
+    # `ubuntu-latest`: the self-hosted labels are an opt-in the variable has
+    # to name explicitly (`gh variable set CI_RUNNER --body '["self-hosted",
+    # "headwater"]'`), not a default. A `pull_request` never reaches that
+    # branch of the expression regardless of what `CI_RUNNER` holds. Read
+    # the live value with `gh variable list` before treating either name as
+    # fact, and before reading a missing check-suite as a dead runner: a
+    # pull request that has gone `CONFLICTING` against a moved `main` gets
+    # no check-suite at all, on either runner, which looks the same from
+    # here.
+    runs-on: ${{ github.event_name == 'push' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
       - uses: actions/checkout@v4
       - name: The cargo cache, on a hosted runner only
@@ -198,8 +238,10 @@ jobs:
         # `ubuntu-latest` (2026-09-08): installing it is not enough on its
         # own, because GitHub's image refuses the uid map a user namespace
         # needs regardless — `bwrap: setting up uid map: Permission denied` —
-        # so this step stays, for whichever runner it does hold on, and the
-        # step below carries the route that holds on both.
+        # so this step stays for the hosted runner, and the step below
+        # carries the route that holds there. Hosted-only: the self-hosted
+        # runner's container has no `sudo`, and a step below gives it
+        # `HEADWATER_MOUNT_POINT` a different way.
         #
         # `apt-get update` exits nonzero when any one of its sources fails,
         # even a source this step never reads. Seen twice on 2026-09-09, both
@@ -208,6 +250,7 @@ jobs:
         # every Ubuntu archive updated in full. `|| true` swallows only that
         # exit code, on the update alone: the install line still fails the
         # step, and this job, on its own account.
+        if: runner.environment == 'github-hosted'
         run: |
           sudo apt-get update || true
           sudo apt-get install -y bubblewrap
@@ -219,11 +262,25 @@ jobs:
         # needs no user namespace at all, so this holds independent of the
         # AppArmor restriction that route 2 hits. `uid=$(id -u)` gives the
         # unprivileged test process, not root, ownership of the tmpfs, since
-        # `cargo test` never runs as root here.
+        # `cargo test` never runs as root here. Hosted-only, for the same
+        # reason as the step above.
+        if: runner.environment == 'github-hosted'
         run: |
           mkdir -p "$RUNNER_TEMP/mount-point"
           sudo mount -t tmpfs -o "size=64m,uid=$(id -u),gid=$(id -g),mode=0755" tmpfs "$RUNNER_TEMP/mount-point"
           echo "HEADWATER_MOUNT_POINT=$RUNNER_TEMP/mount-point" >> "$GITHUB_ENV"
+      - name: A real mount point, on the self-hosted runner's own container
+        # The container this job runs in is started with `--tmpfs
+        # /mnt/hw-mount:size=64m,uid=<runner uid>,gid=<runner gid>,mode=0755`
+        # (see the `github-runner` role in `ansible-config`), so route 1's
+        # tmpfs already exists before the runner process starts — there is
+        # no `sudo` in this image to make one from inside the job, and
+        # `mount` needs a capability Docker drops by default. This step only
+        # names the path the container already gave it; naming the same
+        # `HEADWATER_MOUNT_POINT` variable is what keeps
+        # `killed_publish.rs` unable to tell the two routes apart.
+        if: runner.environment == 'self-hosted'
+        run: echo "HEADWATER_MOUNT_POINT=/mnt/hw-mount" >> "$GITHUB_ENV"
       - name: Test
         run: cargo test --locked --workspace --exclude headwater-resolve
         working-directory: engine
@@ -275,15 +332,20 @@ jobs:
           # quiet skip that goes green regardless.
           HEADWATER_MOUNT_REQUIRED: 1
       - name: Unmount the mount point above
-        # The self-hosted runner's disk persists between jobs; a mount this
-        # job made is this job's to remove, win or lose, so `always()` rather
-        # than the default (this step only on a green job).
-        if: always()
+        # Only the hosted runner made a mount above to remove: the
+        # self-hosted runner's container is one job long, and its tmpfs goes
+        # with it the moment the job ends, mounted or not. `always()` rather
+        # than the default (this step only on a green job), since a mount
+        # the hosted runner made is that job's to remove win or lose.
+        if: always() && runner.environment == 'github-hosted'
         run: sudo umount "$RUNNER_TEMP/mount-point" 2>/dev/null || true
 
   headwater:
     name: headwater check (advisory)
-    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["self-hosted", "headwater"]') }}
+    # Same expression as the `engine` job above, and the same reason: see
+    # the top-of-file comment on why `push` is the only trigger this file
+    # trusts with the self-hosted label.
+    runs-on: ${{ github.event_name == 'push' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
       - uses: actions/checkout@v4
         with:
