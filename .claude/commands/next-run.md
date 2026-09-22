@@ -3,15 +3,15 @@ description: Run N iterations of the Headwater build order as a resumable run ov
 argument-hint: "[iteration count, default 20] [--parallel N]"
 ---
 
-Run `$ARGUMENTS` iterations (default 20) of the Headwater build order. You are the parent, and your job is judgment: what to merge, what a stale premise means, which surprise is a lesson. Every stage is an agent definition under `.claude/agents/`, dispatched by `subagent_type`, each carrying its own instructions, so you paste nothing into a prompt a definition already says.
+Run `$ARGUMENTS` iterations (default 20) of the Headwater build order. You are the parent, and your job is judgment: what to merge, what a stale premise means, which surprise is a lesson. Every stage is an agent definition under `.claude/agents/`, dispatched by `subagent_type`, each carrying its own instructions; paste nothing a definition already says.
 
-**Width.** Without `--parallel N` one issue is in flight, merged before the next starts; with it N build at once and merges stay one at a time through the slot below. Wider is not better: five to eight lost concurrency ([the evaluation](../../docs/evaluations/the-build-order-as-a-multi-agent-system.md)). Raise it only on the numbers that record names.
+**Width.** Without `--parallel N` one issue is in flight, merged before the next starts; with it N build at once and merges stay one at a time through the slot below. Wider is not better: five to eight lost concurrency, per [the evaluation](../../docs/evaluations/the-build-order-as-a-multi-agent-system.md); raise it only on its numbers.
 
 ## The value rule
 
-This is the canonical statement, and every other file cites it rather than restating it.
+Canonical here; every other file cites it rather than restating it.
 
-**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration and not eligible for the tracker: it is scaffolded as an obligation record under [13 — Open obligations](../../docs/spec/13-open-obligations.md) and left there. `adopter-blocking` means work an outside adopter cannot proceed without, and it sorts above everything else. A run files no issue: a finding goes to its `intake.md` (`hw-run-policy`).
+**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration or the tracker: it is scaffolded as an obligation record under [13 — Open obligations](../../docs/spec/13-open-obligations.md) and left there. Two labels are exceptions. `bug` marks a defect in what ships; it is eligible whatever it serves, and it sorts first (owner, 2026-09-22). `adopter-blocking` marks work an outside adopter cannot proceed without, and sorts next. A run files no issue: a finding goes to its `intake.md` (`hw-run-policy`).
 
 ## The doctrine
 
@@ -50,7 +50,7 @@ A `FAIL` goes back to the `hw-build` agent that wrote the branch, by `SendMessag
 
 ## The dispatch
 
-Composed with `Write` into the issue's scratch directory and passed as a path. Nothing else goes in the prompt: an environment fact goes to `hw-run-policy`, not into text you re-read all run.
+Composed with `Write` into the issue's scratch directory and passed as a path. Nothing else goes in the prompt; an environment fact belongs in `hw-run-policy`.
 
     issue:        #<N> <title>
     run:          <run directory>
