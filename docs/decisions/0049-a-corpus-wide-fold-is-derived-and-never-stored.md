@@ -1,7 +1,7 @@
 ---
 id: HW-DR-0049
-status: draft
-status_since: 2026-09-06
+status: current
+status_since: 2026-09-23
 summary: "A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict."
 last_verified: 2026-09-06
 title: "A corpus-wide fold is derived and never stored"
@@ -65,4 +65,4 @@ relations:
 
 **So the two cases have one remedy.** A count and an identifier both need a run over the merged state, and neither needs a new rule. The fold reaches the same conclusion from an unrelated defect. That agreement is the evidence that the conclusion is about merges rather than about counts.
 
-**An adopter inherits the rule rather than the artifacts.** Any corpus that two people edit in parallel meets the same anomaly in any artifact that stores a count over the whole corpus. The rule is the transferable part, and the two artifacts above are this repository's application of it.
+**An adopter inherits the rule and also the verbs that hold it.** Any corpus that two people edit in parallel meets the same anomaly in any artifact that stores a count over the whole corpus. The rule is the transferable part, and the two artifacts above are this repository's application of it.

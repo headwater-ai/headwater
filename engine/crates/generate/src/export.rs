@@ -1094,17 +1094,7 @@ fn envelope(
 }
 
 fn of_census(census: &Census) -> Json {
-    let tally = |tally: &Tally| {
-        Json::object([
-            ("in the graph", Json::Raw(tally.in_graph.to_string())),
-            ("carried", Json::Raw(tally.carried.to_string())),
-            ("accounted for", Json::Raw(tally.accounted.to_string())),
-            ("unaccounted for", Json::Raw(tally.unaccounted.to_string())),
-        ])
-    };
     Json::object([
-        ("nodes", tally(&census.nodes)),
-        ("edges", tally(&census.edges)),
         (
             "accounted for",
             Json::Array(

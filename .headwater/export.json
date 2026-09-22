@@ -9,18 +9,6 @@
   },
   "loss_set": [],
   "census": {
-    "nodes": {
-      "in the graph": 546,
-      "carried": 546,
-      "accounted for": 0,
-      "unaccounted for": 0
-    },
-    "edges": {
-      "in the graph": 754,
-      "carried": 754,
-      "accounted for": 0,
-      "unaccounted for": 0
-    },
     "accounted for": [],
     "unaccounted for": []
   },
@@ -1473,8 +1461,8 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-DR-0049",
-          "status": "draft",
-          "status_since": "2026-09-06",
+          "status": "current",
+          "status_since": "2026-09-23",
           "summary": "A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict.",
           "last_verified": "2026-09-06",
           "title": "A corpus-wide fold is derived and never stored",

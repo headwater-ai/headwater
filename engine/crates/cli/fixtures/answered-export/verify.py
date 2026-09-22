@@ -23,8 +23,11 @@ assert ANSWER in control_text
 assert ANSWER not in filtered_text
 assert filtered["profile"]["filtered"] is True
 assert tombstones == [{"documents": 1, "rule": "filtered.exclude.status"}]
-assert filtered["census"]["nodes"]["accounted for"] == 1
-assert filtered["census"]["nodes"]["unaccounted for"] == 0
+assert "nodes" not in filtered["census"]
+assert "edges" not in filtered["census"]
+assert len(filtered["census"]["accounted for"]) == 1
+assert filtered["census"]["accounted for"][0]["count"] == 1
+assert filtered["census"]["unaccounted for"] == []
 
 print("control answer: present")
 print("filtered answer: withheld")
