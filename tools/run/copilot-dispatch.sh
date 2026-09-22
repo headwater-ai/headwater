@@ -119,7 +119,7 @@ compose() {
 
     preamble "$scratch" > "$out"
 
-    printf '\n\n## THE VALUE RULE\n\nBefore any work starts, name the reader who is not this repository. If the only party better off is Headwater'"'"'s own corpus, the work is not eligible for an iteration and not eligible for the tracker: it is scaffolded as an obligation record under `docs/spec/13-open-obligations.md` and left there. `adopter-blocking` means work an outside adopter cannot proceed without, and it sorts above everything else.\n' >> "$out"
+    printf '\n\n## THE VALUE RULE\n\nBefore any work starts, name the reader who is not this repository. If the only party better off is Headwater'"'"'s own corpus, the work is not eligible for an iteration or the tracker: it is scaffolded as an obligation record under `docs/spec/13-open-obligations.md` and left there. Two labels are exceptions. `bug` marks a defect in what already ships; it is eligible whatever it serves and sorts above everything else (owner, 2026-09-22). `adopter-blocking` marks work an outside adopter cannot proceed without, and sorts next.\n' >> "$out"
 
     printf '\n\n## YOUR DISPATCH\n\n' >> "$out"
     cat "$dispatch" >> "$out"

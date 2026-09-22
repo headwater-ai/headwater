@@ -17,7 +17,7 @@ The reason it runs in its own context is the reason it exists. An agent that has
 
 ## What comes back
 
-Five parts: **Order**, **Completion**, **Misfiled**, **Blocked**, **Undecided**. It will have written to the board — closed a finished milestone, moved a misfiled issue, applied `adopter-blocking` — and every write is named in the part that motivated it, with the reason.
+Five parts: **Order**, **Completion**, **Misfiled**, **Blocked**, **Undecided**. It will have written to the board — closed a finished milestone, moved a misfiled issue, applied `bug` or `adopter-blocking` — and every write is named in the part that motivated it, with the reason. Part 4 opens with the open bugs, because a bug sorts above everything else on this board.
 
 **Put its questions to the person in the session before anything else.** Part 5 opens with one `RULING` block for each decision the owner owes, each with a recommended answer. Ask them with `AskUserQuestion`, the recommended option first and `Defer` last, four to a call. Write each answer onto its issue as a comment that quotes the person's words, and remove `status:needs-ruling`. A deferral needs no write: the next pass asks again. Where the report opens with `RELEASE READY`, ask whether to cut that release, and push the tag only on a yes. The `hw-run-policy` skill states the same rule for a run.
 

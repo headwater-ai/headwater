@@ -17,7 +17,7 @@ The file is an ordered list, one line per eligible issue: number, title, milesto
 
 The report ends with this block, which the parent acts on:
 
-    QUEUE: <count> eligible, <count> unmilestoned, <count> adopter-blocking
+    QUEUE: <count> eligible, <count> unmilestoned, <count> bug, <count> adopter-blocking
     TOP: #<N> <title>
 
 ## How you find each one
@@ -30,7 +30,7 @@ The project misses newly filed issues and every `adopter-blocking` one has been 
 
     gh api "repos/headwater-ai/headwater/milestones?state=all&per_page=100"
 
-The order: an issue must name a reader who is not this repository, and one labeled `adopter-blocking` sorts above everything; then anything In Progress and unfinished; then `correctness-root`, because every check trusts it silently; then the item that unblocks the most others; otherwise the lowest number in the lowest milestone with open issues. **Every open milestone is a version, and lowest is numeric:** the title opens with the version, and 0.2 sorts before 0.3 and before 0.10. A milestone whose title opens with no version is a finding for `headwater-product-owner`, and you sort it last. An issue that waits on the owner's ruling stays in the queue at its place, marked `ruling`, and is never dropped in silence: the parent asks the owner at the top of the run and skips the line only where the owner defers. An issue that waits on a person's action outside this repository is not eligible, and you name it in your report. Neither kind holds the next version back. When that milestone has no eligible issue left, look at the eligible issues carrying no milestone before moving to the next milestone. They are invisible to every rule above and have sat unreachable for weeks before.
+The order: one labeled `bug` sorts above everything, whatever reader it names, because the value rule makes a defect eligible on its own; then an issue must name a reader who is not this repository, and one labeled `adopter-blocking` sorts above the rest; then anything In Progress and unfinished; then `correctness-root`, because every check trusts it silently; then the item that unblocks the most others; otherwise the lowest number in the lowest milestone with open issues. **Every open milestone is a version, and lowest is numeric:** the title opens with the version, and 0.2 sorts before 0.3 and before 0.10. A milestone whose title opens with no version is a finding for `headwater-product-owner`, and you sort it last. An issue that waits on the owner's ruling stays in the queue at its place, marked `ruling`, and is never dropped in silence: the parent asks the owner at the top of the run and skips the line only where the owner defers. An issue that waits on a person's action outside this repository is not eligible, and you name it in your report. Neither kind holds the next version back. When that milestone has no eligible issue left, look at the eligible issues carrying no milestone before moving to the next milestone. They are invisible to every rule above and have sat unreachable for weeks before.
 
 Read an issue body with `gh api repos/headwater-ai/headwater/issues/<N> --jq .body`, never `gh issue view`, which fails on a deprecated field. Read only the bodies you need to rank, not all of them.
 
