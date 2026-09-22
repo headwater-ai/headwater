@@ -113,17 +113,22 @@ command -v gh >/dev/null 2>&1 || exit 0
 
 zeroes=0000000000000000000000000000000000000000
 
-# `--not --remotes` is the range for a branch the remote has never seen. Where
-# the remote already holds a tip, that tip is the exact base and the walk is
-# cheaper. Both are capped: a push carrying hundreds of commits is a rebase or
-# a first push of a long branch, and reading all of it to warn about a board is
-# not worth the wait.
+# `--not --remotes` is the range for a branch the remote has never seen, and
+# also for one it has seen whose remote tip is no longer an ancestor of the
+# tip about to land — a rebase carries the commits the upstream gained in the
+# meantime underneath the local tip, so `$remote_sha..$local_sha` would read
+# them as though this push wrote them, and warn about a board entry that is
+# not this push's to claim. Where the remote tip *is* an ancestor, that tip is
+# the exact base and the walk is cheaper. Both are capped: a push carrying
+# hundreds of commits is a rebase or a first push of a long branch, and
+# reading all of it to warn about a board is not worth the wait.
 numbers=$(
 	while read -r _local_ref local_sha _remote_ref remote_sha; do
 		[ -n "$local_sha" ] || continue
 		[ "$local_sha" = "$zeroes" ] && continue
 
-		if [ -n "$remote_sha" ] && [ "$remote_sha" != "$zeroes" ]; then
+		if [ -n "$remote_sha" ] && [ "$remote_sha" != "$zeroes" ] \
+			&& git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
 			set -- "$remote_sha..$local_sha"
 		else
 			set -- "$local_sha" --not --remotes
