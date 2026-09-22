@@ -36,16 +36,23 @@
 # comments; it holds the coarser and still mechanical bar that a file which
 # compares populations with `comm` at all pins collation on every `sort` and
 # `comm` it runs — opens with `LC_ALL=C`, immediately before the word,
-# allowing for the pipe, the paren, the semicolon, `&&` or the line start
-# that can precede it, and closes as a command word rather than a longer one
-# (`sorted`, `command`), allowing for the whitespace, the closing paren of a
-# `$(...)` it sits inside with no space before it (`| sort)` is the ordinary
-# shape, and was the gap a verifier found before this file first shipped:
-# `... | sort)` reads as unterminated to a check that only accepted
-# whitespace or end-of-line on the right), the semicolon, the backtick or the
-# line end that can follow it. A comment line (its first non-blank character
-# is `#`) is never read as an invocation, so the prose above and inside each
-# of the nine fixture files does not trip this suite on its own words.
+# allowing for the pipe, the paren, the semicolon, `&&` or the line start that
+# can precede it (the left side is deliberately this specific list, and not a
+# bare word boundary: "sort" preceded by nothing but a space, as in a message
+# a script echoes, is prose rather than a command position, and a left side
+# that matched any non-word character would read that prose as an
+# invocation). The right side is not a list: it closes on the first
+# character that cannot continue a shell word — anything that is not
+# `[A-Za-z0-9_]` — or the end of the line, which is what a command word
+# actually ends on. An enumerated list here went through two rounds of a
+# verifier finding one more terminator a real call site used (a bare closing
+# paren of the `$(...)` the call sits inside with no space before it, then a
+# bare pipe, `||`, a redirection or a heredoc marker closing it the same
+# way) before this suite settled on the boundary a shell word actually has,
+# rather than another character added to a list that was never going to stop
+# growing. A comment line (its first non-blank character is `#`) is never
+# read as an invocation, so the prose above and inside each of the nine
+# fixture files does not trip this suite on its own words.
 #
 # # WHAT IT NEEDS, AND WHAT IT WRITES
 #
@@ -109,11 +116,11 @@ unpinned_lines() {
             work = line
             gsub(/LC_ALL=C[ \t]+sort/, "", work)
             gsub(/LC_ALL=C[ \t]+comm/, "", work)
-            if (match(work, /(^|[|;(]|&&[ \t]*)[ \t]*sort([ \t);`]|&&|$)/)) {
+            if (match(work, /(^|[|;(]|&&[ \t]*)[ \t]*sort([^A-Za-z0-9_]|$)/)) {
                 print FILENAME ":" FNR ": " line
                 next
             }
-            if (match(work, /(^|[|;(]|&&[ \t]*)[ \t]*comm([ \t);`]|&&|$)/)) {
+            if (match(work, /(^|[|;(]|&&[ \t]*)[ \t]*comm([^A-Za-z0-9_]|$)/)) {
                 print FILENAME ":" FNR ": " line
             }
         }
@@ -187,6 +194,22 @@ printf '#!/bin/sh\nx=$(find . -type f | sort)\ny=$(comm -12 a b)\n' \
 same "a bare \`sort\` or \`comm\` closed by the ) of its own \$(...) reddens too" \
     "$scratch/arms/paren.sh:2: x=\$(find . -type f | sort)|$scratch/arms/paren.sh:3: y=\$(comm -12 a b)|" \
     "$(unpinned_lines "$scratch/arms/paren.sh" | tr '\n' '|')"
+
+# A second verifier found that even the widened list above (`)`, `;`,
+# backtick, `&&`) was still a list, and a list is exactly what the first
+# verifier's finding predicted would keep growing: a bare pipe, a bare `||`,
+# either direction of redirection and a heredoc marker each close a shell
+# word the same way and were each still invisible. The fix above stopped
+# enumerating characters and closes on the boundary a shell word actually
+# has — anything that is not `[A-Za-z0-9_]`, or the end of the line — so this
+# arm plants five bare invocations, one per closing shape named above, none
+# of them sharing a character with the arms before it, and asserts all five
+# redden together.
+printf '#!/bin/sh\nsort|head\ncomm||true\nsort>out.txt\nsort<in.txt\ncomm<<EOF2\nplaceholder\nEOF2\n' \
+    >"$scratch/arms/boundary.sh"
+same "a bare sort/comm closed by a pipe, ||, either redirection or a heredoc marker reddens, all five together" \
+    "$scratch/arms/boundary.sh:2: sort|head|$scratch/arms/boundary.sh:3: comm||true|$scratch/arms/boundary.sh:4: sort>out.txt|$scratch/arms/boundary.sh:5: sort<in.txt|$scratch/arms/boundary.sh:6: comm<<EOF2|" \
+    "$(unpinned_lines "$scratch/arms/boundary.sh" | tr '\n' '|')"
 
 echo
 echo "$passed passed, $failed failed"
