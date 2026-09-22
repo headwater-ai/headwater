@@ -72,18 +72,6 @@ relations:
   },
   "loss_set": [],
   "census": {
-    "nodes": {
-      "in the graph": 4,
-      "carried": 4,
-      "accounted for": 0,
-      "unaccounted for": 0
-    },
-    "edges": {
-      "in the graph": 5,
-      "carried": 5,
-      "accounted for": 0,
-      "unaccounted for": 0
-    },
     "accounted for": [],
     "unaccounted for": []
   },
@@ -277,18 +265,6 @@ relations:
     }
   ],
   "census": {
-    "nodes": {
-      "in the graph": 4,
-      "carried": 0,
-      "accounted for": 4,
-      "unaccounted for": 0
-    },
-    "edges": {
-      "in the graph": 5,
-      "carried": 0,
-      "accounted for": 5,
-      "unaccounted for": 0
-    },
     "accounted for": [
       {
         "class": "node",
@@ -517,18 +493,6 @@ relations:
   },
   "loss_set": [],
   "census": {
-    "nodes": {
-      "in the graph": 4,
-      "carried": 3,
-      "accounted for": 1,
-      "unaccounted for": 0
-    },
-    "edges": {
-      "in the graph": 5,
-      "carried": 5,
-      "accounted for": 0,
-      "unaccounted for": 0
-    },
     "accounted for": [
       {
         "class": "node",
