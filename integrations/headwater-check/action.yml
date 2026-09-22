@@ -125,24 +125,41 @@ runs:
 
     - name: Run headwater check
       id: check
+      # GitHub's own default for `shell: bash` is `bash --noprofile --norc -eo
+      # pipefail {0}` — `-e` is already active before this script's first
+      # line runs, and `set -uo pipefail` below adds `-u` and `-o pipefail`
+      # without ever clearing it. `headwater check` exiting non-zero (the
+      # ordinary, expected case whenever it finds an error) would abort this
+      # whole step right there, and `echo "exit-code=$?"` would never run.
+      # `set +e` around the one command that is allowed to fail is what
+      # actually captures its exit code instead of the step's.
       shell: bash
       env:
         ROOT: ${{ inputs.root }}
       run: |
         set -uo pipefail
+        set +e
         headwater check --root "$ROOT" --strict --format sarif >"$RUNNER_TEMP/check.sarif" 2>"$RUNNER_TEMP/check.err"
-        echo "exit-code=$?" >>"$GITHUB_OUTPUT"
+        code=$?
+        set -e
+        echo "exit-code=$code" >>"$GITHUB_OUTPUT"
         cat "$RUNNER_TEMP/check.err" >&2 || true
 
     - name: Run headwater generate --check
       id: generate
+      # Same reason as the step above: `set +e` around the one command
+      # allowed to fail, or this step's own exit code, not the check's,
+      # reaches nothing past the first non-zero line.
       shell: bash
       env:
         ROOT: ${{ inputs.root }}
       run: |
         set -uo pipefail
+        set +e
         headwater generate --root "$ROOT" --check >"$RUNNER_TEMP/generate-check.txt" 2>"$RUNNER_TEMP/generate-check.err"
-        echo "exit-code=$?" >>"$GITHUB_OUTPUT"
+        code=$?
+        set -e
+        echo "exit-code=$code" >>"$GITHUB_OUTPUT"
         cat "$RUNNER_TEMP/generate-check.err" >&2 || true
 
     - name: Fold the projection-freshness result into the SARIF report
