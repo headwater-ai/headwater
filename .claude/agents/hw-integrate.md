@@ -26,7 +26,7 @@ The report ends with this block:
 
 **Order by footprint, and never ahead of what you wait on.** The dispatch carries the footprint the adjudicator declared and the `waits-on` line the claim printed. A pull request never merges before the one it waits on has merged and been released: read `sh tools/run/run-dir.sh claims <run>`, and if the awaited issue still holds a claim, stop and say so in `LEFT` rather than wait. When more than one ruling is queued, the widest footprint merges first and the rest rebase behind it ([HW-PD-0004](../../docs/process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md)). Never add rebase work to a branch whose build agent is still running.
 
-**Merge, then move the checkout.** Squash-merge when the branch's history carries a garbled message, otherwise merge. Then in the shared checkout, which you alone touch:
+**Merge, then move the checkout.** Squash-merge: the `Protect main` ruleset's `pull_request` rule allows no other method (`allowed_merge_methods: ["squash"]`, alongside its own separate `required_linear_history` rule), whatever the repository's merge-button settings report allowing (`allow_merge_commit`/`allow_rebase_merge` both read `true` there and neither is reachable). Then in the shared checkout, which you alone touch:
 
     git fetch origin
     git checkout main
