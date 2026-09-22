@@ -160,7 +160,19 @@ cleared_by() {
     # A detached tree names no branch, so there is no pull request to look up.
     # Ask every merged head instead: a verifier's scratch tree sits on a commit
     # that some other branch carried into a merge, and only containment says so.
-    if [ -z "$branch" ]; then
+    #
+    # This has to skip a tip that is already an ancestor of `origin/main`,
+    # worktree or not. Once one pull request has merged since a detached tree
+    # was made, that tree's tip — sitting where it always sat, at or behind
+    # `origin/main` — becomes an ancestor of the new merge commit too, purely
+    # because `origin/main` is itself an ancestor of everything merged after
+    # it. Every fresh detached tree would read as "inside the merged head of"
+    # whichever pull request merged next, which is exactly the ancestry-based
+    # clearing the `ancestry=no` argument exists to refuse for a worktree. A
+    # tip that predates a squash and is genuinely invisible to `origin/main`
+    # ancestry (the squashed branch's own unsquashed commits, never mainline)
+    # is the only tip this loop should still catch.
+    if [ -z "$branch" ] && ! git merge-base --is-ancestor "$tip" origin/main 2>/dev/null; then
         while IFS="$(printf '\t')" read -r row_branch row_state row_oid; do
             [ "$row_state" = MERGED ] || continue
             git cat-file -e "$row_oid" 2>/dev/null || continue

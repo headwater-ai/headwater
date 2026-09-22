@@ -23,7 +23,7 @@ root=$(cd "$(dirname "$0")/../.." && pwd)
 tool="$root/tools/repo/retire-worktree.sh"
 
 # A tool this suite cannot execute makes every case below read an empty
-# report, and an empty report fails all 39 assertions below.
+# report, and an empty report fails all 48 assertions below.
 # That reads as a broken tool rather than as a path this file got wrong,
 # which is what it was when `tools/` was grouped by subject under the suite.
 [ -x "$tool" ] || {
@@ -126,6 +126,14 @@ echo 'uncommitted' >"$trees/dirty/scratch.txt"
 git worktree add --quiet "$trees/locked" -b locked-work origin/main 2>/dev/null
 git worktree lock "$trees/locked" 2>/dev/null
 
+# A locked worktree on no branch at all. The lock guard is checked before the
+# label is ever built, but the label build itself (`detached at $(git
+# rev-parse --short ...)`) is exactly the code path the tab-IFS collapse used
+# to corrupt for every detached tree, so a detached case belongs beside the
+# non-detached one for this guard too, and not only for the guards below.
+git worktree add --quiet "$trees/detached-locked" --detach origin/main 2>/dev/null
+git worktree lock "$trees/detached-locked" 2>/dev/null
+
 git worktree add --quiet "$trees/unmerged" -b unmerged-work origin/main 2>/dev/null
 cd "$trees/unmerged" || exit 1
 echo 'nobody else has this' >>file.txt
@@ -154,6 +162,13 @@ cd "$clone" || exit 1
 # tip of `origin/main` from the second it exists. The sweep deleted such a tree,
 # and its branch with it, while the agent that made it was still working.
 git worktree add --quiet "$trees/fresh" -b fresh-work origin/main 2>/dev/null
+
+# A detached tree made the same way, on no branch at all: `git worktree add
+# <path> --detach origin/main` puts it exactly at that tip too, so the
+# in-flight guard has to clear it on emptiness the same way it clears the
+# branched case above, and Done-when item 5 of the original issue asks this
+# specifically for the detached case, not only for the branched one.
+git worktree add --quiet "$trees/detached-fresh" --detach origin/main 2>/dev/null
 
 # A branch nobody checked out, sitting exactly on `origin/main`. This is what a
 # harness leaves when it makes a worktree for a session that commits nothing,
@@ -190,10 +205,21 @@ same '  and the reason names the merged head rather than ancestry' 1 \
     "$(printf '%s\n' "$report" | grep -F "$trees/merged " \
         | grep -c 'inside the merged head of its pull request')"
 same 'a detached tree inside a merged pull request is retirable' 'WOULD' "$(verdict "$trees/detached-merge")"
+same '  and it is reported with the label the IFS-safe parse now builds, not a raw object name' 1 \
+    "$(printf '%s\n' "$report" | grep -F "$trees/detached-merge " \
+        | grep -Ec '\(detached at [0-9a-f]{8}\)')"
+same '  and the reason names the merged head, not a `?`-count from a corrupted tip' 1 \
+    "$(printf '%s\n' "$report" | grep -F "$trees/detached-merge " \
+        | grep -c 'inside the merged head of #squashed')"
 same 'a tree with an uncommitted change is kept' 'KEPT' "$(verdict "$trees/dirty")"
 same 'a locked tree is kept' 'KEPT' "$(verdict "$trees/locked")"
 same '  and the lock is given as the reason' 1 \
-    "$(printf '%s\n' "$report" | grep -c 'locked, which is a deliberate hold')"
+    "$(printf '%s\n' "$report" | grep -F "$trees/locked " \
+        | grep -c 'locked, which is a deliberate hold')"
+same 'a locked, detached tree is kept' 'KEPT' "$(verdict "$trees/detached-locked")"
+same '  and the lock is given as the reason for the detached tree too' 1 \
+    "$(printf '%s\n' "$report" | grep -F "$trees/detached-locked " \
+        | grep -c 'locked, which is a deliberate hold')"
 same 'a tree holding unmerged work is kept' 'KEPT' "$(verdict "$trees/unmerged")"
 same '  and the report says how many commits it holds' 1 \
     "$(printf '%s\n' "$report" | grep -c 'unmerged, holding 1 commit')"
@@ -204,6 +230,12 @@ same '  and the reason names the emptiness rather than ancestry' 1 \
         | grep -c 'holds no commit origin/main lacks, so it is a tree in flight rather than a tree whose work landed')"
 same '  and no line of the report proposes retiring it' 0 \
     "$(printf '%s\n' "$report" | grep -F "$trees/fresh " | grep -c '^WOULD')"
+same 'a detached tree holding no commit origin/main lacks is kept' 'KEPT' "$(verdict "$trees/detached-fresh")"
+same '  and the reason names the emptiness for the detached tree too' 1 \
+    "$(printf '%s\n' "$report" | grep -F "$trees/detached-fresh " \
+        | grep -c 'holds no commit origin/main lacks, so it is a tree in flight rather than a tree whose work landed')"
+same '  and no line of the report proposes retiring the detached tree either' 0 \
+    "$(printf '%s\n' "$report" | grep -F "$trees/detached-fresh " | grep -c '^WOULD')"
 same 'a branch sitting on origin/main is retirable' 'WOULD' "$(verdict placeholder)"
 same 'a branch holding work no merge carried is kept' 'KEPT' "$(verdict survivor)"
 same 'main is never a candidate' 0 \
@@ -248,9 +280,11 @@ same '  and the reason is still its merged pull request, not ancestry' 1 \
 same 'the merged detached tree is gone' 0 "$(test -d "$trees/detached-merge" && echo 1 || echo 0)"
 same 'the dirty tree survives' 1 "$(test -d "$trees/dirty" && echo 1 || echo 0)"
 same 'the locked tree survives' 1 "$(test -d "$trees/locked" && echo 1 || echo 0)"
+same 'the locked, detached tree survives' 1 "$(test -d "$trees/detached-locked" && echo 1 || echo 0)"
 same 'the unmerged tree survives' 1 "$(test -d "$trees/unmerged" && echo 1 || echo 0)"
 same 'the open pull request tree survives' 1 "$(test -d "$trees/open" && echo 1 || echo 0)"
 same 'the fresh tree survives' 1 "$(test -d "$trees/fresh" && echo 1 || echo 0)"
+same 'the detached fresh tree survives' 1 "$(test -d "$trees/detached-fresh" && echo 1 || echo 0)"
 same '  and its branch survives with it' 1 \
     "$(git show-ref --verify --quiet refs/heads/fresh-work && echo 1 || echo 0)"
 same 'the placeholder branch is gone' 0 \
