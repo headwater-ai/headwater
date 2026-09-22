@@ -1675,19 +1675,18 @@ fn a_check_rule_this_engine_ships_is_an_edge_endpoint_and_a_typo_is_not() {
         ran.out
     );
 
-    // **The measured limit of this change, pinned so that a later reader meets
-    // it here rather than in a corpus.** A bound anchor edge is a target the
-    // graph reports and it is not a neighbour: `Adjacency::of` in
-    // `headwater_check::scope` skips every target that is not a document, so
-    // `relation.participation.overdue` cannot see this edge and reports the
-    // requirement as reaching nothing. The adjudication of #411 predicted the
-    // opposite, and this is the measurement that corrects it. #855 holds the
-    // work, and inverting this assertion is what closes it.
+    // **The measured limit #411 left, closed here.** A bound anchor edge is a
+    // target the graph reports, and `Adjacency::of` in `headwater_check::scope`
+    // now admits it as a neighbour, so `relation.participation.overdue` sees
+    // the `verified_by` edge onto `section.required.missing` and the
+    // requirement reaches something. #855 is the measurement that corrected
+    // the adjudication of #411, which predicted the opposite; this assertion
+    // is what closes it.
     let overdue = root.run(&["check", "--no-cache", "--now", "2026-12-31"]);
     assert_eq!(overdue.code, Some(0), "{}{}", overdue.out, overdue.err);
     assert!(
-        overdue.says("`requirement-verified`: 116 days"),
-        "a check-rule verifier does not yet settle the expectation:\n{}",
+        !overdue.says("`requirement-verified`: 116 days"),
+        "a bound check-rule anchor now settles the participation expectation:\n{}",
         overdue.out
     );
 }
