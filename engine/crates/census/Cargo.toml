@@ -49,6 +49,15 @@ headwater-meta = { workspace = true }
 # `headwater-check` is a cycle from here and not a dependency.
 headwater-paint = { workspace = true }
 
+# `derived::population` excludes what git's ignore rules exclude, so a
+# gitignored producer output (build preview, editor scratch file) never reaches
+# the population it computes. This is the one crate that shells out to git, and
+# `derived::population` is not on the check-evaluation path spec 12 and
+# `headwater_check::change` keep git commands off of — it is the `headwater
+# derived` verb, which already reads no lock and no taxonomy for the same
+# reason `git status` mid-merge still answers.
+headwater-vcs = { workspace = true }
+
 [dev-dependencies]
 # The census of this repository needs this repository's taxonomy resolved. The
 # library takes an already-resolved taxonomy and knows nothing about where one

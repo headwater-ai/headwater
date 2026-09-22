@@ -223,6 +223,37 @@ fn untracked(root: &Path) -> Vec<String> {
     }
 }
 
+/// Every path under `root` that git's ignore rules exclude, read with
+/// `git ls-files --others --ignored --exclude-standard --directory -z`: a
+/// whole directory collapses to one entry ending in `/` where everything
+/// under it is ignored, and an individual file is listed on its own where
+/// only it is. Paths come back relative to `root`, the same posture
+/// [`untracked`] takes and for the same reason: `-C root` makes `root` the
+/// working directory the command's own path output is relative to.
+///
+/// Empty where `root` is not inside a git repository — no ignore rule binds a
+/// tree git does not see — on the same "nothing to report" posture
+/// [`untracked`] takes rather than an error, so a caller with no repository at
+/// all reads that as nothing ignored instead of failing.
+pub fn ignored(root: &Path) -> Vec<String> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args([
+            "ls-files",
+            "--others",
+            "--ignored",
+            "--exclude-standard",
+            "--directory",
+            "-z",
+        ])
+        .output();
+    match output {
+        Ok(output) if output.status.success() => split_nul(&output.stdout),
+        _ => Vec::new(),
+    }
+}
+
 fn split_nul(bytes: &[u8]) -> Vec<String> {
     bytes
         .split(|byte| *byte == 0)
@@ -451,5 +482,41 @@ mod tests {
         assert_eq!(read(&manifest_path), format!("{FORMAT}\n"));
         let _ = fs::remove_dir_all(&out);
         let _ = fs::remove_dir_all(&repo.at);
+    }
+
+    /// A whole ignored directory collapses to one entry ending in `/`, and an
+    /// individually ignored file, not itself a whole directory, is named on
+    /// its own.
+    #[test]
+    fn a_whole_ignored_directory_collapses_and_a_single_ignored_file_stands_alone() {
+        let repo = Repo::new("ignored");
+        repo.write(".gitignore", "build/\nnotes.local.md\n");
+        repo.write("a.md", "x\n");
+        repo.commit("base");
+        repo.write("build/output.txt", "generated\n");
+        repo.write("build/nested/deep.txt", "generated too\n");
+        repo.write("notes.local.md", "scratch\n");
+
+        let mut found = ignored(&repo.at);
+        found.sort();
+        assert_eq!(found, vec!["build/".to_string(), "notes.local.md".to_string()]);
+        let _ = fs::remove_dir_all(&repo.at);
+    }
+
+    /// A tree with no `.git` at all — the shape this crate's own tests build
+    /// for every other case above, before `Repo::new` runs `git init` — reads
+    /// as nothing ignored rather than failing, the same posture [`untracked`]
+    /// takes for the same reason.
+    #[test]
+    fn a_tree_with_no_git_repository_reports_nothing_ignored() {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-vcs-tests-no-repository-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&at);
+        fs::create_dir_all(&at).expect("the directory is there");
+        fs::write(at.join("a.md"), "x\n").expect("the file writes");
+        assert_eq!(ignored(&at), Vec::<String>::new());
+        let _ = fs::remove_dir_all(&at);
     }
 }

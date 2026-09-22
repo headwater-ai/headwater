@@ -516,7 +516,8 @@ pub const FIGURE: &str = "data-figure=";
 /// Compute the population of a tree, and hold it against that tree's attributes.
 pub fn population(root: &Path) -> Population {
     let mut files = Vec::new();
-    collect(root, root, &mut files);
+    let ignored = headwater_vcs::ignored(root);
+    collect(root, root, &ignored, &mut files);
     files.sort();
 
     let mut outputs: Vec<Output> = Vec::new();
@@ -778,8 +779,17 @@ fn is_a_pattern(pattern: &str) -> bool {
     pattern.ends_with('/') || pattern.contains(['*', '?', '[', ']'])
 }
 
-/// Every file of a tree, relative to its root, skipping what no producer writes.
-fn collect(dir: &Path, root: &Path, found: &mut Vec<String>) {
+/// Every file of a tree, relative to its root, skipping what no producer
+/// writes and every path `ignored` (git's own ignore rules, read once by the
+/// caller) excludes.
+///
+/// `ignored` holds a whole directory as one entry ending in `/` where
+/// everything under it is ignored — [`headwater_vcs::ignored`]'s own
+/// contract — so a directory match here prunes the recursion rather than
+/// filtering its contents one file at a time, and a gitignored tree this
+/// walk would otherwise descend into (a locally built site, an editor's
+/// scratch directory) is never read at all.
+fn collect(dir: &Path, root: &Path, ignored: &[String], found: &mut Vec<String>) {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return;
     };
@@ -787,19 +797,31 @@ fn collect(dir: &Path, root: &Path, found: &mut Vec<String>) {
         let path = entry.path();
         let name = entry.file_name();
         let name = name.to_string_lossy();
+        let Ok(relative) = path.strip_prefix(root) else {
+            continue;
+        };
+        let relative = relative.to_string_lossy().replace('\\', "/");
         if path.is_dir() {
             // `.git` holds git's own state, `target` holds a build, and the
             // three below hold a dependency tree or a harness. None is a file
-            // any producer of this repository writes.
+            // any producer of this repository writes. `.git` is never
+            // something git's own ignore rules report (nothing ignores the
+            // repository that holds it), and `git check-ignore` against this
+            // tree today answers "not ignored" for the other four too — this
+            // is an explicit fast path the fix does not depend on, not a list
+            // the ignore-rule read makes redundant.
             if matches!(
                 name.as_ref(),
                 ".git" | "target" | "node_modules" | ".claude" | ".venv"
             ) {
                 continue;
             }
-            collect(&path, root, found);
-        } else if let Ok(relative) = path.strip_prefix(root) {
-            found.push(relative.to_string_lossy().replace('\\', "/"));
+            if ignored.iter().any(|entry| *entry == format!("{relative}/")) {
+                continue;
+            }
+            collect(&path, root, ignored, found);
+        } else if !ignored.iter().any(|entry| *entry == relative) {
+            found.push(relative);
         }
     }
 }
