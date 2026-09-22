@@ -1104,7 +1104,8 @@ judge 'no gh on PATH is silence rather than a verdict about the board' 0 "$statu
 refute 'and it does not warn about the number it could not look up' '#901 is unassigned' "$out"
 
 # Put the answering `gh` back, so the refutation in the last case means the
-# warning was preempted rather than that it had nothing to say.
+# warning was preempted rather than that it had nothing to say. It also gains
+# the two numbers the rebase case below names.
 cat > "$pushes/bin/gh" <<'STUB'
 #!/bin/sh
 for arg in "$@"; do
@@ -1116,10 +1117,68 @@ case ${number:-none} in
     901) echo "https://github.com/fixture/fixture/issues/901 0" ;;
     902) echo "https://github.com/fixture/fixture/issues/902 1" ;;
     903) echo "https://github.com/fixture/fixture/pull/903 0" ;;
+    904) echo "https://github.com/fixture/fixture/issues/904 0" ;;
+    905) echo "https://github.com/fixture/fixture/issues/905 0" ;;
     *) exit 1 ;;
 esac
 STUB
 chmod +x "$pushes/bin/gh"
+
+# The rebase case #941 exists for: the remote tip a push carries is not always
+# an ancestor of the tip landing. A branch pushed once, then rebased onto an
+# upstream that moved in the meantime, reports its *pre-rebase* tip as
+# `remote_sha` — git itself does this, `--force-with-lease` included — so
+# `$remote_sha..$local_sha` walks both the branch's own rebased commit and
+# every commit the rebase carried in underneath it.
+#
+# `refs/remotes/origin/*` is what a real clone would hold after the fetch a
+# rebase onto `origin/main` performs, and `--not --remotes` is the range the
+# hook already falls back to for a first push. Writing those refs by hand
+# with `update-ref` stands in for the fetch without needing a real remote
+# transport, the way `push_from` itself stands in for a real push.
+(
+    cd "$pushes/repo" || exit 1
+    git checkout -qb 941-rebase-fixture main
+    echo four > e.txt
+    git add -A
+    git commit -qm "Work the branch's own thing (Refs #904)" --no-verify
+) >/dev/null 2>&1
+pre_rebase=$(at 941-rebase-fixture)
+
+(
+    cd "$pushes/repo" || exit 1
+    git checkout -q main
+    echo five > f.txt
+    git add -A
+    git commit -qm "Land more work upstream while the branch was out (Refs #905)" --no-verify
+) >/dev/null 2>&1
+new_main=$(at main)
+
+git -C "$pushes/repo" update-ref refs/remotes/origin/main "$new_main"
+git -C "$pushes/repo" update-ref refs/remotes/origin/941-rebase-fixture "$pre_rebase"
+
+(
+    cd "$pushes/repo" || exit 1
+    git checkout -q 941-rebase-fixture
+    git rebase -q main >/dev/null 2>&1
+) >/dev/null 2>&1
+post_rebase=$(at 941-rebase-fixture)
+
+out=$(
+    cd "$pushes/repo" || exit 1
+    printf 'refs/heads/941-rebase-fixture %s refs/heads/941-rebase-fixture %s\n' \
+        "$post_rebase" "$pre_rebase" |
+        PATH="$pushes/bin:$PATH" sh .githooks/pre-push origin dummy 2>&1
+); status=$?
+judge 'a rebase onto a moved upstream still warns about the branch''s own unclaimed number' \
+    0 "$status" '#904 is unassigned' "$out"
+refute 'and it does not warn about the upstream number the rebase carried in' \
+    '#905 is unassigned' "$out"
+
+git -C "$pushes/repo" checkout -q main
+git -C "$pushes/repo" branch -qD 941-rebase-fixture >/dev/null 2>&1
+git -C "$pushes/repo" update-ref -d refs/remotes/origin/main >/dev/null 2>&1
+git -C "$pushes/repo" update-ref -d refs/remotes/origin/941-rebase-fixture >/dev/null 2>&1
 
 # The refusal still wins. A pending marker means unreviewed content is about to
 # leave the clone, and that outranks a stale board.
