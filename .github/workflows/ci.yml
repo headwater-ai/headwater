@@ -1190,6 +1190,27 @@ jobs:
         # It runs `awk`, `sed` and `cmp`, builds no engine, opens no socket,
         # and writes only under a temporary directory.
         run: sh tools/repo/library-index-fixtures.sh
+      - name: Every sort that feeds a comm, and every comm, collates under LC_ALL=C
+        # `comm` requires both of its inputs already ordered in `comm`'s own
+        # notion of sorted order, and that notion does not always agree with a
+        # locale-aware `sort` run under the ambient environment: a `sort` that
+        # `sort -c` itself accepts as correctly ordered can still be one `comm`
+        # rejects, silently, on standard error, while its answer on standard
+        # output is either an empty diff over a population that is not really
+        # equal or a diff that names an entry wrongly (#828). Nine scripts
+        # under `tools/` paired a `sort` with a `comm` on 2026-09-22; one
+        # pinned `LC_ALL=C` on both throughout, seven pinned nothing, and one
+        # pinned it on only its newest call sites.
+        #
+        # This step does not hold a list of the nine. It reads `tools/`,
+        # `.githooks/` and `.claude/` fresh with `grep -rl` for every script
+        # that names `comm`, and holds that every `sort` and every `comm` such
+        # a script runs is pinned to `LC_ALL=C`, so a tenth script that pairs
+        # them next month is caught the same way.
+        #
+        # It runs `grep`, `awk` and `sed`, builds no engine, opens no socket,
+        # and writes only under a temporary directory.
+        run: sh tools/repo/collation-fixtures.sh
       - name: The obligation register lists every current record, and no discharged one
         # Set equality, in both directions, between `docs/obligations/*.md`
         # (excluding `README.md`) whose `status` is not `discharged`, and the

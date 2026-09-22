@@ -151,7 +151,7 @@ entry_facets() {
             sub(/:.*/, "", f)
             print f
         }
-    ' "$bundle" | sort -u
+    ' "$bundle" | LC_ALL=C sort -u
 }
 
 # The `values:` list of one facet, one per line.
@@ -206,7 +206,7 @@ selection_list() {
         done
         pending="$next"
     done
-    sort -u "$scratch/sel"
+    LC_ALL=C sort -u "$scratch/sel"
 }
 
 # A scratch root that selects the bundles named in $2. $1 = destination.
@@ -233,7 +233,7 @@ make_root() {
     echo 'add: {}' > "$at/.headwater/overlay.yml"
     (cd "$at" && "$engine" taxonomy validate) > "$scratch/ns.out" 2> "$scratch/ns.err"
     sed -n 's/.*`identifier_schemes\.\([a-z_]*\)`: identifier integrity: carries no namespace.*/\1/p' \
-        "$scratch/ns.out" "$scratch/ns.err" | sort -u > "$scratch/ns.list"
+        "$scratch/ns.out" "$scratch/ns.err" | LC_ALL=C sort -u > "$scratch/ns.list"
     {
         echo 'add:'
         while read -r scheme; do
@@ -306,7 +306,7 @@ finding_pairs() {
             print page "\t" r
             pending = 0
         }
-    ' "$1" | sort
+    ' "$1" | LC_ALL=C sort
 }
 
 # The whole reported block of one finding. $1 = file, $2 = page, $3 = rule.
@@ -342,6 +342,14 @@ finding_block() {
 }
 
 today=$(date -u +%Y-%m-%d)
+
+# From here on, standard error is captured rather than printed: a `sort` or a
+# `comm` this suite runs that writes a diagnostic (for instance `comm`'s "not
+# in sorted order" warning, the exact shape a collation mismatch produces and
+# that nothing used to read, #828) fails the case at the bottom of this file
+# instead of leaving a line on the console nobody reads. fd 3 holds the real
+# standard error so it can be restored before the summary.
+exec 3>&2 2>"$scratch/stderr"
 
 facets=$(entry_facets)
 facet_floor=$(printf '%s\n' "$facets" | grep -c . || true)
@@ -448,8 +456,8 @@ echo
 echo "case group 5 — the one finding the labels add"
 judge "the labeled arm carries exactly one more finding" \
     "$((${u_find:-0} + 1))" "${l_find:-0}"
-comm -13 "$scratch/unlabeled.pairs" "$scratch/labeled.pairs" > "$scratch/gained"
-comm -23 "$scratch/unlabeled.pairs" "$scratch/labeled.pairs" > "$scratch/lost"
+LC_ALL=C comm -13 "$scratch/unlabeled.pairs" "$scratch/labeled.pairs" > "$scratch/gained"
+LC_ALL=C comm -23 "$scratch/unlabeled.pairs" "$scratch/labeled.pairs" > "$scratch/lost"
 judge "the labels lose no finding" "" \
     "$(tr '\t' ' ' < "$scratch/lost" | tr '\n' ';' | sed 's/;*$//')"
 judge "the labels gain exactly one" 1 "$(grep -c . "$scratch/gained" || true)"
@@ -487,7 +495,7 @@ echo "case group 7 — the correctly labeled page stays silent"
 grep "^$labeled_page	" "$scratch/unlabeled.pairs" > "$scratch/labeled-page.before" || true
 grep "^$labeled_page	" "$scratch/labeled.pairs" > "$scratch/labeled-page.after" || true
 judge "an admitted value adds no finding to the page that carries it" "" \
-    "$(comm -13 "$scratch/labeled-page.before" "$scratch/labeled-page.after" |
+    "$(LC_ALL=C comm -13 "$scratch/labeled-page.before" "$scratch/labeled-page.after" |
         tr '\t' ' ' | tr '\n' ';' | sed 's/;*$//')"
 said=""
 while IFS="$(printf '\t')" read -r p r; do
@@ -515,6 +523,10 @@ echo "  labeled:       $(report_number "$scratch/labeled.out" "✗ error") error
 echo "  check exit:    $(cat "$scratch/unlabeled.code") and $(cat "$scratch/labeled.code") plain, $(cat "$scratch/unlabeled-strict.code") and $(cat "$scratch/labeled-strict.code") strict"
 echo "  the one finding:"
 sed 's/^/  /' "$scratch/gained.block"
+
+exec 2>&3 3>&-
+judge "no sort or comm in this run wrote to standard error" \
+    "" "$(tr '\n' '|' <"$scratch/stderr")"
 
 echo
 echo "$passed passed, $failed failed"

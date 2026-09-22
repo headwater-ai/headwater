@@ -136,22 +136,24 @@ front_matter() {
     ' "$1"
 }
 
-# shelf_ids DIR — one `id` per line, sorted, for every `*.md` under DIR except
-# `README.md`.
+# shelf_ids DIR — one `id` per line, sorted under `LC_ALL=C`, for every
+# `*.md` under DIR except `README.md`. Pinned because `missing_from_shelf`
+# compares this population with `comm`, which collates bytewise regardless
+# of locale (#828).
 shelf_ids() {
     for si_f in "$1"/*.md; do
         [ -f "$si_f" ] || continue
         [ "$(basename "$si_f")" = "README.md" ] && continue
         si_id=$(front_matter "$si_f" | sed -n 's/^id:[ \t]*//p' | head -n1)
         [ -n "$si_id" ] && echo "$si_id"
-    done | sort -u
+    done | LC_ALL=C sort -u
 }
 
 # named_ids FILE — the identifier named by every `[HW-DR-NNNN]` citation of
-# FILE, deduplicated and sorted. A citation inside running prose counts the
-# same as one on a line of its own.
+# FILE, deduplicated and sorted under `LC_ALL=C`, matching `shelf_ids` (#828).
+# A citation inside running prose counts the same as one on a line of its own.
 named_ids() {
-    grep -oE '\[HW-DR-[0-9]+\]' "$1" | sed -E 's/^\[(HW-DR-[0-9]+)\]/\1/' | sort -u
+    grep -oE '\[HW-DR-[0-9]+\]' "$1" | sed -E 's/^\[(HW-DR-[0-9]+)\]/\1/' | LC_ALL=C sort -u
 }
 
 # supersedes_open_questions FILE — prints `yes` if FILE's front matter
@@ -168,12 +170,21 @@ supersedes_open_questions() {
 
 # missing_from_shelf SHELF-FILE NAMED-FILE — one line per named record that
 # the shelf does not carry. Empty output means every named record still
-# exists.
+# exists. `LC_ALL=C`, matching the `LC_ALL=C sort` in `shelf_ids` and
+# `named_ids`: `comm` collates bytewise and a mismatch is silently wrong (#828).
 missing_from_shelf() {
-    comm -23 "$2" "$1"
+    LC_ALL=C comm -23 "$2" "$1"
 }
 
 # ---------------------------------------------------------------------------
+
+# From here on, standard error is captured rather than printed: a `sort` or a
+# `comm` this suite runs that writes a diagnostic (for instance `comm`'s "not
+# in sorted order" warning, the exact shape a collation mismatch produces and
+# that nothing used to read, #828) fails the case at the bottom of this file
+# instead of leaving a line on the console nobody reads. fd 3 holds the real
+# standard error so it can be restored before the summary.
+exec 3>&2 2>"$scratch/stderr"
 
 shelf_ids "$decisions" >"$scratch/shelf"
 named_ids "$register" >"$scratch/named"
@@ -247,6 +258,10 @@ printf -- '---\nid: HW-REG-decisions\nrelations:\n  supersedes:\n    - HW-REG-so
     >"$scratch/reg-other-edge.md"
 same "a supersedes edge toward a different target does not trip the claim check" \
     "" "$(supersedes_open_questions "$scratch/reg-other-edge.md")"
+
+exec 2>&3 3>&-
+same "no sort or comm in this run wrote to standard error" \
+    "" "$(tr '\n' '|' <"$scratch/stderr")"
 
 echo
 echo "$passed passed, $failed failed"
