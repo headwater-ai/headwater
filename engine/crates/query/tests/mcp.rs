@@ -805,8 +805,7 @@ fn the_check_tool_takes_a_format_and_defaults_to_none() {
 /// whole rendered sentence rather than a substring, so a reintroduced repeat
 /// of the argument fails it.
 #[test]
-fn resolve_identifier_over_the_wire_states_the_untyped_documents_path_and_never_repeats_the_argument()
-{
+fn resolve_identifier_over_the_wire_states_the_untyped_path_and_never_repeats_the_argument() {
     let built = fixture_tree();
     let server = built.server(RECORDED_AT);
     let response = once(
