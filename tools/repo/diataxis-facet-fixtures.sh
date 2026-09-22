@@ -357,7 +357,10 @@ facet=$(printf '%s\n' "$facets" | head -n 1)
 values=""
 [ "$facet_floor" -ge 1 ] && values=$(facet_values "$facet")
 value_floor=$(printf '%s\n' "$values" | grep -c . || true)
-pages=$(cd "$corpus/.." && find docs -name '*.md' | sort)
+# Feeds a positional `sed -n` pick below, never a `comm`, but this file also
+# runs `comm` elsewhere, and the coarser rule `tools/repo/collation-fixtures.sh`
+# holds is that every `sort` in a file that runs `comm` at all is pinned.
+pages=$(cd "$corpus/.." && find docs -name '*.md' | LC_ALL=C sort)
 page_floor=$(printf '%s\n' "$pages" | grep -c . || true)
 
 echo "diataxis composition over $sibling, against $engine"

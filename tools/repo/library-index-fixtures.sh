@@ -462,9 +462,12 @@ carried_parts() {
 }
 
 # files_under DIR — every regular file under DIR, as a path relative to DIR.
+# Feeds `carried_judge`'s `cj_compare`, never a `comm`, but this file also
+# runs `comm` elsewhere, and the coarser rule `tools/repo/collation-fixtures.sh`
+# holds is that every `sort` in a file that runs `comm` at all is pinned.
 files_under() {
     [ -d "$1" ] || return 0
-    (cd "$1" && find . -type f | sed 's|^\./||' | sort)
+    (cd "$1" && find . -type f | sed 's|^\./||' | LC_ALL=C sort)
 }
 
 # carried_judge SRC VEND PARTS-FILE — one line per carried file that is missing

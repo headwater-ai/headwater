@@ -36,10 +36,16 @@
 # comments; it holds the coarser and still mechanical bar that a file which
 # compares populations with `comm` at all pins collation on every `sort` and
 # `comm` it runs — opens with `LC_ALL=C`, immediately before the word,
-# allowing for the pipe, the paren, the semicolon or the line start that can
-# precede it. A comment line (its first non-blank character is `#`) is never
-# read as an invocation, so the prose above and inside each of the nine
-# fixture files does not trip this suite on its own words.
+# allowing for the pipe, the paren, the semicolon, `&&` or the line start
+# that can precede it, and closes as a command word rather than a longer one
+# (`sorted`, `command`), allowing for the whitespace, the closing paren of a
+# `$(...)` it sits inside with no space before it (`| sort)` is the ordinary
+# shape, and was the gap a verifier found before this file first shipped:
+# `... | sort)` reads as unterminated to a check that only accepted
+# whitespace or end-of-line on the right), the semicolon, the backtick or the
+# line end that can follow it. A comment line (its first non-blank character
+# is `#`) is never read as an invocation, so the prose above and inside each
+# of the nine fixture files does not trip this suite on its own words.
 #
 # # WHAT IT NEEDS, AND WHAT IT WRITES
 #
@@ -103,11 +109,11 @@ unpinned_lines() {
             work = line
             gsub(/LC_ALL=C[ \t]+sort/, "", work)
             gsub(/LC_ALL=C[ \t]+comm/, "", work)
-            if (match(work, /(^|[|;(]|&&[ \t]*)[ \t]*sort([ \t]|$)/)) {
+            if (match(work, /(^|[|;(]|&&[ \t]*)[ \t]*sort([ \t);`]|&&|$)/)) {
                 print FILENAME ":" FNR ": " line
                 next
             }
-            if (match(work, /(^|[|;(]|&&[ \t]*)[ \t]*comm([ \t]|$)/)) {
+            if (match(work, /(^|[|;(]|&&[ \t]*)[ \t]*comm([ \t);`]|&&|$)/)) {
                 print FILENAME ":" FNR ": " line
             }
         }
@@ -168,6 +174,19 @@ printf '#!/bin/sh\nLC_ALL=C sort file | comm -23 - other\n' >"$scratch/arms/half
 same "a pinned \`sort\` into a bare \`comm\` still reddens, on the \`comm\` alone" \
     "$scratch/arms/half.sh:2: LC_ALL=C sort file | comm -23 - other|" \
     "$(unpinned_lines "$scratch/arms/half.sh" | tr '\n' '|')"
+
+# A verifier found that the two checks above missed a bare invocation closed
+# by the `)` of the `$(...)` it sits inside with no space before it —
+# `x=$(... | sort)` — because the right-hand boundary only ever accepted
+# whitespace or end of line. `tools/repo/library-index-fixtures.sh` and
+# `tools/repo/diataxis-facet-fixtures.sh` both carried exactly this shape on
+# an unrelated `sort` the day it was found. This arm is that shape, verbatim,
+# for both words, so a future narrowing of the boundary reddens here first.
+printf '#!/bin/sh\nx=$(find . -type f | sort)\ny=$(comm -12 a b)\n' \
+    >"$scratch/arms/paren.sh"
+same "a bare \`sort\` or \`comm\` closed by the ) of its own \$(...) reddens too" \
+    "$scratch/arms/paren.sh:2: x=\$(find . -type f | sort)|$scratch/arms/paren.sh:3: y=\$(comm -12 a b)|" \
+    "$(unpinned_lines "$scratch/arms/paren.sh" | tr '\n' '|')"
 
 echo
 echo "$passed passed, $failed failed"
