@@ -816,11 +816,11 @@ fn collect(dir: &Path, root: &Path, ignored: &[String], found: &mut Vec<String>)
             ) {
                 continue;
             }
-            if ignored.iter().any(|entry| *entry == format!("{relative}/")) {
+            if ignored.contains(&format!("{relative}/")) {
                 continue;
             }
             collect(&path, root, ignored, found);
-        } else if !ignored.iter().any(|entry| *entry == relative) {
+        } else if !ignored.contains(&relative) {
             found.push(relative);
         }
     }
