@@ -20,6 +20,14 @@
 # reciprocity rule is generated over it. The subject here is which neighbour
 # satisfies a window, and a fixture that had to satisfy two rules at once is one
 # nobody can read.
+#
+# `code_path` is a third admitted kind, and the only one that is not a document
+# ([#855](https://github.com/headwater-ai/headwater/issues/855)). `by-code-path.md`
+# in each arm declares the identical bound anchor edge, so the same question the
+# rest of this file asks of two document kinds is asked here of a document kind
+# against a kind that is not one: `narrow` still does not accept it, because an
+# anchor kind descends from nothing this taxonomy declares under `kinds:`, and
+# `broad` does, because it names no target kind at all.
 
 facets:
   status:
@@ -92,11 +100,17 @@ kinds:
     lifecycle: standard
     facets: {require: [status, status_since, summary]}
 
+# The resolver every run over a repository has, and the one anchor kind this
+# fixture needs: a literal path in the source tree, so `by-code-path.md` in
+# each arm can bind to a real file under `code/` without a second resolver.
+anchors:
+  code_path: {resolver: source-tree}
+
 relations:
   verified_by:
     family: evidence
     from: [requirement_narrow, requirement_broad]
-    to:   [acceptance_criterion, probe]
+    to:   [acceptance_criterion, probe, code_path]
     cardinality: many
     created_by: author
 

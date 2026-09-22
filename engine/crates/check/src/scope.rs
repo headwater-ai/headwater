@@ -1589,7 +1589,12 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
         let neighbours = adjacency.of_path(&row.path);
         let mut reads = vec![Input::new(&row.path, row.digest.as_deref())];
         for neighbour in &neighbours {
-            if !reads.iter().any(|input| input.path == neighbour.path) {
+            // A bound-anchor neighbour carries the empty marker at `path`
+            // rather than a real one (see `Adjacency::of`): there is no file
+            // to hash, so it costs the read set nothing and its binding goes
+            // into the resolution below instead.
+            if !neighbour.path.is_empty() && !reads.iter().any(|input| input.path == neighbour.path)
+            {
                 reads.push(digests.input(neighbour.path));
             }
         }
@@ -1602,9 +1607,12 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
             clock,
             reads: reads.clone(),
         };
-        // No resolution either. [`Adjacency`] holds only the neighbours whose
-        // target is a document, so this grain reaches no anchor and every input
-        // it read is a path of the read set above.
+        // `Adjacency` now admits an anchor neighbour
+        // ([#855](https://github.com/headwater-ai/headwater/issues/855)), so
+        // this grain can reach one the same way `over_edges` already does, and
+        // its key has to carry the binding the same way: `Some(view.resolution())`
+        // there, `adjacency.anchor_resolution_of_path` here, folded over every
+        // anchor this document's neighbours reach rather than at most one.
         let outcome = cache.outcome(
             C::RULE,
             C::VERSION,
@@ -1613,7 +1621,7 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
             &reads,
             clock,
             None,
-            None,
+            adjacency.anchor_resolution_of_path(&row.path),
             || check.evaluate(&view),
         );
         instances.push(Instance::of(
@@ -1756,45 +1764,99 @@ pub fn over_corpus<C: CorpusCheck>(
 /// document — and never on the edge, which would count one neighbour twice.
 struct Adjacency<'a> {
     by_path: Vec<(&'a str, Vec<Neighbour<'a>>)>,
+    /// One folded string per document that declares at least one bound-anchor
+    /// edge: every such anchor's own binding, in edge order, joined by `\n`.
+    ///
+    /// `EdgeView::resolution` carries one anchor's binding into an edge-scoped
+    /// key (`over_edges`, `Some(view.resolution())`), because one `EdgeView` is
+    /// at most one edge. A neighbourhood is depth 1 over as many edges as the
+    /// document declares, so its key needs as many bindings, folded for the
+    /// reason [HW-OBL-0117](../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md)
+    /// already gives an edge-scoped key one: the identity of a bound anchor is
+    /// what it resolved to, not the string an author wrote, so a change to the
+    /// binding with no change to any read-set byte still has to move the key.
+    anchor_resolutions_by_path: Vec<(&'a str, String)>,
 }
 
 impl<'a> Adjacency<'a> {
     fn of(graph: &'a Graph) -> Self {
         let mut adjacency = Adjacency {
             by_path: Vec::new(),
+            anchor_resolutions_by_path: Vec::new(),
         };
         for edge in &graph.edges {
-            let Target::Document { id, path, kind } = &edge.target else {
-                continue;
-            };
-            // The direction says which end of the *declared* relation each
-            // document sits at, whichever name its author reached for.
-            let (near, far) = match edge.direction {
-                Direction::AsDeclared => (End::Source, End::Target),
-                Direction::Inverse => (End::Target, End::Source),
-            };
-            adjacency.push(
-                &edge.source.path,
-                Neighbour {
-                    relation: &edge.declared,
-                    end: near,
-                    path,
-                    kind,
-                    id,
-                    span: edge.span,
-                },
-            );
-            adjacency.push(
-                path,
-                Neighbour {
-                    relation: &edge.declared,
-                    end: far,
-                    path: &edge.source.path,
-                    kind: &edge.source.kind,
-                    id: &edge.source.id,
-                    span: edge.span,
-                },
-            );
+            match &edge.target {
+                Target::Document { id, path, kind } => {
+                    // The direction says which end of the *declared* relation
+                    // each document sits at, whichever name its author reached
+                    // for.
+                    let (near, far) = match edge.direction {
+                        Direction::AsDeclared => (End::Source, End::Target),
+                        Direction::Inverse => (End::Target, End::Source),
+                    };
+                    adjacency.push(
+                        &edge.source.path,
+                        Neighbour {
+                            relation: &edge.declared,
+                            end: near,
+                            path,
+                            kind,
+                            id,
+                            span: edge.span,
+                        },
+                    );
+                    adjacency.push(
+                        path,
+                        Neighbour {
+                            relation: &edge.declared,
+                            end: far,
+                            path: &edge.source.path,
+                            kind: &edge.source.kind,
+                            id: &edge.source.id,
+                            span: edge.span,
+                        },
+                    );
+                }
+                Target::Anchor {
+                    anchor_kind,
+                    normalized,
+                    ..
+                } => {
+                    // An anchor never declares anything, so it is only ever
+                    // the far end, and only the declaring document gets a
+                    // neighbour: there is no anchor-side list to push the
+                    // reciprocal onto
+                    // ([#855](https://github.com/headwater-ai/headwater/issues/855)).
+                    // `kind` and `id` are exactly what `Target::Anchor`
+                    // already carries. `path` has no answer an anchor can
+                    // give — it is not a document and the corpus assigns it
+                    // no path — so it is the empty string, an absent marker
+                    // rather than a real one: `Neighbour::path` is read for
+                    // identity only inside `Adjacency::push`'s own dedup,
+                    // which an empty string satisfies the same as any other
+                    // value, and the one caller outside this module that
+                    // reads it, `over_neighbourhoods`'s read-set loop, skips
+                    // exactly this marker rather than asking `Digests` to
+                    // hash it.
+                    let near = match edge.direction {
+                        Direction::AsDeclared => End::Source,
+                        Direction::Inverse => End::Target,
+                    };
+                    adjacency.push(
+                        &edge.source.path,
+                        Neighbour {
+                            relation: &edge.declared,
+                            end: near,
+                            path: "",
+                            kind: anchor_kind,
+                            id: normalized,
+                            span: edge.span,
+                        },
+                    );
+                    adjacency.push_resolution(&edge.source.path, edge.target.resolution());
+                }
+                _ => continue,
+            }
         }
         adjacency
     }
@@ -1811,8 +1873,23 @@ impl<'a> Adjacency<'a> {
             known.relation == neighbour.relation
                 && known.end == neighbour.end
                 && known.path == neighbour.path
+                && known.id == neighbour.id
         }) {
             entry.1.push(neighbour);
+        }
+    }
+
+    fn push_resolution(&mut self, path: &'a str, resolution: String) {
+        match self
+            .anchor_resolutions_by_path
+            .iter_mut()
+            .find(|(known, _)| *known == path)
+        {
+            Some((_, existing)) => {
+                existing.push('\n');
+                existing.push_str(&resolution);
+            }
+            None => self.anchor_resolutions_by_path.push((path, resolution)),
         }
     }
 
@@ -1822,5 +1899,16 @@ impl<'a> Adjacency<'a> {
             .find(|(known, _)| *known == path)
             .map(|(_, neighbours)| neighbours.clone())
             .unwrap_or_default()
+    }
+
+    /// Every bound anchor's own binding this document's neighbours reach,
+    /// folded into one string for the cache key. `None` where none of this
+    /// document's edges bind to an anchor, so a document with no such edge
+    /// costs the key nothing new.
+    fn anchor_resolution_of_path(&self, path: &str) -> Option<&str> {
+        self.anchor_resolutions_by_path
+            .iter()
+            .find(|(known, _)| *known == path)
+            .map(|(_, resolution)| resolution.as_str())
     }
 }
