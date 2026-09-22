@@ -145,7 +145,7 @@ bundle_kinds() {
             sub(/:.*/, "", k)
             print k
         }
-    ' "$bundle" | sort -u
+    ' "$bundle" | LC_ALL=C sort -u
 }
 
 # The source table of `fixtures/README.md`: kind, pinned source, assembled path.
@@ -202,7 +202,7 @@ make_root() {
     echo 'add: {}' > "$at/.headwater/overlay.yml"
     (cd "$at" && "$engine" taxonomy validate) > "$scratch/ns.out" 2> "$scratch/ns.err"
     sed -n 's/.*`identifier_schemes\.\([a-z_]*\)`: identifier integrity: carries no namespace.*/\1/p' \
-        "$scratch/ns.out" "$scratch/ns.err" | sort -u > "$scratch/ns.list"
+        "$scratch/ns.out" "$scratch/ns.err" | LC_ALL=C sort -u > "$scratch/ns.list"
     {
         echo 'add:'
         while read -r scheme; do
@@ -211,6 +211,14 @@ make_root() {
         done < "$scratch/ns.list"
     } > "$at/.headwater/overlay.yml"
 }
+
+# From here on, standard error is captured rather than printed: a `sort` or a
+# `comm` this suite runs that writes a diagnostic (for instance `comm`'s "not
+# in sorted order" warning, the exact shape a collation mismatch produces and
+# that nothing used to read, #828) fails the case at the bottom of this file
+# instead of leaving a line on the console nobody reads. fd 3 holds the real
+# standard error so it can be restored before the summary.
+exec 3>&2 2>"$scratch/stderr"
 
 kinds=$(bundle_kinds)
 kind_floor=$(printf '%s\n' "$kinds" | grep -c . || true)
@@ -236,12 +244,12 @@ fi
 
 echo
 echo "case group 1 — the source table covers the kinds, in both directions"
-printf '%s\n' "$rows" | cut -f1 | sort -u > "$scratch/table-kinds"
+printf '%s\n' "$rows" | cut -f1 | LC_ALL=C sort -u > "$scratch/table-kinds"
 printf '%s\n' "$kinds" > "$scratch/bundle-kinds"
 judge "every kind the bundle declares has a pinned source" "" \
-    "$(comm -23 "$scratch/bundle-kinds" "$scratch/table-kinds" | tr '\n' ' ' | sed 's/ *$//')"
+    "$(LC_ALL=C comm -23 "$scratch/bundle-kinds" "$scratch/table-kinds" | tr '\n' ' ' | sed 's/ *$//')"
 judge "every row of the source table names a kind the bundle declares" "" \
-    "$(comm -13 "$scratch/bundle-kinds" "$scratch/table-kinds" | tr '\n' ' ' | sed 's/ *$//')"
+    "$(LC_ALL=C comm -13 "$scratch/bundle-kinds" "$scratch/table-kinds" | tr '\n' ' ' | sed 's/ *$//')"
 
 echo
 echo "case group 2 — resolution and the constructors (criterion 7)"
@@ -292,7 +300,7 @@ selfaddr=$(awk '
     /^add:/ { in_add = 1; next }
     /^[a-z_]+:/ { in_add = 0 }
     in_add && /^  [a-z_]/ { a = $0; sub(/^  /, "", a); sub(/:.*/, "", a); print a }
-' "$bundle" | sort -u)
+' "$bundle" | LC_ALL=C sort -u)
 printf '%s\n' "$selfaddr" > "$scratch/self-addr"
 overlap=""
 for other in "$root"/docs/taxonomies/*/bundle.yml; do
@@ -302,9 +310,9 @@ for other in "$root"/docs/taxonomies/*/bundle.yml; do
         /^add:/ { in_add = 1; next }
         /^[a-z_]+:/ { in_add = 0 }
         in_add && /^  [a-z_]/ { a = $0; sub(/^  /, "", a); sub(/:.*/, "", a); print a }
-    ' "$other" | sort -u)
+    ' "$other" | LC_ALL=C sort -u)
     printf '%s\n' "$o" > "$scratch/other-addr"
-    shared=$(comm -12 "$scratch/self-addr" "$scratch/other-addr" | tr '\n' ' ')
+    shared=$(LC_ALL=C comm -12 "$scratch/self-addr" "$scratch/other-addr" | tr '\n' ' ')
     [ -n "$(printf '%s' "$shared" | tr -d ' ')" ] && overlap="$overlap$name:$shared "
 done
 judge "criterion 6: the address set is disjoint from every other entry" "" \
@@ -458,8 +466,12 @@ echo "  findings:      ${findings:-0}, of which ${errors:-0} error and ${warns:-
 echo "  check exit:    $extcode plain, $strictcode strict"
 echo "  by rule, over the ${findings:-0}:"
 grep -oE '^ +[a-z._]+ \(OB-' "$scratch/external.out" |
-    sed 's/ (OB-$//' | sed 's/^ *//' | sort | uniq -c |
+    sed 's/ (OB-$//' | sed 's/^ *//' | LC_ALL=C sort | uniq -c |
     while read -r n rule; do echo "    $n  $rule"; done
+
+exec 2>&3 3>&-
+judge "no sort or comm in this run wrote to standard error" \
+    "" "$(tr '\n' '|' <"$scratch/stderr")"
 
 echo
 echo "$passed passed, $failed failed"

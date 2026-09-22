@@ -131,10 +131,20 @@ scratch=$(mktemp -d)
 trap 'rm -rf "$scratch"' EXIT INT TERM
 # `LC_ALL=C` on both the sort and the comparison: `comm` collates bytewise and
 # refuses input a locale-aware `sort` ordered differently, which is a failure
-# that appears on one machine and not on the next.
-( cd "$HAND" && find . -type f ) | sed 's|^\./||' | LC_ALL=C sort >"$scratch/hand"
-( cd "$OUT" && find . -type f ) | sed 's|^\./||' | LC_ALL=C sort >"$scratch/generated"
-collisions=$(LC_ALL=C comm -12 "$scratch/hand" "$scratch/generated")
+# that appears on one machine and not on the next. Standard error is captured
+# rather than trusted to be read: a `sort` or `comm` warning here (the exact
+# shape #828 was filed for) fails the assembly below instead of leaving a
+# line on a stream nothing else in this script reads.
+( cd "$HAND" && find . -type f ) | sed 's|^\./||' | LC_ALL=C sort >"$scratch/hand" 2>"$scratch/stderr"
+( cd "$OUT" && find . -type f ) | sed 's|^\./||' | LC_ALL=C sort >"$scratch/generated" 2>>"$scratch/stderr"
+collisions=$(LC_ALL=C comm -12 "$scratch/hand" "$scratch/generated" 2>>"$scratch/stderr")
+if [ -s "$scratch/stderr" ]; then
+  echo "assemble-site.sh: \`sort\` or \`comm\` wrote to standard error while" >&2
+  echo "  comparing the two halves, so the collision list below cannot be" >&2
+  echo "  trusted (#828):" >&2
+  sed 's/^/    /' "$scratch/stderr" >&2
+  exit 1
+fi
 
 cp -R "$HAND"/. "$OUT"/
 
