@@ -39,6 +39,8 @@ The verb marks a field `hand entry` when no declaration determines it. Read its 
 
 ## Relations
 
+**Don't reconstruct the resolved relation set by hand.** `taxonomy-source/`, the bundles under `docs/taxonomies/`, and `.headwater/overlay.yml` are three unresolved layers, and a grep scoped to one misses what the engine actually resolves — a base-package relation like `governs` or `traces_to` is declared once in `headwater-standard` and never repeated in a bundle, so a search that stops at the bundle a task seems to touch reports fewer relations than a document may carry. `headwater new <kind> --title "…"` already prints the resolved relations the document may declare, per the report [above](#never-write-a-new-document-by-hand), and `headwater explain <path>` reports the same for a document that already exists. Read one of those before hand-searching the taxonomy source.
+
 The verb writes an edge only where the taxonomy declares `created_by: scaffold` on the relation. Pass it as `--relates <relation>=<identifier>`, and it writes the far half into the target document where reciprocity is required.
 
 Every other relation is yours to type into the front matter, and two of them carry a cost worth knowing before you propose one.
