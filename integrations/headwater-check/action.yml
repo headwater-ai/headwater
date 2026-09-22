@@ -1,0 +1,198 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# A composite action a CONSUMING repository drops into its own workflow to run
+# `headwater check` over its own corpus, with nothing but the released binary:
+# no clone of this repository, no Rust toolchain, no `cargo`. Filed as #833,
+# from an adjudication of #499 that found the GitHub-App shape of that issue
+# blocked on hosted compute this project has paused and an unresolved
+# who-pays ruling (#525). This recipe needs neither: it downloads a release
+# archive, verifies its checksum, and runs the binary it contains.
+#
+# WHY TWO ENGINE VERBS AND NOT ONE. `headwater check` reads the corpus and its
+# own taxonomy rules — front matter, prose, relations — and `--format sarif`
+# is how it hands those findings to GitHub code scanning. It does not,
+# by design, compare a committed derived file (a shelf index, the graph
+# export) against what this corpus and this lock would write today: that
+# comparison is `headwater generate --check`, and it carries no SARIF output
+# at all, because deriving a whole corpus is not a per-document finding. A
+# consuming repository that wires only `check` gets no signal at all when its
+# own generated artifacts drift, which is exactly the failure mode #833's own
+# decisive fixture names (a `summary:` edit that stales a committed shelf
+# index). So this action runs both verbs and folds the second into the first
+# artifact: `merge-generate-check.py` reads `generate --check`'s plain-text
+# report and appends one SARIF result per stale projection, under a rule this
+# action declares rather than the engine, because the engine states no SARIF
+# shape for a verb that never learned one.
+name: headwater check
+description: >-
+  Run `headwater check --strict` (and hold every committed projection to
+  regeneration) against this repository's own corpus, using the released
+  headwater binary. No Rust toolchain, no cargo, no clone of the engine
+  repository.
+author: headwater-ai
+
+inputs:
+  version:
+    description: >-
+      The `headwater-ai/headwater` release tag to install, for example
+      `v0.1.2`. `latest` (the default) resolves to the newest release whose
+      tag matches `v<version>` (never a `taxonomy/…` tag, which is a
+      different release stream and carries no engine binary) and that
+      carries the `x86_64-unknown-linux-gnu` asset — a tag can exist with
+      neither, and `v0.1.1` is a real one, so `latest` does not mean "the
+      newest tag" here.
+    required: false
+    default: latest
+  root:
+    description: The corpus to check, relative to the consuming repository's checkout.
+    required: false
+    default: "."
+  strict:
+    description: >-
+      Fail the job when `headwater check` reports an error-severity finding,
+      or when a committed projection is not what this corpus and this lock
+      produce. Without it both runs are advisory: SARIF is still written, and
+      the job still exits 0.
+    required: false
+    default: "true"
+  sarif-path:
+    description: Where to write the merged SARIF report.
+    required: false
+    default: headwater-check.sarif
+  upload-sarif:
+    description: >-
+      Upload the SARIF report to GitHub code scanning with
+      `github/codeql-action/upload-sarif`. The calling workflow needs
+      `permissions: security-events: write` for this to succeed; a workflow
+      that already carries that permission for another job does not grant it
+      here by itself.
+    required: false
+    default: "true"
+  github-token:
+    description: >-
+      Used to raise the unauthenticated GitHub API rate limit when resolving
+      `latest`, and passed through to the SARIF upload step. Optional: a
+      public repository resolves `latest` without one, just at a lower rate
+      limit.
+    required: false
+    default: ""
+
+outputs:
+  sarif-path:
+    description: The path `sarif-path` named, for a later step to read.
+    value: ${{ steps.merge.outputs.sarif-path }}
+  conclusion:
+    description: '`pass` or `fail`, the verdict this action reached before `strict` decided whether that verdict fails the job.'
+    value: ${{ steps.verdict.outputs.conclusion }}
+
+runs:
+  using: composite
+  steps:
+    - name: Refuse a platform this release does not cover
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ "${{ runner.os }}" != "Linux" ] || [ "${{ runner.arch }}" != "X64" ]; then
+          echo "::error::headwater-ai/headwater publishes a release binary for Linux x86_64 (glibc >= 2.39) alone. This runner is ${{ runner.os }}/${{ runner.arch }}, so this action refuses rather than silently skipping the check or downloading a binary that will not run here. Build from source instead (see README.md's 'Obtaining a named version')." >&2
+          exit 1
+        fi
+
+    - name: Resolve the release tag
+      id: resolve
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        REQUESTED: ${{ inputs.version }}
+      run: sh "${{ github.action_path }}/resolve-version.sh"
+
+    - name: Download the release archive and verify its checksum
+      shell: bash
+      env:
+        TAG: ${{ steps.resolve.outputs.tag }}
+      run: |
+        set -euo pipefail
+        asset="headwater-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
+        base="https://github.com/headwater-ai/headwater/releases/download/${TAG}"
+        stage="${{ runner.temp }}/headwater-check-action"
+        mkdir -p "$stage"
+        curl -fsSL -o "$stage/$asset" "$base/$asset"
+        curl -fsSL -o "$stage/$asset.sha256" "$base/$asset.sha256"
+        ( cd "$stage" && sha256sum -c "$asset.sha256" )
+        tar -xzf "$stage/$asset" -C "$stage" headwater
+        chmod +x "$stage/headwater"
+        echo "$stage" >>"$GITHUB_PATH"
+        "$stage/headwater" --version
+
+    - name: Run headwater check
+      id: check
+      shell: bash
+      env:
+        ROOT: ${{ inputs.root }}
+      run: |
+        set -uo pipefail
+        headwater check --root "$ROOT" --strict --format sarif >"$RUNNER_TEMP/check.sarif" 2>"$RUNNER_TEMP/check.err"
+        echo "exit-code=$?" >>"$GITHUB_OUTPUT"
+        cat "$RUNNER_TEMP/check.err" >&2 || true
+
+    - name: Run headwater generate --check
+      id: generate
+      shell: bash
+      env:
+        ROOT: ${{ inputs.root }}
+      run: |
+        set -uo pipefail
+        headwater generate --root "$ROOT" --check >"$RUNNER_TEMP/generate-check.txt" 2>"$RUNNER_TEMP/generate-check.err"
+        echo "exit-code=$?" >>"$GITHUB_OUTPUT"
+        cat "$RUNNER_TEMP/generate-check.err" >&2 || true
+
+    - name: Fold the projection-freshness result into the SARIF report
+      id: merge
+      shell: bash
+      env:
+        SARIF_PATH: ${{ inputs.sarif-path }}
+      run: |
+        set -euo pipefail
+        python3 "${{ github.action_path }}/merge-generate-check.py" \
+          "$RUNNER_TEMP/check.sarif" \
+          "$RUNNER_TEMP/generate-check.txt" \
+          "$SARIF_PATH"
+        echo "sarif-path=$SARIF_PATH" >>"$GITHUB_OUTPUT"
+
+    - name: Reach the verdict
+      id: verdict
+      shell: bash
+      env:
+        CHECK_EXIT: ${{ steps.check.outputs.exit-code }}
+        GENERATE_EXIT: ${{ steps.generate.outputs.exit-code }}
+        STRICT: ${{ inputs.strict }}
+      run: |
+        set -euo pipefail
+        if [ "$CHECK_EXIT" = "0" ] && [ "$GENERATE_EXIT" = "0" ]; then
+          echo "conclusion=pass" >>"$GITHUB_OUTPUT"
+        else
+          echo "conclusion=fail" >>"$GITHUB_OUTPUT"
+        fi
+
+    - name: Upload the SARIF report
+      # `inputs.github-token` defaults to the empty string, and
+      # `github/codeql-action/upload-sarif` itself defaults `token` to
+      # `${{ github.token }}`. Passing the empty string through here would
+      # override that sensible default with nothing, so this falls back to
+      # `github.token` itself rather than to the input alone.
+      if: ${{ inputs.upload-sarif == 'true' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ steps.merge.outputs.sarif-path }}
+        token: ${{ inputs.github-token != '' && inputs.github-token || github.token }}
+
+    - name: Fail the job on a strict verdict of fail
+      shell: bash
+      env:
+        CONCLUSION: ${{ steps.verdict.outputs.conclusion }}
+        STRICT: ${{ inputs.strict }}
+      run: |
+        set -euo pipefail
+        if [ "$STRICT" = "true" ] && [ "$CONCLUSION" = "fail" ]; then
+          echo "::error::headwater check found an error-severity finding, or a committed projection was not what this corpus and this lock produce. Read ${{ steps.merge.outputs.sarif-path }}, or run 'headwater check --strict' and 'headwater generate --check' locally." >&2
+          exit 1
+        fi

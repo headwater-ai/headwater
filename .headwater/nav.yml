@@ -123,6 +123,7 @@ nav:
       - "Diagnose an isolation failure": "how-to/diagnose-an-isolation-failure.md"
       - "Mine the shadow-mode routing log": "how-to/mine-the-shadow-mode-routing-log.md"
       - "Relocate a shelf": "how-to/relocate-a-shelf.md"
+      - "Wire headwater check into your own workflow": "how-to/wire-headwater-check-into-your-own-workflow.md"
   - "The command surface":
       - "The command surface": "interfaces/README.md"
       - "headwater capture": "interfaces/headwater-capture.md"

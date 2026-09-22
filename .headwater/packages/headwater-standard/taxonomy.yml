@@ -148,7 +148,14 @@ taxonomy: headwater/standard
 # The two are required to agree: `resolve::package::agrees` refuses the package
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
-version: 4.4.0
+#
+# 4.4.1 changes no declaration in this file. `conformance.yml` beside it names
+# `headwater-ai/headwater/integrations/headwater-check` in the remediation
+# text of `checks.wired` and `gates.required`, so the attestation prompt for
+# each carries a recipe rather than a bare instruction. One package version
+# covers every content file it publishes, this one included, so the number
+# here moves with a change to either.
+version: 4.4.1
 
 purposes:
   rationale:
