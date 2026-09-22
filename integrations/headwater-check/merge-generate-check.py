@@ -34,6 +34,27 @@ STALE_MARKER = "committed, and it is not what this corpus and this lock produce"
 RULE_ID = "headwater/projection.stale"
 
 
+def refuse_traversal(path):
+    """Refuse a `..` path component in `out_path`, the one argument this
+    script takes that traces to `inputs.sarif-path` — an adopter's own
+    workflow, and never this action's own script, chooses that value. An
+    absolute path is not refused here: this action's own CI passes
+    `${{ runner.temp }}/staled.sarif`, a real absolute path, as a legitimate
+    output location, so "absolute" is not itself the signal of anything
+    wrong. A `..` component is, because it is the one shape that turns a
+    path meant to land under the caller's own workspace or temp directory
+    into one that reaches outside it, and no legitimate use of this input
+    needs one."""
+    parts = path.replace("\\", "/").split("/")
+    if ".." in parts:
+        print(
+            f"refusing sarif-path {path!r}: a '..' path component can write "
+            "outside the intended output location",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+
 def find_stale_projections(report_text):
     lines = report_text.splitlines()
     found = []
@@ -61,6 +82,7 @@ def main():
         )
         return 2
     sarif_path, report_path, out_path = sys.argv[1:4]
+    refuse_traversal(out_path)
 
     with open(sarif_path, encoding="utf-8") as f:
         sarif = json.load(f)

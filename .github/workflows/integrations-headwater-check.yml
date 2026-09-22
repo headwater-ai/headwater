@@ -79,6 +79,22 @@ jobs:
           version: ${{ env.FIXTURE_TAG }}
           upload-sarif: "false"
 
+      # `upload-sarif` defaults to `true`, and this job's own `permissions:`
+      # above grants no `security-events: write` — the exact shape of a
+      # caller who forgot that permission. Before the action's own upload
+      # step carried `continue-on-error: true`, this reproduced a real
+      # defect: the upload step's own failure aborted the composite action
+      # before its last step could run, and failed this job on a corpus with
+      # nothing wrong, for a reason `strict` never named. `upload-sarif` is
+      # left at its default (omitted) rather than set, so this step exercises
+      # the same path a caller's own untouched default does.
+      - name: Run the action with the default upload-sarif and no security-events permission
+        uses: ./integrations/headwater-check
+        with:
+          root: ${{ runner.temp }}/fixture
+          version: ${{ env.FIXTURE_TAG }}
+          sarif-path: ${{ runner.temp }}/default-upload.sarif
+
       - name: Stale the committed shelf index with a summary edit
         run: |
           set -euo pipefail

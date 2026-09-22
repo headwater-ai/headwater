@@ -24,9 +24,9 @@ relations:
 
 You need a GitHub Actions runner on Linux x86_64, for example `ubuntu-24.04` or `ubuntu-latest`. `headwater-ai/headwater` publishes a release binary for that platform alone. A runner of a different kind refuses cleanly, and it names the platform it needed. It does not download a binary that cannot run there.
 
-You need no Rust toolchain and no `cargo` on the runner. The action downloads a release archive, checks its `sha256` sum, and runs the binary inside it. It never builds the engine.
+You need no Rust toolchain and no `cargo` on the runner. The action downloads a release archive, checks its `sha256` sum, and runs the binary inside it. It never builds the engine. The checksum proves that the bytes the action downloaded are the bytes `headwater-ai/headwater` published under that tag. It does not sign or attest the release itself. The `.sha256` file and the archive it names both come from the same release. A compromise of the release process would carry a matching checksum too. Treat the download the way you already treat any other third-party action or binary in your pipeline.
 
-Your workflow needs `permissions: security-events: write` if you want the SARIF report on GitHub's code-scanning page. Without that permission, the action still runs the checks and still fails the job on an error, and it skips the upload step alone.
+Your workflow needs `permissions: security-events: write` if you want the SARIF report on GitHub's code-scanning page. Without that permission, the upload step fails and says so in the job's log. It does not fail your job by itself. The action still runs the checks. The job's own pass or fail still answers to `strict` and to what your corpus reports, not to the upload.
 
 ## Steps
 

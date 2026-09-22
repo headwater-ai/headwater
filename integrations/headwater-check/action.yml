@@ -196,20 +196,41 @@ runs:
       # `${{ github.token }}`. Passing the empty string through here would
       # override that sensible default with nothing, so this falls back to
       # `github.token` itself rather than to the input alone.
+      #
+      # `continue-on-error: true` because the upload needs
+      # `permissions: security-events: write` on the calling workflow, a
+      # permission this action cannot grant itself or detect in advance, and
+      # a workflow that omits it is a caller mistake this step alone should
+      # report rather than one that should decide the whole job's outcome.
+      # Without this, a caller who forgot that permission would fail the job
+      # on every run, on a corpus with nothing wrong included, for a reason
+      # `strict`'s own verdict never names: this step's own log is where that
+      # failure shows, and "Fail the job on a strict verdict of fail" below
+      # is what still runs and states the job's real reason.
       if: ${{ inputs.upload-sarif == 'true' }}
+      continue-on-error: true
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: ${{ steps.merge.outputs.sarif-path }}
         token: ${{ inputs.github-token != '' && inputs.github-token || github.token }}
 
     - name: Fail the job on a strict verdict of fail
+      # SARIF_PATH goes through `env:`, like every other step's own inputs,
+      # and never inline inside `${{ }}` in the script text below. GitHub
+      # substitutes a `${{ }}` expression into the script BEFORE bash parses
+      # it, so a value interpolated there becomes shell syntax rather than
+      # shell data. `sarif-path` is `inputs.sarif-path` verbatim, and a
+      # caller's own workflow can set an input from event-controlled data (a
+      # PR title, a branch name), so a value here has to be read as a shell
+      # variable, never spliced into the command.
       shell: bash
       env:
         CONCLUSION: ${{ steps.verdict.outputs.conclusion }}
         STRICT: ${{ inputs.strict }}
+        SARIF_PATH: ${{ steps.merge.outputs.sarif-path }}
       run: |
         set -euo pipefail
         if [ "$STRICT" = "true" ] && [ "$CONCLUSION" = "fail" ]; then
-          echo "::error::headwater check found an error-severity finding, or a committed projection was not what this corpus and this lock produce. Read ${{ steps.merge.outputs.sarif-path }}, or run 'headwater check --strict' and 'headwater generate --check' locally." >&2
+          echo "::error::headwater check found an error-severity finding, or a committed projection was not what this corpus and this lock produce. Read $SARIF_PATH, or run 'headwater check --strict' and 'headwater generate --check' locally." >&2
           exit 1
         fi
