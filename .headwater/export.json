@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 536,
-      "carried": 536,
+      "in the graph": 537,
+      "carried": 537,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -9092,6 +9092,20 @@
               "HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections"
             ]
           }
+        }
+      },
+      {
+        "path": "docs/obligations/0201-no-coverage-or-mutation-measurement-has-ever-been-taken-over-the-engine-s-test-suite.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0201",
+        "facets": {
+          "id": "HW-OBL-0201",
+          "status": "draft",
+          "status_since": "2026-09-22",
+          "summary": "1233 tests exist under engine/crates and nobody has measured whether they would catch a defect, with cargo-llvm-cov and cargo-mutants as the named, unrun instruments.",
+          "last_verified": "2026-09-22",
+          "title": "No coverage or mutation measurement has ever been taken over the engine's test suite",
+          "waiting_on": "measurement"
         }
       },
       {

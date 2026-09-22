@@ -320,6 +320,7 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0198](../obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md) — Nothing states how much of a session's budget the standing instructions consume before work starts
 - [HW-OBL-0199](../obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md) — An observation snapshot records a commit and nothing reads it back
 - [HW-OBL-0200](../obligations/0200-three-graded-regression-runs-are-owed-a-fresh-recording-against-a-moved-taxonomy-lock.md) — Three graded regression runs are owed a fresh recording against a moved taxonomy lock
+- [HW-OBL-0201](../obligations/0201-no-coverage-or-mutation-measurement-has-ever-been-taken-over-the-engine-s-test-suite.md) — No coverage or mutation measurement has ever been taken over the engine's test suite
 
 ## What the first typing of this corpus found
 
