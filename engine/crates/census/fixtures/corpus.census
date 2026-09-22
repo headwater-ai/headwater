@@ -688,6 +688,10 @@ docs/obligations/0200-three-graded-regression-runs-are-owed-a-fresh-recording-ag
   typed: obligation_record
 docs/obligations/0201-no-coverage-or-mutation-measurement-has-ever-been-taken-over-the-engine-s-test-suite.md
   typed: obligation_record
+docs/obligations/0202-a-bare-none-footprint-is-claimed-as-a-literal-path-so-two-disjoint-issues-collide.md
+  typed: obligation_record
+docs/obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
