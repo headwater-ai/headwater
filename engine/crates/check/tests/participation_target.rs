@@ -136,13 +136,15 @@ fn a_target_kind_the_relation_admits_and_the_expectation_does_not_name_is_report
 
     assert_eq!(
         reported(&run, "narrow"),
-        vec!["by-nothing.md", "by-probe.md"],
-        "the narrow arm reports the probe-verified document, which is the defect"
+        vec!["by-code-path.md", "by-nothing.md", "by-probe.md"],
+        "the narrow arm reports the probe-verified document, which is the defect, and the \
+         anchor-verified one, which `to_kind: acceptance_criterion` never admits"
     );
     assert_eq!(
         reported(&run, "broad"),
         vec!["by-nothing.md"],
-        "the broad arm reports only the document that reaches nothing"
+        "the broad arm reports only the document that reaches nothing; the bound anchor \
+         satisfies the arm that names no target kind"
     );
 }
 
@@ -199,16 +201,39 @@ fn the_broad_arm_still_reports_a_document_that_reaches_nothing_and_still_respect
     assert_eq!(reported(&run, "broad"), vec!["by-nothing.md"]);
 
     // And the rule did generate over every document of both kinds, so the
-    // silence above is a verdict rather than an absent instance. Ten documents
-    // carry an expectation; the criterion and the probe declare none.
+    // silence above is a verdict rather than an absent instance. Twelve
+    // documents carry an expectation (six per arm, `by-code-path.md` among
+    // them); the criterion and the probe declare none.
     let instances = run
         .instances
         .iter()
         .filter(|instance| instance.rule == RULE)
         .count();
     assert_eq!(
-        instances, 10,
+        instances, 12,
         "every document of a kind that declares an expectation gets an instance"
+    );
+}
+
+/// Point 3 of [#855](https://github.com/headwater-ai/headwater/issues/855)'s
+/// Done-when: a bound anchor neighbour is admitted at all now, and it still
+/// satisfies only the arm whose expectation names no target kind.
+/// `by-code-path.md` is the identical document and the identical bound
+/// `code_path` edge under both arms; only the `to_kind` clause moves which one
+/// reports it.
+#[test]
+fn a_bound_anchor_neighbour_satisfies_only_the_arm_that_names_no_target_kind() {
+    let run = run();
+    assert!(
+        reported(&run, "narrow").contains(&"by-code-path.md".to_string()),
+        "narrow names `acceptance_criterion`, which the anchor's own kind is not, so it stays \
+         reported: {:?}",
+        reported(&run, "narrow")
+    );
+    assert!(
+        !reported(&run, "broad").contains(&"by-code-path.md".to_string()),
+        "broad names no target kind, so the bound anchor satisfies it: {:?}",
+        reported(&run, "broad")
     );
 }
 

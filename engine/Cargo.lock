@@ -508,6 +508,7 @@ dependencies = [
  "headwater-meta",
  "headwater-paint",
  "headwater-resolve",
+ "headwater-vcs",
  "headwater-yaml",
 ]
 

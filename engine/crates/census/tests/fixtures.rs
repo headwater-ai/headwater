@@ -467,6 +467,70 @@ fn every_producer_output_is_declared_and_every_declared_path_has_a_producer() {
     );
 }
 
+/// A gitignored producer output does not reach the population as undeclared.
+///
+/// This is the #817 fixture: `.headwater/site-deploy/` is build output,
+/// `.gitignore` excludes it, and no `merge=headwater-regenerate` declaration
+/// can ever cover a path nothing commits. Watched failing against the unfixed
+/// `collect`, which walked the filesystem with no regard for `.gitignore` and
+/// reported the marker file here as undeclared — the exact shape quoted in the
+/// issue, reproduced with a scratch tree in place of a locally built site.
+#[test]
+fn a_gitignored_producer_output_is_not_undeclared() {
+    let root = TempTree::new("gitignored");
+    root.git_init();
+    root.write(".gitattributes", "");
+    root.write(".gitignore", "build-preview/\n");
+    root.write(
+        "build-preview/corpus.json",
+        &format!(
+            "{{\n  {},\n  \"documents\": []\n}}\n",
+            headwater_mark::marker_member("site_deploy")
+        ),
+    );
+
+    let population = headwater_census::derived::population(root.path());
+
+    assert!(
+        population.undeclared.is_empty(),
+        "a gitignored producer output reached the population as undeclared, so \
+         a tree that has been locally built once would redden a clean \
+         checkout's suite too: {:#?}",
+        population.undeclared
+    );
+}
+
+/// The same rule holds for one gitignored file, not a whole ignored directory.
+///
+/// Done-when clause 4 of #817 asks that the fix be the ignore rule and not a
+/// name: a second gitignored, marker-bearing file anywhere in the tree must
+/// not reopen this. A directory-only exclusion would pass the case above and
+/// fail this one, so the two together are the generalization the issue asks
+/// for.
+#[test]
+fn a_second_gitignored_marker_bearing_file_does_not_reopen_this() {
+    let root = TempTree::new("gitignored-file");
+    root.git_init();
+    root.write(".gitattributes", "");
+    root.write(".gitignore", "scratch.json\n");
+    root.write(
+        "scratch.json",
+        &format!(
+            "{{\n  {},\n  \"documents\": []\n}}\n",
+            headwater_mark::marker_member("site_deploy")
+        ),
+    );
+
+    let population = headwater_census::derived::population(root.path());
+
+    assert!(
+        population.undeclared.is_empty(),
+        "an individually gitignored file, not a whole ignored directory, \
+         reached the population as undeclared: {:#?}",
+        population.undeclared
+    );
+}
+
 /// The producer's own two literals, held against the copy this crate enumerates by.
 ///
 /// `every_page_carrying_a_figure_is_declared_unmergeable` already holds them
@@ -1057,6 +1121,22 @@ impl TempTree {
         let at = self.0.join(relative);
         std::fs::create_dir_all(at.parent().expect("a parent")).expect("a directory");
         std::fs::write(&at, text).expect("a file");
+    }
+
+    /// Turn this tree into a git repository, so `headwater_vcs::ignored` —
+    /// which `population` calls — reads back a `.gitignore` this tree wrote.
+    /// Git needs a repository to resolve an ignore rule at all: a
+    /// `.gitignore` beside no `.git` binds nothing, the same fact
+    /// `headwater-vcs`'s own `a_tree_with_no_git_repository_reports_nothing_ignored`
+    /// covers from the other side.
+    fn git_init(&self) {
+        let status = std::process::Command::new("git")
+            .arg("-C")
+            .arg(&self.0)
+            .args(["init", "-q"])
+            .status()
+            .expect("git runs");
+        assert!(status.success(), "git init failed in {}", self.0.display());
     }
 }
 
