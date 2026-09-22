@@ -19,6 +19,18 @@
 # at all — `v0.1.1`, a real collision this repository's own history carries,
 # not a hypothetical one.
 #
+# It also holds `assert-no-inline-expression-in-run.py` against the real
+# `action.yml` and against a reintroduced copy of the exact injection a
+# second-opinion security review found on #1034: `action.yml`'s own `run:`
+# steps route every value that traces to `inputs.*` or to another step's
+# `steps.*.outputs.*` through `env:`, never splicing a `${{ }}` expression
+# into the script text directly, because GitHub substitutes that expression
+# into the script BEFORE the shell parses it — a value spliced there becomes
+# shell syntax rather than shell data. Nothing before that review parsed or
+# executed this file's script bodies at all, so a human reading the diff by
+# eye was the only thing standing between a later edit and the same defect.
+# This suite is what stands there now.
+#
 # What this suite does NOT hold: that the action actually passes on a clean
 # corpus and fails on a staled one, end to end, against a real download.
 # `.github/workflows/integrations-headwater-check.yml` is that suite, and it
@@ -28,7 +40,10 @@
 # Run it from anywhere:
 #     sh tools/repo/integrations-fixtures.sh
 #
-# It needs `python3` and nothing else. It writes nothing under this checkout.
+# It needs `python3`, `PyYAML` (`python3 -c 'import yaml'`, already installed
+# in the CI job this runs in, by the `mkdocs` step ahead of it — see that
+# step's own comment for why the two pins move together) and nothing else. It
+# writes nothing under this checkout.
 
 set -u
 
@@ -36,6 +51,7 @@ root=$(cd "$(dirname "$0")/../.." && pwd)
 action="$root/integrations/headwater-check/action.yml"
 doc="$root/docs/how-to/wire-headwater-check-into-your-own-workflow.md"
 resolver="$root/integrations/headwater-check/resolve-latest.py"
+guard="$root/integrations/headwater-check/fixtures/assert-no-inline-expression-in-run.py"
 
 passed=0
 failed=0
@@ -69,6 +85,10 @@ same() {
 }
 [ -x "$resolver" ] || [ -f "$resolver" ] || {
     printf 'no resolve-latest.py at %s\n' "$resolver" >&2
+    exit 1
+}
+[ -f "$guard" ] || {
+    printf 'no assert-no-inline-expression-in-run.py at %s\n' "$guard" >&2
     exit 1
 }
 
@@ -183,6 +203,86 @@ json4='[
 ]'
 got=$(printf '%s' "$json4" | python3 "$resolver")
 same 'no matching release prints nothing rather than a wrong tag' '' "$got"
+
+printf '\n# assert-no-inline-expression-in-run.py, against the real file and a reintroduced injection\n'
+
+scratch=$(mktemp -d) || exit 1
+trap 'rm -rf "$scratch"' EXIT HUP INT TERM
+
+python3 "$guard" "$action" >"$scratch/guard-real.out" 2>&1
+same 'the real, fixed action.yml has no forbidden inline expression' 0 "$?"
+
+# The exact injection the review found and #1034 fixed: splice
+# `${{ steps.merge.outputs.sarif-path }}` straight into the run: text of
+# "Fail the job on a strict verdict of fail" instead of reading it back as
+# `$SARIF_PATH` from that step's own `env:` mapping. Reintroduced by string
+# substitution on a scratch copy rather than committed anywhere, so this case
+# proves the guard catches the defect without the defect ever landing on the
+# real file.
+python3 - "$action" "$scratch/vulnerable.yml" <<'PY'
+import sys
+src, dst = sys.argv[1], sys.argv[2]
+text = open(src, encoding="utf-8").read()
+old = 'Read $SARIF_PATH, or run'
+new = 'Read ${{ steps.merge.outputs.sarif-path }}, or run'
+if old not in text:
+    print(f"the line to corrupt ({old!r}) was not found verbatim in {src}", file=sys.stderr)
+    sys.exit(2)
+open(dst, "w", encoding="utf-8").write(text.replace(old, new))
+PY
+if [ $? -ne 0 ]; then
+    fail 'the exact fixed line still reads $SARIF_PATH verbatim, so the injection can be reintroduced for this case' \
+        'action.yml no longer matches the string this case corrupts — update both together'
+else
+    python3 "$guard" "$scratch/vulnerable.yml" >"$scratch/guard-vuln.out" 2>&1
+    same 'reintroducing the exact injection by hand is caught' 1 "$?"
+    same '  and the report names the step and the forbidden expression' 1 \
+        "$(grep -c "steps.merge.outputs.sarif-path" "$scratch/guard-vuln.out")"
+fi
+
+# A second shape of the same class: `inputs.*` spliced into a run: script
+# directly, rather than through `steps.*.outputs.*`. Built from nothing on
+# the tree, because no real file here carries this one either.
+cat >"$scratch/inputs-injection.yml" <<'YAML'
+name: synthetic
+description: a synthetic action.yml for this one case alone
+inputs:
+  root:
+    required: false
+    default: "."
+runs:
+  using: composite
+  steps:
+    - name: splice an input straight into the script
+      shell: bash
+      run: |
+        echo "root is ${{ inputs.root }}"
+YAML
+python3 "$guard" "$scratch/inputs-injection.yml" >"$scratch/guard-inputs.out" 2>&1
+same 'an inputs.* expression spliced into run: is caught the same way' 1 "$?"
+
+# The negative case this guard exists not to break: the same expression,
+# read back from env: as a shell variable, is the correct and common shape
+# every step in the real file already uses, and it must never be flagged.
+cat >"$scratch/env-only.yml" <<'YAML'
+name: synthetic
+description: a synthetic action.yml for this one case alone
+inputs:
+  root:
+    required: false
+    default: "."
+runs:
+  using: composite
+  steps:
+    - name: read the same value through env instead
+      shell: bash
+      env:
+        ROOT: ${{ inputs.root }}
+      run: |
+        echo "root is $ROOT"
+YAML
+python3 "$guard" "$scratch/env-only.yml" >"$scratch/guard-env.out" 2>&1
+same 'the same expression read back from env: is not flagged' 0 "$?"
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
