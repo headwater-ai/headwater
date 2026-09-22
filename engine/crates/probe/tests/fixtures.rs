@@ -1506,7 +1506,10 @@ fn the_colored_record_strips_to_the_plain_record() {
     let record = record_of(&transcript("transcript.md"));
     let ansi = record.render(ColorMode::Ansi);
     let plain = record.render(ColorMode::Plain);
-    assert!(ansi.contains('\u{1b}'), "the colored record has to carry color");
+    assert!(
+        ansi.contains('\u{1b}'),
+        "the colored record has to carry color"
+    );
     assert_eq!(stripped(&ansi), plain);
 }
 
@@ -1517,7 +1520,10 @@ fn the_colored_record_strips_to_the_plain_record() {
 fn every_results_heading_and_probe_row_is_painted() {
     let results = results_over(&transcript("transcript.md"));
     let ansi = results.render(ColorMode::Ansi);
-    assert!(!results.rows.is_empty(), "this fixture has to grade at least one probe");
+    assert!(
+        !results.rows.is_empty(),
+        "this fixture has to grade at least one probe"
+    );
     for heading in [
         "## The verdicts",
         "## The rate, and the denominator it is over",
@@ -1549,6 +1555,9 @@ fn the_colored_results_strip_to_the_plain_results() {
     let results = results_over(&transcript("transcript.md"));
     let ansi = results.render(ColorMode::Ansi);
     let plain = results.render(ColorMode::Plain);
-    assert!(ansi.contains('\u{1b}'), "the colored results have to carry color");
+    assert!(
+        ansi.contains('\u{1b}'),
+        "the colored results have to carry color"
+    );
     assert_eq!(stripped(&ansi), plain);
 }

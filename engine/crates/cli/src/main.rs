@@ -759,7 +759,11 @@ fn validate(root: &Path) -> ExitCode {
 
     println!(
         "{}",
-        headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "sources, in application order", mode)
+        headwater_cli::paint::paint(
+            headwater_cli::paint::Role::Heading,
+            "sources, in application order",
+            mode
+        )
     );
     for source in &repository.resolution.sources {
         println!(
@@ -2798,7 +2802,11 @@ fn payload(
                 println!(
                     "\n{} states a version range this engine cannot read, so nothing selected it: \
                      {why}",
-                    headwater_cli::paint::paint(headwater_cli::paint::Role::Path, &carried.at, mode)
+                    headwater_cli::paint::paint(
+                        headwater_cli::paint::Role::Path,
+                        &carried.at,
+                        mode
+                    )
                 );
             }
             Ok(false) => {}
@@ -3691,7 +3699,11 @@ fn scaffold_report(
         let _ = writeln!(out, "claimed {claim}");
     }
 
-    let _ = writeln!(out, "\n{}", paint(Role::Heading, "what the taxonomy decided", mode));
+    let _ = writeln!(
+        out,
+        "\n{}",
+        paint(Role::Heading, "what the taxonomy decided", mode)
+    );
     let _ = writeln!(out, "  kind {} on the shelf `{}`", plan.kind, plan.shelf);
     if let Some(minting) = &plan.minting {
         let _ = writeln!(
@@ -3729,7 +3741,11 @@ fn scaffold_report(
     }
 
     if !plan.edges.is_empty() {
-        let _ = writeln!(out, "\n{}", paint(Role::Heading, "the edges it proposed", mode));
+        let _ = writeln!(
+            out,
+            "\n{}",
+            paint(Role::Heading, "the edges it proposed", mode)
+        );
         for edge in &plan.edges {
             let _ = writeln!(
                 out,
@@ -3761,7 +3777,11 @@ fn scaffold_report(
         let _ = writeln!(
             out,
             "\n{}",
-            paint(Role::Heading, "what this document may also declare, and nobody did", mode)
+            paint(
+                Role::Heading,
+                "what this document may also declare, and nobody did",
+                mode
+            )
         );
         for expected in &plan.expected {
             let _ = writeln!(
@@ -4396,10 +4416,7 @@ fn probe_grade(root: &Path, path: &Path) -> ExitCode {
     };
     let record = headwater_probe::Record::read(&source, &tree);
     let results = headwater_probe::Results::over(&record, selected);
-    print!(
-        "{}",
-        results.render(headwater_cli::paint::stdout_color())
-    );
+    print!("{}", results.render(headwater_cli::paint::stdout_color()));
     ExitCode::SUCCESS
 }
 
@@ -4433,10 +4450,7 @@ fn probe_record(root: &Path, path: &Path) -> ExitCode {
         lock: &loaded.bound.digest,
     };
     let record = headwater_probe::Record::read(&source, &tree);
-    print!(
-        "{}",
-        record.render(headwater_cli::paint::stdout_color())
-    );
+    print!("{}", record.render(headwater_cli::paint::stdout_color()));
     ExitCode::SUCCESS
 }
 

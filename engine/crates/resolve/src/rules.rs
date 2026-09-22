@@ -343,7 +343,10 @@ pub fn display_names(taxonomy: &Mapping, mode: ColorMode) -> String {
         bare.len()
     );
     for shelf in &bare {
-        out.push_str(&format!("  {}\n", paint(Role::Path, &format!("shelves.{shelf}"), mode)));
+        out.push_str(&format!(
+            "  {}\n",
+            paint(Role::Path, &format!("shelves.{shelf}"), mode)
+        ));
     }
     if !bare.is_empty() {
         out.push_str(

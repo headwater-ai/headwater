@@ -288,7 +288,9 @@ impl Reason {
                 "{} reads {found} and this verdict rests on {recorded}",
                 paint(Role::Path, path, mode)
             ),
-            Reason::Gone { path } => format!("{} is not in this tree", paint(Role::Path, path, mode)),
+            Reason::Gone { path } => {
+                format!("{} is not in this tree", paint(Role::Path, path, mode))
+            }
             Reason::Unhashed { path } => {
                 format!(
                     "{} carried no hash when it was read, so nothing compares",
@@ -557,7 +559,9 @@ mod tests {
             tree(&[("docs/a.md", "sha256:a")]),
         );
         assert!(verdict.carries());
-        assert!(verdict.render(ColorMode::Plain).contains("carry to this tree"));
+        assert!(verdict
+            .render(ColorMode::Plain)
+            .contains("carry to this tree"));
         assert!(verdict
             .render(ColorMode::Plain)
             .contains("nothing about a document this tree gained"));
