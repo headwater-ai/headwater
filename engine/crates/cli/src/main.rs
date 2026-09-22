@@ -3466,21 +3466,43 @@ fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
             ExitCode::SUCCESS
         }
         None => {
-            let corpus = Corpus::declared(
-                root,
-                &loaded.consumer.corpus_root,
-                &loaded.consumer.exclusions,
-            );
-            eprintln!(
-                "headwater: {}",
-                err(&classification_text(
-                    target,
-                    &corpus.classify(Path::new(target))
-                ))
-            );
+            // An identifier is asked about first, and a path second: the two
+            // grammars can overlap in principle, and this repository's own
+            // never do (every identifier scheme opens on a namespace, and no
+            // corpus path does). Where they did overlap, a target this shaped
+            // gets the identifier's refusal, because a reader who typed an
+            // identifier is not asking whether it is a path.
+            let text = match loaded.shape.identifier_shaped(target) {
+                true => identifier_text(target),
+                false => {
+                    let corpus = Corpus::declared(
+                        root,
+                        &loaded.consumer.corpus_root,
+                        &loaded.consumer.exclusions,
+                    );
+                    classification_text(target, &corpus.classify(Path::new(target)))
+                }
+            };
+            eprintln!("headwater: {}", err(&text));
             ExitCode::FAILURE
         }
     }
+}
+
+/// The sentence [`explain`]'s refusal prints for a target shaped like an
+/// identifier of this corpus that no document declares.
+///
+/// [#845](https://github.com/headwater-ai/headwater/issues/845): the four
+/// states of [`classification_text`] are a reading of a path, and printing
+/// one of them for an identifier told a reader something true and irrelevant
+/// — "outside every corpus root" reads as evidence the identifier is
+/// somewhere else, when the honest answer is that this corpus does not carry
+/// it. This sentence does not say whether the identifier is a typo or an
+/// invention, or whether an untyped document carries it: that finer read is
+/// `resolve_identifier`'s, over `headwater mcp`, and this refusal only stops
+/// claiming the wrong thing rather than starting to claim the fuller one.
+fn identifier_text(target: &str) -> String {
+    format!("`{target}` is shaped like an identifier of this corpus, and no document declares it")
 }
 
 /// The sentence [`explain`]'s refusal prints for a target with no document,

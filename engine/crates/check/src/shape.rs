@@ -587,6 +587,34 @@ impl Shape {
             .find(|scheme| scheme.name == name)
     }
 
+    /// Whether a string opens the way some declared scheme's identifiers open,
+    /// whatever kind mints under that scheme and whatever the rest of the
+    /// string goes on to say.
+    ///
+    /// [`headwater_meta::identifier::Template::prefix`] is the looser question
+    /// this reads: a target one digit short of a declared `{seq}` width, or
+    /// with a slug this corpus never minted, still answers `true` here, and
+    /// [`Shape::identifier_scheme_of`] plus [`Template::admits`] is what a
+    /// caller reaches for the exact question. `headwater explain` is the one
+    /// caller today, and it asks this before it asks whether a target is a
+    /// path, so a typo'd identifier is refused in the words of an identifier
+    /// rather than the words of a path ([#845](https://github.com/headwater-ai/headwater/issues/845)).
+    ///
+    /// A scheme with an unreadable pattern, or with no fixed prefix at all
+    /// (a pattern that opens on `{slug}`), answers `false` for that scheme and
+    /// is skipped rather than treated as a prefix every string admits.
+    pub fn identifier_shaped(&self, target: &str) -> bool {
+        self.identifier_schemes.iter().any(|scheme| {
+            let Ok(template) =
+                headwater_meta::identifier::Template::parse(&scheme.pattern, &scheme.namespace)
+            else {
+                return false;
+            };
+            let prefix = template.prefix();
+            !prefix.is_empty() && target.starts_with(prefix.as_str())
+        })
+    }
+
     /// The lifecycle regime a kind is held to, through the chain that binds
     /// it.
     ///
@@ -1081,6 +1109,31 @@ kinds:
             .expect("declared")
             .values
             .is_empty());
+    }
+
+    const SCHEMES: &str = "\
+identifier_schemes:
+  decision_id:
+    pattern: \"{namespace}-DR-{seq:04d}\"
+    namespace: HW
+  spec_id:
+    pattern: \"{namespace}-SPEC-{slug}\"
+    namespace: HW
+";
+
+    /// The decisive case: a target one digit short of `decision_id`'s declared
+    /// width is not a document this scheme mints, and it is still shaped like
+    /// one — the question `headwater explain` asks before it asks whether a
+    /// target is a path (#845).
+    #[test]
+    fn a_target_shaped_like_a_declared_scheme_is_identifier_shaped_even_short_of_its_width() {
+        let shape = shape(SCHEMES);
+        assert!(shape.identifier_shaped("HW-DR-0040"));
+        assert!(shape.identifier_shaped("HW-DR-004"));
+        assert!(shape.identifier_shaped("HW-DR-9999"));
+        assert!(shape.identifier_shaped("HW-SPEC-glossary"));
+        assert!(!shape.identifier_shaped("docs/spec/09-decisions.md"));
+        assert!(!shape.identifier_shaped(""));
     }
 
     /// The chain is what a required-facet check reads, and it is the whole of

@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-mcp
 status: current
 status_since: 2026-09-06
 summary: "How the stdio MCP server exposes read tools, optional working-tree writes, and a one-write session seal."
-last_verified: 2026-08-25
+last_verified: 2026-09-23
 title: "headwater mcp"
 relations:
   governs:
@@ -23,7 +23,7 @@ The server reads JSON-RPC messages from standard input and writes one response p
 
 `headwater mcp` starts the agent-facing surface of the same library as the command line. It walks the corpus once, fixes the date once and then answers MCP requests from those values.
 
-The default server registers six read tools: `route`, `explain`, `related`, `resolve_identifier`, `governing_docs_for_path` and `check`. The `check` tool takes one format from `text`, `json`, `sarif` or `markdown`. The other read tools take the target or task named by their command-line counterparts.
+The default server registers six read tools: `route`, `explain`, `related`, `resolve_identifier`, `governing_docs_for_path` and `check`. The `check` tool takes one format from `text`, `json`, `sarif` or `markdown`. Four of the other five read tools take the target or task named by their command-line counterparts. `governing_docs_for_path` has no command-line counterpart ([#845](https://github.com/headwater-ai/headwater/issues/845)). This server is the only route to it. `Pointer::render`'s shape — `path (name) — summary [asserted: …]` — is the wire format a caller may rely on.
 
 `--write` also registers `new` and `fix`. `new` takes a kind, title and optional array of relation strings. `fix` takes one output format. No tool commits, pushes or merges, and the default server registers no tool that writes.
 
