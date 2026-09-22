@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 544,
-      "carried": 544,
+      "in the graph": 546,
+      "carried": 546,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -9111,6 +9111,34 @@
           "last_verified": "2026-09-22",
           "title": "No coverage or mutation measurement has ever been taken over the engine's test suite",
           "waiting_on": "measurement"
+        }
+      },
+      {
+        "path": "docs/obligations/0202-a-bare-none-footprint-is-claimed-as-a-literal-path-so-two-disjoint-issues-collide.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0202",
+        "facets": {
+          "id": "HW-OBL-0202",
+          "status": "draft",
+          "status_since": "2026-09-23",
+          "summary": "tools/run/run-dir.sh claim treats the literal string none as an artifact path with no special case, so two issues that both report footprint none produce a spurious WAITS-ON even when they touch disjoint files.",
+          "last_verified": "2026-09-23",
+          "title": "A bare none footprint is claimed as a literal path, so two disjoint issues collide",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0203",
+        "facets": {
+          "id": "HW-OBL-0203",
+          "status": "draft",
+          "status_since": "2026-09-23",
+          "summary": "A missing project-board item for two issues, an interactive-shell grep shadowed to basic-regex semantics, and a stale hook-exit-code comment, none with a reader outside this repository, recorded together under the intake cap.",
+          "last_verified": "2026-09-23",
+          "title": "Three small run-tooling gaps from run 20260922-1121, filed together",
+          "waiting_on": "build"
         }
       },
       {

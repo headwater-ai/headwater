@@ -351,6 +351,8 @@ nav:
       - "An observation snapshot records a commit and nothing reads it back": "obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md"
       - "Three graded regression runs are owed a fresh recording against a moved taxonomy lock": "obligations/0200-three-graded-regression-runs-are-owed-a-fresh-recording-against-a-moved-taxonomy-lock.md"
       - "No coverage or mutation measurement has ever been taken over the engine's test suite": "obligations/0201-no-coverage-or-mutation-measurement-has-ever-been-taken-over-the-engine-s-test-suite.md"
+      - "A bare none footprint is claimed as a literal path, so two disjoint issues collide": "obligations/0202-a-bare-none-footprint-is-claimed-as-a-literal-path-so-two-disjoint-issues-collide.md"
+      - "Three small run-tooling gaps from run 20260922-1121, filed together": "obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"

@@ -2,7 +2,7 @@
 
 # Obligation records
 
-201 documents on this shelf, in the reading order this corpus derives.
+203 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and no category reaches the adjudicated sample bar of 50 findings.
@@ -205,3 +205,5 @@
 - [An observation snapshot records a commit and nothing reads it back](0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md) — A control's commit is still stored and never compared. Issue 937 gave a verification the freshness check a control still lacks, and a plausible-commit syntax check. Whether a commit is a real ancestor of the tree stays unread for both, and that needs an owner's ruling on widening the manifest boundary.
 - [Three graded regression runs are owed a fresh recording against a moved taxonomy lock](0200-three-graded-regression-runs-are-owed-a-fresh-recording-against-a-moved-taxonomy-lock.md) — Three current probe-run transcripts moved to deprecated when a taxonomy change staled their lock, and no fresh session has run against the new one. (asserted, and no human has accepted it)
 - [No coverage or mutation measurement has ever been taken over the engine's test suite](0201-no-coverage-or-mutation-measurement-has-ever-been-taken-over-the-engine-s-test-suite.md) — 1233 tests exist under engine/crates and nobody has measured whether they would catch a defect, with cargo-llvm-cov and cargo-mutants as the named, unrun instruments.
+- [A bare none footprint is claimed as a literal path, so two disjoint issues collide](0202-a-bare-none-footprint-is-claimed-as-a-literal-path-so-two-disjoint-issues-collide.md) — tools/run/run-dir.sh claim treats the literal string none as an artifact path with no special case, so two issues that both report footprint none produce a spurious WAITS-ON even when they touch disjoint files.
+- [Three small run-tooling gaps from run 20260922-1121, filed together](0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md) — A missing project-board item for two issues, an interactive-shell grep shadowed to basic-regex semantics, and a stale hook-exit-code comment, none with a reader outside this repository, recorded together under the intake cap.
