@@ -456,31 +456,31 @@ def explain(engine, root, identifier):
 def carried(mcp, identifier):
     """Whether a document this corpus leaves untyped carries the identifier.
 
-    `headwater explain` refuses a missing identifier through the path matcher,
-    so it answers "is outside every corpus root this repository declares" for
-    an invented identifier and for a typo alike — the four states its contract
-    names classify a path. `resolve_identifier` is the surface that separates
-    an identifier nothing carries from one a document carries while the census
-    leaves that document untyped, which is the only near miss this engine
-    computes.
+    `headwater explain` refuses an identifier in the words of an identifier
+    rather than a path since #845, but it still does not say whether the
+    identifier is a typo or an invention — both refuse the same way.
+    `resolve_identifier` is the surface that separates an identifier nothing
+    carries from one a document carries while the census leaves that document
+    untyped, which is the only near miss this engine computes.
 
     # THE TRAP, WHICH THIS FUNCTION FELL INTO ONCE
 
-    The two refusals share a prefix. `Resolved::Nothing` renders "no document
-    carries X" and `Resolved::NearMiss` renders "no document carries X, and one
-    carries Y". A test of `startswith("no document carries ")` therefore reads
-    every near miss as nothing, and the branch below becomes unreachable while
-    every case still passes — an absence read as satisfaction, which is the
-    shape that keeps finding this repository. The discriminator is the second
-    clause and nothing else.
-
-    The engine's sentence is not quoted into the finding, because `near_miss`
-    matches an identifier exactly and then reports it as the near one, so Y is
-    always X and the sentence names the same identifier twice. That is filed as
-    a defect of the engine rather than worked around here.
+    The two refusals used to share a prefix and repeat the identifier.
+    `Resolved::Nothing` rendered "no document carries X" and
+    `Resolved::NearMiss` rendered "no document carries X, and one carries Y" —
+    with Y always equal to X, because `near_miss` matches the identifier
+    exactly rather than fuzzily. A test of `startswith("no document carries
+    ")` therefore read every near miss as nothing, and the branch below
+    became unreachable while every case still passed — an absence read as
+    satisfaction, which is the shape that keeps finding this repository. #845
+    changed the sentence to state the untyped document's path instead of
+    repeating the identifier, so the discriminator here is that a path is
+    named at all, and the trap above is now also structurally harder to fall
+    into a second time: the two sentences no longer share sixteen characters
+    of prefix to test against by accident.
     """
     text = mcp.call("resolve_identifier", {"id": identifier})
-    return ", and one carries " in text
+    return "carries it, untyped" in text
 
 
 # ---------------------------------------------------------------------------

@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-explain
 status: current
 status_since: 2026-09-06
 summary: "How a path or identifier yields the taxonomy derivation, requirements, relations, and graph edges."
-last_verified: 2026-09-12
+last_verified: 2026-09-23
 title: "headwater explain"
 relations:
   governs:
@@ -37,7 +37,7 @@ The text report follows the order above. JSON carries the same fields in a docum
 
 The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row.
 
-An identifier resolves through the graph index. A target that matches neither a corpus path nor an identifier is refused. Exit status states which of four things it named instead.
+An identifier resolves through the graph index. A target that matches neither a corpus path nor an identifier is refused. Exit status states which of five things it named instead.
 
 ## Options
 
@@ -57,18 +57,19 @@ An identifier resolves through the graph index. A target that matches neither a 
 
 **1** means that the target was missing, the command line was invalid, or the repository could not load. A missing target writes its refusal to standard error and no explanation to standard output.
 
-**A missing target still classifies.** The refusal names one of four states.
+**A missing target still classifies.** The refusal names one of five states.
 
 | The state | What the refusal says |
 |---|---|
+| Shaped like a declared identifier scheme, and no document declares it | "is shaped like an identifier of this corpus, and no document declares it" |
 | Under the corpus root, with no document there | "is a path of this corpus, with no document written there yet" |
 | Under the corpus root, and an exclusion claims it | "is excluded by `<pattern>`" |
 | Outside every corpus root this repository declares | "is outside every corpus root this repository declares" |
 | Not a path this repository can classify | "is not a path this repository can classify" |
 
-One matcher decides all four: `headwater_census::walk::Corpus::classify`, which the walk also uses for an existing file. `.claude/hooks/write.sh` reads the first row and refuses a raw write there.
+The first row is checked before the other four, and it never runs `Corpus::classify`. `Shape::identifier_shaped` tests the target against the fixed prefix each declared `identifier_schemes` entry opens on. A pattern of `{namespace}-DR-{seq:04d}` opens on `HW-DR-`, for example. A target that opens that way is refused as an identifier, whatever the rest of it says. The last four states classify a path: one matcher decides them, `headwater_census::walk::Corpus::classify`, which the walk also uses for an existing file. `.claude/hooks/write.sh` reads the second row and refuses a raw write there.
 
-**The four states classify a path, and an identifier falls through them.** The matcher reads every target as a path. An identifier that no document carries therefore lands in the third row, where the refusal says nothing true about it. `headwater explain HW-DR-9999` and `headwater explain HW-DR-004` both write "is outside every corpus root this repository declares" (measured 2026-09-12). A typo and an invention read the same way here. The `resolve_identifier` tool of [`headwater mcp`](headwater-mcp.md) is the read that separates them. It reports an identifier that no document carries at all, and it reports one that an untyped document carries as a near miss. A caller that has to tell the two apart asks that tool rather than this verb.
+**The identifier state does not say whether the identifier is a typo or an invention.** `headwater explain HW-DR-9999` and `headwater explain HW-DR-004` both write "is shaped like an identifier of this corpus, and no document declares it" (measured 2026-09-23, repairing [#845](https://github.com/headwater-ai/headwater/issues/845)). Before that repair, both fell through to the fourth row instead. Both read "is outside every corpus root this repository declares" — true of a path, and irrelevant to an identifier (measured 2026-09-12). The `resolve_identifier` tool of [`headwater mcp`](headwater-mcp.md) is the read that separates a typo from an invention. It reports an identifier that no document carries at all. It also reports the path of an untyped document that carries the identifier. That match is exact, never a fuzzy one over case or separator. A caller that has to tell the two apart asks that tool rather than this verb.
 
 ## Environment
 

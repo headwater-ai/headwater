@@ -184,10 +184,23 @@ fn reads(surface: &Surface<'_>) -> String {
     }
 
     out.push_str("\nresolve_identifier\n");
-    for id in ["SPEC-FIX-ingest", "SPEC-FIX-ingset", "nothing-like-it"] {
+    for id in [
+        "SPEC-FIX-ingest",
+        "SPEC-FIX-ingset",
+        "nothing-like-it",
+        // The decisive case: no typed document carries this, and
+        // `query/notes/orphan.md` carries it while the census leaves that
+        // document untyped. `near_miss` is an exact match, so the identifier
+        // this prints and the one asked for are the same string — that used
+        // to be the defect (#845), and the rendering below no longer treats
+        // it as one.
+        "SPEC-FIX-orphan",
+    ] {
         let _ = match surface.resolve_identifier(id) {
             Resolved::Document(pointer) => writeln!(out, "  {id} is {}", pointer.render()),
-            Resolved::NearMiss(near) => writeln!(out, "  {id} is nothing, and {near} is near it"),
+            Resolved::NearMiss(path) => {
+                writeln!(out, "  {id} is not typed, and {path} carries it untyped")
+            }
             Resolved::Nothing => writeln!(out, "  {id} is nothing, and nothing is near it"),
         };
     }

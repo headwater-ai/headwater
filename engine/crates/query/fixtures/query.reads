@@ -137,6 +137,7 @@ resolve_identifier
   SPEC-FIX-ingest is query/specs/ingest.md — what the ingest service does with a request, and the limits it holds
   SPEC-FIX-ingset is nothing, and nothing is near it
   nothing-like-it is nothing, and nothing is near it
+  SPEC-FIX-orphan is not typed, and query/notes/orphan.md carries it untyped
 
 governing_docs_for_path
   src/ingest/rate_limit.rs — query/decisions/edge-throttling.md — why throttling is applied at the edge and not per service

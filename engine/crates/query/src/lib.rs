@@ -301,9 +301,15 @@ impl<'a> Surface<'a> {
 
     /// The identifier index, as a read: spec 5's `resolve_identifier`.
     ///
-    /// A miss reports the near miss the index already computes, because an
-    /// identifier that differs by its case or its separator is the common
-    /// mistake and a bare "not found" sends the caller to grep.
+    /// A miss that an untyped document declares verbatim reports that
+    /// document's path rather than a bare "not found", because "fix this
+    /// link" is a different remedy from "type this document" and a caller
+    /// that only hears "not found" cannot choose between them.
+    /// [`headwater_graph::Index::near_miss`] is an exact match on `id` — it
+    /// computes no fuzz over case or separator, so this is not the read for a
+    /// typo that differs from every identifier this corpus carries, typed or
+    /// not; that caller gets [`Resolved::Nothing`], the same as an invented
+    /// identifier ([#845](https://github.com/headwater-ai/headwater/issues/845)).
     pub fn resolve_identifier(&self, id: &str) -> Resolved {
         match self.graph.index.node(id) {
             Some(node) => match self.find(&node.path) {
@@ -315,7 +321,7 @@ impl<'a> Surface<'a> {
                 None => Resolved::Nothing,
             },
             None => match self.graph.index.near_miss(id) {
-                Some(node) => Resolved::NearMiss(node.id.clone()),
+                Some(node) => Resolved::NearMiss(node.path.clone()),
                 None => Resolved::Nothing,
             },
         }
@@ -533,7 +539,9 @@ impl<'a> Surface<'a> {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Resolved {
     Document(Pointer),
-    /// No node carries the identifier, and one carries something close to it.
+    /// No typed document carries the identifier, and an untyped one declares
+    /// it verbatim: the path of that document. Never a fuzzy match — see
+    /// [`Surface::resolve_identifier`].
     NearMiss(String),
     Nothing,
 }

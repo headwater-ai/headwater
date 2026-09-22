@@ -272,6 +272,29 @@ impl Template {
         matches!(self.matches(identifier), Match::Admitted)
     }
 
+    /// The fixed run of characters every identifier this template admits opens
+    /// with: the namespace and every literal segment up to the first `{seq}`
+    /// or `{slug}`. Empty for a template that opens with a placeholder.
+    ///
+    /// This is weaker than [`Template::admits`] on purpose. `HW-DR-004` is not
+    /// admitted by `{namespace}-DR-{seq:04d}` — three digits where four are
+    /// declared — but it still opens the way this scheme's identifiers open,
+    /// and a caller deciding "is this string shaped like an identifier at
+    /// all, whatever its digits" needs that looser question answered. A
+    /// caller that needs the exact question asks [`Template::admits`]
+    /// instead.
+    pub fn prefix(&self) -> String {
+        let mut prefix = String::new();
+        for segment in &self.segments {
+            match segment {
+                Segment::Literal(text) => prefix.push_str(text),
+                Segment::Namespace => prefix.push_str(&self.namespace),
+                Segment::Sequence { .. } | Segment::Slug => break,
+            }
+        }
+        prefix
+    }
+
     /// Why this template does not admit an identifier, or `None` where it does.
     ///
     /// The sentence a finding puts after the colon. It is here rather than at
@@ -627,6 +650,23 @@ mod tests {
 
     fn admits(pattern: &str, namespace: &str, identifier: &str) -> bool {
         template(pattern, namespace).admits(identifier)
+    }
+
+    /// The decisive case: a sequence one digit short of the declared width is
+    /// not admitted, and still opens the way this scheme's identifiers open.
+    #[test]
+    fn a_prefix_is_the_run_before_the_first_placeholder_that_is_not_the_namespace() {
+        let scheme = template("{namespace}-DR-{seq:04d}", "HW");
+        assert_eq!(scheme.prefix(), "HW-DR-");
+        assert!(!scheme.admits("HW-DR-004"), "one digit short of the width");
+        assert!("HW-DR-004".starts_with(&scheme.prefix()));
+        assert!("HW-DR-9999".starts_with(&scheme.prefix()));
+        assert!(!"docs/spec/09-decisions.md".starts_with(&scheme.prefix()));
+
+        // A `{slug}` template with a literal segment before it still yields a
+        // prefix, and a template that opens on a placeholder yields none.
+        assert_eq!(template("{namespace}-SPEC-{slug}", "HW").prefix(), "HW-SPEC-");
+        assert_eq!(template("SPEC-{namespace}-{slug}", "HW").prefix(), "SPEC-HW-");
     }
 
     #[test]

@@ -192,6 +192,51 @@ fn a_path_one_segment_deep_is_excluded_under_either_matcher() {
     );
 }
 
+/// [#845](https://github.com/headwater-ai/headwater/issues/845), the decisive
+/// fixture: a typo of a real identifier and an invented one, against this
+/// repository's own `decision_id` scheme (`{namespace}-DR-{seq:04d}`,
+/// namespace `HW`). Before the repair both read the path sentence — "is
+/// outside every corpus root this repository declares" — which is true of a
+/// path and says nothing true about either target. The fix does not have to
+/// tell a typo from an invention (that is `resolve_identifier`'s job, a
+/// separate fixture); it only has to stop claiming both are a path.
+#[test]
+fn an_identifier_shaped_target_refuses_in_the_words_of_an_identifier_and_not_a_path() {
+    let root = Root::new("identifier-shaped");
+    for target in ["HW-DR-004", "HW-DR-9999"] {
+        let explained = root.run(&["explain", target]);
+        assert_eq!(
+            explained.code,
+            Some(1),
+            "a target no document carries: {explained:?}"
+        );
+        assert!(
+            explained
+                .err
+                .contains("is shaped like an identifier of this corpus, and no document declares it"),
+            "{target} opens on `HW-DR-`, the fixed prefix `{{namespace}}-DR-{{seq:04d}}` declares: {explained:?}"
+        );
+        assert!(
+            !explained.err.contains("is outside every corpus root"),
+            "the path sentence must not print for an identifier-shaped target: {explained:?}"
+        );
+    }
+}
+
+/// The control beside the case above: a path-shaped target with no document
+/// still reads the four path states unchanged, because the identifier check
+/// is additive and never a rewrite of `Corpus::classify`.
+#[test]
+fn a_path_shaped_target_with_no_document_still_reads_the_path_states() {
+    let root = Root::new("path-shaped-control");
+    let explained = root.run(&["explain", "engine/nowhere/at-all.rs"]);
+    assert_eq!(explained.code, Some(1), "a target no document carries: {explained:?}");
+    assert!(
+        explained.err.contains("is outside every corpus root this repository declares"),
+        "a path outside the corpus root still reads the path sentence: {explained:?}"
+    );
+}
+
 /// Repoint `contents.bundles` in a scratch copy of the authored manifest.
 ///
 /// The scalar is relative to the package directory, and

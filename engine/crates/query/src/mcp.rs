@@ -394,7 +394,8 @@ pub const QUERY_CLASS: [Tool; 6] = [
     },
     Tool {
         name: "resolve_identifier",
-        description: "The document an identifier names, or the near miss where none carries it.",
+        description: "The document an identifier names, or the untyped document that carries it \
+                      verbatim where no typed document does.",
         arguments: &[Argument::required(
             "id",
             "An identifier, as a document declares it.",
@@ -791,8 +792,8 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
         },
         "resolve_identifier" => match surface.resolve_identifier(&argument) {
             Resolved::Document(pointer) => format!("{}\n", pointer.render()),
-            Resolved::NearMiss(near) => {
-                format!("no document carries {argument}, and one carries {near}\n")
+            Resolved::NearMiss(path) => {
+                format!("no typed document carries {argument}; {path} carries it, untyped\n")
             }
             Resolved::Nothing => format!("no document carries {argument}\n"),
         },
