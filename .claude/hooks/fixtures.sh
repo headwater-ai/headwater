@@ -1231,6 +1231,21 @@ printf '\n# .claude/settings.json: a hook declaration guards its own script (#97
 # it cannot open a script that is not there — the one exit code every event
 # below reads as a deliberate refusal rather than a failure.
 #
+# The guard's `else` branch exits 1 rather than falling through to an
+# implicit 0. Confirmed live against https://code.claude.com/docs/en/hooks
+# (fetched 2026-09-22): "Stderr from a hook that exits 0 goes to the debug
+# log only, never the transcript, and Claude never sees it," while "any
+# other exit code doesn't block on its own for most hook events," and empty
+# stdout with a non-2 exit "shows the transcript a `<hook name>` hook error
+# notice followed by the first line of stderr." Exit 2 is still the only
+# code documented to block any of these six events (`UserPromptSubmit`'s own
+# decision-control section names only `decision: block` or exit 2, no other
+# code). So exit 1 keeps every declaration failing open exactly as exit 0
+# would, and additionally makes the absence visible where exit 0 would not
+# — closer to the issue's own ELI5, which asks for "a visible note," than
+# the literal "exits 0" of its Done-when clause 1, whose intent this reads
+# as "fails open" rather than as a constraint on which non-blocking code.
+#
 # `CLAUDE_PROJECT_DIR` is what every declaration's own command string reads,
 # and it is not the variable `HEADWATER_HOOK_ROOT` this suite already exports
 # at the top; a case below that ran a declaration's command with it unset
@@ -1325,16 +1340,17 @@ hw_settings_case() {
     command=$(hw_settings_command "$ordinal")
     real="$hooks/$script"
 
-    # Direction one: the script file is absent. Every declaration must exit
-    # 0, say one line on standard error naming the path, and stay silent on
-    # standard output, in every affected mode a session meets: a prompt
-    # submits (`intent.sh`), `Bash` runs (`wait.sh`), `Write`/`Edit` run
-    # (`write.sh`, `touch.sh`), and the session can `Stop` (`review.sh`).
+    # Direction one: the script file is absent. Every declaration must fail
+    # open — exit 1, not the harness's one blocking code, 2 — say one line
+    # on standard error naming the path, and stay silent on standard
+    # output, in every affected mode a session meets: a prompt submits
+    # (`intent.sh`), `Bash` runs (`wait.sh`), `Write`/`Edit` run (`write.sh`,
+    # `touch.sh`), and the session can `Stop` (`review.sh`).
     moved="$real.moved-by-fixtures-971"
     trap 'mv -f "$moved" "$real" 2>/dev/null' EXIT INT TERM
     mv "$real" "$moved"
-    expect_streams "$script (declaration $ordinal): script absent exits 0 with one stderr line naming the path" \
-        0 "hook script not found: $real" \
+    expect_streams "$script (declaration $ordinal): script absent exits 1 (fails open, visibly) with one stderr line naming the path" \
+        1 "hook script not found: $real" \
         sh -c "$command"
     mv "$moved" "$real"
     trap - EXIT INT TERM
