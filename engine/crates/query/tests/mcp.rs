@@ -792,6 +792,34 @@ fn the_check_tool_takes_a_format_and_defaults_to_none() {
     }
 }
 
+/// [#845](https://github.com/headwater-ai/headwater/issues/845)'s second
+/// defect, over the one path a real client reads.
+///
+/// `tests/reads.rs`'s own match on [`headwater_query::Resolved`] proves what
+/// `Surface::resolve_identifier` computes, and it never calls this crate's
+/// `mcp::respond` — so it cannot catch a regression in `call`'s own
+/// `"resolve_identifier"` render arm, the literal subject of the issue title.
+/// This does: `SPEC-FIX-orphan` is the fixture tree's one untyped document
+/// carrying an identifier (`fixtures/query/notes/orphan.md`), so this reaches
+/// [`Resolved::NearMiss`] through the real wire, and the assertion pins the
+/// whole rendered sentence rather than a substring, so a reintroduced repeat
+/// of the argument fails it.
+#[test]
+fn resolve_identifier_over_the_wire_states_the_untyped_documents_path_and_never_repeats_the_argument()
+{
+    let built = fixture_tree();
+    let server = built.server(RECORDED_AT);
+    let response = once(
+        &server,
+        &calling("resolve_identifier", r#"{"id":"SPEC-FIX-orphan"}"#),
+    );
+    let text = tool_text(&response);
+    assert_eq!(
+        text,
+        "no typed document carries SPEC-FIX-orphan; query/notes/orphan.md carries it, untyped\n"
+    );
+}
+
 /// An argument each tool accepts, so that a call reaches the read behind it.
 ///
 /// A `match` rather than one string for all six: `check` refuses a path where a
