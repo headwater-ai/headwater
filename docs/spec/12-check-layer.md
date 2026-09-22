@@ -67,11 +67,9 @@ The near half could not stay where it was. A document-scoped rule that read the 
 
 **A summary is prose, and the row hid it for two editions.** A facet in the `scent` role carries a sentence about the document, and `headwater generate` publishes that sentence verbatim onto a shelf index. So the row held the most-read line of a document to nothing.
 
-The population of a lexical rule is the body and the facet the shape puts in the `scent` role. A role rather than a name, because `summary` is this repository's spelling of it and an adopter picks another. Two rules read it: `language.controlled.not_met` and `language.retired_term.used`. A corpus that declares no facet in that role loses nothing, because both rules then read the body alone.
+The population of a lexical rule is the body and the facet the shape puts in the `scent` role. A role rather than a name, because `summary` is this repository's spelling of it and an adopter picks another. Three rules read it: `language.controlled.not_met`, `language.retired_term.used` and `voice.forbidden_construction`. A corpus that declares no facet in that role loses nothing, because all three then read the body alone.
 
 Every other role stays out, and a role is either prose or a label. A facet in the `name` role is a title that a reader scans, and it holds no verb. A sentence-length rule over a title reports a defect whose only repair is a rename. To hold a title to half the rules puts a third category between prose and label that nothing declares. A corpus that writes a sentence into a `name` facet reopens this, and this one does not.
-
-`voice.forbidden_construction` reads the body alone. The constructions it forbids are narrations, a summary that carries one is a separate measurement, and that measurement owes its own failing fixture.
 
 A finding in front matter carries no patch. `check --fix` reaches a run of prose and a relations block, and neither shape edits a mapping, which [HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md) records. The remediation names the correction and a person writes it.
 
