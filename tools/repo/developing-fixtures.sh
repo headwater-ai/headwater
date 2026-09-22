@@ -204,7 +204,7 @@ members() {
             buf = ""
         }
         END { if (buf != "") scan(buf) }
-    ' | sort -u
+    ' | LC_ALL=C sort -u
 }
 
 # workflow_text FILE — every `run:` value, one command line per output line.
@@ -248,12 +248,20 @@ page_text() {
 # file descriptor 3's stand-in (a second call with `extra`).
 side() {
     # side KIND FILE  ->  the members of KIND in FILE's extracted text
-    grep "^$1 " | sed "s/^$1 //" | sort -u
+    grep "^$1 " | sed "s/^$1 //" | LC_ALL=C sort -u
 }
 
 # ---------------------------------------------------------------------------
 # The live populations.
 # ---------------------------------------------------------------------------
+# From here on, standard error is captured rather than printed: a `sort` or a
+# `comm` this suite runs that writes a diagnostic (for instance `comm`'s "not
+# in sorted order" warning, the exact shape a collation mismatch produces and
+# that nothing used to read, #828) fails the case near the bottom of this
+# file instead of leaving a line on the console nobody reads. fd 3 holds the
+# real standard error so it can be restored before the summary.
+exec 3>&2 2>"$scratch/stderr"
+
 workflow_text "$workflow" | members > "$scratch/ci.all"
 page_text "$page" "$section" | members > "$scratch/page.all"
 
@@ -279,8 +287,8 @@ echo
 echo "what CI runs and what the page says are one set"
 
 for kind in script cargo verb; do
-    missing=$(comm -23 "$scratch/ci.$kind" "$scratch/page.$kind" | tr '\n' ' ')
-    extra=$(comm -13 "$scratch/ci.$kind" "$scratch/page.$kind" | tr '\n' ' ')
+    missing=$(LC_ALL=C comm -23 "$scratch/ci.$kind" "$scratch/page.$kind" | tr '\n' ' ')
+    extra=$(LC_ALL=C comm -13 "$scratch/ci.$kind" "$scratch/page.$kind" | tr '\n' ' ')
     same "every $kind gate CI runs is named on the page" "" "$missing"
     same "  and every $kind gate the page names, CI runs" "" "$extra"
 done
@@ -503,12 +511,12 @@ stale_page="$scratch/stale.md"
 page_text "$stale_page" "$section" | members > "$scratch/stale.all"
 side script < "$scratch/stale.all" > "$scratch/stale.script"
 
-omitted=$(comm -23 "$scratch/fx.script" "$scratch/stale.script" | tr '\n' ' ' | sed 's/ *$//')
+omitted=$(LC_ALL=C comm -23 "$scratch/fx.script" "$scratch/stale.script" | tr '\n' ' ' | sed 's/ *$//')
 same "the eight-item list of 2026-09-06 is reported as seven omissions, by name" \
     "tools/engine/build-declaration-fixtures.sh tools/engine/engine-readme-fixtures.sh tools/repo/readme-fixtures.sh tools/site/assemble-site.sh tools/site/check-site-console.py tools/site/check-site-fragments.py tools/site/site-console-fixtures.sh" \
     "$omitted"
 same "  and the eight it did name are not reported as extras" \
-    "" "$(comm -13 "$scratch/fx.script" "$scratch/stale.script" | tr '\n' ' ' | sed 's/ *$//')"
+    "" "$(LC_ALL=C comm -13 "$scratch/fx.script" "$scratch/stale.script" | tr '\n' ' ' | sed 's/ *$//')"
 same "  and a path named in prose rather than in a code block is a mention, not a claim" \
     "" "$(grep -c 'fixtures-live' "$scratch/stale.script" | sed 's/^0$//')"
 
@@ -516,7 +524,7 @@ same "  and a path named in prose rather than in a code block is a mention, not 
 # invariant rather than a count: CI has only grown since that day, so those
 # seven must still be reported, and an absolute number written here would go
 # stale the next time a gate lands.
-still=$(comm -23 "$scratch/ci.script" "$scratch/stale.script" | tr '\n' ' ')
+still=$(LC_ALL=C comm -23 "$scratch/ci.script" "$scratch/stale.script" | tr '\n' ' ')
 missing_now=""
 for s in tools/site/assemble-site.sh tools/engine/build-declaration-fixtures.sh \
     tools/site/check-site-console.py tools/site/check-site-fragments.py \
@@ -539,7 +547,11 @@ invented="$scratch/invented.md"
 page_text "$invented" "$section" | members | side script > "$scratch/inv.script"
 same "a gate the page invents is reported in the other direction" \
     "tools/nonexistent-fixtures.sh" \
-    "$(comm -13 "$scratch/fx.script" "$scratch/inv.script" | tr '\n' ' ' | sed 's/ *$//')"
+    "$(LC_ALL=C comm -13 "$scratch/fx.script" "$scratch/inv.script" | tr '\n' ' ' | sed 's/ *$//')"
+
+exec 2>&3 3>&-
+same "no sort or comm in this run wrote to standard error" \
+    "" "$(tr '\n' '|' <"$scratch/stderr")"
 
 echo
 echo "$passed passed, $failed failed"

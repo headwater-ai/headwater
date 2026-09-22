@@ -228,7 +228,7 @@ lock_kinds() {
         /^  kinds:/ { here = 1; next }
         /^  [a-z_]+:/ { here = 0 }
         here && /^    [a-z_]+:/ { k = $0; sub(/^    /, "", k); sub(/:.*/, "", k); print k }
-    ' "$1" | sort -u
+    ' "$1" | LC_ALL=C sort -u
 }
 
 # Every value of `resolved.vocabularies.lifecycle_state` of a written lock.
@@ -243,7 +243,7 @@ lock_states() {
             gsub(/[" ]/, "", v)
             if (v != "") print v
         }
-    ' "$1" | sort -u
+    ' "$1" | LC_ALL=C sort -u
 }
 
 # The `pattern` of an identifier scheme in a written lock.
@@ -330,7 +330,7 @@ make_root() {
     echo 'add: {}' > "$at/.headwater/overlay.yml"
     (cd "$at" && "$engine" taxonomy validate) > "$scratch/ns.out" 2> "$scratch/ns.err"
     sed -n 's/.*`identifier_schemes\.\([a-z_]*\)`: identifier integrity: carries no namespace.*/\1/p' \
-        "$scratch/ns.out" "$scratch/ns.err" | sort -u > "$scratch/ns.list"
+        "$scratch/ns.out" "$scratch/ns.err" | LC_ALL=C sort -u > "$scratch/ns.list"
     {
         echo 'add:'
         while read -r scheme; do
@@ -367,7 +367,7 @@ smap_floor=$(printf '%s\n' "$smap" | grep -c . || true)
 # Every vendored file under any population's own `sources/` tree, not just the
 # first population's `adr/` subdirectory, so a second population's file is a
 # member of this cross-check rather than an unmatched row of the table.
-files=$(find "$fixtures/sources" -type f ! -name 'LICENSE' | sed "s|^$fixtures/||" | sort)
+files=$(find "$fixtures/sources" -type f ! -name 'LICENSE' | sed "s|^$fixtures/||" | LC_ALL=C sort)
 file_floor=$(printf '%s\n' "$files" | grep -c . || true)
 
 echo "decision-record external fixtures, against $engine"
@@ -393,14 +393,24 @@ fi
 [ "$smap_floor" -eq 0 ] && exit 1
 [ "$file_floor" -eq 0 ] && exit 1
 
+# From here on, standard error is captured rather than printed: a `sort` or a
+# `comm` this suite runs that writes a diagnostic (for instance `comm`'s "not
+# in sorted order" warning, the exact shape a collation mismatch produces and
+# that nothing used to read, #828) fails the case near the bottom of this
+# file instead of leaving a line on the console nobody reads. fd 3 holds the
+# real standard error so it can be restored before the summary. An explicit
+# per-command `2>` elsewhere in this file (the engine's own runs) still goes
+# to its own scratch file rather than here.
+exec 3>&2 2>"$scratch/stderr"
+
 echo
 echo "case group 1 — the source table covers the vendored files, in both directions"
-printf '%s\n' "$rows" | cut -f3 | sort -u > "$scratch/table-files"
+printf '%s\n' "$rows" | cut -f3 | LC_ALL=C sort -u > "$scratch/table-files"
 printf '%s\n' "$files" > "$scratch/tree-files"
 judge "every vendored file has a row in the source table" "" \
-    "$(comm -13 "$scratch/table-files" "$scratch/tree-files" | tr '\n' ' ' | sed 's/ *$//')"
+    "$(LC_ALL=C comm -13 "$scratch/table-files" "$scratch/tree-files" | tr '\n' ' ' | sed 's/ *$//')"
 judge "every row of the source table names a vendored file that is there" "" \
-    "$(comm -23 "$scratch/table-files" "$scratch/tree-files" | tr '\n' ' ' | sed 's/ *$//')"
+    "$(LC_ALL=C comm -23 "$scratch/table-files" "$scratch/tree-files" | tr '\n' ' ' | sed 's/ *$//')"
 
 echo
 echo "case group 2 — the pinned bytes are the bytes the table seals"
@@ -458,12 +468,12 @@ fi
 pass "the run wrote a lock, which is a validated taxonomy"
 lock_kinds "$lock" > "$scratch/declared-kinds"
 lock_states "$lock" > "$scratch/declared-states"
-printf '%s\n' "$rows" | cut -f1 | sort -u > "$scratch/table-kinds"
+printf '%s\n' "$rows" | cut -f1 | LC_ALL=C sort -u > "$scratch/table-kinds"
 judge "every kind the source table names is a kind the taxonomy declares" "" \
-    "$(comm -23 "$scratch/table-kinds" "$scratch/declared-kinds" | tr '\n' ' ' | sed 's/ *$//')"
-printf '%s\n' "$smap" | cut -f2 | sort -u > "$scratch/mapped-states"
+    "$(LC_ALL=C comm -23 "$scratch/table-kinds" "$scratch/declared-kinds" | tr '\n' ' ' | sed 's/ *$//')"
+printf '%s\n' "$smap" | cut -f2 | LC_ALL=C sort -u > "$scratch/mapped-states"
 judge "every state the status map targets is a declared lifecycle state" "" \
-    "$(comm -23 "$scratch/mapped-states" "$scratch/declared-states" | tr '\n' ' ' | sed 's/ *$//')"
+    "$(LC_ALL=C comm -23 "$scratch/mapped-states" "$scratch/declared-states" | tr '\n' ' ' | sed 's/ *$//')"
 
 echo
 echo "case group 4 — the status map reaches every document that declares one, and what it drops"
@@ -504,7 +514,7 @@ awk -F'\t' '$3 == "yes" { printf "    %s  [%s] -> %s\n", $1, $4, $2 }' "$scratch
 echo
 echo "case group 5 — the corpus, assembled with front matter and no other edit"
 : > "$scratch/idcheck"
-printf '%s\n' "$rows" | cut -f1 | sort -u | while read -r k; do
+printf '%s\n' "$rows" | cut -f1 | LC_ALL=C sort -u | while read -r k; do
     [ -n "$k" ] || continue
     scheme=$(lock_kind_scheme "$lock" "$k")
     pattern=$(lock_pattern "$lock" "$scheme")
@@ -622,7 +632,7 @@ judge "every document of every external population is typed" "${docs:-0}" "${typ
 # first kind's — this is what makes the assertion hold with one population or
 # with several.
 : > "$scratch/kindcheck"
-printf '%s\n' "$rows" | cut -f1 | sort -u | while read -r k; do
+printf '%s\n' "$rows" | cut -f1 | LC_ALL=C sort -u | while read -r k; do
     [ -n "$k" ] || continue
     want=$(printf '%s\n' "$rows" | awk -F'\t' -v k="$k" '$1 == k' | grep -c .)
     got=$(sed -n "s/^ *\([0-9][0-9]*\) typed $k\$/\1/p" "$scratch/check.out" | head -n 1)
@@ -653,15 +663,15 @@ awk '
 ran=$(sed -n 's/^ *\([0-9][0-9]*\) instances of section.required.missing$/\1/p' "$scratch/check.out" | head -n 1)
 judge "the section rule ran over every document of every population" "${docs:-0}" "${ran:-0}"
 
-sort -u "$scratch/missing-by-doc" > "$scratch/missing-by-doc.sorted" 2>/dev/null || : > "$scratch/missing-by-doc.sorted"
-printf '%s\n' "$rows" | awk -F'\t' '$1 == "decision" { print $4 }' | sort -u > "$scratch/decision-dests"
-missing_decision=$(comm -12 "$scratch/decision-dests" "$scratch/missing-by-doc.sorted" | grep -c . || true)
+LC_ALL=C sort -u "$scratch/missing-by-doc" > "$scratch/missing-by-doc.sorted" 2>/dev/null || : > "$scratch/missing-by-doc.sorted"
+printf '%s\n' "$rows" | awk -F'\t' '$1 == "decision" { print $4 }' | LC_ALL=C sort -u > "$scratch/decision-dests"
+missing_decision=$(LC_ALL=C comm -12 "$scratch/decision-dests" "$scratch/missing-by-doc.sorted" | grep -c . || true)
 judge "no document of the first (inspect-evals) population is missing a required section" "0" "${missing_decision:-0}"
 
-printf '%s\n' "$rows" | awk -F'\t' '$1 != "decision" { print $4 }' | sort -u > "$scratch/other-dests"
+printf '%s\n' "$rows" | awk -F'\t' '$1 != "decision" { print $4 }' | LC_ALL=C sort -u > "$scratch/other-dests"
 other_total=$(printf '%s\n' "$rows" | awk -F'\t' '$1 != "decision"' | grep -c . || true)
 if [ "${other_total:-0}" -gt 0 ]; then
-    missing_other_docs=$(comm -12 "$scratch/other-dests" "$scratch/missing-by-doc.sorted" | grep -c . || true)
+    missing_other_docs=$(LC_ALL=C comm -12 "$scratch/other-dests" "$scratch/missing-by-doc.sorted" | grep -c . || true)
     missing_other_findings=$(grep -Ff "$scratch/other-dests" "$scratch/missing-by-doc" 2>/dev/null | grep -c . || true)
     echo "  recorded, not asserted: ${missing_other_docs:-0} of ${other_total} documents outside the first population are missing a required section (${missing_other_findings:-0} finding(s)), and it is not repaired"
 fi
@@ -681,8 +691,12 @@ echo "  findings:      ${findings:-0}, of which ${errors:-0} error and ${warns:-
 echo "  check exit:    $extcode plain, $strictcode strict"
 echo "  by rule, over the ${findings:-0}:"
 grep -oE '^ +[a-z._]+ \(OB-' "$scratch/check.out" |
-    sed 's/ (OB-$//' | sed 's/^ *//' | sort | uniq -c |
+    sed 's/ (OB-$//' | sed 's/^ *//' | LC_ALL=C sort | uniq -c |
     while read -r n rule; do echo "    $n  $rule"; done
+
+exec 2>&3 3>&-
+judge "no sort or comm in this run wrote to standard error" \
+    "" "$(tr '\n' '|' <"$scratch/stderr")"
 
 echo
 echo "$passed passed, $failed failed"

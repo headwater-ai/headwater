@@ -129,8 +129,10 @@ front_matter() {
     ' "$1"
 }
 
-# current_ids DIR — one `id` per line, sorted, for every `*.md` under DIR
-# except `README.md` whose front-matter `status` is not `discharged`.
+# current_ids DIR — one `id` per line, sorted under `LC_ALL=C`, for every
+# `*.md` under DIR except `README.md` whose front-matter `status` is not
+# `discharged`. Pinned because `membership_judge` compares this population
+# with `comm`, which collates bytewise regardless of locale (#828).
 current_ids() {
     for ci_f in "$1"/*.md; do
         [ -f "$ci_f" ] || continue
@@ -140,11 +142,12 @@ current_ids() {
         [ "$ci_status" = "discharged" ] && continue
         ci_id=$(printf '%s\n' "$ci_fm" | sed -n 's/^id:[ \t]*//p' | head -n1)
         [ -n "$ci_id" ] && echo "$ci_id"
-    done | sort -u
+    done | LC_ALL=C sort -u
 }
 
 # discharged_ids DIR — the complement of current_ids: the `id` of every record
-# under DIR whose `status` is `discharged`.
+# under DIR whose `status` is `discharged`. Sorted under `LC_ALL=C`, matching
+# `current_ids`, because both feed a `comm` comparison (#828).
 discharged_ids() {
     for di_f in "$1"/*.md; do
         [ -f "$di_f" ] || continue
@@ -154,31 +157,44 @@ discharged_ids() {
         [ "$di_status" = "discharged" ] || continue
         di_id=$(printf '%s\n' "$di_fm" | sed -n 's/^id:[ \t]*//p' | head -n1)
         [ -n "$di_id" ] && echo "$di_id"
-    done | sort -u
+    done | LC_ALL=C sort -u
 }
 
 # bulleted_ids FILE — the identifier named by every line of FILE that opens
-# with `- [HW-OBL-`, one per line, sorted. A duplicate bullet for one
-# identifier appears twice in the raw scan and once here, which is why case
-# group 1 below also checks the raw count against the deduplicated one.
+# with `- [HW-OBL-`, one per line, sorted under `LC_ALL=C` by the caller
+# (never here: case group 1b reads the raw, unsorted count too). A duplicate
+# bullet for one identifier appears twice in the raw scan and once deduped,
+# which is why case group 1 below also checks the raw count against the
+# deduplicated one.
 bulleted_ids() {
     grep -oE '^- \[HW-OBL-[0-9]+\]' "$1" | sed -E 's/^- \[(HW-OBL-[0-9]+)\]/\1/'
 }
 
 # membership_judge CURRENT-FILE BULLETED-FILE — one line per member of the
 # symmetric difference between the two populations, naming which side it is
-# missing from. Empty output is set equality in both directions.
+# missing from. Empty output is set equality in both directions. `LC_ALL=C`
+# on both `comm` calls, matching the `LC_ALL=C sort` that built each input:
+# `comm` collates bytewise regardless of locale, and a mismatch is a silent
+# wrong answer (#828).
 membership_judge() {
-    comm -23 "$1" "$2" | sed 's/^/a current record with no bullet line: /'
-    comm -13 "$1" "$2" | sed 's/^/a bulleted line naming no current record: /'
+    LC_ALL=C comm -23 "$1" "$2" | sed 's/^/a current record with no bullet line: /'
+    LC_ALL=C comm -13 "$1" "$2" | sed 's/^/a bulleted line naming no current record: /'
 }
 
 # ---------------------------------------------------------------------------
 
+# From here on, standard error is captured rather than printed: a `sort` or a
+# `comm` this suite runs that writes a diagnostic (for instance `comm`'s "not
+# in sorted order" warning, the exact shape a collation mismatch produces and
+# that nothing used to read, #828) fails the case at the bottom of this file
+# instead of leaving a line on the console nobody reads. fd 3 holds the real
+# standard error so it can be restored before the summary.
+exec 3>&2 2>"$scratch/stderr"
+
 current_ids "$obligations" >"$scratch/current"
 discharged_ids "$obligations" >"$scratch/discharged"
-bulleted_ids "$register" | sort >"$scratch/bulleted-sorted"
-bulleted_ids "$register" | sort -u >"$scratch/bulleted"
+bulleted_ids "$register" | LC_ALL=C sort >"$scratch/bulleted-sorted"
+bulleted_ids "$register" | LC_ALL=C sort -u >"$scratch/bulleted"
 
 echo "the shelf's current records, and the file's bulleted lines"
 
@@ -210,7 +226,7 @@ same "every current record has a bullet line, and every bulleted line names a cu
 #     (an id that appears on no shelf file's front matter) cannot slip past
 #     both checks unnoticed.
 same "no discharged record has a bullet line" \
-    "" "$(comm -12 "$scratch/discharged" "$scratch/bulleted" |
+    "" "$(LC_ALL=C comm -12 "$scratch/discharged" "$scratch/bulleted" |
           sed 's/^/a discharged record still bulleted: /' | tr '\n' '|')"
 
 echo
@@ -236,7 +252,7 @@ same "the scratch shelf's discharged record is read as discharged" \
     "HW-OBL-0003" "$scratch_discharged"
 
 printf '%s\n' "$scratch_current" >"$scratch/s-current"
-bulleted_ids "$scratch/reg-clean.md" | sort -u >"$scratch/s-bulleted-clean"
+bulleted_ids "$scratch/reg-clean.md" | LC_ALL=C sort -u >"$scratch/s-bulleted-clean"
 same "the clean scratch pair passes set equality in both directions" \
     "" "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-clean" | tr '\n' '|')"
 
@@ -245,7 +261,7 @@ same "the clean scratch pair passes set equality in both directions" \
 #     before the repair below existed, and the run below shows it doing so.
 printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0002](../obligations/0002-two.md) — Two\n\n[HW-OBL-0003](../obligations/0003-three.md) is discharged and it is not in the list above.\n' \
     >"$scratch/reg-drop.md"
-bulleted_ids "$scratch/reg-drop.md" | sort -u >"$scratch/s-bulleted-drop"
+bulleted_ids "$scratch/reg-drop.md" | LC_ALL=C sort -u >"$scratch/s-bulleted-drop"
 same "dropping a current record's bullet reddens the membership judge" \
     "a current record with no bullet line: HW-OBL-0001|" \
     "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-drop" | tr '\n' '|')"
@@ -255,14 +271,14 @@ same "dropping a current record's bullet reddens the membership judge" \
 #     record whose front matter already reads `discharged`.
 printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0001](../obligations/0001-one.md) — One\n- [HW-OBL-0002](../obligations/0002-two.md) — Two\n- [HW-OBL-0003](../obligations/0003-three.md) — Three\n' \
     >"$scratch/reg-add.md"
-bulleted_ids "$scratch/reg-add.md" | sort -u >"$scratch/s-bulleted-add"
+bulleted_ids "$scratch/reg-add.md" | LC_ALL=C sort -u >"$scratch/s-bulleted-add"
 same "bulleting a discharged record reddens the membership judge" \
     "a bulleted line naming no current record: HW-OBL-0003|" \
     "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-add" | tr '\n' '|')"
 printf '%s\n' "$scratch_discharged" >"$scratch/s-discharged"
 same "bulleting a discharged record reddens the direct discharged check" \
     "a discharged record still bulleted: HW-OBL-0003|" \
-    "$(comm -12 "$scratch/s-discharged" "$scratch/s-bulleted-add" |
+    "$(LC_ALL=C comm -12 "$scratch/s-discharged" "$scratch/s-bulleted-add" |
        sed 's/^/a discharged record still bulleted: /' | tr '\n' '|')"
 
 # 2c. A bare mention in prose, in the sanctioned "is discharged and it is not
@@ -281,6 +297,10 @@ printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0003](../obligati
     >"$scratch/reg-annotated.md"
 same "an annotated bullet for a discharged record still counts as bulleted" \
     "HW-OBL-0003" "$(bulleted_ids "$scratch/reg-annotated.md")"
+
+exec 2>&3 3>&-
+same "no sort or comm in this run wrote to standard error" \
+    "" "$(tr '\n' '|' <"$scratch/stderr")"
 
 echo
 echo "$passed passed, $failed failed"

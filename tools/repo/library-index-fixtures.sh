@@ -168,15 +168,16 @@ bundles_root() {
     (cd "$br_dir/$br_val" 2>/dev/null && pwd)
 }
 
-# bundles_of ROOT — one name per line, sorted: a directory under ROOT that
-# carries a `bundle.yml`. A directory without one is not a bundle and is not in
-# the population.
+# bundles_of ROOT — one name per line, sorted under `LC_ALL=C`: a directory
+# under ROOT that carries a `bundle.yml`. A directory without one is not a
+# bundle and is not in the population. Pinned because this population is
+# compared with `comm`, which collates bytewise regardless of locale (#828).
 bundles_of() {
     for bo_dir in "$1"/*/; do
         [ -f "$bo_dir/bundle.yml" ] || continue
         bo_name=${bo_dir%/}
         echo "${bo_name##*/}"
-    done | sort
+    done | LC_ALL=C sort
 }
 
 # bundle_key FILE — the `bundle:` key a `bundle.yml` declares.
@@ -258,21 +259,26 @@ links_outside_rows() {
                 rest = substr(rest, j + 1)
             }
         }
-    ' "$1" | sort -u
+    ' "$1" | LC_ALL=C sort -u
 }
 
 # accounted_of SECTION-FILE — the entries the section accounts for: a row's
-# first cell, or a bare directory link in its prose.
+# first cell, or a bare directory link in its prose. Sorted under `LC_ALL=C`
+# to match `bundles_of`, because `accounted_judge` compares the two with
+# `comm`, which collates bytewise (#828).
 accounted_of() {
-    { rows_of "$1" | cut -f1; links_outside_rows "$1"; } | sort -u
+    { rows_of "$1" | cut -f1; links_outside_rows "$1"; } | LC_ALL=C sort -u
 }
 
 # accounted_judge BUNDLES-FILE ACCOUNTED-FILE — one line per member of the
 # symmetric difference, naming which side it is missing from. Empty output is
-# set equality.
+# set equality. `LC_ALL=C` on both `comm` calls, matching the `LC_ALL=C sort`
+# that built each input: `comm` collates bytewise regardless of locale, and a
+# population sorted under the ambient locale can disagree with it silently,
+# printing a warning to standard error that nothing here used to read (#828).
 accounted_judge() {
-    comm -23 "$1" "$2" | sed 's/^/a bundle the admission section does not account for: /'
-    comm -13 "$1" "$2" | sed 's/^/an entry the admission section accounts for that is no bundle: /'
+    LC_ALL=C comm -23 "$1" "$2" | sed 's/^/a bundle the admission section does not account for: /'
+    LC_ALL=C comm -13 "$1" "$2" | sed 's/^/an entry the admission section accounts for that is no bundle: /'
 }
 
 # row_judge BUNDLES-ROOT SECTION-FILE — one line per row that does not hold up:
@@ -307,7 +313,7 @@ add_keys() {
             sub(/:.*$/, "")
             print
         }
-    ' "$1" | sort -u
+    ' "$1" | LC_ALL=C sort -u
 }
 
 # address_judge BUNDLES-ROOT SECTION-FILE — one line per address that a bundle
@@ -329,7 +335,7 @@ add_keys() {
 address_judge() {
     aj_root=$1
     aj_section=$2
-    rows_of "$aj_section" | cut -f1 | sort -u >"$scratch/aj.rows"
+    rows_of "$aj_section" | cut -f1 | LC_ALL=C sort -u >"$scratch/aj.rows"
     bundles_of "$aj_root" | while read -r aj_b; do
         grep -qx "$aj_b" "$scratch/aj.rows" && continue
         add_keys "$aj_root/$aj_b/bundle.yml" | while read -r aj_k; do
@@ -347,7 +353,7 @@ address_judge() {
 # on the day somebody writes it.
 criteria_of() {
     section_of "$1" "Admission criteria" | awk '/^### /{exit} 1' |
-        sed -n 's/^\*\*\([1-9][0-9]*\)\. .*/\1/p' | sort -un
+        sed -n 's/^\*\*\([1-9][0-9]*\)\. .*/\1/p' | LC_ALL=C sort -un
 }
 
 # stated_criteria INDEX-FILE — the count the admission-criteria prose states in
@@ -422,7 +428,7 @@ criteria_judge() {
     cr_root=$1
     cr_section=$2
     cr_crit=$3
-    rows_of "$cr_section" | cut -f1 | sort -u >"$scratch/cr.rows"
+    rows_of "$cr_section" | cut -f1 | LC_ALL=C sort -u >"$scratch/cr.rows"
     bundles_of "$cr_root" | while read -r cr_b; do
         grep -qx "$cr_b" "$scratch/cr.rows" && continue
         refusal_block "$cr_section" "$cr_b" >"$scratch/cr.block"
@@ -456,9 +462,12 @@ carried_parts() {
 }
 
 # files_under DIR — every regular file under DIR, as a path relative to DIR.
+# Feeds `carried_judge`'s `cj_compare`, never a `comm`, but this file also
+# runs `comm` elsewhere, and the coarser rule `tools/repo/collation-fixtures.sh`
+# holds is that every `sort` in a file that runs `comm` at all is pinned.
 files_under() {
     [ -d "$1" ] || return 0
-    (cd "$1" && find . -type f | sed 's|^\./||' | sort)
+    (cd "$1" && find . -type f | sed 's|^\./||' | LC_ALL=C sort)
 }
 
 # carried_judge SRC VEND PARTS-FILE — one line per carried file that is missing
@@ -482,12 +491,12 @@ carried_judge() {
     cj_compare "README.md"
     for cj_b in $(bundles_of "$cj_src") $(bundles_of "$cj_vend"); do
         echo "$cj_b"
-    done | sort -u | while read -r cj_b; do
+    done | LC_ALL=C sort -u | while read -r cj_b; do
         while read -r cj_part; do
             case $cj_part in
                 */)
                     { files_under "$cj_src/$cj_b/${cj_part%/}"
-                      files_under "$cj_vend/$cj_b/${cj_part%/}"; } | sort -u |
+                      files_under "$cj_vend/$cj_b/${cj_part%/}"; } | LC_ALL=C sort -u |
                     while read -r cj_f; do
                         cj_compare "$cj_b/$cj_part$cj_f"
                     done
@@ -507,6 +516,14 @@ if [ -z "$lib" ] || [ ! -d "$lib" ]; then
     echo "  rather than reporting passes over an empty set." >&2
     exit 1
 fi
+
+# From here on, standard error is captured rather than printed: a `sort` or a
+# `comm` this suite runs that writes a diagnostic (for instance `comm`'s
+# "file … is not in sorted order", the exact warning a collation mismatch
+# produces and that nothing used to read, #828) fails the case near the
+# bottom of this file instead of leaving a line on the console nobody reads.
+# fd 3 holds the real standard error so it can be restored before the summary.
+exec 3>&2 2>"$scratch/stderr"
 
 section_of "$index" "Admission, and what is admitted" >"$scratch/section"
 bundles_of "$lib" >"$scratch/bundles"
@@ -549,11 +566,14 @@ same "every admitted row resolves and names its bundle and its tradition" \
         sed -n 's/^[ \t]*bundles:[ \t]*\[\(.*\)\][ \t]*$/\1/p' "$rec" |
             tr ',' '\n' | sed 's/[][ "'"'"']//g' | grep -v '^$' || true
     done
-} | sort -u >"$scratch/depended"
+} | LC_ALL=C sort -u >"$scratch/depended"
 more_than "some bundle is required by another or selected by a recipe" 0 \
     "$(wc -l <"$scratch/depended" | tr -d ' ')"
+# `LC_ALL=C` on both this sort and the comparison below, matching
+# `accounted_of`'s own `LC_ALL=C sort`: `comm` collates bytewise and the two
+# populations must agree on order or the comparison is silently wrong (#828).
 same "every bundle a requires line or a recipe names is accounted for" \
-    "" "$(comm -23 "$scratch/depended" "$scratch/accounted" |
+    "" "$(LC_ALL=C comm -23 "$scratch/depended" "$scratch/accounted" |
           sed 's/^/an entry a consumer is made to select and the index never names: /' |
           tr '\n' '|')"
 
@@ -822,6 +842,37 @@ same "  a bundle.yml whose key disagrees with its directory is refused" \
     "beta: the Bundle cell disagrees with \`bundle: bravo\`|" \
     "$(row_judge "$scratch/lib" "$scratch/arms.a" | tr '\n' '|')"
 printf 'bundle: beta\nrequires: []\n' >"$scratch/lib/beta/bundle.yml"
+
+# 2h. The defect this suite exists to catch (#828): `comm` collates bytewise
+#     and a locale-aware `sort` does not. `fileA` and `file_a` is a verified
+#     pair on this host — `sort -c` accepts the ambient order, `LC_ALL=C
+#     sort -c` disagrees with it — so a bundle population holding both and an
+#     admission section accounting for only one of them (`file_a` is the
+#     truly unaccounted bundle here) is the shape #828 was filed for.
+#     Unpinned, `comm` does not just warn: it misreports the ACCOUNTED-FOR
+#     `fileA` as unaccounted too, alongside the real defect, because the
+#     disorder it detects between the two files derails the merge — a wrong
+#     answer at exit 0, since nothing before this issue read `comm`'s
+#     standard error. Verified by hand before this case was written: run
+#     unpinned against these two exact populations and both `fileA` and
+#     `file_a` come back as missing; run `LC_ALL=C` and only the real
+#     defect, `file_a`, does. `bundles_of` and `accounted_of` both sort
+#     under `LC_ALL=C` now, so `accounted_judge` reports the one bundle
+#     that is truly unaccounted and nothing else, and the standard-error
+#     case at the end of this file fails the run if `sort` or `comm` write
+#     a warning instead of agreeing silently on everything else.
+mkdir -p "$scratch/coll/lib/fileA" "$scratch/coll/lib/file_a"
+printf 'bundle: fileA\nrequires: []\n' >"$scratch/coll/lib/fileA/bundle.yml"
+printf 'bundle: file_a\nrequires: []\n' >"$scratch/coll/lib/file_a/bundle.yml"
+write_section "$scratch/coll/section" \
+    '| Entry | Bundle | The tradition |' \
+    '|---|---|---|' \
+    '| [`fileA`](fileA/) | `fileA` | Another tradition |'
+bundles_of "$scratch/coll/lib" >"$scratch/coll/bundles"
+accounted_of "$scratch/coll/section" >"$scratch/coll/accounted"
+same "  the one bundle a collation-adversarial pair truly leaves unaccounted, and only it" \
+    "a bundle the admission section does not account for: file_a|" \
+    "$(accounted_judge "$scratch/coll/bundles" "$scratch/coll/accounted" | tr '\n' '|')"
 
 echo
 echo "the authored page and the copy a consumer receives"
@@ -1144,7 +1195,7 @@ citing_of() {
     find "$1/docs" -type f -name '*.md' \
         ! -path "$1/docs/taxonomies/*" \
         ! -path "$1/docs/reviews/*" 2>/dev/null |
-        sort | while read -r co_f; do
+        LC_ALL=C sort | while read -r co_f; do
         grep -qE 'admitted-entry table|taxonomies/README\.md#admission' \
             "$co_f" || continue
         echo "${co_f#$1/}"
@@ -1586,6 +1637,14 @@ printf '# tools/repo/alpha-fixtures.sh is discussed here\nsh tools/repo/alpha-fi
 same "  and the same wrapper once a live line runs it" \
     "" "$(ci_claim_judge "$scratch/rp" "$scratch/rp/.github/workflows/ci.yml" \
         "$scratch/rp/index.md" "$scratch/rp/work" | tr '\n' '|')"
+
+# Restore standard error and read back what the run captured. A `sort` or a
+# `comm` that wrote anything here — a collation warning above all, #828 — was
+# wrong to pass silently, so this fails the run rather than leaving the line
+# on a stream nothing else in this suite reads.
+exec 2>&3 3>&-
+same "no sort or comm this run wrote to standard error" \
+    "" "$(tr '\n' '|' <"$scratch/stderr")"
 
 echo
 echo "$passed passed, $failed failed"

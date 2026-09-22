@@ -200,7 +200,7 @@ ver_ge() {
     a=$(norm "$1")
     b=$(norm "$2")
     [ "$a" = "$b" ] && return 0
-    [ "$(printf '%s\n%s\n' "$a" "$b" | sort -V | head -1)" = "$b" ]
+    [ "$(printf '%s\n%s\n' "$a" "$b" | LC_ALL=C sort -V | head -1)" = "$b" ]
 }
 
 # blocks_of FILE — every line of every INDENTED code block, as
@@ -301,7 +301,7 @@ max_locked_rust_version() {
         grep -o '"rust_version":"[^"]*"' |
         sed 's/.*:"//; s/"$//' |
         while IFS= read -r v; do norm "$v"; done |
-        sort -V |
+        LC_ALL=C sort -V |
         tail -1
 }
 
@@ -322,7 +322,7 @@ echo "the floor the lock actually requires, against the image the page pins"
 runs=$(docker_runs "$readme" | wc -l | tr -d ' ')
 same "the page carries two container recipes" "2" "$runs"
 
-blocks=$(blocks_of "$readme" | awk -F'\t' '{ print $1 }' | sort -un | wc -l | tr -d ' ')
+blocks=$(blocks_of "$readme" | awk -F'\t' '{ print $1 }' | LC_ALL=C sort -un | wc -l | tr -d ' ')
 more_than "the page carries indented code blocks" "2" "$blocks"
 
 # 1b. The two recipes pin the same Rust version, in two different image
@@ -452,14 +452,14 @@ echo "two commands, two exit statuses, never one pipe"
 # 4a. The recipes are in different blocks. Two indented blocks with only blank
 #     lines between them are ONE `<pre>` to CommonMark, and a reader who copied
 #     the rendered block would run them joined.
-runblocks=$(docker_runs "$readme" | awk -F'\t' '{ print $1 }' | sort -u | wc -l | tr -d ' ')
+runblocks=$(docker_runs "$readme" | awk -F'\t' '{ print $1 }' | LC_ALL=C sort -u | wc -l | tr -d ' ')
 same "the two recipes are two blocks" "2" "$runblocks"
 
 # 4b. Prose stands between them, which is what keeps them two blocks on the
 #     rendered page. Read as the line span between the last line of the first
 #     recipe's block and the first line of the second's.
-gap=$(blocks_of "$readme" | awk -F'\t' -v a="$(docker_runs "$readme" | awk -F'\t' '{ print $1 }' | sort -n | head -1)" \
-    -v b="$(docker_runs "$readme" | awk -F'\t' '{ print $1 }' | sort -n | tail -1)" '
+gap=$(blocks_of "$readme" | awk -F'\t' -v a="$(docker_runs "$readme" | awk -F'\t' '{ print $1 }' | LC_ALL=C sort -n | head -1)" \
+    -v b="$(docker_runs "$readme" | awk -F'\t' '{ print $1 }' | LC_ALL=C sort -n | tail -1)" '
     $1 == a { last = $2 }
     $1 == b && first == 0 { first = $2 }
     END { print first - last - 1 }')
@@ -477,7 +477,7 @@ more_than "a piped recipe is named" "0" \
 
 printf '%s\n' 'Prose.' '' '    docker run --rm rust:1.85-slim a' '' '    docker run --rm rust:1.85-slim b' >"$scratch/arms/merged.md"
 same "two blocks separated by a blank line alone are one block" "1" \
-    "$(docker_runs "$scratch/arms/merged.md" | awk -F'\t' '{ print $1 }' | sort -u | wc -l | tr -d ' ')"
+    "$(docker_runs "$scratch/arms/merged.md" | awk -F'\t' '{ print $1 }' | LC_ALL=C sort -u | wc -l | tr -d ' ')"
 
 echo "the lint flag the container half must not carry"
 
@@ -495,7 +495,7 @@ sites=$(floor_versions "$root")
 sitecount=$(printf '%s\n' "$sites" | grep -c . || true)
 more_than "the tree states the floor in several places" "6" "$sitecount"
 
-filecount=$(printf '%s\n' "$sites" | awk -F: '{ print $1 }' | sort -u | grep -c . || true)
+filecount=$(printf '%s\n' "$sites" | awk -F: '{ print $1 }' | LC_ALL=C sort -u | grep -c . || true)
 more_than "the floor is stated across several files" "5" "$filecount"
 
 # 6b. Every one of them names one version.
@@ -505,7 +505,7 @@ same "the workspace manifest declares a rust-version" "$pin" "$declared"
 same "clippy is told the same floor" "$pin" "$msrv"
 
 disagreeing=$(printf '%s\n' "$sites" | awk -F: -v want="$pin" '
-    $3 != "" && $3 != want { print $1 ":" $2 " says " $3 }' | sort | tr '\n' '|')
+    $3 != "" && $3 != want { print $1 ":" $2 " says " $3 }' | LC_ALL=C sort | tr '\n' '|')
 same "no file states a floor other than the pinned one" "" "$disagreeing"
 
 # 6c. Provoked. A site that moved on its own is the drift this group exists for,
@@ -540,13 +540,21 @@ table_crates() {
             sub(/`.*$/, "", row)
             print row
         }
-    ' "$1" | sort -u
+    ' "$1" | LC_ALL=C sort -u
 }
+
+# From here on, standard error is captured rather than printed: a `sort` or a
+# `comm` this suite runs that writes a diagnostic (for instance `comm`'s "not
+# in sorted order" warning, the exact shape a collation mismatch produces and
+# that nothing used to read, #828) fails the case near the bottom of this
+# file instead of leaving a line on the console nobody reads. fd 3 holds the
+# real standard error so it can be restored before the summary.
+exec 3>&2 2>"$scratch/stderr"
 
 # 7a. Both populations, before either is compared to the other. A selector that
 #     stopped matching reports an empty table as agreeing with an empty tree.
 table_crates "$readme" >"$scratch/table-crates"
-ls "$root/engine/crates" | sort -u >"$scratch/tree-crates"
+ls "$root/engine/crates" | LC_ALL=C sort -u >"$scratch/tree-crates"
 
 rows=$(grep -c . "$scratch/table-crates" || true)
 dirs=$(grep -c . "$scratch/tree-crates" || true)
@@ -557,10 +565,10 @@ more_than "the workspace holds several crates" "20" "$dirs"
 #     reader cannot find from this page; a row with no crate is a name that
 #     sends one to a directory that is not there. #188 found the first at 12 of
 #     23, and nothing here could see it.
-missing=$(comm -13 "$scratch/table-crates" "$scratch/tree-crates" | tr '\n' ' ' | sed 's/ *$//')
+missing=$(LC_ALL=C comm -13 "$scratch/table-crates" "$scratch/tree-crates" | tr '\n' ' ' | sed 's/ *$//')
 same "every crate in the tree has a row" "" "$missing"
 
-invented=$(comm -23 "$scratch/table-crates" "$scratch/tree-crates" | tr '\n' ' ' | sed 's/ *$//')
+invented=$(LC_ALL=C comm -23 "$scratch/table-crates" "$scratch/tree-crates" | tr '\n' ' ' | sed 's/ *$//')
 same "every row names a crate in the tree" "" "$invented"
 
 same "the table has one row per crate" "$dirs" "$rows"
@@ -571,7 +579,7 @@ same "the table has one row per crate" "$dirs" "$rows"
 sed '/^| *`headwater-hash` *|/d' "$readme" >"$scratch/arms/rowgone.md"
 table_crates "$scratch/arms/rowgone.md" >"$scratch/arms/rowgone.list"
 same "a crate whose row was deleted is named" "hash" \
-    "$(comm -13 "$scratch/arms/rowgone.list" "$scratch/tree-crates" | tr '\n' ' ' | sed 's/ *$//')"
+    "$(LC_ALL=C comm -13 "$scratch/arms/rowgone.list" "$scratch/tree-crates" | tr '\n' ' ' | sed 's/ *$//')"
 
 awk '
     { print }
@@ -582,7 +590,11 @@ awk '
 ' "$readme" >"$scratch/arms/rowextra.md"
 table_crates "$scratch/arms/rowextra.md" >"$scratch/arms/rowextra.list"
 same "a row naming no crate is named" "nonesuch" \
-    "$(comm -23 "$scratch/arms/rowextra.list" "$scratch/tree-crates" | tr '\n' ' ' | sed 's/ *$//')"
+    "$(LC_ALL=C comm -23 "$scratch/arms/rowextra.list" "$scratch/tree-crates" | tr '\n' ' ' | sed 's/ *$//')"
+
+exec 2>&3 3>&-
+same "no sort or comm in this run wrote to standard error" \
+    "" "$(tr '\n' '|' <"$scratch/stderr")"
 
 echo
 echo "$passed passed, $failed failed"
