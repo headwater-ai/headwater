@@ -591,16 +591,25 @@ jobs:
         # `site_url`. That is a parser and a URL join rather than a pattern, and
         # a tool can be held by a fixtures suite where an inline `grep` cannot.
         #
-        # It reads the generated half and never the assembled root. None of the
-        # eight hand-built pages carries a canonical URL, so the presence
-        # assertion over the assembled root would be red on correct input from
-        # its first run.
+        # It reads the generated half and never the assembled root.
+        # `tools/site/check-site-fragments.py` already reads the assembled root
+        # for the neighboring defect, and the step below and the one after it
+        # run against each half on its own, so a build failure in one half
+        # never hides a canonical defect in the other.
         #
         # The population is walked from the built directory, `404.html` is
         # exempt for the structural reason the tool's header states, and an
         # empty population exits 2 rather than passing. The step below provokes
         # each of those.
         run: python3 tools/site/check-site-canonical.py .headwater/site-build
+      - name: Every hand-built page carries its own canonical URL
+        # The eight pages under `site/` carried none until #1012, which is the
+        # gap this tool's own header used to name as a separate, unresolved
+        # question. `site/` needs no `mkdocs build` ahead of it, so this step
+        # runs on its own rather than as a wider directory argument to the step
+        # above, and it stays independent of whether the generated half built
+        # at all.
+        run: python3 tools/site/check-site-canonical.py site
       - name: The canonical URL checker refuses what it claims to refuse
         # Spec 12 refuses a check that ships with no failing fixture, and
         # `tools/site/site-fragments-fixtures.sh` is the shape this follows. Two of

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assert that every generated page carries its own canonical URL.
+"""Assert that every page in a directory carries its own canonical URL.
 
 WHAT THIS READS
 
@@ -45,17 +45,19 @@ WHAT IS EXEMPT, AND WHY
 
   The generated half has no root `index.html` at all: `docs/README.md` does not
   exist and `.headwater/nav.yml` names no root page, so `https://headwater.tools/`
-  is served by `site/index.html` from the hand-built half. This tool still
-  derives the right URL for a root `index.html` should one ever appear, and says
-  nothing about the hand-built half.
+  is served by `site/index.html` from the hand-built half. This tool checks
+  that page too, run a second time against `site` rather than the generated
+  half's build output, which is what CI and `site-canonical-fixtures.sh` both
+  do (#1012).
 
 WHY IT IS NOT POINTED AT THE ASSEMBLED SITE
 
   `tools/site/check-site-fragments.py` reads the assembled root, both halves
   composed, because a dead fragment is a defect wherever it is served. This one
-  cannot: none of the eight hand-built pages carries a canonical URL, so
-  assertion 1 over the assembled root would be red on correct input from its
-  first run. Whether those eight should carry one is a separate question.
+  runs against each half on its own instead — `.headwater/site-build` for the
+  generated half, `site` for the hand-built half — so a build failure in one
+  half never hides a canonical defect in the other, and the hand-built half
+  needs no `mkdocs build` to be checked at all.
 
 WHAT IT REFUSES TO DO
 
@@ -188,8 +190,8 @@ def main(argv):
     findings = len(absent) + len(repeated) + len(wrong)
     exempted = ", ".join(exempt) if exempt else "none"
     print(
-        f"{len(checked) - findings} of {len(checked)} generated pages carry "
-        f"one canonical URL naming the URL they are served at, against "
+        f"{len(checked) - findings} of {len(checked)} pages carry one "
+        f"canonical URL naming the URL they are served at, against "
         f"`{origin}/`."
     )
     print(

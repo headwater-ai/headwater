@@ -34,6 +34,7 @@ set -u
 root=$(cd "$(dirname "$0")/../.." && pwd)
 tool="$root/tools/site/check-site-canonical.py"
 build="$root/.headwater/site-build"
+hand="$root/site"
 origin="https://headwater.tools"
 
 if [ ! -f "$tool" ]; then
@@ -115,7 +116,7 @@ report "every generated page carries its own canonical URL" 0 "$status"
 # 2. The denominator is stated and is not zero. A run that checked nothing
 #    would report zero findings too, and that is the pass this suite must not
 #    accept on the corpus's behalf.
-if grep -qE '[1-9][0-9]* of [1-9][0-9]* generated pages carry one canonical URL' "$scratch/out"; then
+if grep -qE '[1-9][0-9]* of [1-9][0-9]* pages carry one canonical URL' "$scratch/out"; then
     passed=$((passed + 1)); echo "  ok    it states a non-zero denominator"
 else
     failed=$((failed + 1)); echo "  FAIL  it states a non-zero denominator"
@@ -126,6 +127,23 @@ fi
 #    exemption nobody can see is indistinguishable from a page the walk missed.
 report "it names \`404.html\` as the exempt page" 0 "$status" \
     "Exempt: 404.html." "$scratch/out"
+
+echo
+echo "over the hand-built half of the real site"
+
+# 3a. The eight pages under `site/` carried no canonical URL at all until
+#     #1012, which is the gap the tool's own header used to call a separate,
+#     unresolved question. A failure here is that regression back, not a
+#     broken fixture.
+status=$(run "$hand")
+report "every hand-built page carries its own canonical URL" 0 "$status"
+
+# 3b. The denominator here is the eight pages named in #1012, none of them
+#     `404.html`, so it is stated with no exemption at all.
+report "it states the denominator with no exemption" 0 "$status" \
+    "pages carry one canonical URL naming the URL they are served at" \
+    "$scratch/out"
+report "  and exempts none of them" 0 "$status" "Exempt: none." "$scratch/out"
 
 echo
 echo "over a scratch copy of the real build, with one page broken"
@@ -173,7 +191,7 @@ page "$good" "spec/12-check-layer/index.html" "$origin/spec/12-check-layer/"
 page "$good" "index.html" "$origin/"
 status=$(run "$good")
 report "a directory URL and a root page both pass" 0 "$status" \
-    "2 of 2 generated pages" "$scratch/out"
+    "2 of 2 pages" "$scratch/out"
 
 # 7. A missing trailing slash is a different URL, and a presence grep passes it.
 slash="$scratch/slash"
@@ -268,7 +286,7 @@ printf '<!DOCTYPE html><html><head><link rel="Canonical alternate" href="%s/a/">
     "$origin" >"$tokens/a/index.html"
 status=$(run "$tokens")
 report "a multi-token, mixed-case \`rel\` is read as a canonical" 0 "$status" \
-    "1 of 1 generated pages" "$scratch/out"
+    "1 of 1 pages" "$scratch/out"
 
 echo
 echo "$passed passed, $failed failed"
