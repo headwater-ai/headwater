@@ -508,7 +508,10 @@ fn the_voice_rule_reads_the_facet_in_the_scent_role_and_the_body_and_not_the_tit
         .position(|line| line == PHRASE)
         .expect("the body sentence")
         + 1;
-    assert_ne!(summary, body, "the facet and the body must be different lines");
+    assert_ne!(
+        summary, body,
+        "the facet and the body must be different lines"
+    );
 
     let run = fixture_run();
     let mine: Vec<&headwater_check::Finding> = run
@@ -519,7 +522,11 @@ fn the_voice_rule_reads_the_facet_in_the_scent_role_and_the_body_and_not_the_tit
     assert_eq!(mine.len(), 2, "{mine:#?}");
 
     for finding in &mine {
-        assert_eq!(finding.severity, headwater_check::Severity::Warn, "{finding:#?}");
+        assert_eq!(
+            finding.severity,
+            headwater_check::Severity::Warn,
+            "{finding:#?}"
+        );
         assert!(finding.patch.is_none(), "{finding:#?}");
         assert_ne!(
             finding.line, title,
@@ -559,8 +566,7 @@ fn the_voice_rule_skips_a_document_with_nothing_to_read_rather_than_passing_it()
         .instances
         .iter()
         .filter(|instance| {
-            instance.rule == voice::RULE
-                && instance.reads.iter().any(|input| input.path == PATH)
+            instance.rule == voice::RULE && instance.reads.iter().any(|input| input.path == PATH)
         })
         .collect();
     assert_eq!(mine.len(), 1, "{mine:#?}");
