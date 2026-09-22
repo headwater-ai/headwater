@@ -665,8 +665,14 @@ mod tests {
 
         // A `{slug}` template with a literal segment before it still yields a
         // prefix, and a template that opens on a placeholder yields none.
-        assert_eq!(template("{namespace}-SPEC-{slug}", "HW").prefix(), "HW-SPEC-");
-        assert_eq!(template("SPEC-{namespace}-{slug}", "HW").prefix(), "SPEC-HW-");
+        assert_eq!(
+            template("{namespace}-SPEC-{slug}", "HW").prefix(),
+            "HW-SPEC-"
+        );
+        assert_eq!(
+            template("SPEC-{namespace}-{slug}", "HW").prefix(),
+            "SPEC-HW-"
+        );
     }
 
     #[test]

@@ -230,9 +230,15 @@ fn an_identifier_shaped_target_refuses_in_the_words_of_an_identifier_and_not_a_p
 fn a_path_shaped_target_with_no_document_still_reads_the_path_states() {
     let root = Root::new("path-shaped-control");
     let explained = root.run(&["explain", "engine/nowhere/at-all.rs"]);
-    assert_eq!(explained.code, Some(1), "a target no document carries: {explained:?}");
+    assert_eq!(
+        explained.code,
+        Some(1),
+        "a target no document carries: {explained:?}"
+    );
     assert!(
-        explained.err.contains("is outside every corpus root this repository declares"),
+        explained
+            .err
+            .contains("is outside every corpus root this repository declares"),
         "a path outside the corpus root still reads the path sentence: {explained:?}"
     );
 }
