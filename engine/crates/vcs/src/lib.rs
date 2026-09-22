@@ -499,7 +499,10 @@ mod tests {
 
         let mut found = ignored(&repo.at);
         found.sort();
-        assert_eq!(found, vec!["build/".to_string(), "notes.local.md".to_string()]);
+        assert_eq!(
+            found,
+            vec!["build/".to_string(), "notes.local.md".to_string()]
+        );
         let _ = fs::remove_dir_all(&repo.at);
     }
 
