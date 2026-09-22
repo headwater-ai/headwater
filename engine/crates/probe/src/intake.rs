@@ -42,6 +42,7 @@
 
 use crate::{Arm, Cents, Tier};
 use headwater_census::census::{Census, Outcome};
+use headwater_check::paint::{paint, ColorMode, Role};
 use headwater_graph::Config;
 use headwater_yaml::value::{Mapping, Value};
 
@@ -552,7 +553,11 @@ impl Record {
     }
 
     /// The report, in the engine's own words.
-    pub fn render(&self) -> String {
+    ///
+    /// `mode` is the color decision the caller already made — this function
+    /// reads no stream itself, on the rule `headwater_check::paint`'s module
+    /// comment states.
+    pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
 
@@ -621,10 +626,12 @@ impl Record {
              present, the membership of every probe named, that no key outside the closed set \
              appears, and that a realized cost was recorded. Present is not confirmed: of the \
              six members a plan fixes before a run, the lock is the one compared here, and it \
-             refuses the file. `headwater probe stale` compares the read set against the tree in \
+             refuses the file. `{}` compares the read set against the tree in \
              front of it. It graded nothing: a verdict is a function of this transcript, the \
-             expectations these probes declare and a grader version, and `headwater probe grade` \
-             is the verb that holds all three."
+             expectations these probes declare and a grader version, and `{}` \
+             is the verb that holds all three.",
+            paint(Role::Verb, "headwater probe stale", mode),
+            paint(Role::Verb, "headwater probe grade", mode)
         );
         out
     }

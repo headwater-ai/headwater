@@ -358,7 +358,9 @@ fn this_repository_resolves_to_the_recorded_taxonomy() {
     ));
 
     out.push_str("\nrule by rule\n");
-    out.push_str(&headwater_resolve::rules::render());
+    out.push_str(&headwater_resolve::rules::render(
+        headwater_paint::ColorMode::Plain,
+    ));
 
     compare(&fixtures_dir().join("corpus.resolve"), &out);
     compare(

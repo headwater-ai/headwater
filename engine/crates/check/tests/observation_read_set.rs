@@ -188,6 +188,6 @@ fn deleting_the_snapshot_entry_between_check_and_gate_does_not_carry() {
     assert!(
         !verdict.carries(),
         "a snapshot deleted after the run that read it must not carry: {}",
-        verdict.render()
+        verdict.render(headwater_check::paint::ColorMode::Plain)
     );
 }

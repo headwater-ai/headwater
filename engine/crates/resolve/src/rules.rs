@@ -31,6 +31,7 @@
 use crate::error::{ResolveError, ResolveErrorKind};
 use headwater_meta::identifier::Template;
 use headwater_meta::Pattern;
+use headwater_paint::{paint, ColorMode, Role};
 use headwater_yaml::{Mapping, Span, Value};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -272,9 +273,10 @@ pub const WAITING: [(&str, &str); 1] = [(
 /// `headwater taxonomy validate` prints this beside its verdict, because a
 /// verdict with no statement of what was checked is the pass that
 /// [spec 4](../../../../docs/spec/04-assurance-model.md) refuses.
-pub fn render() -> String {
+pub fn render(mode: ColorMode) -> String {
     let mut out = String::new();
     for (rule, ran) in RULES {
+        let rule = paint(Role::Heading, rule, mode);
         match ran {
             Ran::Source(how) => out.push_str(&format!("  {rule}\n    over one source: {how}\n")),
             Ran::Merge(how) => out.push_str(&format!("  {rule}\n    at merge time: {how}\n")),
@@ -286,7 +288,11 @@ pub fn render() -> String {
     }
     // The heading carries its own count, so a list that empties says so rather
     // than looking like a list nobody printed.
-    out.push_str(&format!("\nnot decided anywhere: {}\n", WAITING.len()));
+    out.push_str(&format!(
+        "\n{}: {}\n",
+        paint(Role::Heading, "not decided anywhere", mode),
+        WAITING.len()
+    ));
     for (rule, why) in WAITING {
         out.push_str(&format!("  {rule}\n    {why}\n"));
     }
@@ -325,14 +331,22 @@ pub fn undisplayed(taxonomy: &Mapping) -> Vec<&str> {
 /// a founding: a list that empties says so rather than looking like a list
 /// nobody printed. The trailing note prints only beside a name, and it is the
 /// one place the fall-through is written down for a reader of this verb.
-pub fn display_names(taxonomy: &Mapping) -> String {
+pub fn display_names(taxonomy: &Mapping, mode: ColorMode) -> String {
     let bare = undisplayed(taxonomy);
     let mut out = format!(
-        "shelves that print their key for want of a display name: {}\n",
+        "{}: {}\n",
+        paint(
+            Role::Heading,
+            "shelves that print their key for want of a display name",
+            mode
+        ),
         bare.len()
     );
     for shelf in &bare {
-        out.push_str(&format!("  shelves.{shelf}\n"));
+        out.push_str(&format!(
+            "  {}\n",
+            paint(Role::Path, &format!("shelves.{shelf}"), mode)
+        ));
     }
     if !bare.is_empty() {
         out.push_str(

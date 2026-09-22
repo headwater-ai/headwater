@@ -709,6 +709,7 @@ dependencies = [
  "headwater-doc",
  "headwater-hash",
  "headwater-meta",
+ "headwater-paint",
  "headwater-ref",
  "headwater-yaml",
 ]

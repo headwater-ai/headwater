@@ -57,6 +57,7 @@
 
 use crate::context::Date;
 use crate::instance::Input;
+use crate::paint::{paint, ColorMode, Role};
 use headwater_yaml::json::Json;
 
 /// A read set as a gate reads it back.
@@ -224,7 +225,7 @@ impl Reason {
     fn json(&self) -> Json {
         let mut members: Vec<(&'static str, Json)> = vec![
             ("reason", Json::string(self.token())),
-            ("says", Json::string(self.render())),
+            ("says", Json::string(self.render(ColorMode::Plain))),
         ];
         let text = |value: &String| Json::string(value.clone());
         match self {
@@ -257,7 +258,7 @@ impl Reason {
         Json::object(members)
     }
 
-    pub fn render(&self) -> String {
+    pub fn render(&self, mode: ColorMode) -> String {
         match self {
             Reason::LockMoved { recorded, found } => {
                 format!("the taxonomy lock reads {found} and this verdict rests on {recorded}")
@@ -283,10 +284,18 @@ impl Reason {
                 path,
                 recorded,
                 found,
-            } => format!("{path} reads {found} and this verdict rests on {recorded}"),
-            Reason::Gone { path } => format!("{path} is not in this tree"),
+            } => format!(
+                "{} reads {found} and this verdict rests on {recorded}",
+                paint(Role::Path, path, mode)
+            ),
+            Reason::Gone { path } => {
+                format!("{} is not in this tree", paint(Role::Path, path, mode))
+            }
             Reason::Unhashed { path } => {
-                format!("{path} carried no hash when it was read, so nothing compares")
+                format!(
+                    "{} carried no hash when it was read, so nothing compares",
+                    paint(Role::Path, path, mode)
+                )
             }
         }
     }
@@ -314,7 +323,7 @@ impl Verdict {
     /// printed "the verdict carries" alone would be read as "the corpus is
     /// green", and a read set cannot say that about a corpus that gained a
     /// document.
-    pub fn render(&self) -> String {
+    pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
         let listed = self.listed;
@@ -322,17 +331,19 @@ impl Verdict {
             true => {
                 let _ = writeln!(
                     out,
-                    "the verdicts this run reached about the {listed} inputs it listed carry to \
-                     this tree"
+                    "{} the verdicts this run reached about the {listed} inputs it listed carry \
+                     to this tree",
+                    paint(Role::Heading, "gate", mode)
                 );
             }
             false => {
                 let _ = writeln!(
                     out,
-                    "the verdicts this run reached do not carry to this tree"
+                    "{} the verdicts this run reached do not carry to this tree",
+                    paint(Role::Heading, "gate", mode)
                 );
                 for reason in &self.reasons {
-                    let _ = writeln!(out, "  {}", reason.render());
+                    let _ = writeln!(out, "  {}", reason.render(mode));
                 }
             }
         }
@@ -548,9 +559,11 @@ mod tests {
             tree(&[("docs/a.md", "sha256:a")]),
         );
         assert!(verdict.carries());
-        assert!(verdict.render().contains("carry to this tree"));
         assert!(verdict
-            .render()
+            .render(ColorMode::Plain)
+            .contains("carry to this tree"));
+        assert!(verdict
+            .render(ColorMode::Plain)
             .contains("nothing about a document this tree gained"));
     }
 
@@ -626,7 +639,7 @@ mod tests {
             }]
         );
         assert!(verdict
-            .render()
+            .render(ColorMode::Plain)
             .contains("a list of members states no extent"));
     }
 
@@ -727,7 +740,66 @@ mod tests {
             Some(Reason::ChangeScoped { .. })
         ));
         assert!(verdict
-            .render()
+            .render(ColorMode::Plain)
             .contains("lists corpus paths rather than changes"));
+    }
+
+    /// The palette a gate report reaches, in the shape
+    /// [`headwater_check::paint::tests`] and `route.rs`'s own case table
+    /// already use: a substring per role, checked under [`ColorMode::Ansi`].
+    #[test]
+    fn each_line_reaches_the_role_the_palette_gives_it() {
+        struct Case {
+            what: &'static str,
+            opens_with: &'static str,
+        }
+        let cases = [
+            Case {
+                what: "the report opens on a heading, bold in the default color",
+                opens_with: "\u{1b}[1mgate\u{1b}[0m the verdicts",
+            },
+            Case {
+                what: "a moved path is a path, cyan",
+                opens_with: "\u{1b}[36mdocs/a.md\u{1b}[0m reads",
+            },
+        ];
+        let carrying = decide(
+            &plain(),
+            "sha256:lock",
+            day("2026-08-13"),
+            tree(&[("docs/a.md", "sha256:a")]),
+        );
+        let moved = decide(
+            &plain(),
+            "sha256:lock",
+            day("2026-08-13"),
+            tree(&[("docs/a.md", "sha256:different")]),
+        );
+        let painted = format!(
+            "{}{}",
+            carrying.render(ColorMode::Ansi),
+            moved.render(ColorMode::Ansi)
+        );
+        for case in cases {
+            assert!(
+                painted.contains(case.opens_with),
+                "{}: no `{}` in\n{painted}",
+                case.what,
+                case.opens_with.escape_debug()
+            );
+        }
+    }
+
+    /// `Plain` writes not one escape byte, on the promise every recorded
+    /// fixture and every machine reader of a gate report depends on.
+    #[test]
+    fn plain_mode_writes_no_escape_sequence() {
+        let verdict = decide(
+            &plain(),
+            "sha256:lock",
+            day("2026-08-13"),
+            tree(&[("docs/a.md", "sha256:different")]),
+        );
+        assert!(!verdict.render(ColorMode::Plain).contains('\x1b'));
     }
 }

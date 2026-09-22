@@ -562,7 +562,10 @@ fn body(
 
     let _ = writeln!(out, "## The run this transcript recorded");
     let _ = writeln!(out);
-    out.push_str(&record.render());
+    // Plain, always: this is a generated document's own bytes, never a
+    // terminal report, and `headwater check --strict` reads the same bytes
+    // this function writes.
+    out.push_str(&record.render(headwater_check::paint::ColorMode::Plain));
     if let Some(identity) = &record.identity {
         let _ = writeln!(out);
         out.push_str(&provenance(&identity.selection, selection));
@@ -571,7 +574,7 @@ fn body(
     }
     let _ = writeln!(out);
 
-    out.push_str(&results.render());
+    out.push_str(&results.render(headwater_check::paint::ColorMode::Plain));
     if record.refusal.is_some() {
         let _ = writeln!(out);
         out.push_str(&read_set_of_this_result(read_by));
