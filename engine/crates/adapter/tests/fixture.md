@@ -1,15 +1,16 @@
 ## `headwater check`
 
-57 findings, 37 of them errors across 25 of 28 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
+60 findings, 38 of them errors across 27 of 30 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
 
-**Coverage.** This run saw 28 files and classified 26 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 314 check instances, and 53 of them reached no verdict.
+**Coverage.** This run saw 30 files and classified 28 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 338 check instances, and 58 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
-- 19 — the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+- 21 — the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 - 2 — `guarded` forbids hedging, and this engine has no pattern set for it
+- 1 — `declarative` binds this kind and this document carries no prose to read: no body and no `summary` facet with a value
 - 2 — `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
-- 27 — change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+- 29 — change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 - 1 — the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there
 
 2 readings of a path the census never walked, so the coverage above is computed over a set that does not hold them:
@@ -69,6 +70,9 @@
 | error | `check/spec/21-summary-facet-prose.md:7` | `language.controlled.not_met` | `ste_house` admits no contraction, and the `summary` facet writes `doesn't` |
 | error | `check/spec/21-summary-facet-prose.md:7` | `language.controlled.not_met` | `ste_house` declares the tag `en-US`, and the `summary` facet writes `organisation` |
 | error | `check/spec/21-summary-facet-prose.md:7` | `language.retired_term.used` | `ste_house` retires `reference system`, and the `summary` facet writes it: the corpus renamed it |
+| warn | `check/spec/22-voice-facet-prose.md:7` | `voice.forbidden_construction` | `declarative` forbids future_intent, and the `summary` facet writes `will be` |
+| warn | `check/spec/22-voice-facet-prose.md:16` | `voice.forbidden_construction` | `declarative` forbids future_intent, and this sentence writes `will be` |
+| error | `check/spec/23-voice-empty-population.md:6` | `facet.value.blank` | `summary` is declared as empty text |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `control.mechanism.unimplemented` | control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18 |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `control.mechanism.unimplemented` | control CT-FIX-17 names the mechanism phase:no.such.phase, which this engine does not implement, so nothing discharges OB-FIX-20 |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance |
@@ -87,4 +91,4 @@
 
 </details>
 
-28 documents in the read set, and 6 barriers that no gate carries across a merge. 27 obligations, 21 verified.
+30 documents in the read set, and 6 barriers that no gate carries across a merge. 27 obligations, 21 verified.

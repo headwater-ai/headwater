@@ -483,6 +483,110 @@ fn a_lexical_rule_reads_the_facet_in_the_scent_role_and_no_other() {
     }
 }
 
+/// The sibling case for `voice.forbidden_construction`, which #774 brought
+/// into line with the lexical rules above. A `future_intent` construction
+/// planted in the `summary` facet alone produced zero `voice.*` findings
+/// before this fix, silently missing the facet.
+#[test]
+fn the_voice_rule_reads_the_facet_in_the_scent_role_and_the_body_and_not_the_title() {
+    const PATH: &str = "check/spec/22-voice-facet-prose.md";
+    const PHRASE: &str = "The reference will be rewritten once the lock format settles.";
+    // Every line is read from the source rather than assumed, so an edit to
+    // the fixture moves the expectation with the file.
+    let source = std::fs::read_to_string(fixtures_dir().join(PATH)).expect("the fixture");
+    let line_of = |key: &str| {
+        source
+            .lines()
+            .position(|line| line.starts_with(key))
+            .expect("the facet")
+            + 1
+    };
+    let title = line_of("title:");
+    let summary = line_of("summary:");
+    let body = source
+        .lines()
+        .position(|line| line == PHRASE)
+        .expect("the body sentence")
+        + 1;
+    assert_ne!(
+        summary, body,
+        "the facet and the body must be different lines"
+    );
+
+    let run = fixture_run();
+    let mine: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.path == PATH && finding.rule == voice::RULE)
+        .collect();
+    assert_eq!(mine.len(), 2, "{mine:#?}");
+
+    for finding in &mine {
+        assert_eq!(
+            finding.severity,
+            headwater_check::Severity::Warn,
+            "{finding:#?}"
+        );
+        assert!(finding.patch.is_none(), "{finding:#?}");
+        assert_ne!(
+            finding.line, title,
+            "a label in the `name` role is not prose: {finding:#?}"
+        );
+    }
+
+    let from_facet: Vec<&&headwater_check::Finding> = mine
+        .iter()
+        .filter(|finding| finding.message.contains("facet"))
+        .collect();
+    assert_eq!(from_facet.len(), 1, "{mine:#?}");
+    assert_eq!(from_facet[0].line, summary, "{from_facet:#?}");
+    assert!(
+        from_facet[0].message.contains("the `summary` facet"),
+        "{from_facet:#?}"
+    );
+
+    let from_body: Vec<&&headwater_check::Finding> = mine
+        .iter()
+        .filter(|finding| !finding.message.contains("facet"))
+        .collect();
+    assert_eq!(from_body.len(), 1, "{mine:#?}");
+    assert_eq!(from_body[0].line, body, "{from_body:#?}");
+}
+
+/// A document whose kind binds a voice regime, with no body sentence and no
+/// `scent`-role facet carrying one, skips with a written reason rather than
+/// silently claiming a hold it never checked. #774: the empty population was
+/// reachable before this fix too, and fell through to `Outcome::failed(vec![])`,
+/// which reports the same as a genuine hold.
+#[test]
+fn the_voice_rule_skips_a_document_with_nothing_to_read_rather_than_passing_it() {
+    const PATH: &str = "check/spec/23-voice-empty-population.md";
+    let run = fixture_run();
+    let mine: Vec<&headwater_check::Instance> = run
+        .instances
+        .iter()
+        .filter(|instance| {
+            instance.rule == voice::RULE && instance.reads.iter().any(|input| input.path == PATH)
+        })
+        .collect();
+    assert_eq!(mine.len(), 1, "{mine:#?}");
+    match &mine[0].outcome {
+        headwater_check::Outcome::Skipped(reason) => {
+            assert!(
+                !reason.is_empty(),
+                "a skip carries a written reason, not an empty one"
+            );
+        }
+        other => panic!("expected a skip with a reason, got {other:#?}"),
+    }
+    assert!(
+        !run.findings
+            .iter()
+            .any(|finding| finding.path == PATH && finding.rule == voice::RULE),
+        "a skip carries no finding"
+    );
+}
+
 /// This repository, checked by the taxonomy that types it.
 ///
 /// The recorded file holds the coverage totals, the instance count per rule,
@@ -1472,8 +1576,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 28);
-    assert_eq!(run.coverage.classified(), 26);
+    assert_eq!(run.coverage.seen(), 30);
+    assert_eq!(run.coverage.classified(), 28);
 
     // A file this engine wrote is the third state, and it is accounted for
     // without being judged. `check/spec/12-generated.md` sits on a heterogeneous
@@ -1818,7 +1922,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
         &mut Cache::disabled(),
     );
 
-    assert_eq!(declared.len(), 26, "one instance per typed document");
+    assert_eq!(declared.len(), 28, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()

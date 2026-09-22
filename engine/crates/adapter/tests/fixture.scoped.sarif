@@ -281,7 +281,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 3,
+                  "version": 4,
                   "obligations": [
                     "OB-FIX-7"
                   ],
@@ -865,6 +865,28 @@
           ],
           "hashes": {
             "sha-256": "16254913bd0c34a373fdb76b1a6acd730f6bd03bdd1ad47b2d964a496aaf6695"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/22-voice-facet-prose.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "404a707df4c8b5fb0e958ce3e87f5a4eec0ed5d12588f0ebe6f6a3398f641822"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/23-voice-empty-population.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "43da22615732693705b57847374fa9b93eeadc834fa0007fbf6eecd929f30e6a"
           }
         }
       ],
@@ -2592,6 +2614,103 @@
           }
         },
         {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 17,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids future_intent, and the `summary` facet writes `will be`",
+            "markdown": "`declarative` forbids future_intent, and the `summary` facet writes `will be`\n\n**Fix:** state what the system does now, or move the sentence to a document whose kind narrates"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/22-voice-facet-prose.md"
+                },
+                "region": {
+                  "startLine": 7,
+                  "startColumn": 10
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state what the system does now, or move the sentence to a document whose kind narrates",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 17,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids future_intent, and this sentence writes `will be`",
+            "markdown": "`declarative` forbids future_intent, and this sentence writes `will be`\n\n**Fix:** state what the system does now, or move the sentence to a document whose kind narrates"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/22-voice-facet-prose.md"
+                },
+                "region": {
+                  "startLine": 16,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state what the system does now, or move the sentence to a document whose kind narrates",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "facet.value.blank",
+          "ruleIndex": 2,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`summary` is declared as empty text",
+            "markdown": "`summary` is declared as empty text\n\n**Fix:** write the value of `summary` into check/spec/23-voice-empty-population.md, which this kind requires"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/23-voice-empty-population.md"
+                },
+                "region": {
+                  "startLine": 6,
+                  "startColumn": 10
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "write the value of `summary` into check/spec/23-voice-empty-population.md, which this kind requires",
+              "escape": "none"
+            }
+          }
+        },
+        {
           "ruleId": "control.mechanism.unimplemented",
           "ruleIndex": 30,
           "level": "warning",
@@ -2818,12 +2937,12 @@
             "promotions": 0
           },
           "coverage": {
-            "seen": 28,
-            "classified": 26,
-            "checked": 26,
+            "seen": 30,
+            "classified": 28,
+            "checked": 28,
             "generated": 1,
-            "instances": 314,
-            "skipped": 29,
+            "instances": 338,
+            "skipped": 32,
             "skips": [
               {
                 "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
@@ -2855,7 +2974,7 @@
               },
               {
                 "reason": "the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it",
-                "instances": 19,
+                "instances": 21,
                 "documents": [
                   {
                     "path": "check/spec/00-both-halves.md",
@@ -2989,6 +3108,20 @@
                       "shelf.placement_is_primary"
                     ],
                     "routings": 1
+                  },
+                  {
+                    "path": "check/spec/22-voice-facet-prose.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/23-voice-empty-population.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
                   }
                 ],
                 "unrouted": 0
@@ -3006,6 +3139,20 @@
                   },
                   {
                     "path": "check/spec/09-contract-missing.md",
+                    "rules": [
+                      "voice.forbidden_construction"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
+              },
+              {
+                "reason": "`declarative` binds this kind and this document carries no prose to read: no body and no `summary` facet with a value",
+                "instances": 1,
+                "documents": [
+                  {
+                    "path": "check/spec/23-voice-empty-population.md",
                     "rules": [
                       "voice.forbidden_construction"
                     ],
@@ -3098,7 +3245,7 @@
             "suppressed": 2
           },
           "read_set": {
-            "inputs": 30,
+            "inputs": 32,
             "unhashed": 0
           },
           "loss_set": [

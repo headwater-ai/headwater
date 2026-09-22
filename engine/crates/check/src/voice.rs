@@ -72,6 +72,15 @@
 //! `change_narration` stood, and no run separates the two readings:
 //! [HW-OBL-0168](../../../../docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md)
 //! holds the coverage line that would, and it is open.
+//!
+//! **This census predates edition four ([#774](https://github.com/headwater-ai/headwater/issues/774)),
+//! which widens the population it counts over.** The two denominators above are
+//! body-only: they exclude every `scent`-role facet (`summary` in this
+//! corpus), which edition four adds to what every category reads. A summary
+//! enters the population for the first time, so the true denominators are now
+//! at least as large as stated and the two zero numerators are unconfirmed
+//! over the wider set. Re-run the count rather than trust this comment for
+//! either number.
 
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
@@ -234,6 +243,11 @@ pub struct Voice {
     /// report, and the names it cannot. Computed once, because the generation
     /// step reads the taxonomy and the evaluation step reads one document.
     bound: Vec<Bound>,
+    /// The facet in the `scent` role, resolved once from the shape. A
+    /// forbidden construction is forbidden wherever this document's author
+    /// wrote it, and [`crate::frontmatter`] states why the population is a
+    /// role.
+    scent: Option<String>,
 }
 
 struct Bound {
@@ -274,7 +288,10 @@ impl Voice {
                 unknown,
             });
         }
-        Voice { bound }
+        Voice {
+            bound,
+            scent: crate::frontmatter::scent_facet(shape),
+        }
     }
 
     fn bound_to(&self, kind: &str) -> Option<&Bound> {
@@ -310,7 +327,20 @@ impl DocumentCheck for Voice {
     /// unchanged, so a warm cache from the previous engine would serve the old
     /// verdict on every document that quotes anybody and the change would read
     /// as working while it did nothing.
-    const VERSION: u32 = 3;
+    ///
+    /// **Edition four, on 2026-09-23 ([#774](https://github.com/headwater-ai/headwater/issues/774)).**
+    /// This rule now also reads the facet in the `scent` role, exactly as
+    /// [`crate::retired`] and [`crate::language`] already do. The population
+    /// widens from the body alone to the body and that facet, so a warm cache
+    /// from before this edition would keep serving edition three's verdict on
+    /// every document whose `scent` facet writes a forbidden construction,
+    /// which is the defect this issue exists to fix. The same edition also
+    /// changes the no-prose posture from a silent `Outcome::Passed` to a
+    /// written `Outcome::Skipped`, which is not itself cache-relevant (a skip
+    /// and a pass with zero findings differ in the report, not in the
+    /// findings a subsequent read would compare) but is bundled into the same
+    /// edition because it is the same fix, made at the source #774 names.
+    const VERSION: u32 = 4;
     /// The body, because the regime is about prose. This declaration is the
     /// access: without it [`DocumentView::body`] returns nothing.
     const NEEDS_BODY: bool = true;
@@ -343,27 +373,70 @@ impl DocumentCheck for Voice {
                 }
             ));
         }
-        let Some(body) = view.body() else {
-            return Outcome::Passed;
-        };
+        let body = view.body();
+        let scent = self
+            .scent
+            .as_deref()
+            .and_then(|facet| crate::frontmatter::Scent::of(view, facet));
 
-        let sentences = body.sentences();
+        // Body sentences and the scent facet's sentences, in one population.
+        // `in_body` says which one a given sentence came from, and where a
+        // finding sourced from it anchors: at its own span for a body
+        // sentence, at the start of the value the author wrote for a facet
+        // sentence (`crate::frontmatter` states why).
+        let prose = body
+            .into_iter()
+            .flat_map(|body| body.sentences().into_iter().map(|s| (s, true)))
+            .chain(
+                scent
+                    .iter()
+                    .flat_map(|scent| scent.sentences.iter().cloned().map(|s| (s, false))),
+            )
+            .collect::<Vec<_>>();
+
+        if prose.is_empty() {
+            // A regime with a readable category and nothing to read it
+            // against: a skip would lose the finding, and a silent pass would
+            // claim a check that never ran.
+            return Outcome::Skipped(format!(
+                "`{}` binds this kind and this document carries no prose to read: no body and no `{}` facet with a value",
+                bound.regime,
+                self.scent.as_deref().unwrap_or("scent")
+            ));
+        }
+
         let mut findings = Vec::new();
         for index in &bound.known {
             let category = &CATEGORIES[*index];
-            for sentence in &sentences {
+            for (sentence, in_body) in &prose {
                 let Some(pattern) = matched(category, sentence) else {
                     continue;
+                };
+                let (line, column, subject) = match (in_body, &scent) {
+                    (true, _) => (
+                        sentence.span.start.line,
+                        sentence.span.start.col,
+                        "this sentence".to_string(),
+                    ),
+                    (false, Some(scent)) => (
+                        scent.span.start.line,
+                        scent.span.start.col,
+                        format!("the `{}` facet", scent.facet),
+                    ),
+                    // Unreachable: a sentence not from the body comes from
+                    // the scent, and `scent` is `Some` whenever one of its
+                    // sentences reached this loop.
+                    (false, None) => (0, 0, "this sentence".to_string()),
                 };
                 findings.push(Finding {
                     rule: self::RULE,
                     severity: Severity::Warn,
                     obligation: None,
                     path: view.path().to_string(),
-                    line: sentence.span.start.line,
-                    column: sentence.span.start.col,
+                    line,
+                    column,
                     message: format!(
-                        "`{}` forbids {}, and this sentence writes `{pattern}`",
+                        "`{}` forbids {}, and {subject} writes `{pattern}`",
                         bound.regime, category.name
                     ),
                     remediation: category.instead.to_string(),
