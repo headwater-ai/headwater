@@ -238,6 +238,8 @@ docs/how-to/mine-the-shadow-mode-routing-log.md
   typed: how_to
 docs/how-to/relocate-a-shelf.md
   typed: how_to
+docs/how-to/wire-headwater-check-into-your-own-workflow.md
+  typed: how_to
 docs/interfaces/README.md
   generated: `verb_index`, and `headwater generate --check` holds it rather than this census
 docs/interfaces/headwater-capture.md

@@ -120,7 +120,10 @@ conformance:
         so no reading of the tree decides it.
       remediation: >-
         Wire `headwater check` into the job that runs on every change, and
-        record an attestation with an owner and a date.
+        record an attestation with an owner and a date. A GitHub repository can
+        add `headwater-ai/headwater/integrations/headwater-check`, a composite
+        action that runs `headwater check --strict` against your own corpus
+        with the released binary alone.
 
     - name: gates.required
       title: The gate is required on the default branch
@@ -131,7 +134,9 @@ conformance:
         surface of the forge, which no file in the repository states.
       remediation: >-
         Require the check run on the default branch, and record an attestation
-        with an owner and a date.
+        with an owner and a date. `headwater-ai/headwater/integrations/headwater-check`
+        is the recipe `checks.wired` names, and its job is what a branch
+        protection rule requires by name.
 
     - name: hooks.installed
       title: The write-time hooks are installed

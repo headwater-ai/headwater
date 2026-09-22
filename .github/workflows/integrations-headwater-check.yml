@@ -1,0 +1,124 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# CI for `integrations/headwater-check`, the composite action #833 packages.
+# This is the composite action's own test suite, not a corpus gate: it never
+# touches `docs/` or `.headwater/` under this repository's own root, and it
+# runs on a change to the action or its adopter-facing doc rather than on
+# every push.
+#
+# THE DECISIVE FIXTURE, AND WHY IT IS BUILT RATHER THAN COMMITTED. #833 names
+# its own bar: a corpus whose committed projection a `summary:` edit stales,
+# run through the packaged action end to end, must exit non-zero and the
+# SARIF output must name the staleness. That corpus cannot be this
+# repository's own `docs/` tree, and it cannot be a corpus committed once and
+# left standing either. `headwater-check/fixtures/build-decisive-fixture.sh`
+# states why in its own header: building it with today's dev engine and
+# checking it with `FIXTURE_TAG`'s released one hit exactly the failure this
+# design avoids, "the lock declares rule set 2 and this engine validates
+# against 1", the first time this workflow was written. So the fixture is
+# built fresh, in this job, with the same pinned binary the job then runs the
+# action against.
+name: integrations/headwater-check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - integrations/headwater-check/**
+      - docs/how-to/wire-headwater-check-into-your-own-workflow.md
+      - .github/workflows/integrations-headwater-check.yml
+  pull_request:
+    paths:
+      - integrations/headwater-check/**
+      - docs/how-to/wire-headwater-check-into-your-own-workflow.md
+      - .github/workflows/integrations-headwater-check.yml
+
+permissions:
+  contents: read
+
+env:
+  # Pinned rather than "latest" so this suite's own result does not move on a
+  # day nobody touched the action. `resolve-version.sh`'s own handling of
+  # `latest` is exercised by `tools/repo/integrations-fixtures.sh` instead,
+  # which needs no corpus and no download to hold.
+  FIXTURE_TAG: v0.1.2
+  FIXTURE_TAXONOMY_TAG: taxonomy/headwater-standard/v4.2.0
+  FIXTURE_TAXONOMY_DIGEST: sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
+
+jobs:
+  decisive-fixture:
+    name: A staled projection fails the run, and the SARIF names it
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the pinned release engine, the one FIXTURE_TAG names
+        run: |
+          set -euo pipefail
+          asset="headwater-${FIXTURE_TAG}-x86_64-unknown-linux-gnu.tar.gz"
+          base="https://github.com/headwater-ai/headwater/releases/download/${FIXTURE_TAG}"
+          stage="$RUNNER_TEMP/fixture-engine"
+          mkdir -p "$stage"
+          curl -fsSL -o "$stage/$asset" "$base/$asset"
+          curl -fsSL -o "$stage/$asset.sha256" "$base/$asset.sha256"
+          ( cd "$stage" && sha256sum -c "$asset.sha256" )
+          tar -xzf "$stage/$asset" -C "$stage" headwater
+          chmod +x "$stage/headwater"
+          echo "FIXTURE_ENGINE=$stage/headwater" >>"$GITHUB_ENV"
+
+      - name: Build the fixture corpus with that same engine
+        run: |
+          HEADWATER_BIN="$FIXTURE_ENGINE" \
+          BOOTSTRAP_SCRIPT="$GITHUB_WORKSPACE/tools/headwater-bootstrap.sh" \
+          sh integrations/headwater-check/fixtures/build-decisive-fixture.sh "$RUNNER_TEMP/fixture"
+
+      - name: Run the action against the clean fixture
+        uses: ./integrations/headwater-check
+        with:
+          root: ${{ runner.temp }}/fixture
+          version: ${{ env.FIXTURE_TAG }}
+          upload-sarif: "false"
+
+      # `upload-sarif` defaults to `true`, and this job's own `permissions:`
+      # above grants no `security-events: write` — the exact shape of a
+      # caller who forgot that permission. Before the action's own upload
+      # step carried `continue-on-error: true`, this reproduced a real
+      # defect: the upload step's own failure aborted the composite action
+      # before its last step could run, and failed this job on a corpus with
+      # nothing wrong, for a reason `strict` never named. `upload-sarif` is
+      # left at its default (omitted) rather than set, so this step exercises
+      # the same path a caller's own untouched default does.
+      - name: Run the action with the default upload-sarif and no security-events permission
+        uses: ./integrations/headwater-check
+        with:
+          root: ${{ runner.temp }}/fixture
+          version: ${{ env.FIXTURE_TAG }}
+          sarif-path: ${{ runner.temp }}/default-upload.sarif
+
+      - name: Stale the committed shelf index with a summary edit
+        run: |
+          set -euo pipefail
+          decision_file=$(find "$RUNNER_TEMP/fixture/docs/decisions" -name '0001-*.md')
+          sed -i 's/in a separate queue\./in a separate queue system./' "$decision_file"
+
+      - name: Run the action against the staled fixture, expecting failure
+        id: staled
+        continue-on-error: true
+        uses: ./integrations/headwater-check
+        with:
+          root: ${{ runner.temp }}/fixture
+          version: ${{ env.FIXTURE_TAG }}
+          sarif-path: ${{ runner.temp }}/staled.sarif
+          upload-sarif: "false"
+
+      - name: The staled corpus failed the run
+        run: |
+          if [ "${{ steps.staled.outcome }}" != "failure" ]; then
+            echo "::error::a corpus whose committed shelf index a summary: edit staled passed this action. This is #833's own decisive fixture, and it must exit non-zero." >&2
+            exit 1
+          fi
+
+      - name: The SARIF names the staleness
+        run: |
+          python3 integrations/headwater-check/fixtures/assert-sarif-names-staleness.py \
+            "$RUNNER_TEMP/staled.sarif" docs/decisions/README.md

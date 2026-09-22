@@ -3251,6 +3251,35 @@
         }
       },
       {
+        "path": "docs/how-to/wire-headwater-check-into-your-own-workflow.md",
+        "kind": "how_to",
+        "id": "HW-HOW-wire-headwater-check-into-your-own-workflow",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-HOW-wire-headwater-check-into-your-own-workflow",
+          "status": "current",
+          "status_since": "2026-09-23",
+          "summary": "A composite action runs headwater check --strict against your own corpus, with the released binary alone: no clone, no Rust toolchain, no cargo.",
+          "last_verified": "2026-09-23",
+          "title": "Wire headwater check into your own workflow",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-SPEC-harness-support"
+            ],
+            "governs": [
+              "integrations/headwater-check/**"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/interfaces/headwater-capture.md",
         "kind": "interface_contract",
         "id": "HW-IFACE-headwater-capture",
@@ -11245,6 +11274,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "integrations/headwater-check/**",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "mkdocs.yml",
         "resolver": "source-tree"
       },
@@ -14718,6 +14752,28 @@
           "id": "HW-SPEC-taxonomy-model",
           "path": "docs/spec/02-taxonomy-model.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/how-to/wire-headwater-check-into-your-own-workflow.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-harness-support",
+          "path": "docs/spec/16-harness-support.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/how-to/wire-headwater-check-into-your-own-workflow.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "integrations/headwater-check/**",
+          "resolver": "source-tree"
         }
       },
       {

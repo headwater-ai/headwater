@@ -1284,6 +1284,26 @@ jobs:
         # It runs `grep` and `find`, builds no engine, opens no socket, and
         # writes only under a temporary directory.
         run: sh tools/repo/engine-resolver-fixtures.sh
+      - name: The composite action's doc and resolve-latest.py hold against the fixture beside them
+        # `integrations/headwater-check`, #833's composite action, is packaged
+        # surface rather than corpus content: `docs/how-to/wire-
+        # headwater-check-into-your-own-workflow.md`'s own usage example and
+        # `action.yml`'s actual declared inputs are the two files this step
+        # holds against each other, the same shape as group 7 of
+        # `tools/repo/readme-fixtures.sh` a page's claim against a workflow's
+        # actual name.
+        #
+        # It also holds `resolve-latest.py` (the `latest`-resolution logic
+        # `resolve-version.sh` calls) against three synthetic release-list
+        # shapes, so the `latest` path is checked on every push rather than
+        # only when `.github/workflows/integrations-headwater-check.yml`
+        # happens to cut a real release and a real network reaches GitHub. That
+        # workflow pins a fixed tag for exactly this reason, stated in its own
+        # header.
+        #
+        # It needs `python3` and nothing else: no engine, no network, no
+        # corpus, and it writes nothing under this checkout.
+        run: sh tools/repo/integrations-fixtures.sh
       - name: The composition demonstration reports the one finding it claims
         # `docs/taxonomies/diataxis/fixtures/README.md` records what happens
         # when the `reader_mode` facet of one library entry is read over

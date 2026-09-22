@@ -162,6 +162,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/repo/engine-resolver-fixtures.sh
     sh tools/engine/engine-readme-fixtures.sh
     sh tools/repo/id-store-fixtures.sh
+    sh tools/repo/integrations-fixtures.sh
     sh tools/repo/library-index-fixtures.sh
     sh tools/repo/obligation-register-fixtures.sh
     sh tools/probe/probe-record-fixtures.sh
