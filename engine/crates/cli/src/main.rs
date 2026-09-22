@@ -2751,6 +2751,7 @@ struct Sides<'a> {
 ///
 /// [`Sides`] carries both, and it is one parameter because the pair is one
 /// reading.
+#[allow(clippy::too_many_arguments)]
 fn payload(
     fetched: &Path,
     manifest: &headwater_yaml::Mapping,
