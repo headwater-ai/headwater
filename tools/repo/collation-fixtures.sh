@@ -137,11 +137,23 @@ unpinned_lines() {
             gsub(/LC_ALL=C[ \t]+sort/, "", work)
             gsub(/LC_ALL=C[ \t]+comm/, "", work)
             gsub(/\\`/, "", work)
-            if (match(work, /(^|[|;(`"]|&&[ \t]*)[ \t]*sort([^A-Za-z0-9_]|$)/)) {
+            # A POSIX reserved word that opens a new command (`do`, `then`,
+            # a bare `!`, a case-arm pattern`s closing `)`, …) is a command
+            # position exactly the way a pipe or a semicolon is, and this
+            # tree writes several of them on the same line as the command
+            # they open (`for f in *; do sort "$f"; done`, `pattern) comm
+            # -12 a b ;;`). Marking the boundary right after each one with a
+            # `|` — the character the check below already recognizes — lets
+            # one regex hold both without hand-listing keyword-by-keyword
+            # inside it. This is lexical, not a real shell parse: the run
+            # below over the real tree is what proves this substitution
+            # reaches no case name or message it should not.
+            gsub(/(^|[^A-Za-z0-9_])(if|then|elif|else|fi|do|done|for|while|until|case|esac)([^A-Za-z0-9_]|$)/, "&|", work)
+            if (match(work, /(^|[|;(`"!{})]|&&[ \t]*)[ \t]*sort([^A-Za-z0-9_]|$)/)) {
                 print FILENAME ":" FNR ": " line
                 next
             }
-            if (match(work, /(^|[|;(`"]|&&[ \t]*)[ \t]*comm([^A-Za-z0-9_]|$)/)) {
+            if (match(work, /(^|[|;(`"!{})]|&&[ \t]*)[ \t]*comm([^A-Za-z0-9_]|$)/)) {
                 print FILENAME ":" FNR ": " line
             }
         }
@@ -255,6 +267,21 @@ printf '#!/bin/sh\necho "the \\`sort\\` step wrote to \\`comm\\` on stderr"\n' \
     >"$scratch/arms/escapedbacktick.sh"
 same "an escaped backtick quoting sort/comm as a code span in a message stays clean" \
     "" "$(unpinned_lines "$scratch/arms/escapedbacktick.sh" | tr '\n' '|')"
+
+# A fourth verifier found the left side still missed every POSIX reserved
+# word that opens a new command — do, then, elif, a bare !, a brace group,
+# and, most tellingly, a case arm's closing `)`, which looks exactly like
+# the `$(...)` close the right-hand fix already treats as a terminator but
+# is a left-hand opener instead. Confirmed by injecting these eight shapes
+# into `tools/repo/developing-fixtures.sh` — one of the nine files this suite
+# already reports clean — and finding them invisible before this arm's fix,
+# caught after it, restored before committing. This arm plants one shape per
+# line, matching that same injection, and asserts all eight redden.
+printf '#!/bin/sh\nfor f in *; do sort "$f"; done\nwhile true; do comm -12 a b; done\nuntil false; do sort x; done\nif sort file; then :; fi\nif false; then :; elif sort file; then :; fi\n! sort file\n{ sort file; }\ncase $x in pattern) comm -12 a b ;; esac\n' \
+    >"$scratch/arms/keywords.sh"
+same "for/do, while/do, until/do, if, elif, a bare !, a brace group and a case arm all redden" \
+    "$scratch/arms/keywords.sh:2: for f in *; do sort \"\$f\"; done|$scratch/arms/keywords.sh:3: while true; do comm -12 a b; done|$scratch/arms/keywords.sh:4: until false; do sort x; done|$scratch/arms/keywords.sh:5: if sort file; then :; fi|$scratch/arms/keywords.sh:6: if false; then :; elif sort file; then :; fi|$scratch/arms/keywords.sh:7: ! sort file|$scratch/arms/keywords.sh:8: { sort file; }|$scratch/arms/keywords.sh:9: case \$x in pattern) comm -12 a b ;; esac|" \
+    "$(unpinned_lines "$scratch/arms/keywords.sh" | tr '\n' '|')"
 
 echo
 echo "$passed passed, $failed failed"
