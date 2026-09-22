@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/intent.sh\"",
+            "command": "p=\"$CLAUDE_PROJECT_DIR/.claude/hooks/intent.sh\"; if [ -f \"$p\" ]; then sh \"$p\"; else echo \"hook script not found: $p\" >&2; fi",
             "timeout": 15
           }
         ]
@@ -17,12 +17,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/write.sh\"",
+            "command": "p=\"$CLAUDE_PROJECT_DIR/.claude/hooks/write.sh\"; if [ -f \"$p\" ]; then sh \"$p\"; else echo \"hook script not found: $p\" >&2; fi",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/touch.sh\"",
+            "command": "p=\"$CLAUDE_PROJECT_DIR/.claude/hooks/touch.sh\"; if [ -f \"$p\" ]; then sh \"$p\"; else echo \"hook script not found: $p\" >&2; fi",
             "timeout": 15
           }
         ]
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/wait.sh\"",
+            "command": "p=\"$CLAUDE_PROJECT_DIR/.claude/hooks/wait.sh\"; if [ -f \"$p\" ]; then sh \"$p\"; else echo \"hook script not found: $p\" >&2; fi",
             "timeout": 15
           }
         ]
@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/write.sh\"",
+            "command": "p=\"$CLAUDE_PROJECT_DIR/.claude/hooks/write.sh\"; if [ -f \"$p\" ]; then sh \"$p\"; else echo \"hook script not found: $p\" >&2; fi",
             "timeout": 15
           }
         ]
@@ -55,7 +55,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/review.sh\"",
+            "command": "p=\"$CLAUDE_PROJECT_DIR/.claude/hooks/review.sh\"; if [ -f \"$p\" ]; then sh \"$p\"; else echo \"hook script not found: $p\" >&2; fi",
             "timeout": 120
           }
         ]
