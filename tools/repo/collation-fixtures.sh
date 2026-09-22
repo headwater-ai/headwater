@@ -35,24 +35,39 @@
 # copy of the logic each of the nine fixture suites already states in its own
 # comments; it holds the coarser and still mechanical bar that a file which
 # compares populations with `comm` at all pins collation on every `sort` and
-# `comm` it runs — opens with `LC_ALL=C`, immediately before the word,
-# allowing for the pipe, the paren, the semicolon, `&&` or the line start that
-# can precede it (the left side is deliberately this specific list, and not a
-# bare word boundary: "sort" preceded by nothing but a space, as in a message
-# a script echoes, is prose rather than a command position, and a left side
-# that matched any non-word character would read that prose as an
-# invocation). The right side is not a list: it closes on the first
-# character that cannot continue a shell word — anything that is not
-# `[A-Za-z0-9_]` — or the end of the line, which is what a command word
-# actually ends on. An enumerated list here went through two rounds of a
-# verifier finding one more terminator a real call site used (a bare closing
-# paren of the `$(...)` the call sits inside with no space before it, then a
-# bare pipe, `||`, a redirection or a heredoc marker closing it the same
-# way) before this suite settled on the boundary a shell word actually has,
-# rather than another character added to a list that was never going to stop
-# growing. A comment line (its first non-blank character is `#`) is never
-# read as an invocation, so the prose above and inside each of the nine
-# fixture files does not trip this suite on its own words.
+# `comm` it runs — opens with `LC_ALL=C`, immediately before the word.
+#
+# THE RIGHT SIDE is not a list: it closes on the first character that cannot
+# continue a shell word — anything that is not `[A-Za-z0-9_]` — or the end of
+# the line, which is what a command word actually ends on. An enumerated
+# list here went through two rounds of a verifier finding one more
+# terminator a real call site used (a bare closing paren of the `$(...)` the
+# call sits inside with no space before it, then a bare pipe, `||`, a
+# redirection or a heredoc marker closing it the same way) before this suite
+# settled on the boundary a shell word actually has, rather than another
+# character added to a list that was never going to stop growing.
+#
+# THE LEFT SIDE opens on the pipe, the paren, the semicolon, `&&`, a
+# backtick, a double quote or the line start — the characters after which a
+# shell command name can legally begin, including the two shapes a third
+# verifier found this list still missed once the right side was fixed:
+# backtick command substitution (`` `sort file` ``) and a quoted command name
+# (`"sort" file`). It is deliberately NOT the same bare word boundary the
+# right side uses: "sort" preceded by nothing but a space, as in a message a
+# script echoes ("no sort or comm..."), is prose rather than a command
+# position, and a left side that matched any non-word character reads that
+# prose as an invocation — confirmed by running the bare-boundary form
+# against this tree before this comment was written, which turned ten
+# lines of ordinary case names and messages red. A bare backtick is its own
+# hazard the same way: it also opens a markdown code span inside an ordinary
+# double-quoted message, which `tools/site/assemble-site.sh` already writes
+# one of, so a backslash-escaped backtick (`\``) is stripped before either
+# check runs, the same way an already-pinned invocation is, and only a bare,
+# unescaped backtick opens a match.
+#
+# A comment line (its first non-blank character is `#`) is never read as an
+# invocation, so the prose above and inside each of the nine fixture files
+# does not trip this suite on its own words.
 #
 # # WHAT IT NEEDS, AND WHAT IT WRITES
 #
@@ -112,15 +127,21 @@ unpinned_lines() {
             sub(/^[ \t]*/, "", trimmed)
             if (substr(trimmed, 1, 1) == "#") next
             # Remove every already-pinned invocation so only a bare one, if
-            # any remains, can trip the two checks below.
+            # any remains, can trip the two checks below. Also remove every
+            # backslash-escaped backtick: a shell backtick opens a command
+            # substitution only when it is not escaped, and an escaped one
+            # (an error message elsewhere in this tree carries it, quoting
+            # sort/comm as a code span inside a double-quoted string) never
+            # opens one.
             work = line
             gsub(/LC_ALL=C[ \t]+sort/, "", work)
             gsub(/LC_ALL=C[ \t]+comm/, "", work)
-            if (match(work, /(^|[|;(]|&&[ \t]*)[ \t]*sort([^A-Za-z0-9_]|$)/)) {
+            gsub(/\\`/, "", work)
+            if (match(work, /(^|[|;(`"]|&&[ \t]*)[ \t]*sort([^A-Za-z0-9_]|$)/)) {
                 print FILENAME ":" FNR ": " line
                 next
             }
-            if (match(work, /(^|[|;(]|&&[ \t]*)[ \t]*comm([^A-Za-z0-9_]|$)/)) {
+            if (match(work, /(^|[|;(`"]|&&[ \t]*)[ \t]*comm([^A-Za-z0-9_]|$)/)) {
                 print FILENAME ":" FNR ": " line
             }
         }
@@ -210,6 +231,30 @@ printf '#!/bin/sh\nsort|head\ncomm||true\nsort>out.txt\nsort<in.txt\ncomm<<EOF2\
 same "a bare sort/comm closed by a pipe, ||, either redirection or a heredoc marker reddens, all five together" \
     "$scratch/arms/boundary.sh:2: sort|head|$scratch/arms/boundary.sh:3: comm||true|$scratch/arms/boundary.sh:4: sort>out.txt|$scratch/arms/boundary.sh:5: sort<in.txt|$scratch/arms/boundary.sh:6: comm<<EOF2|" \
     "$(unpinned_lines "$scratch/arms/boundary.sh" | tr '\n' '|')"
+
+# A third verifier found the mirror gap on the LEFT: the opener was still a
+# hand-enumerated list (`|`, `;`, `(`, `&&`, line start) and missed backtick
+# command substitution and a quoted command name, neither of which is a
+# character the right-hand fix touched. Widening the opener to backtick and
+# `"` closes both, but a bare backtick is ambiguous in this tree: it also
+# opens a markdown code span inside an ordinary double-quoted message, and an
+# ESCAPED backtick (`\``) is how those messages write one without triggering
+# a real command substitution — `tools/site/assemble-site.sh` already does
+# this. So an escaped backtick is stripped before either check runs, the
+# same way an already-pinned invocation is, and only a bare, unescaped one
+# opens a match. This arm plants the two real gaps together on one line each,
+# and a negative arm right after plants the escaped-backtick shape that must
+# stay clean.
+printf '#!/bin/sh\nx=`sort file`; y=`comm -12 a b`\n"sort" file | "comm" -12 - other\n' \
+    >"$scratch/arms/leftopen.sh"
+same "backtick command substitution and a quoted command name both reddens on the left" \
+    "$scratch/arms/leftopen.sh:2: x=\`sort file\`; y=\`comm -12 a b\`|$scratch/arms/leftopen.sh:3: \"sort\" file | \"comm\" -12 - other|" \
+    "$(unpinned_lines "$scratch/arms/leftopen.sh" | tr '\n' '|')"
+
+printf '#!/bin/sh\necho "the \\`sort\\` step wrote to \\`comm\\` on stderr"\n' \
+    >"$scratch/arms/escapedbacktick.sh"
+same "an escaped backtick quoting sort/comm as a code span in a message stays clean" \
+    "" "$(unpinned_lines "$scratch/arms/escapedbacktick.sh" | tr '\n' '|')"
 
 echo
 echo "$passed passed, $failed failed"
