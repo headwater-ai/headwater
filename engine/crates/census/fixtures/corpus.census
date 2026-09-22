@@ -800,6 +800,8 @@ docs/spec/15-the-recorder-contract.md
   typed: design_spec
 docs/spec/16-harness-support.md
   typed: design_spec
+docs/spec/17-orchestration-architecture.md
+  typed: design_spec
 docs/spec/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/spec/glossary.md

@@ -11,6 +11,9 @@ provenance:
   drafted_by: claude-fable-5-1
   activity: measure+draft
   evidence_basis: evidenced
+relations:
+  cited_by:
+    - HW-SPEC-orchestration-architecture
 ---
 
 # The build order as a multi-agent system
