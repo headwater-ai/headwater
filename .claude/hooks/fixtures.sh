@@ -1220,13 +1220,179 @@ expect 'an input that will not parse is silent rather than an error' \
     wait.sh 0 '' \
     'not json at all, but it does contain the word sleep'
 
+printf '\n# .claude/settings.json: a hook declaration guards its own script (#971)\n'
+
+# `CLAUDE_PROJECT_DIR` freezes at session start and a worktree can be retired,
+# rebased past, or started outside a commit that holds a script the tree it
+# reads from does not. `wait.sh` first existed at `578e5114`, and any session
+# whose configuration named it from before that commit met the failure this
+# suite now provokes on purpose: the harness passes each declaration's
+# `command` string to `sh -c`, `/bin/sh` here is dash, and dash exits 2 when
+# it cannot open a script that is not there — the one exit code every event
+# below reads as a deliberate refusal rather than a failure.
+#
+# The guard's `else` branch exits 1 rather than falling through to an
+# implicit 0. Confirmed live against https://code.claude.com/docs/en/hooks
+# (fetched 2026-09-22): "Stderr from a hook that exits 0 goes to the debug
+# log only, never the transcript, and Claude never sees it," while "any
+# other exit code doesn't block on its own for most hook events," and empty
+# stdout with a non-2 exit "shows the transcript a `<hook name>` hook error
+# notice followed by the first line of stderr." Exit 2 is still the only
+# code documented to block any of these six events (`UserPromptSubmit`'s own
+# decision-control section names only `decision: block` or exit 2, no other
+# code). So exit 1 keeps every declaration failing open exactly as exit 0
+# would, and additionally makes the absence visible where exit 0 would not
+# — closer to the issue's own ELI5, which asks for "a visible note," than
+# the literal "exits 0" of its Done-when clause 1, whose intent this reads
+# as "fails open" rather than as a constraint on which non-blocking code.
+#
+# `CLAUDE_PROJECT_DIR` is what every declaration's own command string reads,
+# and it is not the variable `HEADWATER_HOOK_ROOT` this suite already exports
+# at the top; a case below that ran a declaration's command with it unset
+# would be testing a hook that resolved its own script against `/`, not the
+# guard this issue writes.
+CLAUDE_PROJECT_DIR=$root
+export CLAUDE_PROJECT_DIR
+
+# The `command` string of the Nth hook declaration in `.claude/settings.json`,
+# in file order, unescaped to the text `sh -c` actually receives once the
+# harness has parsed the surrounding JSON. Each declaration's `command` sits
+# on its own line by convention, which the standing case just below checks
+# stays true, so a line-oriented extraction reads the same text a JSON parser
+# would without adding the interpreter dependency HW-DR-0055 refused for a
+# hook body — `hw_patch_path` in lib.sh already scrapes a different wire
+# shape the same way. The guard this issue writes into every declaration
+# carries no backslash of its own, so the only JSON escape left to undo is
+# `\"`.
+hw_settings_command() {
+    sed -n 's/^[[:space:]]*"command": "\(.*\)",\{0,1\}$/\1/p' "$root/.claude/settings.json" |
+        sed -n "${1}p" |
+        sed 's/\\"/"/g'
+}
+
+# Like `expect`, but holds standard output and standard error apart, for a
+# clause whose contract is which stream a line lands on. `expect` cannot make
+# this distinction: it reads both through one `2>&1` (line 66), which is
+# right for a case that only asks whether a hook spoke and wrong here, where
+# `UserPromptSubmit` folds a hook's stdout into the model's context, so a
+# diagnostic landing on stdout would leak into the conversation rather than
+# staying a log line.
+expect_streams() {
+    name=$1 status=$2 err_substring=$3
+    shift 3
+    _out=$(mktemp) _err=$(mktemp)
+    "$@" >"$_out" 2>"$_err" </dev/null
+    got=$?
+    _stdout=$(cat "$_out") _stderr=$(cat "$_err")
+    rm -f "$_out" "$_err"
+    if [ "$got" -ne "$status" ]; then
+        printf 'FAIL %s\n  expected exit %s, got %s\n' "$name" "$status" "$got"
+        failed=$((failed + 1))
+        return
+    fi
+    if [ -n "$_stdout" ]; then
+        printf 'FAIL %s\n  expected no standard output, got:\n%s\n' "$name" "$_stdout"
+        failed=$((failed + 1))
+        return
+    fi
+    case $_stderr in
+        *"$err_substring"*) ;;
+        *)
+            printf 'FAIL %s\n  expected standard error to hold %s, got:\n%s\n' "$name" "$err_substring" "$_stderr"
+            failed=$((failed + 1))
+            return
+            ;;
+    esac
+    printf 'ok   %s\n' "$name"
+    passed=$((passed + 1))
+}
+
+# The standing half of clause 5: no declaration may fall back to the bare
+# `sh "$CLAUDE_PROJECT_DIR/.claude/hooks/<name>.sh"` this issue found, with no
+# guard around it. This reads `.claude/settings.json` itself rather than a
+# count of declarations, so a seventh one added later in this exact shape is
+# caught here rather than shipped, whether or not this file's other six cases
+# below are ever updated to know about it.
+bare=$(grep -nE '"command": *"sh \\"\$CLAUDE_PROJECT_DIR/\.claude/hooks/[A-Za-z_.]+\.sh\\""' "$root/.claude/settings.json") || true
+if [ -n "$bare" ]; then
+    printf 'FAIL %s\n  found a hook declaration with no guard around its script:\n%s\n' \
+        'no declaration in .claude/settings.json is a bare, unguarded script path' "$bare"
+    failed=$((failed + 1))
+else
+    printf 'ok   %s\n' 'no declaration in .claude/settings.json is a bare, unguarded script path'
+    passed=$((passed + 1))
+fi
+
+# The two directions of the six declarations themselves, run through their
+# own command string exactly as `.claude/settings.json` holds it — not a
+# paraphrase of it — with the script it names moved aside and then replaced
+# by a stub that refuses on purpose. Mirrors the shape `review.sh`'s own
+# engine-absence case already uses above: move the dependency aside, prove
+# the fixture cleans up even on interrupt, restore it.
+#
+# The ordinal of each declaration is its position in `.claude/settings.json`
+# file order (`intent.sh`, `write.sh` PreToolUse, `touch.sh`, `wait.sh`,
+# `write.sh` PostToolUse, `review.sh`); the bare-pattern scan just above is
+# the one of the two checks that does not depend on this list staying
+# up to date with that order.
+hw_settings_case() {
+    ordinal=$1 script=$2
+    command=$(hw_settings_command "$ordinal")
+    real="$hooks/$script"
+
+    # Direction one: the script file is absent. Every declaration must fail
+    # open — exit 1, not the harness's one blocking code, 2 — say one line
+    # on standard error naming the path, and stay silent on standard
+    # output, in every affected mode a session meets: a prompt submits
+    # (`intent.sh`), `Bash` runs (`wait.sh`), `Write`/`Edit` run (`write.sh`,
+    # `touch.sh`), and the session can `Stop` (`review.sh`).
+    moved="$real.moved-by-fixtures-971"
+    trap 'mv -f "$moved" "$real" 2>/dev/null' EXIT INT TERM
+    mv "$real" "$moved"
+    expect_streams "$script (declaration $ordinal): script absent exits 1 (fails open, visibly) with one stderr line naming the path" \
+        1 "hook script not found: $real" \
+        sh -c "$command"
+    mv "$moved" "$real"
+    trap - EXIT INT TERM
+
+    # Direction two: the script is present and refuses on purpose. A guard
+    # written as `[ -f "$P" ] && sh "$P" || exit 0` would swallow this,
+    # because its `||` arm catches a deliberate refusal along with a missing
+    # file, turning every gate in the table into a no-op. The `if`/`else`
+    # form this issue writes must preserve the script's own exit code
+    # exactly.
+    stub="$real.stub-by-fixtures-971"
+    cp "$real" "$stub"
+    trap 'mv -f "$stub" "$real" 2>/dev/null' EXIT INT TERM
+    printf '#!/bin/sh\nexit 2\n' >"$real"
+    out=$(sh -c "$command" 2>&1 </dev/null)
+    got=$?
+    if [ "$got" -eq 2 ]; then
+        printf 'ok   %s\n' "$script (declaration $ordinal): present and exiting 2 on purpose still blocks, exit code preserved"
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n  expected exit 2 preserved through the guard, got %s, with:\n%s\n' \
+            "$script (declaration $ordinal): present and exiting 2 on purpose still blocks" "$got" "$out"
+        failed=$((failed + 1))
+    fi
+    mv -f "$stub" "$real"
+    trap - EXIT INT TERM
+}
+
+hw_settings_case 1 intent.sh
+hw_settings_case 2 write.sh
+hw_settings_case 3 touch.sh
+hw_settings_case 4 wait.sh
+hw_settings_case 5 write.sh
+hw_settings_case 6 review.sh
+
 printf '\n%s passed, %s failed, %s skipped\n' "$passed" "$failed" "$skipped"
 # A caller that knows an engine should be there says so, and this answers
 # before the failure count below, because it explains that count rather than
 # competing with it.
 #
 # What a missing engine actually does here, measured rather than assumed: the
-# suite reports 23 passed, 5 failed and 9 skipped, and exits 1. It does not go
+# suite reports 36 passed, 5 failed and 9 skipped, and exits 1. It does not go
 # green. Five `write.sh` cases assert a refusal and get silence from a hook
 # that fails open, so they fail outright. The remaining engine cases sit behind
 # an `[ -x "$engine" ]` guard and skip. Anyone reading that output cold sees
