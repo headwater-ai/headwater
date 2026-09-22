@@ -551,7 +551,7 @@ fn the_plan_names_the_harness_by_the_shared_constant() {
 fn the_record_over_the_transcript_is_recorded() {
     compare(
         &fixtures_dir().join("record.txt"),
-        &record_of(&transcript("transcript.md")).render(),
+        &record_of(&transcript("transcript.md")).render(ColorMode::Plain),
     );
 }
 
@@ -568,7 +568,7 @@ fn every_predicate_form_is_recorded_satisfied_refuted_and_refused() {
     ] {
         compare(
             &fixtures_dir().join(recorded),
-            &results_over(&transcript(transcript_name)).render(),
+            &results_over(&transcript(transcript_name)).render(ColorMode::Plain),
         );
     }
 }
@@ -589,10 +589,13 @@ fn a_plan_a_record_and_a_grade_are_each_the_same_bytes_twice() {
         regression().render(ColorMode::Plain)
     );
     let source = transcript("transcript.md");
-    assert_eq!(record_of(&source).render(), record_of(&source).render());
     assert_eq!(
-        results_over(&source).render(),
-        results_over(&source).render()
+        record_of(&source).render(ColorMode::Plain),
+        record_of(&source).render(ColorMode::Plain)
+    );
+    assert_eq!(
+        results_over(&source).render(ColorMode::Plain),
+        results_over(&source).render(ColorMode::Plain)
     );
 }
 
@@ -728,7 +731,9 @@ fn a_refused_transcript_produces_no_verdict_at_all() {
     let results = results_over(&transcript("transcript-with-prose.md"));
     assert!(results.unusable.is_some());
     assert!(results.rows.is_empty());
-    assert!(results.render().contains("reached no grader"));
+    assert!(results
+        .render(ColorMode::Plain)
+        .contains("reached no grader"));
 }
 
 /// Three refusals that no transcript can provoke, because `headwater probe
@@ -780,7 +785,7 @@ fn the_grader_refuses_a_selection_the_plan_would_not_have_produced() {
 #[test]
 fn the_rate_is_over_the_graded_sessions_and_names_what_it_left_out() {
     let results = results_over(&transcript("transcript.md"));
-    let rendered = results.render();
+    let rendered = results.render(ColorMode::Plain);
     assert!(rendered.contains("5 of 5 graded sessions"), "{rendered}");
     assert!(rendered.contains("95% interval"), "{rendered}");
     assert!(
@@ -1189,7 +1194,7 @@ fn an_event_naming_a_probe_this_corpus_does_not_declare_does_not_count() {
 /// test is what a reviewer of that change reads first.
 #[test]
 fn the_intake_grades_nothing() {
-    let rendered = record_of(&transcript("transcript.md")).render();
+    let rendered = record_of(&transcript("transcript.md")).render(ColorMode::Plain);
     assert!(
         rendered.contains("It graded nothing"),
         "the report says so where a reader sees it"
@@ -1468,4 +1473,82 @@ fn both_path_positions_of_the_plan_are_painted() {
 fn the_plain_plan_writes_no_escape_byte() {
     let plain = regression().render(ColorMode::Plain);
     assert!(!plain.contains('\u{1b}'), "the plain plan has to be plain");
+}
+
+// --- the palette `Record::render` and `Results::render` reach, #479 ---------
+
+/// `Record::render` paints the two sibling verb names it names in prose,
+/// `headwater probe stale` and `headwater probe grade`, in `Role::Verb` — the
+/// only role this report's prose carries, on the shape `derived.rs` already
+/// uses for a verb command.
+#[test]
+fn the_record_paints_the_two_verbs_it_names() {
+    let record = record_of(&transcript("transcript.md"));
+    let ansi = record.render(ColorMode::Ansi);
+    for verb in ["headwater probe stale", "headwater probe grade"] {
+        let wanted = paint(Role::Verb, verb, ColorMode::Ansi);
+        assert!(
+            ansi.contains(&wanted),
+            "the record does not paint `{verb}` in Role::Verb:\n{ansi}"
+        );
+    }
+    assert!(
+        !record.render(ColorMode::Plain).contains('\u{1b}'),
+        "the plain record has to be plain"
+    );
+}
+
+/// The colored record strips to the plain record, byte for byte — the same
+/// property `the_colored_plan_strips_to_the_plain_plan` holds for the plan,
+/// and what the recorded fixture `record.txt` assumes of the `Plain` arm.
+#[test]
+fn the_colored_record_strips_to_the_plain_record() {
+    let record = record_of(&transcript("transcript.md"));
+    let ansi = record.render(ColorMode::Ansi);
+    let plain = record.render(ColorMode::Plain);
+    assert!(ansi.contains('\u{1b}'), "the colored record has to carry color");
+    assert_eq!(stripped(&ansi), plain);
+}
+
+/// `Results::render` paints its two `##` headings whole, and a probe
+/// identifier per verdict row, on the shape the plan's own headings and paths
+/// are held to above.
+#[test]
+fn every_results_heading_and_probe_row_is_painted() {
+    let results = results_over(&transcript("transcript.md"));
+    let ansi = results.render(ColorMode::Ansi);
+    assert!(!results.rows.is_empty(), "this fixture has to grade at least one probe");
+    for heading in [
+        "## The verdicts",
+        "## The rate, and the denominator it is over",
+    ] {
+        let wanted = paint(Role::Heading, heading, ColorMode::Ansi);
+        assert!(
+            ansi.contains(&wanted),
+            "the heading {heading:?} is not painted in the colored results"
+        );
+    }
+    for row in &results.rows {
+        let wanted = paint(Role::Path, &row.probe, ColorMode::Ansi);
+        assert!(
+            ansi.contains(&wanted),
+            "the verdict row for {} does not paint its probe:\n{ansi}",
+            row.probe
+        );
+    }
+    assert!(
+        !results.render(ColorMode::Plain).contains('\u{1b}'),
+        "the plain results have to be plain"
+    );
+}
+
+/// The colored results strip to the plain results, byte for byte, on the same
+/// property held above for the plan and the record.
+#[test]
+fn the_colored_results_strip_to_the_plain_results() {
+    let results = results_over(&transcript("transcript.md"));
+    let ansi = results.render(ColorMode::Ansi);
+    let plain = results.render(ColorMode::Plain);
+    assert!(ansi.contains('\u{1b}'), "the colored results have to carry color");
+    assert_eq!(stripped(&ansi), plain);
 }

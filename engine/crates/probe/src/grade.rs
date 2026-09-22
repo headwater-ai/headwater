@@ -65,6 +65,7 @@
 use crate::intake::{Answer, Event, Produced, Record};
 use crate::plan::{Examined, Selected};
 use crate::{Arm, Category, Expectation, Tier};
+use headwater_check::paint::{paint, ColorMode, Role};
 
 /// The grader version, which a result names for the reason a reading names its
 /// lock digest. This is the engine version, read from the one constant that
@@ -451,7 +452,11 @@ impl Results {
     }
 
     /// The report, in the engine's own words.
-    pub fn render(&self) -> String {
+    ///
+    /// `mode` is the color decision the caller already made — this function
+    /// reads no stream itself, on the rule `headwater_check::paint`'s module
+    /// comment states.
+    pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
 
@@ -481,13 +486,13 @@ impl Results {
         }
         let _ = writeln!(out);
 
-        let _ = writeln!(out, "## The verdicts");
+        let _ = writeln!(out, "{}", paint(Role::Heading, "## The verdicts", mode));
         let _ = writeln!(out);
         for row in &self.rows {
             let _ = writeln!(
                 out,
                 "- {} ({}, expects {})",
-                row.probe,
+                paint(Role::Path, &row.probe, mode),
                 row.category.name(),
                 row.expectation.name()
             );
@@ -506,7 +511,15 @@ impl Results {
         }
         let _ = writeln!(out);
 
-        let _ = writeln!(out, "## The rate, and the denominator it is over");
+        let _ = writeln!(
+            out,
+            "{}",
+            paint(
+                Role::Heading,
+                "## The rate, and the denominator it is over",
+                mode
+            )
+        );
         let _ = writeln!(out);
         match self.rate() {
             None => {

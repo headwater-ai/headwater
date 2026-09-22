@@ -36,5 +36,11 @@ headwater-doc = { workspace = true }
 # two readings. `release.rs` argues why a fetched artifact is checked with it.
 headwater-hash = { workspace = true }
 
+# The palette. `taxonomy validate`, `resolve`, `publish`, `vendor` and
+# `migrate` all render inside this crate, below `headwater-check` in the
+# dependency graph, which is why the primitives live in this leaf crate rather
+# than there. See `headwater_paint`'s own module comment.
+headwater-paint = { workspace = true }
+
 [lints]
 workspace = true

@@ -222,6 +222,41 @@ senses_its_terminal 'probe plan' "$engine probe plan --root ."
 # suite would have to invent: `derived --root .` reads the tree and writes nothing.
 senses_its_terminal 'derived' "$engine derived --root ."
 
+# Three of the eleven #479 wired, and the three whose input this suite can
+# synthesize from the tree in front of it rather than from an external
+# artifact. `taxonomy validate` and `taxonomy resolve --check` read this
+# repository's own sources and lock, and write nothing. `gate` needs a read
+# set to hold against a tree, and `headwater check --read-set` is what writes
+# one — so this is a two-step case rather than a bare `senses_its_terminal`
+# line, and the read set is generated fresh into a temp file rather than
+# committed, because a read set is a hash of the tree it was taken over and
+# goes stale the moment the tree that produced it moves.
+senses_its_terminal 'taxonomy validate' "$engine taxonomy validate --root ."
+senses_its_terminal 'taxonomy resolve --check' "$engine taxonomy resolve --check --root ."
+gate_read_set="${TMPDIR:-/tmp}/headwater-color-gate.$$.readset"
+if "$engine" check --read-set "$gate_read_set" --root . >/dev/null 2>&1; then
+    senses_its_terminal 'gate' "$engine gate --read-set $gate_read_set --root ."
+else
+    echo "SKIP: gate — \`headwater check --read-set\` did not write one, so gate has nothing to hold"
+fi
+rm -f "$gate_read_set"
+
+# `new`, `import`, `probe record`, `probe grade`, `taxonomy diff`, `taxonomy
+# vendor`, `taxonomy publish` and `taxonomy migrate` are also wired (each
+# renderer now takes a `ColorMode` and the call site in `main.rs` supplies
+# one), and are not exercised here. `new` writes a document into the tree this
+# script runs against, and this suite fabricates no scratch corpus to write
+# one into instead. `import`, `probe record` and `probe grade` need a declared
+# import, a recorded transcript or a graded selection this repository does not
+# carry. `taxonomy diff`, `vendor`, `publish` and `migrate` need a second,
+# fetched copy of the package this repository already carries at
+# `taxonomy-source/headwater-standard/` — buildable with `taxonomy publish
+# --from`, but not attempted here in the time this build had. Each is held
+# instead by the palette unit tests beside its renderer, which exercise
+# `ColorMode::Ansi` and `ColorMode::Plain` directly, and none of the four
+# `taxonomy` sub-verbs above changed their machine (`--json`) output: none of
+# the four writes one.
+
 # The help family, which is four templates rather than one. The root screen is
 # written by `first_screen`, a verb page is `clap`'s own `{options}` renderer, a
 # verb with second words is `second_words`, and `headwater help <verb>` reaches

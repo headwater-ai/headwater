@@ -95,6 +95,7 @@ pub mod anchors;
 pub mod snapshot;
 pub mod write;
 
+use headwater_check::paint::{paint, ColorMode, Role};
 use headwater_check::shape::Shape;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::index::Index;
@@ -611,11 +612,17 @@ impl Plan {
     }
 
     /// The plan, rendered for a reader.
-    pub fn render(&self) -> String {
+    ///
+    /// `mode` is the color decision the caller already made — this function
+    /// reads no stream itself, on the rule `headwater_check::paint`'s module
+    /// comment states.
+    pub fn render(&self, mode: ColorMode) -> String {
         let mut out = String::new();
         out.push_str(&format!(
-            "import {} from {}\n",
-            self.declaration.name, self.snapshot.source
+            "{} {} from {}\n",
+            paint(Role::Heading, "import", mode),
+            self.declaration.name,
+            self.snapshot.source
         ));
         out.push_str(&format!("  fetched {}\n", self.snapshot.fetched));
         out.push_str(&format!("  digest {}\n", self.release.digest));
@@ -630,8 +637,9 @@ impl Plan {
         ));
         for edge in &self.edges {
             out.push_str(&format!(
-                "  {} {} {} at revision {}{}\n",
+                "  {} ({}) {} {} at revision {}{}\n",
                 edge.from,
+                paint(Role::Path, &edge.path, mode),
                 edge.relation,
                 edge.to,
                 edge.verified_revision,

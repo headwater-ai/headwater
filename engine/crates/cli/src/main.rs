@@ -747,6 +747,7 @@ fn no_such_second_word(verb: &str, words: &[String]) -> ExitCode {
 /// [spec 4](../../../../docs/spec/04-assurance-model.md) exists to remove, and
 /// eight of the rules on spec 2's list decide only part of what that list says.
 fn validate(root: &Path) -> ExitCode {
+    let mode = headwater_cli::paint::stdout_color();
     let repository = match headwater_resolve::repository(root) {
         Ok(repository) => repository,
         Err(errors) => {
@@ -756,9 +757,15 @@ fn validate(root: &Path) -> ExitCode {
         }
     };
 
-    println!("sources, in application order");
+    println!(
+        "{}",
+        headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "sources, in application order", mode)
+    );
     for source in &repository.resolution.sources {
-        println!("  {source}");
+        println!(
+            "  {}",
+            headwater_cli::paint::paint(headwater_cli::paint::Role::Path, source, mode)
+        );
     }
 
     // Between the sources and the rules, because a founding is a fact about the
@@ -777,12 +784,15 @@ fn validate(root: &Path) -> ExitCode {
     println!();
     print!(
         "{}",
-        headwater_resolve::rules::display_names(&repository.resolution.taxonomy)
+        headwater_resolve::rules::display_names(&repository.resolution.taxonomy, mode)
     );
 
     let findings = repository.resolution.validate();
-    println!("\nrules");
-    print!("{}", headwater_resolve::rules::render());
+    println!(
+        "\n{}",
+        headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "rules", mode)
+    );
+    print!("{}", headwater_resolve::rules::render(mode));
 
     if findings.is_empty() {
         println!("\n{} is valid", repository.consumer.package);
@@ -851,6 +861,7 @@ fn advise_recipe(root: &Path, package: Option<&str>, from: Option<&Path>, assemb
 
 /// `headwater taxonomy resolve`, and `--check` over a committed lock.
 fn resolve(root: &Path, check_only: bool) -> ExitCode {
+    let mode = headwater_cli::paint::stdout_color();
     let repository = match headwater_resolve::repository(root) {
         Ok(repository) => repository,
         Err(errors) => {
@@ -917,7 +928,14 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
         // edit.
         return match headwater_lock::diverged(&committed, &text) {
             headwater_lock::Divergence::Same => {
-                println!("{} is what the sources resolve to", headwater_lock::LOCK);
+                println!(
+                    "{} is what the sources resolve to",
+                    headwater_cli::paint::paint(
+                        headwater_cli::paint::Role::Path,
+                        headwater_lock::LOCK,
+                        mode
+                    )
+                );
                 ExitCode::SUCCESS
             }
             headwater_lock::Divergence::Form { adoption } => {
@@ -1049,9 +1067,15 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     if let Err(error) = std::fs::write(&path, &text) {
         return refuse(&format!("cannot write {}: {error}", path.display()));
     }
-    println!("wrote {}", headwater_lock::LOCK);
+    println!(
+        "wrote {}",
+        headwater_cli::paint::paint(headwater_cli::paint::Role::Path, headwater_lock::LOCK, mode)
+    );
     for source in &repository.resolution.sources {
-        println!("  from {source}");
+        println!(
+            "  from {}",
+            headwater_cli::paint::paint(headwater_cli::paint::Role::Path, source, mode)
+        );
     }
     println!("  {note}");
     ExitCode::SUCCESS
@@ -1372,6 +1396,7 @@ fn publish(
     clear_killed: bool,
     json: bool,
 ) -> ExitCode {
+    let mode = headwater_cli::paint::stdout_color();
     let Some(out) = out else {
         return fail("`taxonomy publish` writes into a directory. Name it with `--out <dir>`");
     };
@@ -1552,8 +1577,20 @@ fn publish(
         return ExitCode::SUCCESS;
     }
 
-    println!("published {} {}", record.package, record.version);
-    println!("  into {}", out.display());
+    println!(
+        "{} {} {}",
+        headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "published", mode),
+        record.package,
+        record.version
+    );
+    println!(
+        "  into {}",
+        headwater_cli::paint::paint(
+            headwater_cli::paint::Role::Path,
+            &out.display().to_string(),
+            mode
+        )
+    );
     println!("  {} files", record.members.len());
     if let Some(range) = &record.requires_engine {
         println!("  for an engine in {range}");
@@ -1577,6 +1614,7 @@ fn publish(
 /// rules that a location may reach this verb too, resolved by a crate this one
 /// never links.
 fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
+    let mode = headwater_cli::paint::stdout_color();
     let declared = headwater_resolve::package::consumer(root)
         .ok()
         .and_then(|consumer| consumer.digest);
@@ -1603,8 +1641,20 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
     };
     let record = &vendored.release;
 
-    println!("vendored {} {}", record.package, record.version);
-    println!("  from {}", fetched.display());
+    println!(
+        "{} {} {}",
+        headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "vendored", mode),
+        record.package,
+        record.version
+    );
+    println!(
+        "  from {}",
+        headwater_cli::paint::paint(
+            headwater_cli::paint::Role::Path,
+            &fetched.display().to_string(),
+            mode
+        )
+    );
     println!(
         "  {} files, all of them the pinned bytes",
         record.members.len()
@@ -1811,6 +1861,7 @@ fn migrate(
     now: Option<Date>,
     applying: bool,
 ) -> ExitCode {
+    let mode = headwater_cli::paint::stdout_color();
     let Some(_ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
         eprintln!(
             "headwater: {}",
@@ -1969,8 +2020,10 @@ fn migrate(
     };
 
     println!(
-        "\nmigration  {}, from {from} to {to}\n  payload  {}\n",
-        record.package, payload.at
+        "\n{}  {}, from {from} to {to}\n  payload  {}\n",
+        headwater_cli::paint::paint(headwater_cli::paint::Role::Heading, "migration", mode),
+        record.package,
+        headwater_cli::paint::paint(headwater_cli::paint::Role::Path, &payload.at, mode)
     );
 
     // Which steps of this payload did not happen for this repository.
@@ -2039,7 +2092,14 @@ fn migrate(
                 for site in &sites {
                     match site {
                         headwater_compat::migrate::Site::Front { path, key } => {
-                            println!("    {path}  `{key}`");
+                            println!(
+                                "    {}  `{key}`",
+                                headwater_cli::paint::paint(
+                                    headwater_cli::paint::Role::Path,
+                                    path,
+                                    mode
+                                )
+                            );
                             moves.push(headwater_scaffold::migrate::Move {
                                 path: path.clone(),
                                 key: key.clone(),
@@ -2344,6 +2404,7 @@ fn migrate(
 }
 
 fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> ExitCode {
+    let mode = headwater_cli::paint::stdout_color();
     // The clock, read once and before anything is walked, on the same terms
     // `check` reads it: two windowed expectations evaluated a second apart
     // would be a difference this verb attributed to the taxonomy.
@@ -2611,6 +2672,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
         &lock_version,
         &record.version,
         &moved,
+        mode,
     ) {
         return code;
     }
@@ -2693,6 +2755,7 @@ fn payload(
     from: &str,
     to: &str,
     moved: &Movement,
+    mode: headwater_cli::paint::ColorMode,
 ) -> Result<(), ExitCode> {
     let Sides { taking, candidate } = sides;
     let payloads = match headwater_resolve::migration::at(fetched, manifest) {
@@ -2735,7 +2798,7 @@ fn payload(
                 println!(
                     "\n{} states a version range this engine cannot read, so nothing selected it: \
                      {why}",
-                    carried.at
+                    headwater_cli::paint::paint(headwater_cli::paint::Role::Path, &carried.at, mode)
                 );
             }
             Ok(false) => {}
@@ -3520,6 +3583,13 @@ fn scaffold(
     now: Option<Date>,
     surface: EntryPoint,
 ) -> Result<Written, String> {
+    // The one place this shell decides color, because it is the one place that
+    // knows which entry point is asking: a terminal senses its own stream, and
+    // the protocol surface of the MCP server is never a terminal.
+    let mode = match surface {
+        EntryPoint::Terminal => headwater_cli::paint::stdout_color(),
+        EntryPoint::Protocol => headwater_cli::paint::ColorMode::Plain,
+    };
     // `load` writes its own account to standard error, which is where a
     // terminal reads it and where the process serving a protocol call keeps it.
     let loaded = load(root).map_err(|_| "the corpus did not load".to_string())?;
@@ -3571,7 +3641,7 @@ fn scaffold(
         headwater_scaffold::reading::Reading::of(&plan, &loaded.bound.digest, now, surface);
     let recorded = headwater_scaffold::reading::append(root, &reading);
     Ok(Written {
-        artifact: scaffold_report(&plan, &composed, claimed.as_deref(), recorded.is_ok()),
+        artifact: scaffold_report(&plan, &composed, claimed.as_deref(), recorded.is_ok(), mode),
         // The document landed and its reading did not, which is the one outcome
         // a store of this shape cannot report later: a run with no reading and a
         // corpus that never ran the verb are the same file. So the run says so
@@ -3602,7 +3672,9 @@ fn scaffold_report(
     composed: &[headwater_scaffold::write::Composed],
     claimed: Option<&str>,
     recorded: bool,
+    mode: headwater_cli::paint::ColorMode,
 ) -> String {
+    use headwater_cli::paint::{paint, Role};
     use std::fmt::Write;
     let mut out = String::new();
 
@@ -3611,7 +3683,7 @@ fn scaffold_report(
             true => "wrote",
             false => "edited",
         };
-        let _ = writeln!(out, "{verb} {}", file.path);
+        let _ = writeln!(out, "{verb} {}", paint(Role::Path, &file.path, mode));
     }
     // The claim, named where the reader is already reading what this run
     // wrote. It is not a document, so it is not in `composed`.
@@ -3619,7 +3691,7 @@ fn scaffold_report(
         let _ = writeln!(out, "claimed {claim}");
     }
 
-    let _ = writeln!(out, "\nwhat the taxonomy decided");
+    let _ = writeln!(out, "\n{}", paint(Role::Heading, "what the taxonomy decided", mode));
     let _ = writeln!(out, "  kind {} on the shelf `{}`", plan.kind, plan.shelf);
     if let Some(minting) = &plan.minting {
         let _ = writeln!(
@@ -3657,7 +3729,7 @@ fn scaffold_report(
     }
 
     if !plan.edges.is_empty() {
-        let _ = writeln!(out, "\nthe edges it proposed");
+        let _ = writeln!(out, "\n{}", paint(Role::Heading, "the edges it proposed", mode));
         for edge in &plan.edges {
             let _ = writeln!(
                 out,
@@ -3669,7 +3741,8 @@ fn scaffold_report(
                     let _ = writeln!(
                         out,
                         "    the far half `{}` went into {}, because reciprocity is required",
-                        half.relation, half.path
+                        half.relation,
+                        paint(Role::Path, &half.path, mode)
                     );
                 }
                 None => {
@@ -3685,7 +3758,11 @@ fn scaffold_report(
     }
 
     if !plan.expected.is_empty() {
-        let _ = writeln!(out, "\nwhat this document may also declare, and nobody did");
+        let _ = writeln!(
+            out,
+            "\n{}",
+            paint(Role::Heading, "what this document may also declare, and nobody did", mode)
+        );
         for expected in &plan.expected {
             let _ = writeln!(
                 out,
@@ -3698,7 +3775,11 @@ fn scaffold_report(
     }
 
     if let Some(language) = &plan.language {
-        let _ = writeln!(out, "\nwhat this document's prose answers to");
+        let _ = writeln!(
+            out,
+            "\n{}",
+            paint(Role::Heading, "what this document's prose answers to", mode)
+        );
         let _ = writeln!(
             out,
             "  the `{}` language regime — {}",
@@ -3741,7 +3822,11 @@ fn scaffold_report(
     }
 
     let assisted = plan.assisted();
-    let _ = writeln!(out, "\nassisted fraction of this run");
+    let _ = writeln!(
+        out,
+        "\n{}",
+        paint(Role::Heading, "assisted fraction of this run", mode)
+    );
     let _ = writeln!(
         out,
         "  {} of {} — front matter {}/{}, sections {}/{}, identifier {}/{}, edge halves {}/{}",
@@ -4311,7 +4396,10 @@ fn probe_grade(root: &Path, path: &Path) -> ExitCode {
     };
     let record = headwater_probe::Record::read(&source, &tree);
     let results = headwater_probe::Results::over(&record, selected);
-    print!("{}", results.render());
+    print!(
+        "{}",
+        results.render(headwater_cli::paint::stdout_color())
+    );
     ExitCode::SUCCESS
 }
 
@@ -4345,7 +4433,10 @@ fn probe_record(root: &Path, path: &Path) -> ExitCode {
         lock: &loaded.bound.digest,
     };
     let record = headwater_probe::Record::read(&source, &tree);
-    print!("{}", record.render());
+    print!(
+        "{}",
+        record.render(headwater_cli::paint::stdout_color())
+    );
     ExitCode::SUCCESS
 }
 
@@ -4541,7 +4632,7 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
         }
     };
 
-    print!("{}", plan.render());
+    print!("{}", plan.render(headwater_cli::paint::stdout_color()));
     let pending = plan.to_write();
     if !writing {
         println!(
@@ -4959,7 +5050,7 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>, json: bool) -
     // constant both read.
     match json {
         true => print!("{}", verdict.render_json()),
-        false => print!("{}", verdict.render()),
+        false => print!("{}", verdict.render(headwater_cli::paint::stdout_color())),
     }
     match verdict.carries() {
         true => ExitCode::SUCCESS,
