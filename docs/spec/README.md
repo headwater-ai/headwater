@@ -2,7 +2,7 @@
 
 # The specification series
 
-16 documents on this shelf, in the reading order this corpus derives.
+17 documents on this shelf, in the reading order this corpus derives.
 
 - [Vision and scope](00-vision-and-scope.md) — What Headwater is for, the three qualities it aims at, the eleven design principles, and what it refuses to build.
 - [Conceptual model](01-conceptual-model.md) — The vocabulary that the rest of the specification uses, from corpus and shelf to warrant, projection, and the TBox and ABox split.
@@ -19,4 +19,5 @@
 - [The check layer](12-check-layer.md) — What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
 - [The recorder contract](15-the-recorder-contract.md) — Everything an external recorder writes into a transcript, the closed key sets that refuse a file, the one member of the run identity this engine compares, and the period a result stays citable. (asserted, and no human has accepted it)
 - [Harness support](16-harness-support.md) — The ten capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.
+- [Orchestration architecture](17-orchestration-architecture.md) — The five stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges. (asserted, and no human has accepted it)
 - [Glossary](glossary.md) — One line for every named concept in the specification, with a link to the section that defines it.

@@ -1,12 +1,26 @@
 anchors
   code_path `.claude/agents/headwater-maintainer.md` via source-tree
     cited by HW-SPEC-ai-integration
+  code_path `.claude/agents/hw-adjudicate.md` via source-tree
+    cited by HW-SPEC-orchestration-architecture
   code_path `.claude/agents/hw-build.md` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
+  code_path `.claude/agents/hw-build.md` via source-tree
+    cited by HW-SPEC-orchestration-architecture
+  code_path `.claude/agents/hw-integrate.md` via source-tree
+    cited by HW-SPEC-orchestration-architecture
+  code_path `.claude/agents/hw-queue.md` via source-tree
+    cited by HW-SPEC-orchestration-architecture
+  code_path `.claude/agents/hw-verify.md` via source-tree
+    cited by HW-SPEC-orchestration-architecture
   code_path `.claude/commands/next-run.md` via source-tree
     cited by HW-OBL-0177
   code_path `.claude/commands/next-run.md` via source-tree
     cited by HW-PD-0001
+  code_path `.claude/commands/next-run.md` via source-tree
+    cited by HW-SPEC-orchestration-architecture
+  code_path `.claude/commands/next.md` via source-tree
+    cited by HW-SPEC-orchestration-architecture
   code_path `.claude/hooks/**` via source-tree
     cited by HW-SPEC-ai-integration
   code_path `.claude/hooks/fixtures-live.sh` via source-tree
@@ -47,6 +61,10 @@ anchors
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `.claude/skills/hw-run-policy/SKILL.md` via source-tree
     cited by HW-PD-0007
+  code_path `.claude/skills/hw-run-policy/SKILL.md` via source-tree
+    cited by HW-SPEC-orchestration-architecture
+  code_path `.claude/skills/hw-verification-bar/SKILL.md` via source-tree
+    cited by HW-SPEC-orchestration-architecture
   code_path `.claude/tutorial/fixtures.sh` via source-tree
     cited by HW-DR-0061
   code_path `.gitattributes` via source-tree

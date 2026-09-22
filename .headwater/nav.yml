@@ -413,6 +413,7 @@ nav:
       - "The check layer": "spec/12-check-layer.md"
       - "The recorder contract": "spec/15-the-recorder-contract.md"
       - "Harness support": "spec/16-harness-support.md"
+      - "Orchestration architecture": "spec/17-orchestration-architecture.md"
       - "Glossary": "spec/glossary.md"
   - "Tutorials":
       - "Tutorials": "tutorials/README.md"

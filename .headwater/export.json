@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 536,
-      "carried": 536,
+      "in the graph": 543,
+      "carried": 543,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 736,
-      "carried": 736,
+      "in the graph": 754,
+      "carried": 754,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2889,6 +2889,11 @@
             "drafted_by": "claude-fable-5-1",
             "activity": "measure+draft",
             "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "cited_by": [
+              "HW-SPEC-orchestration-architecture"
+            ]
           }
         }
       },
@@ -10477,6 +10482,55 @@
         }
       },
       {
+        "path": "docs/spec/17-orchestration-architecture.md",
+        "kind": "design_spec",
+        "id": "HW-SPEC-orchestration-architecture",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-SPEC-orchestration-architecture",
+          "status": "current",
+          "status_since": "2026-09-22",
+          "summary": "The five stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges.",
+          "last_verified": "2026-09-22",
+          "doc_type": "design_spec",
+          "sequence": "17",
+          "title": "Orchestration architecture",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed",
+            "reconstructed_from": "HW-EVAL-the-build-order-as-a-multi-agent-system, HW-PD-0001 through HW-PD-0007, and the five agent definitions, two commands and two skills this document governs, read at bddbac2b"
+          },
+          "relations": {
+            "cites_evidence": [
+              "HW-EVAL-the-build-order-as-a-multi-agent-system"
+            ],
+            "traces_to": [
+              "HW-PD-0001",
+              "HW-PD-0002",
+              "HW-PD-0003",
+              "HW-PD-0004",
+              "HW-PD-0005",
+              "HW-PD-0006",
+              "HW-PD-0007"
+            ],
+            "governs": [
+              ".claude/commands/next-run.md",
+              ".claude/commands/next.md",
+              ".claude/agents/hw-queue.md",
+              ".claude/agents/hw-adjudicate.md",
+              ".claude/agents/hw-build.md",
+              ".claude/agents/hw-verify.md",
+              ".claude/agents/hw-integrate.md",
+              ".claude/skills/hw-run-policy/SKILL.md",
+              ".claude/skills/hw-verification-bar/SKILL.md"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/spec/glossary.md",
         "kind": "design_spec",
         "id": "HW-SPEC-glossary",
@@ -10575,12 +10629,37 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": ".claude/agents/hw-adjudicate.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": ".claude/agents/hw-build.md",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
+        "id": ".claude/agents/hw-integrate.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".claude/agents/hw-queue.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".claude/agents/hw-verify.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": ".claude/commands/next-run.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".claude/commands/next.md",
         "resolver": "source-tree"
       },
       {
@@ -10646,6 +10725,11 @@
       {
         "anchor_kind": "code_path",
         "id": ".claude/skills/hw-run-policy/SKILL.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": ".claude/skills/hw-verification-bar/SKILL.md",
         "resolver": "source-tree"
       },
       {
@@ -14020,6 +14104,17 @@
           "bound": "document",
           "id": "HW-SPEC-check-layer",
           "path": "docs/spec/12-check-layer.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/the-build-order-as-a-multi-agent-system.md",
+        "relation": "cites_evidence",
+        "written_as": "cited_by",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-orchestration-architecture",
+          "path": "docs/spec/17-orchestration-architecture.md",
           "kind": "design_spec"
         }
       },
@@ -19303,6 +19398,193 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "AGENTS.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "cites_evidence",
+        "written_as": "cites_evidence",
+        "target": {
+          "bound": "document",
+          "id": "HW-EVAL-the-build-order-as-a-multi-agent-system",
+          "path": "docs/evaluations/the-build-order-as-a-multi-agent-system.md",
+          "kind": "evaluation"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0001",
+          "path": "docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0002",
+          "path": "docs/process/decisions/0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0003",
+          "path": "docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0004",
+          "path": "docs/process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0005",
+          "path": "docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0006",
+          "path": "docs/process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0007",
+          "path": "docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/commands/next-run.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/commands/next.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/agents/hw-queue.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/agents/hw-adjudicate.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/agents/hw-build.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/agents/hw-verify.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/agents/hw-integrate.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/skills/hw-run-policy/SKILL.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/17-orchestration-architecture.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/skills/hw-verification-bar/SKILL.md",
           "resolver": "source-tree"
         }
       },
