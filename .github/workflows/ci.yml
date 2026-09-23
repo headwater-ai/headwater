@@ -165,7 +165,7 @@ jobs:
           case $SLOTS in ''|*[!0-9]*) fallback "CI_SELF_HOSTED_SLOTS is '$SLOTS', not a count" ;; esac
           runs=
           for status in queued in_progress waiting pending requested; do
-            page=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=$status&per_page=100" --jq '.workflow_runs[].id') \
+            page=$(gh api "repos/$GITHUB_REPOSITORY/actions/runz?status=$status&per_page=100" --jq '.workflow_runs[].id') \
               || fallback "listing $status runs failed"
             runs="$runs $page"
           done
