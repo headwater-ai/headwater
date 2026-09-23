@@ -143,14 +143,14 @@ fi
 
 # --- 4. front matter is exactly what a harness reads, and two agents cannot write
 
-printf '\n# each build-order agent declares exactly name, description, tools and model\n'
+printf '\n# each build-order agent declares exactly name, description, tools, model and effort\n'
 for file in "$agents"/hw-*.md; do
     name=$(basename "$file" .md)
     keys=$(sed -n '2,/^---$/p' "$file" | sed '/^---$/d' | sed 's/:.*//' | tr '\n' ' ' | sed 's/ $//')
-    if [ "$keys" = "name description tools model" ]; then
-        pass "$name declares name, description, tools and model, in that order"
+    if [ "$keys" = "name description tools model effort" ]; then
+        pass "$name declares name, description, tools, model and effort, in that order"
     else
-        fail "$name declares exactly name, description, tools and model" "it declares: $keys"
+        fail "$name declares exactly name, description, tools, model and effort" "it declares: $keys"
     fi
     declared=$(sed -n 's/^name: *//p' "$file" | head -1)
     [ "$declared" = "$name" ] || fail "$name is addressed by its file name" "front matter says \`$declared\`"
