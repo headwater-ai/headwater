@@ -26,7 +26,20 @@
 # this file and the asset name out of `README.md` and requires them to be the
 # same string, and it reads the tag pattern below against the tag the first
 # screen pins. And `workflow_dispatch` below takes a tag by hand, so a tag that
-# is already cut can be given an asset without cutting another one.
+# is already cut can be given an asset without cutting another one. With
+# `publish: false` the same hand run builds every archive, runs the two smoke
+# jobs and stops before the release, which is how a change to this file is run
+# on its own branch before it merges:
+#
+#   gh workflow run release.yml --ref <branch> -f tag=v0.1.2 -f publish=false
+#
+# # WHAT A STRANGER CAN RUN, AND WHAT SHOWS IT
+#
+# Three archives: glibc Linux, static musl Linux and Apple silicon macOS. The
+# two smoke jobs run the musl and macOS archives on hosts that did not build
+# them and have no Rust, from the uploaded artifact rather than the build tree,
+# and the job that creates the release needs both. An archive that does not run
+# where a stranger runs it stops the release rather than shipping.
 #
 # # THE RUNNER IS PINNED HERE AND NOT READ FROM A VARIABLE
 #
@@ -47,27 +60,29 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: The tag to build and attach the asset to
+        description: The tag to build and attach the archives to
         required: true
+      publish:
+        # `false` runs every build and both smoke jobs and creates no release,
+        # which is how this file is run on a branch before it merges.
+        description: Create the release once every archive has run
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
 jobs:
-  asset:
-    name: A binary attached to the tag
+  tag:
+    name: The tag this run is about
     runs-on: ubuntu-24.04
-    # The workflow-level default above is `contents: read`, which builds
-    # everything and then fails at the upload with a read-only token. The
-    # override is per job rather than per workflow so that a job added here
-    # later has to ask for it.
-    permissions:
-      contents: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - name: The tag this run is about
         # One value for both entry points: the ref for a tag push, the input for
-        # a hand run. Every step below reads this and never `github.ref_name`,
-        # so the two paths cannot diverge.
+        # a hand run. Every job below reads this output and never
+        # `github.ref_name`, so the two paths cannot diverge.
         id: tag
         run: |
           tag="${{ inputs.tag || github.ref_name }}"
@@ -76,24 +91,68 @@ jobs:
               *) echo "::error::\`$tag\` is not a tag of the form this workflow releases" && exit 1 ;;
           esac
           echo "tag=$tag" >>"$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: tag
+    # Three archives, one per row. Each name is spelled out in full on its row
+    # rather than assembled from `matrix.target`, for the reason the archive
+    # step states: `tools/repo/readme-fixtures.sh` reads these names against
+    # the ones `README.md` offers, and a name built by concatenation is a name
+    # no judge can read.
+    #
+    # The gnu row is the archive every release so far has carried, and the
+    # `headwater-check` action downloads it by that name, so it stays. It
+    # needs glibc 2.39 or later because `ubuntu-24.04` built it. The musl row
+    # is linked statically and needs no C library on the host at all, and the
+    # darwin row is built on Apple silicon. #975 and HW-DR-0077 are why the
+    # last two exist.
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+            archive: headwater-${TAG}-x86_64-unknown-linux-gnu.tar.gz
+            checksum: headwater-${TAG}-x86_64-unknown-linux-gnu.tar.gz.sha256
+          - target: x86_64-unknown-linux-musl
+            runner: ubuntu-24.04
+            archive: headwater-${TAG}-x86_64-unknown-linux-musl.tar.gz
+            checksum: headwater-${TAG}-x86_64-unknown-linux-musl.tar.gz.sha256
+          - target: aarch64-apple-darwin
+            runner: macos-14
+            archive: headwater-${TAG}-aarch64-apple-darwin.tar.gz
+            checksum: headwater-${TAG}-aarch64-apple-darwin.tar.gz.sha256
+    runs-on: ${{ matrix.runner }}
+    steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ steps.tag.outputs.tag }}
+          ref: ${{ needs.tag.outputs.tag }}
       - name: The toolchain this build needs
         run: |
           rustup update --no-self-update stable
           rustup default stable
+          rustup target add ${{ matrix.target }}
+      - name: The C toolchain a static musl link needs
+        # `tract-linalg` compiles C and assembly kernels through `cc`, and on
+        # the musl target `cc` looks for `musl-gcc`. The hosted image does not
+        # carry it.
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
       - name: Build the engine
         # `--locked` for the reason `tools/engine/build-declaration-fixtures.sh` states
         # and holds: a copy of the release build that a stranger is handed must
         # resolve the committed lock rather than whatever resolves today.
-        run: cargo build --release -p headwater-cli --locked
+        run: cargo build --release -p headwater-cli --locked --target ${{ matrix.target }}
         working-directory: engine
       - name: The binary prints the version the tag names
         # A checkout of the wrong ref, or a tag cut before the version bump it
         # was meant to carry, produces a binary that is not what its name says.
-        # This is the only step that can catch that, because nothing downstream
-        # reads the binary again.
+        # Each row runs its own binary here, on the host that built it; the
+        # smoke jobs below run the two new archives again, on hosts that did
+        # not build them.
         #
         # Two lines here are the guard on the guard, and this step passed for
         # every tag without them. GitHub's default shell for a `run:` block on
@@ -104,10 +163,10 @@ jobs:
         # every tag there is. So the option is set and the emptiness is refused
         # by name: a check that cannot run is not a check that passes.
         env:
-          TAG: ${{ steps.tag.outputs.tag }}
+          TAG: ${{ needs.tag.outputs.tag }}
         run: |
           set -eo pipefail
-          printed=$(./engine/target/release/headwater --version | awk '{print $NF}')
+          printed=$(./engine/target/${{ matrix.target }}/release/headwater --version | awk '{print $NF}')
           if [ -z "$printed" ]; then
               echo "::error::the binary printed no version, so this step would pass for any tag" && exit 1
           fi
@@ -116,24 +175,134 @@ jobs:
               *) echo "::error::the tag names ${TAG#v} and the binary prints $printed" && exit 1 ;;
           esac
       - name: The archive and the checksum beside it
-        # Both names are spelled out in full rather than the second being built
-        # from the first. `tools/repo/readme-fixtures.sh` compares the names in this
-        # file with the names on the first screen, and a name assembled by shell
-        # concatenation is a name no judge can read — which is the whole defect
-        # this workflow is guarded against.
+        # Both names are spelled out in full on the matrix row rather than the
+        # second being built from the first. `tools/repo/readme-fixtures.sh`
+        # compares the names in this file with the names on the first screen,
+        # and a name assembled by shell concatenation is a name no judge can
+        # read — which is the whole defect this workflow is guarded against.
+        #
+        # `shasum -a 256` rather than `sha256sum`, because macOS carries only
+        # the first. It writes the same line, and `sha256sum -c` reads it.
+        # `COPYFILE_DISABLE` keeps macOS `tar` from adding `._` resource files.
         env:
-          TAG: ${{ steps.tag.outputs.tag }}
+          TAG: ${{ needs.tag.outputs.tag }}
+          COPYFILE_DISABLE: 1
         run: |
-          asset="headwater-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
-          checksum="headwater-${TAG}-x86_64-unknown-linux-gnu.tar.gz.sha256"
+          asset="${{ matrix.archive }}"
+          checksum="${{ matrix.checksum }}"
           stage=$(mktemp -d)
-          cp engine/target/release/headwater "$stage/headwater"
+          cp engine/target/${{ matrix.target }}/release/headwater "$stage/headwater"
           cp LICENSE "$stage/LICENSE"
           tar -czf "$asset" -C "$stage" headwater LICENSE
-          sha256sum "$asset" >"$checksum"
+          shasum -a 256 "$asset" >"$checksum"
           cat "$checksum"
-          echo "asset=$asset" >>"$GITHUB_ENV"
-          echo "checksum=$checksum" >>"$GITHUB_ENV"
+          mkdir dist
+          mv "$asset" "$checksum" dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: dist/
+          if-no-files-found: error
+
+  smoke-linux:
+    name: The static Linux archive runs on an older distribution with no toolchain
+    needs: [tag, build]
+    # The decisive test of the musl archive. `debian:bullseye` carries glibc
+    # 2.31, older than the 2.39 the gnu archive needs, and no Rust at all. The
+    # job reads the archive the build uploaded and never the build tree, so it
+    # runs what a stranger downloads. Publishing waits on this job.
+    runs-on: ubuntu-24.04
+    container: debian:bullseye
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: x86_64-unknown-linux-musl
+      - name: Unpack, verify and run the archive
+        env:
+          TAG: ${{ needs.tag.outputs.tag }}
+        run: |
+          set -eo pipefail
+          asset="headwater-${TAG}-x86_64-unknown-linux-musl.tar.gz"
+          checksum="headwater-${TAG}-x86_64-unknown-linux-musl.tar.gz.sha256"
+          if command -v cargo || command -v rustc; then
+              echo "::error::this container has a Rust toolchain, so it cannot show that the archive needs none" && exit 1
+          fi
+          sha256sum -c "$checksum"
+          tar -xzf "$asset"
+          # `ldd` exits 1 for a static executable and 0 for a static-pie one on
+          # some glibc versions, so its status says nothing here and its words
+          # decide. A line with `=>` is a shared library the binary loads.
+          ldd ./headwater >ldd.txt 2>&1 || true
+          cat ldd.txt
+          if grep -q '=>' ldd.txt || ! grep -Eq 'not a dynamic executable|statically linked' ldd.txt; then
+              echo "::error::the archive holds a dynamically linked binary, so it runs only where its C library is" && exit 1
+          fi
+          printed=$(./headwater --version | awk '{print $NF}')
+          if [ -z "$printed" ]; then
+              echo "::error::the binary printed no version on $(head -1 /etc/os-release)" && exit 1
+          fi
+          case "${TAG#v}" in
+              "$printed"*) echo "$TAG carries $printed, statically linked, on $(grep PRETTY_NAME /etc/os-release)" ;;
+              *) echo "::error::the tag names ${TAG#v} and the binary prints $printed" && exit 1 ;;
+          esac
+
+  smoke-macos:
+    name: The macOS archive runs on a host that did not build it
+    needs: [tag, build]
+    # A second `macos-14` host that installs nothing. The hosted image does
+    # carry a Rust toolchain, so the binary runs with an environment that
+    # holds only `/usr/bin` and `/bin`, and every library it loads must be
+    # one the operating system ships. Publishing waits on this job.
+    runs-on: macos-14
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: aarch64-apple-darwin
+      - name: Unpack, verify and run the archive
+        env:
+          TAG: ${{ needs.tag.outputs.tag }}
+        run: |
+          set -eo pipefail
+          asset="headwater-${TAG}-aarch64-apple-darwin.tar.gz"
+          checksum="headwater-${TAG}-aarch64-apple-darwin.tar.gz.sha256"
+          shasum -a 256 -c "$checksum"
+          tar -xzf "$asset"
+          otool -L ./headwater
+          foreign=$(otool -L ./headwater | tail -n +2 | awk '{print $1}' | grep -Ev '^(/usr/lib/|/System/)' || true)
+          if [ -n "$foreign" ]; then
+              echo "::error::the binary loads libraries macOS does not ship: $foreign" && exit 1
+          fi
+          printed=$(env -i PATH=/usr/bin:/bin ./headwater --version | awk '{print $NF}')
+          if [ -z "$printed" ]; then
+              echo "::error::the binary printed no version" && exit 1
+          fi
+          case "${TAG#v}" in
+              "$printed"*) echo "$TAG carries $printed on $(sw_vers -productVersion) $(uname -m)" ;;
+              *) echo "::error::the tag names ${TAG#v} and the binary prints $printed" && exit 1 ;;
+          esac
+
+  publish:
+    name: Attach the archives to the release
+    # Every archive a release carries has run on a host that did not build it
+    # before this job starts. `publish: false` on a hand run stops here, so the
+    # build and both smoke jobs can be run on a branch against a tag that is
+    # already cut, which is the only run this file ever gets before a tag.
+    needs: [tag, build, smoke-linux, smoke-macos]
+    if: github.event_name == 'push' || inputs.publish
+    runs-on: ubuntu-24.04
+    # The workflow-level default above is `contents: read`, which builds
+    # everything and then fails at the upload with a read-only token. The
+    # override is per job rather than per workflow so that a job added here
+    # later has to ask for it.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
       - name: The digest the package in this tree publishes
         # `--generate-notes` writes a list of merged pull requests and a compare
         # link, and nothing else. So an engine release has never stated the
@@ -156,7 +325,7 @@ jobs:
               echo "::error::.headwater/packages/headwater-standard/release.yml states no release.digest, so this release would carry none" && exit 1
           fi
           printf 'release.digest: %s\n\nThis tag carries `headwater/standard` with that `release.digest`. Pass the value to `headwater taxonomy vendor <dir> --expect %s`. It is what `headwater taxonomy publish` printed for the package in this tree, and it is not a checksum of any one file.\n' "$digest" "$digest" >release-notes.md
-      - name: Attach both to the release
+      - name: Attach every archive and its checksum to the release
         # A pushed tag has no release object until somebody makes one, and
         # `gh release upload` refuses a tag that has none. `v0.1.1` is why
         # the two calls this comment used to describe are gone: GitHub now
@@ -179,16 +348,27 @@ jobs:
         # `gh` puts the file's text first and appends the generated list to it.
         # The file is the step above, and it is the only place an engine
         # release states the `release.digest` a consumer pins.
+        #
+        # The six names are spelled out again here, with variable names no
+        # other step assigns, because `tools/repo/readme-fixtures.sh` resolves
+        # each operand of this call through the assignments in this file and
+        # compares what it finds with what `README.md` offers.
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.tag.outputs.tag }}
+          TAG: ${{ needs.tag.outputs.tag }}
         run: |
+          gnu="headwater-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
+          gnu_sum="headwater-${TAG}-x86_64-unknown-linux-gnu.tar.gz.sha256"
+          musl="headwater-${TAG}-x86_64-unknown-linux-musl.tar.gz"
+          musl_sum="headwater-${TAG}-x86_64-unknown-linux-musl.tar.gz.sha256"
+          darwin="headwater-${TAG}-aarch64-apple-darwin.tar.gz"
+          darwin_sum="headwater-${TAG}-aarch64-apple-darwin.tar.gz.sha256"
           if gh release view "$TAG" >/dev/null 2>&1; then
               echo "::error::$TAG already has a release, and GitHub will not let this step add assets to it. Delete the release (not the tag) and run this workflow again." && exit 1
           fi
-          gh release create "$TAG" "$asset" "$checksum" --title "$TAG" --generate-notes --notes-file release-notes.md
+          gh release create "$TAG" "$gnu" "$gnu_sum" "$musl" "$musl_sum" "$darwin" "$darwin_sum" --title "$TAG" --generate-notes --notes-file release-notes.md
       - name: What the release now carries
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.tag.outputs.tag }}
+          TAG: ${{ needs.tag.outputs.tag }}
         run: gh release view "$TAG" --json assets --jq '.assets[].name'
