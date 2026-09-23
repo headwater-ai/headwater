@@ -26,9 +26,13 @@
 //! - a front-matter value that is one path and nothing else, which is how a
 //!   `governs` edge names its target.
 //!
-//! A token counts when it opens with a declared local root, or with `./` and
-//! then one. Raw HTML is left alone, because an HTML comment is a note to the
-//! next editor and not a page an adopter reads.
+//! A token counts when it opens with a declared local root, with `./` and then
+//! one, or with a shell variable such as `$ROOT/` or `${ROOT}/` and then one,
+//! because a command that names the root of the checkout by a variable still
+//! runs the file under it. Code inside a block quote counts too: a quotation
+//! on a page for an adopter is still something the page shows them to run.
+//! Raw HTML is left alone, because an HTML comment is a note to the next editor
+//! and not a page an adopter reads.
 //!
 //! # A passage that says so
 //!
@@ -82,6 +86,7 @@ impl LocalPath {
 
     /// The local root a token opens with, if it opens with one.
     fn root_of(&self, token: &str) -> Option<&str> {
+        let token = strip_variable(token);
         let token = token.strip_prefix("./").unwrap_or(token);
         self.local_roots
             .iter()
@@ -92,7 +97,10 @@ impl LocalPath {
 
 impl DocumentCheck for LocalPath {
     const RULE: &'static str = self::RULE;
-    const VERSION: u32 = 1;
+    /// Edition two, on 2026-09-23: a shell variable before a local root and a
+    /// code span inside a block quote both count. The lock does not move
+    /// with either, so a warm cache would serve edition one's pass.
+    const VERSION: u32 = 2;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, _kind: &str) -> bool {
@@ -152,7 +160,7 @@ impl DocumentCheck for LocalPath {
             .map(|body| body.blocks.as_slice())
             .unwrap_or(&[])
         {
-            if block.quote_depth > 0 || block.kind == BlockKind::Html {
+            if block.kind == BlockKind::Html {
                 continue;
             }
             let place = match block.kind {
@@ -183,6 +191,30 @@ impl DocumentCheck for LocalPath {
         findings.sort_by_key(|finding| (finding.line, finding.column));
         Outcome::failed(findings)
     }
+}
+
+/// A token with a leading `$NAME/` or `${NAME}/` removed, and the token
+/// itself when it opens with neither.
+fn strip_variable(token: &str) -> &str {
+    let Some(rest) = token.strip_prefix('$') else {
+        return token;
+    };
+    let rest = match rest.strip_prefix('{') {
+        Some(braced) => match braced.split_once('}') {
+            Some((name, tail)) if !name.is_empty() => tail,
+            _ => return token,
+        },
+        None => {
+            let end = rest
+                .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+                .unwrap_or(rest.len());
+            match end {
+                0 => return token,
+                _ => &rest[end..],
+            }
+        }
+    };
+    rest.strip_prefix('/').unwrap_or(token)
 }
 
 /// Every scalar a front-matter value holds, through nested lists and mappings,
@@ -232,7 +264,16 @@ fn segment_matches(glob: &str, text: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::glob_matches;
+    use super::{glob_matches, strip_variable};
+
+    #[test]
+    fn a_shell_variable_before_a_path_is_removed() {
+        assert_eq!(strip_variable("$ROOT/tools/x.sh"), "tools/x.sh");
+        assert_eq!(strip_variable("${ROOT}/tools/x.sh"), "tools/x.sh");
+        assert_eq!(strip_variable("$ROOT"), "$ROOT");
+        assert_eq!(strip_variable("$/tools"), "$/tools");
+        assert_eq!(strip_variable("tools/x.sh"), "tools/x.sh");
+    }
 
     #[test]
     fn a_glob_matches_inside_a_segment_and_across_segments() {
