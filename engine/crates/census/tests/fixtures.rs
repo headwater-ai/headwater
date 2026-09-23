@@ -1150,6 +1150,76 @@ fn a_merge_attribute_in_a_nested_gitattributes_is_read_and_overrides_the_root() 
     );
 }
 
+/// Every way a `.gitattributes` line can reach a path is read as git reads it.
+///
+/// Four layouts that a reader of literal paths and two named drivers reported
+/// clean, while `git check-attr merge` gave another answer:
+///
+/// - a nested `-merge` unsets the root's driver, so the fold merges as an
+///   ordinary file;
+/// - the `binary` macro unsets it too, because it expands to `-merge`;
+/// - a pattern with no slash matches that name at any depth below its file,
+///   so `README.md` in `c/` reaches `c/d/README.md`;
+/// - a driver this reader does not know is named, not skipped.
+#[test]
+fn an_unset_a_macro_a_pattern_with_no_slash_and_an_unknown_driver_are_read_as_git_reads_them() {
+    use headwater_census::derived::{Shape, Treatment};
+
+    let fold = "<!-- headwater:generated shelf_index. -->\n\n# 48 decisions\n";
+    let root = TempTree::new("git-reads");
+    root.write(
+        ".gitattributes",
+        "b/README.md merge=headwater-regenerate\n\
+         m/README.md merge=headwater-regenerate\n\
+         c/d/README.md merge=headwater-regenerate\n\
+         k/README.md merge=headwater-regenerate\n",
+    );
+    root.write("b/.gitattributes", "README.md -merge\n");
+    root.write("b/README.md", fold);
+    root.write("m/.gitattributes", "README.md binary\n");
+    root.write("m/README.md", fold);
+    root.write("c/.gitattributes", "README.md merge=union\n");
+    root.write("c/d/README.md", fold);
+    root.write("k/.gitattributes", "README.md merge=ours\n");
+    root.write("k/README.md", fold);
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    let treatment_of = |path: &str| {
+        let member = population
+            .members
+            .iter()
+            .find(|member| member.path == path)
+            .unwrap_or_else(|| panic!("{path} is not in the report:\n{report}"));
+        assert_eq!(member.shape, Shape::Fold, "{path} is not a fold:\n{report}");
+        member.treatment
+    };
+    assert_eq!(
+        treatment_of("b/README.md"),
+        Treatment::Unset,
+        "a nested `-merge` did not unset the root's driver:\n{report}"
+    );
+    assert_eq!(
+        treatment_of("m/README.md"),
+        Treatment::Unset,
+        "the `binary` macro did not unset the root's driver:\n{report}"
+    );
+    assert_eq!(
+        treatment_of("c/d/README.md"),
+        Treatment::Union,
+        "a pattern with no slash did not reach a path below its directory:\n{report}"
+    );
+    assert_eq!(
+        population.unreadable,
+        vec!["k/README.md merge=ours".to_string()],
+        "a merge driver this reader does not know was passed over:\n{report}"
+    );
+    assert!(
+        !population.agrees(),
+        "the report claims the tree agrees:\n{report}"
+    );
+}
+
 /// A path that two shape rules both match takes the shape of the first rule.
 ///
 /// The contract reads the rules in a fixed order, and a producer output is a
