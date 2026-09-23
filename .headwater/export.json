@@ -3601,7 +3601,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How to start a corpus by writing a consumer declaration and an overlay from tree evidence and interview prompts.",
-          "last_verified": "2026-08-25",
+          "last_verified": "2026-09-23",
           "title": "headwater init",
           "relations": {
             "governs": [
@@ -3653,6 +3653,27 @@
                 "engine/crates/cli/src/main.rs"
               ],
               "engine/crates/query/src/mcp.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/interfaces/headwater-merge-driver.md",
+        "kind": "interface_contract",
+        "id": "HW-IFACE-headwater-merge-driver",
+        "facets": {
+          "id": "HW-IFACE-headwater-merge-driver",
+          "status": "current",
+          "status_since": "2026-09-23",
+          "summary": "How git refuses the merge of a derived fold through a verb that keeps the current side and names the producer that rebuilds it.",
+          "last_verified": "2026-09-23",
+          "title": "headwater merge-driver",
+          "relations": {
+            "governs": [
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ]
             ]
           }
         }
@@ -8536,7 +8557,7 @@
           "status": "current",
           "status_since": "2026-09-07",
           "summary": "Under HEADWATER_BLESS one case truncates crates/conformance/fixtures/wrapped.report while a sibling thread of the same binary reads it, which can panic the run and cannot corrupt the artifact.",
-          "last_verified": "2026-09-07",
+          "last_verified": "2026-09-23",
           "title": "A blessed fixture is read by a sibling case that runs while the write truncates it",
           "waiting_on": "adopter",
           "provenance": {
@@ -8549,6 +8570,7 @@
           "relations": {
             "traces_to": [
               "engine/crates/conformance/tests/render.rs",
+              "engine/crates/query/tests/mcp.rs",
               "HW-OBL-0133"
             ]
           }
@@ -11271,6 +11293,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/query/src/route.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/query/tests/mcp.rs",
         "resolver": "source-tree"
       },
       {
@@ -15273,6 +15300,17 @@
         }
       },
       {
+        "source": "docs/interfaces/headwater-merge-driver.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/interfaces/headwater-neighbors.md",
         "relation": "governs",
         "written_as": "governs",
@@ -17714,6 +17752,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/conformance/tests/render.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/query/tests/mcp.rs",
           "resolver": "source-tree"
         }
       },

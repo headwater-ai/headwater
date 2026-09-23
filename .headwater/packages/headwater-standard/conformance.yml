@@ -147,7 +147,11 @@ conformance:
         `core.hooksPath` is per-clone configuration, so the tree that carries
         the hooks does not say whether anybody runs them.
       remediation: >-
-        Run `git config core.hooksPath .githooks` in each clone, and record an
+        Run `headwater init --git --git-config` in each clone. It writes the
+        `.gitattributes` lines for the files `headwater taxonomy resolve` and
+        `headwater generate` write, and it runs the two `git config` lines that
+        name `headwater merge-driver` as the merge driver. Without
+        `--git-config` it prints those two lines for you to run. Then record an
         attestation with an owner and a date.
 
   # The ladder. Each level names its own rules, and a level includes every level
