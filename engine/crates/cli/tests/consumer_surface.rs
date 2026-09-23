@@ -187,14 +187,22 @@ impl Drop for Root {
 
 const INSTRUCTS: &str = "\nRun the gate before you commit.\n\n```sh\nsh tools/foo.sh\n```\n";
 
+/// The two forms the first edition missed: a path behind a shell variable, and
+/// a code span inside a block quote.
+const DISGUISED: &str = "\n```sh\nsh \"$ROOT/tools/var.sh\"\n```\n\n> Then run `tools/quote.sh`.\n";
+
 const SAYS_SO: &str = "\n<!-- headwater allow=surface.local_path.instructed scope=block until=2099-12-31 reason=accepted_deviation note=how this repository does it -->\nThis repository runs `tools/foo.sh` before it commits.\n\n<!-- headwater allow=surface.local_path.instructed scope=file until=2099-12-31 reason=accepted_deviation note=the governs edge names how this repository does it -->\n";
 
 #[test]
 fn the_rule_reads_the_manifest_and_honors_a_passage_that_says_so() {
-    let root = Root::new("three", &["docs/interfaces/x.md", "docs/interfaces/y.md"]);
+    let root = Root::new(
+        "three",
+        &["docs/interfaces/x.md", "docs/interfaces/y.md", "docs/interfaces/w.md"],
+    );
     root.contract("x", INSTRUCTS);
     root.contract("y", SAYS_SO);
     root.contract("z", INSTRUCTS);
+    root.contract("w", DISGUISED);
 
     let (_, out, err) = root.run(&["check"]);
     let x = root.findings("x");
@@ -213,6 +221,12 @@ fn the_rule_reads_the_manifest_and_honors_a_passage_that_says_so() {
         root.findings("y"),
         Vec::<String>::new(),
         "a passage marked as how this repository does it passes"
+    );
+    let w = root.findings("w");
+    assert!(
+        w.iter().any(|f| f.contains("$ROOT/tools/var.sh"))
+            && w.iter().any(|f| f.contains("tools/quote.sh")),
+        "a path behind a shell variable and a code span in a block quote are both reported\n{w:#?}"
     );
     assert_eq!(
         root.findings("z"),
