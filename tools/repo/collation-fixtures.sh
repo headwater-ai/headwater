@@ -312,6 +312,23 @@ printf '#!/bin/sh\necho "wait for sort to finish before continuing"\necho "wait 
 same "an opener keyword immediately before sort/comm in ordinary prose does not redden" \
     "" "$(unpinned_lines "$scratch/arms/prose.sh" | tr '\n' '|')"
 
+# The verifier of that fix (#1031) found two genuine shapes it missed. A
+# reserved word that opens a command right after another one (`do if sort`,
+# `then if comm`, `else if sort`) was missed before the fix and after it,
+# because the one-pass gsub consumed the space after the first keyword and
+# never read the `|` it had inserted. And a single `&`, which ends a
+# background command and opens the next, was in neither opener class, so
+# `false & if sort` went from caught to missed. This arm plants one shape per
+# line, each one resting on a different member of the opener class — the
+# nested keyword, `&&`, `&`, `|` and a case arm's `)` — and every line must
+# redden. The expected value is every line of the file, so it names no
+# output of the function it judges.
+printf '#!/bin/sh\nfor f in a b; do if sort "$f"; then :; fi; done\nif true; then if comm -12 a b; then :; fi; fi\nwhile read x; do while sort y; do :; done; done\nif x; then :; else if sort z; then :; fi; fi\ntrue && if sort a; then :; fi\nfalse & if sort bg; then :; fi\ncat f | while sort; do :; done\ncase $x in a) if comm -12 a b; then :; fi ;; esac\ntrue && sort x\nfalse & comm -12 a b\n' \
+    >"$scratch/arms/nested.sh"
+same "a keyword after a keyword, after && or &, after a pipe or a case arm, and a bare & before sort/comm all redden" \
+    "$(awk 'NR > 1 { print FILENAME ":" NR ": " $0 }' "$scratch/arms/nested.sh" | tr '\n' '|')" \
+    "$(unpinned_lines "$scratch/arms/nested.sh" | tr '\n' '|')"
+
 echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]
