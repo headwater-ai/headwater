@@ -351,6 +351,44 @@ fn the_git_step_writes_attributes_for_the_two_verb_producers_and_prints_the_conf
     );
 }
 
+/// A producer output of this repository's own script is reported by
+/// `headwater derived` and never written by `init --git`.
+///
+/// `derived` asks four producers, and two of them are a script and a test run
+/// that only the repository maintaining this engine holds. A page under `site/`
+/// carrying a `data-figure` element is what the script claims, so the tree below
+/// holds one. The first assertion is what makes the second a measurement: a
+/// page `derived` did not claim would be absent from `.gitattributes` whatever
+/// the filter did.
+#[test]
+fn the_git_step_writes_no_line_for_a_producer_the_adopter_does_not_hold() {
+    let tree = Tree::adopted("script-producer");
+    const PAGE: &str = "site/index.html";
+    std::fs::create_dir_all(tree.at.join("site")).expect("the site directory is made");
+    tree.write(
+        PAGE,
+        "<p>The corpus holds <span data-figure=\"census.seen\">1</span> files.</p>\n",
+    );
+
+    let derived = tree.headwater(&["derived"]);
+    let report = String::from_utf8_lossy(&derived.stdout).into_owned();
+    assert!(
+        report.contains(PAGE),
+        "`headwater derived` claims {PAGE} for the figure producer:\n{report}"
+    );
+
+    tree.headwater_ok(&["init", "--git"]);
+    let attributes = tree.read(".gitattributes");
+    assert!(
+        !attributes.contains(PAGE),
+        "`init --git` writes no line for a producer an adopter does not hold:\n{attributes}"
+    );
+    assert!(
+        attributes.contains(".headwater/corpus.json merge=headwater-regenerate"),
+        "the verb producers' outputs are still written:\n{attributes}"
+    );
+}
+
 /// The verb, called as git calls it, with nothing of git around it.
 #[test]
 fn the_driver_leaves_the_current_side_and_exits_non_zero() {
