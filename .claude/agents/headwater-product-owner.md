@@ -90,7 +90,8 @@ One report, in five parts, and every claim in it names the artifact or command i
 
     gh issue list --repo headwater-ai/headwater --state open --limit 200 --json number,title,labels,milestone
     gh api "repos/headwater-ai/headwater/milestones?state=all&per_page=100" --jq '.[] | "\(.title)\t\(.state)\topen=\(.open_issues)\tclosed=\(.closed_issues)\tnumber=\(.number)"'
-    gh api repos/headwater-ai/headwater/issues/<N> --jq .body
+    sh tools/run/gh-issue.sh body <N>
+    sh tools/run/gh-issue.sh comments <N>
 
 The off-plan share for a window, which is part 1's number:
 
@@ -109,7 +110,7 @@ Your writes, in the forms that work here:
     gh api -X PATCH repos/headwater-ai/headwater/issues/<N> -F milestone=<milestone-number>
     gh issue edit <N> --repo headwater-ai/headwater --add-label adopter-blocking
 
-`gh issue view` and `gh pr edit` fail here with a `projectCards` GraphQL deprecation, which is why the reads above use `gh api` for a single issue body. Corrections often live in the comments rather than the body, so read those before you move an issue on what the body says. Use `-F` rather than `-f` for the milestone number, because it is an integer and `-f` sends a string.
+`gh issue view` and `gh pr edit` fail here with a `projectCards` GraphQL deprecation, which is why the reads above use `gh api` for a single issue body, through `tools/run/gh-issue.sh` rather than retyped. Corrections often live in the comments rather than the body, so read those before you move an issue on what the body says. Use `-F` rather than `-f` for the milestone number, because it is an integer and `-f` sends a string.
 
 For parts 3 and 4, read [13 — Open obligations](../../docs/spec/13-open-obligations.md). Its *What waits on a first adopter* section is the standing list of what an adopter would unblock, and its *Design work that nothing blocks* section is the project's own statement of what is not on the critical path. Both are hand-maintained and both drift, so treat a count there as a claim to re-derive rather than a fact to quote.
 

@@ -32,15 +32,15 @@ The report ends with this block:
     git checkout main
     git merge --ff-only origin/main
 
-**Rebuild before you regenerate, always.** A binary built before the merge writes what the previous engine produced, and `headwater check --strict` passes it because the same binary wrote and checked it:
+**Rebuild before you regenerate, always, through `tools/hw-cargo` and never a bare `cargo`.** A binary built before the merge writes what the previous engine produced, and `headwater check --strict` passes it because the same binary wrote and checked it. `HW_CARGO_SLOT=integrate` gives you your own target directory and your own lock, outside the numbered pool a builder waits on, so you never queue behind a builder and a builder never queues behind you — depth one already means the reservation is never contended:
 
-    cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked
+    HW_CARGO_SLOT=integrate sh tools/hw-cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked
     headwater generate
     headwater check --strict
 
-Then `HEADWATER_BLESS=1 cargo test --workspace --no-fail-fast --manifest-path engine/Cargo.toml` redirected to a file, and read its tail. When the regenerate or the bless moved a committed artifact, the merge left `main` stale: open a small pull request for exactly that diff, say so in `LEFT`, and never push to `main`.
+Then `HW_CARGO_SLOT=integrate HEADWATER_BLESS=1 sh tools/hw-cargo test --workspace --no-fail-fast --manifest-path engine/Cargo.toml` redirected to a file, and read its tail. When the regenerate or the bless moved a committed artifact, the merge left `main` stale: open a small pull request for exactly that diff, say so in `LEFT`, and never push to `main`.
 
-**Write back, because it is the part that compounds.** Comment on the issue wherever the work found it wrong, through `gh api -X PATCH` and `gh api ... /comments` rather than `gh issue view`, which fails on a deprecated field. Close the issue the pull request closes and confirm the close took; an agent can state a write-back and not land it. Route a finding that sharpens a closed decision to spec 13, never to spec 9, which accepts no new question.
+**Write back, because it is the part that compounds.** Comment on the issue wherever the work found it wrong, with `sh tools/run/gh-issue.sh comment <N> <file>` rather than `gh issue view`, which fails on a deprecated field. Close the issue the pull request closes with `sh tools/run/gh-issue.sh close <N>`, which re-reads the state and refuses to report success when the close did not take; an agent can state a write-back and not land it. Route a finding that sharpens a closed decision to spec 13, never to spec 9, which accepts no new question.
 
 **Release the claims.** After the merge, `sh tools/run/run-dir.sh release <run> <issue>` frees every artifact the issue held, which is what lets the next claimant through. Say in `WROTE BACK` how many it freed.
 
@@ -52,7 +52,11 @@ It reads every tree and every branch rather than only the one you merged, so it 
 
 **Write the ledger line.** `sh tools/run/run-dir.sh log <run> '<json>'` with `iter`, `issue`, `pr`, `merge`, `verdict`, `proved` (what verification proved, never what the build claimed), `opened` and `closed`. The tool refuses a missing key and a stored total, because totals are derived by whoever reads the log and never stored ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)).
 
-**Wait by blocking.** CI on the merge commit is one blocking wait, never a check per turn, and a red `main` is the first line of `LEFT`, for the next iteration's branch to fix before its own work.
+**Wait by blocking.** CI on the merge commit is one blocking wait, never a check per turn, through `tools/run/wait-for.sh`, started with `run_in_background: true` and re-issued on a `RE-ISSUE` exit rather than left running past the cache lifetime ([HW-PD-0007](../../docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md)):
+
+    sh tools/run/wait-for.sh '[ "$(gh api repos/headwater-ai/headwater/commits/<sha>/status --jq .state)" != pending ]'
+
+A red `main` is the first line of `LEFT`, for the next iteration's branch to fix before its own work.
 
 ## What you never do
 

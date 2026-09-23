@@ -25,12 +25,11 @@ The report ends with this block:
 
 ## How you work
 
-**A scratch worktree, reset to the branch.** Never the build agent's worktree and never the shared checkout:
+**A scratch worktree, reset to the branch.** Never the build agent's worktree and never the shared checkout, fetched, added and built in one call:
 
-    git fetch origin
-    git worktree add "$root/.claude/worktrees/verify-<N>" <branch>
+    sh tools/repo/new-worktree.sh "$root/.claude/worktrees/verify-<N>" <branch>
 
-Build the engine there with `--profile dev-release` before any engine verb, and run `git worktree remove` on it before you exit. Removing it is not optional and it is not the integrator's to collect: your tree sits on a branch whose pull request is still open, and the sweep that retires a finished tree refuses an open one by design. A tree you leave behind is a tree nothing else will take. Say that it is still there only when the removal refused, and give the refusal.
+Run `git worktree remove` on it before you exit. Removing it is not optional and it is not the integrator's to collect: your tree sits on a branch whose pull request is still open, and the sweep that retires a finished tree refuses an open one by design. A tree you leave behind is a tree nothing else will take. Say that it is still there only when the removal refused, and give the refusal.
 
 **Run the suite and the gates.** Redirect each to files and read the tail; never pipe a gate, because the pipe reports the filter's exit status. Keep stdout and stderr apart on an invariant test.
 
@@ -38,11 +37,11 @@ Build the engine there with `--profile dev-release` before any engine verb, and 
 
 **When your check contradicts the build note, suspect your check first.** Across four runs the verifier was wrong more often than the builder. Name the denominator before you report a delta.
 
-**Wait on the pull request yourself.** `mergeable` is a field GitHub computes after you ask, so spend one blocking wait and never a check per turn. Start it with `run_in_background: true`, so that the wait survives the ten-minute cap on a foreground call and its completion notification is what wakes you:
+**Wait on the pull request yourself.** `mergeable` is a field GitHub computes after you ask, so spend one blocking wait and never a check per turn. `gh` computing it can run past the five-minute prompt-cache lifetime, so wait through `tools/run/wait-for.sh`, capped and re-issued rather than left running silently ([HW-PD-0007](../../docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md)). Start it with `run_in_background: true`:
 
-    until [ "$(gh pr view <N> --json mergeable -q .mergeable)" != "UNKNOWN" ]; do sleep 30; done
+    sh tools/run/wait-for.sh '[ "$(gh pr view <N> --json mergeable -q .mergeable)" != UNKNOWN ]'
 
-A conflicting pull request runs no CI at all, so read `mergeable` before you read a missing check run as a dead runner. Report `mergeable` and `mergeStateStatus` in `RAN`.
+A `RE-ISSUE` exit is not a finding; run the identical call again. A conflicting pull request runs no CI at all, so read `mergeable` before you read a missing check run as a dead runner. Report `mergeable` and `mergeStateStatus` in `RAN`.
 
 ## What you never do
 

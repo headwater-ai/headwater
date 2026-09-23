@@ -43,6 +43,15 @@
 #   HW_CARGO_JOBS   cargo jobs per slot, default 2 (an explicit -j still wins)
 #   HW_CARGO_POOL   pool root, default ${XDG_CACHE_HOME:-$HOME/.cache}/headwater/cargo-pool
 #   HW_CARGO_NICE   nice increment, default 5
+#   HW_CARGO_SLOT   a reserved slot by name instead of a number, for a caller
+#                   the numbered pool must never make wait behind a builder or
+#                   a builder wait behind: `HW_CARGO_SLOT=integrate tools/hw-cargo
+#                   build ...`. It takes its own target directory and its own
+#                   lock, outside the 1..HW_CARGO_SLOTS pool, so it neither
+#                   queues on a builder's slot nor is queued on. hw-integrate
+#                   is depth one by HW-PD-0003, so its reserved slot is never
+#                   contended; give a role with no such guarantee its own name
+#                   too rather than share one across roles.
 
 set -e
 
@@ -67,7 +76,7 @@ case "${1:-}" in
     exit 0
     ;;
 "")
-    sed -n '3,46p' "$0" | sed 's/^# \{0,1\}//' >&2
+    sed -n '3,54p' "$0" | sed 's/^# \{0,1\}//' >&2
     exit 2
     ;;
 esac
@@ -98,9 +107,17 @@ else
 fi
 
 # Take the first free slot. A caller that finds none queues on slot 1 rather
-# than adding a compiler to a machine that already has too many.
+# than adding a compiler to a machine that already has too many. A caller
+# naming HW_CARGO_SLOT takes its own reserved slot instead, outside 1..slots,
+# so it never queues behind a builder and a builder never queues behind it.
 slot=
-if command -v flock >/dev/null 2>&1; then
+if [ -n "${HW_CARGO_SLOT:-}" ]; then
+    slot=$HW_CARGO_SLOT
+    if command -v flock >/dev/null 2>&1; then
+        exec 9>>"$pool/slot.$slot.lock"
+        flock 9
+    fi
+elif command -v flock >/dev/null 2>&1; then
     i=1
     while [ "$i" -le "$slots" ]; do
         exec 9>>"$pool/slot.$i.lock"
