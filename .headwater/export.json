@@ -3600,7 +3600,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How to start a corpus by writing a consumer declaration and an overlay from tree evidence and interview prompts.",
-          "last_verified": "2026-08-25",
+          "last_verified": "2026-09-23",
           "title": "headwater init",
           "relations": {
             "governs": [
@@ -3652,6 +3652,27 @@
                 "engine/crates/cli/src/main.rs"
               ],
               "engine/crates/query/src/mcp.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/interfaces/headwater-merge-driver.md",
+        "kind": "interface_contract",
+        "id": "HW-IFACE-headwater-merge-driver",
+        "facets": {
+          "id": "HW-IFACE-headwater-merge-driver",
+          "status": "current",
+          "status_since": "2026-09-23",
+          "summary": "How git refuses the merge of a derived fold through a verb that keeps the current side and names the producer that rebuilds it.",
+          "last_verified": "2026-09-23",
+          "title": "headwater merge-driver",
+          "relations": {
+            "governs": [
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ]
             ]
           }
         }
@@ -15258,6 +15279,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/query/src/mcp.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-merge-driver.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
         }
       },

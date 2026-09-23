@@ -228,6 +228,8 @@ anchors
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-mcp
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-merge-driver
+  code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-neighbors
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-new

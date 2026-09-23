@@ -29,7 +29,9 @@
 //! A token counts when it opens with a declared local root, with `./` and then
 //! one, or with a shell variable such as `$ROOT/` or `${ROOT}/` and then one,
 //! because a command that names the root of the checkout by a variable still
-//! runs the file under it. Code inside a block quote counts too: a quotation
+//! runs the file under it. `$HOME` is the exception: a path under the home
+//! directory of the user is not a path of this repository. A quoted variable,
+//! as in `"$ROOT"/tools/x.sh`, is not read, and the contract says so. Code inside a block quote counts too: a quotation
 //! on a page for an adopter is still something the page shows them to run.
 //! Raw HTML is left alone, because an HTML comment is a note to the next editor
 //! and not a page an adopter reads.
@@ -100,7 +102,10 @@ impl DocumentCheck for LocalPath {
     /// Edition two, on 2026-09-23: a shell variable before a local root and a
     /// code span inside a block quote both count. The lock does not move
     /// with either, so a warm cache would serve edition one's pass.
-    const VERSION: u32 = 2;
+    ///
+    /// Edition three: `$HOME/` no longer counts as a variable before a local
+    /// root, so a user-level path is not reported.
+    const VERSION: u32 = 3;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, _kind: &str) -> bool {
@@ -201,15 +206,15 @@ fn strip_variable(token: &str) -> &str {
     };
     let rest = match rest.strip_prefix('{') {
         Some(braced) => match braced.split_once('}') {
-            Some((name, tail)) if !name.is_empty() => tail,
+            Some((name, tail)) if !name.is_empty() && name != "HOME" => tail,
             _ => return token,
         },
         None => {
             let end = rest
                 .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
                 .unwrap_or(rest.len());
-            match end {
-                0 => return token,
+            match &rest[..end] {
+                "" | "HOME" => return token,
                 _ => &rest[end..],
             }
         }
@@ -273,6 +278,9 @@ mod tests {
         assert_eq!(strip_variable("$ROOT"), "$ROOT");
         assert_eq!(strip_variable("$/tools"), "$/tools");
         assert_eq!(strip_variable("tools/x.sh"), "tools/x.sh");
+        // The home directory of the user is not this repository.
+        assert_eq!(strip_variable("$HOME/.claude/x"), "$HOME/.claude/x");
+        assert_eq!(strip_variable("${HOME}/.claude/x"), "${HOME}/.claude/x");
     }
 
     #[test]
