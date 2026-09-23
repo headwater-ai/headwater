@@ -889,14 +889,12 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
             ),
-            Cache::at(Path::new("/nonexistent"), "sha256:lock", "sha256:other-rules").plain_key(
-                "r",
-                1,
-                scope,
-                "a.md",
-                &inputs(Some("sha256:one")),
-                None,
-            ),
+            Cache::at(
+                Path::new("/nonexistent"),
+                "sha256:lock",
+                "sha256:other-rules",
+            )
+            .plain_key("r", 1, scope, "a.md", &inputs(Some("sha256:one")), None),
         ];
         for (index, other) in others.iter().enumerate() {
             assert_ne!(

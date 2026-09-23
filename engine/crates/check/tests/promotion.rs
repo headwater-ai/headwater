@@ -256,12 +256,20 @@ fn a_warm_run_does_not_serve_a_verdict_across_a_change_to_the_prior_version() {
     ));
     std::fs::create_dir_all(&directory).expect("a scratch directory");
 
-    let mut cold = Cache::at(&directory, "sha256:promotion-fixture", &headwater_check::rules_digest());
+    let mut cold = Cache::at(
+        &directory,
+        "sha256:promotion-fixture",
+        &headwater_check::rules_digest(),
+    );
     let first = run_with(&at(Some("promoted.md")), &mut cold);
     cold.write(&directory);
     assert_eq!(first.change.expect("a change").promotions, 1);
 
-    let mut warm = Cache::at(&directory, "sha256:promotion-fixture", &headwater_check::rules_digest());
+    let mut warm = Cache::at(
+        &directory,
+        "sha256:promotion-fixture",
+        &headwater_check::rules_digest(),
+    );
     let second = run_with(&at(Some("accepted-already.md")), &mut warm);
     warm.write(&directory);
     assert_eq!(
@@ -273,7 +281,11 @@ fn a_warm_run_does_not_serve_a_verdict_across_a_change_to_the_prior_version() {
     // And the run that read one prior version twice is warm, so the key divides
     // rather than refuses. A rule that lost its key would pass the assertion
     // above by re-evaluating everything, forever.
-    let mut again = Cache::at(&directory, "sha256:promotion-fixture", &headwater_check::rules_digest());
+    let mut again = Cache::at(
+        &directory,
+        "sha256:promotion-fixture",
+        &headwater_check::rules_digest(),
+    );
     let third = run_with(&at(Some("accepted-already.md")), &mut again);
     assert_eq!(third.change.expect("a change").promotions, 0);
     assert!(
