@@ -700,6 +700,8 @@ docs/obligations/0205-hw-obl-0002-s-sample-counts-and-voice-rs-s-own-census-pred
   typed: obligation_record
 docs/obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness.md
   typed: obligation_record
+docs/obligations/0207-the-plan-usage-of-one-issue-is-known-only-as-the-average-of-its-run.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
