@@ -1104,7 +1104,8 @@ judge 'no gh on PATH is silence rather than a verdict about the board' 0 "$statu
 refute 'and it does not warn about the number it could not look up' '#901 is unassigned' "$out"
 
 # Put the answering `gh` back, so the refutation in the last case means the
-# warning was preempted rather than that it had nothing to say.
+# warning was preempted rather than that it had nothing to say. It also gains
+# the four numbers the rebase and merge cases below name.
 cat > "$pushes/bin/gh" <<'STUB'
 #!/bin/sh
 for arg in "$@"; do
@@ -1116,10 +1117,135 @@ case ${number:-none} in
     901) echo "https://github.com/fixture/fixture/issues/901 0" ;;
     902) echo "https://github.com/fixture/fixture/issues/902 1" ;;
     903) echo "https://github.com/fixture/fixture/pull/903 0" ;;
+    904) echo "https://github.com/fixture/fixture/issues/904 0" ;;
+    905) echo "https://github.com/fixture/fixture/issues/905 0" ;;
+    906) echo "https://github.com/fixture/fixture/issues/906 0" ;;
+    907) echo "https://github.com/fixture/fixture/issues/907 0" ;;
     *) exit 1 ;;
 esac
 STUB
 chmod +x "$pushes/bin/gh"
+
+# The rebase case #941 exists for: the remote tip a push carries is not always
+# an ancestor of the tip landing. A branch pushed once, then rebased onto an
+# upstream that moved in the meantime, reports its *pre-rebase* tip as
+# `remote_sha` — git itself does this, `--force-with-lease` included — so
+# `$remote_sha..$local_sha` walks both the branch's own rebased commit and
+# every commit the rebase carried in underneath it.
+#
+# `refs/remotes/origin/*` is what a real clone would hold after the fetch a
+# rebase onto `origin/main` performs, and `--not --remotes` is the range the
+# hook already falls back to for a first push. Writing those refs by hand
+# with `update-ref` stands in for the fetch without needing a real remote
+# transport, the way `push_from` itself stands in for a real push.
+(
+    cd "$pushes/repo" || exit 1
+    git checkout -qb 941-rebase-fixture main
+    echo four > e.txt
+    git add -A
+    git commit -qm "Work the branch's own thing (Refs #904)" --no-verify
+) >/dev/null 2>&1
+pre_rebase=$(at 941-rebase-fixture)
+
+(
+    cd "$pushes/repo" || exit 1
+    git checkout -q main
+    echo five > f.txt
+    git add -A
+    git commit -qm "Land more work upstream while the branch was out (Refs #905)" --no-verify
+) >/dev/null 2>&1
+new_main=$(at main)
+
+git -C "$pushes/repo" update-ref refs/remotes/origin/main "$new_main"
+git -C "$pushes/repo" update-ref refs/remotes/origin/941-rebase-fixture "$pre_rebase"
+
+(
+    cd "$pushes/repo" || exit 1
+    git checkout -q 941-rebase-fixture
+    git rebase -q main >/dev/null 2>&1
+) >/dev/null 2>&1
+post_rebase=$(at 941-rebase-fixture)
+
+out=$(
+    cd "$pushes/repo" || exit 1
+    printf 'refs/heads/941-rebase-fixture %s refs/heads/941-rebase-fixture %s\n' \
+        "$post_rebase" "$pre_rebase" |
+        PATH="$pushes/bin:$PATH" sh .githooks/pre-push origin dummy 2>&1
+); status=$?
+judge 'a rebase onto a moved upstream still warns about the branch''s own unclaimed number' \
+    0 "$status" '#904 is unassigned' "$out"
+refute 'and it does not warn about the upstream number the rebase carried in' \
+    '#905 is unassigned' "$out"
+
+git -C "$pushes/repo" checkout -q main
+git -C "$pushes/repo" branch -qD 941-rebase-fixture >/dev/null 2>&1
+git -C "$pushes/repo" update-ref -d refs/remotes/origin/main >/dev/null 2>&1
+git -C "$pushes/repo" update-ref -d refs/remotes/origin/941-rebase-fixture >/dev/null 2>&1
+
+# The merge case #941 also exists for: a rebase is not the only way the
+# remote tip stops being this push's whole history. A local `git merge` of
+# `origin/main` into the branch leaves the pre-merge tip as the merge
+# commit's *first* parent, so it is still an ancestor of the new tip — the
+# ancestor check an earlier fix here relied on cannot tell this apart from a
+# safe fast-forward, and a two-dot `$remote_sha..$local_sha` range reads the
+# merged-in commits as this push's own for the same reason it does after a
+# rebase: a two-dot diff excludes only the ancestors of `$remote_sha`, not
+# the commits any other remote-tracking ref already holds. This merge is not
+# a push, so it needs no `--force-with-lease`.
+#
+# `remote_sha` has to be the branch's position *before* its own new commit,
+# not after: unlike a rebase, a merge never changes the SHA of a commit
+# already on the branch, so recording the remote tip after committing #906
+# would make #906 itself reachable from `origin/941-merge-fixture` and the
+# fixed range would rightly say nothing about it — proving only that an
+# already-claimed push stays silent, not that a new one still warns. Here
+# the branch is recorded as already pushed at the fork point, `#906` is
+# then a genuinely unpushed local commit, and only after that does the
+# branch merge in main's own new commit.
+base=$(at main)
+
+(
+	cd "$pushes/repo" || exit 1
+	git checkout -qb 941-merge-fixture main
+	echo six > g.txt
+	git add -A
+	git commit -qm "Work the branch's own thing (Refs #906)" --no-verify
+) >/dev/null 2>&1
+
+(
+	cd "$pushes/repo" || exit 1
+	git checkout -q main
+	echo seven > h.txt
+	git add -A
+	git commit -qm "Land more work upstream while the branch was out (Refs #907)" --no-verify
+) >/dev/null 2>&1
+new_main=$(at main)
+
+git -C "$pushes/repo" update-ref refs/remotes/origin/main "$new_main"
+git -C "$pushes/repo" update-ref refs/remotes/origin/941-merge-fixture "$base"
+
+(
+	cd "$pushes/repo" || exit 1
+	git checkout -q 941-merge-fixture
+	git merge -q main -m "Merge main into 941-merge-fixture" >/dev/null 2>&1
+) >/dev/null 2>&1
+post_merge=$(at 941-merge-fixture)
+
+out=$(
+	cd "$pushes/repo" || exit 1
+	printf 'refs/heads/941-merge-fixture %s refs/heads/941-merge-fixture %s\n' \
+		"$post_merge" "$base" |
+		PATH="$pushes/bin:$PATH" sh .githooks/pre-push origin dummy 2>&1
+); status=$?
+judge 'a local merge of a moved upstream still warns about the branch''s own unclaimed number' \
+	0 "$status" '#906 is unassigned' "$out"
+refute 'and it does not warn about the upstream number the merge carried in' \
+	'#907 is unassigned' "$out"
+
+git -C "$pushes/repo" checkout -q main
+git -C "$pushes/repo" branch -qD 941-merge-fixture >/dev/null 2>&1
+git -C "$pushes/repo" update-ref -d refs/remotes/origin/main >/dev/null 2>&1
+git -C "$pushes/repo" update-ref -d refs/remotes/origin/941-merge-fixture >/dev/null 2>&1
 
 # The refusal still wins. A pending marker means unreviewed content is about to
 # leave the clone, and that outranks a stale board.

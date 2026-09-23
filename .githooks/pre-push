@@ -113,23 +113,33 @@ command -v gh >/dev/null 2>&1 || exit 0
 
 zeroes=0000000000000000000000000000000000000000
 
-# `--not --remotes` is the range for a branch the remote has never seen. Where
-# the remote already holds a tip, that tip is the exact base and the walk is
-# cheaper. Both are capped: a push carrying hundreds of commits is a rebase or
-# a first push of a long branch, and reading all of it to warn about a board is
-# not worth the wait.
+# `--not --remotes` is the range for a branch the remote has never seen. It
+# is also the only range that is safe once the remote tip is not this push's
+# whole history: `$remote_sha..$local_sha` is a two-dot diff, and a two-dot
+# diff excludes only the ancestors of `$remote_sha` — it does not care by
+# which parent a commit is reachable from `$local_sha`. A rebase carries the
+# commits the upstream gained in the meantime underneath the local tip, so
+# `$remote_sha` (the pre-rebase tip) is no longer even an ancestor and the
+# two-dot range reads them as though this push wrote them. A local `git merge`
+# of the upstream into the branch is worse to detect: `$remote_sha` (the
+# pre-merge tip) *is* still an ancestor, as the merge commit's first parent,
+# so a check that only asks "is the remote tip an ancestor" takes the same
+# two-dot range and reads the merged-in commits the same wrong way. Neither
+# shape is rare or unsupported — this repository's own hooks treat a local
+# merge of `main` as ordinary traffic — so the range never trusts an ancestry
+# check to tell the two apart. It excludes every commit reachable from any
+# remote-tracking ref instead, which is correct whether this push is a first
+# push, a fast-forward, a rebase or a merge, because none of those change
+# what `refs/remotes/origin/*` already holds before this push updates it. A
+# push carrying hundreds of commits is a rebase or a first push of a long
+# branch, and reading all of it to warn about a board is not worth the wait,
+# so `--max-count` still caps the walk below.
 numbers=$(
-	while read -r _local_ref local_sha _remote_ref remote_sha; do
+	while read -r _local_ref local_sha _remote_ref _remote_sha; do
 		[ -n "$local_sha" ] || continue
 		[ "$local_sha" = "$zeroes" ] && continue
 
-		if [ -n "$remote_sha" ] && [ "$remote_sha" != "$zeroes" ]; then
-			set -- "$remote_sha..$local_sha"
-		else
-			set -- "$local_sha" --not --remotes
-		fi
-
-		git log --format=%B --max-count=50 "$@" 2>/dev/null
+		git log --format=%B --max-count=50 "$local_sha" --not --remotes 2>/dev/null
 	done | grep -oE '#[0-9]+' | tr -d '#' | sort -un
 )
 
