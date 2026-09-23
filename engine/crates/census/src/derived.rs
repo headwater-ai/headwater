@@ -515,10 +515,7 @@ pub const FIGURE: &str = "data-figure=";
 
 /// Compute the population of a tree, and hold it against that tree's attributes.
 pub fn population(root: &Path) -> Population {
-    let mut files = Vec::new();
-    let ignored = headwater_vcs::ignored(root);
-    collect(root, root, &ignored, &mut files);
-    files.sort();
+    let files = files_of(root);
 
     let mut outputs: Vec<Output> = Vec::new();
     for path in &files {
@@ -531,7 +528,8 @@ pub fn population(root: &Path) -> Population {
     }
     outputs.sort();
 
-    let attributes = merge_attributes(root);
+    let declarations = declarations(root, &files);
+    let attributes = readable(&declarations);
     let declared: Vec<String> = attributes
         .iter()
         .filter(|(_, treatment)| *treatment == Treatment::Regenerate)
@@ -588,8 +586,17 @@ pub fn population(root: &Path) -> Population {
         undeclared,
         unproduced,
         members,
-        unreadable: unreadable_patterns(root),
+        unreadable: unreadable(&declarations),
     }
+}
+
+/// Every file of a tree that this verb reads, sorted.
+fn files_of(root: &Path) -> Vec<String> {
+    let mut files = Vec::new();
+    let ignored = headwater_vcs::ignored(root);
+    collect(root, root, &ignored, &mut files);
+    files.sort();
+    files
 }
 
 /// Every store of readings of this tree, by the structure of the file.
@@ -728,46 +735,84 @@ pub fn declared_paths(root: &Path) -> Vec<String> {
 /// and quotes the `git config` lines that install the driver. A pattern this
 /// reader cannot expand is skipped here and reported by [`unreadable_patterns`].
 pub fn merge_attributes(root: &Path) -> Vec<(String, Treatment)> {
-    let mut found: Vec<(String, Treatment)> = declarations(root)
-        .into_iter()
-        .filter(|(pattern, _)| !is_a_pattern(pattern))
-        .collect();
-    found.sort();
-    found.dedup();
-    found
+    readable(&declarations(root, &files_of(root)))
 }
 
 /// Every `.gitattributes` pattern that carries a merge attribute and a glob.
+///
+/// A pattern from a file below the root is named relative to the root, so the
+/// report says which directory it came from.
 pub fn unreadable_patterns(root: &Path) -> Vec<String> {
-    let mut found: Vec<String> = declarations(root)
+    unreadable(&declarations(root, &files_of(root)))
+}
+
+/// The declarations that name one path, with git's precedence applied.
+///
+/// `declarations` yields the shallowest file first and each file's lines in
+/// order, so the last declaration of a path is the one git obeys: the deeper
+/// directory wins, and within one file the later line wins.
+fn readable(declarations: &[(String, Treatment)]) -> Vec<(String, Treatment)> {
+    let mut found: std::collections::BTreeMap<&str, Treatment> = std::collections::BTreeMap::new();
+    for (pattern, treatment) in declarations {
+        if !is_a_pattern(pattern) {
+            found.insert(pattern, *treatment);
+        }
+    }
+    found
         .into_iter()
+        .map(|(path, treatment)| (path.to_string(), treatment))
+        .collect()
+}
+
+/// The declarations whose pattern this reader cannot expand.
+fn unreadable(declarations: &[(String, Treatment)]) -> Vec<String> {
+    let mut found: Vec<String> = declarations
+        .iter()
         .filter(|(pattern, _)| is_a_pattern(pattern))
-        .map(|(pattern, _)| pattern)
+        .map(|(pattern, _)| pattern.clone())
         .collect();
     found.sort();
     found.dedup();
     found
 }
 
-/// Each `.gitattributes` line that sets a merge attribute, pattern and value.
-fn declarations(root: &Path) -> Vec<(String, Treatment)> {
-    let Ok(text) = std::fs::read_to_string(root.join(".gitattributes")) else {
-        return Vec::new();
-    };
-    text.lines()
-        .map(str::trim)
-        .filter(|line| !line.starts_with('#'))
-        .filter_map(|line| {
-            let mut fields = line.split_whitespace();
-            let pattern = fields.next()?;
-            let treatment = fields.find_map(|field| match field {
-                "merge=union" => Some(Treatment::Union),
-                "merge=headwater-regenerate" => Some(Treatment::Regenerate),
-                _ => None,
-            })?;
-            Some((pattern.to_string(), treatment))
-        })
-        .collect()
+/// Each `.gitattributes` line of the tree that sets a merge attribute.
+///
+/// Git reads a `.gitattributes` in every directory, and a pattern in one below
+/// the root is relative to that directory. So each pattern comes back joined
+/// to the directory of its file, the shallowest file first. A reader of the
+/// root file alone reported a tree clean where `git check-attr` said `union`.
+fn declarations(root: &Path, files: &[String]) -> Vec<(String, Treatment)> {
+    let mut sources: Vec<&str> = files
+        .iter()
+        .map(String::as_str)
+        .filter(|path| *path == ".gitattributes" || path.ends_with("/.gitattributes"))
+        .collect();
+    sources.sort_by_key(|path| (path.matches('/').count(), *path));
+    let mut found = Vec::new();
+    for source in sources {
+        let Ok(text) = std::fs::read_to_string(root.join(source)) else {
+            continue;
+        };
+        let directory = source.strip_suffix(".gitattributes").unwrap_or_default();
+        found.extend(
+            text.lines()
+                .map(str::trim)
+                .filter(|line| !line.starts_with('#'))
+                .filter_map(|line| {
+                    let mut fields = line.split_whitespace();
+                    let pattern = fields.next()?;
+                    let treatment = fields.find_map(|field| match field {
+                        "merge=union" => Some(Treatment::Union),
+                        "merge=headwater-regenerate" => Some(Treatment::Regenerate),
+                        _ => None,
+                    })?;
+                    let pattern = pattern.strip_prefix('/').unwrap_or(pattern);
+                    Some((format!("{directory}{pattern}"), treatment))
+                }),
+        );
+    }
+    found
 }
 
 /// Whether a `.gitattributes` pattern reaches more than the path it spells.

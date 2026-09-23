@@ -1144,7 +1144,10 @@ fn a_merge_attribute_in_a_nested_gitattributes_is_read_and_overrides_the_root() 
         "a glob in a nested `.gitattributes` was passed over, or was not named \
          relative to the root:\n{report}"
     );
-    assert!(!population.agrees(), "the report claims the tree agrees:\n{report}");
+    assert!(
+        !population.agrees(),
+        "the report claims the tree agrees:\n{report}"
+    );
 }
 
 /// A path that two shape rules both match takes the shape of the first rule.
