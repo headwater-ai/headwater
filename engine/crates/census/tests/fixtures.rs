@@ -1220,6 +1220,65 @@ fn an_unset_a_macro_a_pattern_with_no_slash_and_an_unknown_driver_are_read_as_gi
     );
 }
 
+/// A line or a source that this reader does not interpret is named, never passed.
+///
+/// Git obeys each of these, and this reader does not interpret them: a macro
+/// that an `[attr]` line defines, a quoted pattern, an escaped pattern, and
+/// `$GIT_DIR/info/attributes`. Each one overrides a root declaration here, so
+/// a reader that skipped it would report the tree clean. The case also holds
+/// that the last merge field of a line wins, which is what git obeys.
+#[test]
+fn a_macro_a_quoted_or_escaped_pattern_and_the_info_attributes_file_are_named() {
+    use headwater_census::derived::Treatment;
+
+    let fold = "<!-- headwater:generated shelf_index. -->\n\n# 48 decisions\n";
+    let root = TempTree::new("uninterpreted");
+    root.git_init();
+    root.write(
+        ".gitattributes",
+        "[attr]keep -merge\n\
+         x/README.md merge=union merge=headwater-regenerate\n\
+         y/README.md merge=headwater-regenerate\n\
+         q/README.md merge=headwater-regenerate\n\
+         e/README.md merge=headwater-regenerate\n\
+         i/README.md merge=headwater-regenerate\n",
+    );
+    root.write("y/.gitattributes", "README.md keep\n");
+    root.write("q/.gitattributes", "\"README.md\" merge=union\n");
+    root.write("e/.gitattributes", "\\README.md merge=union\n");
+    root.write(".git/info/attributes", "i/README.md merge=union\n");
+    for directory in ["x", "y", "q", "e", "i"] {
+        root.write(&format!("{directory}/README.md"), fold);
+    }
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    let x = population
+        .members
+        .iter()
+        .find(|member| member.path == "x/README.md")
+        .unwrap_or_else(|| panic!("x/README.md is not in the report:\n{report}"));
+    assert_eq!(
+        x.treatment,
+        Treatment::Regenerate,
+        "the first merge field of a line won, and git obeys the last:\n{report}"
+    );
+    assert_eq!(
+        population.unreadable,
+        vec![
+            ".git/info/attributes: i/README.md merge=union".to_string(),
+            "e/\\README.md merge=union".to_string(),
+            "q/\"README.md\" merge=union".to_string(),
+            "y/README.md keep".to_string(),
+        ],
+        "a line or a source this reader does not interpret was passed over:\n{report}"
+    );
+    assert!(
+        !population.agrees(),
+        "the report claims the tree agrees:\n{report}"
+    );
+}
+
 /// A path that two shape rules both match takes the shape of the first rule.
 ///
 /// The contract reads the rules in a fixed order, and a producer output is a

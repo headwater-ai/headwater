@@ -29,7 +29,7 @@ The fourth rule reads the shape of the artifact and not the name of the file. [H
 
 The verb then holds the computed set against the `merge=headwater-regenerate` attribute in `.gitattributes`, and it reports both directions. A producer output that carries no attribute merges as an ordinary file, and two branches that move it to one value merge it in silence. A path that carries the attribute and no producer writes refuses a merge of text that a person now edits. `.gitattributes` names the second failure the worse of the two.
 
-The verb reads the tree and nothing else. It reads no lock, resolves no taxonomy and runs no producer. So it answers on a tree whose lock is stale, and on a tree in the middle of a merge, which are the two moments a caller asks the question.
+The verb reads the tree, and outside it only `$GIT_DIR/info/attributes`. It reads no lock, resolves no taxonomy and runs no producer. So it answers on a tree whose lock is stale, and on a tree in the middle of a merge, which are the two moments a caller asks the question.
 
 ### The shape of a record, and the treatment that shape takes
 
@@ -64,6 +64,13 @@ Three rules give the shape, and they are read in this order:
 
 **A merge attribute that this verb cannot read is reported too.** The verb reads each `.gitattributes` of the tree as a list of paths. A `.gitattributes` below the root is read too, because git obeys it. A merge attribute that git obeys and this verb skips gives a clean report that `git check-attr` contradicts. A pattern that carries a merge attribute and a glob character reaches files this reader cannot enumerate. A merge driver that this repository does not define takes no treatment of the table. The verb names each such line rather than passing over it, because a declaration nothing reads looks the same as a declaration that agrees.
 
+**The verb does not interpret four more things, and it names the first three.** It names each line of the four kinds below as a line it does not read, and the tree then does not agree. A named line can be a false alarm, because git can give that path the treatment its shape takes. It is never a clean report.
+
+- A line that uses a macro that an `[attr]` line defines. The built-in `binary` macro is read, as no merge attribute.
+- A quoted pattern, which opens with `"`, and a pattern that holds a `\` escape.
+- A line of `$GIT_DIR/info/attributes` that sets a merge field or uses a macro. Git reads this file after every `.gitattributes`, so it wins over all of them. It lies outside the tree, so the verb names each such line and does not resolve it.
+- The file that `core.attributesFile` names, which is `$XDG_CONFIG_HOME/git/attributes` when nothing sets it. The verb does not read it. Git gives it less weight than every `.gitattributes`, so it can change only a path that no `.gitattributes` names. It belongs to one user and not to the repository, so the answer of the verb does not depend on the machine that runs it.
+
 **The check layer does not carry this rule, and the reason is the grain.** A check of this repository runs at the grain of a document or of the corpus. [Spec 12](../spec/12-check-layer.md) gives a finding a document to hang on. Most paths here are not documents: a lock, a site page, a record of a test run, and a store of readings. A rule whose subject is a path that no shelf claims has no document grain to run at. So it lives in the verb that already computes the population.
 
 **The report renders the palette [HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md) rules on, when standard output is a terminal.** The opening count is a heading. Each producer command carries the verb color, because it is the command a reader retypes. Every path carries the path color, on both sides of the answer. The two headings that report a disagreement carry the error color, and their agreement counterparts stay plain: the verb exits non-zero on exactly those two conditions, so the color says what the exit status says.
@@ -92,13 +99,14 @@ The verb takes no option of its own. It computes one answer about one tree, and 
 
 ## Environment
 
-No environment variable reaches this verb. The root comes from the command line, and every other input comes from the tree.
+No environment variable reaches this verb. The root comes from the command line. Every other input comes from the tree, except `$GIT_DIR/info/attributes`, which the files table names.
 
 ## Files
 
 | Path | How this verb treats it |
 |---|---|
-| `.gitattributes`, at the root and in every directory below it | Read for the merge attribute of every path it names. A path declares `merge=headwater-regenerate`, or `merge=union`, or neither, and all three answers are held against the shape of that path. A pattern that holds a slash is read relative to the directory of its file. A pattern with no slash names every file of that name below that directory, as it does for git. `-merge`, `!merge`, a bare `merge` and the `binary` macro leave the merge to git, which the report calls no merge attribute. Where two files name one path, the file in the deeper directory wins. Where one file names a path twice, the later line wins. |
+| `.gitattributes`, at the root and in every directory below it | Read for the merge attribute of every path it names. A path declares `merge=headwater-regenerate`, or `merge=union`, or neither, and all three answers are held against the shape of that path. A pattern that holds a slash is read relative to the directory of its file. A pattern with no slash names every file of that name below that directory, as it does for git. `-merge`, `!merge`, a bare `merge` and the `binary` macro leave the merge to git, which the report calls no merge attribute. Where two files name one path, the file in the deeper directory wins. Where one file names a path twice, the later line wins, and where one line sets two merge fields, the later field wins. |
+| `$GIT_DIR/info/attributes` | Read for each line that sets a merge field or uses a macro. Each such line is named as a line this verb does not read, and it is never resolved. |
 | `.headwater/taxonomy.lock` | Claimed as the output of `headwater taxonomy resolve`. Its content is not read. |
 | `.headwater/capture-cost.jsonl`, `.headwater/adoption.jsonl` | Read for their shape. No producer writes either one, and both carry `merge=union`. |
 | Every other file of the tree | Read, to ask each producer rule whether the file is its own, and to compute the shape of the ones the report names. |
