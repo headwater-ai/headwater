@@ -149,13 +149,18 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.4.2 changes no declaration in this file. `conformance.yml` beside it names
+# `headwater init --git --git-config` in the remediation text of
+# `hooks.installed`, where it named `.githooks`, a directory of the repository
+# that maintains this package and of no adopter (#974).
+#
 # 4.4.1 changes no declaration in this file. `conformance.yml` beside it names
 # `headwater-ai/headwater/integrations/headwater-check` in the remediation
 # text of `checks.wired` and `gates.required`, so the attestation prompt for
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.4.1
+version: 4.4.2
 
 purposes:
   rationale:

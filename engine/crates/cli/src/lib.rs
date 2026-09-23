@@ -528,6 +528,31 @@ pub enum Verb {
     // No flag at all. The verb computes one answer about the tree in front of
     // it, and every input it has is the tree.
     Derived {},
+    // The four operands git hands a merge driver, in git's order. Each is an
+    // `Option` so that a missing one reaches the verb's own sentence rather
+    // than `clap`'s, which is the posture every positional of this parse takes.
+    MergeDriver {
+        #[arg(
+            value_name = "ancestor",
+            help = "the file git wrote the common ancestor's version into, `%O`. Not read"
+        )]
+        ancestor: Option<String>,
+        #[arg(
+            value_name = "current",
+            help = "the file holding the current side's version, `%A`. Left byte for byte, because git reads the merge result from it"
+        )]
+        current: Option<String>,
+        #[arg(
+            value_name = "other",
+            help = "the file holding the other side's version, `%B`. Not read"
+        )]
+        other: Option<String>,
+        #[arg(
+            value_name = "path",
+            help = "the path of the artifact in the tree, `%P`. It decides which producer the message names"
+        )]
+        path: Option<String>,
+    },
     Route {
         #[arg(
             value_name = "task description",
@@ -798,6 +823,23 @@ pub enum Verb {
             help = "the package to take. `headwater/standard` by default"
         )]
         package: Option<String>,
+        #[arg(
+            long,
+            help = "append a `merge=headwater-regenerate` line to `.gitattributes` for each file \
+                    `headwater taxonomy resolve` and `headwater generate` write in this tree, and \
+                    print the two `git config` lines that name `headwater merge-driver` as the \
+                    driver. It runs after the first `headwater generate`, and on a repository that \
+                    is already bound it does this and nothing else"
+        )]
+        git: bool,
+        #[arg(
+            long = "git-config",
+            requires = "git",
+            help = "also run the two `git config` lines `--git` prints, in this clone. Git takes \
+                    no driver from a repository, so without this flag the lines are printed and \
+                    the adopter runs them"
+        )]
+        git_config: bool,
     },
     Taxonomy {
         #[command(subcommand)]
