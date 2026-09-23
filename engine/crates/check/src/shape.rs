@@ -57,6 +57,24 @@ pub struct Shape {
     pub lifecycle: Vec<LifecycleRegime>,
     /// `identifier_schemes`, which a kind reaches through `identifier.scheme`.
     pub identifier_schemes: Vec<IdentifierScheme>,
+    /// The consumer surface of HW-DR-0077, read down to what
+    /// [`crate::surface`] needs. Empty for a taxonomy that declares none, and
+    /// an empty surface generates no instance.
+    pub surface: Surface,
+}
+
+/// The part of the declared consumer surface that a check reads.
+///
+/// [HW-DR-0077](../../../../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)
+/// names four populations. The documents an adopter reads and the roots of the
+/// population local to the repository are the two lists a page is held
+/// against. The rest of the block is declaration with no reader here yet.
+#[derive(Clone, Debug, Default)]
+pub struct Surface {
+    /// Globs over repository paths, `*` inside one segment and `**` across any.
+    pub adopter_documents: Vec<String>,
+    /// Directory prefixes, each ending in `/`.
+    pub local_roots: Vec<String>,
 }
 
 /// An identifier scheme: the shape a minted identifier takes.
@@ -490,6 +508,19 @@ impl Shape {
                     span: schemes.span,
                 }),
             }
+        }
+
+        if let Some(surface) = root.get("surface").and_then(|node| node.value.as_map()) {
+            shape.surface = Surface {
+                adopter_documents: sequence(surface, "adopter_documents"),
+                local_roots: sequence(surface, "local_roots")
+                    .into_iter()
+                    .map(|root| match root.ends_with('/') {
+                        true => root,
+                        false => format!("{root}/"),
+                    })
+                    .collect(),
+            };
         }
 
         if let Some(regimes) = root.get("regimes").and_then(|node| node.value.as_map()) {

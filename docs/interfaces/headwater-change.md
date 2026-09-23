@@ -15,7 +15,6 @@ relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/vcs/src/lib.rs
-    - .githooks/change-manifest
 ---
 
 # headwater change
@@ -28,13 +27,13 @@ The verb takes two operands, in order. The first is the revision to compare the 
 
 ## Description
 
-`headwater change` writes the manifest that [`headwater check --change`](headwater-check.md) reads. It is the one verb of this binary that runs a version control command. The one crate it calls, `engine/crates/vcs`, is the one crate of the workspace that does. [Spec 12](../spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version) fixes the boundary this verb sits outside of. The check-evaluation path "runs no version control command, and it opens no file that the manifest does not name." A change manifest still has to come from somewhere. Until this verb existed, the only producer was `.githooks/change-manifest`, a shell script that belonged to this repository alone. [HW-DR-0072](../decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) rules that gap a defect. An adopter with no shell script of their own could never reach a rule that reads a transition.
+`headwater change` writes the manifest that [`headwater check --change`](headwater-check.md) reads. It is the one verb of this binary that runs a version control command. The one crate it calls, `engine/crates/vcs`, is the one crate of the workspace that does. [Spec 12](../spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version) fixes the boundary this verb sits outside of. The check-evaluation path "runs no version control command, and it opens no file that the manifest does not name." A change manifest still has to come from somewhere. Until this verb existed, the only producer was `.githooks/change-manifest`, a shell script that belonged to this repository alone. [HW-DR-0072](../decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) rules that gap a defect. An adopter with no shell script of their own could never reach a rule that reads a transition. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=accepted_deviation note=history of how this repository produced the manifest -->
 
 The verb runs three git commands against `<base-rev>`. `git diff --name-status --find-renames` finds every document the working tree moved since that revision. `git show` reads the bytes each moved document held at that revision. `git ls-files --others` finds every document the working tree holds that the index does not, because a diff against a revision never reports one of those. The verb writes `<out-dir>/manifest`, in the grammar `headwater check --change` reads. It writes `<out-dir>/prior/<n>` as well, one file per document whose prior version the manifest names. The manifest's own path goes to standard output. The caller owns `<out-dir>` and removes it.
 
 **`<base-rev>` is resolved against the git top level, not against `--root`.** A `--root` that names a subdirectory of a larger repository still anchors every path this verb writes at the repository root. That is the way `git diff` itself anchors its own paths. A corpus root that is not inside a git repository at all is refused.
 
-**`<out-dir>` must sit outside the tree `<base-rev>` is compared against.** `git ls-files --others` finds every file the working tree holds that the index does not. A directory this verb is still writing into is exactly such a file. An `<out-dir>` under the corpus root is therefore named as a document the change itself adds. `.githooks/pre-commit` and the CI job both avoid this with `mktemp -d`.
+**`<out-dir>` must sit outside the tree `<base-rev>` is compared against.** `git ls-files --others` finds every file the working tree holds that the index does not. A directory this verb is still writing into is exactly such a file. An `<out-dir>` under the corpus root is therefore named as a document the change itself adds. The commit gate and the CI job of this repository both avoid this with `mktemp -d`.
 
 **No path is normalized, and no path is filtered.** A rename is named at the path the document arrived at. The path it left is the source of its prior bytes. A deleted document is named as a `prior` line rather than dropped, because the working tree holds no file there. That absence is the only evidence left of what stood there. A file that is no document of any corpus is still named. Filtering here would hide the one defect this verb can have. A path written in a form the census does not use reaches no row, and the report names it. Under a filter, that same path would be dropped before the check layer ever saw it. The run would then report a correct-looking nothing.
 
@@ -90,4 +89,4 @@ The verb writes no file of the corpus itself. It touches no cache and no claim s
 
 [HW-DR-0072](../decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) rules that git plumbing is one of two integration points that may sit outside the binary. It names this verb as what closes the gap it found.
 
-`.githooks/change-manifest` is the caller this repository's own commit gate and CI job use. It resolves the built engine and hands its two arguments to this verb. It runs no git command of its own.
+`.githooks/change-manifest` is the caller this repository's own commit gate and CI job use. It resolves the built engine and hands its two arguments to this verb. It runs no git command of its own. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=accepted_deviation note=how this repository calls the verb -->

@@ -23,7 +23,7 @@ The verb takes no argument. It reports the derived artifacts of the tree in fron
 
 `headwater derived` answers one question: which files of this repository does a producer write? It asks each producer for its own output set, and the union of those sets is the answer. No file of this repository holds the set as a list, so a new producer output changes the answer with no edit to the engine.
 
-Four producers answer, and each one has its own rule. `headwater generate` claims a file that carries the generated-file marker. `headwater taxonomy resolve` claims the committed lock. `tools/site/refresh-figures.sh` claims a page under `site/` that carries a `data-figure` element. A blessing run of the test suite claims a recorded corpus fixture whose opening states a fold.
+Four producers answer, and each one has its own rule. `headwater generate` claims a file that carries the generated-file marker. `headwater taxonomy resolve` claims the committed lock. A script local to this repository claims a page of its hand-built site that carries a `data-figure` element. A blessing run of the test suite claims a recorded corpus fixture whose opening states a fold.
 
 The fourth rule reads the shape of the artifact and not the name of the file. [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) decomposed two recorded fixtures into one record for each entity, so that they merge correctly. A decomposed artifact must not declare the merge driver. What separates the two groups is the fold, and a fold shows in the first lines of the artifact as a count over the corpus or as a digest over the whole canonical text.
 

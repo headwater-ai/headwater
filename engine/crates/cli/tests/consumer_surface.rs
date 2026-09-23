@@ -137,8 +137,8 @@ impl Root {
         )
     }
 
-    /// The message of each finding of this rule on one document, read from the
-    /// JSON report, which prints one member of a finding per line.
+    /// The message of each finding of this rule on one document that no escape
+    /// hides, read from the JSON report, which prints one member per line.
     fn findings(&self, slug: &str) -> Vec<String> {
         let (_, out, _) = self.run(&["check", "--format", "json"]);
         let path = format!("\"path\": \"docs/interfaces/{slug}.md\",");
@@ -148,8 +148,17 @@ impl Root {
             if *line != format!("\"rule\": \"{RULE}\",") {
                 continue;
             }
-            let finding = &lines[at..(at + 8).min(lines.len())];
-            if finding.contains(&path.as_str()) {
+            // One finding runs to the next `rule` member. A finding the runner
+            // filtered is still in the report, with its escape named, and only
+            // an unescaped one is a verdict a reader meets.
+            let end = lines[at + 1..]
+                .iter()
+                .position(|l| l.starts_with("\"rule\""))
+                .map_or(lines.len(), |next| at + 1 + next);
+            let finding = &lines[at..end];
+            if finding.contains(&path.as_str())
+                && finding.iter().any(|l| l.starts_with("\"escape\": \"none\""))
+            {
                 if let Some(message) = finding.iter().find(|l| l.starts_with("\"message\"")) {
                     messages.push(message.to_string());
                 }

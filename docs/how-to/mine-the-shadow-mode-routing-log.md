@@ -18,6 +18,8 @@ relations:
 
 # Mine the shadow-mode routing log
 
+**Audience:** a contributor to this repository. An adopter of Headwater needs no step of this guide, and the consumer surface in `.headwater/overlay.yml` does not list it.
+
 ## Before you start
 
 [HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md) sets the collection period. Wait for 1,000 person prompts or 30 days, whichever comes first. The period also needs 58 silent invocations or more. A count below either bound is a measurement of the collector rather than of the router.
