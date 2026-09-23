@@ -7,7 +7,11 @@
 # combined-status endpoint, which answers `pending` with an empty status list
 # forever on a repository whose CI is GitHub Actions: every attempt ended in
 # RE-ISSUE until the integrator of run 20260923-0733 noticed and changed the
-# endpoint itself. A builder first slept and listed runs to learn a run id to
+# endpoint itself, and #1046 then wrote an inline check-runs condition into
+# the definition with a count guard, so that a wait cannot clear before CI has
+# registered a run. The guard lives on here as "no workflow run yet". Check
+# runs alone still miss a job behind `needs:`, as the paragraph on both halves
+# below says. A builder first slept and listed runs to learn a run id to
 # wait on, and another waited on `gh pr checks | grep -qv pending`, which
 # succeeds the moment any one check is no longer pending.
 #

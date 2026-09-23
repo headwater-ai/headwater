@@ -148,12 +148,39 @@ unpinned_lines() {
             # inside it. This is lexical, not a real shell parse: the run
             # below over the real tree is what proves this substitution
             # reaches no case name or message it should not.
-            gsub(/(^|[^A-Za-z0-9_])(if|then|elif|else|fi|do|done|for|while|until|case|esac)([^A-Za-z0-9_]|$)/, "&|", work)
-            if (match(work, /(^|[|;(`"!{})]|&&[ \t]*)[ \t]*sort([^A-Za-z0-9_]|$)/)) {
+            #
+            # A fifth verifier (#1031) found that this marking matched a
+            # reserved word wherever it appeared as a whole word at all,
+            # with no check that the word itself sat in a command position:
+            # "wait for sort to finish" put `for` immediately before `sort`
+            # as ordinary English, and the match still opened a new command
+            # there. A keyword now opens a command only when it stands in
+            # one itself: after `open`, the one class all three matches
+            # below share, and never after a bare space. The verifier of
+            # that fix found two more gaps. A keyword right after another
+            # one (`do if sort`) needs the first one`s mark as its own left
+            # side, and a single gsub pass never reads a mark it wrote. So
+            # the loop below replaces one command-position keyword at a
+            # time with `;`, and the next pass reads that `;` as the opener
+            # it is. Each pass removes one keyword, so the loop ends. And a
+            # single `&` ends a background command and opens the next, so
+            # it is in `open`, which also covers `&&`.
+            open = "(^|[|;&(`\"!{})])[ \t]*"
+            while (match(work, open "(if|then|elif|else|fi|do|done|for|while|until|case|esac)([^A-Za-z0-9_]|$)")) {
+                seg = substr(work, RSTART, RLENGTH)
+                end = ""
+                if (seg ~ /[^A-Za-z0-9_]$/) {
+                    end = substr(seg, length(seg), 1)
+                    seg = substr(seg, 1, length(seg) - 1)
+                }
+                sub(/[a-z]+$/, ";", seg)
+                work = substr(work, 1, RSTART - 1) seg end substr(work, RSTART + RLENGTH)
+            }
+            if (match(work, open "sort([^A-Za-z0-9_]|$)")) {
                 print FILENAME ":" FNR ": " line
                 next
             }
-            if (match(work, /(^|[|;(`"!{})]|&&[ \t]*)[ \t]*comm([^A-Za-z0-9_]|$)/)) {
+            if (match(work, open "comm([^A-Za-z0-9_]|$)")) {
                 print FILENAME ":" FNR ": " line
             }
         }
@@ -282,6 +309,40 @@ printf '#!/bin/sh\nfor f in *; do sort "$f"; done\nwhile true; do comm -12 a b; 
 same "for/do, while/do, until/do, if, elif, a bare !, a brace group and a case arm all redden" \
     "$scratch/arms/keywords.sh:2: for f in *; do sort \"\$f\"; done|$scratch/arms/keywords.sh:3: while true; do comm -12 a b; done|$scratch/arms/keywords.sh:4: until false; do sort x; done|$scratch/arms/keywords.sh:5: if sort file; then :; fi|$scratch/arms/keywords.sh:6: if false; then :; elif sort file; then :; fi|$scratch/arms/keywords.sh:7: ! sort file|$scratch/arms/keywords.sh:8: { sort file; }|$scratch/arms/keywords.sh:9: case \$x in pattern) comm -12 a b ;; esac|" \
     "$(unpinned_lines "$scratch/arms/keywords.sh" | tr '\n' '|')"
+
+# A fifth verifier (#1031) found that the fourth verifier's keyword-opener
+# gsub above marks a reserved word as a command opener wherever it appears
+# as a whole word at all, with no check that the word itself sits in a
+# command position. English trips this the same way a real invocation
+# does: "wait for sort to finish" and "wait until comm settles down" both
+# put a keyword immediately before sort/comm as ordinary prose, and the
+# unconditional gsub inserted a `|` right after "for"/"until" regardless,
+# which then satisfied the left-side sort/comm check the same way a real
+# pipe would. This arm plants both sentences and asserts neither reddens;
+# it depends on the keywords arm just above staying green unmodified, which
+# is the other half of the issue's own Done-when — a genuine invocation
+# must still fire.
+printf '#!/bin/sh\necho "wait for sort to finish before continuing"\necho "wait until comm settles down"\n' \
+    >"$scratch/arms/prose.sh"
+same "an opener keyword immediately before sort/comm in ordinary prose does not redden" \
+    "" "$(unpinned_lines "$scratch/arms/prose.sh" | tr '\n' '|')"
+
+# The verifier of that fix (#1031) found two genuine shapes it missed. A
+# reserved word that opens a command right after another one (`do if sort`,
+# `then if comm`, `else if sort`) was missed before the fix and after it,
+# because the one-pass gsub consumed the space after the first keyword and
+# never read the `|` it had inserted. And a single `&`, which ends a
+# background command and opens the next, was in neither opener class, so
+# `false & if sort` went from caught to missed. This arm plants one shape per
+# line, each one resting on a different member of the opener class — the
+# nested keyword, `&&`, `&`, `|` and a case arm's `)` — and every line must
+# redden. The expected value is every line of the file, so it names no
+# output of the function it judges.
+printf '#!/bin/sh\nfor f in a b; do if sort "$f"; then :; fi; done\nif true; then if comm -12 a b; then :; fi; fi\nwhile read x; do while sort y; do :; done; done\nif x; then :; else if sort z; then :; fi; fi\ntrue && if sort a; then :; fi\nfalse & if sort bg; then :; fi\ncat f | while sort; do :; done\ncase $x in a) if comm -12 a b; then :; fi ;; esac\ntrue && sort x\nfalse & comm -12 a b\n' \
+    >"$scratch/arms/nested.sh"
+same "a keyword after a keyword, after && or &, after a pipe or a case arm, and a bare & before sort/comm all redden" \
+    "$(awk 'NR > 1 { print FILENAME ":" NR ": " $0 }' "$scratch/arms/nested.sh" | tr '\n' '|')" \
+    "$(unpinned_lines "$scratch/arms/nested.sh" | tr '\n' '|')"
 
 echo
 echo "$passed passed, $failed failed"

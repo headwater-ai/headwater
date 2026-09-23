@@ -52,7 +52,7 @@
 //! artifact, so its bytes sit inside the digest a consumer pins and
 //! `headwater taxonomy vendor` refuses an artifact whose bytes moved.
 
-use headwater_census::census::{Census, Outcome};
+use headwater_census::census::{no_front_matter_message, Census, Outcome, Untyped};
 use headwater_check::context::Date;
 use headwater_lock::Lock;
 use headwater_resolve::package::Consumer;
@@ -1130,12 +1130,32 @@ fn joined<E: ToString>(errors: &[E]) -> String {
 /// stated reason. An excluded file states a reason, a generated file names its
 /// projection, and a file that is not Markdown is not a document. Each of those
 /// is an account, and this rule reads the rows that carry none.
+///
+/// A shelf-claimed file with no front matter is not the same gap as a path no
+/// shelf claims: a shelf already fixes where the file belongs, so its entry in
+/// the list names that shelf, and the kind `headwater new` would mint where
+/// the shelf picks exactly one, rather than leaving a reader to reopen the
+/// corpus to place the fix. [`no_front_matter_message`] is that sentence, and
+/// [`Outcome::detail`](headwater_census::census::Outcome::detail) writes the
+/// same one for the census's own per-row report.
 pub fn corpus_classified(census: &Census) -> Verdict {
-    let loose: Vec<&str> = census
+    let loose: Vec<String> = census
         .rows
         .iter()
         .filter(|row| matches!(row.outcome, Outcome::Untyped(_) | Outcome::Unreadable(_)))
-        .map(|row| row.path.as_str())
+        .map(|row| match &row.outcome {
+            // A shelf claimed this path, so `headwater new` already knows
+            // where the file belongs; name the shelf, and the kind where the
+            // shelf picks exactly one, rather than leaving the path bare. The
+            // no-shelf-claims-this-path case, and every unreadable file, keep
+            // the plain path: nothing here has decided a placement for either.
+            Outcome::Untyped(Untyped::NoFrontMatter { shelf, kind }) => format!(
+                "{} ({})",
+                row.path,
+                no_front_matter_message(shelf, kind.as_deref())
+            ),
+            _ => row.path.clone(),
+        })
         .collect();
     match loose.is_empty() {
         true => Verdict::Met,
