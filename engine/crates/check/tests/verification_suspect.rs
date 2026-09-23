@@ -148,6 +148,20 @@ fn findings_of(run: &Run) -> Vec<&headwater_check::finding::Finding> {
     run.findings.iter().filter(|f| f.rule == RULE).collect()
 }
 
+/// The line the report's verification block prints for one verification, and
+/// nothing where the block does not name it. The block is part of
+/// [`Run::render`], so this reads the same text a person reads.
+fn report_line(run: &Run, verification: &str) -> Option<String> {
+    let text = run.render(
+        headwater_check::Detail::Findings,
+        headwater_check::paint::ColorMode::Plain,
+    );
+    let prefix = format!("  {verification} ");
+    text.lines()
+        .find(|line| line.starts_with(&prefix))
+        .map(str::to_string)
+}
+
 /// State 1: no snapshot names the verification. `declared`, and a pass.
 #[test]
 fn no_snapshot_is_declared_and_not_a_finding() {
@@ -157,6 +171,11 @@ fn no_snapshot_is_declared_and_not_a_finding() {
         findings_of(&run).is_empty(),
         "a verification with no committed snapshot is `declared`, not suspect: {:?}",
         findings_of(&run)
+    );
+    // And the report names it with its state, rather than counting it.
+    assert_eq!(
+        report_line(&run, VERIFICATION_ID).as_deref(),
+        Some(format!("  {VERIFICATION_ID} declared").as_str()),
     );
     let _ = std::fs::remove_dir_all(&root);
 }
@@ -179,6 +198,10 @@ fn a_snapshot_matching_the_criterions_current_digest_is_observed_and_not_a_findi
         findings_of(&run).is_empty(),
         "the snapshot's digest matches the criterion as it reads today: {:?}",
         findings_of(&run)
+    );
+    assert_eq!(
+        report_line(&run, VERIFICATION_ID).as_deref(),
+        Some(format!("  {VERIFICATION_ID} observed at {SNAPSHOT_COMMIT}").as_str()),
     );
     let _ = std::fs::remove_dir_all(&root);
 }
@@ -243,6 +266,123 @@ fn the_same_snapshot_after_the_criterion_changes_is_suspect() {
         reported[0].message.contains(SNAPSHOT_COMMIT),
         "{}",
         reported[0].message
+    );
+    // The report block names the same state the finding does, because the
+    // rule and the block share one comparison.
+    assert_eq!(
+        report_line(&after, VERIFICATION_ID).as_deref(),
+        Some(
+            format!("  {VERIFICATION_ID} suspect since {SNAPSHOT_COMMIT}, ACP-FIX-proven changed")
+                .as_str()
+        ),
+    );
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// The decisive case for the report half of #937: one corpus holds three
+/// verifications at once, one in each state, and the report names each of
+/// them with its own state.
+///
+/// Before the verification block, `declared` and `observed` both returned a
+/// pass and printed nothing, so a run could not show whether a verification
+/// was ever observed or only declared. A count of findings passes on that
+/// tree too, which is why this case reads the report text: the `observed`
+/// line is the one that nothing printed before.
+#[test]
+fn one_report_names_each_verification_in_its_own_state() {
+    let root = scratch_corpus("three-states");
+    let tree = root.join("acceptance-criterion-proven");
+    for (name, criterion, verification) in [
+        ("two", "ACP-FIX-observed", "ACP-FIX-verification-two"),
+        ("three", "ACP-FIX-stale", "ACP-FIX-verification-three"),
+    ] {
+        std::fs::write(
+            tree.join("criteria").join(format!("{name}.md")),
+            format!(
+                "---\nid: {criterion}\nstatus: current\nstatus_since: 2026-08-01\n\
+                 summary: reaches {verification}\nverification_method: test\n\
+                 relations:\n  proven_by:\n    - {verification}\n---\n\n# {name}\n"
+            ),
+        )
+        .expect("the criterion writes");
+        std::fs::write(
+            tree.join("verifications").join(format!("{name}.md")),
+            format!(
+                "---\nid: {verification}\nstatus: current\nstatus_since: 2026-08-01\n\
+                 summary: proves {criterion}\nrelations:\n  proves:\n    - {criterion}\n\
+                 ---\n\n# {name}\n"
+            ),
+        )
+        .expect("the verification writes");
+    }
+    let observed_digest = headwater_hash::digest(
+        &std::fs::read(tree.join("criteria").join("two.md")).expect("the criterion reads"),
+    );
+    let observations = Observations::of(vec![
+        Observation::Verification {
+            verification: "ACP-FIX-verification-two".to_string(),
+            commit: SNAPSHOT_COMMIT.to_string(),
+            criterion_digest: observed_digest,
+        },
+        Observation::Verification {
+            verification: "ACP-FIX-verification-three".to_string(),
+            commit: SNAPSHOT_COMMIT.to_string(),
+            criterion_digest:
+                "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+                    .to_string(),
+        },
+    ]);
+
+    let run = run_over(&root, &observations);
+    let reported = findings_of(&run);
+    assert_eq!(
+        reported.len(),
+        1,
+        "only the stale verification is a finding: {reported:?}"
+    );
+    assert!(
+        reported[0].message.contains("ACP-FIX-verification-three"),
+        "{}",
+        reported[0].message
+    );
+
+    for (verification, expected) in [
+        (VERIFICATION_ID, format!("  {VERIFICATION_ID} declared")),
+        (
+            "ACP-FIX-verification-two",
+            format!("  ACP-FIX-verification-two observed at {SNAPSHOT_COMMIT}"),
+        ),
+        (
+            "ACP-FIX-verification-three",
+            format!(
+                "  ACP-FIX-verification-three suspect since {SNAPSHOT_COMMIT}, ACP-FIX-stale changed"
+            ),
+        ),
+    ] {
+        assert_eq!(
+            report_line(&run, verification).as_deref(),
+            Some(expected.as_str()),
+            "{}",
+            run.render(
+                headwater_check::Detail::Findings,
+                headwater_check::paint::ColorMode::Plain
+            )
+        );
+    }
+
+    let text = run.render(
+        headwater_check::Detail::Findings,
+        headwater_check::paint::ColorMode::Plain,
+    );
+    assert!(
+        text.contains("3 verifications: 1 declared, 1 observed, 1 suspect"),
+        "{text}"
+    );
+    // The header states where an observed or suspect state comes from, once.
+    assert!(
+        text.contains("transcribed from .headwater/observations.yml"),
+        "{text}"
     );
 
     let _ = std::fs::remove_dir_all(&root);
