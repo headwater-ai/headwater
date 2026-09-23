@@ -323,6 +323,9 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0201](../obligations/0201-no-coverage-or-mutation-measurement-has-ever-been-taken-over-the-engine-s-test-suite.md) — No coverage or mutation measurement has ever been taken over the engine's test suite
 - [HW-OBL-0202](../obligations/0202-a-bare-none-footprint-is-claimed-as-a-literal-path-so-two-disjoint-issues-collide.md) — A bare none footprint is claimed as a literal path, so two disjoint issues collide
 - [HW-OBL-0203](../obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md) — Three small run-tooling gaps from run 20260922-1121, filed together
+- [HW-OBL-0204](../obligations/0204-docs-decisions-0077-still-describes-hw-dr-0049-s-rewrite-as-pending-after-574-made-it.md) — docs/decisions/0077 still describes HW-DR-0049's rewrite as pending, after #574 made it
+- [HW-OBL-0205](../obligations/0205-hw-obl-0002-s-sample-counts-and-voice-rs-s-own-census-predate-the-scent-role-fix-and-need-retaking.md) — HW-OBL-0002's sample counts and voice.rs's own census predate the scent-role fix and need retaking
+- [HW-OBL-0206](../obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness.md) — hw-run-policy names a worktree-add workaround that Write/Edit refuses under this harness
 
 ## What the first typing of this corpus found
 
