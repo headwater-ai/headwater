@@ -7168,7 +7168,7 @@
           "status_since": "2026-08-14",
           "waiting_on": "ruling",
           "summary": "The read set artifact holds one line per document, so an external anchor is on no line and a gate that compares listed hashes cannot see the target of one leave the tree.",
-          "last_verified": "2026-08-14",
+          "last_verified": "2026-09-23",
           "title": "The published read set names no anchor, so a gate decides nothing about one",
           "provenance": {
             "warrant": "proposed",
@@ -9198,6 +9198,20 @@
           "summary": "hw-run-policy tells a subagent needing its own workspace to make one by hand with git worktree add. Edit and Write on a file under that hand-made worktree are refused, because the write sandbox stays pinned to the worktree the subagent was launched into.",
           "last_verified": "2026-09-23",
           "title": "hw-run-policy names a worktree-add workaround that Write/Edit refuses under this harness",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0208",
+        "facets": {
+          "id": "HW-OBL-0208",
+          "status": "draft",
+          "status_since": "2026-09-23",
+          "summary": "A collation opener class, a cache key's CLI wiring, a cache doc word and a recurring board-card gap, each with no reader outside this repository.",
+          "last_verified": "2026-09-23",
+          "title": "Four small test and wording gaps from run 20260923-0733 filed together",
           "waiting_on": "build"
         }
       },

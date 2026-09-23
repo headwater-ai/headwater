@@ -55,11 +55,9 @@ It reads every tree and every branch rather than only the one you merged, so it 
 
 **Wait by blocking.** CI on the merge commit is one blocking wait, never a check per turn, through `tools/run/wait-for.sh`, started with `run_in_background: true` and re-issued on a `RE-ISSUE` exit rather than left running past the cache lifetime ([HW-PD-0007](../../docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md)):
 
-    sh tools/run/wait-for.sh '[ "$(gh api repos/headwater-ai/headwater/commits/<sha>/check-runs --jq "(.check_runs | length) > 0 and all(.check_runs[]; .status == \"completed\")")" = true ]'
+    sh tools/run/wait-for.sh 'sh tools/run/ci-done.sh <sha>'
 
-Read check runs, never the combined `status`: CI here posts check runs and no commit status, so `status` stays `pending` with a count of 0 and a wait on it never clears. The count guard stops a wait from clearing before CI has registered a run.
-
-A red `main` is the first line of `LEFT`, for the next iteration's branch to fix before its own work.
+It ends on `green` or on `red` with the failing checks named; its header says why no other condition is used. A red `main` is the first line of `LEFT`, for the next iteration's branch to fix before its own work.
 
 ## What you never do
 

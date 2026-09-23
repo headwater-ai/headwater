@@ -26,9 +26,11 @@ The report ends with this block:
 
 ## How you work
 
-**A scratch worktree, reset to the branch.** Never the build agent's worktree and never the shared checkout, fetched, added and built in one call:
+**A scratch worktree, reset to the branch.** Never the build agent's worktree and never the shared checkout, fetched, added and built in one call with a `timeout` of 600000, detached at the pushed tip and on your own build slot:
 
-    sh tools/repo/new-worktree.sh "$root/.claude/worktrees/verify-<N>" <branch>
+    HW_CARGO_SLOT=verify sh tools/repo/new-worktree.sh "$root/.claude/worktrees/verify-<N>" --detach origin/<branch>
+
+Keep `HW_CARGO_SLOT=verify` on every later `tools/hw-cargo` call in the tree. The header of `tools/repo/new-worktree.sh` says why each of the three is there.
 
 Run `git worktree remove` on it before you exit. Removing it is not optional and it is not the integrator's to collect: your tree sits on a branch whose pull request is still open, and the sweep that retires a finished tree refuses an open one by design. A tree you leave behind is a tree nothing else will take. Say that it is still there only when the removal refused, and give the refusal.
 

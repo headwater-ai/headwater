@@ -14,10 +14,14 @@
 #
 #     sh tools/run/board-move.sh <issue-number> todo|in-progress|done
 #
-# A newly filed issue is sometimes missing from the project entirely — the
-# project misses newly filed issues, a fact `hw-queue.md` already carries for
-# a different reason — and this script says so rather than failing on an
-# empty id.
+# The card is found with `gh project item-add`, which returns the existing
+# item when the issue is already on the project and adds it when it is not.
+# That is one call where there were two ways to fail. The script first read
+# `gh project item-list --limit 200`, which stops finding cards once the
+# project holds more than 200, and it refused an issue with no card and told
+# the caller to file it by hand. The project stopped adding new issues on its
+# own after #995, so in run 20260923-0733 all three builders' claims were
+# refused that way and each one carried on without a card.
 
 set -u
 
@@ -45,11 +49,11 @@ case $n in '' | *[!0-9]*) echo "board-move: \`$n\` is not an issue number." >&2;
 option=$(option_id "$status")
 [ -n "$option" ] || { echo "board-move: status is one of todo, in-progress, done — got \`$status\`." >&2; exit 2; }
 
-item_id=$(gh project item-list 1 --owner "$owner" --format json --limit 200 \
-    | jq -r --argjson n "$n" '.items[] | select(.content.number == $n) | .id' | head -1)
+item_id=$(gh project item-add 1 --owner "$owner" \
+    --url "https://github.com/headwater-ai/headwater/issues/$n" --format json --jq .id) || item_id=
 
 if [ -z "$item_id" ]; then
-    echo "board-move: #$n has no card on the project board. The project misses newly filed issues; file it there by hand first." >&2
+    echo "board-move: #$n could not be put on the project board; gh gave no item id." >&2
     exit 1
 fi
 
