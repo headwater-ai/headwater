@@ -118,5 +118,41 @@ else
     echo "  ok    no numbered slot lock was touched"
 fi
 
+echo "a slot another worktree built in last makes this tree's workspace crates rebuild"
+# Cargo gives a workspace crate one metadata hash in every checkout, so a
+# unit a second worktree compiled more recently reads as fresh in the first.
+# The tool marks the building tree's crate sources newer than anything in a
+# slot it did not build in last; here the fake cargo builds nothing, so the
+# source's modification time is what is held.
+rm -rf "$pool"
+mkdir -p "$worktree_a/engine/crates/verbs/src" "$worktree_b/engine/crates/verbs/src"
+: >"$worktree_a/engine/crates/verbs/src/lib.rs"
+: >"$worktree_b/engine/crates/verbs/src/lib.rs"
+build_in() {
+    PATH="$fakebin:$PATH" HW_CARGO_POOL="$pool" HW_CARGO_SLOT=shared sh "$tool" build --profile dev-release -p headwater-cli \
+        --manifest-path "$1/engine/Cargo.toml" --locked >"$scratch/out" 2>"$scratch/err"
+}
+is_old() { [ "$(find "$1" -newer "$scratch/stamp" | wc -l)" -eq 0 ]; }
+touch -t 202001010000 "$scratch/stamp"
+build_in "$worktree_a"
+touch -t 202001010000 "$worktree_b/engine/crates/verbs/src/lib.rs"
+build_in "$worktree_b"
+if ! is_old "$worktree_b/engine/crates/verbs/src/lib.rs" && grep -q 'every workspace crate rebuilds from this tree' "$scratch/err"; then
+    passed=$((passed + 1))
+    echo "  ok    b, after a, has its crate sources marked newer, and says so"
+else
+    failed=$((failed + 1))
+    echo "  FAIL  b, after a, was not made to rebuild its workspace crates"
+fi
+touch -t 202001010000 "$worktree_b/engine/crates/verbs/src/lib.rs"
+build_in "$worktree_b"
+if is_old "$worktree_b/engine/crates/verbs/src/lib.rs"; then
+    passed=$((passed + 1))
+    echo "  ok    b, building in the slot it built in last, is left incremental"
+else
+    failed=$((failed + 1))
+    echo "  FAIL  b rebuilding in its own slot had its sources touched again"
+fi
+
 echo "$passed passed; $failed failed"
 [ "$failed" -eq 0 ]
