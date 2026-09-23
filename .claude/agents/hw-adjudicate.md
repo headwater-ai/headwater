@@ -27,8 +27,8 @@ The report ends with this block, which the parent acts on:
 
 Read the issue and its comments, because corrections live there:
 
-    gh api repos/headwater-ai/headwater/issues/<N> --jq .body
-    gh api repos/headwater-ai/headwater/issues/<N>/comments --jq '.[].body'
+    sh tools/run/gh-issue.sh body <N>
+    sh tools/run/gh-issue.sh comments <N>
 
 Confirm the premise against `docs/spec/`, [9 — The decision register](../../docs/spec/09-decisions.md) and spec 13. `headwater explain` and `headwater route` answer from the graph the engine built; open a specification part only after they have named the right one, and never read a whole part.
 

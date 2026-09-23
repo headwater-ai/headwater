@@ -245,5 +245,33 @@ else
     fail 'both commands name the same agents' "next-run: $(printf '%s' "$run_set" | tr '\n' ' ') / next: $(printf '%s' "$one_set" | tr '\n' ' ')"
 fi
 
+# --- 9. every cargo build/test an agent definition runs goes through tools/hw-cargo
+
+# Scoped to the agent definitions themselves, and not to a skill or a command:
+# a skill such as headwater-engine is the general reference and teaches the
+# bare invocation on purpose, before explaining which stage wraps it and why.
+# An agent definition's own command block is what a dispatch actually runs.
+printf '\n# no agent definition runs a bare cargo build or cargo test\n'
+bare=''
+for file in "$agents"/*.md; do
+    [ -f "$file" ] || continue
+    hits=$(grep -nE 'cargo (build|test)\b' "$file" | grep -v 'hw-cargo' || true)
+    [ -z "$hits" ] || bare="$bare
+$(basename "$file"): $(printf '%s' "$hits" | tr '\n' ';')"
+done
+if [ -z "$bare" ]; then
+    pass 'every agent definition runs cargo build/test through tools/hw-cargo'
+else
+    fail 'every agent definition runs cargo build/test through tools/hw-cargo' "$bare"
+fi
+# The refusal arm: a bare cargo build in a fresh file is reported.
+printf 'Run `cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked`.\n' > "$scratch/bare-cargo.md"
+hits=$(grep -nE 'cargo (build|test)\b' "$scratch/bare-cargo.md" | grep -v 'hw-cargo' || true)
+if [ -n "$hits" ]; then
+    pass 'and a bare cargo build in a fresh file is found'
+else
+    fail 'a bare cargo build in a fresh file is found' 'nothing was found'
+fi
+
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]

@@ -99,5 +99,24 @@ report "cwd b, manifest path a, lands only in a" \
     "$worktree_a/engine/target/dev-release/headwater" \
     "$worktree_b/engine/target/dev-release/headwater"
 
+echo "HW_CARGO_SLOT reserves a target dir outside the numbered pool"
+rm -rf "$worktree_b/engine/target" "$pool"
+(
+    cd "$worktree_b" || exit 1
+    PATH="$fakebin:$PATH" HW_CARGO_POOL="$pool" HW_CARGO_SLOT=integrate sh "$tool" build --profile dev-release -p headwater-cli --locked
+) >"$scratch/out" 2>"$scratch/err"
+report "a reserved slot writes its own named target dir" \
+    "$pool/target-integrate/dev-release/headwater" \
+    "$pool/target-1/dev-release/headwater"
+
+echo "a reserved slot never takes a numbered slot's lock"
+if [ -e "$pool/slot.1.lock" ]; then
+    failed=$((failed + 1))
+    echo "  FAIL  a reserved-slot build left slot.1.lock behind"
+else
+    passed=$((passed + 1))
+    echo "  ok    no numbered slot lock was touched"
+fi
+
 echo "$passed passed; $failed failed"
 [ "$failed" -eq 0 ]
