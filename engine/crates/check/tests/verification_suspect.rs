@@ -540,7 +540,7 @@ fn snapshot_on_disk(root: &Path, text: &str) -> Observations {
     let path = root.join(".headwater").join("observations.yml");
     std::fs::create_dir_all(path.parent().expect("a parent")).expect("the dir creates");
     std::fs::write(&path, text).expect("the snapshot writes");
-    Observations::at(&root)
+    Observations::at(root)
 }
 
 fn rendered(run: &Run) -> String {
