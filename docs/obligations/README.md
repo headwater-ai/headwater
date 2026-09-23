@@ -2,7 +2,7 @@
 
 # Obligation records
 
-206 documents on this shelf, in the reading order this corpus derives.
+207 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and no category reaches the adjudicated sample bar of 50 findings.
@@ -210,3 +210,4 @@
 - [docs/decisions/0077 still describes HW-DR-0049's rewrite as pending, after #574 made it](0204-docs-decisions-0077-still-describes-hw-dr-0049-s-rewrite-as-pending-after-574-made-it.md) — A sentence in decision 0077 says HW-DR-0049's acceptance still owes a rewrite of itself. #574 already made that rewrite, so the sentence now describes a past event as future.
 - [Two sample counts, HW-OBL-0002's and voice.rs's own census, predate the scent-role fix and need retaking](0205-hw-obl-0002-s-sample-counts-and-voice-rs-s-own-census-predate-the-scent-role-fix-and-need-retaking.md) — Two sample counts predate the scent-role fix #774 landed: HW-OBL-0002's, and voice.rs's own census. Neither was re-taken, so both figures now understate what the rule covers.
 - [hw-run-policy names a worktree-add workaround that Write/Edit refuses under this harness](0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness.md) — hw-run-policy tells a subagent needing its own workspace to make one by hand with git worktree add. Edit and Write on a file under that hand-made worktree are refused, because the write sandbox stays pinned to the worktree the subagent was launched into.
+- [Four small test and wording gaps from run 20260923-0733 filed together](0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md) — A collation opener class, a cache key's CLI wiring, a cache doc word and a recurring board-card gap, each with no reader outside this repository.
