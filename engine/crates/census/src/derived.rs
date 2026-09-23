@@ -839,7 +839,7 @@ fn declarations(root: &Path, files: &[String]) -> Vec<Declaration> {
                 continue;
             };
             // The last merge field of a line wins, as it does for git.
-            let Some(merge) = fields.filter_map(merge_field).last() else {
+            let Some(merge) = fields.filter_map(merge_field).next_back() else {
                 continue;
             };
             if is_a_pattern(pattern) || pattern.contains('/') {
