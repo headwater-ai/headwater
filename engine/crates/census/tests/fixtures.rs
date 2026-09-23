@@ -1097,6 +1097,110 @@ fn a_merge_attribute_behind_a_glob_is_reported_rather_than_skipped() {
     );
 }
 
+/// A merge attribute in a `.gitattributes` below the root is read, and it wins.
+///
+/// Git reads every `.gitattributes` of a tree, and the one in the deeper
+/// directory wins over the root for a path both name. A reader of the root
+/// file alone reported this tree clean: the root declares the fold for
+/// regeneration, while git merges it with `union`, the worst of the six
+/// disagreements. `git check-attr merge sub/README.md` answers `union` here.
+#[test]
+fn a_merge_attribute_in_a_nested_gitattributes_is_read_and_overrides_the_root() {
+    use headwater_census::derived::{Shape, Treatment};
+
+    let root = TempTree::new("nested");
+    root.write(
+        ".gitattributes",
+        "sub/README.md merge=headwater-regenerate\n",
+    );
+    root.write("sub/.gitattributes", "README.md merge=union\n");
+    root.write(
+        "sub/README.md",
+        "<!-- headwater:generated shelf_index. -->\n\n# 48 decisions\n",
+    );
+    // A second nested file, with a glob that this reader cannot expand.
+    root.write("deep/er/.gitattributes", "*.jsonl merge=union\n");
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    let member = population
+        .members
+        .iter()
+        .find(|member| member.path == "sub/README.md")
+        .unwrap_or_else(|| panic!("sub/README.md is not in the report:\n{report}"));
+    assert_eq!(
+        (member.shape, member.treatment),
+        (Shape::Fold, Treatment::Union),
+        "the merge attribute of the nested `.gitattributes` was not read, or \
+         the root's declaration won over it:\n{report}"
+    );
+    assert!(
+        member.disagreement().is_some(),
+        "a fold under `union` was not reported:\n{report}"
+    );
+    assert_eq!(
+        population.unreadable,
+        vec!["deep/er/*.jsonl".to_string()],
+        "a glob in a nested `.gitattributes` was passed over, or was not named \
+         relative to the root:\n{report}"
+    );
+    assert!(!population.agrees(), "the report claims the tree agrees:\n{report}");
+}
+
+/// A path that two shape rules both match takes the shape of the first rule.
+///
+/// The contract reads the rules in a fixed order, and a producer output is a
+/// fold before it is anything else. Each file below is written by a producer
+/// and is also one complete record on every line. So the record-stream rule
+/// also matches it, and read first it would call the fold `union`-safe. Swap
+/// the fold and record-stream arms of `shape_of`, and this case fails.
+///
+/// A generated JSON projection is not planted here. The marker rule reads the
+/// `headwater:generated` key only at the start of a line, and a line of a
+/// record stream starts with `{`, so no generated file can be both.
+#[test]
+fn a_producer_output_whose_every_line_is_a_record_is_a_fold() {
+    use headwater_census::derived::{Producer, Shape};
+
+    let root = TempTree::new("order");
+    root.write(".gitattributes", "");
+    root.write(
+        "engine/crates/a/fixtures/corpus.a",
+        "{\"digest\":\"sha256:0a1b\"}\n{\"seen\":426}\n",
+    );
+    root.write(
+        "site/figure/index.html",
+        "{<span data-figure=\"census.seen\">426</span>}\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    for (path, producer) in [
+        ("engine/crates/a/fixtures/corpus.a", Producer::RecordedFold),
+        ("site/figure/index.html", Producer::FigureRefresh),
+    ] {
+        assert!(
+            population
+                .outputs
+                .iter()
+                .any(|output| output.path == path && output.producer == producer),
+            "{path} is not claimed by {producer:?}, so it cannot test the rule \
+             order:\n{report}"
+        );
+        let member = population
+            .members
+            .iter()
+            .find(|member| member.path == path)
+            .unwrap_or_else(|| panic!("{path} is not in the report:\n{report}"));
+        assert_eq!(
+            member.shape,
+            Shape::Fold,
+            "{path} is a producer output and every line of it is a record; the \
+             record-stream rule was read before the fold rule:\n{report}"
+        );
+    }
+}
+
 /// A tree under a directory this process owns, removed when the case ends.
 ///
 /// Keyed on the process identifier and a label, because `cargo` runs the cases
