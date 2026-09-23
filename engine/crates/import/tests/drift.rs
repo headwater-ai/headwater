@@ -114,7 +114,7 @@ fn a_revision_that_moved_under_a_cached_run_is_not_served_from_the_entry_before_
     let pinned = declaration(&digest);
     import(&scratch, &pinned);
 
-    let mut cold = Cache::at(scratch.path(), LOCK);
+    let mut cold = Cache::at(scratch.path(), LOCK, &headwater_check::rules_digest());
     let before = run_over(&scratch, &pinned, &mut cold);
     cold.write(scratch.path());
     assert_eq!(
@@ -128,7 +128,7 @@ fn a_revision_that_moved_under_a_cached_run_is_not_served_from_the_entry_before_
     // document digest moves, and the corpus is byte-identical on both sides.
     let advanced = declaration(&advance(&scratch));
 
-    let mut warm = Cache::at(scratch.path(), LOCK);
+    let mut warm = Cache::at(scratch.path(), LOCK, &headwater_check::rules_digest());
     let after = run_over(&scratch, &advanced, &mut warm);
 
     assert_eq!(
