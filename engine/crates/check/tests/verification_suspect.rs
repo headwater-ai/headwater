@@ -533,3 +533,131 @@ fn warm_cache_sees_an_edited_snapshot_without_no_cache() {
 
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// Write `.headwater/observations.yml` into a scratch corpus and read it back
+/// the way the verb does, so each case below meets the reader's own problems.
+fn snapshot_on_disk(root: &Path, text: &str) -> Observations {
+    let path = root.join(".headwater").join("observations.yml");
+    std::fs::create_dir_all(path.parent().expect("a parent")).expect("the dir creates");
+    std::fs::write(&path, text).expect("the snapshot writes");
+    Observations::at(&root)
+}
+
+fn rendered(run: &Run) -> String {
+    run.render(
+        headwater_check::Detail::Findings,
+        headwater_check::paint::ColorMode::Plain,
+    )
+}
+
+/// The veto on #1056: a snapshot that did not parse read as no snapshot, so
+/// a stale verification printed `declared` and its suspect finding went
+/// away with nothing in the block to say why. A run that could not read the
+/// file does not know whether an entry names the verification, so the state
+/// is `unknown`, and the header says the file did not read.
+#[test]
+fn an_unparsable_snapshot_is_unknown_and_not_declared() {
+    let root = scratch_corpus("unparsable");
+    let observations = snapshot_on_disk(&root, "ACP-FIX-verification-one: [unclosed\n");
+    assert!(
+        !observations.problems().is_empty(),
+        "the reader reports the file"
+    );
+    let run = run_over(&root, &observations);
+    assert_eq!(
+        report_line(&run, VERIFICATION_ID).as_deref(),
+        Some(format!("  {VERIFICATION_ID} unknown, the snapshot did not read").as_str()),
+        "{}",
+        rendered(&run)
+    );
+    let text = rendered(&run);
+    assert!(
+        text.contains(".headwater/observations.yml did not read"),
+        "{text}"
+    );
+    assert!(!text.contains("transcribed from"), "{text}");
+    assert!(
+        text.contains("1 verifications: 0 declared, 0 observed, 0 suspect, 1 unknown"),
+        "{text}"
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// One entry that did not read makes that verification `unknown`, with the
+/// reader's reason, and not `declared`.
+#[test]
+fn an_entry_with_an_implausible_commit_is_unknown() {
+    let root = scratch_corpus("bad-commit");
+    let observations = snapshot_on_disk(
+        &root,
+        &format!(
+            "{VERIFICATION_ID}:\n  kind: verification\n  commit: \"not a commit\"\n  \
+             criterion_digest: \"sha256:00\"\n"
+        ),
+    );
+    let run = run_over(&root, &observations);
+    let line = report_line(&run, VERIFICATION_ID).expect("the block names the verification");
+    assert!(
+        line.starts_with(&format!(
+            "  {VERIFICATION_ID} unknown, its snapshot entry did not read: "
+        )),
+        "{line}"
+    );
+    assert!(line.contains("plausible commit"), "{line}");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// An empty `criterion_digest` names no bytes. Compared, it reported a
+/// criterion as changed that never changed. It is an entry problem now.
+#[test]
+fn an_empty_criterion_digest_is_unknown_and_names_no_change() {
+    let root = scratch_corpus("empty-digest");
+    let observations = snapshot_on_disk(
+        &root,
+        &format!(
+            "{VERIFICATION_ID}:\n  kind: verification\n  commit: {SNAPSHOT_COMMIT}\n  \
+             criterion_digest: \"\"\n"
+        ),
+    );
+    let run = run_over(&root, &observations);
+    assert!(
+        findings_of(&run).is_empty(),
+        "no suspect finding for a change nobody made: {:?}",
+        findings_of(&run)
+    );
+    let line = report_line(&run, VERIFICATION_ID).expect("the block names the verification");
+    assert_eq!(
+        line,
+        format!(
+            "  {VERIFICATION_ID} unknown, its snapshot entry did not read: its \
+             `criterion_digest` is empty"
+        )
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A verification entry that names no verification of the corpus is named
+/// in the block rather than dropped.
+#[test]
+fn an_entry_naming_no_verification_is_named() {
+    let root = scratch_corpus("orphan");
+    let observations = Observations::of(vec![Observation::Verification {
+        verification: "ACP-FIX-verification-nowhere".to_string(),
+        commit: SNAPSHOT_COMMIT.to_string(),
+        criterion_digest: "sha256:00".to_string(),
+    }]);
+    let run = run_over(&root, &observations);
+    let text = rendered(&run);
+    assert!(
+        text.contains(
+            "  ACP-FIX-verification-nowhere is named in the snapshot and is no verification \
+             of this corpus"
+        ),
+        "{text}"
+    );
+    assert_eq!(
+        report_line(&run, VERIFICATION_ID).as_deref(),
+        Some(format!("  {VERIFICATION_ID} declared").as_str())
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}

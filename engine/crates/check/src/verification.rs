@@ -50,7 +50,16 @@
 //! cannot show whether a verification was ever observed or was only
 //! declared ([#937](https://github.com/headwater-ai/headwater/issues/937)).
 //! The block is a report block and not a finding, so a green run still has
-//! no findings. The rule and the block both call [`compare`], so the state a
+//! no findings.
+//!
+//! A snapshot that did not read is none of the three states. A run that
+//! could not read the file, or the entry for one verification, does not know
+//! whether an entry names it, so the state is `unknown` and the rule
+//! decides nothing for that instance. Reading it as `declared` turned a
+//! suspect verification green in the block, which is the veto on #1056.
+//! `control.observation.invalid` reports the file or the entry. An entry
+//! that names no verification of the corpus is named too, rather than
+//! dropped. The rule and the block both call [`compare`], so the state a
 //! finding reports and the state the block prints cannot disagree.
 //!
 //! # The denominator
@@ -76,7 +85,7 @@
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
-use crate::observation::Observations;
+use crate::observation::{Observation, Observations, Recorded};
 use crate::scope::{EdgeCheck, EdgeUnit, EdgeView};
 use headwater_census::census::Census;
 use headwater_graph::declarations::Relation;
@@ -124,7 +133,7 @@ impl<'a> Verified<'a> {
 impl EdgeCheck for Verified<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
-    const VERSION: u32 = 1;
+    const VERSION: u32 = 2;
     /// Both ends have to be documents: the rule reads a content digest at
     /// each of them.
     const UNIT: EdgeUnit = EdgeUnit::Pair;
@@ -161,6 +170,14 @@ impl EdgeCheck for Verified<'_> {
         // [`Block`] calls it too.
         let commit = match compare(self.observations, verification.id, current_digest) {
             Freshness::Declared | Freshness::Observed { .. } => return Outcome::Passed,
+            // Not a pass: a snapshot this run could not read says nothing
+            // about whether the criterion moved. `control.observation.invalid`
+            // reports the file or the entry, and this instance decides nothing.
+            Freshness::Unknown { reason } => {
+                return Outcome::Skipped(format!(
+                    "the observation snapshot did not read for this verification: {reason}"
+                ))
+            }
             Freshness::Suspect { commit } => commit,
         };
 
@@ -197,6 +214,10 @@ pub enum Freshness<'a> {
     Observed { commit: &'a str },
     /// A snapshot names it, and the criterion changed after the snapshot.
     Suspect { commit: &'a str },
+    /// The snapshot, or its entry for this verification, did not read. A run
+    /// that could not read it does not know whether an entry names the
+    /// verification, so this is not `declared`.
+    Unknown { reason: &'a str },
 }
 
 /// The one comparison. [`Verified::evaluate`] calls it for each edge, and
@@ -207,10 +228,14 @@ pub fn compare<'a>(
     verification: &str,
     current_digest: &str,
 ) -> Freshness<'a> {
-    match observations.verification(verification) {
-        None => Freshness::Declared,
-        Some((commit, recorded)) if recorded == current_digest => Freshness::Observed { commit },
-        Some((commit, _)) => Freshness::Suspect { commit },
+    match observations.recorded(verification) {
+        Recorded::Absent => Freshness::Declared,
+        Recorded::Unread(reason) => Freshness::Unknown { reason },
+        Recorded::Entry {
+            commit,
+            criterion_digest,
+        } if criterion_digest == current_digest => Freshness::Observed { commit },
+        Recorded::Entry { commit, .. } => Freshness::Suspect { commit },
     }
 }
 
@@ -234,6 +259,11 @@ pub enum State {
         commit: String,
         criteria: Vec<String>,
     },
+    /// The snapshot or its entry did not read, or a criterion has no bytes
+    /// to compare. Not `declared`: see [`Freshness::Unknown`].
+    Unknown {
+        reason: String,
+    },
 }
 
 /// The verification block of the report: every verification document of the
@@ -250,6 +280,11 @@ pub struct Block {
     /// because it is what every `observed` and `suspect` state is
     /// transcribed from.
     pub snapshot: Option<String>,
+    /// Every verification entry of the snapshot that names no verification
+    /// of the corpus, sorted.
+    pub orphans: Vec<String>,
+    /// Whether the whole snapshot file did not read.
+    pub unread: bool,
 }
 
 impl Block {
@@ -293,42 +328,51 @@ impl Block {
             }
         }
 
-        let lines = reached
+        let unread = observations.unread().is_some();
+        let lines: Vec<Line> = reached
             .into_iter()
             .map(|(verification, criteria)| {
-                let mut commit_seen = None;
-                let mut moved = Vec::new();
-                for (criterion, path) in criteria {
-                    // A criterion whose bytes the census did not read has no
-                    // digest to compare, and the rule skips the same edge.
-                    let Some(digest) = digest_at(census, path) else {
-                        continue;
-                    };
-                    match compare(observations, verification, digest) {
-                        Freshness::Declared => {}
-                        Freshness::Observed { commit } => commit_seen = Some(commit),
-                        Freshness::Suspect { commit } => {
-                            commit_seen = Some(commit);
-                            moved.push(criterion.to_string());
+                let state = match observations.recorded(verification) {
+                    Recorded::Absent => State::Declared,
+                    // The file did not read: the header says so once, and the
+                    // finding of `control.observation.invalid` says why.
+                    Recorded::Unread(_) if unread => State::Unknown {
+                        reason: "the snapshot did not read".to_string(),
+                    },
+                    Recorded::Unread(reason) => State::Unknown {
+                        reason: format!("its snapshot entry did not read: {reason}"),
+                    },
+                    Recorded::Entry { commit, .. } => {
+                        let mut moved = Vec::new();
+                        let mut unknown = None;
+                        for (criterion, path) in criteria {
+                            // The rule skips the same edge: no bytes, nothing
+                            // to compare.
+                            let Some(digest) = digest_at(census, path) else {
+                                unknown.get_or_insert_with(|| {
+                                    format!("the census read no bytes of {criterion}")
+                                });
+                                continue;
+                            };
+                            if let Freshness::Suspect { .. } =
+                                compare(observations, verification, digest)
+                            {
+                                moved.push(criterion.to_string());
+                            }
+                        }
+                        // An entry that no criterion reaches is observed:
+                        // nothing it proves has moved.
+                        match (moved.is_empty(), unknown) {
+                            (false, _) => State::Suspect {
+                                commit: commit.to_string(),
+                                criteria: moved,
+                            },
+                            (true, Some(reason)) => State::Unknown { reason },
+                            (true, None) => State::Observed {
+                                commit: commit.to_string(),
+                            },
                         }
                     }
-                }
-                // A verification that an entry names but no criterion reaches
-                // is observed: nothing it proves has moved.
-                let commit = commit_seen.or_else(|| {
-                    observations
-                        .verification(verification)
-                        .map(|(commit, _)| commit)
-                });
-                let state = match (commit, moved.is_empty()) {
-                    (None, _) => State::Declared,
-                    (Some(commit), true) => State::Observed {
-                        commit: commit.to_string(),
-                    },
-                    (Some(commit), false) => State::Suspect {
-                        commit: commit.to_string(),
-                        criteria: moved,
-                    },
                 };
                 Line {
                     verification: verification.to_string(),
@@ -337,20 +381,43 @@ impl Block {
             })
             .collect();
 
+        // A verification entry that names no verification of the corpus. No
+        // line above can carry it, and dropping it would hide a typo in the
+        // snapshot.
+        let orphans = observations
+            .entries()
+            .iter()
+            .filter_map(|entry| match entry {
+                Observation::Verification { verification, .. }
+                    if lines
+                        .binary_search_by(|line| line.verification.as_str().cmp(verification))
+                        .is_err() =>
+                {
+                    Some(verification.clone())
+                }
+                _ => None,
+            })
+            .collect::<BTreeSet<String>>()
+            .into_iter()
+            .collect();
+
         Block {
             lines,
+            orphans,
             snapshot: observations.read_set_digest().flatten().map(str::to_string),
+            unread,
         }
     }
 
-    /// How many lines carry each state: declared, observed, suspect.
-    pub fn counts(&self) -> (usize, usize, usize) {
+    /// How many lines carry each state: declared, observed, suspect, unknown.
+    pub fn counts(&self) -> (usize, usize, usize, usize) {
         self.lines
             .iter()
-            .fold((0, 0, 0), |(d, o, s), line| match line.state {
-                State::Declared => (d + 1, o, s),
-                State::Observed { .. } => (d, o + 1, s),
-                State::Suspect { .. } => (d, o, s + 1),
+            .fold((0, 0, 0, 0), |(d, o, s, u), line| match line.state {
+                State::Declared => (d + 1, o, s, u),
+                State::Observed { .. } => (d, o + 1, s, u),
+                State::Suspect { .. } => (d, o, s + 1, u),
+                State::Unknown { .. } => (d, o, s, u + 1),
             })
     }
 
@@ -358,29 +425,40 @@ impl Block {
     pub fn render(&self) -> String {
         use std::fmt::Write;
         let mut out = String::new();
-        if self.lines.is_empty() {
+        if self.lines.is_empty() && self.orphans.is_empty() {
             return out;
         }
-        let (declared, observed, suspect) = self.counts();
+        let (declared, observed, suspect, unknown) = self.counts();
         out.push_str("verifications\n");
         let _ = writeln!(
             out,
-            "  {} verifications: {declared} declared, {observed} observed, {suspect} suspect",
+            "  {} verifications: {declared} declared, {observed} observed, {suspect} suspect, \
+             {unknown} unknown",
             self.lines.len()
         );
-        // The source of every `observed` and `suspect` state, stated once.
-        // The state is transcribed from the snapshot, and the snapshot's
-        // digest pins it. HW-OBL-0070 records why this line is not an
-        // instance of the `transcribed` warrant.
-        let _ = writeln!(
-            out,
-            "  each observed or suspect state is transcribed from {}{}",
-            crate::observation::PATH,
-            match &self.snapshot {
-                Some(digest) => format!(" at {digest}"),
-                None => String::new(),
-            }
-        );
+        if self.unread {
+            // No state below is transcribed from anything: the file did not
+            // read, and `control.observation.invalid` says why.
+            let _ = writeln!(
+                out,
+                "  {} did not read, so no verification has a known state",
+                crate::observation::PATH
+            );
+        } else {
+            // The source of every `observed` and `suspect` state, stated
+            // once. The state is transcribed from the snapshot, and the
+            // snapshot's digest pins it. HW-OBL-0070 records why this line is
+            // not an instance of the `transcribed` warrant.
+            let _ = writeln!(
+                out,
+                "  each observed or suspect state is transcribed from {}{}",
+                crate::observation::PATH,
+                match &self.snapshot {
+                    Some(digest) => format!(" at {digest}"),
+                    None => String::new(),
+                }
+            );
+        }
         for line in &self.lines {
             let _ = match &line.state {
                 State::Declared => writeln!(out, "  {} declared", line.verification),
@@ -393,7 +471,16 @@ impl Block {
                     line.verification,
                     criteria.join(", ")
                 ),
+                State::Unknown { reason } => {
+                    writeln!(out, "  {} unknown, {reason}", line.verification)
+                }
             };
+        }
+        for orphan in &self.orphans {
+            let _ = writeln!(
+                out,
+                "  {orphan} is named in the snapshot and is no verification of this corpus"
+            );
         }
         out
     }
