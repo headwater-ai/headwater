@@ -98,6 +98,7 @@ operations
   add.identifier_schemes.process_decision_id (.headwater/overlay.yml)
   add.kinds.process_decision (.headwater/overlay.yml)
   add.shelves.process_decisions (.headwater/overlay.yml)
+  add.surface (.headwater/overlay.yml)
   add_to.projections (.headwater/overlay.yml)
 
 declarations, by member count
@@ -116,6 +117,7 @@ declarations, by member count
   projections: 7 items
   obligations: 36 members
   controls: 33 members
+  surface: 7 members
 
 `taxonomy validate`: valid
 

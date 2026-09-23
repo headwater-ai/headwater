@@ -69,8 +69,6 @@ anchors
     cited by HW-DR-0061
   code_path `.gitattributes` via source-tree
     cited by HW-DR-0049
-  code_path `.githooks/change-manifest` via source-tree
-    cited by HW-IFACE-headwater-change
   code_path `.githooks/commit-msg` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `.githooks/fixtures.sh` via source-tree

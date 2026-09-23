@@ -85,6 +85,8 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   language.retired_term.used
     document scope, one document, its front matter and its body
+  surface.local_path.instructed
+    document scope, one document, its front matter and its body
   language.source_form.not_met
     document scope, one document, its front matter and its body
   section.required.missing
@@ -147,6 +149,7 @@ register
   identifier.claimed_twice reaches no obligation, so it names none
   identifier.claim.missing reaches no obligation, so it names none
   identifier.claim.stale reaches no obligation, so it names none
+  surface.local_path.instructed reaches no obligation, so it names none
   link.path.unresolved reaches no obligation, so it names none
   warrant.promoted reaches no obligation, so it names none
   lifecycle.transition.not_permitted reaches no obligation, so it names none

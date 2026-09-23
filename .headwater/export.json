@@ -3327,8 +3327,7 @@
                 "engine/crates/cli/src/lib.rs",
                 "engine/crates/cli/src/main.rs"
               ],
-              "engine/crates/vcs/src/lib.rs",
-              ".githooks/change-manifest"
+              "engine/crates/vcs/src/lib.rs"
             ]
           }
         }
@@ -10845,11 +10844,6 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": ".githooks/change-manifest",
-        "resolver": "source-tree"
-      },
-      {
-        "anchor_kind": "code_path",
         "id": ".githooks/commit-msg",
         "resolver": "source-tree"
       },
@@ -14870,17 +14864,6 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/vcs/src/lib.rs",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/interfaces/headwater-change.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": ".githooks/change-manifest",
           "resolver": "source-tree"
         }
       },

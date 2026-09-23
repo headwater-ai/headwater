@@ -1,4 +1,4 @@
-579 seen, 391 classified, 391 checked, 7429 check instances
+579 seen, 391 classified, 391 checked, 7819 check instances
      21 generated, held to regeneration by `headwater generate --check`
      23 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       3 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-16`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
@@ -20,7 +20,7 @@ adoption
     391 instances of facet.value.blank
     391 instances of identifier.pattern.not_met
     391 instances of shelf.placement_is_primary
-    756 instances of relation.target.unresolved
+    755 instances of relation.target.unresolved
      91 instances of relation.reciprocity.missing
     434 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
@@ -34,6 +34,7 @@ adoption
     352 instances of voice.forbidden_construction
     370 instances of language.controlled.not_met
     370 instances of language.retired_term.used
+    391 instances of surface.local_path.instructed
     370 instances of language.source_form.not_met
     340 instances of section.required.missing
       1 instances of link.fragment.unresolved
@@ -44,7 +45,12 @@ adoption
       1 instances of lifecycle.deletion.not_permitted
       1 instances of relation.target.verification.suspect
 suppressions
-  0 findings hidden by 0 directives
+  8 findings hidden by 7 directives
+      1 false_positive
+      7 accepted_deviation
+      8 of surface.local_path.instructed
+      7 on the shelf interfaces
+      1 on the shelf how_to
       2 matched no finding
 rules, and for each the scope that binds it
   facet.required.missing
@@ -86,6 +92,8 @@ rules, and for each the scope that binds it
   language.controlled.not_met
     document scope, one document, its front matter and its body
   language.retired_term.used
+    document scope, one document, its front matter and its body
+  surface.local_path.instructed
     document scope, one document, its front matter and its body
   language.source_form.not_met
     document scope, one document, its front matter and its body
@@ -136,5 +144,6 @@ register
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 0 suppressed
   facet.value.blank reaches no obligation, so it names none
+  surface.local_path.instructed reaches no obligation, so it names none
   control.observation.invalid reaches no obligation, so it names none
   relation.target.verification.suspect reaches no obligation, so it names none
