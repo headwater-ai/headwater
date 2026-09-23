@@ -148,7 +148,19 @@ unpinned_lines() {
             # inside it. This is lexical, not a real shell parse: the run
             # below over the real tree is what proves this substitution
             # reaches no case name or message it should not.
-            gsub(/(^|[^A-Za-z0-9_])(if|then|elif|else|fi|do|done|for|while|until|case|esac)([^A-Za-z0-9_]|$)/, "&|", work)
+            #
+            # A fifth verifier (#1031) found that the gsub above matched a
+            # reserved word wherever it appeared as a whole word at all,
+            # with no check that the word itself sat in a command position:
+            # "wait for sort to finish" put `for` immediately before `sort`
+            # as ordinary English, and the unconditional match still opened
+            # a new command there. The opener now requires the same
+            # left-open context the sort/comm check below already requires
+            # of `sort`/`comm` itself — pipe, semicolon, paren, backtick,
+            # quote, `&&`, brace, line start — so a reserved word only
+            # counts as a command opener when something that can precede a
+            # shell command already precedes it, never a bare space.
+            gsub(/(^|[|;(`"!{})]|&&[ \t]*)[ \t]*(if|then|elif|else|fi|do|done|for|while|until|case|esac)([^A-Za-z0-9_]|$)/, "&|", work)
             if (match(work, /(^|[|;(`"!{})]|&&[ \t]*)[ \t]*sort([^A-Za-z0-9_]|$)/)) {
                 print FILENAME ":" FNR ": " line
                 next
