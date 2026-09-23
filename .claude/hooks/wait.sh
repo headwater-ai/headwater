@@ -120,7 +120,7 @@ long=no
 printf '%s' "$command" | grep -qE '(^|[;&|[:space:]])(until|while)([[:space:]]|$)' &&
     printf '%s' "$command" | grep -qE '(^|[;&|[:space:]])sleep[[:space:]]' &&
     long=yes
-printf '%s' "$command" | grep -qE 'gh[[:space:]]+run[[:space:]]+watch' && long=yes
+printf '%s' "$command" | grep -qE '(^|[;&|[:space:]])gh[[:space:]]+run[[:space:]]+watch' && long=yes
 [ "$long" = yes ] || exit 0
 
 reason="This waits in the foreground, and a foreground call is capped at ten minutes.
@@ -130,6 +130,8 @@ When the cap is reached the harness moves this loop into the background and answ
 Re-issue this same command with \`run_in_background: true\`. There is no cap on it, the loop exits on its own condition however long that takes, and its completion notification is what wakes you. Do not then wait on it again.
 
 In a subagent, a background wait that runs longer than about five minutes outlives the prompt cache, and the turn that reads its notification pays to write the whole context back rather than to read it, at roughly twelve times the cost. Run \`9ab3be93\` paid \$14.85 that way in one four-hour stretch. Wrap a wait that might run that long in \`timeout 240\`, so it exits on its own before the cache would have, and re-issue it if the condition still is not met: the wrapped loop has already ended by then, so this is not the re-issue the line above forbids, which is about a loop the harness itself only moved to the background and is still running. The parent's cache lives an hour, not five minutes, so the parent waits by ending its turn and never re-issues a bounded wait.
+
+That bounded wait is already written: \`sh tools/run/wait-for.sh '<condition>'\`, started with \`run_in_background: true\`. For CI on a commit the condition is \`sh tools/run/ci-done.sh <sha>\`.
 
 Every loop that waits belongs in the background, whatever it sleeps for."
 quoted=$(hw_quote "$reason") || exit 0

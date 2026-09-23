@@ -9200,6 +9200,20 @@
         }
       },
       {
+        "path": "docs/obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0208",
+        "facets": {
+          "id": "HW-OBL-0208",
+          "status": "draft",
+          "status_since": "2026-09-23",
+          "summary": "A collation opener class, a cache key's CLI wiring, a cache doc word and a recurring board-card gap, each with no reader outside this repository.",
+          "last_verified": "2026-09-23",
+          "title": "Four small test and wording gaps from run 20260923-0733 filed together",
+          "waiting_on": "build"
+        }
+      },
+      {
         "path": "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
         "kind": "probe_result",
         "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",

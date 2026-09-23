@@ -1473,12 +1473,10 @@ controls:
         sample: "every finding of one run over the adopting corpus, adjudicated once"
 surface:
   adopter_documents:
-    - README.md
     - "docs/interfaces/*.md"
     - "docs/tutorials/*.md"
     - docs/how-to/relocate-a-shelf.md
     - docs/how-to/wire-headwater-check-into-your-own-workflow.md
-    - ".headwater/packages/headwater-standard/**"
   archive:
     - headwater
     - LICENSE
