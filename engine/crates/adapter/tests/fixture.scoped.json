@@ -564,7 +564,7 @@
     {
       "rule": "relation.target.verification.suspect",
       "scope": "edge",
-      "version": 1,
+      "version": 2,
       "obligations": []
     }
   ],

@@ -654,7 +654,7 @@ read set
   version control.mechanism.unimplemented 1
   version control.observation.invalid 1
   version adoption.task.expired 1
-  version relation.target.verification.suspect 1
+  version relation.target.verification.suspect 2
   input .headwater/ids sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   input check/evaluations/alpha.md sha256:e651a58ed6489f388954343391d6321a708a2b7492bb4dc1386699a8bf65cc7b
   input check/evaluations/beta.md sha256:37e03d2c518cced7604d74dd38c1949cbc72186db9b4a4bd5bb8f3fe9503d31d

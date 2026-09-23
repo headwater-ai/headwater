@@ -148,6 +148,20 @@ fn findings_of(run: &Run) -> Vec<&headwater_check::finding::Finding> {
     run.findings.iter().filter(|f| f.rule == RULE).collect()
 }
 
+/// The line the report's verification block prints for one verification, and
+/// nothing where the block does not name it. The block is part of
+/// [`Run::render`], so this reads the same text a person reads.
+fn report_line(run: &Run, verification: &str) -> Option<String> {
+    let text = run.render(
+        headwater_check::Detail::Findings,
+        headwater_check::paint::ColorMode::Plain,
+    );
+    let prefix = format!("  {verification} ");
+    text.lines()
+        .find(|line| line.starts_with(&prefix))
+        .map(str::to_string)
+}
+
 /// State 1: no snapshot names the verification. `declared`, and a pass.
 #[test]
 fn no_snapshot_is_declared_and_not_a_finding() {
@@ -157,6 +171,11 @@ fn no_snapshot_is_declared_and_not_a_finding() {
         findings_of(&run).is_empty(),
         "a verification with no committed snapshot is `declared`, not suspect: {:?}",
         findings_of(&run)
+    );
+    // And the report names it with its state, rather than counting it.
+    assert_eq!(
+        report_line(&run, VERIFICATION_ID).as_deref(),
+        Some(format!("  {VERIFICATION_ID} declared").as_str()),
     );
     let _ = std::fs::remove_dir_all(&root);
 }
@@ -179,6 +198,10 @@ fn a_snapshot_matching_the_criterions_current_digest_is_observed_and_not_a_findi
         findings_of(&run).is_empty(),
         "the snapshot's digest matches the criterion as it reads today: {:?}",
         findings_of(&run)
+    );
+    assert_eq!(
+        report_line(&run, VERIFICATION_ID).as_deref(),
+        Some(format!("  {VERIFICATION_ID} observed at {SNAPSHOT_COMMIT}").as_str()),
     );
     let _ = std::fs::remove_dir_all(&root);
 }
@@ -243,6 +266,123 @@ fn the_same_snapshot_after_the_criterion_changes_is_suspect() {
         reported[0].message.contains(SNAPSHOT_COMMIT),
         "{}",
         reported[0].message
+    );
+    // The report block names the same state the finding does, because the
+    // rule and the block share one comparison.
+    assert_eq!(
+        report_line(&after, VERIFICATION_ID).as_deref(),
+        Some(
+            format!("  {VERIFICATION_ID} suspect since {SNAPSHOT_COMMIT}, ACP-FIX-proven changed")
+                .as_str()
+        ),
+    );
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// The decisive case for the report half of #937: one corpus holds three
+/// verifications at once, one in each state, and the report names each of
+/// them with its own state.
+///
+/// Before the verification block, `declared` and `observed` both returned a
+/// pass and printed nothing, so a run could not show whether a verification
+/// was ever observed or only declared. A count of findings passes on that
+/// tree too, which is why this case reads the report text: the `observed`
+/// line is the one that nothing printed before.
+#[test]
+fn one_report_names_each_verification_in_its_own_state() {
+    let root = scratch_corpus("three-states");
+    let tree = root.join("acceptance-criterion-proven");
+    for (name, criterion, verification) in [
+        ("two", "ACP-FIX-observed", "ACP-FIX-verification-two"),
+        ("three", "ACP-FIX-stale", "ACP-FIX-verification-three"),
+    ] {
+        std::fs::write(
+            tree.join("criteria").join(format!("{name}.md")),
+            format!(
+                "---\nid: {criterion}\nstatus: current\nstatus_since: 2026-08-01\n\
+                 summary: reaches {verification}\nverification_method: test\n\
+                 relations:\n  proven_by:\n    - {verification}\n---\n\n# {name}\n"
+            ),
+        )
+        .expect("the criterion writes");
+        std::fs::write(
+            tree.join("verifications").join(format!("{name}.md")),
+            format!(
+                "---\nid: {verification}\nstatus: current\nstatus_since: 2026-08-01\n\
+                 summary: proves {criterion}\nrelations:\n  proves:\n    - {criterion}\n\
+                 ---\n\n# {name}\n"
+            ),
+        )
+        .expect("the verification writes");
+    }
+    let observed_digest = headwater_hash::digest(
+        &std::fs::read(tree.join("criteria").join("two.md")).expect("the criterion reads"),
+    );
+    let observations = Observations::of(vec![
+        Observation::Verification {
+            verification: "ACP-FIX-verification-two".to_string(),
+            commit: SNAPSHOT_COMMIT.to_string(),
+            criterion_digest: observed_digest,
+        },
+        Observation::Verification {
+            verification: "ACP-FIX-verification-three".to_string(),
+            commit: SNAPSHOT_COMMIT.to_string(),
+            criterion_digest:
+                "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+                    .to_string(),
+        },
+    ]);
+
+    let run = run_over(&root, &observations);
+    let reported = findings_of(&run);
+    assert_eq!(
+        reported.len(),
+        1,
+        "only the stale verification is a finding: {reported:?}"
+    );
+    assert!(
+        reported[0].message.contains("ACP-FIX-verification-three"),
+        "{}",
+        reported[0].message
+    );
+
+    for (verification, expected) in [
+        (VERIFICATION_ID, format!("  {VERIFICATION_ID} declared")),
+        (
+            "ACP-FIX-verification-two",
+            format!("  ACP-FIX-verification-two observed at {SNAPSHOT_COMMIT}"),
+        ),
+        (
+            "ACP-FIX-verification-three",
+            format!(
+                "  ACP-FIX-verification-three suspect since {SNAPSHOT_COMMIT}, ACP-FIX-stale changed"
+            ),
+        ),
+    ] {
+        assert_eq!(
+            report_line(&run, verification).as_deref(),
+            Some(expected.as_str()),
+            "{}",
+            run.render(
+                headwater_check::Detail::Findings,
+                headwater_check::paint::ColorMode::Plain
+            )
+        );
+    }
+
+    let text = run.render(
+        headwater_check::Detail::Findings,
+        headwater_check::paint::ColorMode::Plain,
+    );
+    assert!(
+        text.contains("3 verifications: 1 declared, 1 observed, 1 suspect"),
+        "{text}"
+    );
+    // The header states where an observed or suspect state comes from, once.
+    assert!(
+        text.contains("transcribed from .headwater/observations.yml"),
+        "{text}"
     );
 
     let _ = std::fs::remove_dir_all(&root);
@@ -391,5 +531,133 @@ fn warm_cache_sees_an_edited_snapshot_without_no_cache() {
          {corrected_report:?}"
     );
 
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// Write `.headwater/observations.yml` into a scratch corpus and read it back
+/// the way the verb does, so each case below meets the reader's own problems.
+fn snapshot_on_disk(root: &Path, text: &str) -> Observations {
+    let path = root.join(".headwater").join("observations.yml");
+    std::fs::create_dir_all(path.parent().expect("a parent")).expect("the dir creates");
+    std::fs::write(&path, text).expect("the snapshot writes");
+    Observations::at(root)
+}
+
+fn rendered(run: &Run) -> String {
+    run.render(
+        headwater_check::Detail::Findings,
+        headwater_check::paint::ColorMode::Plain,
+    )
+}
+
+/// The veto on #1056: a snapshot that did not parse read as no snapshot, so
+/// a stale verification printed `declared` and its suspect finding went
+/// away with nothing in the block to say why. A run that could not read the
+/// file does not know whether an entry names the verification, so the state
+/// is `unknown`, and the header says the file did not read.
+#[test]
+fn an_unparsable_snapshot_is_unknown_and_not_declared() {
+    let root = scratch_corpus("unparsable");
+    let observations = snapshot_on_disk(&root, "ACP-FIX-verification-one: [unclosed\n");
+    assert!(
+        !observations.problems().is_empty(),
+        "the reader reports the file"
+    );
+    let run = run_over(&root, &observations);
+    assert_eq!(
+        report_line(&run, VERIFICATION_ID).as_deref(),
+        Some(format!("  {VERIFICATION_ID} unknown, the snapshot did not read").as_str()),
+        "{}",
+        rendered(&run)
+    );
+    let text = rendered(&run);
+    assert!(
+        text.contains(".headwater/observations.yml did not read"),
+        "{text}"
+    );
+    assert!(!text.contains("transcribed from"), "{text}");
+    assert!(
+        text.contains("1 verifications: 0 declared, 0 observed, 0 suspect, 1 unknown"),
+        "{text}"
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// One entry that did not read makes that verification `unknown`, with the
+/// reader's reason, and not `declared`.
+#[test]
+fn an_entry_with_an_implausible_commit_is_unknown() {
+    let root = scratch_corpus("bad-commit");
+    let observations = snapshot_on_disk(
+        &root,
+        &format!(
+            "{VERIFICATION_ID}:\n  kind: verification\n  commit: \"not a commit\"\n  \
+             criterion_digest: \"sha256:00\"\n"
+        ),
+    );
+    let run = run_over(&root, &observations);
+    let line = report_line(&run, VERIFICATION_ID).expect("the block names the verification");
+    assert!(
+        line.starts_with(&format!(
+            "  {VERIFICATION_ID} unknown, its snapshot entry did not read: "
+        )),
+        "{line}"
+    );
+    assert!(line.contains("plausible commit"), "{line}");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// An empty `criterion_digest` names no bytes. Compared, it reported a
+/// criterion as changed that never changed. It is an entry problem now.
+#[test]
+fn an_empty_criterion_digest_is_unknown_and_names_no_change() {
+    let root = scratch_corpus("empty-digest");
+    let observations = snapshot_on_disk(
+        &root,
+        &format!(
+            "{VERIFICATION_ID}:\n  kind: verification\n  commit: {SNAPSHOT_COMMIT}\n  \
+             criterion_digest: \"\"\n"
+        ),
+    );
+    let run = run_over(&root, &observations);
+    assert!(
+        findings_of(&run).is_empty(),
+        "no suspect finding for a change nobody made: {:?}",
+        findings_of(&run)
+    );
+    let line = report_line(&run, VERIFICATION_ID).expect("the block names the verification");
+    assert_eq!(
+        line,
+        format!(
+            "  {VERIFICATION_ID} unknown, its snapshot entry did not read: its \
+             `criterion_digest` is empty"
+        )
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A verification entry that names no verification of the corpus is named
+/// in the block rather than dropped.
+#[test]
+fn an_entry_naming_no_verification_is_named() {
+    let root = scratch_corpus("orphan");
+    let observations = Observations::of(vec![Observation::Verification {
+        verification: "ACP-FIX-verification-nowhere".to_string(),
+        commit: SNAPSHOT_COMMIT.to_string(),
+        criterion_digest: "sha256:00".to_string(),
+    }]);
+    let run = run_over(&root, &observations);
+    let text = rendered(&run);
+    assert!(
+        text.contains(
+            "  ACP-FIX-verification-nowhere is named in the snapshot and is no verification \
+             of this corpus"
+        ),
+        "{text}"
+    );
+    assert_eq!(
+        report_line(&run, VERIFICATION_ID).as_deref(),
+        Some(format!("  {VERIFICATION_ID} declared").as_str())
+    );
     let _ = std::fs::remove_dir_all(&root);
 }

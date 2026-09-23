@@ -138,3 +138,7 @@ register
   facet.value.blank reaches no obligation, so it names none
   control.observation.invalid reaches no obligation, so it names none
   relation.target.verification.suspect reaches no obligation, so it names none
+verifications
+  1 verifications: 1 declared, 0 observed, 0 suspect, 0 unknown
+  each observed or suspect state is transcribed from .headwater/observations.yml
+  HW-VER-0001 declared
