@@ -9159,6 +9159,48 @@
         }
       },
       {
+        "path": "docs/obligations/0204-docs-decisions-0077-still-describes-hw-dr-0049-s-rewrite-as-pending-after-574-made-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0204",
+        "facets": {
+          "id": "HW-OBL-0204",
+          "status": "draft",
+          "status_since": "2026-09-23",
+          "summary": "A sentence in decision 0077 says HW-DR-0049's acceptance still owes a rewrite of itself. #574 already made that rewrite, so the sentence now describes a past event as future.",
+          "last_verified": "2026-09-23",
+          "title": "docs/decisions/0077 still describes HW-DR-0049's rewrite as pending, after #574 made it",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0205-hw-obl-0002-s-sample-counts-and-voice-rs-s-own-census-predate-the-scent-role-fix-and-need-retaking.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0205",
+        "facets": {
+          "id": "HW-OBL-0205",
+          "status": "draft",
+          "status_since": "2026-09-23",
+          "summary": "Two sample counts predate the scent-role fix #774 landed: HW-OBL-0002's, and voice.rs's own census. Neither was re-taken, so both figures now understate what the rule covers.",
+          "last_verified": "2026-09-23",
+          "title": "Two sample counts, HW-OBL-0002's and voice.rs's own census, predate the scent-role fix and need retaking",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0206",
+        "facets": {
+          "id": "HW-OBL-0206",
+          "status": "draft",
+          "status_since": "2026-09-23",
+          "summary": "hw-run-policy tells a subagent needing its own workspace to make one by hand with git worktree add. Edit and Write on a file under that hand-made worktree are refused, because the write sandbox stays pinned to the worktree the subagent was launched into.",
+          "last_verified": "2026-09-23",
+          "title": "hw-run-policy names a worktree-add workaround that Write/Edit refuses under this harness",
+          "waiting_on": "build"
+        }
+      },
+      {
         "path": "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
         "kind": "probe_result",
         "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
