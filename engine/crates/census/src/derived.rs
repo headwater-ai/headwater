@@ -489,8 +489,8 @@ impl Population {
             false => {
                 out.push_str(
                     "these carry a merge attribute behind a pattern this reader cannot \
-                     expand, or a merge driver it does not know, so no shape of this \
-                     tree was held against them:\n",
+                     expand, a merge driver it does not know, or a line it does not \
+                     interpret, so no shape of this tree was held against them:\n",
                 );
                 for pattern in &self.unreadable {
                     out.push_str(&format!("    {pattern}\n"));
@@ -757,6 +757,10 @@ enum Merge {
     Known(Treatment),
     /// `merge=<driver>` for a driver this repository does not define.
     Driver(String),
+    /// A line that concerns the merge and that this reader does not interpret.
+    ///
+    /// The declaration's first field is then the line as the report names it.
+    Uninterpreted,
 }
 
 /// One declaration: the path or pattern, relative to the root, and its value.
@@ -770,7 +774,7 @@ type Declaration = (String, Merge);
 fn resolved(declarations: &[Declaration]) -> std::collections::BTreeMap<&str, &Merge> {
     let mut found = std::collections::BTreeMap::new();
     for (pattern, merge) in declarations {
-        if !is_a_pattern(pattern) {
+        if !is_a_pattern(pattern) && *merge != Merge::Uninterpreted {
             found.insert(pattern.as_str(), merge);
         }
     }
@@ -783,16 +787,17 @@ fn readable(declarations: &[Declaration]) -> Vec<(String, Treatment)> {
         .into_iter()
         .filter_map(|(path, merge)| match merge {
             Merge::Known(treatment) => Some((path.to_string(), *treatment)),
-            Merge::Driver(_) => None,
+            Merge::Driver(_) | Merge::Uninterpreted => None,
         })
         .collect()
 }
 
-/// Every glob, and every path whose last declaration names an unknown driver.
+/// Every glob, every uninterpreted line, and every path whose last
+/// declaration names an unknown driver.
 fn unreadable(declarations: &[Declaration]) -> Vec<String> {
     let mut found: Vec<String> = declarations
         .iter()
-        .filter(|(pattern, _)| is_a_pattern(pattern))
+        .filter(|(pattern, merge)| *merge == Merge::Uninterpreted || is_a_pattern(pattern))
         .map(|(pattern, _)| pattern.clone())
         .collect();
     found.extend(
@@ -800,13 +805,16 @@ fn unreadable(declarations: &[Declaration]) -> Vec<String> {
             .into_iter()
             .filter_map(|(path, merge)| match merge {
                 Merge::Driver(driver) => Some(format!("{path} merge={driver}")),
-                Merge::Known(_) => None,
+                Merge::Known(_) | Merge::Uninterpreted => None,
             }),
     );
     found.sort();
     found.dedup();
     found
 }
+
+/// How the report names the one attribute source that lies outside the tree.
+const INFO_ATTRIBUTES: &str = ".git/info/attributes";
 
 /// Each `.gitattributes` line of the tree that says anything about merging.
 ///
@@ -816,6 +824,11 @@ fn unreadable(declarations: &[Declaration]) -> Vec<String> {
 /// file of the tree it reaches. The shallowest file comes first, and the lines
 /// of one file keep their order. A reader of the root file alone, and of
 /// literal paths alone, reported a tree clean where `git check-attr` did not.
+///
+/// Three things this reader does not interpret, and each comes back as
+/// [`Merge::Uninterpreted`] rather than being skipped: a line that uses a
+/// macro an `[attr]` line defines, a quoted or escaped pattern, and a line of
+/// `$GIT_DIR/info/attributes` that concerns the merge.
 fn declarations(root: &Path, files: &[String]) -> Vec<Declaration> {
     let mut sources: Vec<&str> = files
         .iter()
@@ -823,45 +836,119 @@ fn declarations(root: &Path, files: &[String]) -> Vec<Declaration> {
         .filter(|path| *path == ".gitattributes" || path.ends_with("/.gitattributes"))
         .collect();
     sources.sort_by_key(|path| (path.matches('/').count(), *path));
+    let texts: Vec<(&str, String)> = sources
+        .into_iter()
+        .filter_map(|source| Some((source, std::fs::read_to_string(root.join(source)).ok()?)))
+        .collect();
+    let info = info_attributes(root)
+        .and_then(|path| std::fs::read_to_string(path).ok())
+        .unwrap_or_default();
+    let macros: Vec<&str> = texts
+        .iter()
+        .map(|(_, text)| text.as_str())
+        .chain([info.as_str()])
+        .flat_map(str::lines)
+        .filter_map(|line| line.trim().strip_prefix("[attr]"))
+        .filter_map(|definition| definition.split_whitespace().next())
+        .collect();
+
     let mut found = Vec::new();
-    for source in sources {
-        let Ok(text) = std::fs::read_to_string(root.join(source)) else {
-            continue;
-        };
+    for (source, text) in &texts {
         let directory = source.strip_suffix(".gitattributes").unwrap_or_default();
         for line in text.lines().map(str::trim) {
-            // A comment, and a macro definition, which names no path.
-            if line.starts_with('#') || line.starts_with("[attr]") {
-                continue;
-            }
-            let mut fields = line.split_whitespace();
-            let Some(pattern) = fields.next() else {
-                continue;
-            };
-            // The last merge field of a line wins, as it does for git.
-            let Some(merge) = fields.filter_map(merge_field).next_back() else {
-                continue;
-            };
-            if is_a_pattern(pattern) || pattern.contains('/') {
-                // A slash anywhere but the end anchors it to this directory.
-                let pattern = pattern.strip_prefix('/').unwrap_or(pattern);
-                found.push((format!("{directory}{pattern}"), merge));
-            } else {
-                // No slash: every file of that name below the directory.
-                found.extend(
-                    files
-                        .iter()
-                        .filter(|path| {
-                            path.strip_prefix(directory).is_some_and(|rest| {
-                                rest == pattern || rest.ends_with(&format!("/{pattern}"))
-                            })
-                        })
-                        .map(|path| (path.clone(), merge.clone())),
-                );
-            }
+            read_line(line, directory, &macros, files, &mut found);
+        }
+    }
+    // Git reads this file after every `.gitattributes`, so it wins over all of
+    // them. It lies outside the tree, and this reader names each merge line of
+    // it rather than resolving it.
+    for line in info.lines().map(str::trim) {
+        if concerns_the_merge(line, &macros) {
+            found.push((format!("{INFO_ATTRIBUTES}: {line}"), Merge::Uninterpreted));
         }
     }
     found
+}
+
+/// The declarations of one line of a `.gitattributes` in `directory`.
+fn read_line(
+    line: &str,
+    directory: &str,
+    macros: &[&str],
+    files: &[String],
+    found: &mut Vec<Declaration>,
+) {
+    // A comment, a macro definition, and a line with no merge field.
+    if !concerns_the_merge(line, macros) {
+        return;
+    }
+    let mut fields = line.split_whitespace();
+    let Some(pattern) = fields.next() else {
+        return;
+    };
+    let uses_a_macro = line
+        .split_whitespace()
+        .skip(1)
+        .any(|field| is_a_macro(field, macros));
+    if uses_a_macro || pattern.starts_with('"') || pattern.contains('\\') {
+        found.push((format!("{directory}{line}"), Merge::Uninterpreted));
+        return;
+    }
+    // The last merge field of a line wins, as it does for git.
+    let Some(merge) = fields.filter_map(merge_field).next_back() else {
+        return;
+    };
+    if is_a_pattern(pattern) || pattern.contains('/') {
+        // A slash anywhere but the end anchors it to this directory.
+        let pattern = pattern.strip_prefix('/').unwrap_or(pattern);
+        found.push((format!("{directory}{pattern}"), merge));
+    } else {
+        // No slash: every file of that name below the directory.
+        found.extend(
+            files
+                .iter()
+                .filter(|path| {
+                    path.strip_prefix(directory).is_some_and(|rest| {
+                        rest == pattern || rest.ends_with(&format!("/{pattern}"))
+                    })
+                })
+                .map(|path| (path.clone(), merge.clone())),
+        );
+    }
+}
+
+/// Whether a line sets a merge field, or uses a macro that may set one.
+fn concerns_the_merge(line: &str, macros: &[&str]) -> bool {
+    !line.starts_with('#')
+        && !line.starts_with("[attr]")
+        && line
+            .split_whitespace()
+            .skip(1)
+            .any(|field| merge_field(field).is_some() || is_a_macro(field, macros))
+}
+
+/// Whether a field sets, unsets or unspecifies a macro an `[attr]` line defines.
+fn is_a_macro(field: &str, macros: &[&str]) -> bool {
+    let name = field.trim_start_matches(['-', '!']);
+    macros.contains(&name)
+}
+
+/// Where git keeps `$GIT_DIR/info/attributes` for this tree, if it is a clone.
+///
+/// A linked worktree names its git directory in a `.git` file, and that
+/// directory names the common one, which is where `info/` lives.
+fn info_attributes(root: &Path) -> Option<PathBuf> {
+    let dot = root.join(".git");
+    if dot.is_dir() {
+        return Some(dot.join("info").join("attributes"));
+    }
+    let text = std::fs::read_to_string(&dot).ok()?;
+    let git_dir = root.join(text.trim().strip_prefix("gitdir:")?.trim());
+    let common = match std::fs::read_to_string(git_dir.join("commondir")) {
+        Ok(common) => git_dir.join(common.trim()),
+        Err(_) => git_dir,
+    };
+    Some(common.join("info").join("attributes"))
 }
 
 /// What one field of a `.gitattributes` line says about merging, if anything.
