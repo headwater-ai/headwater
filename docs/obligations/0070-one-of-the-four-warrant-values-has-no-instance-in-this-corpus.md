@@ -30,4 +30,4 @@ Nothing is `transcribed`, because no external system of record feeds this reposi
 
 ## Discharge
 
-The `transcribed` branch runs over corpus content, and not over the census fixture tree alone. It waits on an importer, which does not feed this repository. What the `asserted` instances found is a second question, and [HW-OBL-0126](0126-every-asserted-document-carries-the-freshness-date-that-spec-3-says-it-cannot.md) holds it rather than this record.
+The `transcribed` branch runs over corpus content, and not over the census fixture tree alone. It waits on an importer, which does not feed this repository. The verification block of `headwater check` states that each `observed` or `suspect` state is transcribed from `.headwater/observations.yml` ([#937](https://github.com/headwater-ai/headwater/issues/937)). That statement is not an instance, because the snapshot is not a document of the corpus and so carries no warrant. What the `asserted` instances found is a second question, and [HW-OBL-0126](0126-every-asserted-document-carries-the-freshness-date-that-spec-3-says-it-cannot.md) holds it rather than this record.

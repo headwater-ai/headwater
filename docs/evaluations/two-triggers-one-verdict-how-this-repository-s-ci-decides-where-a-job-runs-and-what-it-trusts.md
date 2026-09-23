@@ -3,7 +3,7 @@ id: HW-EVAL-two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-jo
 status: current
 status_since: 2026-09-21
 summary: "The event that started a run decides which of two machines it takes, and every other condition in the workflow can only take work away."
-last_verified: 2026-09-21
+last_verified: 2026-09-23
 title: "Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts"
 provenance:
   warrant: asserted
@@ -71,6 +71,18 @@ The self-hosted container takes neither. Its cargo registry and its sccache dire
 Its `engine/target` is deliberately **not** carried between jobs. Two attempts to carry it broke the checkout and then the fixture suite in turn. A persistent directory inside the checked-out tree is a directory `actions/checkout` cannot remove. A symlink to one is a file the fixture scratch copies collect. So a self-hosted job always builds into a cold target directory, and sccache is what makes that cheap.
 
 A run's cancellation is keyed on the ref rather than on the event. Keying it on the event, which is what the workflow did until 2026-09-21, exempted from cancellation exactly the runs that occupy the runner. The queue that made cancellation worth having is made of `push` runs. Every ref but `main` cancels a superseded run, and `main` never does.
+
+## A full pool sends a push run to a hosted runner, and the router can only take work away
+
+On 2026-09-23 the self-hosted pool was the slow part of CI. On that day, 84 jobs of `push` runs waited 11.8 hours in the queue and ran for 6.4 hours. The mean wait was 8.4 minutes, the longest wait was 35.6 minutes, and 30 waits were longer than 10 minutes. The pool is three slots on one host, and it was two slots for most of that day. Each run is two jobs.
+
+A hosted runner is slower than a free slot, and faster than a full one. Over 35 green self-hosted runs, `Engine tests` took 3.2 minutes and `headwater check` took 6.8 minutes, as means. From 2026-09-15 to 2026-09-20 the same jobs took about 5.8 and 9.3 minutes on a hosted runner. So each job costs about 2.5 minutes more on a hosted runner. A queued job waits for a slot to become free, and a slot becomes free after 3 to 7 minutes.
+
+The `route` job applies that comparison before the two jobs start. It runs on a hosted runner, because a job that measures a full queue cannot wait in that queue. It lists the queued and running jobs of this repository that ask for the `headwater` label. It uses the run's own token with `actions: read`, and that token cannot list the runners themselves. The rule is this: self-hosted when no such job is queued and the running ones plus two fit the pool, and hosted otherwise. The pool size is the variable `CI_SELF_HOSTED_SLOTS`, three when it is not set. Two routers that read the pool at the same time can both choose it. That costs one wait, which is what every run paid before the router existed.
+
+The router obeys the rule of the section on conditions above, and the proof is in the expression and not in the script. The router gives one word, `overflow`. Each job compares it with the literal `'true'` inside the same `runs-on` expression that first tests for a `push`. A `pull_request` run gets a hosted runner whatever the router says. A `push` run gets `CI_RUNNER` or a hosted runner, and no value of the word gives it a third label. So the router can move work from the self-hosted pool to a hosted runner, and it cannot move work in the other direction.
+
+A router that fails must not skip the jobs, and the reason is the rule about skipped jobs above. By default, a job whose `needs:` fails or skips is skipped too, and a skipped job reports success to a required check. A router that failed on a fork pull request would therefore pass it without a test. Two mechanisms stop this. The router has no condition of its own, and its one step continues on an error and has a two-minute limit. An error, a missing permission or an answer it cannot read gives an empty word or `false`. The router can also fail as a whole job, when GitHub loses its runner or cannot set it up. For that case, the condition of each job opens with `!cancelled()`, so the job runs after a failed router. In both cases the word is empty or `false`, and the jobs run where they ran before the router existed. The branch that added the router showed each route and the fallback on its own `push` runs.
 
 ## What transfers, and what belongs to this repository
 

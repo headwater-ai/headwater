@@ -147,6 +147,22 @@ impl Observation {
     }
 }
 
+/// What the snapshot records for one verification. See
+/// [`Observations::recorded`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Recorded<'a> {
+    /// The snapshot read, and no entry names the identifier.
+    Absent,
+    /// An entry names it, with the commit and the criterion digest it holds.
+    Entry {
+        commit: &'a str,
+        criterion_digest: &'a str,
+    },
+    /// The file, or the entry for this identifier, did not read. The reason
+    /// is the one [`Problem`] carries.
+    Unread(&'a str),
+}
+
 /// What [`Observations::at`] could not use, kept apart by shape because the
 /// two need different remediation.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -365,6 +381,15 @@ impl Observations {
                         });
                         continue;
                     };
+                    // An empty digest names no bytes, so a comparison with
+                    // it would report a change that did not happen.
+                    if criterion_digest.trim().is_empty() {
+                        problems.push(Problem::Entry {
+                            id: id.clone(),
+                            reason: "its `criterion_digest` is empty".to_string(),
+                        });
+                        continue;
+                    }
                     if !plausible_commit(&commit) {
                         problems.push(Problem::Entry {
                             id: id.clone(),
@@ -425,6 +450,43 @@ impl Observations {
                 criterion_digest,
             } if verification == id => Some((commit.as_str(), criterion_digest.as_str())),
             _ => None,
+        })
+    }
+
+    /// What the snapshot says about one verification, with the case
+    /// [`Observations::verification`] folds into `None` kept apart: a
+    /// snapshot that could not be read, or an entry for this identifier that
+    /// did not read, is not the same fact as no entry at all. `declared`
+    /// means that no entry names the verification, and a run that could not
+    /// read the file does not know that.
+    pub fn recorded(&self, id: &str) -> Recorded<'_> {
+        if let Some(Problem::File(reason)) = self
+            .problems
+            .iter()
+            .find(|problem| matches!(problem, Problem::File(_)))
+        {
+            return Recorded::Unread(reason);
+        }
+        if let Some((commit, criterion_digest)) = self.verification(id) {
+            return Recorded::Entry {
+                commit,
+                criterion_digest,
+            };
+        }
+        match self.problems.iter().find_map(|problem| match problem {
+            Problem::Entry { id: named, reason } if named == id => Some(reason.as_str()),
+            _ => None,
+        }) {
+            Some(reason) => Recorded::Unread(reason),
+            None => Recorded::Absent,
+        }
+    }
+
+    /// The whole-file problem, where the snapshot could not be read at all.
+    pub fn unread(&self) -> Option<&str> {
+        self.problems.iter().find_map(|problem| match problem {
+            Problem::File(reason) => Some(reason.as_str()),
+            Problem::Entry { .. } => None,
         })
     }
 

@@ -337,6 +337,10 @@ pub struct Run {
     /// its health, and what escaped under each obligation. Spec 4 makes it a
     /// projection of the two declarations, generated and never authored.
     pub register: register::Projection,
+    /// Every verification of the corpus with its state: `declared`,
+    /// `observed at <commit>` or `suspect since <commit>`. A projection that
+    /// no cache stores, beside the register. See [`verification::Block`].
+    pub verifications: verification::Block,
     /// The change this run was scoped to, and nothing for a full-corpus run.
     ///
     /// It states an input rather than a verdict, which is why it is here beside
@@ -999,6 +1003,12 @@ pub fn run(
         served,
         read_set,
         register,
+        verifications: verification::Block::of(
+            declared.relations,
+            census,
+            graph,
+            declared.observations,
+        ),
         change,
         cache: cache.report(),
     }
@@ -1200,6 +1210,10 @@ impl Run {
         // the coverage report — "what fraction of obligations are verified, by
         // severity, with the gap list" — generated from it. This is that.
         out.push_str(&self.register.render());
+        // Beside the register for its reason: a run that only counted the
+        // verifications could not show which were observed and which were
+        // only declared (#937).
+        out.push_str(&self.verifications.render());
 
         if detail != Detail::Totals {
             let _ = writeln!(out, "{} findings", self.findings.len());

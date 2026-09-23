@@ -32,7 +32,9 @@
 # 1. `runs-on` decides self-hosted eligibility on `github.event_name` and on
 #    nothing else. Never key it on which repository opened a pull request,
 #    or on any field a pull request's author can influence. A fork runs its
-#    own copy of this file, so no condition here defends against one.
+#    own copy of this file, so no condition here defends against one. The
+#    router of rule 6 may send an eligible job to a hosted runner, and it
+#    never makes a job eligible.
 #
 # 2. The real boundary is `fork_pr_contributor_approval:
 #    all_external_contributors`, which holds every outside run for a manual
@@ -51,6 +53,18 @@
 #    attempts broke `actions/checkout` and then `.githooks/fixtures.sh`.
 #    sccache is what makes a cold target directory cheap.
 #
+# 6. The `route` job moves a `push` run to a hosted runner when the
+#    self-hosted pool is full, and it can do nothing else. It outputs one
+#    word, `overflow`, and `runs-on` below compares it with the literal
+#    `'true'`, so the only labels a job can get are `vars.CI_RUNNER` or
+#    `ubuntu-latest`. A failed or skipped `needs:` skips a job by default,
+#    and a skipped job reports success to a required check. Two things stop
+#    that. Its step continues on an error, so an error in the script gives
+#    an empty output. And the `if:` of `engine` and `headwater` opens with
+#    `!cancelled()`, so they run when `route` fails as a job (a runner lost
+#    or a setup that failed), and an empty output is today's routing. Keep
+#    that prefix, and give `route` no `if:` of its own.
+#
 # `runner.environment` reads `self-hosted` on the container and tells the two
 # runners apart wherever a step differs between them. `--break-system-packages`
 # on each `pip install --user` below is what the self-hosted image's PEP 668
@@ -59,6 +73,8 @@
 #   gh variable set CI_RUNNER --body '["self-hosted", "headwater"]'  # opt in, push events only
 #   gh variable delete CI_RUNNER                                    # back to ubuntu-latest
 #   gh variable list                                                # which one is live
+#   gh variable set CI_SELF_HOSTED_SLOTS --body 3                  # the pool size the router assumes
+#   gh variable set CI_SELF_HOSTED_SLOTS --body 0                  # every push run to a hosted runner
 
 name: CI
 
@@ -71,10 +87,10 @@ on:
     branches: ['**']
   pull_request:
 
-# On the self-hosted runner a superseded run is not merely wasted compute: one
-# runner serves this repository and it takes one job at a time, so a run
-# nobody will read holds the only runner, and every other branch waits behind
-# a verdict about a commit nobody will merge. Three pushes to one branch in
+# On the self-hosted runner a superseded run is not merely wasted compute: a
+# pool of three slots serves this repository (two until 2026-09-23), a run is
+# two jobs, so a run nobody will read holds most of the pool, and every other
+# branch waits behind a verdict about a commit nobody will merge. Three pushes to one branch in
 # ten minutes queued three full runs of both jobs, at three to fourteen
 # minutes each. On a GitHub-hosted runner the queue is not the cost and the
 # minutes are, which is the same reason under a different meter.
@@ -97,6 +113,86 @@ permissions:
   contents: read
 
 jobs:
+  route:
+    # Header rule 6 carries what this job may do and why it must never fail.
+    # It is not a required check, and its name is a literal like every other.
+    name: Route
+    # A literal, and hosted: the job that decides whether the self-hosted
+    # pool is full cannot wait in the queue of that pool.
+    runs-on: ubuntu-latest
+    # The run's own token lists this repository's runs and jobs with
+    # `actions: read`. It cannot list the self-hosted runners themselves,
+    # because that needs administration, so the router counts the jobs that
+    # ask for the `headwater` label instead of the runners that serve it.
+    permissions:
+      actions: read
+    outputs:
+      overflow: ${{ steps.measure.outputs.overflow }}
+    steps:
+      - name: Measure the self-hosted pool
+        id: measure
+        # Belt and braces for header rule 6: the script below already exits
+        # 0 on every error it can see, and these two keep a hung API call or
+        # an error it cannot see from failing the job. The job then succeeds
+        # with an empty output, which routes as if this job did not exist.
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          # The size of the pool, three slots since 2026-09-23. It is a
+          # variable so that a pool that grows or shrinks moves one value
+          # and no commit.
+          SLOTS: ${{ vars.CI_SELF_HOSTED_SLOTS || '3' }}
+        # The rule: self-hosted when no job waits for the `headwater` label
+        # and the jobs running on it, plus the two jobs of this run, fit the
+        # pool. Otherwise hosted. A self-hosted job is faster than a hosted
+        # one by about 2.5 minutes for each of the two jobs (3.2 against 5.8
+        # minutes, and 6.8 against 9.3), and a queued job waits for a slot
+        # that frees in 3 to 7 minutes. So a run that cannot start both jobs
+        # at once finishes sooner on a hosted runner. Two routers that read
+        # the pool at the same moment can both choose it, and that costs one
+        # wait, which is what every run paid before this job existed.
+        run: |
+          fallback() {
+            echo "route: $1; falling back to vars.CI_RUNNER"
+            echo "overflow=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          if [ "$EVENT" != push ]; then
+            echo "route: a $EVENT run never reaches self-hosted -> hosted"
+            echo "overflow=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case $SLOTS in ''|*[!0-9]*) fallback "CI_SELF_HOSTED_SLOTS is '$SLOTS', not a count" ;; esac
+          runs=
+          for status in queued in_progress waiting pending requested; do
+            page=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=$status&per_page=100" --jq '.workflow_runs[].id') \
+              || fallback "listing $status runs failed"
+            runs="$runs $page"
+          done
+          queued=0
+          busy=0
+          for id in $(printf '%s\n' $runs | sort -u); do
+            [ "$id" = "$GITHUB_RUN_ID" ] && continue
+            counts=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs?filter=latest&per_page=100" \
+              --jq '[.jobs[] | select(.labels | index("headwater"))] | "\(map(select(.status == "queued" or .status == "waiting" or .status == "pending")) | length) \(map(select(.status == "in_progress")) | length)"') \
+              || fallback "listing the jobs of run $id failed"
+            case $counts in
+              *[!0-9\ ]*|'') fallback "the jobs of run $id read '$counts'" ;;
+            esac
+            set -- $counts
+            queued=$((queued + $1))
+            busy=$((busy + $2))
+          done
+          if [ "$queued" -eq 0 ] && [ $((busy + 2)) -le "$SLOTS" ]; then
+            route=self-hosted overflow=false
+          else
+            route=hosted overflow=true
+          fi
+          echo "route: $busy in progress, $queued queued, $SLOTS slots -> $route"
+          echo "overflow=$overflow" >> "$GITHUB_OUTPUT"
+
   engine:
     # A context the `Protect main` ruleset requires, so it stays a literal
     # (header rule 4). A same-repo pull request puts two check-runs of it on
@@ -108,7 +204,12 @@ jobs:
     # `push` run on the same commit already answered. It takes work away and
     # grants none (header rule 3), which is why it may read a pull request
     # field here and `runs-on` below may not.
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) }}
+    # `!cancelled()` in the `if:` above runs this job when `route` fails as
+    # a job, so this `needs:` delays it by one short hosted job and never
+    # skips it (header rule 6). With no output the job routes as it did
+    # before `route` existed.
+    needs: route
     # `CI_RUNNER` is only read on a `push`, and its own unset fallback is
     # `ubuntu-latest`: the self-hosted labels are an opt-in the variable has
     # to name explicitly (`gh variable set CI_RUNNER --body '["self-hosted",
@@ -119,7 +220,7 @@ jobs:
     # pull request that has gone `CONFLICTING` against a moved `main` gets
     # no check-suite at all, on either runner, which looks the same from
     # here.
-    runs-on: ${{ github.event_name == 'push' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
+    runs-on: ${{ github.event_name == 'push' && needs.route.outputs.overflow != 'true' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
       - uses: actions/checkout@v4
       - name: The cargo cache, on a hosted runner only
@@ -340,8 +441,9 @@ jobs:
     # job carries why a same-repo pull request skips here, and the
     # top-of-file comment carries why `push` is the only trigger this file
     # trusts with the self-hosted label.
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    runs-on: ${{ github.event_name == 'push' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) }}
+    needs: route
+    runs-on: ${{ github.event_name == 'push' && needs.route.outputs.overflow != 'true' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
       - uses: actions/checkout@v4
         with:

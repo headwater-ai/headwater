@@ -535,7 +535,7 @@
               "properties": {
                 "headwater": {
                   "scope": "edge",
-                  "version": 1,
+                  "version": 2,
                   "obligations": [],
                   "exportable_as": []
                 }
