@@ -913,6 +913,70 @@ release_upload_judge() {
     fi
 }
 
+# release_smoke_jobs WORKFLOW — the ids of the jobs whose id starts with
+# `smoke`, one per line: the jobs that run an archive on a host that did not
+# build it.
+release_smoke_jobs() {
+    release_yaml_text "$1" | awk '
+        /^[a-zA-Z]/ { injobs = ($0 ~ /^jobs:/); next }
+        injobs && /^  [A-Za-z_][A-Za-z0-9_-]*:[ \t]*$/ {
+            id = $0
+            sub(/^  /, "", id)
+            sub(/:[ \t]*$/, "", id)
+            if (id ~ /^smoke/) print id
+        }
+    ' | LC_ALL=C sort -u
+}
+
+# release_publish_needs WORKFLOW — the `needs:` of the job that runs
+# `gh release create`, one id per line. Both YAML shapes of a `needs:` value
+# are read: the inline flow list and a single bare id.
+release_publish_needs() {
+    release_yaml_text "$1" | awk '
+        /^[a-zA-Z]/ { injobs = ($0 ~ /^jobs:/); next }
+        injobs && /^  [A-Za-z_][A-Za-z0-9_-]*:[ \t]*$/ {
+            if (creates) { print needs; exit }
+            needs = ""
+            next
+        }
+        injobs && /^    needs:/ {
+            v = $0
+            sub(/^    needs:[ \t]*/, "", v)
+            gsub(/[][,]/, " ", v)
+            needs = v
+            next
+        }
+        injobs && index($0, "gh release create") { creates = 1 }
+        END { if (creates) print needs }
+    ' | tr ' ' '\n' | grep . | LC_ALL=C sort -u
+}
+
+# release_gate_judge WORKFLOW — does the job that creates the release wait on
+# every job that runs an archive on a host that did not build it?
+#
+# The build job runs each binary on the host that built it, which is the one
+# host guaranteed to have what the binary links against. A stranger on an older
+# Linux or on a Mac is not that host, and #975 is the issue that found the only
+# archive a release carried ran on neither. A smoke job that the release does
+# not wait on is a report after the fact rather than a gate.
+release_gate_judge() {
+    rg_smoke=$(release_smoke_jobs "$1")
+    if [ -z "$rg_smoke" ]; then
+        echo "no job runs an archive on a host that did not build it, so nothing stops a release whose archive cannot run"
+        return
+    fi
+    rg_needs=$(release_publish_needs "$1")
+    rg_missing=$(printf '%s\n' "$rg_smoke" | awk -v needs="$(oneline "$rg_needs")" '
+        BEGIN { n = split(needs, a, " "); for (i = 1; i <= n; i++) have[a[i]] = 1 }
+        !($0 in have)
+    ')
+    if [ -n "$rg_missing" ]; then
+        echo "the job that creates the release does not wait on $(oneline "$rg_missing")"
+    else
+        echo ok
+    fi
+}
+
 # workflow_step_run WORKFLOW NAME — the body of the `run: |` block of the step
 # whose `name:` is NAME, with the block indentation removed, so what comes out
 # is a runnable script. Reading the step BY ITS NAME rather than by a line
@@ -1943,6 +2007,10 @@ same "  and a tag already cut can be given one by hand" ok \
     "$(release_dispatch_judge "$release_wf")"
 same "  and the upload hands over exactly what the page offers" ok \
     "$(release_upload_judge "$readme" "$release_wf")"
+same "  and the release waits on every job that runs an archive where it was not built" ok \
+    "$(release_gate_judge "$release_wf")"
+more_than "  over the jobs that run an archive where it was not built" 1 \
+    "$(release_smoke_jobs "$release_wf" | grep -c .)"
 same "  and no step reads a command through an unguarded pipe" "" \
     "$(release_pipe_steps "$release_wf" offenders | tr '\n' '|')"
 more_than "  over the asset names the page carries" 0 \
@@ -1969,7 +2037,7 @@ if [ -f "$release_wf" ]; then
             "the planted edit changed nothing, so this case measured nothing"
     else
         same "  a workflow uploading a different triple is named on both sides" \
-            "the page names $(oneline "$real_name") and the workflow uploads $(oneline "$(printf '%s\n' "$real_name" | sed 's/x86_64/aarch64/g')")" \
+            "the page names $(oneline "$real_name") and the workflow uploads $(oneline "$(printf '%s\n' "$real_name" | sed 's/x86_64/aarch64/g' | LC_ALL=C sort -u)")" \
             "$(release_asset_judge "$readme" "$scratch/release/other-arch.yml")"
     fi
 
@@ -2017,7 +2085,8 @@ if [ -f "$release_wf" ]; then
         "no \`gh release upload\` or \`gh release create\` hands over an asset, so the tag gets nothing" \
         "$(release_upload_judge "$readme" "$scratch/release/no-upload.yml")"
 
-    sed 's/create "\$TAG" "\$asset" "\$checksum"/create "$TAG" "$checksum"/' \
+    sed -e '/gh release create/s/ "\$gnu"//' -e '/gh release create/s/ "\$musl"//' \
+        -e '/gh release create/s/ "\$darwin"//' \
         "$release_wf" >"$scratch/release/checksum-only.yml"
     if cmp -s "$release_wf" "$scratch/release/checksum-only.yml"; then
         fail "  a workflow that uploads the checksum and not the archive is refused" \
@@ -2028,7 +2097,7 @@ if [ -f "$release_wf" ]; then
             "$(release_upload_judge "$readme" "$scratch/release/checksum-only.yml")"
     fi
 
-    sed 's/create "\$TAG" "\$asset"/create "$TAG" "$archive"/' \
+    sed 's/create "\$TAG" "\$gnu"/create "$TAG" "$archive"/' \
         "$release_wf" >"$scratch/release/renamed-var.yml"
     if [ "$(release_upload_judge "$readme" "$scratch/release/renamed-var.yml")" = ok ]; then
         fail "  an operand naming a variable nothing assigns is refused" \
@@ -2036,6 +2105,37 @@ if [ -f "$release_wf" ]; then
     else
         pass "  an operand naming a variable nothing assigns is refused"
     fi
+
+    # #975. A page that offers the macOS archive against a workflow that has
+    # stopped building it is the same 404 as a wrong triple, for one platform
+    # of three. Every line naming the darwin target goes, so the build row,
+    # the smoke job's names and the upload operands all go together.
+    grep -v 'aarch64-apple-darwin' "$release_wf" >"$scratch/release/no-darwin.yml"
+    if cmp -s "$release_wf" "$scratch/release/no-darwin.yml"; then
+        fail "  a page offering an archive the workflow no longer builds is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a page offering an archive the workflow no longer builds is refused" \
+            "the page names $(oneline "$real_name") and the workflow uploads $(oneline "$(printf '%s\n' "$real_name" | grep -v 'aarch64-apple-darwin')")" \
+            "$(release_asset_judge "$readme" "$scratch/release/no-darwin.yml")"
+    fi
+
+    # A smoke job the release does not wait on reports a broken archive after
+    # the release already carries it.
+    sed '/^    needs: \[.*smoke/s/, smoke-macos//' "$release_wf" >"$scratch/release/ungated.yml"
+    if cmp -s "$release_wf" "$scratch/release/ungated.yml"; then
+        fail "  a release that does not wait on a smoke job is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a release that does not wait on a smoke job is refused" \
+            "the job that creates the release does not wait on smoke-macos" \
+            "$(release_gate_judge "$scratch/release/ungated.yml")"
+    fi
+
+    sed 's/^  smoke-/  check-/' "$release_wf" >"$scratch/release/no-smoke.yml"
+    same "  and a workflow with no smoke job at all is refused" \
+        "no job runs an archive on a host that did not build it, so nothing stops a release whose archive cannot run" \
+        "$(release_gate_judge "$scratch/release/no-smoke.yml")"
 
     # The guard on the guard. `bash -e` without `pipefail` takes the LAST
     # command's status, so a version check written as `$(binary | awk …)` passes
