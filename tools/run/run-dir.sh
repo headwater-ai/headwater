@@ -16,6 +16,7 @@
 #         lessons.md       prose, seeded from the previous run
 #         decisions.md     prose, seeded from the previous run
 #         parent.session   the parent's session id prefix, for the review hook
+#         usage.jsonl      one plan-usage sample per start, log and end
 #
 # Under the common dir rather than under a worktree, so every worktree of the
 # clone reaches it and none of them commits it. `git rev-parse
@@ -30,7 +31,29 @@
 #                                               claim each artifact, or say who holds it
 #     sh tools/run/run-dir.sh release <dir> <issue>  drop every claim the issue holds
 #     sh tools/run/run-dir.sh claims <dir>           every claim, one per line
-#     sh tools/run/run-dir.sh end <dir>              drop every claim, once the run has closed
+#     sh tools/run/run-dir.sh end <dir>              drop every claim, once the run has closed,
+#                                                    then print what `usage` prints
+#     sh tools/run/run-dir.sh usage <dir>            plan usage per closed issue, derived
+#
+# `start`, `log` and `end` each append one sample of the plan's rate-limit
+# usage to `usage.jsonl`, so the parent and the integrator record it without
+# doing anything: `usage` then derives how many points of the 5-hour and
+# 7-day windows the run spent, over the issues it closed, and how many more
+# issues at that rate fit in what is left of each window. The owner plans
+# delivery against those two windows, and a run's cost in turns
+# ([HW-PD-0003]) does not convert into either of them.
+#
+# The source is one JSON file per Claude Code session under
+# `~/.cache/claude-usage/sessions/` (`HEADWATER_USAGE_DIR` overrides it),
+# which the owner's status-line script writes from the `rate_limits` the
+# harness hands it. Nothing in this repository writes that directory, so a
+# host without it records no sample and says nothing: a sample is an
+# observation of the host, and its absence must never fail a run. A
+# session's figures are only as fresh as its own last API call, and idle
+# sessions keep re-reporting old ones, so a sample takes the parent's own
+# session where `parent.session` names it, and otherwise the session whose
+# `last_activity` is newest. A sample is raw, and every figure is derived by
+# `usage` and never stored, as for the log.
 #
 # A claim is a file at `<dir>/claims/artifacts/<artifact>`, opened with
 # `set -C`, which dash implements as O_EXCL, so two parents claiming one
@@ -116,6 +139,7 @@ start() {
             : > "$dir/$file"
         fi
     done
+    sample "$dir" start
     printf '%s\n' "$dir"
 }
 
@@ -139,6 +163,78 @@ log() {
         exit 1
     fi
     printf '%s' "$line" | jq -c . >> "$dir/log.jsonl"
+    sample "$dir" log
+}
+
+# Where the per-session usage snapshots live. HEADWATER_USAGE_DIR overrides
+# it, for a fixture.
+usage_source() {
+    printf '%s' "${HEADWATER_USAGE_DIR:-$HOME/.cache/claude-usage/sessions}"
+}
+
+# Append one usage sample, or nothing. Never an error and never a line on
+# either stream: the caller is a ledger write, and the ledger write is what
+# must succeed.
+sample() {
+    dir=$1 event=$2
+    command -v jq >/dev/null 2>&1 || return 0
+    src=$(usage_source)
+    ls "$src"/*.json >/dev/null 2>&1 || return 0
+    parent=$(cat "$dir/parent.session" 2>/dev/null)
+    jq -c -n --arg parent "$parent" --arg event "$event" --argjson now "$(date +%s)" '
+        [inputs | select(type == "object" and .last_activity != null)] as $all
+        | [$all[] | select($parent != "" and ((.session_id // "") | startswith($parent)))] as $own
+        | (if ($own | length) > 0 then {from: "parent", s: ($own | max_by(.last_activity))}
+           else {from: "freshest", s: ($all | max_by(.last_activity))} end) as $pick
+        | select($pick.s != null)
+        | {at: ($now | todate), event: $event, from: $pick.from,
+           session: (($pick.s.session_id // "")[:8]), age_s: ($now - $pick.s.last_activity),
+           five_hour: $pick.s.five_hour, seven_day: $pick.s.seven_day}
+    ' "$src"/*.json >> "$dir/usage.jsonl" 2>/dev/null || true
+}
+
+# What the run spent of each window, over what it closed. Consecutive samples
+# under one `resets_at` add their rise; across a reset the later sample's
+# figure is all that can be seen of that window, so it is added and the
+# total is marked as a floor. A projection divides what is left of each
+# window, at the last sample, by the points per closed issue.
+plan_usage() {
+    need_jq
+    dir=$1
+    [ -f "$dir/log.jsonl" ] || { echo "run-dir: no log at $dir." >&2; exit 1; }
+    if [ ! -s "$dir/usage.jsonl" ]; then
+        echo "no usage samples in $dir: the host wrote no snapshot under $(usage_source)"
+        return 0
+    fi
+    jq -r -n --slurpfile log "$dir/log.jsonl" '
+        [inputs] as $s
+        | ($log | map(select(.verdict == "merged" or ((.merge | type) == "string" and .merge != ""))) | length) as $merges
+        | ($log | map(.closed // 0) | add // 0) as $closed
+        | def spent($w):
+            [$s[] | .[$w] | select(. != null and .used_percentage != null)] as $p
+            | if ($p | length) < 2 then null else
+                reduce range(1; $p | length) as $i ({pts: 0, resets: 0};
+                  if $p[$i].resets_at == $p[$i - 1].resets_at
+                  then .pts += ([$p[$i].used_percentage - $p[$i - 1].used_percentage, 0] | max)
+                  else .pts += $p[$i].used_percentage | .resets += 1 end)
+                + {now: $p[-1].used_percentage}
+              end;
+          def line($name; $w):
+            spent($w) as $x
+            | if $x == null then "\($name)  fewer than two samples"
+              else "\($name)  spent \($x.pts)\(if $x.resets > 0 then "+ (\($x.resets) reset)" else "" end) points, now at \($x.now)%"
+                + (if $closed > 0 and $x.pts > 0
+                   then ", \($x.pts / $closed * 10 | round / 10) per closed issue, room for \((100 - $x.now) / ($x.pts / $closed) | floor) more"
+                   else "" end)
+              end;
+          "samples \($s | length) from \($s[0].at) to \($s[-1].at)  merges \($merges)  issues closed \($closed)",
+          line("5-hour"; "five_hour"),
+          line("7-day "; "seven_day"),
+          (($s | map(.session) | unique) as $ids
+           | if ($ids | length) > 1 then "warning: samples came from \($ids | length) sessions (\($ids | join(", "))), so a rise between two of them may be another session'"'"'s figure" else empty end),
+          (($s | map(select(.from == "freshest")) | length) as $f
+           | if $f > 0 then "note: \($f) sample(s) took the freshest session because no parent.session named one" else empty end)
+    ' "$dir/usage.jsonl"
 }
 
 tail_log() {
@@ -276,7 +372,13 @@ end() {
         freed=$(find "$dir/claims/artifacts" -type f 2>/dev/null | wc -l | tr -d ' ')
     fi
     rm -rf "$dir/claims"
+    sample "$dir" end
     printf 'ENDED: %s, %s claims dropped\n' "$dir" "${freed:-0}"
+    # The parent's closing report quotes what `end` prints, so the figures a
+    # run spent reach the owner without a second command in next-run.md.
+    if [ -s "$dir/usage.jsonl" ] && [ -f "$dir/log.jsonl" ] && command -v jq >/dev/null 2>&1; then
+        plan_usage "$dir"
+    fi
 }
 
 case ${1:-} in
@@ -288,6 +390,7 @@ case ${1:-} in
     log) [ $# -eq 3 ] || usage; log "$2" "$3" ;;
     tail) [ $# -ge 2 ] || usage; tail_log "$2" "${3:-5}" ;;
     net) [ $# -eq 2 ] || usage; net "$2" ;;
+    usage) [ $# -eq 2 ] || usage; plan_usage "$2" ;;
     import) [ $# -eq 3 ] || usage; import "$2" "$3" ;;
     *) usage ;;
 esac
