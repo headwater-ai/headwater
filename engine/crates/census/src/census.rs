@@ -375,9 +375,7 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
                     Outcome::Untyped(Untyped::NoFrontMatter {
                         shelf: shelf.name.clone(),
                         kind: match &shelf.body {
-                            crate::shelves::ShelfBody::Homogeneous { kind } => {
-                                Some(kind.clone())
-                            }
+                            crate::shelves::ShelfBody::Homogeneous { kind } => Some(kind.clone()),
                             crate::shelves::ShelfBody::Heterogeneous { .. } => None,
                         },
                     })
@@ -804,10 +802,7 @@ mod tests {
             .find(|row| row.path == "walk/spec/no-front-matter.md")
             .expect("the fixture");
         assert!(
-            matches!(
-                row.outcome,
-                Outcome::Untyped(Untyped::NoFrontMatter { .. })
-            ),
+            matches!(row.outcome, Outcome::Untyped(Untyped::NoFrontMatter { .. })),
             "{:?}",
             row.outcome
         );
