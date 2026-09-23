@@ -213,6 +213,12 @@ jobs:
     # runs what a stranger downloads. Publishing waits on this job.
     runs-on: ubuntu-24.04
     container: debian:bullseye
+    # Inside a container GitHub's default shell is `sh -e {0}`, which is dash
+    # on Debian and refuses `set -o pipefail`. The first run of this job died
+    # on that line. `bash` is in the image and nothing else is added.
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/download-artifact@v4
         with:
