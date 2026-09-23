@@ -920,8 +920,31 @@ fn a_session_writes_nothing_to_the_corpus_it_reads() {
         &fixtures_dir(),
         "a_session_writes_nothing_to_the_corpus_it_reads",
     );
+    // Two markers exist in the copy and nowhere else: a file under the corpus
+    // root, and a claim in the store. The session reads the census and the
+    // claims that `built` holds, so the two assertions below hold only when
+    // both of them were read from the copy that this case snapshots. Without
+    // them, a corpus or a claim store read from `fixtures_dir()` would leave
+    // this case green while it snapshots a tree nothing reads.
+    let marker = "query/notes/scratch-marker.md";
+    std::fs::write(scratch.0.join(marker), "# A marker in the copy\n").expect("the marker");
+    let store = scratch.0.join(headwater_check::claim::STORE).join("marker");
+    std::fs::create_dir_all(&store).expect("the claim store");
+    std::fs::write(store.join("MARK-0001"), "scratch-copy\n").expect("the claim");
     let before = snapshot(&scratch.0);
     let built = fixture_tree_at(&scratch.0);
+    let rows = &built.census.rows;
+    assert!(
+        rows.iter().any(|row| row.path.ends_with(marker)),
+        "the census did not read the copy at {}",
+        scratch.0.display()
+    );
+    assert_eq!(
+        built.claims.claimant("marker", "MARK-0001"),
+        Some("scratch-copy"),
+        "the claims were not read from the copy at {}",
+        scratch.0.display()
+    );
     let server = built.server(RECORDED_AT);
     for tool in &QUERY_CLASS {
         let request = calling(
