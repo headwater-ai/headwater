@@ -265,7 +265,7 @@ else
     fail 'every agent definition runs cargo build/test through tools/hw-cargo' "$bare"
 fi
 # The refusal arm: a bare cargo build in a fresh file is reported.
-printf 'Run `cargo build --profile dev-release -p headwater-cli`.\n' > "$scratch/bare-cargo.md"
+printf 'Run `cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked`.\n' > "$scratch/bare-cargo.md"
 hits=$(grep -nE 'cargo (build|test)\b' "$scratch/bare-cargo.md" | grep -v 'hw-cargo' || true)
 if [ -n "$hits" ]; then
     pass 'and a bare cargo build in a fresh file is found'
