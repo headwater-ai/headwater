@@ -149,23 +149,38 @@ unpinned_lines() {
             # below over the real tree is what proves this substitution
             # reaches no case name or message it should not.
             #
-            # A fifth verifier (#1031) found that the gsub above matched a
+            # A fifth verifier (#1031) found that this marking matched a
             # reserved word wherever it appeared as a whole word at all,
             # with no check that the word itself sat in a command position:
             # "wait for sort to finish" put `for` immediately before `sort`
-            # as ordinary English, and the unconditional match still opened
-            # a new command there. The opener now requires the same
-            # left-open context the sort/comm check below already requires
-            # of `sort`/`comm` itself — pipe, semicolon, paren, backtick,
-            # quote, `&&`, brace, line start — so a reserved word only
-            # counts as a command opener when something that can precede a
-            # shell command already precedes it, never a bare space.
-            gsub(/(^|[|;(`"!{})]|&&[ \t]*)[ \t]*(if|then|elif|else|fi|do|done|for|while|until|case|esac)([^A-Za-z0-9_]|$)/, "&|", work)
-            if (match(work, /(^|[|;(`"!{})]|&&[ \t]*)[ \t]*sort([^A-Za-z0-9_]|$)/)) {
+            # as ordinary English, and the match still opened a new command
+            # there. A keyword now opens a command only when it stands in
+            # one itself: after `open`, the one class all three matches
+            # below share, and never after a bare space. The verifier of
+            # that fix found two more gaps. A keyword right after another
+            # one (`do if sort`) needs the first one`s mark as its own left
+            # side, and a single gsub pass never reads a mark it wrote. So
+            # the loop below replaces one command-position keyword at a
+            # time with `;`, and the next pass reads that `;` as the opener
+            # it is. Each pass removes one keyword, so the loop ends. And a
+            # single `&` ends a background command and opens the next, so
+            # it is in `open`, which also covers `&&`.
+            open = "(^|[|;&(`\"!{})])[ \t]*"
+            while (match(work, open "(if|then|elif|else|fi|do|done|for|while|until|case|esac)([^A-Za-z0-9_]|$)")) {
+                seg = substr(work, RSTART, RLENGTH)
+                end = ""
+                if (seg ~ /[^A-Za-z0-9_]$/) {
+                    end = substr(seg, length(seg), 1)
+                    seg = substr(seg, 1, length(seg) - 1)
+                }
+                sub(/[a-z]+$/, ";", seg)
+                work = substr(work, 1, RSTART - 1) seg end substr(work, RSTART + RLENGTH)
+            }
+            if (match(work, open "sort([^A-Za-z0-9_]|$)")) {
                 print FILENAME ":" FNR ": " line
                 next
             }
-            if (match(work, /(^|[|;(`"!{})]|&&[ \t]*)[ \t]*comm([^A-Za-z0-9_]|$)/)) {
+            if (match(work, open "comm([^A-Za-z0-9_]|$)")) {
                 print FILENAME ":" FNR ": " line
             }
         }
