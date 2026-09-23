@@ -29,6 +29,16 @@ use std::path::{Path, PathBuf};
 /// one test changes it on purpose.
 const LOCK: &str = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
 
+/// A rules-identity string standing in for one compiled binary's
+/// [`headwater_check::rules_digest`]. The runs below share it, and one test
+/// swaps it for `RULES_AFTER_A_DROPPED_RULE` to stand in for an upgrade,
+/// since a compiled `RULES` array cannot change within one process.
+const RULES: &str = "sha256:rules-0000000000000000000000000000000000000000000000000000000000";
+
+/// The identity of a build that dropped, renamed or changed one rule.
+const RULES_AFTER_A_DROPPED_RULE: &str =
+    "sha256:rules-1111111111111111111111111111111111111111111111111111111111";
+
 /// The date these runs are evaluated at, unless one of them says otherwise.
 const TODAY: &str = "2026-08-12";
 
@@ -132,11 +142,11 @@ fn a_cached_run_and_a_run_with_no_cache_write_the_same_report() {
 
     let without = run_over(&root, &mut Cache::disabled());
 
-    let mut cold = Cache::at(&root, LOCK);
+    let mut cold = Cache::at(&root, LOCK, RULES);
     let first = run_over(&root, &mut cold);
     cold.write(&root);
 
-    let mut warm = Cache::at(&root, LOCK);
+    let mut warm = Cache::at(&root, LOCK, RULES);
     let second = run_over(&root, &mut warm);
 
     assert_eq!(
@@ -186,7 +196,7 @@ fn an_edited_document_is_evaluated_again() {
     const EDITED: &str = "check/evaluations/gamma.md";
     let root = corpus_for("edited");
 
-    let mut cold = Cache::at(&root, LOCK);
+    let mut cold = Cache::at(&root, LOCK, RULES);
     let before = run_over(&root, &mut cold);
     cold.write(&root);
 
@@ -203,7 +213,7 @@ fn an_edited_document_is_evaluated_again() {
     assert_ne!(source, edited, "the fixture no longer restates its kind");
     std::fs::write(&path, &edited).expect("the copy writes");
 
-    let mut warm = Cache::at(&root, LOCK);
+    let mut warm = Cache::at(&root, LOCK, RULES);
     let after = run_over(&root, &mut warm);
 
     assert_ne!(
@@ -267,7 +277,7 @@ fn a_duplicate_settled_in_the_other_file_is_not_served_stale() {
     );
     let untouched = std::fs::read(root.join(SECOND)).expect("the second claimant");
 
-    let mut cold = Cache::at(&root, LOCK);
+    let mut cold = Cache::at(&root, LOCK, RULES);
     let planted = run_over(&root, &mut cold);
     cold.write(&root);
 
@@ -292,7 +302,7 @@ fn a_duplicate_settled_in_the_other_file_is_not_served_stale() {
          the case this test is not about"
     );
 
-    let mut warm = Cache::at(&root, LOCK);
+    let mut warm = Cache::at(&root, LOCK, RULES);
     let settled = run_over(&root, &mut warm);
 
     assert_eq!(
@@ -383,7 +393,7 @@ fn a_moved_anchor_target_is_not_served_from_the_entry_before_it() {
             .collect()
     }
 
-    let mut cold = Cache::at(&root, LOCK);
+    let mut cold = Cache::at(&root, LOCK, RULES);
     let bound = run_over(&root, &mut cold);
     cold.write(&root);
     assert_eq!(
@@ -397,7 +407,7 @@ fn a_moved_anchor_target_is_not_served_from_the_entry_before_it() {
     // digest moves, and no document is added or removed.
     std::fs::remove_file(&governed).expect("the anchor's target goes");
 
-    let mut warm = Cache::at(&root, LOCK);
+    let mut warm = Cache::at(&root, LOCK, RULES);
     let gone = run_over(&root, &mut warm);
 
     assert_eq!(
@@ -449,11 +459,11 @@ fn rewrite(path: &Path, from: &str, to: &str) {
 fn a_clock_that_moved_is_not_served_from_the_entry_before_it() {
     let root = corpus_for("clock");
 
-    let mut cold = Cache::at(&root, LOCK);
+    let mut cold = Cache::at(&root, LOCK, RULES);
     let inside = run_at(&root, &at("2026-08-12"), &mut cold);
     cold.write(&root);
 
-    let mut warm = Cache::at(&root, LOCK);
+    let mut warm = Cache::at(&root, LOCK, RULES);
     let outside = run_at(&root, &at("2026-09-30"), &mut warm);
 
     assert_ne!(
@@ -493,11 +503,11 @@ fn a_clock_that_moved_is_not_served_from_the_entry_before_it() {
 fn a_lock_that_moved_serves_nothing() {
     let root = corpus_for("relocked");
 
-    let mut cold = Cache::at(&root, LOCK);
+    let mut cold = Cache::at(&root, LOCK, RULES);
     run_over(&root, &mut cold);
     cold.write(&root);
 
-    let mut relocked = Cache::at(&root, "sha256:something-else");
+    let mut relocked = Cache::at(&root, "sha256:something-else", RULES);
     let after = run_over(&root, &mut relocked);
     assert_eq!(after.cache.hits, 0, "{:?}", after.cache);
     assert!(after.cache.misses > 0, "{:?}", after.cache);
@@ -509,6 +519,28 @@ fn a_lock_that_moved_serves_nothing() {
     assert_eq!(text.lines().count(), after.cache.misses + 1, "{text}");
 }
 
+/// The engine's own upgrade invalidates every entry, on the terms
+/// `a_lock_that_moved_serves_nothing` already holds the lock digest to.
+///
+/// This is the decisive fixture for
+/// [#1029](https://github.com/headwater-ai/headwater/issues/1029): before this
+/// change, `RULES_AFTER_A_DROPPED_RULE` moved no component of the key at all,
+/// so this test failed with `after.cache.hits > 0` — the stale verdict was
+/// served across the simulated upgrade.
+#[test]
+fn an_engine_upgrade_that_drops_a_rule_serves_nothing() {
+    let root = corpus_for("upgraded");
+
+    let mut cold = Cache::at(&root, LOCK, RULES);
+    run_over(&root, &mut cold);
+    cold.write(&root);
+
+    let mut upgraded = Cache::at(&root, LOCK, RULES_AFTER_A_DROPPED_RULE);
+    let after = run_over(&root, &mut upgraded);
+    assert_eq!(after.cache.hits, 0, "{:?}", after.cache);
+    assert!(after.cache.misses > 0, "{:?}", after.cache);
+}
+
 /// A cache file this engine cannot read is an empty cache and never a refusal.
 ///
 /// Spec 12 decides every doubtful case toward re-running: a false invalidation
@@ -518,13 +550,13 @@ fn a_lock_that_moved_serves_nothing() {
 fn a_damaged_cache_file_costs_one_run_and_nothing_else() {
     let root = corpus_for("damaged");
 
-    let mut cold = Cache::at(&root, LOCK);
+    let mut cold = Cache::at(&root, LOCK, RULES);
     let expected = run_over(&root, &mut cold);
     cold.write(&root);
 
     for damage in ["", "headwater check cache 99\n", "not a cache at all\n"] {
         std::fs::write(Cache::path(&root), damage).expect("the cache writes");
-        let mut cache = Cache::at(&root, LOCK);
+        let mut cache = Cache::at(&root, LOCK, RULES);
         let run = run_over(&root, &mut cache);
         assert_eq!(
             expected.render(Detail::EveryInstance, ColorMode::Plain),

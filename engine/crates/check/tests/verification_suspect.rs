@@ -300,7 +300,7 @@ fn warm_cache_sees_an_edited_snapshot_without_no_cache() {
 
     // Run 1: cold cache, no snapshot at all. `declared`, and every instance in
     // this small fixture tree is a miss, because the cache started empty.
-    let mut cache = Cache::at(&root, LOCK);
+    let mut cache = Cache::at(&root, LOCK, &headwater_check::rules_digest());
     let run1 = run_over_with(&root, &Observations::at(&root), &mut cache);
     assert!(
         findings_of(&run1).is_empty(),
@@ -326,7 +326,7 @@ fn warm_cache_sees_an_edited_snapshot_without_no_cache() {
         ),
     )
     .expect("the snapshot writes");
-    let mut cache = Cache::at(&root, LOCK);
+    let mut cache = Cache::at(&root, LOCK, &headwater_check::rules_digest());
     let run2 = run_over_with(&root, &Observations::at(&root), &mut cache);
     let reported = findings_of(&run2);
     assert_eq!(
@@ -371,7 +371,7 @@ fn warm_cache_sees_an_edited_snapshot_without_no_cache() {
         ),
     )
     .expect("the snapshot writes");
-    let mut cache = Cache::at(&root, LOCK);
+    let mut cache = Cache::at(&root, LOCK, &headwater_check::rules_digest());
     let run3 = run_over_with(&root, &Observations::at(&root), &mut cache);
     assert!(
         findings_of(&run3).is_empty(),
