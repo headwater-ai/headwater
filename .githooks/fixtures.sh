@@ -672,8 +672,12 @@ refute 'and nothing is reported as an ordinary stale figure' 'stale findings' "$
 # none" is the correct rendering of an uncontracted count of exactly 1, and a
 # pattern that reads the plural alone matches neither the total nor the two
 # has/have clauses on such a tree, and refuses every run over it.
+#
+# The count is read off the page rather than written here, so a new verb with
+# its contract moves this case with no edit (#974 added the twenty-fourth).
 reset
-sed -i 's/`headwater` dispatches 23 verbs\. 23 of them have a contract on this shelf, and 0 have none\./`headwater` dispatches 23 verbs. 22 of them have a contract on this shelf, and 1 has none./' \
+verbs=$(sed -n 's/^`headwater` dispatches \([0-9]*\) verbs\..*/\1/p' "$scratch/docs/interfaces/README.md")
+sed -i "s/\`headwater\` dispatches $verbs verbs\\. $verbs of them have a contract on this shelf, and 0 have none\\./\`headwater\` dispatches $verbs verbs. $((verbs - 1)) of them have a contract on this shelf, and 1 has none./" \
     "$scratch/docs/interfaces/README.md"
 grep -q '1 has none' "$scratch/docs/interfaces/README.md" || {
     printf 'FAIL setup: docs/interfaces/README.md did not move to the singular form\n'

@@ -142,6 +142,7 @@ nav:
       - "headwater init": "interfaces/headwater-init.md"
       - "headwater json": "interfaces/headwater-json.md"
       - "headwater mcp": "interfaces/headwater-mcp.md"
+      - "headwater merge-driver": "interfaces/headwater-merge-driver.md"
       - "headwater neighbors": "interfaces/headwater-neighbors.md"
       - "headwater new": "interfaces/headwater-new.md"
       - "headwater probe": "interfaces/headwater-probe.md"
