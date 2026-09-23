@@ -30,13 +30,13 @@ The report is the four lines, and then the block:
 
 ## How you work
 
-**Claim through the board.** Assign the issue to yourself and move it to In Progress before the first commit, with `gh issue edit <N> --repo headwater-ai/headwater --add-assignee @me` and `sh tools/run/board-move.sh <N> in-progress`. The claim is atomic, it survives your death, and nobody has to ask. A card the project does not have is a finding for `headwater-product-owner`, not a reason to stop.
+**Claim through the board.** Assign the issue to yourself and move it to In Progress before the first commit, with `gh issue edit <N> --repo headwater-ai/headwater --add-assignee @me` and `sh tools/run/board-move.sh <N> in-progress`. The claim is atomic, it survives your death, and nobody has to ask. The script adds a card the project does not have yet, so a claim never lands without one.
 
 **Your own worktree, fetched, added and built.** `EnterWorktree` is refused to a subagent and `Write` is refused in the shared checkout, so fetch, add and build the engine in one call:
 
     sh tools/repo/new-worktree.sh "$root/.claude/worktrees/<name>" -b <branch> origin/main
 
-Leave the shared checkout on `main` and untouched. A fresh worktree has no engine and the commit gate then fails open, which is exactly what the build step above exists to prevent. `core.hooksPath` resolving absolute is not a correctness problem here: every `.githooks/` hook hands off to your worktree's own copy regardless of that value ([#925](https://github.com/headwater-ai/headwater/issues/925), fixed by [#946](https://github.com/headwater-ai/headwater/pull/946)).
+Give the call a `timeout` of 600000. Leave the shared checkout on `main` and untouched. A fresh worktree has no engine and the commit gate then fails open, which is exactly what the build step above exists to prevent. `core.hooksPath` resolving absolute is not a correctness problem here: every `.githooks/` hook hands off to your worktree's own copy regardless of that value ([#925](https://github.com/headwater-ai/headwater/issues/925), fixed by [#946](https://github.com/headwater-ai/headwater/pull/946)).
 
 Nothing has to hold that tree open. `tools/repo/retire-worktree.sh` keeps a tree that holds no commit `origin/main` lacks, and keeps its branch with it, so a tree you have not committed to is safe from the sweep and needs no lock. Push early for the other reason, which is that only pushed commits survive your death.
 
@@ -46,7 +46,11 @@ Nothing has to hold that tree open. `tools/repo/retire-worktree.sh` keeps a tree
 
 **Before you open the pull request**, rebase onto `origin/main`, rebuild the engine, then run `headwater generate` and re-bless the recorded fixtures, and read that diff. Then run the whole suite once, `sh tools/hw-cargo test --workspace --manifest-path engine/Cargo.toml`, which is the one workspace-wide run a build owes before its pull request. A binary built before the rebase writes what the previous engine produced, and `headwater check --strict` passes it because the same binary wrote and checked it.
 
-**After you open it, wait for CI once**, with `gh run watch <id> --exit-status` or an `until` loop at thirty seconds, started with `run_in_background: true`, and repair a Format, Lint or unblessed-fixture failure yourself before you report. Seven of ten vetoes in one run were exactly those, and each one bought a fresh verifier at twenty minutes. A red CI you cannot repair is the first line of your report, not a pull request handed on.
+**After you open it, wait for CI once**, on the commit you pushed, started with `run_in_background: true` and re-issued on a `RE-ISSUE` exit:
+
+    sh tools/run/wait-for.sh "sh tools/run/ci-done.sh $(git rev-parse HEAD)"
+
+Its last line is `green` or `red` with the failing checks named, and the `run <id>` lines above it are the id your report's `CI:` line wants. Then repair a Format, Lint or unblessed-fixture failure yourself before you report. Seven of ten vetoes in one run were exactly those, and each one bought a fresh verifier at twenty minutes. A red CI you cannot repair is the first line of your report, not a pull request handed on.
 
 **A `waits-on` line in your dispatch is the integrator's to honor, not yours to build around.** Build against `origin/main` as it stands; the integrator merges the awaited change first and rebases yours behind it. Do not rebase onto another agent's unmerged branch.
 
