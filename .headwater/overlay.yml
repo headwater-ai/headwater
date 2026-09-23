@@ -1181,6 +1181,47 @@ add:
     kind: process_decision
     layout: "{seq:04d}-{slug}.md"
 
+  # --- the consumer surface ------------------------------------------------
+  # HW-DR-0077 rules that the consumer surface is a closed list and that a
+  # declaration holds it. This is that declaration. `surface.local_path.instructed`
+  # reads `adopter_documents` and `local_roots`: a page on the first list that
+  # points at a file under the second, in a code span, a code block or a
+  # front-matter path, is reported. The other members state the rest of the
+  # record as data, and each one gains a reader with the issue that needs it
+  # (#976 names them). A page may still cite population 4 as the way this
+  # repository does a thing, under a block directive with
+  # `reason=accepted_deviation`, which is the passage "that says so".
+
+  surface:
+    archive:
+      - headwater
+      - LICENSE
+    integration_points:
+      git:
+        depends_on: [git, sh]
+      ci_forge:
+        depends_on: []
+      agent_harness:
+        depends_on: []
+      shell:
+        depends_on: [sh]
+      site_generator:
+        depends_on: [mkdocs, python3]
+    prerequisites: [git, sh, curl, tar]
+    companions:
+      - headwater probe
+      - headwater neighbors
+      - headwater sweep
+    adopter_documents:
+      - README.md
+      - docs/interfaces/*.md
+      - docs/tutorials/*.md
+      - docs/how-to/relocate-a-shelf.md
+      - docs/how-to/wire-headwater-check-into-your-own-workflow.md
+      - .headwater/packages/headwater-standard/**
+    local_roots: [tools/, .githooks/, .claude/, .github/, site/, mkdocs/]
+    commands: [headwater, git, sh, curl, tar]
+
 # --- projections ------------------------------------------------------------
 # `projections` is a list in the base, so an `add` cannot reach it, and this is
 # the one operation in this file that is not an `add`. Spec 13 records that

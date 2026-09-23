@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:af7522eebcc1571787cd82adb3458d426df58b2f0ca4aafc6995637ab8056c7a
+  digest: sha256:a48e1e43b9f84df7e56e5c499981866e7e08fb4d82eb971f7a80a3123c62ee7b
   rules: 2
   package: headwater/standard
   version: 4.4.1
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:a1d0295f3af618bb371291f264a5f3d85925aabdd171ccea64629ee42a0e1c24
     - path: .headwater/overlay.yml
-      digest: sha256:f0b5a06a7365891ff7e632f91a489ebec07849cebbac16c8e7b6be4f7c9cfe17
+      digest: sha256:c8606f3f6bc80a57f0fe457e44adb7283fc55f91dc539a344499104831572f8c
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -1534,3 +1534,52 @@ resolved:
           window: "one release of the taxonomy over an adopting corpus"
           threshold: "no false positive, because the rule reports a date comparison between a task's own declared `until` and the injected clock, deriving nothing else"
           sample: "every finding of one run over the adopting corpus, adjudicated once"
+  surface:
+    adopter_documents:
+      - README.md
+      - "docs/interfaces/*.md"
+      - "docs/tutorials/*.md"
+      - docs/how-to/relocate-a-shelf.md
+      - docs/how-to/wire-headwater-check-into-your-own-workflow.md
+      - ".headwater/packages/headwater-standard/**"
+    archive:
+      - headwater
+      - LICENSE
+    commands:
+      - headwater
+      - git
+      - sh
+      - curl
+      - tar
+    companions:
+      - "headwater probe"
+      - "headwater neighbors"
+      - "headwater sweep"
+    integration_points:
+      agent_harness:
+        depends_on: []
+      ci_forge:
+        depends_on: []
+      git:
+        depends_on:
+          - git
+          - sh
+      shell:
+        depends_on:
+          - sh
+      site_generator:
+        depends_on:
+          - mkdocs
+          - python3
+    local_roots:
+      - tools/
+      - ".githooks/"
+      - ".claude/"
+      - ".github/"
+      - site/
+      - mkdocs/
+    prerequisites:
+      - git
+      - sh
+      - curl
+      - tar
