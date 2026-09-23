@@ -197,7 +197,11 @@ const SAYS_SO: &str = "\n<!-- headwater allow=surface.local_path.instructed scop
 fn the_rule_reads_the_manifest_and_honors_a_passage_that_says_so() {
     let root = Root::new(
         "three",
-        &["docs/interfaces/x.md", "docs/interfaces/y.md", "docs/interfaces/w.md"],
+        &[
+            "docs/interfaces/x.md",
+            "docs/interfaces/y.md",
+            "docs/interfaces/w.md",
+        ],
     );
     root.contract("x", INSTRUCTS);
     root.contract("y", SAYS_SO);
