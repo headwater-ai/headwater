@@ -57,11 +57,13 @@
 #    self-hosted pool is full, and it can do nothing else. It outputs one
 #    word, `overflow`, and `runs-on` below compares it with the literal
 #    `'true'`, so the only labels a job can get are `vars.CI_RUNNER` or
-#    `ubuntu-latest`. It must run on every event and it must never fail:
-#    a failed or skipped `needs:` skips `engine` and `headwater`, and a
-#    skipped job reports success to a required check. So it has no `if:`,
-#    and any error in it gives an empty output, which is today's routing.
-#    Never give it an `if:`, a job-level timeout or a step that can fail it.
+#    `ubuntu-latest`. A failed or skipped `needs:` skips a job by default,
+#    and a skipped job reports success to a required check. Two things stop
+#    that. Its step continues on an error, so an error in the script gives
+#    an empty output. And the `if:` of `engine` and `headwater` opens with
+#    `!cancelled()`, so they run when `route` fails as a job (a runner lost
+#    or a setup that failed), and an empty output is today's routing. Keep
+#    that prefix, and give `route` no `if:` of its own.
 #
 # `runner.environment` reads `self-hosted` on the container and tells the two
 # runners apart wherever a step differs between them. `--break-system-packages`
@@ -202,9 +204,11 @@ jobs:
     # `push` run on the same commit already answered. It takes work away and
     # grants none (header rule 3), which is why it may read a pull request
     # field here and `runs-on` below may not.
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    # `route` always runs and never fails (header rule 6), so this `needs:`
-    # delays the job by one short hosted job and never skips it.
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) }}
+    # `!cancelled()` in the `if:` above runs this job when `route` fails as
+    # a job, so this `needs:` delays it by one short hosted job and never
+    # skips it (header rule 6). With no output the job routes as it did
+    # before `route` existed.
     needs: route
     # `CI_RUNNER` is only read on a `push`, and its own unset fallback is
     # `ubuntu-latest`: the self-hosted labels are an opt-in the variable has
@@ -437,7 +441,7 @@ jobs:
     # job carries why a same-repo pull request skips here, and the
     # top-of-file comment carries why `push` is the only trigger this file
     # trusts with the self-hosted label.
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) }}
     needs: route
     runs-on: ${{ github.event_name == 'push' && needs.route.outputs.overflow != 'true' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
