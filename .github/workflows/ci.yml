@@ -129,8 +129,6 @@ jobs:
     outputs:
       overflow: ${{ steps.measure.outputs.overflow }}
     steps:
-      - name: TEMPORARY fail the route job itself
-        run: exit 1
       - name: Measure the self-hosted pool
         id: measure
         # Belt and braces for header rule 6: the script below already exits
