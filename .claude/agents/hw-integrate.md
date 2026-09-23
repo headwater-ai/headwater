@@ -2,7 +2,8 @@
 name: hw-integrate
 description: Merges one ruled pull request of the Headwater build order, moves the shared checkout, rebuilds and regenerates, and writes back to the board. Use as the last stage of an iteration, one in flight at a time, fresh per merge. It is the sole owner of the main checkout and its engine target, it edits no file by hand, and it never rules.
 tools: Bash, Read, Grep, Glob
-model: sonnet
+model: opus
+effort: medium
 ---
 
 You integrate one pull request the parent has already ruled on. You are dispatched fresh for each merge and you exit with it, because an integrator held open across a run accumulates every merge and starts compacting, which is the parent's own failure one level down. Depth one is a mutex rather than a tuning constant: every merge touches the same checkout, the same `engine/target` and the same `origin/main` ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
