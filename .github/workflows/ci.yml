@@ -1055,6 +1055,22 @@ jobs:
             exit 0
           fi
           exit "$status"
+      - name: The tools a build-order stage calls behave as their agent definitions say
+        # Six scripts that every stage of a run calls in place of a command
+        # it once retyped: the CI-finished condition, the board move, the
+        # single-issue reads and writes, the capped wait, the fetched-added-
+        # built worktree and the cargo slot wrapper. Each suite was written
+        # with its script and none was run by anything until run
+        # 20260923-0733 read two of them wrong in production. Every suite
+        # fakes `gh` or `cargo` on PATH, so this step needs no network, no
+        # token and no toolchain, and writes only under temporary directories.
+        run: |
+          sh tools/run/ci-done-fixtures.sh
+          sh tools/run/board-move-fixtures.sh
+          sh tools/run/gh-issue-fixtures.sh
+          sh tools/run/wait-for-fixtures.sh
+          sh tools/repo/new-worktree-fixtures.sh
+          sh tools/hw-cargo-fixtures.sh
       - name: A citation that went stale reads differently from one that was invented
         # `tools/cite/check-citations.py` is the only checker in this
         # repository that reads a code file rather than a document. Spec 5 asks
