@@ -532,13 +532,25 @@ pub enum Verb {
     // `Option` so that a missing one reaches the verb's own sentence rather
     // than `clap`'s, which is the posture every positional of this parse takes.
     MergeDriver {
-        #[arg(value_name = "ancestor", help = "the file git wrote the common ancestor's version into, `%O`. Not read")]
+        #[arg(
+            value_name = "ancestor",
+            help = "the file git wrote the common ancestor's version into, `%O`. Not read"
+        )]
         ancestor: Option<String>,
-        #[arg(value_name = "current", help = "the file holding the current side's version, `%A`. Left byte for byte, because git reads the merge result from it")]
+        #[arg(
+            value_name = "current",
+            help = "the file holding the current side's version, `%A`. Left byte for byte, because git reads the merge result from it"
+        )]
         current: Option<String>,
-        #[arg(value_name = "other", help = "the file holding the other side's version, `%B`. Not read")]
+        #[arg(
+            value_name = "other",
+            help = "the file holding the other side's version, `%B`. Not read"
+        )]
         other: Option<String>,
-        #[arg(value_name = "path", help = "the path of the artifact in the tree, `%P`. It decides which producer the message names")]
+        #[arg(
+            value_name = "path",
+            help = "the path of the artifact in the tree, `%P`. It decides which producer the message names"
+        )]
         path: Option<String>,
     },
     Route {

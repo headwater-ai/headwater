@@ -6270,7 +6270,12 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
     let mut paths: Vec<String> = population
         .outputs
         .iter()
-        .filter(|output| matches!(output.producer, Producer::Generate | Producer::TaxonomyResolve))
+        .filter(|output| {
+            matches!(
+                output.producer,
+                Producer::Generate | Producer::TaxonomyResolve
+            )
+        })
         .map(|output| output.path.clone())
         .collect();
     paths.push(LOCK.to_string());
@@ -6278,7 +6283,10 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
     paths.dedup();
 
     let declared = headwater_census::derived::declared_paths(root);
-    let missing: Vec<&String> = paths.iter().filter(|path| !declared.contains(path)).collect();
+    let missing: Vec<&String> = paths
+        .iter()
+        .filter(|path| !declared.contains(path))
+        .collect();
 
     let attributes = root.join(".gitattributes");
     if !missing.is_empty() {
@@ -6310,7 +6318,10 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
             println!("  {path} {DRIVER_ATTRIBUTE}");
         }
     } else {
-        println!(".gitattributes already declares all {} derived artifacts", paths.len());
+        println!(
+            ".gitattributes already declares all {} derived artifacts",
+            paths.len()
+        );
     }
 
     let lines = [
