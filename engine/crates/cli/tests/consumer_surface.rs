@@ -67,7 +67,10 @@ impl Root {
             &repository.join(headwater_resolve::package::PACKAGES),
             &at.join(headwater_resolve::package::PACKAGES),
         );
-        copy(&repository.join("docs/taxonomies"), &at.join("docs/taxonomies"));
+        copy(
+            &repository.join("docs/taxonomies"),
+            &at.join("docs/taxonomies"),
+        );
         std::fs::copy(
             repository.join(".headwater/taxonomy.yml"),
             at.join(".headwater/taxonomy.yml"),
@@ -87,7 +90,13 @@ impl Root {
 
         let root = Root { at };
         let resolved = root.run(&["taxonomy", "resolve"]);
-        assert_eq!(resolved.0, Some(0), "the fixture resolves\n{}{}", resolved.1, resolved.2);
+        assert_eq!(
+            resolved.0,
+            Some(0),
+            "the fixture resolves\n{}{}",
+            resolved.1,
+            resolved.2
+        );
         root
     }
 
@@ -157,7 +166,9 @@ impl Root {
                 .map_or(lines.len(), |next| at + 1 + next);
             let finding = &lines[at..end];
             if finding.contains(&path.as_str())
-                && finding.iter().any(|l| l.starts_with("\"escape\": \"none\""))
+                && finding
+                    .iter()
+                    .any(|l| l.starts_with("\"escape\": \"none\""))
             {
                 if let Some(message) = finding.iter().find(|l| l.starts_with("\"message\"")) {
                     messages.push(message.to_string());
@@ -180,10 +191,7 @@ const SAYS_SO: &str = "\n<!-- headwater allow=surface.local_path.instructed scop
 
 #[test]
 fn the_rule_reads_the_manifest_and_honors_a_passage_that_says_so() {
-    let root = Root::new(
-        "three",
-        &["docs/interfaces/x.md", "docs/interfaces/y.md"],
-    );
+    let root = Root::new("three", &["docs/interfaces/x.md", "docs/interfaces/y.md"]);
     root.contract("x", INSTRUCTS);
     root.contract("y", SAYS_SO);
     root.contract("z", INSTRUCTS);
@@ -197,7 +205,10 @@ fn the_rule_reads_the_manifest_and_honors_a_passage_that_says_so() {
          code block, and each is one finding\n{x:#?}\n{out}{err}"
     );
     assert!(x.iter().any(|f| f.contains("tools/foo.sh")), "{x:#?}");
-    assert!(x.iter().any(|f| f.contains(".githooks/pre-commit")), "{x:#?}");
+    assert!(
+        x.iter().any(|f| f.contains(".githooks/pre-commit")),
+        "{x:#?}"
+    );
     assert_eq!(
         root.findings("y"),
         Vec::<String>::new(),

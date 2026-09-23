@@ -123,7 +123,11 @@ impl DocumentCheck for LocalPath {
             });
         };
 
-        for (key, node) in view.facets().iter().map(|entry| (&entry.key.value, &entry.value)) {
+        for (key, node) in view
+            .facets()
+            .iter()
+            .map(|entry| (&entry.key.value, &entry.value))
+        {
             for item in paths_in(node) {
                 let Some(text) = item.value.as_scalar().map(|scalar| scalar.text.as_str()) else {
                     continue;
@@ -143,7 +147,11 @@ impl DocumentCheck for LocalPath {
             }
         }
 
-        for block in view.body().map(|body| body.blocks.as_slice()).unwrap_or(&[]) {
+        for block in view
+            .body()
+            .map(|body| body.blocks.as_slice())
+            .unwrap_or(&[])
+        {
             if block.quote_depth > 0 || block.kind == BlockKind::Html {
                 continue;
             }
@@ -157,7 +165,8 @@ impl DocumentCheck for LocalPath {
                 }
                 for (offset, line) in run.text.split('\n').enumerate() {
                     for token in line.split(|c: char| {
-                        c.is_whitespace() || matches!(c, '`' | '"' | '\'' | '(' | ')' | '=' | ',' | ';')
+                        c.is_whitespace()
+                            || matches!(c, '`' | '"' | '\'' | '(' | ')' | '=' | ',' | ';')
                     }) {
                         if let Some(root) = self.root_of(token) {
                             let line_number = run.span.start.line + offset;
@@ -182,7 +191,10 @@ impl DocumentCheck for LocalPath {
 fn paths_in(node: &Spanned<Value>) -> Vec<&Spanned<Value>> {
     match (&node.value.as_seq(), &node.value.as_map()) {
         (Some(items), _) => items.iter().flat_map(paths_in).collect(),
-        (None, Some(map)) => map.iter().flat_map(|entry| paths_in(&entry.value)).collect(),
+        (None, Some(map)) => map
+            .iter()
+            .flat_map(|entry| paths_in(&entry.value))
+            .collect(),
         (None, None) => vec![node],
     }
 }
@@ -224,10 +236,19 @@ mod tests {
 
     #[test]
     fn a_glob_matches_inside_a_segment_and_across_segments() {
-        assert!(glob_matches("docs/interfaces/*.md", "docs/interfaces/headwater-check.md"));
-        assert!(!glob_matches("docs/interfaces/*.md", "docs/interfaces/sub/x.md"));
+        assert!(glob_matches(
+            "docs/interfaces/*.md",
+            "docs/interfaces/headwater-check.md"
+        ));
+        assert!(!glob_matches(
+            "docs/interfaces/*.md",
+            "docs/interfaces/sub/x.md"
+        ));
         assert!(glob_matches("docs/tutorials/**", "docs/tutorials/a/b.md"));
         assert!(glob_matches("README.md", "README.md"));
-        assert!(!glob_matches("docs/how-to/relocate-*.md", "docs/how-to/wire-x.md"));
+        assert!(!glob_matches(
+            "docs/how-to/relocate-*.md",
+            "docs/how-to/wire-x.md"
+        ));
     }
 }
