@@ -221,8 +221,14 @@ pub enum Outcome {
 
 #[derive(Clone, Debug)]
 pub enum Untyped {
-    /// No `---` block. An ordinary corpus state, and never a defect on its own.
-    NoFrontMatter,
+    /// No `---` block, on a path a shelf claims. An ordinary corpus state, and
+    /// never a defect on its own — but a shelf claimed it, so `headwater new`
+    /// already knows where this file belongs. `shelf` is that shelf's name,
+    /// and `kind` is the kind it would mint, where the shelf is homogeneous
+    /// enough to name one; a heterogeneous shelf leaves this `None`, because
+    /// no fact this census reads picks a kind for a document with no facets to
+    /// read one from.
+    NoFrontMatter { shelf: String, kind: Option<String> },
     /// Resolution ran and stopped, and it says where.
     Unresolved {
         reason: resolve::Untyped,
@@ -365,7 +371,17 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
         // Step 1 needs a path and nothing else, so it still runs.
         return hashed(
             match resolve::shelf_for(&entry.path, taxonomy) {
-                resolve::ShelfMatch::Matched { .. } => Outcome::Untyped(Untyped::NoFrontMatter),
+                resolve::ShelfMatch::Matched { shelf, .. } => {
+                    Outcome::Untyped(Untyped::NoFrontMatter {
+                        shelf: shelf.name.clone(),
+                        kind: match &shelf.body {
+                            crate::shelves::ShelfBody::Homogeneous { kind } => {
+                                Some(kind.clone())
+                            }
+                            crate::shelves::ShelfBody::Heterogeneous { .. } => None,
+                        },
+                    })
+                }
                 resolve::ShelfMatch::Stopped(stop) => Outcome::Untyped(Untyped::Unresolved {
                     reason: stop.reason.clone(),
                     derivation: Box::new(stop.into_resolution()),
@@ -506,8 +522,8 @@ impl Outcome {
                     (None, Some(kind)) => format!("resolved as `{kind}`, and {held}"),
                 }
             }
-            Outcome::Untyped(Untyped::NoFrontMatter) => {
-                "no front matter, so nobody has typed this file".to_string()
+            Outcome::Untyped(Untyped::NoFrontMatter { shelf, kind }) => {
+                no_front_matter_message(shelf, kind.as_deref())
             }
             Outcome::Untyped(Untyped::Unresolved { reason, .. }) => reason.to_string(),
             Outcome::Unreadable(Unreadable::NotText) => "the bytes are not UTF-8".to_string(),
@@ -533,6 +549,28 @@ impl Outcome {
                 "a name that is not UTF-8, so no pattern can match it".to_string()
             }
         }
+    }
+}
+
+/// The sentence for a file a shelf claims, but that carries no front matter.
+///
+/// Shared between [`Outcome::detail`] and `headwater_conformance`'s
+/// `corpus_classified`, so that the shelf a file sits on and the kind
+/// `headwater new` would mint are named once rather than in two places that
+/// could drift. `kind` is `None` for a heterogeneous shelf, which does not
+/// pick a kind for a document with no facets to read one from, and the
+/// sentence then points at `headwater new` without one.
+pub fn no_front_matter_message(shelf: &str, kind: Option<&str>) -> String {
+    match kind {
+        Some(kind) => format!(
+            "no front matter, so nobody has typed this file. It sits on the `{shelf}` shelf, \
+             which types every file `{kind}`. Run `headwater new {kind} --title \"<title>\"` \
+             instead"
+        ),
+        None => format!(
+            "no front matter, so nobody has typed this file. It sits on the `{shelf}` shelf. \
+             Run `headwater new <kind> --title \"<title>\"` instead"
+        ),
     }
 }
 
@@ -763,13 +801,57 @@ mod tests {
         let row = census
             .rows
             .iter()
-            .find(|row| row.path.ends_with("no-front-matter.md"))
+            .find(|row| row.path == "walk/spec/no-front-matter.md")
             .expect("the fixture");
         assert!(
-            matches!(row.outcome, Outcome::Untyped(Untyped::NoFrontMatter)),
+            matches!(
+                row.outcome,
+                Outcome::Untyped(Untyped::NoFrontMatter { .. })
+            ),
             "{:?}",
             row.outcome
         );
+    }
+
+    #[test]
+    fn a_shelf_claimed_file_with_no_front_matter_carries_the_shelf_it_sits_on() {
+        // `walk/spec/no-front-matter.md` sits on `spec_series`, a heterogeneous
+        // shelf, so a kind is not this census's to guess: nothing here reads a
+        // discriminator off a file with no facets. `headwater new` still has a
+        // shelf to write into, and this is the fact that lets it say so.
+        let census = take(&corpus(), &taxonomy());
+        let row = census
+            .rows
+            .iter()
+            .find(|row| row.path == "walk/spec/no-front-matter.md")
+            .expect("the fixture");
+        match &row.outcome {
+            Outcome::Untyped(Untyped::NoFrontMatter { shelf, kind }) => {
+                assert_eq!(shelf, "spec_series");
+                assert_eq!(kind, &None);
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_shelf_claimed_file_on_a_homogeneous_shelf_names_the_kind_headwater_new_would_mint() {
+        // `walk/evaluations/no-front-matter.md` sits on `evaluations`, a
+        // homogeneous shelf that declares exactly one kind, so the census can
+        // name it: it is the kind `headwater new` would mint for this path.
+        let census = take(&corpus(), &taxonomy());
+        let row = census
+            .rows
+            .iter()
+            .find(|row| row.path == "walk/evaluations/no-front-matter.md")
+            .expect("the fixture");
+        match &row.outcome {
+            Outcome::Untyped(Untyped::NoFrontMatter { shelf, kind }) => {
+                assert_eq!(shelf, "evaluations");
+                assert_eq!(kind.as_deref(), Some("evaluation"));
+            }
+            other => panic!("{other:?}"),
+        }
     }
 
     #[test]
@@ -797,7 +879,7 @@ mod tests {
             let parsed = row.document.is_some();
             match &row.outcome {
                 Outcome::Typed { .. } => assert!(parsed, "{} is typed and empty", row.path),
-                Outcome::Untyped(Untyped::NoFrontMatter) => {
+                Outcome::Untyped(Untyped::NoFrontMatter { .. }) => {
                     assert!(!parsed, "{} has no block to carry", row.path);
                 }
                 Outcome::Excluded { .. }
