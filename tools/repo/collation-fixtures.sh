@@ -283,6 +283,23 @@ same "for/do, while/do, until/do, if, elif, a bare !, a brace group and a case a
     "$scratch/arms/keywords.sh:2: for f in *; do sort \"\$f\"; done|$scratch/arms/keywords.sh:3: while true; do comm -12 a b; done|$scratch/arms/keywords.sh:4: until false; do sort x; done|$scratch/arms/keywords.sh:5: if sort file; then :; fi|$scratch/arms/keywords.sh:6: if false; then :; elif sort file; then :; fi|$scratch/arms/keywords.sh:7: ! sort file|$scratch/arms/keywords.sh:8: { sort file; }|$scratch/arms/keywords.sh:9: case \$x in pattern) comm -12 a b ;; esac|" \
     "$(unpinned_lines "$scratch/arms/keywords.sh" | tr '\n' '|')"
 
+# A fifth verifier (#1031) found that the fourth verifier's keyword-opener
+# gsub above marks a reserved word as a command opener wherever it appears
+# as a whole word at all, with no check that the word itself sits in a
+# command position. English trips this the same way a real invocation
+# does: "wait for sort to finish" and "wait until comm settles down" both
+# put a keyword immediately before sort/comm as ordinary prose, and the
+# unconditional gsub inserted a `|` right after "for"/"until" regardless,
+# which then satisfied the left-side sort/comm check the same way a real
+# pipe would. This arm plants both sentences and asserts neither reddens;
+# it depends on the keywords arm just above staying green unmodified, which
+# is the other half of the issue's own Done-when — a genuine invocation
+# must still fire.
+printf '#!/bin/sh\necho "wait for sort to finish before continuing"\necho "wait until comm settles down"\n' \
+    >"$scratch/arms/prose.sh"
+same "an opener keyword immediately before sort/comm in ordinary prose does not redden" \
+    "" "$(unpinned_lines "$scratch/arms/prose.sh" | tr '\n' '|')"
+
 echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]
