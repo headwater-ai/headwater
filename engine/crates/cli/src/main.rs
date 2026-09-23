@@ -211,6 +211,19 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             json,
         } => gate(root, read_set, now, json),
         Verb::Derived {} => derived(root),
+        Verb::MergeDriver {
+            ancestor,
+            current,
+            other,
+            path,
+        } => match (ancestor, current, other, path) {
+            (Some(_), Some(current), Some(_), Some(path)) => merge_driver(Path::new(&current), &path),
+            _ => fail(
+                "`merge-driver` takes the four operands git hands a merge driver. Git runs it as \
+                 `headwater merge-driver %O %A %B %P`, and `headwater init --git` prints the \
+                 `git config` line that says so",
+            ),
+        },
         Verb::Route { task, budget, json } => match task.is_empty() {
             true => fail("`route` takes a task description. Try `headwater route \"add rate limiting to the ingest API\"`"),
             false => route(root, &task.join(" "), budget, json),
@@ -305,7 +318,12 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             check,
             json,
         } => export(root, profile, chosen(json, format), typed(json), at, check),
-        Verb::Init { corpus, package } => init(root, corpus, package),
+        Verb::Init {
+            corpus,
+            package,
+            git,
+            git_config,
+        } => init(root, corpus, package, git, git_config),
         Verb::Infer {
             owner,
             until,
@@ -6195,7 +6213,191 @@ fn migrated(
 /// untestable for the sake of asking the same questions in a worse place. So
 /// the questions are written where the answers go, each one marked, and the
 /// verb prints the list of what is unanswered.
-fn init(root: &Path, corpus_root: Option<String>, package: Option<String>) -> ExitCode {
+///
+/// **`--git` is a second step that may run alone.** At the moment a repository
+/// is first bound, no producer has written anything, so the set of paths a
+/// merge must refuse is the lock alone. The step therefore runs again after the
+/// first `headwater generate`, and on a repository that is already bound it
+/// skips the scaffold rather than refusing. See [`init_git`].
+fn init(
+    root: &Path,
+    corpus_root: Option<String>,
+    package: Option<String>,
+    git: bool,
+    git_config: bool,
+) -> ExitCode {
+    let bound = root.join(headwater_resolve::package::CONSUMER).exists();
+    if !(git && bound) {
+        let bound = bind(root, corpus_root, package);
+        if bound != ExitCode::SUCCESS || !git {
+            return bound;
+        }
+        println!();
+    }
+    init_git(root, git_config)
+}
+
+/// The name git prints for the driver, and the line it runs.
+///
+/// `headwater` and not an absolute path, so that the printed line is the same
+/// on every clone and names no file of any tree. It needs the binary on the
+/// `PATH` git runs with, which is the one dependency the driver has beyond it.
+const DRIVER_NAME: &str = "regenerate a derived artifact";
+const DRIVER_LINE: &str = "headwater merge-driver %O %A %B %P";
+const DRIVER_ATTRIBUTE: &str = "merge=headwater-regenerate";
+
+/// `headwater init --git`: the attribute lines, and the configuration git needs.
+///
+/// **The set is computed, and only from the two producers that are verbs.**
+/// `headwater derived` asks four producers, and two of them are a script and a
+/// toolchain of the repository that maintains this engine. An adopter holds
+/// neither, so a line this step wrote for one of them would name a producer
+/// the adopter cannot run. The lock is always in the set, because
+/// `headwater taxonomy resolve` writes it and nothing else does, whether or
+/// not it has run yet.
+///
+/// **It appends and never rewrites.** `.gitattributes` is the adopter's own
+/// file, so a line already declaring the attribute is left alone and every
+/// other line is kept byte for byte. A second run writes nothing.
+///
+/// **It prints the `git config` lines, and runs them only under
+/// `--git-config`.** Git takes no driver from a repository without the consent
+/// of the clone, and [HW-DR-0077](../../../../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)
+/// keeps that consent with the adopter.
+fn init_git(root: &Path, configure: bool) -> ExitCode {
+    use headwater_census::derived::{Producer, LOCK};
+    let population = headwater_census::derived::population(root);
+    let mut paths: Vec<String> = population
+        .outputs
+        .iter()
+        .filter(|output| matches!(output.producer, Producer::Generate | Producer::TaxonomyResolve))
+        .map(|output| output.path.clone())
+        .collect();
+    paths.push(LOCK.to_string());
+    paths.sort();
+    paths.dedup();
+
+    let declared = headwater_census::derived::declared_paths(root);
+    let missing: Vec<&String> = paths.iter().filter(|path| !declared.contains(path)).collect();
+
+    let attributes = root.join(".gitattributes");
+    if !missing.is_empty() {
+        let mut text = match std::fs::read_to_string(&attributes) {
+            Ok(text) => text,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
+            Err(error) => return refuse(&format!("cannot read .gitattributes: {error}")),
+        };
+        if !text.is_empty() && !text.ends_with('\n') {
+            text.push('\n');
+        }
+        let header = "# Written by `headwater init --git`. Each path is a derived artifact that holds a fold,\n\
+                      # so a merge keeps the current side, marks it conflicted, and names the verb that\n\
+                      # rebuilds it. `headwater derived` reports a producer output with no line here.\n";
+        if !text.contains(header) {
+            if !text.is_empty() {
+                text.push('\n');
+            }
+            text.push_str(header);
+        }
+        for path in &missing {
+            text.push_str(&format!("{path} {DRIVER_ATTRIBUTE}\n"));
+        }
+        if let Err(error) = std::fs::write(&attributes, &text) {
+            return refuse(&format!("cannot write .gitattributes: {error}"));
+        }
+        println!("wrote .gitattributes");
+        for path in &missing {
+            println!("  {path} {DRIVER_ATTRIBUTE}");
+        }
+    } else {
+        println!(".gitattributes already declares all {} derived artifacts", paths.len());
+    }
+
+    let lines = [
+        ("merge.headwater-regenerate.name", DRIVER_NAME),
+        ("merge.headwater-regenerate.driver", DRIVER_LINE),
+    ];
+    match configure {
+        false => {
+            println!(
+                "\ngit takes no merge driver from a repository, so run these once in each clone:"
+            );
+            for (key, value) in lines {
+                println!("  git config {key} \"{value}\"");
+            }
+            println!("\nor run `headwater init --git --git-config` to run them here");
+        }
+        true => {
+            for (key, value) in lines {
+                let status = std::process::Command::new("git")
+                    .arg("-C")
+                    .arg(root)
+                    .args(["config", key, value])
+                    .status();
+                match status {
+                    Ok(status) if status.success() => {
+                        println!("ran git config {key} \"{value}\"");
+                    }
+                    Ok(status) => {
+                        return refuse(&format!("`git config {key}` exited with {status}"));
+                    }
+                    Err(error) => return refuse(&format!("cannot run git: {error}")),
+                }
+            }
+        }
+    }
+    println!(
+        "\nthe driver runs `headwater`, so the binary must be on the PATH git runs with. Run the \
+         step again after a producer writes a new file, and `headwater derived` names any it missed"
+    );
+    ExitCode::SUCCESS
+}
+
+/// `headwater merge-driver %O %A %B %P`: keep the current side, and refuse.
+///
+/// **It does not regenerate, given the name of the driver.** A driver runs
+/// during the merge, one path at a time, over a working tree in which the other
+/// paths are not all merged yet. A fold regenerated at that moment describes a
+/// tree that never existed. So it leaves `%A` as it is, which git reads as the
+/// result, and exits non-zero so that git records a conflict. Git writes no
+/// marker for a custom driver, so the file stays readable, and the resolution
+/// is to run the producer and stage the result.
+///
+/// **It reaches two branches that moved a fold to different values, and never
+/// two that moved it to the same value.** Git resolves one blob at the tree
+/// level and calls no driver. `engine/crates/census/tests/merge_driver.rs`
+/// measures that, and the contract states it as the gap this verb leaves.
+///
+/// The message goes to standard error, because standard output during a merge
+/// is git's.
+fn merge_driver(current: &Path, path: &str) -> ExitCode {
+    let producer = match path == headwater_census::derived::LOCK {
+        true => "headwater taxonomy resolve",
+        false => "headwater generate",
+    };
+    let checked = match path == headwater_census::derived::LOCK {
+        true => "headwater taxonomy resolve --check",
+        false => "headwater generate --check",
+    };
+    let state = match current.exists() {
+        true => "The current side is left in place",
+        false => "The current side deleted it",
+    };
+    eprintln!(
+        "\n  {path} is a derived artifact, and this merge did not reconcile it.\n\n  \
+         It holds a fold over the whole corpus, and both sides moved it. A merge of the two\n  \
+         would state a value true of neither tree. {state}, and the path is\n  \
+         marked conflicted.\n\n  \
+         Finish the merge, then rebuild it and stage it. Where the lock is conflicted too,\n  \
+         resolve it first, because every generated file records the lock:\n\n      \
+         {producer}\n      git add {path}\n\n  \
+         `{checked}` holds the result.\n"
+    );
+    ExitCode::FAILURE
+}
+
+/// The half of `init` that writes the consumer declaration and the overlay.
+fn bind(root: &Path, corpus_root: Option<String>, package: Option<String>) -> ExitCode {
     let declaration = root.join(headwater_resolve::package::CONSUMER);
     if declaration.exists() {
         return refuse(&format!(

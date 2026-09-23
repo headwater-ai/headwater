@@ -13,7 +13,7 @@
 
 taxonomy:
   package: headwater/standard
-  version: 4.4.1
+  version: 4.4.2
   bundles: [diataxis-site]
   overlay: .headwater/overlay.yml
 
