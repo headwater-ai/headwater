@@ -2,13 +2,13 @@
 id: HW-OBL-0205
 status: draft
 status_since: 2026-09-23
-summary: "HW-OBL-0002's sample counts and voice.rs's own census both predate the scent-role fix #774 landed. Neither measurement was re-taken, so both figures now understate what the rule actually covers."
+summary: "Two sample counts predate the scent-role fix #774 landed: HW-OBL-0002's, and voice.rs's own census. Neither was re-taken, so both figures now understate what the rule covers."
 last_verified: 2026-09-23
-title: "HW-OBL-0002's sample counts and voice.rs's own census predate the scent-role fix and need retaking"
+title: "Two sample counts, HW-OBL-0002's and voice.rs's own census, predate the scent-role fix and need retaking"
 waiting_on: build
 ---
 
-# HW-OBL-0002's sample counts and voice.rs's own census predate the scent-role fix and need retaking
+# Two sample counts, HW-OBL-0002's and voice.rs's own census, predate the scent-role fix and need retaking
 
 ## Context
 
