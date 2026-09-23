@@ -307,10 +307,11 @@ pub struct Population {
     /// file-shaped rows of the evaluation table have no member in the
     /// population. The module header says why that matters.
     pub members: Vec<Member>,
-    /// A `.gitattributes` pattern that carries a merge attribute and a glob.
+    /// A `.gitattributes` pattern that carries a merge attribute and a glob,
+    /// or a path whose merge driver this reader does not know.
     ///
-    /// This reader expands no pattern, so such a line reaches files it cannot
-    /// enumerate. It is named rather than passed over, because a declaration
+    /// This reader expands no glob, so such a line reaches files it cannot
+    /// enumerate, and an unknown driver takes no treatment of the table. It is named rather than passed over, because a declaration
     /// that nothing reads looks exactly like a declaration that agrees.
     pub unreadable: Vec<String>,
 }
@@ -488,7 +489,8 @@ impl Population {
             false => {
                 out.push_str(
                     "these carry a merge attribute behind a pattern this reader cannot \
-                     expand, so no shape of this tree was held against them:\n",
+                     expand, or a merge driver it does not know, so no shape of this \
+                     tree was held against them:\n",
                 );
                 for pattern in &self.unreadable {
                     out.push_str(&format!("    {pattern}\n"));
@@ -738,51 +740,83 @@ pub fn merge_attributes(root: &Path) -> Vec<(String, Treatment)> {
     readable(&declarations(root, &files_of(root)))
 }
 
-/// Every `.gitattributes` pattern that carries a merge attribute and a glob.
+/// Every `.gitattributes` declaration that this reader cannot hold against a shape.
 ///
-/// A pattern from a file below the root is named relative to the root, so the
-/// report says which directory it came from.
+/// Two kinds: a pattern with a glob, which reaches files this reader does not
+/// enumerate, and a merge driver this reader does not know, written as the
+/// path and the attribute. A pattern from a file below the root is named
+/// relative to the root, so the report says which directory it came from.
 pub fn unreadable_patterns(root: &Path) -> Vec<String> {
     unreadable(&declarations(root, &files_of(root)))
 }
+
+/// What one `.gitattributes` line says about the merge of the paths it names.
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum Merge {
+    /// A value this reader holds against a shape.
+    Known(Treatment),
+    /// `merge=<driver>` for a driver this repository does not define.
+    Driver(String),
+}
+
+/// One declaration: the path or pattern, relative to the root, and its value.
+type Declaration = (String, Merge);
 
 /// The declarations that name one path, with git's precedence applied.
 ///
 /// `declarations` yields the shallowest file first and each file's lines in
 /// order, so the last declaration of a path is the one git obeys: the deeper
 /// directory wins, and within one file the later line wins.
-fn readable(declarations: &[(String, Treatment)]) -> Vec<(String, Treatment)> {
-    let mut found: std::collections::BTreeMap<&str, Treatment> = std::collections::BTreeMap::new();
-    for (pattern, treatment) in declarations {
+fn resolved(declarations: &[Declaration]) -> std::collections::BTreeMap<&str, &Merge> {
+    let mut found = std::collections::BTreeMap::new();
+    for (pattern, merge) in declarations {
         if !is_a_pattern(pattern) {
-            found.insert(pattern, *treatment);
+            found.insert(pattern.as_str(), merge);
         }
     }
     found
+}
+
+/// Every path whose last declaration is a value this reader knows.
+fn readable(declarations: &[Declaration]) -> Vec<(String, Treatment)> {
+    resolved(declarations)
         .into_iter()
-        .map(|(path, treatment)| (path.to_string(), treatment))
+        .filter_map(|(path, merge)| match merge {
+            Merge::Known(treatment) => Some((path.to_string(), *treatment)),
+            Merge::Driver(_) => None,
+        })
         .collect()
 }
 
-/// The declarations whose pattern this reader cannot expand.
-fn unreadable(declarations: &[(String, Treatment)]) -> Vec<String> {
+/// Every glob, and every path whose last declaration names an unknown driver.
+fn unreadable(declarations: &[Declaration]) -> Vec<String> {
     let mut found: Vec<String> = declarations
         .iter()
         .filter(|(pattern, _)| is_a_pattern(pattern))
         .map(|(pattern, _)| pattern.clone())
         .collect();
+    found.extend(
+        resolved(declarations)
+            .into_iter()
+            .filter_map(|(path, merge)| match merge {
+                Merge::Driver(driver) => Some(format!("{path} merge={driver}")),
+                Merge::Known(_) => None,
+            }),
+    );
     found.sort();
     found.dedup();
     found
 }
 
-/// Each `.gitattributes` line of the tree that sets a merge attribute.
+/// Each `.gitattributes` line of the tree that says anything about merging.
 ///
-/// Git reads a `.gitattributes` in every directory, and a pattern in one below
-/// the root is relative to that directory. So each pattern comes back joined
-/// to the directory of its file, the shallowest file first. A reader of the
-/// root file alone reported a tree clean where `git check-attr` said `union`.
-fn declarations(root: &Path, files: &[String]) -> Vec<(String, Treatment)> {
+/// Git reads a `.gitattributes` in every directory. A pattern that holds a
+/// slash is relative to the directory of its file. A pattern with no slash
+/// matches that name at any depth below it, so it comes back once for every
+/// file of the tree it reaches. The shallowest file comes first, and the lines
+/// of one file keep their order. A reader of the root file alone, and of
+/// literal paths alone, reported a tree clean where `git check-attr` did not.
+fn declarations(root: &Path, files: &[String]) -> Vec<Declaration> {
     let mut sources: Vec<&str> = files
         .iter()
         .map(String::as_str)
@@ -795,24 +829,54 @@ fn declarations(root: &Path, files: &[String]) -> Vec<(String, Treatment)> {
             continue;
         };
         let directory = source.strip_suffix(".gitattributes").unwrap_or_default();
-        found.extend(
-            text.lines()
-                .map(str::trim)
-                .filter(|line| !line.starts_with('#'))
-                .filter_map(|line| {
-                    let mut fields = line.split_whitespace();
-                    let pattern = fields.next()?;
-                    let treatment = fields.find_map(|field| match field {
-                        "merge=union" => Some(Treatment::Union),
-                        "merge=headwater-regenerate" => Some(Treatment::Regenerate),
-                        _ => None,
-                    })?;
-                    let pattern = pattern.strip_prefix('/').unwrap_or(pattern);
-                    Some((format!("{directory}{pattern}"), treatment))
-                }),
-        );
+        for line in text.lines().map(str::trim) {
+            // A comment, and a macro definition, which names no path.
+            if line.starts_with('#') || line.starts_with("[attr]") {
+                continue;
+            }
+            let mut fields = line.split_whitespace();
+            let Some(pattern) = fields.next() else {
+                continue;
+            };
+            // The last merge field of a line wins, as it does for git.
+            let Some(merge) = fields.filter_map(merge_field).last() else {
+                continue;
+            };
+            if is_a_pattern(pattern) || pattern.contains('/') {
+                // A slash anywhere but the end anchors it to this directory.
+                let pattern = pattern.strip_prefix('/').unwrap_or(pattern);
+                found.push((format!("{directory}{pattern}"), merge));
+            } else {
+                // No slash: every file of that name below the directory.
+                found.extend(
+                    files
+                        .iter()
+                        .filter(|path| {
+                            path.strip_prefix(directory).is_some_and(|rest| {
+                                rest == pattern || rest.ends_with(&format!("/{pattern}"))
+                            })
+                        })
+                        .map(|path| (path.clone(), merge.clone())),
+                );
+            }
+        }
     }
     found
+}
+
+/// What one field of a `.gitattributes` line says about merging, if anything.
+///
+/// `-merge`, `!merge`, a bare `merge` and the `binary` macro all leave the
+/// merge to git's own rule, so each one is [`Treatment::Unset`].
+fn merge_field(field: &str) -> Option<Merge> {
+    match field {
+        "merge=union" => Some(Merge::Known(Treatment::Union)),
+        "merge=headwater-regenerate" => Some(Merge::Known(Treatment::Regenerate)),
+        "-merge" | "!merge" | "merge" | "binary" => Some(Merge::Known(Treatment::Unset)),
+        _ => field
+            .strip_prefix("merge=")
+            .map(|driver| Merge::Driver(driver.to_string())),
+    }
 }
 
 /// Whether a `.gitattributes` pattern reaches more than the path it spells.
