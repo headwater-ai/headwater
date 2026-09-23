@@ -9223,6 +9223,20 @@
         }
       },
       {
+        "path": "docs/obligations/0207-the-plan-usage-of-one-issue-is-known-only-as-the-average-of-its-run.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0207",
+        "facets": {
+          "id": "HW-OBL-0207",
+          "status": "current",
+          "status_since": "2026-09-23",
+          "summary": "A build-order run reports the points of the owner's 5-hour and 7-day plan windows that it spent, divided by the issues it closed. A figure for one issue needs each dispatch priced by model and token type, then matched to the issue its pull request closes.",
+          "last_verified": "2026-09-23",
+          "title": "The plan usage of one issue is known only as the average of its run",
+          "waiting_on": "measurement"
+        }
+      },
+      {
         "path": "docs/obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md",
         "kind": "obligation_record",
         "id": "HW-OBL-0208",

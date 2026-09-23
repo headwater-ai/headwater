@@ -66,4 +66,4 @@ Composed with `Write` into the issue's scratch directory and passed as a path. N
 
 ## Stop
 
-Report at the end of the run, when a decision needs an owner, or when a human asks: a table of issue, pull request and result; what verification caught that a report did not, and what was your own error; anything you would not merge again without a ruling; the run directory's path.
+Report at the end of the run, when a decision needs an owner, or when a human asks: a table of issue, pull request and result; what verification caught that a report did not, and what was your own error; anything you would not merge again without a ruling; what `run-dir.sh end` prints.
