@@ -28,6 +28,8 @@ fi
 scratch=$(mktemp -d) || exit 1
 trap 'rm -rf "$scratch"' EXIT HUP INT TERM
 export HEADWATER_RUN_ROOT="$scratch/runs"
+# No host usage snapshot reaches a fixture unless a case plants one.
+export HEADWATER_USAGE_DIR="$scratch/no-usage"
 
 passed=0
 failed=0
@@ -215,6 +217,51 @@ for round in 1 2 3 4 5 6 7 8 9 10; do
     [ "$claimed" -eq 1 ] && [ "$waited" -eq 1 ] || lost=$((lost + 1))
 done
 same 'in every race exactly one claimant owns and exactly one waits' 0 "$lost"
+
+printf '\n# usage: a sample per start, log and end, and the figures derived from them\n'
+bare=$(sh "$tool" start usage-bare 2>/dev/null)
+same 'a host with no usage snapshot records no sample' 0 "$( [ -s "$bare/usage.jsonl" ] && echo 1 || echo 0)"
+same '  and usage says so rather than failing' "0 no usage samples" \
+    "$(sh "$tool" usage "$bare" >"$scratch/out" 2>&1; echo $?) $(cut -c1-16 "$scratch/out")"
+
+export HEADWATER_USAGE_DIR="$scratch/usage"
+mkdir -p "$HEADWATER_USAGE_DIR"
+# plant <session id> <last_activity> <5h %> <5h resets_at> <7d %>
+plant() {
+    printf '{"session_id":"%s","last_activity":%s,"five_hour":{"used_percentage":%s,"resets_at":"%s"},"seven_day":{"used_percentage":%s,"resets_at":"W"}}\n' \
+        "$1" "$2" "$3" "$4" "$5" > "$HEADWATER_USAGE_DIR/$1.json"
+}
+merged='{"iter":1,"issue":1,"pr":2,"merge":"abc","verdict":"merged","proved":"p","opened":0,"closed":1}'
+
+plant aaaa1111-parent 100 10 R1 40
+plant bbbb2222-other 200 99 R1 99
+run=$(CLAUDE_JOB_DIR=/jobs/aaaa1111 sh "$tool" start usage-parent 2>/dev/null)
+same 'start takes the parent session over a fresher one' "parent aaaa1111 10" \
+    "$(jq -r '"\(.from) \(.session) \(.five_hour.used_percentage)"' "$run/usage.jsonl")"
+plant aaaa1111-parent 300 30 R1 46
+sh "$tool" log "$run" "$merged" >/dev/null
+plant aaaa1111-parent 400 8 R2 52
+sh "$tool" log "$run" "$merged" >/dev/null
+sh "$tool" end "$run" > "$scratch/ended"
+same 'start, two logs and end leave four samples' 4 "$(wc -l < "$run/usage.jsonl" | tr -d ' ')"
+same '  and end prints the usage after its own line' 4 "$(wc -l < "$scratch/ended" | tr -d ' ')"
+sh "$tool" usage "$run" > "$scratch/out"
+same '  the 5-hour rise counts across a reset as a floor' \
+    '5-hour  spent 28+ (1 reset) points, now at 8%, 14 per closed issue, room for 6 more' \
+    "$(sed -n 2p "$scratch/out")"
+same '  the 7-day rise is divided by the issues closed' \
+    '7-day   spent 12 points, now at 52%, 6 per closed issue, room for 8 more' \
+    "$(sed -n 3p "$scratch/out")"
+
+plant bbbb2222-other 500 99 R2 99
+loose=$(sh "$tool" start usage-freshest 2>/dev/null)
+same 'without parent.session a sample takes the freshest session' "freshest bbbb2222" \
+    "$(jq -r '"\(.from) \(.session)"' "$loose/usage.jsonl")"
+
+printf 'not json' > "$HEADWATER_USAGE_DIR/cccc3333-broken.json"
+sh "$tool" log "$loose" "$merged" >/dev/null 2>"$scratch/err"; status=$?
+same 'a broken snapshot never fails the ledger write, and prints nothing' "0 0 1" \
+    "$status $(wc -c < "$scratch/err" | tr -d ' ') $(wc -l < "$loose/log.jsonl" | tr -d ' ')"
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
