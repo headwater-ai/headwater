@@ -673,11 +673,11 @@ fn this_repository_reports_the_same_run_from_a_cache_as_from_none() {
 
     let without = corpus_run();
 
-    let mut cold = Cache::at(&store, &lock.digest);
+    let mut cold = Cache::at(&store, &lock.digest, &headwater_check::rules_digest());
     let first = cached_corpus_run(&mut cold);
     cold.write(&store);
 
-    let mut warm = Cache::at(&store, &lock.digest);
+    let mut warm = Cache::at(&store, &lock.digest, &headwater_check::rules_digest());
     let second = cached_corpus_run(&mut warm);
 
     let expected = without.render(Detail::Findings, ColorMode::Plain);

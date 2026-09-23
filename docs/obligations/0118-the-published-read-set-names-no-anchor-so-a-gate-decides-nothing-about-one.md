@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-14
 waiting_on: ruling
 summary: "The read set artifact holds one line per document, so an external anchor is on no line and a gate that compares listed hashes cannot see the target of one leave the tree."
-last_verified: 2026-08-14
+last_verified: 2026-09-23
 title: "The published read set names no anchor, so a gate decides nothing about one"
 provenance:
   warrant: proposed
@@ -55,3 +55,5 @@ Nothing discharges this yet, and two shapes are open.
 **What no fixture here shows.** `engine/crates/check/src/gate.rs` holds every reason a verdict does not carry, and an anchor is not among them. No case can fail on this while a barrier voids each answer first. So the measurement above is a hand run rather than a case in a suite. A gate that reports per rule is what makes one possible.
 
 **[#855](https://github.com/headwater-ai/headwater/issues/855) widens this limit and closes none of it.** #855 admits a bound anchor as a neighbour. It carries the anchor's resolution into the neighbourhood-scoped cache key, the way `over_edges` already carries one into the edge-scoped key. Neither key carries the engine's own binary version. A verdict about a bound `check_rule` still survives an engine upgrade that drops the rule. Only the lock digest and the rule `VERSION` move. The compiled `RULES` list enters neither key. That gap is [#411](https://github.com/headwater-ai/headwater/issues/411)'s debt. #855 was asked to record it here, not to close it. No issue owns closing it yet. This record files it as intake for the product owner to triage.
+
+**2026-09-23: [#1029](https://github.com/headwater-ai/headwater/issues/1029) closes the cache-key gap above, and it closes nothing else in this record.** `Cache::key` now carries the identity of the compiled rule set. `headwater_check::rules_digest` hashes the sorted list of `crate::RULES`, so the value moves when a rule enters or leaves the set. `an_engine_upgrade_that_drops_a_rule_serves_nothing` in `engine/crates/check/tests/cache.rs` failed before the change with 280 hits and 0 misses. After the change it reports 0 hits and 280 misses. The obligation of this record is the artifact that a gate reads, and it stays open as measured.

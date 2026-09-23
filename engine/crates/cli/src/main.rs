@@ -57,7 +57,7 @@ use headwater_adapter::{Format, Subject};
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::{Cache, Context, Date, Declared, Register, Shape};
+use headwater_check::{rules_digest, Cache, Context, Date, Declared, Register, Shape};
 use headwater_cli::{JsonWord, ProbeWord, SweepWord, TaxonomyWord, Verb};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -5155,7 +5155,7 @@ fn derived(root: &Path) -> ExitCode {
 fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
     let loaded = load(root)?;
     let mut cache = match cached {
-        true => Cache::at(root, &loaded.bound.digest),
+        true => Cache::at(root, &loaded.bound.digest, &rules_digest()),
         false => Cache::disabled(),
     };
     let run = headwater_check::run(
@@ -5433,7 +5433,7 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // taxonomy that moved invalidates every entry without anyone clearing a
     // directory.
     let mut cache = match cached {
-        true => Cache::at(root, &bound.digest),
+        true => Cache::at(root, &bound.digest, &rules_digest()),
         false => Cache::disabled(),
     };
     let run = headwater_check::run(
