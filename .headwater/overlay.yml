@@ -1186,9 +1186,9 @@ add:
   # declaration holds it. This is that declaration. `surface.local_path.instructed`
   # reads `adopter_documents` and `local_roots`: a page on the first list that
   # points at a file under the second, in a code span, a code block or a
-  # front-matter path, is reported. The other members state the rest of the
-  # record as data, and each one gains a reader with the issue that needs it
-  # (#976 names them). A page may still cite population 4 as the way this
+  # front-matter path, is reported. `archive`, `integration_points`,
+  # `prerequisites`, `companions` and `commands` have no reader yet. They state
+  # the rest of the record as data, and #1051 gives the first reader to each. A page may still cite population 4 as the way this
   # repository does a thing, under a block directive with
   # `reason=accepted_deviation`, which is the passage "that says so".
 
@@ -1212,13 +1212,16 @@ add:
       - headwater probe
       - headwater neighbors
       - headwater sweep
+    # Only pages the rule can read belong here: typed documents under the
+    # corpus root. `README.md` at the root and the shipped package text are
+    # pages for an adopter too, and neither is typed, so listing them would
+    # claim a hold the rule does not have. `docs/interfaces/headwater-check.md`
+    # states where each one is held instead.
     adopter_documents:
-      - README.md
       - docs/interfaces/*.md
       - docs/tutorials/*.md
       - docs/how-to/relocate-a-shelf.md
       - docs/how-to/wire-headwater-check-into-your-own-workflow.md
-      - .headwater/packages/headwater-standard/**
     local_roots: [tools/, .githooks/, .claude/, .github/, site/, mkdocs/]
     commands: [headwater, git, sh, curl, tar]
 
