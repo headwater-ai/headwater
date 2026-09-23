@@ -31,7 +31,7 @@ A run writes a directory under `git rev-parse --git-common-dir` from its first i
 
 The doctrine block is at most ten numbered lines and at most 600 tokens, and it is the first file of the run directory. The parent reads it on the integration-completion turn it already pays, so it re-enters context without a re-read turn. The parent's decisions are keyed to fixed report blocks such as `VERDICT: PASS` and `WAITS-ON:`, so a degraded parent acts correctly by matching a block rather than by recalling a rule. The canonical copy of the doctrine lives in the repository, and a fixture holds the copy in the command byte-identical to it.
 
-Each stage's model is its frontmatter. Adjudication, construction and verification run on Opus. Integration and the queue run on Sonnet. Verification stays on Opus on the argument that a cheaper verifier of a stronger builder is credulous where it should be diligent, and the frontmatter is the one-line change by which a later run measures the alternative.
+Each stage's model and reasoning effort are its frontmatter. Every stage runs on Opus at medium effort, as the owner set on 2026-09-23. A cheaper verifier of a stronger builder is credulous where it should be diligent, so no stage runs on a weaker model than the builder. The frontmatter is the one-line change by which a later run measures an alternative.
 
 `/next` stays as the single-iteration form and becomes a stub over the same definitions and skills.
 

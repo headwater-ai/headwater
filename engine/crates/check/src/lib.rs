@@ -179,7 +179,7 @@ pub mod verification;
 pub mod voice;
 
 pub use adoption::Ledger;
-pub use cache::Cache;
+pub use cache::{rules_digest, Cache};
 pub use context::{Context, Date};
 pub use coverage::Coverage;
 pub use fill::{filled, WIDTH};

@@ -218,7 +218,9 @@ census
         1 untyped
 
   docs/decisions/postgres-note.md
-    untyped: no front matter, so nobody has typed this file
+    untyped: no front matter, so nobody has typed this file. It sits on the
+      `decisions` shelf, which types every file `decision`. Run `headwater new
+      decision --title "<title>"` instead
 ```
 
 ```

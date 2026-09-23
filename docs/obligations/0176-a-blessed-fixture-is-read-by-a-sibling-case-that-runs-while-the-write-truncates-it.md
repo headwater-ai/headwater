@@ -3,7 +3,7 @@ id: HW-OBL-0176
 status: current
 status_since: 2026-09-07
 summary: "Under HEADWATER_BLESS one case truncates crates/conformance/fixtures/wrapped.report while a sibling thread of the same binary reads it, which can panic the run and cannot corrupt the artifact."
-last_verified: 2026-09-07
+last_verified: 2026-09-23
 title: "A blessed fixture is read by a sibling case that runs while the write truncates it"
 waiting_on: adopter
 provenance:
@@ -15,6 +15,7 @@ provenance:
 relations:
   traces_to:
     - engine/crates/conformance/tests/render.rs
+    - engine/crates/query/tests/mcp.rs
     - HW-OBL-0133
 ---
 
@@ -32,9 +33,13 @@ A scan for the pair found one instance. The shape is a file that reads `HEADWATE
 
 **The artifact is not at risk, and this is the part to state precisely.** The bytes `compare` writes are `actual`, which is the run's own in-memory render, computed before the call and independent of what any other thread does. Eighteen blessed runs across two independent checkouts fired the race zero times, and every artifact they produced was byte-identical. So the failure mode is a flaky panic in a reader, and blessing is not non-deterministic. The condition predates any one branch.
 
+**A second instance used a shape that the scan did not match.** In `engine/crates/query/tests/mcp.rs`, `the_session_runs_to_the_recorded_transcript` writes `fixtures/query.mcp` under the variable. `a_session_writes_nothing_to_the_corpus_it_reads` did not call `read_to_string` on that name. It walked the whole fixture directory and compared every byte before and after a session. So the reader was a directory walk, and a scan for a fixture name did not find it.
+
+This instance was not only a truncation window. When the transcript really changed, the write changed the bytes of `query.mcp` between the two snapshots, and the case failed. On 2026-09-23, with `query.mcp` one byte stale before each run, 12 of 20 blessed runs failed and 7 of 20 failed on a second loop. With `query.mcp` already current, 1 of 90 failed. With no variable, 0 of 30 failed. Issue #1038 moved that case onto a private copy of the fixture tree, and after the change 0 of 20 stale-transcript runs failed. The `render.rs` pair above is still open.
+
 ## Obligation
 
-A suite that re-records its own expectations has one shared mutable file and two threads that reach it. Nothing in the helper, the test file or the runner orders them. The cost of the race is a red run that a rerun clears. That is the class of failure that teaches a reader to rerun rather than to read.
+A suite that re-records its own expectations has one shared mutable file and two threads that reach it. Nothing in the helper, the test file or the runner orders them. The cost of the race is a red run. For the `render.rs` pair, a rerun clears it. For a reader that compares bytes, as `mcp.rs` did, a real re-record fails most runs. Both teach a reader to rerun rather than to read.
 
 ## Discharge
 
@@ -42,4 +47,4 @@ The reader stops being a reader. `the_recorded_block_is_the_one_this_width_produ
 
 Where two cases must keep separate names, the pair is discharged by reading the file once at the top of the target. Any order the runner honors does the same. `--test-threads=1` under the variable is a third route and the weakest, because it holds the property by a flag a caller can drop.
 
-The wider question is whether any other blessed fixture is read outside its `compare`. The scan above answers it for the one shape it matched. A scan over a path built by a helper other than `fixtures_dir` reaches further.
+The wider question is whether any other blessed fixture is read outside its `compare`. The scan above answers it for the one shape it matched. A scan over a path built by a helper other than `fixtures_dir` reaches further. A scan must also match a case that walks a fixture directory, because that reader names no fixture file.

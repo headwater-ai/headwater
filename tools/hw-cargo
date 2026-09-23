@@ -31,7 +31,9 @@
 # that into an orderly queue rather than a surprise.
 #
 # This changes where intermediate output lives and how many compilers run at
-# once. It changes nothing about what a build produces.
+# once. It must change nothing about what a build produces, and a pool shared
+# by worktrees broke that until a slot learned to record who built in it last:
+# see the paragraph above the cargo call.
 #
 #   tools/hw-cargo build --profile dev-release -p headwater-cli --locked
 #   tools/hw-cargo test --workspace
@@ -51,7 +53,11 @@
 #                   queues on a builder's slot nor is queued on. hw-integrate
 #                   is depth one by HW-PD-0003, so its reserved slot is never
 #                   contended; give a role with no such guarantee its own name
-#                   too rather than share one across roles.
+#                   too rather than share one across roles. hw-verify takes
+#                   `verify`: in run 20260923-0733 a verifier queued on slot 1
+#                   behind three builders, gave up on its engine, and skipped
+#                   `headwater check` and `generate --check`. Two verifiers at
+#                   once queue on each other and never on a builder.
 
 set -e
 
@@ -76,7 +82,7 @@ case "${1:-}" in
     exit 0
     ;;
 "")
-    sed -n '3,54p' "$0" | sed 's/^# \{0,1\}//' >&2
+    sed -n '3,/^set -e/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//' >&2
     exit 2
     ;;
 esac
@@ -145,6 +151,32 @@ CARGO_BUILD_JOBS=$jobs
 export CARGO_TARGET_DIR CARGO_BUILD_JOBS
 
 echo "hw-cargo: slot $slot, target $CARGO_TARGET_DIR, $(date -u +%H:%M:%S)Z" >&2
+
+# A pooled target directory cannot tell two worktrees' copies of one workspace
+# crate apart. Cargo gives a workspace member the same metadata hash in every
+# checkout and records its sources in dep-info relative to the crate, so a
+# unit another worktree compiled more recently reads as fresh here, and its
+# code is linked into this tree's binary without a line of this tree's source
+# being compiled. Run 20260923-0733 measured it: a build in one worktree
+# compiled 21 crates and took `headwater-verbs` as fresh from worktree `974`,
+# and the binary it produced dispatched a verb that no source in the building
+# tree defines. Third-party crates come from one registry source, so sharing
+# them stays sound; only the workspace's own crates are at risk.
+#
+# So the slot records which worktree built in it last, and when that is not
+# this one, every file under this tree's `engine/crates` is marked newer than
+# anything already in the slot. Each workspace crate then rebuilds from this
+# tree, while the dependency graph the pool exists to share is left alone. A
+# tree building in the slot it built in last rebuilds incrementally, as before.
+if [ -n "$root" ] && [ -d "$root/engine/crates" ]; then
+    owner_file="$CARGO_TARGET_DIR.root"
+    last=$(cat "$owner_file" 2>/dev/null || true)
+    if [ "$last" != "$root" ]; then
+        find "$root/engine/crates" -name target -prune -o -type f -exec touch {} +
+        printf '%s\n' "$root" > "$owner_file"
+        echo "hw-cargo: slot $slot last built ${last:-nothing recorded}; every workspace crate rebuilds from this tree" >&2
+    fi
+fi
 
 status=0
 nice -n "$nice_by" cargo "$@" || status=$?

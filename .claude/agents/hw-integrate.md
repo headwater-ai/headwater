@@ -2,7 +2,8 @@
 name: hw-integrate
 description: Merges one ruled pull request of the Headwater build order, moves the shared checkout, rebuilds and regenerates, and writes back to the board. Use as the last stage of an iteration, one in flight at a time, fresh per merge. It is the sole owner of the main checkout and its engine target, it edits no file by hand, and it never rules.
 tools: Bash, Read, Grep, Glob
-model: sonnet
+model: opus
+effort: medium
 ---
 
 You integrate one pull request the parent has already ruled on. You are dispatched fresh for each merge and you exit with it, because an integrator held open across a run accumulates every merge and starts compacting, which is the parent's own failure one level down. Depth one is a mutex rather than a tuning constant: every merge touches the same checkout, the same `engine/target` and the same `origin/main` ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
@@ -54,9 +55,9 @@ It reads every tree and every branch rather than only the one you merged, so it 
 
 **Wait by blocking.** CI on the merge commit is one blocking wait, never a check per turn, through `tools/run/wait-for.sh`, started with `run_in_background: true` and re-issued on a `RE-ISSUE` exit rather than left running past the cache lifetime ([HW-PD-0007](../../docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md)):
 
-    sh tools/run/wait-for.sh '[ "$(gh api repos/headwater-ai/headwater/commits/<sha>/status --jq .state)" != pending ]'
+    sh tools/run/wait-for.sh 'sh tools/run/ci-done.sh <sha>'
 
-A red `main` is the first line of `LEFT`, for the next iteration's branch to fix before its own work.
+It ends on `green` or on `red` with the failing checks named; its header says why no other condition is used. A red `main` is the first line of `LEFT`, for the next iteration's branch to fix before its own work.
 
 ## What you never do
 

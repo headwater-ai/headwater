@@ -665,7 +665,10 @@ fn the_reading_counts_a_file_with_no_kind_and_no_stated_reason_and_no_other() {
     let untyped = Census {
         rows: vec![row(
             "docs/loose.md",
-            Outcome::Untyped(Untyped::NoFrontMatter),
+            Outcome::Untyped(Untyped::NoFrontMatter {
+                shelf: "decisions".to_string(),
+                kind: Some("decision".to_string()),
+            }),
         )],
     };
     let detail = gap(&corpus_classified(&untyped));
@@ -679,6 +682,60 @@ fn the_reading_counts_a_file_with_no_kind_and_no_stated_reason_and_no_other() {
         )],
     };
     assert!(gap(&corpus_classified(&unreadable)).contains("docs/bytes.md"));
+}
+
+/// A shelf-claimed file with no front matter names the shelf `headwater new`
+/// would write into, and the kind where that shelf picks exactly one, so a
+/// reader of the conformance report does not have to reopen the corpus to
+/// place the fix. The no-shelf-claims-this-path case names neither, because
+/// nothing decided a placement for it: that is a legitimate declared-exclusion
+/// candidate, not an unfinished pointer.
+#[test]
+fn a_shelf_claimed_gap_names_the_shelf_and_kind_and_points_at_headwater_new() {
+    let homogeneous = Census {
+        rows: vec![row(
+            "docs/decisions/loose.md",
+            Outcome::Untyped(Untyped::NoFrontMatter {
+                shelf: "decisions".to_string(),
+                kind: Some("decision".to_string()),
+            }),
+        )],
+    };
+    let detail = gap(&corpus_classified(&homogeneous));
+    assert!(detail.contains("decisions"), "{detail}");
+    assert!(detail.contains("headwater new decision"), "{detail}");
+
+    let heterogeneous = Census {
+        rows: vec![row(
+            "walk/spec/loose.md",
+            Outcome::Untyped(Untyped::NoFrontMatter {
+                shelf: "spec_series".to_string(),
+                kind: None,
+            }),
+        )],
+    };
+    let detail = gap(&corpus_classified(&heterogeneous));
+    assert!(detail.contains("spec_series"), "{detail}");
+    assert!(detail.contains("headwater new"), "{detail}");
+
+    let no_shelf_claim = Census {
+        rows: vec![row(
+            "docs/unshelved.md",
+            Outcome::Untyped(Untyped::Unresolved {
+                reason: headwater_census::resolve::Untyped::NoShelf,
+                derivation: Box::new(headwater_census::Resolution {
+                    outcome: headwater_census::resolve::Outcome::Untyped(
+                        headwater_census::resolve::Untyped::NoShelf,
+                    ),
+                    steps: Vec::new(),
+                    span: None,
+                }),
+            }),
+        )],
+    };
+    let detail = gap(&corpus_classified(&no_shelf_claim));
+    assert!(detail.contains("docs/unshelved.md"), "{detail}");
+    assert!(!detail.contains("headwater new"), "{detail}");
 }
 
 // ---------------------------------------------------------------------------

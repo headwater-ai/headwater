@@ -18,6 +18,24 @@
 # `cargo`, at --profile dev-release and never --release. HW_CARGO_SLOT, if
 # already set in the environment, passes through untouched, so a caller with
 # a reserved slot keeps it.
+#
+# How hw-verify calls it, and why, as run 20260923-0733 found:
+#
+#     HW_CARGO_SLOT=verify sh tools/repo/new-worktree.sh <path> --detach origin/<branch>
+#
+# --detach, because the build agent's own worktree still has <branch>
+# checked out and git refuses a second checkout of one branch: `fatal:
+# '<branch>' is already used by worktree at ...`. The verifier attacks the
+# pushed tip and commits nothing, so a detached head costs it nothing.
+#
+# HW_CARGO_SLOT=verify, because the numbered pool is sized for builders. A
+# verifier with no slot of its own queued on slot 1 behind three of them,
+# gave up on its engine, and skipped `headwater check` and `generate --check`.
+#
+# A Bash timeout of 600000 on the call, because the build runs inside it. A
+# cold slot builds for minutes, and at the default two-minute cap the harness
+# moves the call to the background, where the caller then waits on a binary
+# that the next `ls` does not find yet.
 
 set -eu
 

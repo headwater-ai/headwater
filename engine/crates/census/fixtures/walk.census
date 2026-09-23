@@ -1,7 +1,7 @@
-28 files under the corpus root
+29 files under the corpus root
       3 typed
       2 generated
-     11 untyped
+     12 untyped
       3 unreadable
       2 excluded
       3 not a document
@@ -26,6 +26,8 @@ walk/directory.md/inside.md
   untyped: no shelf pattern claims this path
 walk/empty.md
   untyped: no shelf pattern claims this path
+walk/evaluations/no-front-matter.md
+  untyped: no front matter, so nobody has typed this file. It sits on the `evaluations` shelf, which types every file `evaluation`. Run `headwater new evaluation --title "<title>"` instead
 walk/evaluations/typed-by-placement.md
   typed: evaluation
 walk/excluded/unterminated.md
@@ -55,7 +57,7 @@ walk/spec/generated-register.md
 walk/spec/no-discriminator.md
   untyped: the shelf is heterogeneous and the document declares no `doc_type`
 walk/spec/no-front-matter.md
-  untyped: no front matter, so nobody has typed this file
+  untyped: no front matter, so nobody has typed this file. It sits on the `spec_series` shelf. Run `headwater new <kind> --title "<title>"` instead
 walk/spec/not-a-mapping.md
   unreadable: 2:1: front matter is a sequence, and a facet has a name, so the block is a mapping
 walk/spec/quotes-the-marker.md

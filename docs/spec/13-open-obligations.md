@@ -326,6 +326,7 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0204](../obligations/0204-docs-decisions-0077-still-describes-hw-dr-0049-s-rewrite-as-pending-after-574-made-it.md) — docs/decisions/0077 still describes HW-DR-0049's rewrite as pending, after #574 made it
 - [HW-OBL-0205](../obligations/0205-hw-obl-0002-s-sample-counts-and-voice-rs-s-own-census-predate-the-scent-role-fix-and-need-retaking.md) — Two sample counts, HW-OBL-0002's and voice.rs's own census, predate the scent-role fix and need retaking
 - [HW-OBL-0206](../obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness.md) — hw-run-policy names a worktree-add workaround that Write/Edit refuses under this harness
+- [HW-OBL-0208](../obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md) — Four small test and wording gaps from run 20260923-0733 filed together
 
 ## What the first typing of this corpus found
 

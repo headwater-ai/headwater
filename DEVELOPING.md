@@ -161,9 +161,11 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/repo/diataxis-fixtures.sh
     sh tools/repo/engine-resolver-fixtures.sh
     sh tools/engine/engine-readme-fixtures.sh
+    sh tools/hw-cargo-fixtures.sh
     sh tools/repo/id-store-fixtures.sh
     sh tools/repo/integrations-fixtures.sh
     sh tools/repo/library-index-fixtures.sh
+    sh tools/repo/new-worktree-fixtures.sh
     sh tools/repo/obligation-register-fixtures.sh
     sh tools/probe/probe-record-fixtures.sh
     sh tools/repo/readme-fixtures.sh
@@ -171,8 +173,12 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/site/refresh-crawler-files.sh --check
     sh tools/site/refresh-figures.sh --check
     sh tools/site/refresh-site-tokens.sh --check
+    sh tools/run/board-move-fixtures.sh
+    sh tools/run/ci-done-fixtures.sh
+    sh tools/run/gh-issue-fixtures.sh
     sh tools/run/run-census-fixtures.sh
     sh tools/run/run-dir-fixtures.sh
+    sh tools/run/wait-for-fixtures.sh
     sh tools/site/check-site-footer.sh .headwater/site-deploy
     sh tools/site/site-canonical-fixtures.sh
     sh tools/site/site-console-fixtures.sh
@@ -249,6 +255,8 @@ Both of those two scripts, and `.claude/tutorial/drive.py` beside the first, loo
 `sh tools/repo/retire-worktree-fixtures.sh` holds `tools/repo/retire-worktree.sh`, the sweep that retires a worktree and a branch a merge finished. The tool exists because ownership of a tree and knowledge of its merge sit in different agents: `hw-build` makes the tree and exits when the pull request opens, at which point the branch is unmerged and no rule permits deleting it, and `hw-integrate` is the first stage that knows it merged. Merged is decided by the pull request rather than by ancestry, because a squash merge leaves no commit of the branch reachable from `origin/main` and ancestry therefore calls every finished branch unmerged forever. The suite builds its own repository, produces that exact shape, and asserts that ancestry gets it wrong before asserting that the tool gets it right. Five guards are each provoked. A locked tree, a tree holding an uncommitted change and a tree whose pull request is open are three of them. The fourth is a tree a live process has its working directory in, which is the guard with a cost behind it, because removing such a tree pins the directory on disk and the next cargo run there exits 101 naming the binary under test. The fifth is a tree that holds no commit `origin/main` lacks: `git worktree add <path> -b <branch> origin/main` puts a new tree exactly at that tip, so ancestry read it as finished from the second it existed and the sweep deleted the directory and then the branch it had just freed, while the agent that made it was still working. A branch with no tree sitting on `origin/main` stays retirable, because the absence of a tree is what says nobody is building on it, and the suite holds both directions in one run. The report arm is held to retiring nothing, since the action is destructive and a forgotten flag must not read as a clean sweep, and the suite runs the tool twice to hold it idempotent. It stands in for `gh` through `HEADWATER_RETIRE_PR_STATE` and needs nothing but git.
 
 `sh tools/probe/probe-record-fixtures.sh` holds the two halves of a recorder, `tools/probe/probe-transform.sh` and `tools/probe/probe-record.sh`. [Spec 15](docs/spec/15-the-recorder-contract.md) keeps both outside this engine, and [HW-DR-0059](docs/decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md) admits the shape on one condition: the session log has to reach the transform through a channel the model holds no handle on, which is the standard output of `claude -p --output-format stream-json --verbose` and never a file under `~/.claude/projects/`. The suite feeds the transform a harness log whose `thinking` and `text` blocks carry content shaped like transcript fields, and asserts that no byte of any block the harness did not tag as a call or a result survives. A case that only asserts that the thinking block is gone passes a filter by position, a filter by index and a filter over the tags in one sample, so it asserts the bytes. It also holds spec 15's three-state rule, where `calls: []` is a watched session that made no call and an absent `calls` key is a session nothing watched, and the transform refuses a stream carrying no `system`/`init` line rather than claiming an observation nobody made. Two properties are held by mutation rather than by a needle, because both went unheld under a suite that looked complete: the content digest, where replacing `sha256sum` with a constant has to fail, and the encoder, where weakening it to a line-based one has to fail at every entry point that takes a scalar. It needs `jq`, which CI treats as a skip when absent.
+
+Six suites hold the scripts a build-order stage calls in place of a command it once retyped: `ci-done-fixtures.sh`, `board-move-fixtures.sh`, `gh-issue-fixtures.sh` and `wait-for-fixtures.sh` under `tools/run/`, `tools/repo/new-worktree-fixtures.sh`, and `tools/hw-cargo-fixtures.sh`. Each fakes `gh` or `cargo` on `PATH`, so none needs a network, a token or a toolchain. They were written with their scripts and ran nowhere until run 20260923-0733 met two of those scripts wired wrong. Each script's header carries the reasons its agent definition leaves out.
 
 `sh tools/run/run-census-fixtures.sh` holds `tools/run/run-census.sh`, which reads one session transcript and prints what its turns were spent on: one usage record per message id, and every `Bash` call grouped by its leading verb, with the turns and the cache reads each group cost. It then reads the agent transcripts the harness writes beside the session file and prints the fleet: the share of the span with no agent in flight, the mean number in flight, the gap around each compaction, and the parent's turns per agent of each type. It is the measurement behind [HW-PD-0003](docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) as a tool, so a run is held to the numbers the evaluation records rather than to a memory of them. It gates nothing.
 

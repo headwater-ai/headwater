@@ -702,6 +702,8 @@ docs/obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-e
   typed: obligation_record
 docs/obligations/0207-the-plan-usage-of-one-issue-is-known-only-as-the-average-of-its-run.md
   typed: obligation_record
+docs/obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
