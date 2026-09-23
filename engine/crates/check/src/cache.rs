@@ -103,6 +103,29 @@
 //! only ever *divides* a key, so a rule stays as keyed as it was. What changes
 //! is that two states of one anchor stop sharing an entry.
 //!
+//! # The seventh component: whether the rule still exists
+//!
+//! Every component above is a fact about the corpus, the taxonomy or one
+//! anchor. This one is a fact about the binary: which rules `crate::RULES`
+//! compiles today. [#855](https://github.com/headwater-ai/headwater/pull/855)
+//! added the sixth component and explicitly left this gap open, deferring it
+//! to
+//! [HW-OBL-0118](../../../../docs/obligations/0118-the-published-read-set-names-no-anchor-so-a-gate-decides-nothing-about-one.md).
+//! Without it, a verdict about a `check_rule` anchor keyed before an engine
+//! upgrade that dropped, renamed or changed the rule it names survives that
+//! upgrade, because the lock did not move and the rule's own `VERSION` is not
+//! read for a rule the new binary no longer registers.
+//!
+//! [`rules_digest`] hashes the sorted, joined text of the compiled rule list,
+//! so it changes on an add or a remove and stands still on a reorder: the
+//! failure this component exists to close is a rule leaving or entering the
+//! set, and a set a taxonomy author merely reordered in `RULES` is not a
+//! different engine. [`Cache::at`] takes it as an argument on the terms `lock`
+//! already sets, rather than [`Cache::key`] reading `crate::RULES` itself,
+//! because the differential in `tests/cache.rs` has to hold two rule sets in
+//! one process and a compiled constant is one array for the life of the
+//! binary.
+//!
 //! # Why a skipped instance is never stored
 //!
 //! A cache holds verdicts. [`Outcome::Skipped`] is the statement that no
@@ -139,6 +162,32 @@ pub const CACHE: &str = ".headwater/cache/checks";
 /// verdict the differential in `tests/cache.rs` holds.
 pub const FORMAT: &str = "headwater check cache 2";
 
+/// The identity of the compiled rule set: a digest that changes if and only if
+/// [`crate::RULES`] changes which rules it holds, and stays put when the same
+/// set is only reordered. See the module doc's seventh component.
+///
+/// This is the one reader of `crate::RULES` for this purpose. [`Cache::at`]
+/// takes the string it returns as an argument, the same way it takes `lock`,
+/// so [`Cache::key`] never reads the constant itself.
+pub fn rules_digest() -> String {
+    digest_of(&crate::RULES)
+}
+
+/// [`rules_digest`], over an explicit slice rather than the compiled
+/// constant, so the hashing rule — membership, not order, and no collision
+/// between two rule sets that share a boundary — is a unit test rather than a
+/// fact taken on faith about a list this crate cannot change at test time.
+fn digest_of(rules: &[&str]) -> String {
+    let mut sorted: Vec<&str> = rules.to_vec();
+    sorted.sort_unstable();
+    let mut text = String::new();
+    for rule in sorted {
+        text.push_str(rule);
+        text.push('\n');
+    }
+    headwater_hash::hex(text.as_bytes())
+}
+
 /// What a run did with its cache.
 ///
 /// No render prints this. See the module comment: it is a fact about a disk,
@@ -173,6 +222,11 @@ pub struct Cache {
     /// `--no-cache` a path that computes no key rather than one that computes
     /// a key and ignores it.
     lock: Option<String>,
+    /// The identity of the compiled rule set, on the same terms as `lock`:
+    /// a fact this cache was built with rather than a fact `key` reaches out
+    /// for. See [`rules_digest`] and the module doc's seventh component.
+    /// Empty and unused when `lock` is `None`.
+    rules: String,
     /// What was on disk when the run started.
     found: BTreeMap<String, String>,
     /// What this run keyed, and the only thing [`Cache::write`] writes. So the
@@ -188,25 +242,33 @@ impl Cache {
     pub fn disabled() -> Self {
         Cache {
             lock: None,
+            rules: String::new(),
             found: BTreeMap::new(),
             used: BTreeMap::new(),
             report: Report::default(),
         }
     }
 
-    /// The cache of a repository, against the taxonomy lock that keys it.
+    /// The cache of a repository, against the taxonomy lock and the compiled
+    /// rule set that key it.
+    ///
+    /// `rules` is [`rules_digest`] from the caller, not read here, on the same
+    /// terms as `lock`: the caller is the one place that knows which binary
+    /// this is, and a test that has to hold two rule sets in one process
+    /// constructs two `Cache`s with two strings rather than two binaries.
     ///
     /// A file that is absent, unreadable, or written by another engine reads
     /// as an empty cache. None of the three is an error: the cost is one full
     /// run, and the alternative is a verb that refuses to check a corpus
     /// because of a file that holds no corpus content.
-    pub fn at(root: &Path, lock: &str) -> Self {
+    pub fn at(root: &Path, lock: &str, rules: &str) -> Self {
         let found = std::fs::read_to_string(Self::path(root))
             .ok()
             .map(|text| read(&text))
             .unwrap_or_default();
         Cache {
             lock: Some(lock.to_string()),
+            rules: rules.to_string(),
             found,
             used: BTreeMap::new(),
             report: Report::default(),
@@ -337,6 +399,11 @@ impl Cache {
         let lock = self.lock.as_ref()?;
         let mut text = String::from("headwater check key 1\n");
         text.push_str(&format!("lock {lock}\n"));
+        // The seventh component: see the module doc. `self.rules` is
+        // [`rules_digest`] as the constructor received it, never `crate::RULES`
+        // read here, so the two states this component exists to tell apart are
+        // two strings rather than two processes.
+        text.push_str(&format!("rules {}\n", self.rules));
         text.push_str(&format!("rule {rule}\n"));
         text.push_str(&format!("version {version}\n"));
         text.push_str(&format!(
@@ -612,6 +679,20 @@ mod tests {
     use crate::scope::Scope;
     use headwater_yaml::Mapping;
 
+    /// [`digest_of`] moves on membership and stands still on order, and two
+    /// sets that differ by one rule never collide.
+    #[test]
+    fn the_rules_digest_is_membership_not_order() {
+        let a = digest_of(&["a", "b", "c"]);
+        let reordered = digest_of(&["c", "a", "b"]);
+        let added = digest_of(&["a", "b", "c", "d"]);
+        let removed = digest_of(&["a", "b"]);
+        assert_eq!(a, reordered, "reordering the same rules moved the digest");
+        assert_ne!(a, added, "adding a rule left the digest where it was");
+        assert_ne!(a, removed, "removing a rule left the digest where it was");
+        assert_ne!(added, removed, "two different sets collided");
+    }
+
     fn finding() -> Finding {
         Finding {
             rule: "test.rule",
@@ -708,7 +789,7 @@ mod tests {
             std::process::id()
         ));
         let _ = std::fs::remove_dir_all(&root);
-        Cache::at(&root, "sha256:lock").write(&root);
+        Cache::at(&root, "sha256:lock", "sha256:rules").write(&root);
         let ignore = std::fs::read_to_string(root.join(".headwater/cache/.gitignore"))
             .expect("write created the ignore file");
         assert_eq!(ignore, "*\n!.gitignore\n");
@@ -731,7 +812,7 @@ mod tests {
     }
 
     fn cache() -> Cache {
-        Cache::at(Path::new("/nonexistent"), "sha256:lock")
+        Cache::at(Path::new("/nonexistent"), "sha256:lock", "sha256:rules")
     }
 
     fn day(text: &str) -> Option<Date> {
@@ -800,7 +881,15 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 day("2026-08-12"),
             ),
-            Cache::at(Path::new("/nonexistent"), "sha256:other").plain_key(
+            Cache::at(Path::new("/nonexistent"), "sha256:other", "sha256:rules").plain_key(
+                "r",
+                1,
+                scope,
+                "a.md",
+                &inputs(Some("sha256:one")),
+                None,
+            ),
+            Cache::at(Path::new("/nonexistent"), "sha256:lock", "sha256:other-rules").plain_key(
                 "r",
                 1,
                 scope,

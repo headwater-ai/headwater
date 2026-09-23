@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0118
-status: current
-status_since: 2026-08-14
-waiting_on: ruling
+status: discharged
+status_since: 2026-09-23
+waiting_on: build
 summary: "The read set artifact holds one line per document, so an external anchor is on no line and a gate that compares listed hashes cannot see the target of one leave the tree."
-last_verified: 2026-08-14
+last_verified: 2026-09-23
 title: "The published read set names no anchor, so a gate decides nothing about one"
 provenance:
   warrant: proposed
@@ -46,12 +46,10 @@ The measurement is a hand run on 2026-08-14 over this repository, which declares
 
 ## Discharge
 
-Nothing discharges this yet, and two shapes are open.
+**This record is discharged for the gap its own text last named as unowned.** The narrow and wide shapes above are about a different use of the read set, and this change does not reach them. The Context and Obligation sections are about the artifact `headwater check --read-set` writes and `headwater gate` reads back. That limit stands exactly as measured. A barrier voids every answer before the input comparison begins. Neither the narrow shape (a keyword for an anchor line) nor the wide shape (a resolver-stated digest read back by the gate) has been built. What discharges here is the postscript below: the debt [#855](https://github.com/headwater-ai/headwater/issues/855) filed into this record as unowned.
 
-**The narrow shape is a line of its own.** The artifact gains a keyword for a target that no path names, carrying the anchor kind, the resolver and the binding. A gate that meets that keyword reports that it cannot decide, on the terms it already uses for an input with no content hash. It costs one line for each anchor edge and it decides nothing new.
+**[#855](https://github.com/headwater-ai/headwater/issues/855) widened the neighbourhood-scoped cache key to carry a bound anchor's resolution.** `over_edges` already carried one into the edge-scoped key. #855 named the gap it did not close: neither key carried the engine's own binary version. A verdict about a bound `check_rule` anchor could survive an engine upgrade that dropped, renamed or changed the rule it names. Only the lock digest and the rule's own `VERSION` moved the key, and the compiled `RULES` list entered neither. That gap is [#411](https://github.com/headwater-ai/headwater/issues/411)'s debt, filed here as intake for the product owner to triage: "no issue owns closing it yet."
 
-**The wider shape is a resolver that states a digest over what it resolved against.** A gate re-runs the resolvers over the later tree and compares that digest. It decides the question rather than refusing it, and it makes a gate read the tree rather than a list. That list is the economy [spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) fixed as the whole test.
+**[#1029](https://github.com/headwater-ai/headwater/issues/1029) is that issue.** `Cache::key` now carries a seventh component: the identity of the compiled rule set. `headwater_check::rules_digest` hashes the sorted, joined text of `crate::RULES`. The value changes on an add or a remove and stands still on a reorder of the same set. `Cache::at` takes it as an argument on the terms `lock` already sets. A run's cache is keyed on which rules the binary that produced it compiled, and `Cache::key` never reads the constant itself.
 
-**What no fixture here shows.** `engine/crates/check/src/gate.rs` holds every reason a verdict does not carry, and an anchor is not among them. No case can fail on this while a barrier voids each answer first. So the measurement above is a hand run rather than a case in a suite. A gate that reports per rule is what makes one possible.
-
-**[#855](https://github.com/headwater-ai/headwater/issues/855) widens this limit and closes none of it.** #855 admits a bound anchor as a neighbour. It carries the anchor's resolution into the neighbourhood-scoped cache key, the way `over_edges` already carries one into the edge-scoped key. Neither key carries the engine's own binary version. A verdict about a bound `check_rule` still survives an engine upgrade that drops the rule. Only the lock digest and the rule `VERSION` move. The compiled `RULES` list enters neither key. That gap is [#411](https://github.com/headwater-ai/headwater/issues/411)'s debt. #855 was asked to record it here, not to close it. No issue owns closing it yet. This record files it as intake for the product owner to triage.
+**The measurement is `an_engine_upgrade_that_drops_a_rule_serves_nothing` in `engine/crates/check/tests/cache.rs`.** It warms a cache under one rules identity. It "upgrades" to a second identity standing in for a build that dropped a rule, and it re-runs the same corpus against the same lock. Before this change, the test failed with `Report { hits: 280, misses: 0, unkeyed: 57 }`: every keyed instance served a verdict from before the simulated upgrade. After this change, `hits` is 0 and `misses` is 280. The warm cache serves nothing across the boundary this component exists to name.
