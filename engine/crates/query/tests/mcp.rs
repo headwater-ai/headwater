@@ -93,9 +93,18 @@ struct Built {
 }
 
 fn fixture_tree() -> Built {
-    let corpus = Corpus::new(fixtures_dir(), "query");
-    let source = std::fs::read_to_string(fixtures_dir().join("query.taxonomy.yml"))
-        .expect("the fixture taxonomy");
+    fixture_tree_at(&fixtures_dir())
+}
+
+/// The fixture corpus read from `at`, which is the checked-in tree for every
+/// case but one. `a_session_writes_nothing_to_the_corpus_it_reads` passes a
+/// private copy, because the bless run of
+/// `the_session_runs_to_the_recorded_transcript` rewrites `query.mcp` in the
+/// checked-in tree while that case's snapshot is open (#1038).
+fn fixture_tree_at(at: &Path) -> Built {
+    let corpus = Corpus::new(at, "query");
+    let source =
+        std::fs::read_to_string(at.join("query.taxonomy.yml")).expect("the fixture taxonomy");
     let root = headwater_yaml::load(&source)
         .expect("it loads")
         .value
@@ -116,7 +125,7 @@ fn fixture_tree() -> Built {
     );
     Built {
         census,
-        claims: headwater_check::claim::Claims::at(&fixtures_dir()),
+        claims: headwater_check::claim::Claims::at(at),
         graph,
         shape,
         taxonomy,
@@ -846,8 +855,48 @@ fn an_argument_for(tool: &str) -> &'static str {
 /// store would land here as a new path under the fixture tree. So this test is
 /// what holds the module's claim that the tool uses no cache, and it is the
 /// only thing that holds it.
+///
+/// The session reads a private copy of the whole fixture tree, `src/`
+/// included, and the snapshots are taken of that copy. The checked-in tree is
+/// not private: under `HEADWATER_BLESS=1` a sibling case rewrites `query.mcp`
+/// in it, and a snapshot taken there fails on bytes this session never wrote
+/// (#1038). The copy is keyed on the pid and the case name, because cargo runs
+/// the cases of one binary as threads of one process.
 #[test]
 fn a_session_writes_nothing_to_the_corpus_it_reads() {
+    /// A copy of the fixture tree that removes itself.
+    struct Scratch(PathBuf);
+
+    impl Scratch {
+        fn of(from: &Path, case: &str) -> Self {
+            let name = format!("headwater-query-{}-{case}", std::process::id());
+            let at = std::env::temp_dir().join(name);
+            let _ = std::fs::remove_dir_all(&at);
+            copy(from, &at);
+            Scratch(at)
+        }
+    }
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn copy(from: &Path, to: &Path) {
+        std::fs::create_dir_all(to).expect("the scratch tree is made");
+        for entry in std::fs::read_dir(from).expect("the fixture tree") {
+            let entry = entry.expect("an entry").path();
+            let target = to.join(entry.file_name().expect("a name"));
+            match entry.is_dir() {
+                true => copy(&entry, &target),
+                false => {
+                    std::fs::copy(&entry, &target).expect("a fixture is copied");
+                }
+            }
+        }
+    }
+
     fn snapshot(at: &Path) -> Vec<(PathBuf, Vec<u8>)> {
         let mut found = Vec::new();
         let mut stack = vec![at.to_path_buf()];
@@ -867,8 +916,12 @@ fn a_session_writes_nothing_to_the_corpus_it_reads() {
         found
     }
 
-    let before = snapshot(&fixtures_dir());
-    let built = fixture_tree();
+    let scratch = Scratch::of(
+        &fixtures_dir(),
+        "a_session_writes_nothing_to_the_corpus_it_reads",
+    );
+    let before = snapshot(&scratch.0);
+    let built = fixture_tree_at(&scratch.0);
     let server = built.server(RECORDED_AT);
     for tool in &QUERY_CLASS {
         let request = calling(
@@ -888,5 +941,5 @@ fn a_session_writes_nothing_to_the_corpus_it_reads() {
             tool.name
         );
     }
-    assert_eq!(before, snapshot(&fixtures_dir()));
+    assert_eq!(before, snapshot(&scratch.0));
 }
