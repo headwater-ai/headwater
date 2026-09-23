@@ -1126,6 +1126,12 @@ if [ -x "$engine" ]; then
     expect '  and names the remedy, a bounded wait that re-issues itself' \
         wait.sh 0 'timeout 240' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done"}}'
+    expect '  and names the script that is that wait, and the condition for CI' \
+        wait.sh 0 'tools/run/ci-done.sh' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done"}}'
+    refute 'a run watch named inside a quoted argument is not a wait' \
+        wait.sh '"permissionDecision":"deny"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"grep -n '"'"'gh run watch'"'"' .claude/agents/hw-build.md"}}'
     expect '  and exempts the parent, whose cache lives an hour' \
         wait.sh 0 'the parent waits by ending its turn' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done"}}'
