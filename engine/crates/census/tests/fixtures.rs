@@ -1151,6 +1151,69 @@ fn a_producer_output_whose_every_line_is_a_record_is_a_fold() {
     }
 }
 
+/// A tree that holds neither the figure script nor the engine workspace is
+/// not told to run either one.
+///
+/// The tree below is an adopter's: a page under `site/` that carries a
+/// `data-figure` element, and a recorded fixture whose opening states a fold.
+/// In this repository the first is the figure producer's and the second is the
+/// blessing run's. Here neither producer is held, so neither claims a file, and
+/// the report names neither command. Make either predicate always true and
+/// this case fails.
+#[test]
+fn a_tree_that_lacks_a_producer_is_not_told_to_run_it() {
+    use headwater_census::derived::Producer;
+
+    const PAGE: &str = "site/index.html";
+    const FOLD: &str = "engine/crates/a/fixtures/corpus.a";
+    let root = TempTree::adopter("adopter");
+    root.write(".gitattributes", "");
+    root.write(PAGE, "<span data-figure=\"census.seen\">426</span>\n");
+    root.write(FOLD, "426 files\nsha256:0a1b\n");
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    for producer in [Producer::FigureRefresh, Producer::RecordedFold] {
+        assert!(
+            !producer.held_by(root.path()),
+            "{producer:?} is held by a tree that carries neither the script nor the \
+             engine workspace"
+        );
+        assert!(
+            !report.contains(producer.command()),
+            "the report names `{}`, which this tree cannot run:\n{report}",
+            producer.command()
+        );
+    }
+    assert!(
+        population.outputs.is_empty(),
+        "a producer the tree does not hold claimed a file:\n{report}"
+    );
+    assert!(
+        !report.contains(PAGE) && !report.contains(FOLD),
+        "the report names a file that no held producer writes:\n{report}"
+    );
+    assert!(
+        report.contains("computed from 2 producers"),
+        "the opening count names the producers the tree holds:\n{report}"
+    );
+    assert!(
+        population.agrees(),
+        "an adopter tree with no attribute agrees:\n{report}"
+    );
+
+    // The same files, in a tree that holds both producers, are claimed.
+    root.write(REFRESH_SCRIPT, "#!/bin/sh\n");
+    root.write(ENGINE_MANIFEST, "[workspace]\n");
+    let population = headwater_census::derived::population(root.path());
+    let claimed: Vec<&str> = population
+        .outputs
+        .iter()
+        .map(|output| output.path.as_str())
+        .collect();
+    assert_eq!(claimed, vec![FOLD, PAGE], "a held producer claims its file");
+}
+
 /// Inside a git repository, the merge attribute of every path is git's answer.
 ///
 /// The verb once read the root `.gitattributes` alone, as a list of literal
@@ -1219,8 +1282,9 @@ fn derived_agrees_with_git_check_attr_on_every_path() {
 /// Outside a git repository, the verb reads the root `.gitattributes` alone.
 ///
 /// The same layouts as the case above, with no `git init`. No git answer
-/// exists here, so the root file is the whole declaration. A nested file is
-/// not read, and a glob in the root file is named as unreadable.
+/// exists here, so the root file gives every treatment. A nested file is not
+/// read, and it is named as unreadable with the glob in the root file, so the
+/// verb exits 1 rather than report agreement for a layout it did not read.
 #[test]
 fn outside_a_git_repository_the_root_gitattributes_alone_is_read() {
     use headwater_census::derived::Treatment;
@@ -1254,8 +1318,98 @@ fn outside_a_git_repository_the_root_gitattributes_alone_is_read() {
     }
     assert_eq!(
         population.unreadable,
-        vec!["glob/*.md".to_string()],
-        "the root reader did not name the glob it cannot expand:\n{report}"
+        [
+            "c/.gitattributes",
+            "glob/*.md",
+            "m/.gitattributes",
+            "other/.gitattributes",
+            "sub/.gitattributes",
+        ]
+        .map(String::from)
+        .to_vec(),
+        "the root reader did not name the glob it cannot expand and every \
+         nested file it does not read:\n{report}"
+    );
+    assert!(!population.agrees(), "the report claims the tree agrees");
+    assert!(
+        report.contains(
+            "these `.gitattributes` files are below the root, and this reader \
+             does not read them, so no shape of this tree was held against them:\n    \
+             c/.gitattributes\n    m/.gitattributes\n    other/.gitattributes\n    \
+             sub/.gitattributes\n"
+        ),
+        "the report does not name the nested files under their own heading:\n{report}"
+    );
+    assert!(
+        report.contains(
+            "these carry a merge attribute behind a pattern this reader cannot \
+             expand, so no shape of this tree was held against them:\n    glob/*.md\n"
+        ),
+        "the report does not name the glob under its own heading:\n{report}"
+    );
+}
+
+/// Outside a git repository, a nested `.gitattributes` is named whatever its directory is called.
+///
+/// A walk path is a file name and not a pattern. A directory name that holds
+/// `[`, `]`, `*` or `?` is legal, and a filter that reads such a path as a glob
+/// drops its `.gitattributes` from the report, so the verb states agreement
+/// for a file it did not read.
+#[test]
+fn outside_a_git_repository_a_nested_file_under_a_glob_character_is_named() {
+    let root = TempTree::new("glob-named-directories");
+    for path in [
+        "br[1]/.gitattributes",
+        "q?/x/.gitattributes",
+        "star*/.gitattributes",
+    ] {
+        root.write(path, "gen.md merge=headwater-regenerate\n");
+    }
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    assert_eq!(
+        population.unreadable,
+        [
+            "br[1]/.gitattributes",
+            "q?/x/.gitattributes",
+            "star*/.gitattributes",
+        ]
+        .map(String::from)
+        .to_vec(),
+        "a nested file under a directory with a glob character was dropped:\n{report}"
+    );
+    assert!(!population.agrees(), "the report claims the tree agrees");
+    assert!(
+        report.contains("no merge attribute is behind a pattern this verb cannot expand\n"),
+        "a nested file was reported as a root pattern:\n{report}"
+    );
+}
+
+/// Outside a git repository, a leading `/` of a root line is an anchor.
+///
+/// The companion of `a_root_declaration_with_a_leading_slash_is_asked_of_git_without_it`.
+/// The `/` anchors the pattern to the root and is not part of the path, so
+/// `/gen.md` declares the produced `gen.md`. Read with the `/`, the report
+/// shows `gen.md` undeclared and `/gen.md` unproduced.
+#[test]
+fn outside_a_git_repository_a_leading_slash_of_a_root_line_is_not_part_of_the_path() {
+    let root = TempTree::new("leading-slash-no-repository");
+    root.write(".gitattributes", "/gen.md merge=headwater-regenerate\n");
+    root.write(
+        "gen.md",
+        "<!-- headwater:generated shelf_index. -->\n\n# 48 decisions\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    assert!(
+        population.undeclared.is_empty(),
+        "the produced path was not read as declared:\n{report}"
+    );
+    assert!(
+        population.unproduced.is_empty(),
+        "the anchor was read as part of the path:\n{report}"
     );
 }
 
@@ -1518,6 +1672,11 @@ fn git_treatment(root: &Path, path: &str) -> headwater_census::derived::Treatmen
     }
 }
 
+/// The file whose presence means a tree holds the figure producer.
+const REFRESH_SCRIPT: &str = "tools/site/refresh-figures.sh";
+/// The file whose presence means a tree holds the blessing run.
+const ENGINE_MANIFEST: &str = "engine/Cargo.toml";
+
 /// A tree under a directory this process owns, removed when the case ends.
 ///
 /// Keyed on the process identifier and a label, because `cargo` runs the cases
@@ -1526,7 +1685,19 @@ fn git_treatment(root: &Path, path: &str) -> headwater_census::derived::Treatmen
 struct TempTree(PathBuf);
 
 impl TempTree {
+    /// A tree that holds all four producers, as this repository does.
+    ///
+    /// The figure script and the engine workspace are planted, because a tree
+    /// that lacks either is not asked about that producer at all.
     fn new(label: &str) -> TempTree {
+        let tree = TempTree::adopter(label);
+        tree.write(REFRESH_SCRIPT, "#!/bin/sh\n");
+        tree.write(ENGINE_MANIFEST, "[workspace]\n");
+        tree
+    }
+
+    /// A tree that holds only the two verb producers, as an adopter's does.
+    fn adopter(label: &str) -> TempTree {
         let path =
             std::env::temp_dir().join(format!("headwater-derived-{}-{label}", std::process::id()));
         let _ = std::fs::remove_dir_all(&path);
