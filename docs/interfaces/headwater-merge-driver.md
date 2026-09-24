@@ -38,6 +38,8 @@ Git writes no conflict marker for a custom driver. So the file stays readable, a
 
 **Git calls no driver when the two branches wrote the same bytes.** A driver is a content merge. Git compares the two blobs first, and it resolves a path that has one blob at the tree level. Two branches that each add one document of one kind can write one identical fold. That merge gives a value true of neither tree, and git does not call this verb. `engine/crates/census/tests/merge_driver.rs` measures this case.
 
+**Git calls no driver in a clone that has the configuration and not the override.** Git runs no hook before a merge, so nothing can write the override between the `git config` lines and a first merge. That merge keeps the current side of each fold and conflicts, and no message names the producer. Anything else that the driver does for a repository is also absent from that merge. A repository that writes a review marker from its driver gets no marker. `headwater init --git` in a configured clone writes the override, and it is the step to run before the first merge.
+
 **A forge calls no driver, and it does not read `-merge`.** We measured this on GitHub on 2026-09-24. A pull request that moved a `-merge` path showed as mergeable, and its test merge held the edits of both branches.
 
 The check on the merged tree is what reaches these cases, and the driver is its fallback. `headwater generate --check` and `headwater taxonomy resolve --check` are that check. An adopter runs them after a merge and in CI. This repository also runs them from a commit hook while a merge is in progress. No verb carries that hook, because HW-DR-0077 gives its exception to the driver alone, and a second verb for a hook needs its own ruling.

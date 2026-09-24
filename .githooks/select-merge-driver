@@ -16,27 +16,57 @@
 # after `.gitattributes` gains a path. What that keeps is the driver's refusal,
 # which names the producer, and the site-review marker it writes under
 # `<git-common-dir>/headwater-pending-site-review/`, which `.githooks/pre-push`
-# blocks on. It appends and never rewrites, and a second run writes nothing.
+# blocks on.
+#
+# It owns every line of that file of the form `<path> merge=headwater-regenerate`,
+# and no other line. Each run makes that set equal to what it derives: one line
+# for each `-merge` path of `.gitattributes` where the driver is configured, and
+# none where it is not. So a line for a path that stopped being a fold is
+# removed, and so is every such line in a clone that dropped the config, where
+# the line alone would be the text merge again. Every other line is kept byte
+# for byte. A second run writes nothing.
+#
+# What it cannot reach: a clone that sets the config and then merges before any
+# checkout, merge or commit has run a hook. Git runs no hook before a merge, and
+# `post-merge` runs after it, so that first merge conflicts on each fold without
+# the driver and writes no site-review marker.
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -n "$root" ] || exit 0
-[ -n "$(git config merge.headwater-regenerate.driver 2>/dev/null)" ] || exit 0
-[ -f "$root/.gitattributes" ] || exit 0
 override=$(git rev-parse --git-path info/attributes 2>/dev/null) || exit 0
 case $override in
     /*) ;;
     *) override="$root/$override" ;;
 esac
 
-missing=$(awk '!/^#/ && $2 == "-merge" { print $1 }' "$root/.gitattributes" |
-    while read -r fold; do
-        grep -qxF "$fold merge=headwater-regenerate" "$override" 2>/dev/null || echo "$fold"
-    done)
-[ -n "$missing" ] || exit 0
+# What the file should select: nothing without the driver config.
+wanted=
+if [ -n "$(git config merge.headwater-regenerate.driver 2>/dev/null)" ] && [ -f "$root/.gitattributes" ]; then
+    wanted=$(awk '!/^#/ && $2 == "-merge" { print $1 " merge=headwater-regenerate" }' "$root/.gitattributes")
+fi
+
+current=
+[ -f "$override" ] && current=$(cat "$override")
+kept=$(printf '%s\n' "$current" | awk 'NF && !(NF == 2 && $2 == "merge=headwater-regenerate")')
+owned=$(printf '%s\n' "$current" | awk 'NF == 2 && $2 == "merge=headwater-regenerate"')
+[ "$owned" = "$wanted" ] && exit 0
+
+# How many lines of `$1` are not in `$2`, both newline-separated.
+missing_from() {
+    awk -v a="$1" -v b="$2" 'BEGIN {
+        n = split(b, B, "\n"); for (i = 1; i <= n; i++) if (B[i] != "") seen[B[i]] = 1
+        m = split(a, A, "\n"); c = 0
+        for (i = 1; i <= m; i++) if (A[i] != "" && !(A[i] in seen)) c++
+        print c
+    }'
+}
+added=$(missing_from "$wanted" "$owned")
+removed=$(missing_from "$owned" "$wanted")
 
 mkdir -p "$(dirname "$override")" || exit 0
-printf '%s\n' "$missing" | while read -r fold; do
-    printf '%s merge=headwater-regenerate\n' "$fold"
-done >> "$override" || exit 0
-count=$(printf '%s\n' "$missing" | wc -l | tr -d ' ')
-echo "headwater: selected the merge driver for $count derived path(s) in $override" >&2
+{
+    if [ -n "$kept" ]; then printf '%s\n' "$kept"; fi
+    if [ -n "$wanted" ]; then printf '%s\n' "$wanted"; fi
+} > "$override.tmp" || exit 0
+mv "$override.tmp" "$override" || exit 0
+echo "headwater: selected the merge driver for $added derived path(s) and removed $removed in $override" >&2
 exit 0

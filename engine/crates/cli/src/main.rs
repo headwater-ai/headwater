@@ -6308,11 +6308,12 @@ const COMMITTED_ATTRIBUTE: &str = "-merge";
 
 /// `headwater init --git`: the attribute lines, and the configuration git needs.
 ///
-/// **The set is computed, and only from the two producers that are verbs.**
-/// `headwater derived` asks four producers, and two of them are a script and a
+/// **The set is computed, and only from the producers the tree holds.**
+/// `headwater derived` knows four producers, and two of them are a script and a
 /// toolchain of the repository that maintains this engine. An adopter holds
 /// neither, so a line this step wrote for one of them would name a producer
-/// the adopter cannot run. The lock is always in the set, because
+/// the adopter cannot run. `Producer::held_by` is the one predicate. The
+/// population applies it, so this step and `headwater derived` read one set. The lock is always in the set, because
 /// `headwater taxonomy resolve` writes it and nothing else does, whether or
 /// not it has run yet.
 ///
@@ -6347,7 +6348,7 @@ const COMMITTED_ATTRIBUTE: &str = "-merge";
 /// [HW-DR-0077](../../../../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)
 /// keeps that consent with the adopter.
 fn init_git(root: &Path, configure: bool) -> ExitCode {
-    use headwater_census::derived::{Producer, Shape, Treatment, LOCK};
+    use headwater_census::derived::{Shape, Treatment, LOCK};
     let population = headwater_census::derived::population(root);
     // A fold alone owes a line. A generated file that is one record per entity
     // merges as text to what the producer writes, as #1058 measured, and a
@@ -6361,12 +6362,8 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
     let mut paths: Vec<String> = population
         .outputs
         .iter()
-        .filter(|output| {
-            matches!(
-                output.producer,
-                Producer::Generate | Producer::TaxonomyResolve
-            )
-        })
+        // No producer filter here: `population` already drops the output of
+        // every producer the tree does not hold, by `Producer::held_by`.
         .filter(|output| folds.contains(&output.path.as_str()))
         .map(|output| output.path.clone())
         .collect();

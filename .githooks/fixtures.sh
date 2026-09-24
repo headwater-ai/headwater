@@ -894,6 +894,21 @@ judge 'and the selection names the site pages the marker guards' 0 0 \
 again=$(cd "$scratch" && sh .githooks/select-merge-driver 2>&1)
 refute 'and a second run selects nothing more' 'selected the merge driver' "$again"
 
+# The guard. Without the driver config the selector selects nothing, and it
+# removes every line an earlier run wrote, because a driver line with no config
+# is the text merge #1058 closed. Delete the guard and this goes red.
+unguarded=$(cd "$scratch" && git config --unset merge.headwater-regenerate.driver; sh .githooks/select-merge-driver >/dev/null 2>&1; cat "$(git rev-parse --git-path info/attributes)" 2>/dev/null)
+refute 'without the driver config no driver line is left in info/attributes' \
+    'merge=headwater-regenerate' "$unguarded"
+
+# A line for a path that is no longer a fold is removed, and a line the
+# selector does not own is kept byte for byte.
+stale=$(cd "$scratch" && git config merge.headwater-regenerate.driver ".githooks/merge-regenerate %O %A %B %P" && printf 'x.bin -diff\ndocs/decisions/README.md merge=headwater-regenerate\n' >> "$(git rev-parse --git-path info/attributes)" && sh .githooks/select-merge-driver >/dev/null 2>&1; cat "$(git rev-parse --git-path info/attributes)")
+refute 'a driver line for a record-shaped path is removed' \
+    'docs/decisions/README.md merge=headwater-regenerate' "$stale"
+judge 'and a line the selector does not own is kept' 0 0 'x.bin -diff' "$stale"
+judge 'and every fold is still selected' 0 0 'site/index.html merge=headwater-regenerate' "$stale"
+
 # And the gate reports an absolute `core.hooksPath`, which `EnterWorktree`
 # writes on every call, and says nothing about the relative one `CLAUDE.md`
 # instructs. Both arms exit 0. This invocation is by a relative path from

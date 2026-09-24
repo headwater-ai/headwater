@@ -1163,6 +1163,69 @@ fn a_producer_output_whose_every_line_is_a_record_is_a_fold() {
     }
 }
 
+/// A tree that holds neither the figure script nor the engine workspace is
+/// not told to run either one.
+///
+/// The tree below is an adopter's: a page under `site/` that carries a
+/// `data-figure` element, and a recorded fixture whose opening states a fold.
+/// In this repository the first is the figure producer's and the second is the
+/// blessing run's. Here neither producer is held, so neither claims a file, and
+/// the report names neither command. Make either predicate always true and
+/// this case fails.
+#[test]
+fn a_tree_that_lacks_a_producer_is_not_told_to_run_it() {
+    use headwater_census::derived::Producer;
+
+    const PAGE: &str = "site/index.html";
+    const FOLD: &str = "engine/crates/a/fixtures/corpus.a";
+    let root = TempTree::adopter("adopter");
+    root.write(".gitattributes", "");
+    root.write(PAGE, "<span data-figure=\"census.seen\">426</span>\n");
+    root.write(FOLD, "426 files\nsha256:0a1b\n");
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    for producer in [Producer::FigureRefresh, Producer::RecordedFold] {
+        assert!(
+            !producer.held_by(root.path()),
+            "{producer:?} is held by a tree that carries neither the script nor the \
+             engine workspace"
+        );
+        assert!(
+            !report.contains(producer.command()),
+            "the report names `{}`, which this tree cannot run:\n{report}",
+            producer.command()
+        );
+    }
+    assert!(
+        population.outputs.is_empty(),
+        "a producer the tree does not hold claimed a file:\n{report}"
+    );
+    assert!(
+        !report.contains(PAGE) && !report.contains(FOLD),
+        "the report names a file that no held producer writes:\n{report}"
+    );
+    assert!(
+        report.contains("computed from 2 producers"),
+        "the opening count names the producers the tree holds:\n{report}"
+    );
+    assert!(
+        population.agrees(),
+        "an adopter tree with no attribute agrees:\n{report}"
+    );
+
+    // The same files, in a tree that holds both producers, are claimed.
+    root.write(REFRESH_SCRIPT, "#!/bin/sh\n");
+    root.write(ENGINE_MANIFEST, "[workspace]\n");
+    let population = headwater_census::derived::population(root.path());
+    let claimed: Vec<&str> = population
+        .outputs
+        .iter()
+        .map(|output| output.path.as_str())
+        .collect();
+    assert_eq!(claimed, vec![FOLD, PAGE], "a held producer claims its file");
+}
+
 /// Inside a git repository, the merge attribute of every path is git's answer.
 ///
 /// The verb once read the root `.gitattributes` alone, as a list of literal
@@ -1707,6 +1770,11 @@ fn git_treatment(root: &Path, path: &str) -> headwater_census::derived::Treatmen
     }
 }
 
+/// The file whose presence means a tree holds the figure producer.
+const REFRESH_SCRIPT: &str = "tools/site/refresh-figures.sh";
+/// The file whose presence means a tree holds the blessing run.
+const ENGINE_MANIFEST: &str = "engine/Cargo.toml";
+
 /// A tree under a directory this process owns, removed when the case ends.
 ///
 /// Keyed on the process identifier and a label, because `cargo` runs the cases
@@ -1715,7 +1783,19 @@ fn git_treatment(root: &Path, path: &str) -> headwater_census::derived::Treatmen
 struct TempTree(PathBuf);
 
 impl TempTree {
+    /// A tree that holds all four producers, as this repository does.
+    ///
+    /// The figure script and the engine workspace are planted, because a tree
+    /// that lacks either is not asked about that producer at all.
     fn new(label: &str) -> TempTree {
+        let tree = TempTree::adopter(label);
+        tree.write(REFRESH_SCRIPT, "#!/bin/sh\n");
+        tree.write(ENGINE_MANIFEST, "[workspace]\n");
+        tree
+    }
+
+    /// A tree that holds only the two verb producers, as an adopter's does.
+    fn adopter(label: &str) -> TempTree {
         let path =
             std::env::temp_dir().join(format!("headwater-derived-{}-{label}", std::process::id()));
         let _ = std::fs::remove_dir_all(&path);
