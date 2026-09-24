@@ -171,7 +171,10 @@ fn node(expected: &Expected, name: &str) -> String {
 fn lane(text: &str, purpose: &str) -> Vec<String> {
     let open = format!("subgraph purpose_{purpose}[\"{purpose}\"]");
     let mut lines = text.lines().skip_while(|line| line.trim() != open);
-    assert!(lines.next().is_some(), "the lane `{purpose}` is drawn:\n{text}");
+    assert!(
+        lines.next().is_some(),
+        "the lane `{purpose}` is drawn:\n{text}"
+    );
     lines
         .take_while(|line| line.trim() != "end")
         .map(|line| line.trim().to_string())
@@ -192,8 +195,14 @@ fn caption(relation: &str, from: &str, to: &str) -> String {
 
 /// Hold one drawing to what its lock says, every set in full.
 fn holds(text: &str, expected: &Expected) {
-    assert!(text.starts_with("%%") || text.starts_with("flowchart"), "{text}");
-    assert!(text.lines().any(|l| l == "flowchart LR"), "a flowchart:\n{text}");
+    assert!(
+        text.starts_with("%%") || text.starts_with("flowchart"),
+        "{text}"
+    );
+    assert!(
+        text.lines().any(|l| l == "flowchart LR"),
+        "a flowchart:\n{text}"
+    );
     for purpose in &expected.purposes {
         let inside = lane(text, purpose);
         for (lane_of, kind) in &expected.lanes {
@@ -240,7 +249,11 @@ fn holds(text: &str, expected: &Expected) {
         );
     }
     let listed = text.lines().filter(|l| l.starts_with("%%   ")).count();
-    assert_eq!(listed, expected.captioned.len(), "the caption lists each pair once:\n{text}");
+    assert_eq!(
+        listed,
+        expected.captioned.len(),
+        "the caption lists each pair once:\n{text}"
+    );
 }
 
 #[test]
@@ -357,7 +370,11 @@ fn the_drawing_follows_an_edit_to_the_lock() {
 
     let at = root("edited", Some(&edited));
     let ran = graph(&at);
-    assert_eq!(ran.code, Some(0), "the edited lock reads and draws: {ran:?}");
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "the edited lock reads and draws: {ran:?}"
+    );
     let text = ran.text();
     holds(&text, &after);
 
@@ -366,14 +383,19 @@ fn the_drawing_follows_an_edit_to_the_lock() {
         "the new lane holds the new kind:\n{text}"
     );
     assert!(
-        text.lines().any(|l| l == caption("zz_link", "zz_kind", &abstract_kind)),
+        text.lines()
+            .any(|l| l == caption("zz_link", "zz_kind", &abstract_kind)),
         "the new pair is captioned:\n{text}"
     );
     assert!(
         !edges(&text).iter().any(|l| l.contains("|zz_link|")),
         "the new pair is not drawn:\n{text}"
     );
-    let line = format!("{} -->|{gone}| {}", node(&before, &gone_from), node(&before, &gone_to));
+    let line = format!(
+        "{} -->|{gone}| {}",
+        node(&before, &gone_from),
+        node(&before, &gone_to)
+    );
     assert!(
         !text.contains(&format!("|{gone}|")),
         "the removed relation `{line}` is gone:\n{text}"
@@ -387,7 +409,10 @@ fn two_runs_over_one_lock_write_the_same_bytes() {
     let first = graph(&at);
     let second = graph(&at);
     assert_eq!(first.code, Some(0), "{first:?}");
-    assert_eq!(first.out, second.out, "standard output is a function of the lock");
+    assert_eq!(
+        first.out, second.out,
+        "standard output is a function of the lock"
+    );
     let _ = std::fs::remove_dir_all(&at);
 }
 
@@ -398,7 +423,10 @@ fn a_root_with_no_lock_exits_non_zero_with_one_sentence() {
     assert_ne!(ran.code, Some(0), "{ran:?}");
     assert!(ran.out.is_empty(), "nothing is drawn: {ran:?}");
     assert_eq!(ran.err.trim_end().lines().count(), 1, "one line: {ran:?}");
-    assert!(ran.err.contains("taxonomy.lock"), "it names the lock: {ran:?}");
+    assert!(
+        ran.err.contains("taxonomy.lock"),
+        "it names the lock: {ran:?}"
+    );
     let _ = std::fs::remove_dir_all(&at);
 }
 

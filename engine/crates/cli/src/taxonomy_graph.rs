@@ -171,7 +171,12 @@ pub fn render(package: &str, version: &str, resolved: &Mapping) -> String {
             join(&abstracts)
         );
         for (relation, from, to) in &captioned {
-            text.push_str(&format!("<br/>{}: {} -> {}", label(relation), label(from), label(to)));
+            text.push_str(&format!(
+                "<br/>{}: {} -> {}",
+                label(relation),
+                label(from),
+                label(to)
+            ));
         }
         out.push_str(&format!("  note_abstract[\"{text}\"]\n"));
         out.push_str("  class note_abstract note\n");
@@ -179,7 +184,10 @@ pub fn render(package: &str, version: &str, resolved: &Mapping) -> String {
     }
     if !anchors.is_empty() {
         out.push_str("  classDef anchor fill:#eee,stroke:#555\n");
-        let members: Vec<String> = anchors.iter().map(|a| format!("anchor_{}", ident(a))).collect();
+        let members: Vec<String> = anchors
+            .iter()
+            .map(|a| format!("anchor_{}", ident(a)))
+            .collect();
         out.push_str(&format!("  class {} anchor\n", members.join(",")));
     }
     for (index, family) in families.iter().enumerate() {
