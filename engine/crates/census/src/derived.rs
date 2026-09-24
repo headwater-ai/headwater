@@ -998,20 +998,23 @@ fn declarations(root: &Path) -> Vec<(String, Treatment)> {
         .collect()
 }
 
+/// Whether an entry of [`Population::unreadable`] is a nested `.gitattributes`
+/// file rather than a root pattern, read from its last component alone.
+///
+/// A walk path is a file name and not a pattern, so a directory such as
+/// `br[1]` does not make it one: a test for glob characters here would drop
+/// that file from the report in silence. The one entry this reads wrongly is a
+/// root glob whose last component is `.gitattributes`, and that entry is still
+/// named and is still a disagreement, only under the other heading.
+pub fn is_a_nested_attributes_file(entry: &str) -> bool {
+    !is_a_pattern(entry) && entry.ends_with("/.gitattributes")
+}
+
 /// Whether a `.gitattributes` pattern reaches more than the path it spells.
 ///
 /// Git's pattern language is the one `.gitignore` uses. This reader expands
 /// none of it, so a pattern that carries any of these characters is reported
 /// rather than matched, and a trailing `/` is a directory rather than a file.
-/// Whether an entry of [`Population::unreadable`] is a nested `.gitattributes`
-/// file rather than a root pattern.
-///
-/// A literal root path never reaches `unreadable`, so an entry with no glob
-/// whose last component is `.gitattributes` is a file of the walk.
-pub fn is_a_nested_attributes_file(entry: &str) -> bool {
-    !is_a_pattern(entry) && entry.ends_with("/.gitattributes")
-}
-
 fn is_a_pattern(pattern: &str) -> bool {
     pattern.ends_with('/') || pattern.contains(['*', '?', '[', ']'])
 }
@@ -1203,6 +1206,28 @@ mod tests {
         assert_eq!(refused.found, declarations);
         let outside = super::attributes_from(None, declarations, &[]);
         assert_eq!(outside.refused, None);
+    }
+
+    /// Where git refuses, the root-file reader answers, and it names each
+    /// nested `.gitattributes` of the walk as it does outside a repository.
+    #[test]
+    fn a_refusal_of_git_check_attr_names_each_nested_attributes_file() {
+        let files = [
+            ".gitattributes",
+            "a.md",
+            "sub/.gitattributes",
+            "sub/deep/.gitattributes",
+        ]
+        .map(String::from);
+        let refused = super::attributes_from(
+            Some(Err("fatal: an invented refusal".to_string())),
+            Vec::new(),
+            &files,
+        );
+        assert_eq!(
+            refused.unreadable,
+            ["sub/.gitattributes", "sub/deep/.gitattributes"].map(String::from)
+        );
     }
 
     #[test]
