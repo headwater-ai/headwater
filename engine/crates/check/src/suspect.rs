@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! A Graph-origin check: an imported edge names its upstream item at the
-//! revision the edge was verified against.
+//! A Graph-origin check: an edge names its target at the revision the edge was
+//! verified against.
 //!
 //! # The gap this closes
 //!
@@ -15,6 +15,17 @@
 //! together. The importer records `verified_revision` on every edge it writes,
 //! and the snapshot records the revision each item is at now. This rule is the
 //! comparison, and it is the whole computation.
+//!
+//! # A `governs` edge ages on the same comparison
+//!
+//! #946 fixed a hook, and six documents that govern it stayed wrong with no
+//! report, because this rule read only a relation an importer writes and the
+//! `source-tree` resolver answered no revision. The governs evaluation's
+//! "Aging" section is the design: an edge records a digest of what it reached,
+//! and a later run compares it against the bytes that are there now.
+//! [`headwater_graph::anchors::tree_revision`] is that digest, so the rule
+//! below needed no second comparison, only a wider denominator and the
+//! message a working tree is owed rather than a snapshot's.
 //!
 //! # The report is at the origin
 //!
@@ -37,37 +48,70 @@
 //!
 //! # The denominator
 //!
-//! Every relation the taxonomy declares with `created_by: import`, and no
-//! other. A relation an importer may not write can carry no
-//! `verified_revision`, so an instance over one would report a denominator of
-//! edges that could never be suspect. Declaration-driven, so a new importable
-//! relation produces its instances with no code here, which is the property
-//! [`crate::target`] states as its own.
+//! Every relation the taxonomy declares with `created_by: import`, and every
+//! relation whose `to` names an anchor kind. The first set is the edges an
+//! importer writes a `verified_revision` onto. The second is the edges whose
+//! target a resolver can state a revision for, which is `governs` in the
+//! standard package and every relation a corpus declares onto a `code_path`.
+//! A relation outside both reaches only documents, and a document target holds
+//! no revision, so an instance over one would report a denominator of edges
+//! that could never be suspect. A relation inside the second set can still
+//! admit a document as well, and the instances over those edges are skipped
+//! (see below). Declaration-driven, so a new relation produces
+//! its instances with no code here, which is the property [`crate::target`]
+//! states as its own.
 //!
 //! The instance exists for an edge that is not suspect as well as for one that
 //! is. A rule whose instances are only its findings reports a count that reads
 //! as its own denominator.
 //!
-//! # The three silences, and each one is deliberate
+//! # The three silences, and the one report an unrecorded edge gets
 //!
-//! An edge with no recorded revision passes. A person who types an entry of an
-//! importable relation by hand records nothing to compare, and that such an
-//! edge is itself worth reporting is a different finding with a different
-//! remedy.
+//! An edge with no recorded revision passes, with one exception below. A
+//! person who types an entry by hand records nothing to compare, and every
+//! `governs` entry this corpus held when the rule widened was such an entry.
 //!
-//! An edge whose resolver offered no revision passes. Every resolver but a
-//! snapshot's has no such notion, and a rule must not invent a comparison a
-//! resolver did not offer.
+//! An edge whose resolver offered no revision passes. A snapshot and the
+//! source tree offer one. Every other resolver has no such notion, and neither
+//! has a literal that names a directory (see
+//! [`headwater_graph::anchors::tree_revision`]). A rule must not invent a
+//! comparison a resolver did not offer.
 //!
-//! A target that is not an anchor passes. A document target holds no upstream
-//! revision, and an unbound target is [`crate::target`]'s.
+//! A target that is not an anchor passes, and a document target is skipped
+//! with its reason. A document holds no revision, and an unbound target is
+//! [`crate::target`]'s. The skip is there because instantiation is per
+//! relation, so a relation that admits both a document and an anchor has an
+//! instance over each of its document edges, and a pass there would count an
+//! edge that could never be suspect.
+//!
+//! **The exception is an unrecorded edge on a document verified today.** The
+//! document's freshness facet (`last_verified` in the standard package) is at
+//! or after the run's clock, so its author has just re-read it, and the rule
+//! reports at `Info` with a patch that records the digest the edge reaches
+//! now. That patch is the one way a digest is recorded without typing it.
+//!
+//! # When a fix is offered, and why the clock decides it
+//!
+//! A patch that writes `verified_revision` records a verification. So it is
+//! offered only where the document says one happened today: its freshness
+//! facet is at or after the injected clock, compared as dates because the
+//! facet is a date. On any other document the finding carries its remedy as
+//! prose and no patch, because `headwater check --fix` would then record a
+//! verification nobody performed. The patch is a [`crate::Patch::Half`] with
+//! the edge's attributes, which [`headwater_scaffold::write::splice`] writes
+//! over the entry that names the target and reads back. It turns a bare entry
+//! into the mapping form, and keeps every other attribute the entry had. An
+//! entry with a list target, or an attribute that is not a scalar, gets no
+//! patch, because the splice matches an entry by one scalar `to`.
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
 use crate::scope::{EdgeCheck, EdgeUnit, EdgeView};
+use crate::shape::Shape;
+use crate::{Date, Patch};
 use headwater_graph::declarations::Relation;
 use headwater_graph::edges::VERIFIED_REVISION;
-use headwater_graph::{Declarations, Target};
+use headwater_graph::{Declarations, Direction, Edge, Target};
 
 pub const RULE: &str = "relation.target.suspect";
 
@@ -75,30 +119,70 @@ pub const RULE: &str = "relation.target.suspect";
 /// [`crate::target`]: recorded rather than panicked on.
 const NO_HALF: &str = "the entry carries no declared half";
 
-/// The check, generated from the relation declarations an importer may write.
+/// Why an instance over an edge onto a document decides nothing.
+const DOCUMENT_TARGET: &str =
+    "the target is a document, which holds no revision for an edge to be verified against";
+
+/// The resolver whose revision is a digest of working-tree bytes.
+const SOURCE_TREE: &str = "source-tree";
+
+/// The check, generated from the relation declarations that can carry a
+/// revision.
 pub struct Suspect<'a> {
-    /// Every relation whose `created_by` is `import`. A relation this list
-    /// omits is one no importer writes, so no edge of it records the revision
-    /// this rule compares.
+    /// Every relation whose `created_by` is `import`, and every relation whose
+    /// `to` names an anchor kind. See the module comment.
     declared: Vec<&'a Relation>,
+    /// The facet that carries the freshness role, which says when a person
+    /// last re-read the document. Nothing where the taxonomy declares none,
+    /// and then no fix is ever offered.
+    freshness: Option<&'a str>,
 }
 
 impl<'a> Suspect<'a> {
-    pub fn over(declarations: &'a Declarations) -> Self {
+    pub fn over(declarations: &'a Declarations, shape: &'a Shape) -> Self {
         Suspect {
             declared: declarations
                 .relations
                 .iter()
-                .filter(|relation| relation.created_by.as_deref() == Some("import"))
+                .filter(|relation| {
+                    relation.created_by.as_deref() == Some("import")
+                        || relation
+                            .to
+                            .iter()
+                            .any(|kind| declarations.anchor(kind).is_some())
+                })
                 .collect(),
+            freshness: shape
+                .facet_in_role("freshness")
+                .map(|facet| facet.name.as_str()),
         }
+    }
+
+    /// Whether the document that declared this edge says it was verified on
+    /// or after the run's clock.
+    fn verified_today(&self, view: &EdgeView<'_>) -> bool {
+        let (Some(facet), Some(now), Some(facets)) =
+            (self.freshness, view.now(), view.declarer_facets())
+        else {
+            return false;
+        };
+        facets
+            .get(facet)
+            .and_then(|node| node.value.as_scalar())
+            .and_then(|scalar| Date::parse(&scalar.text))
+            .is_some_and(|verified| verified >= now)
     }
 }
 
 impl EdgeCheck for Suspect<'_> {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`].
-    const VERSION: u32 = 1;
+    /// See [`crate::placement::Placement::VERSION`]. 2: the denominator
+    /// widened to every relation onto an anchor kind, and the rule reads the
+    /// clock (#952).
+    const VERSION: u32 = 2;
+    /// The fix is offered only on a document verified on or after the clock,
+    /// so the clock is an input and has to be in the key.
+    const NEEDS_CLOCK: bool = true;
     /// As [`crate::target`]: an anchor target has no far document, so there is
     /// no pair to group two halves into.
     const UNIT: EdgeUnit = EdgeUnit::Entry;
@@ -112,53 +196,186 @@ impl EdgeCheck for Suspect<'_> {
             return Outcome::Skipped(NO_HALF.to_string());
         };
 
-        let Target::Anchor { revision, .. } = &edge.target else {
-            return Outcome::Passed;
-        };
-
-        let Some(verified) = edge
-            .attributes
-            .iter()
-            .find(|entry| entry.key.value == VERIFIED_REVISION)
-            .and_then(|entry| entry.value.value.as_scalar())
-            .map(|scalar| scalar.text.as_str())
-        else {
-            return Outcome::Passed;
+        let (revision, resolver, patterns) = match &edge.target {
+            Target::Anchor {
+                revision,
+                resolver,
+                patterns,
+                ..
+            } => (revision, resolver, patterns),
+            // A relation that admits a document and an anchor, `traces_to` in
+            // the standard package, has an instance over each of its document
+            // edges too. It is skipped with the reason rather than passed, so
+            // that the count of instances this rule passed is a count of edges
+            // that could have gone suspect.
+            Target::Document { .. } => return Outcome::Skipped(DOCUMENT_TARGET.to_string()),
+            _ => return Outcome::Passed,
         };
 
         let Some(current) = revision.as_deref() else {
             return Outcome::Passed;
         };
 
-        if verified == current {
-            return Outcome::Passed;
-        }
+        let verified = edge
+            .attributes
+            .iter()
+            .find(|entry| entry.key.value == VERIFIED_REVISION)
+            .and_then(|entry| entry.value.value.as_scalar())
+            .map(|scalar| scalar.text.as_str());
 
+        let today = self.verified_today(view);
         let (line, column) = at(Some(edge.span));
-        Outcome::failed_with(Finding {
+        let finding = |severity, message, remediation, patch| Finding {
             rule: self::RULE,
-            severity: Severity::Warn,
+            severity,
             obligation: None,
             path: edge.source.path.clone(),
             line,
             column,
-            message: message(
-                &edge.source.id,
-                &edge.name,
-                &edge.raw_target,
-                verified,
-                current,
+            message,
+            remediation,
+            patch,
+        };
+
+        let Some(verified) = verified else {
+            // The one report an unrecorded edge gets. See the module comment.
+            if !today || resolver != SOURCE_TREE {
+                return Outcome::Passed;
+            }
+            let Some(patch) = recording(edge, current) else {
+                return Outcome::Passed;
+            };
+            return Outcome::failed_with(finding(
+                Severity::Info,
+                unrecorded(&edge.source.id, &edge.name, &edge.raw_target, current),
+                format!(
+                    "run `headwater check --fix` to record `{VERIFIED_REVISION}: {current}` on \
+                     this entry, so that a later change to what it reaches is reported"
+                ),
+                Some(patch),
+            ));
+        };
+
+        if verified == current {
+            return Outcome::Passed;
+        }
+
+        let reached: usize = {
+            let mut union: Vec<&String> = patterns.iter().flat_map(|p| p.matched.iter()).collect();
+            union.sort();
+            union.dedup();
+            union.len()
+        };
+        let literal = patterns.len() == 1
+            && patterns[0].matched.len() == 1
+            && patterns[0].matched[0] == patterns[0].pattern;
+
+        let (message, remediation) = match resolver.as_str() {
+            SOURCE_TREE => (
+                moved(
+                    &edge.source.id,
+                    &edge.name,
+                    &edge.raw_target,
+                    verified,
+                    current,
+                    match literal {
+                        true => Reach::One,
+                        false => Reach::Set(reached),
+                    },
+                ),
+                reread(current),
             ),
-            remediation: remediation(current),
-            // No fix. The repair is a person re-reading an upstream item and
-            // deciding whether the edge still holds, which is judgment rather
-            // than the mechanical and total correction
-            // [spec 12](../../../../docs/spec/12-check-layer.md#fixability)
-            // sets as the bar. Writing the new revision in would record a
-            // verification that nobody performed.
-            patch: None,
-        })
+            _ => (
+                message(&edge.source.id, &edge.name, &edge.raw_target, verified, current),
+                remediation(current),
+            ),
+        };
+        // A snapshot's revision is never fixed here: see `remediation`. A
+        // source-tree digest is, on a document verified today, because then
+        // the verification the patch records is one the author stated.
+        let patch = match resolver == SOURCE_TREE && today {
+            true => recording(edge, current),
+            false => None,
+        };
+        Outcome::failed_with(finding(Severity::Warn, message, remediation, patch))
     }
+}
+
+/// The patch that records `current` on the entry that declared `edge`, and
+/// nothing where the splice could not find that entry by one scalar `to` or
+/// could not carry an attribute the entry already has.
+fn recording(edge: &Edge, current: &str) -> Option<Patch> {
+    if edge.direction != Direction::AsDeclared {
+        return None;
+    }
+    let Target::Anchor { patterns, .. } = &edge.target else {
+        return None;
+    };
+    if patterns.len() != 1 {
+        return None;
+    }
+    let mut attributes = Vec::with_capacity(edge.attributes.len() + 1);
+    for entry in &edge.attributes {
+        if entry.key.value == VERIFIED_REVISION {
+            continue;
+        }
+        let scalar = entry.value.value.as_scalar()?;
+        attributes.push((entry.key.value.clone(), scalar.text.clone()));
+    }
+    attributes.push((VERIFIED_REVISION.to_string(), current.to_string()));
+    Some(Patch::Half {
+        path: edge.source.path.clone(),
+        relation: edge.name.clone(),
+        id: edge.raw_target.clone(),
+        attributes,
+    })
+}
+
+/// How many entries a moved source-tree anchor reaches, and whether that is a
+/// count of changed entries.
+#[derive(Clone, Copy)]
+enum Reach {
+    /// A literal path: one entry, so the one that changed.
+    One,
+    /// A pattern or a list: this many entries now, and the digest does not say
+    /// how many of them changed.
+    Set(usize),
+}
+
+/// A moved digest, in the terms of the document that declares the edge.
+fn moved(id: &str, name: &str, raw: &str, verified: &str, current: &str, reach: Reach) -> String {
+    match reach {
+        Reach::One => format!(
+            "`{id}` declares `{name}: {raw}`, which was verified against content `{verified}`, \
+             and the 1 entry it reaches has changed since: it now reads `{current}`"
+        ),
+        Reach::Set(count) => format!(
+            "`{id}` declares `{name}: {raw}`, which was verified against content `{verified}`, \
+             and the {count} {entries} it matches now read `{current}`; the digest covers the \
+             set, so how many of them changed is not recorded",
+            entries = match count {
+                1 => "entry",
+                _ => "entries",
+            }
+        ),
+    }
+}
+
+/// What to do about a moved digest.
+fn reread(current: &str) -> String {
+    format!(
+        "re-read what the entry reaches and correct this document where it no longer holds; then \
+         set its `last_verified` to today and run `headwater check --fix`, which records \
+         `{VERIFIED_REVISION}: {current}` on this entry"
+    )
+}
+
+/// An unrecorded edge on a document verified today.
+fn unrecorded(id: &str, name: &str, raw: &str, current: &str) -> String {
+    format!(
+        "`{id}` declares `{name}: {raw}` with no `{VERIFIED_REVISION}`, and the document was \
+         verified today, so the content it reaches now, `{current}`, can be recorded"
+    )
 }
 
 /// What moved, in the terms of the document that declares the edge.

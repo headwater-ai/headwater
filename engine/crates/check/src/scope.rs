@@ -881,6 +881,9 @@ pub struct EdgeView<'a> {
     /// nothing for an instance whose far end is not a document. See
     /// [`EdgeView::ends`].
     ends: Option<(EdgeEnd<'a>, EdgeEnd<'a>)>,
+    /// The front matter of the document that declared the half this instance
+    /// is keyed on. See [`EdgeView::declarer_facets`].
+    declarer: Option<&'a Mapping>,
     clock: Option<Date>,
     reads: Vec<Input>,
     resolution: String,
@@ -1024,6 +1027,7 @@ impl<'a> EdgeView<'a> {
             declared,
             inverse,
             ends,
+            declarer: read_at(census, &anchor.source.path).0,
             clock,
             reads,
             resolution: anchor.target.resolution(),
@@ -1067,6 +1071,20 @@ impl<'a> EdgeView<'a> {
     /// [`EdgeUnit::Entry`] it is most of what the unit exists to reach.
     pub fn ends(&self) -> Option<(EdgeEnd<'a>, EdgeEnd<'a>)> {
         self.ends
+    }
+
+    /// The front matter of the document that declared this instance's half,
+    /// whatever the far end is.
+    ///
+    /// [`EdgeView::ends`] is nothing for an anchor target, because there is
+    /// no second document. The declaring document is still there, it is
+    /// already the first member of [`EdgeView::reads`], and a rule about an
+    /// anchor edge can need what its author stated about it: whether it was
+    /// verified today is what [`crate::suspect`] reads before it offers a fix
+    /// that records a verification. Nothing where the census carries no parsed
+    /// document for the path.
+    pub fn declarer_facets(&self) -> Option<&'a Mapping> {
+        self.declarer
     }
 
     /// The injected date, and only for a check that declared `NEEDS_CLOCK`.
