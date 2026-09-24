@@ -647,7 +647,7 @@ read set
   version voice.forbidden_construction 4
   version language.controlled.not_met 3
   version language.retired_term.used 3
-  version surface.local_path.instructed 3
+  version surface.local_path.instructed 4
   version surface.command.undeclared 1
   version language.source_form.not_met 1
   version section.required.missing 1
