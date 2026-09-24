@@ -58,8 +58,7 @@ fn serve(count: usize) -> String {
 fn a_loopback_zip_unpacks_with_its_members_at_the_root() {
     let base = serve(1);
     let fetched = headwater_fetch::fetch(&format!("{base}/x.zip")).unwrap();
-    let manifest =
-        std::fs::read_to_string(fetched.path().join("headwater-package.yml")).unwrap();
+    let manifest = std::fs::read_to_string(fetched.path().join("headwater-package.yml")).unwrap();
     assert_eq!(manifest, "name: acme/example\n");
     assert!(fetched.path().join("schema/kinds.yml").is_file());
 

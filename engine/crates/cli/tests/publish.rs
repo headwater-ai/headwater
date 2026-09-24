@@ -2613,7 +2613,10 @@ fn tree(dir: &Path) -> std::collections::BTreeMap<PathBuf, Vec<u8>> {
                 stack.push(path);
             } else {
                 let bytes = std::fs::read(&path).expect("the file reads");
-                files.insert(path.strip_prefix(dir).expect("under dir").to_path_buf(), bytes);
+                files.insert(
+                    path.strip_prefix(dir).expect("under dir").to_path_buf(),
+                    bytes,
+                );
             }
         }
     }
@@ -2757,7 +2760,10 @@ fn a_location_vendors_the_bytes_the_same_artifact_vendors_by_path() {
     );
 
     let installed_by_path = tree(&by_path.join(package::PACKAGES));
-    assert!(!installed_by_path.is_empty(), "the path form installed nothing");
+    assert!(
+        !installed_by_path.is_empty(),
+        "the path form installed nothing"
+    );
     assert_eq!(
         installed_by_path,
         tree(&by_location.join(package::PACKAGES)),

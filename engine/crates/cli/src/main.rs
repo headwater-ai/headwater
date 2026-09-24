@@ -1665,7 +1665,9 @@ fn vendor(root: &Path, source: &str, expect: Option<&str>) -> ExitCode {
         Ok(fetched) => fetched,
         Err(code) => return code,
     };
-    let from = fetched.as_ref().map_or(Path::new(source), |fetched| fetched.path());
+    let from = fetched
+        .as_ref()
+        .map_or(Path::new(source), |fetched| fetched.path());
 
     let vendored = match headwater_resolve::package::vendor(root, from, &pinned) {
         Ok(vendored) => vendored,
@@ -1685,11 +1687,7 @@ fn vendor(root: &Path, source: &str, expect: Option<&str>) -> ExitCode {
     );
     println!(
         "  from {}",
-        headwater_cli::paint::paint(
-            headwater_cli::paint::Role::Path,
-            source,
-            mode
-        )
+        headwater_cli::paint::paint(headwater_cli::paint::Role::Path, source, mode)
     );
     println!(
         "  {} files, all of them the pinned bytes",

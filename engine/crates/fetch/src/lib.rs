@@ -145,7 +145,9 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
     let fetched = Fetched { dir: scratch()? };
     // `extract` refuses a member whose name leaves the directory.
     archive.extract(&fetched.dir).map_err(|error| {
-        Error::Archive(format!("the archive at {location} does not unpack: {error}"))
+        Error::Archive(format!(
+            "the archive at {location} does not unpack: {error}"
+        ))
     })?;
     Ok(fetched)
 }
