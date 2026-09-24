@@ -171,12 +171,14 @@ impl Root {
             if *line != format!("\"rule\": \"{rule}\",") {
                 continue;
             }
-            // One finding runs to the next `rule` member. A finding the runner
-            // filtered is still in the report, with its escape named, and only
-            // an unescaped one is a verdict a reader meets.
+            // One finding runs to the brace that closes it, and the last one
+            // would otherwise run on into the read set, which names every
+            // page. A finding the runner filtered is still in the report, with
+            // its escape named, and only an unescaped one is a verdict a
+            // reader meets.
             let end = lines[at + 1..]
                 .iter()
-                .position(|l| l.starts_with("\"rule\""))
+                .position(|l| l.starts_with("\"rule\"") || l.starts_with('}'))
                 .map_or(lines.len(), |next| at + 1 + next);
             let finding = &lines[at..end];
             if finding.contains(&path.as_str())
