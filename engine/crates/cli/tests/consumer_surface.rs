@@ -232,6 +232,15 @@ fn the_rule_reads_the_manifest_and_honors_a_passage_that_says_so() {
             && w.iter().any(|f| f.contains("tools/quote.sh")),
         "a path behind a shell variable and a code span in a block quote are both reported\n{w:#?}"
     );
+    // The generation step reads the adopter list, so a page the list does not
+    // name has no instance of the rule at all, rather than an instance that
+    // passes without being read (#1051). Three of the four typed documents are
+    // on the list.
+    assert!(
+        out.lines()
+            .any(|line| line.trim() == format!("3 instances of {RULE}")),
+        "the rule instantiates on the three listed pages and not on `z.md`\n{out}"
+    );
     assert_eq!(
         root.findings("z"),
         Vec::<String>::new(),
