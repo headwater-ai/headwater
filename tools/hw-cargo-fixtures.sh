@@ -16,7 +16,9 @@
 # It needs no toolchain: `cargo` on `PATH` is a fake for the length of this
 # suite, a shell script that plants an empty executable at
 # `$CARGO_TARGET_DIR/<profile>/headwater` and does nothing else. The cases
-# below hold where the tool copies that file, not what building one produces.
+# below hold where the tool copies that file, which slot and lock it takes,
+# and that a process the build leaves behind does not keep the lock. What
+# building produces is `tools/hw-cargo-link-fixtures.sh`'s, which compiles.
 # Every worktree is a real `git init` under `mktemp -d`, and nothing inside
 # this checkout is written.
 
