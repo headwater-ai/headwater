@@ -2,7 +2,7 @@
 
 # Obligation records
 
-216 documents on this shelf, in the reading order this corpus derives.
+The documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and no category reaches the adjudicated sample bar of 50 findings.

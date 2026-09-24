@@ -165,11 +165,12 @@ pub(crate) fn emit(
         let front = match &declaration.identity {
             None => None,
             Some(identity) => {
+                // The summary names the shelf and counts nothing, for the
+                // reason the sentence under the heading gives (#1058).
                 let composed = crate::derived::Composed {
                     summary: format!(
-                        "One row for each of the {} documents on the `{name}` shelf, with the cue \
-                         that each of them states.",
-                        on_shelf.len()
+                        "One row for each document on the `{name}` shelf, with the cue that each \
+                         of them states."
                     ),
                     sources: on_shelf.iter().map(|document| document.path).collect(),
                 };
@@ -246,14 +247,10 @@ fn render(shelf: &str, output: &str, ordered: &[Pointer], front: Option<&str>) -
     out.push_str("# ");
     out.push_str(shelf);
     out.push_str("\n\n");
-    out.push_str(&format!(
-        "{} {} on this shelf, in the reading order this corpus derives.\n\n",
-        ordered.len(),
-        match ordered.len() {
-            1 => "document",
-            _ => "documents",
-        }
-    ));
+    // No count of the rows. A count is a fold over the shelf that a text merge
+    // of two branches writes wrong with no conflict (#1058, HW-DR-0049), and
+    // the rows below already say how many there are.
+    out.push_str("The documents on this shelf, in the reading order this corpus derives.\n\n");
     let base = parent_of(output);
     for pointer in ordered {
         let target = relative(&base, &pointer.path);

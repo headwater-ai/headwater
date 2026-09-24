@@ -708,6 +708,22 @@ docs/obligations/0207-the-plan-usage-of-one-issue-is-known-only-as-the-average-o
   typed: obligation_record
 docs/obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md
   typed: obligation_record
+docs/obligations/0209-a-build-order-dispatch-passes-no-isolation-so-a-stage-can-inherit-the-parent-worktree-as-its-working-directory.md
+  typed: obligation_record
+docs/obligations/0210-no-fixture-holds-the-symlink-case-of-new-worktree-sh-and-a-bare-name-of-two-dots-leaves-a-branch-behind.md
+  typed: obligation_record
+docs/obligations/0211-two-hand-remedy-lines-for-hw-cargo-in-hw-run-policy-may-no-longer-earn-their-cost-on-every-dispatch.md
+  typed: obligation_record
+docs/obligations/0212-ci-done-sh-reads-a-cancelled-run-of-another-branch-as-a-red-result-on-a-main-merge-commit.md
+  typed: obligation_record
+docs/obligations/0213-ci-builds-no-mkdocs-site-so-a-generated-page-under-docs-is-never-checked-against-a-strict-build-before-merge.md
+  typed: obligation_record
+docs/obligations/0214-the-commit-gate-does-not-see-docs-taxonomies-readme-md-drift-from-its-vendored-copy.md
+  typed: obligation_record
+docs/obligations/0215-a-bless-run-of-the-conformance-render-tests-races-two-tests-over-one-fixture-file.md
+  typed: obligation_record
+docs/obligations/0216-two-merge-hooks-of-this-repository-print-a-resolve-flag-that-the-verb-refuses.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md

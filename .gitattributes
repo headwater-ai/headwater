@@ -132,10 +132,15 @@
 engine/crates/check/fixtures/corpus.checks merge=headwater-regenerate
 engine/crates/lock/fixtures/corpus.lock merge=headwater-regenerate
 
-# The generated documents, which are the same shape for the same reason. Each
-# one opens with a count of the shelf below it, and `headwater generate` writes
-# every one of them from the corpus. Two branches that each add a decision both
-# write `48` where the merged tree holds 49.
+# The generated documents. None of them stores a count since #1058, so a text
+# merge no longer writes a number true of neither branch. Each one still lists
+# its entries in an order the corpus derives. A shelf page orders its rows by
+# precedence over the relations of the shelf, so a document that governs one
+# entry and is governed by another moves two rows that neither branch touched,
+# and a text merge of two branches can land that order wrong with no conflict.
+# The probe-result pages and `docs/interfaces/README.md` list the answer of a
+# query over the whole corpus, which is the same fold. `headwater generate`
+# writes every one of them.
 #
 # They are listed rather than matched. `docs/*/README.md` would reach
 # `docs/taxonomies/README.md` and `docs/w3id/README.md`, which nobody generates

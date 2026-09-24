@@ -5,7 +5,7 @@ doc_type: decision_register
 title: Open questions, closed and redirected
 status: superseded
 status_since: 2026-08-11
-summary: "One heading for each of the 81 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
+summary: "One heading for each document on the `decisions` shelf, so that a citation naming one of them resolves in this file."
 last_verified: 2026-08-11
 sequence: 9
 relations:
@@ -15,7 +15,7 @@ relations:
 
 # Decision records
 
-81 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+The documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 

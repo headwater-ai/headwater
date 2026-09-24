@@ -2,7 +2,7 @@
 
 # Process decisions
 
-8 documents on this shelf, in the reading order this corpus derives.
+The documents on this shelf, in the reading order this corpus derives.
 
 - [Orchestration prose has one owner per sentence](0001-orchestration-prose-has-one-owner-per-sentence.md) — Every sentence of orchestration prose has exactly one home, decided by who must obey it and whether it changes per dispatch, so the command holds only what the parent decides and each agent loads only what it must obey. (asserted, and no human has accepted it)
 - [Adjudication is a separate stage, and refusal is licensed](0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md) — Adjudication runs as its own stage before construction and its prompt licenses refusal, because a run that separated them returned a refusal or a correction from six of eight slots, and that costs one parent turn per issue which is paid. (asserted, and no human has accepted it)
