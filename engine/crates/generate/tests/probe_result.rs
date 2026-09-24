@@ -1281,6 +1281,12 @@ fn a_released_refusal_names_every_document_that_reads_it() {
         !written.contains(UNRELATED),
         "the result named a document that links neither it nor its transcript:\n{written}"
     );
+    // #1058: the list stays and its count goes, because a count of the readers
+    // is a fold that a text merge of two branches gets wrong.
+    assert!(
+        !written.contains("1 document of this corpus"),
+        "the result stores a count of the documents that read it:\n{written}"
+    );
 }
 
 /// A refused recording that nothing reads says so, rather than printing an

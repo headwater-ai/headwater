@@ -196,14 +196,15 @@ pub(crate) fn emit(
         let front = match &declaration.identity {
             None => None,
             Some(identity) => {
-                // The one required facet nothing derives. A count written here
-                // regenerates with the shelf, where the same claim in a
-                // taxonomy source drifts and no check reads it.
+                // The one required facet nothing derives. It names the shelf
+                // and counts nothing: a count here is a fold that a text merge
+                // of two branches writes wrong with no conflict (#1058), and
+                // other pages copy this summary, so the count would reach them
+                // too.
                 let composed = crate::derived::Composed {
                     summary: format!(
-                        "One heading for each of the {} documents on the `{name}` shelf, so that \
-                         a citation naming one of them resolves in this file.",
-                        sections.len()
+                        "One heading for each document on the `{name}` shelf, so that a citation \
+                         naming one of them resolves in this file."
                     ),
                     sources: on_shelf.iter().map(|document| document.path).collect(),
                 };
@@ -310,16 +311,12 @@ fn render(shelf: &str, output: &str, sections: &[Section], front: Option<&str>) 
     out.push_str("# ");
     out.push_str(shelf);
     out.push_str("\n\n");
-    out.push_str(&format!(
-        "{} {} on this shelf, in the reading order this corpus derives. Each heading below is the \
-         name that the document declares, so a citation of a heading is a citation of a \
-         document.\n",
-        sections.len(),
-        match sections.len() {
-            1 => "document",
-            _ => "documents",
-        }
-    ));
+    // No count of the sections, for the reason [`crate::shelf_index`] gives.
+    out.push_str(
+        "The documents on this shelf, in the reading order this corpus derives. Each heading \
+         below is the name that the document declares, so a citation of a heading is a citation \
+         of a document.\n",
+    );
     let base = crate::shelf_index::parent_of(output);
     for section in sections {
         out.push_str(&format!("\n## {}\n\n", section.name));

@@ -2,7 +2,7 @@
 
 # Review records
 
-7 documents on this shelf, in the reading order this corpus derives.
+The documents on this shelf, in the reading order this corpus derives.
 
 - [Assessment of the existing core-concepts findings](core-concepts-findings-assessment.md) — An assessment of the first findings report, made against a later revision, with the places where it would revise them.
 - [Core-concepts independent review](core-concepts-independent-review.md) — An independent run of the core-concepts instrument, made without reading the existing findings first.

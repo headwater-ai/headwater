@@ -667,25 +667,25 @@ judge 'and the reported-count difference is labeled clock only' 0 "$status" \
     'clock only findings.reported' "$out"
 refute 'and nothing is reported as an ordinary stale figure' 'stale findings' "$out"
 
-# The verb-count sentence pluralizes "verb(s)" and "has"/"have" each on its own
-# count, singular at exactly 1 (#811, folded in from the same file). "1 has
-# none" is the correct rendering of an uncontracted count of exactly 1, and a
-# pattern that reads the plural alone matches neither the total nor the two
-# has/have clauses on such a tree, and refuses every run over it.
-#
-# The count is read off the page rather than written here, so a new verb with
-# its contract moves this case with no edit (#974 added the twenty-fourth).
+# The verb figures are read off the rows of the index, which states no count
+# since #1058: one row for each verb, and `**no contract**` in the last cell of
+# a verb nothing describes. So a tree whose first row loses its contract must
+# read one uncontracted verb and one fewer contracted one. The total is read
+# off the page rather than written here, so a new verb with its contract moves
+# this case with no edit.
 reset
-verbs=$(sed -n 's/^`headwater` dispatches \([0-9]*\) verbs\..*/\1/p' "$scratch/docs/interfaces/README.md")
-sed -i "s/\`headwater\` dispatches $verbs verbs\\. $verbs of them have a contract on this shelf, and 0 have none\\./\`headwater\` dispatches $verbs verbs. $((verbs - 1)) of them have a contract on this shelf, and 1 has none./" \
+verbs=$(grep -c '^| `' "$scratch/docs/interfaces/README.md")
+sed -i '0,/^| `/{s/^\(| `.*\) | \[[^]]*\]([^)]*) |$/\1 | **no contract** |/}' \
     "$scratch/docs/interfaces/README.md"
-grep -q '1 has none' "$scratch/docs/interfaces/README.md" || {
-    printf 'FAIL setup: docs/interfaces/README.md did not move to the singular form\n'
+grep -q '| \*\*no contract\*\* |$' "$scratch/docs/interfaces/README.md" || {
+    printf 'FAIL setup: the first verb row of docs/interfaces/README.md did not lose its contract\n'
     exit 1
 }
 out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --print 2>&1); status=$?
-judge 'a verb count whose uncontracted figure is exactly 1 is read rather than refused' \
-    0 "$status" 'verbs.nocontract  1' "$out"
+judge 'a verb row marked with no contract is read as one uncontracted verb' \
+    0 "$status" 'verbs.nocontract 1' "$out"
+judge 'and the contracted figure is the rows less that one' \
+    0 "$status" "verbs.contracts $((verbs - 1)) " "$out"
 
 # The engine behind the tree. Every case above measures with whatever binary is
 # under `engine/target/`, and until #679 nothing asked whether that binary was

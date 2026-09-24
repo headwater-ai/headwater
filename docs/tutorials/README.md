@@ -2,6 +2,6 @@
 
 # Tutorials
 
-1 document on this shelf, in the reading order this corpus derives.
+The documents on this shelf, in the reading order this corpus derives.
 
 - [Your first governed corpus](your-first-governed-corpus.md) — An untyped repository reaches a passing strict check in sixteen steps, and the reader leaves holding shelf, kind, facet, overlay and obligation.

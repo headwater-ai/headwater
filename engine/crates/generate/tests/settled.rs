@@ -6,17 +6,26 @@
 //!
 //! `fixtures/chained.taxonomy.yml` declares a `shelf_sections` whose output is a
 //! document with a composed summary, and a `shelf_index` that prints that
-//! summary. Adding a decision moves the count in the summary, and one plan reads
-//! the summary from before its own write. So one write left the index one count
-//! behind, and a second write repaired it. Two writes agreeing is therefore no
-//! evidence: they agreed while the defect was live. What this file asserts is
-//! that one call leaves a tree a check accepts.
+//! summary. Until [#1058](https://github.com/headwater-ai/headwater/issues/1058)
+//! the summary counted the shelf, so adding a decision moved it, and one plan
+//! read the summary from before its own write. One write left the index one
+//! count behind, and a second write repaired it.
+//!
+//! #1058 took the count out of every composed summary, because a count is a
+//! fold that a text merge writes wrong. So no emitter of this engine forms that
+//! chain now, and [`one_write_after_adding_a_document_leaves_nothing_behind`]
+//! holds that over the same fixture.
+//!
+//! [`headwater_generate::write_settled`] stays, because a future emitter can
+//! print what another one composes. The cases below hold it over a chain built
+//! by hand: one output lists the decisions, and a second output copies the
+//! first one as it stands on disk.
 //!
 //! # The instrument before the measurement
 //!
-//! [`one_plan_written_once_leaves_the_index_behind`] runs a single
-//! [`headwater_generate::write`] over the same tree, and it must leave a
-//! difference. Without it, a fixture that stopped reaching the chain would make
+//! [`one_plan_written_once_leaves_the_copy_behind`] runs a single
+//! [`headwater_generate::write`] over the hand-built chain, and it must leave a
+//! difference. Without it, a chain that stopped reaching two passes would make
 //! the case below pass for the wrong reason.
 //!
 //! # Watched failing
@@ -24,7 +33,7 @@
 //! With `write_settled` reduced to one pass,
 //! [`one_call_after_adding_a_document_leaves_a_tree_the_check_accepts`] failed
 //! on `chained/registers/README.md`, committed with the count 2 where the
-//! register says 3.
+//! register said 3. That was the emitter chain before #1058.
 
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
@@ -44,8 +53,6 @@ use std::path::{Path, PathBuf};
 
 /// The output that prints a summary another output composes.
 const INDEX: &str = "chained/registers/README.md";
-/// The output whose summary carries the count.
-const REGISTER: &str = "chained/registers/open.md";
 
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
@@ -128,7 +135,7 @@ fn settle(root: &Path) -> Report {
     }
 }
 
-/// A third decision, which moves the count the register composes.
+/// A third decision, which moves what the shelf lists.
 fn add_a_decision(root: &Path) {
     std::fs::write(
         root.join("chained/decisions/0003-decision-3.md"),
@@ -152,49 +159,138 @@ fn read(root: &Path, path: &str) -> String {
     std::fs::read_to_string(root.join(path)).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
-/// The instrument. One plan, written once, over a settled tree with a decision
-/// added, leaves the index behind the register it lists. If this stops
-/// failing the check, the fixture no longer reaches the chain of #842.
+/// The emitter chain of #842 is gone. The index lists the register, and the
+/// register's summary names its shelf and counts nothing, so one write over an
+/// added decision leaves nothing behind. If this starts to fail, an emitter
+/// prints a value that another one composes from the shelf again.
 #[test]
-fn one_plan_written_once_leaves_the_index_behind() {
-    let root = scratch("instrument");
+fn one_write_after_adding_a_document_leaves_nothing_behind() {
+    let root = scratch("one-write");
     let settled = settle(&root);
     assert_eq!(settled.unsettled, None, "the fixture tree did not settle");
-    assert!(
-        drifted(&root).is_empty(),
-        "the fixture tree is not settled before the case begins: {:?}",
-        drifted(&root)
-    );
 
     add_a_decision(&root);
     let once = write(&root, &planned(&root));
     assert!(!once.has_errors(), "one write failed: {:?}", once.wrote);
-
-    let behind = drifted(&root);
+    let left = drifted(&root);
     assert!(
-        behind.iter().any(|(path, _)| path == INDEX),
-        "one write over the added decision left `{INDEX}` current, so this fixture no longer \
-         reaches the chain it exists for and the case beside it proves nothing. The check \
-         reported: {behind:?}"
+        left.is_empty(),
+        "one write over the added decision left {left:?} behind, so an emitter reads what \
+         another one writes in the same run. The index reads:\n{}",
+        read(&root, INDEX)
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// The output of the hand-built chain that lists the decisions. Both outputs
+/// sit outside the corpus root, so neither is a document the emitters read.
+const LIST: &str = "hand-built/list.md";
+/// The output of the hand-built chain that copies [`LIST`] from disk.
+const COPY: &str = "hand-built/copy.md";
+
+fn marked(path: &str, body: &str) -> String {
+    format!(
+        "{}\n\n{body}\n",
+        headwater_mark::marker(Kind::ShelfIndex.name(), path).expect("Markdown carries a marker")
+    )
+}
+
+/// A plan whose second output reads the first one off disk, which is the shape
+/// of #842 without an emitter that forms it.
+fn chain(root: &Path) -> Plan {
+    let mut names: Vec<String> = std::fs::read_dir(root.join("chained/decisions"))
+        .expect("the decisions read")
+        .map(|entry| {
+            entry
+                .expect("an entry reads")
+                .file_name()
+                .to_string_lossy()
+                .into_owned()
+        })
+        .collect();
+    names.sort();
+    let list = marked(LIST, &names.join("\n"));
+    let copied = std::fs::read_to_string(root.join(LIST)).unwrap_or_default();
+    let copy = marked(COPY, &copied.replace("<!--", "(").replace("-->", ")"));
+    Plan {
+        outputs: vec![
+            Output {
+                path: LIST.to_string(),
+                kind: Kind::ShelfIndex,
+                bytes: list,
+            },
+            Output {
+                path: COPY.to_string(),
+                kind: Kind::ShelfIndex,
+                bytes: copy,
+            },
+        ],
+        ..Plan::default()
+    }
+}
+
+fn chain_drifted(root: &Path) -> Vec<(String, Verdict)> {
+    check(root, &chain(root))
+        .wrote
+        .into_iter()
+        .filter(|wrote| wrote.verdict != Verdict::Unchanged)
+        .map(|wrote| (wrote.path, wrote.verdict))
+        .collect()
+}
+
+fn settle_chain(root: &Path) -> Report {
+    match write_settled(root, || Ok::<_, Infallible>(chain(root))) {
+        Ok(report) => report,
+        Err(never) => match never {},
+    }
+}
+
+/// The instrument. One plan, written once, over a settled chain with a decision
+/// added, leaves the copy behind the list it copies. If this stops failing the
+/// check, the chain no longer needs two passes and the case beside it proves
+/// nothing.
+#[test]
+fn one_plan_written_once_leaves_the_copy_behind() {
+    let root = scratch("instrument");
+    let settled = settle_chain(&root);
+    assert_eq!(settled.unsettled, None, "the chain did not settle");
+    assert!(
+        chain_drifted(&root).is_empty(),
+        "the chain is not settled before the case begins: {:?}",
+        chain_drifted(&root)
+    );
+
+    add_a_decision(&root);
+    let once = write(&root, &chain(&root));
+    assert!(!once.has_errors(), "one write failed: {:?}", once.wrote);
+
+    let behind = chain_drifted(&root);
+    assert!(
+        behind.iter().any(|(path, _)| path == COPY),
+        "one write over the added decision left `{COPY}` current, so this chain no longer \
+         needs a second pass and the case beside it proves nothing. The check reported: \
+         {behind:?}"
     );
     let _ = std::fs::remove_dir_all(&root);
 }
 
 /// The decisive case. One call after adding a document leaves a tree that a
-/// check accepts, and the index prints the count the register now composes.
+/// check accepts, over the emitters and over the hand-built chain.
 #[test]
 fn one_call_after_adding_a_document_leaves_a_tree_the_check_accepts() {
     let root = scratch("settled");
     settle(&root);
+    settle_chain(&root);
     add_a_decision(&root);
 
-    let report = settle(&root);
-    assert_eq!(
-        report.unsettled, None,
-        "the run did not settle: {:?}",
-        report.wrote
-    );
-    assert!(report.remedy().is_none(), "{:?}", report.remedy());
+    for report in [settle(&root), settle_chain(&root)] {
+        assert_eq!(
+            report.unsettled, None,
+            "the run did not settle: {:?}",
+            report.wrote
+        );
+        assert!(report.remedy().is_none(), "{:?}", report.remedy());
+    }
 
     let left = drifted(&root);
     assert!(
@@ -203,26 +299,35 @@ fn one_call_after_adding_a_document_leaves_a_tree_the_check_accepts() {
          reads:\n{}",
         read(&root, INDEX)
     );
+    let left = chain_drifted(&root);
     assert!(
-        read(&root, REGISTER).contains("each of the 3 documents"),
-        "the register does not count the added decision:\n{}",
-        read(&root, REGISTER)
+        left.is_empty(),
+        "one `write_settled` left the chain behind: {left:?}. The copy reads:\n{}",
+        read(&root, COPY)
     );
     assert!(
-        read(&root, INDEX).contains("each of the 3 documents"),
-        "the index prints a count the register no longer composes:\n{}",
-        read(&root, INDEX)
+        read(&root, COPY).contains("0003-decision-3.md"),
+        "the copy does not carry the added decision:\n{}",
+        read(&root, COPY)
     );
+    let _ = std::fs::remove_dir_all(&root);
+}
 
-    // Each path once, with what the first pass that changed it did. The index
-    // changed on both passes, and its line says so once.
+/// Each path once in a report, with what the first pass that changed it did.
+/// The copy changed on both passes, and its line says so once.
+#[test]
+fn a_path_two_passes_changed_is_reported_once() {
+    let root = scratch("once");
+    settle_chain(&root);
+    add_a_decision(&root);
+    let report = settle_chain(&root);
     let lines: Vec<&str> = report
         .wrote
         .iter()
-        .filter(|wrote| wrote.path == INDEX)
+        .filter(|wrote| wrote.path == COPY)
         .map(|wrote| wrote.path.as_str())
         .collect();
-    assert_eq!(lines, [INDEX], "{:?}", report.wrote);
+    assert_eq!(lines, [COPY], "{:?}", report.wrote);
     let _ = std::fs::remove_dir_all(&root);
 }
 

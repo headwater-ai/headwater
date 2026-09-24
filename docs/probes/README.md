@@ -2,7 +2,7 @@
 
 # Probes
 
-8 documents on this shelf, in the reading order this corpus derives.
+The documents on this shelf, in the reading order this corpus derives.
 
 - [A cold agent reaches the governing document through the corpus descriptor](a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md) — The descriptor names one entry point for each shelf that holds a document, and this asks whether a session with no other pointer opens the one that governs the task. (asserted, and no human has accepted it)
 - [A counted tombstone separates a withheld answer from an absent answer](a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md) — A session classifies a recovery word as present, withheld, or absent from a served corpus with a counted tombstone. (asserted, and no human has accepted it)

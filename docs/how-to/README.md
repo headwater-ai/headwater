@@ -2,7 +2,7 @@
 
 # How-to guides
 
-4 documents on this shelf, in the reading order this corpus derives.
+The documents on this shelf, in the reading order this corpus derives.
 
 - [Diagnose an isolation failure](diagnose-an-isolation-failure.md) — Five questions separate a failure of your change from a failure of the checkout it ran in, and each one is one command. (asserted, and no human has accepted it)
 - [Mine the shadow-mode routing log](mine-the-shadow-mode-routing-log.md) — Join the shadow log to the session transcripts by prompt identifier, and read the deterministic route against the embedding path one prompt at a time. (asserted, and no human has accepted it)

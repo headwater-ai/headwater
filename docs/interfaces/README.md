@@ -2,7 +2,7 @@
 
 # The command surface
 
-`headwater` dispatches 24 verbs. 24 of them have a contract on this shelf, and 0 have none.
+`headwater` dispatches the verbs below, one row each.
 
 A verb with no contract carries a mark in the last column, and that cell is what this file is for. An index of the contracts that exist would say nothing about the verbs nobody has described yet.
 
