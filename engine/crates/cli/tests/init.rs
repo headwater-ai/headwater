@@ -1073,3 +1073,83 @@ fn vendor_with_expect_adds_one_line_to_a_declaration_with_no_commented_digest() 
         "the pin is the one line that moved"
     );
 }
+
+/// Every comment the adopter wrote keeps its bytes, whatever it says about a
+/// digest.
+///
+/// Only the placeholder line `init` writes is the verb's to replace. The three
+/// comments below each begin `# digest:`, and a verify run found a build that
+/// replaced the first of them it met: an audit note in the block, a note at
+/// column zero above the next key, and a note inside `bundles`, where the edit
+/// then did not parse and the verb refused a valid file.
+#[test]
+fn vendor_with_expect_keeps_every_comment_it_does_not_own() {
+    let root = Root::over("vendor-expect-comments");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+    root.init();
+    let before = format!(
+        "taxonomy:\n  package: headwater/standard\n  # digest: sha256:0000 was the old pin, \
+         keep for audit\n  version: {}\n  bundles:\n    # digest: see the release notes\n    \
+         []\n  overlay: .headwater/overlay.yml\n# digest: the upstream pin, see below\ncorpus:\n  \
+         root: docs\n",
+        maintained_version()
+    );
+    root.write(".headwater/taxonomy.yml", &before);
+
+    let (code, stderr) = root.run(
+        &["taxonomy", "vendor", "--expect", digest.as_str()],
+        Some(&artifact),
+    );
+    assert_eq!(
+        code,
+        Some(0),
+        "`vendor --expect` pins a valid file:\n{stderr}"
+    );
+    let version_line = format!("  version: {}\n", maintained_version());
+    assert_eq!(
+        root.read(".headwater/taxonomy.yml"),
+        before.replacen(
+            &version_line,
+            &format!("{version_line}  digest: {digest}\n"),
+            1
+        ),
+        "the pin is one line after `version:`, and every comment stays"
+    );
+}
+
+/// An edit that does not read back as this pin is undone, byte for byte.
+///
+/// `digest: []` declares no pin that `vendor` can read, so the run goes ahead
+/// on `--expect` and adds a second `digest` key. The read-back refuses that
+/// file, and the verb puts the original bytes back rather than leave it.
+#[test]
+fn a_pin_that_does_not_read_back_leaves_the_declaration_byte_identical() {
+    let root = Root::over("vendor-expect-restore");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+    root.init();
+    let before = root
+        .read(".headwater/taxonomy.yml")
+        .replace("  version: 0.0.0\n", "  version: 0.0.0\n  digest: []\n");
+    root.write(".headwater/taxonomy.yml", &before);
+
+    let (code, stderr) = root.run(
+        &["taxonomy", "vendor", "--expect", digest.as_str()],
+        Some(&artifact),
+    );
+    assert_eq!(
+        code,
+        Some(1),
+        "the verb refuses a pin it could not write:\n{stderr}"
+    );
+    assert!(
+        stderr.contains("restored"),
+        "the refusal says the file was put back:\n{stderr}"
+    );
+    assert_eq!(
+        root.read(".headwater/taxonomy.yml"),
+        before,
+        "the declaration is byte for byte what it was"
+    );
+}

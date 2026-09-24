@@ -1812,9 +1812,10 @@ fn vendor(root: &Path, source: &str, expect: Option<&str>) -> ExitCode {
 /// declaration, as a one-line edit of its text.
 ///
 /// The file is not re-serialized, so every comment and every key keeps its
-/// bytes. The commented `# digest:` line that `init` writes is replaced where it
-/// is there. Otherwise the line goes after `version:`, or after the last key of
-/// the block, at the indentation of its sibling keys. The file is read back
+/// bytes. The placeholder line that `init` writes is replaced where it is
+/// there, and no other comment is touched. Otherwise the line goes after the
+/// value of `version:`, or of the last key of the block, at the indentation of
+/// its sibling keys. The file is read back
 /// through the parser every verb reads it with, and a result that does not
 /// declare this digest puts the original bytes back and refuses.
 fn record_pin(root: &Path, digest: &str) -> Result<(), String> {
@@ -1832,6 +1833,12 @@ fn record_pin(root: &Path, digest: &str) -> Result<(), String> {
     std::fs::write(&path, &original).map_err(|error| error.to_string())?;
     Err("the edited file did not read back with this digest, so it was restored".to_string())
 }
+
+/// The commented line `init` writes where the vendor route puts its pin, less
+/// its indentation. `init.rs` holds the declaration byte for byte, and
+/// `vendor_with_expect_writes_the_pin_the_next_run_reads` fails where the two
+/// drift, because the placeholder would then survive beside the pin.
+const INIT_DIGEST_PLACEHOLDER: &str = "# digest: sha256:<the digest the publisher printed>";
 
 /// The declaration text with one `digest:` line in its `taxonomy:` block, or
 /// `None` where that block is not a block of keys on their own lines.
@@ -1862,16 +1869,33 @@ fn with_pin(text: &str, digest: &str) -> Option<String> {
     let pin = format!("{indent}digest: {digest}\n");
 
     let mut out: Vec<String> = lines.iter().map(|line| (*line).to_string()).collect();
-    let commented = block
-        .iter()
-        .position(|line| line.trim_start().starts_with("# digest:"));
-    if let Some(offset) = commented {
+    // Only the placeholder `init` wrote, at the indentation of the sibling
+    // keys, is this verb's to replace. Any other comment is the adopter's, and
+    // it keeps its bytes whatever it says.
+    let placeholder = block.iter().position(|line| {
+        line.strip_prefix(indent)
+            .is_some_and(|rest| rest.trim_end() == INIT_DIGEST_PLACEHOLDER)
+    });
+    if let Some(offset) = placeholder {
         out[start + 1 + offset] = pin;
     } else {
-        let after = block
+        let key = block
             .iter()
-            .position(|line| is_key(line) && line.trim_start().starts_with("version:"))
+            .position(|line| is_key(line) && line[indent.len()..].starts_with("version:"))
             .or_else(|| block.iter().rposition(|line| is_key(line)))?;
+        // Past every line that continues the value of that key, so the pin
+        // never lands inside a multi-line scalar or a nested block.
+        let deeper = |line: &str| {
+            line.trim() != ""
+                && line
+                    .strip_prefix(indent)
+                    .is_some_and(|rest| rest.starts_with([' ', '\t']))
+        };
+        let after = key
+            + block[key + 1..]
+                .iter()
+                .take_while(|line| deeper(line))
+                .count();
         let at = start + 1 + after;
         if !out[at].ends_with('\n') {
             out[at].push('\n');
