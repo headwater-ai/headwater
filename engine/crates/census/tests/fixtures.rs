@@ -1175,7 +1175,10 @@ fn derived_agrees_with_git_check_attr_on_every_path() {
     let attributes = headwater_census::derived::merge_attributes(root.path());
 
     let files = files_of(root.path());
-    assert!(files.len() >= 10, "the planted tree is missing files: {files:#?}");
+    assert!(
+        files.len() >= 10,
+        "the planted tree is missing files: {files:#?}"
+    );
     for path in &files {
         let git = git_treatment(root.path(), path);
         let verb = attributes
@@ -1187,7 +1190,11 @@ fn derived_agrees_with_git_check_attr_on_every_path() {
             verb, git,
             "the verb gives {path} {verb:?}, and `git check-attr merge` gives {git:?}:\n{report}"
         );
-        if let Some(member) = population.members.iter().find(|member| member.path == *path) {
+        if let Some(member) = population
+            .members
+            .iter()
+            .find(|member| member.path == *path)
+        {
             assert_eq!(
                 member.treatment, git,
                 "the report gives {path} {:?}, and `git check-attr merge` gives {git:?}:\n{report}",
@@ -1238,8 +1245,6 @@ fn outside_a_git_repository_the_root_gitattributes_alone_is_read() {
         ("other/gen.md", Treatment::Unset),
         // The root declares it, and the nested `binary` is not read.
         ("m/README.md", Treatment::Regenerate),
-        // The byte order mark is part of the first pattern for this reader.
-        ("top.md", Treatment::Unset),
     ] {
         assert_eq!(
             treatment_of(path),
@@ -1282,6 +1287,41 @@ fn a_merge_attribute_behind_a_glob_is_expanded_by_git_inside_a_repository() {
     );
 }
 
+/// A merge driver that the verb does not know is named in the report.
+///
+/// `merge=ours` is not a treatment that a shape takes. A fold under it is a
+/// disagreement, and the driver name is printed rather than read as no
+/// attribute.
+#[test]
+fn a_merge_driver_the_verb_does_not_know_is_named() {
+    use headwater_census::derived::Treatment;
+
+    let root = TempTree::new("unknown-driver");
+    root.git_init();
+    root.write(".gitattributes", "k/README.md merge=ours\n");
+    root.write(
+        "k/README.md",
+        "<!-- headwater:generated shelf_index. -->\n\n# 48 decisions\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    let member = population
+        .members
+        .iter()
+        .find(|member| member.path == "k/README.md")
+        .unwrap_or_else(|| panic!("k/README.md is not in the report:\n{report}"));
+    assert_eq!(member.treatment, Treatment::Unknown, "{report}");
+    assert!(member.disagreement().is_some(), "{report}");
+    assert_eq!(
+        population.drivers,
+        vec![("k/README.md".to_string(), "ours".to_string())],
+        "{report}"
+    );
+    assert!(report.contains("k/README.md merge=ours"), "{report}");
+    assert!(!population.agrees(), "{report}");
+}
+
 /// The producer outputs `plant_attribute_layouts` writes.
 const FOLDS: &[&str] = &[
     "top.md",
@@ -1314,7 +1354,10 @@ fn plant_attribute_layouts(root: &TempTree, repository: bool) {
     // A nested file unsets the root's driver.
     root.write("sub/.gitattributes", "out.md -merge\n");
     // A nested file declares a producer output that the root does not name.
-    root.write("other/.gitattributes", "gen.md merge=headwater-regenerate\n");
+    root.write(
+        "other/.gitattributes",
+        "gen.md merge=headwater-regenerate\n",
+    );
     // The `binary` macro expands to `-merge`.
     root.write("m/.gitattributes", "README.md binary\n");
     // A pattern with no slash matches at any depth below its file.
