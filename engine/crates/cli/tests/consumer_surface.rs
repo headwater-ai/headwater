@@ -295,8 +295,11 @@ fn the_surface_block_generates_a_page_that_goes_stale_with_it() {
     );
 
     // (a) A hand edit to the page.
-    std::fs::write(root.at.join(PAGE), format!("{page}\nA line somebody typed.\n"))
-        .expect("the page writes");
+    std::fs::write(
+        root.at.join(PAGE),
+        format!("{page}\nA line somebody typed.\n"),
+    )
+    .expect("the page writes");
     let edited = root.run(&["generate", "--check"]);
     assert_ne!(
         edited.0,
@@ -322,5 +325,8 @@ fn the_surface_block_generates_a_page_that_goes_stale_with_it() {
     );
     root.run(&["generate"]);
     let again = std::fs::read_to_string(root.at.join(PAGE)).expect("the page reads");
-    assert!(again.contains("`unzip`"), "the page follows the block\n{again}");
+    assert!(
+        again.contains("`unzip`"),
+        "the page follows the block\n{again}"
+    );
 }

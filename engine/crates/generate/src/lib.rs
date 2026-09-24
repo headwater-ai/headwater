@@ -936,11 +936,9 @@ pub fn plan(
                 probe_result::emit(surface, census, declaration, runs, identity, &mut plan);
             }
             Kind::VerbIndex => verb_index::emit(surface, declaration, verbs, &mut plan),
-            Kind::ConsumerSurface => consumer_surface::emit(
-                projections.surface.as_ref(),
-                declaration,
-                &mut plan,
-            ),
+            Kind::ConsumerSurface => {
+                consumer_surface::emit(projections.surface.as_ref(), declaration, &mut plan)
+            }
             Kind::SiteNav => navs.push(declaration),
             // Only a declarable kind with no emitter arm above reaches here,
             // and `unbuilt` answers `Some` for every one of those. A `None`
@@ -972,7 +970,12 @@ pub fn plan(
         let pages: Vec<(String, &str)> = plan
             .outputs
             .iter()
-            .filter_map(|output| output.kind.page_label().map(|label| (output.path.clone(), label)))
+            .filter_map(|output| {
+                output
+                    .kind
+                    .page_label()
+                    .map(|label| (output.path.clone(), label))
+            })
             .collect();
         site_nav::emit(
             surface,
