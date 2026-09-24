@@ -42,6 +42,7 @@
 //! the condition; this end holds both and reads it.
 
 use headwater_census::census::Census;
+use headwater_check::paint::{paint, ColorMode, Role};
 use headwater_resolve::migration::{declares, Payload, Step, Subject};
 use headwater_resolve::{Adopted, Resolution};
 use std::collections::BTreeSet;
@@ -189,11 +190,16 @@ impl Accounting {
         self.unaccounted.is_empty()
     }
 
-    pub fn render(&self) -> String {
+    /// The account a reader meets, in the palette of HW-DR-0045. No cell here
+    /// is padded, so no escape byte can shift a column.
+    pub fn render(&self, mode: ColorMode) -> String {
         let mut out = String::new();
         out.push_str(&format!(
-            "\nmigration payload  {}, from {} to {}\n",
-            self.at, self.from, self.to
+            "\n{}  {}, from {} to {}\n",
+            paint(Role::Heading, "migration payload", mode),
+            self.at,
+            self.from,
+            self.to
         ));
         out.push_str(&format!(
             "  {} step{}, {} mechanical and {} judgment-bearing\n",
@@ -206,12 +212,15 @@ impl Accounting {
             self.steps.len() - self.mechanical()
         ));
         for step in &self.steps {
-            out.push_str(&format!("\n  {}\n", step.at));
+            out.push_str(&format!("\n  {}\n", paint(Role::Path, &step.at, mode)));
             out.push_str(&format!("    {}\n", step.how));
             out.push_str(&format!("    remedies {}\n", step.remedies.join(", ")));
             out.push_str(&format!("    {}\n", step.reach()));
             if let Some(task) = &step.task {
-                out.push_str(&format!("    task  {task}\n"));
+                out.push_str(&format!(
+                    "    task  {}\n",
+                    paint(Role::Obligation, task, mode)
+                ));
             }
             out.push_str(&format!("    why   {}\n", step.because));
         }
@@ -231,7 +240,7 @@ impl Accounting {
                     self.moved
                 ));
                 for path in &self.unaccounted {
-                    out.push_str(&format!("    {path}\n"));
+                    out.push_str(&format!("    {}\n", paint(Role::Path, path, mode)));
                 }
             }
         }
@@ -261,6 +270,81 @@ impl Accounted {
             (true, true, count) => format!("{STANDS}, and {}", self.subject.reached(count)),
             (true, false, 0) => self.subject.reached_nothing().to_string(),
             (true, false, count) => self.subject.reached(count),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn accounting(unaccounted: Vec<String>) -> Accounting {
+        Accounting {
+            at: "acme/fixture@2.0.0".into(),
+            from: "1.0.0".into(),
+            to: "2.0.0".into(),
+            steps: vec![Accounted {
+                subject: Subject::Kind,
+                at: "kinds.old_thing".into(),
+                how: "rename to new_thing".into(),
+                remedies: &["rename"],
+                subjects: BTreeSet::from(["docs/a.md".to_string()]),
+                declared: true,
+                stands: false,
+                task: Some("AD-0001".into()),
+                because: "the kind was renamed".into(),
+            }],
+            moved: 1 + unaccounted.len(),
+            unaccounted,
+        }
+    }
+
+    /// The palette a migration account reaches, a substring per role under
+    /// [`ColorMode::Ansi`]. A same-package publish carries no payload, so the
+    /// pty case in `tools/engine/color-fixtures.sh` never reaches this
+    /// renderer, and this table is what holds it.
+    #[test]
+    fn each_line_reaches_the_role_the_palette_gives_it() {
+        struct Case {
+            what: &'static str,
+            contains: &'static str,
+        }
+        let cases = [
+            Case {
+                what: "the section opens on a heading, bold in the default color",
+                contains: "\n\u{1b}[1mmigration payload\u{1b}[0m  acme/fixture@2.0.0",
+            },
+            Case {
+                what: "where a step is is a path, cyan",
+                contains: "\n  \u{1b}[36mkinds.old_thing\u{1b}[0m\n",
+            },
+            Case {
+                what: "a step's task is an obligation, magenta",
+                contains: "    task  \u{1b}[35mAD-0001\u{1b}[0m\n",
+            },
+            Case {
+                what: "a document no step names is a path, cyan",
+                contains: "    \u{1b}[36mdocs/b.md\u{1b}[0m\n",
+            },
+        ];
+        let painted = accounting(vec!["docs/b.md".into()]).render(ColorMode::Ansi);
+        for case in cases {
+            assert!(
+                painted.contains(case.contains),
+                "{}: no `{}` in\n{}",
+                case.what,
+                case.contains.escape_debug(),
+                painted.escape_debug()
+            );
+        }
+    }
+
+    /// `Plain` writes not one escape byte, in either arm of the account.
+    #[test]
+    fn plain_mode_writes_no_escape_sequence() {
+        for unaccounted in [Vec::new(), vec!["docs/b.md".to_string()]] {
+            let rendered = accounting(unaccounted).render(ColorMode::Plain);
+            assert!(!rendered.contains('\u{1b}'), "{}", rendered.escape_debug());
         }
     }
 }
