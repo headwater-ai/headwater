@@ -179,7 +179,7 @@ impl Shape {
         match self {
             Shape::IndependentLines => Treatment::Union,
             Shape::RecordPerEntity => Treatment::Unset,
-            Shape::Fold => Treatment::Regenerate,
+            Shape::Fold => Treatment::Refuse,
         }
     }
 
@@ -193,7 +193,10 @@ impl Shape {
                 "two branches write two different lines, so an ordinary conflict is the correct report and no attribute is wanted"
             }
             Shape::Fold => {
-                "a fold depends on every record, so it is rewritten rather than reconciled"
+                "a fold depends on every record, so a merge keeps the current side and conflicts, \
+                 and it is rewritten rather than reconciled. A clone that ran \
+                 `headwater init --git --git-config` overrides it with `merge=headwater-regenerate` \
+                 in `info/attributes`, which also agrees"
             }
         }
     }
@@ -202,15 +205,28 @@ impl Shape {
 /// What git's attributes say about merging a path.
 ///
 /// Inside a git repository this is the answer of `git check-attr merge
-/// <path>`. `unspecified`, `unset` (`-merge` and the `binary` macro), `set`
-/// and the built-in `text` driver all read as [`Treatment::Unset`], because
-/// none of them names a driver that a shape takes.
+/// <path>`. `unset` (`-merge` and the `binary` macro) reads as
+/// [`Treatment::Refuse`], because git keeps the current side of such a path
+/// and records a conflict with no driver and no configuration. `unspecified`,
+/// `set` and the built-in `text` driver read as [`Treatment::Unset`], because
+/// each of them is a text merge.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Treatment {
     /// `merge=union`: keep the lines of both sides.
     Union,
     /// `merge=headwater-regenerate`: refuse, and name the producer to rerun.
+    ///
+    /// A fold takes it only from a clone's own `$GIT_DIR/info/attributes`,
+    /// which `headwater init --git --git-config` writes beside the driver
+    /// config. Committed, it names a driver that an unconfigured clone and a
+    /// forge do not define, and git reads an undefined driver as a text merge
+    /// ([#1058](https://github.com/headwater-ai/headwater/issues/1058)).
     Regenerate,
+    /// `-merge`: keep the current side and record a conflict, with no driver.
+    ///
+    /// What the committed `.gitattributes` declares for a fold, because git
+    /// honors it in every clone whatever its configuration.
+    Refuse,
     /// No merge attribute: git reconciles the lines like any other file.
     Unset,
     /// A merge driver this verb does not know, such as `merge=ours`.
@@ -222,11 +238,17 @@ pub enum Treatment {
 }
 
 impl Treatment {
+    /// Whether a merge of a path under this treatment stops rather than reconciles.
+    pub fn stops_a_merge(self) -> bool {
+        matches!(self, Treatment::Regenerate | Treatment::Refuse)
+    }
+
     /// How this treatment is written in `.gitattributes`, for the report.
     pub fn declaration(self) -> &'static str {
         match self {
             Treatment::Union => "merge=union",
             Treatment::Regenerate => "merge=headwater-regenerate",
+            Treatment::Refuse => "-merge",
             Treatment::Unset => "no merge attribute",
             Treatment::Unknown => "a merge driver this verb does not know",
         }
@@ -258,7 +280,7 @@ pub struct Member {
 impl Member {
     /// What the merge of this path costs, where its attribute is not its treatment.
     ///
-    /// The six disagreements are enumerated here rather than described in a
+    /// The disagreements are enumerated here rather than described in a
     /// comment, so that a shape or a treatment added later fails to compile
     /// until somebody says what its merge does. Each arm names the cost at the
     /// merge rather than restating the rule.
@@ -267,6 +289,7 @@ impl Member {
             (Shape::IndependentLines, Treatment::Union) => None,
             (Shape::RecordPerEntity, Treatment::Unset) => None,
             (Shape::Fold, Treatment::Regenerate) => None,
+            (Shape::Fold, Treatment::Refuse) => None,
 
             (Shape::IndependentLines, Treatment::Unset) => Some(
                 "two branches that each appended a reading conflict on the last line, on every parallel append",
@@ -276,6 +299,12 @@ impl Member {
             ),
             (Shape::RecordPerEntity, Treatment::Regenerate) => Some(
                 "the driver refuses the merge this record was decomposed to take, which is the whole return on decomposing it",
+            ),
+            (Shape::RecordPerEntity, Treatment::Refuse) => Some(
+                "the merge keeps one side of every record and conflicts, which refuses the merge this record was decomposed to take",
+            ),
+            (Shape::IndependentLines, Treatment::Refuse) => Some(
+                "two branches that each appended a reading conflict, and the merge keeps one side's readings and drops the other's",
             ),
             (Shape::RecordPerEntity, Treatment::Union) => Some(
                 "two record streams interleave out of the fixed order, into a file no producer writes and no reader can bless",
@@ -310,7 +339,7 @@ pub struct Output {
 pub struct Population {
     /// Every producer output, sorted, one entry per path.
     pub outputs: Vec<Output>,
-    /// Every path `.gitattributes` declares `merge=headwater-regenerate`.
+    /// Every path git's attributes declare `-merge` or `merge=headwater-regenerate`.
     pub declared: Vec<String>,
     /// A producer writes it and no attribute covers it: a merge of it is silent.
     pub undeclared: Vec<Output>,
@@ -413,7 +442,7 @@ impl Population {
             false => {
                 out.push_str(&paint(
                     Role::Error,
-                    "these are written by a producer and carry no `merge=headwater-regenerate`, \
+                    "these are written by a producer and carry neither `-merge` nor `merge=headwater-regenerate`, \
                      so two branches that move one to the same value merge it silently:",
                     mode,
                 ));
@@ -583,7 +612,7 @@ pub fn population(root: &Path) -> Population {
     } = attributes_of(root, &files);
     let declared: Vec<String> = attributes
         .iter()
-        .filter(|(_, treatment)| *treatment == Treatment::Regenerate)
+        .filter(|(_, treatment)| treatment.stops_a_merge())
         .map(|(path, _)| path.clone())
         .collect();
     let undeclared: Vec<Output> = outputs
@@ -591,8 +620,13 @@ pub fn population(root: &Path) -> Population {
         .filter(|output| !declared.contains(&output.path))
         .cloned()
         .collect();
-    let unproduced: Vec<String> = declared
+    // Only the driver is held in this direction. `-merge` is also git's word
+    // for a binary file, and `*.png binary` on hand-made images is no claim
+    // that a producer writes them.
+    let unproduced: Vec<String> = attributes
         .iter()
+        .filter(|(_, treatment)| *treatment == Treatment::Regenerate)
+        .map(|(path, _)| path)
         .filter(|path| !outputs.iter().any(|output| output.path == **path))
         .cloned()
         .collect();
@@ -761,16 +795,36 @@ fn in_a_fixture_tree(path: &str) -> bool {
     path.split('/').any(|component| component == "fixtures")
 }
 
-/// Every path that git's attributes declare `merge=headwater-regenerate`.
+/// Every path that git's attributes declare `-merge` or `merge=headwater-regenerate`.
 ///
 /// Read through [`merge_attributes`], so `headwater init --git` sees a
 /// declaration in a nested `.gitattributes` and does not append a second one.
 pub fn declared_paths(root: &Path) -> Vec<String> {
     merge_attributes(root)
         .into_iter()
-        .filter(|(_, treatment)| *treatment == Treatment::Regenerate)
+        .filter(|(_, treatment)| treatment.stops_a_merge())
         .map(|(path, _)| path)
         .collect()
+}
+
+/// Each literal path of the root `.gitattributes` and the last merge attribute it sets there.
+///
+/// This is the committed half of a declaration, read by hand, so that
+/// `headwater init --git` can tell a committed `-merge` from the driver that a
+/// clone's own `info/attributes` supplies. Git answers with the override, which
+/// wins, so its answer alone cannot say what the committed file holds. A later
+/// line for one path wins over an earlier one, as it does in git.
+pub fn root_declarations(root: &Path) -> Vec<(String, Treatment)> {
+    let mut found: Vec<(String, Treatment)> = Vec::new();
+    for (pattern, treatment) in declarations(root) {
+        if is_a_pattern(&pattern) {
+            continue;
+        }
+        let path = pattern.trim_start_matches('/').to_string();
+        found.retain(|(seen, _)| *seen != path);
+        found.push((path, treatment));
+    }
+    found
 }
 
 /// Every path of the tree that carries a merge attribute, and which one.
@@ -865,7 +919,8 @@ fn attributes_from(
     let mut drivers = Vec::new();
     for (path, value) in answers {
         let treatment = match value.as_str() {
-            "unspecified" | "unset" | "set" | "text" | "binary" => continue,
+            "unspecified" | "set" | "text" => continue,
+            "unset" | "binary" => Treatment::Refuse,
             "union" => Treatment::Union,
             "headwater-regenerate" => Treatment::Regenerate,
             _ => {
@@ -957,6 +1012,7 @@ fn declarations(root: &Path) -> Vec<(String, Treatment)> {
             let treatment = fields.find_map(|field| match field {
                 "merge=union" => Some(Treatment::Union),
                 "merge=headwater-regenerate" => Some(Treatment::Regenerate),
+                "-merge" | "binary" => Some(Treatment::Refuse),
                 _ => None,
             })?;
             Some((pattern.to_string(), treatment))
@@ -1081,7 +1137,7 @@ mod tests {
         assert!(rendered.starts_with("2 derived artifacts, computed from 4 producers\n"));
         assert!(rendered.contains("  headwater generate — carries the generated-file marker"));
         assert!(rendered.contains("    docs/spec/06-engine-architecture.md\n"));
-        assert!(rendered.contains("these are written by a producer and carry no"));
+        assert!(rendered.contains("these are written by a producer and carry neither"));
         assert!(rendered.contains("these declare `merge=headwater-regenerate` and no producer"));
         assert!(rendered.contains("    docs/handbook.md\n"));
     }
@@ -1104,7 +1160,7 @@ mod tests {
             ("unproduced path", "\x1b[36mdocs/handbook.md\x1b[0m"),
             (
                 "undeclared refusal",
-                "\x1b[1;31mthese are written by a producer and carry no",
+                "\x1b[1;31mthese are written by a producer and carry neither",
             ),
             (
                 "unproduced refusal",

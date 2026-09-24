@@ -125,12 +125,12 @@
 # whose content depends on the corpus only through an aggregate can be written
 # alike by two branches, and any path that names the document cannot.
 
-.headwater/corpus.json merge=headwater-regenerate
-.headwater/export.json merge=headwater-regenerate
-.headwater/nav.yml merge=headwater-regenerate
-.headwater/taxonomy.lock merge=headwater-regenerate
-engine/crates/check/fixtures/corpus.checks merge=headwater-regenerate
-engine/crates/lock/fixtures/corpus.lock merge=headwater-regenerate
+.headwater/corpus.json -merge
+.headwater/export.json -merge
+.headwater/nav.yml -merge
+.headwater/taxonomy.lock -merge
+engine/crates/check/fixtures/corpus.checks -merge
+engine/crates/lock/fixtures/corpus.lock -merge
 
 # The generated documents. None of them stores a count since #1058, so a text
 # merge no longer writes a number true of neither branch. Each one still lists
@@ -148,28 +148,28 @@ engine/crates/lock/fixtures/corpus.lock merge=headwater-regenerate
 # worse failure than the one this list prevents. A list goes stale instead, so
 # `the_generated_documents_are_declared_unmergeable` in the census crate holds
 # every row the census calls generated against this block.
-docs/acceptance-criteria/README.md merge=headwater-regenerate
-docs/decisions/README.md merge=headwater-regenerate
-docs/evaluations/README.md merge=headwater-regenerate
-docs/how-to/README.md merge=headwater-regenerate
-docs/interfaces/README.md merge=headwater-regenerate
-docs/interfaces/consumer-surface.md merge=headwater-regenerate
-docs/obligations/README.md merge=headwater-regenerate
-docs/probes/README.md merge=headwater-regenerate
-docs/process/decisions/README.md merge=headwater-regenerate
-docs/requirements/README.md merge=headwater-regenerate
-docs/reviews/README.md merge=headwater-regenerate
-docs/spec/09-open-questions.md merge=headwater-regenerate
-docs/spec/README.md merge=headwater-regenerate
-docs/tutorials/README.md merge=headwater-regenerate
-docs/verifications/README.md merge=headwater-regenerate
-docs/probe-results/README.md merge=headwater-regenerate
-docs/probe-runs/README.md merge=headwater-regenerate
-docs/probe-results/regression-probe-transcript-for-2026-09-09.md merge=headwater-regenerate
-docs/probe-results/regression-probe-transcript-for-2026-09-11.md merge=headwater-regenerate
-docs/probe-results/regression-probe-transcript-for-2026-09-16.md merge=headwater-regenerate
-docs/probe-results/regression-probe-transcript-for-2026-09-17.md merge=headwater-regenerate
-docs/probe-results/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md merge=headwater-regenerate
+docs/acceptance-criteria/README.md -merge
+docs/decisions/README.md -merge
+docs/evaluations/README.md -merge
+docs/how-to/README.md -merge
+docs/interfaces/README.md -merge
+docs/interfaces/consumer-surface.md -merge
+docs/obligations/README.md -merge
+docs/probes/README.md -merge
+docs/process/decisions/README.md -merge
+docs/requirements/README.md -merge
+docs/reviews/README.md -merge
+docs/spec/09-open-questions.md -merge
+docs/spec/README.md -merge
+docs/tutorials/README.md -merge
+docs/verifications/README.md -merge
+docs/probe-results/README.md -merge
+docs/probe-runs/README.md -merge
+docs/probe-results/regression-probe-transcript-for-2026-09-09.md -merge
+docs/probe-results/regression-probe-transcript-for-2026-09-11.md -merge
+docs/probe-results/regression-probe-transcript-for-2026-09-16.md -merge
+docs/probe-results/regression-probe-transcript-for-2026-09-17.md -merge
+docs/probe-results/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md -merge
 
 # The hand-built pages that carry a measured figure. `tools/site/refresh-figures.sh`
 # substitutes 34 measured keys into every element marked `data-figure` on every
@@ -213,9 +213,9 @@ docs/probe-results/regression-probe-transcript-for-2026-09-17-after-the-probe-co
 # refreshed the tokens wrote the same bytes and used to merge, and now they stop
 # and ask. The remedy the driver names rewrites the figures and leaves the token
 # block untouched, so the resolution is one command either way.
-site/how-it-works/index.html merge=headwater-regenerate
-site/index.html merge=headwater-regenerate
-site/proof/index.html merge=headwater-regenerate
+site/how-it-works/index.html -merge
+site/index.html -merge
+site/proof/index.html -merge
 
 # Vendor snapshots retain upstream bytes, including whitespace that this
 # repository does not own. Their fixture README pins their source revisions.

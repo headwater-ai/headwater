@@ -175,7 +175,7 @@ fn the_generated_documents_are_declared_unmergeable() {
         std::fs::read_to_string(root.join(".gitattributes")).expect("the attributes file");
     let declared: Vec<&str> = attributes
         .lines()
-        .filter(|line| line.contains("merge=headwater-regenerate"))
+        .filter(|line| !line.starts_with('#') && line.split_whitespace().nth(1) == Some("-merge"))
         .filter_map(|line| line.split_whitespace().next())
         .collect();
     assert!(
@@ -275,7 +275,7 @@ fn every_page_carrying_a_figure_is_declared_unmergeable() {
         std::fs::read_to_string(root.join(".gitattributes")).expect("the attributes file");
     let declared: Vec<&str> = attributes
         .lines()
-        .filter(|line| line.contains("merge=headwater-regenerate"))
+        .filter(|line| !line.starts_with('#') && line.split_whitespace().nth(1) == Some("-merge"))
         .filter_map(|line| line.split_whitespace().next())
         .collect();
     assert!(
