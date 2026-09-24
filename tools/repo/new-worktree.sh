@@ -11,9 +11,22 @@
 #
 #     sh tools/repo/new-worktree.sh <path> -b <branch> <start-point>
 #     sh tools/repo/new-worktree.sh <path> <existing-branch>
+#     sh tools/repo/new-worktree.sh --name <name> <git-worktree-add-args>
 #
 # Everything after <path> passes straight to `git worktree add`, so either
-# shape works exactly as it would typed by hand. The engine then builds
+# shape works exactly as it would typed by hand. `--name <name>` stands for
+# the path `<main>/.claude/worktrees/<name>`, so a caller never computes a
+# root of its own.
+#
+# The main checkout, and why it is not `--show-toplevel` (#848): an agent
+# whose session inherited a linked worktree asked `git rev-parse
+# --show-toplevel` for its root, got that linked tree, and built its new tree
+# nested inside it, so builds took over each other's worktrees. The main
+# checkout is the parent of `--git-common-dir`, the same derivation
+# `tools/repo/retire-worktree.sh` and `tools/run/run-dir.sh` use, and fetch
+# and add run there. A <path> inside any linked worktree is refused, and the
+# refusal names the path under the main checkout; the tool never moves a path
+# silently. A relative <path> is read against the caller's directory. The engine then builds
 # inside the new tree, through its own `tools/hw-cargo` and never a bare
 # `cargo`, at --profile dev-release and never --release. HW_CARGO_SLOT, if
 # already set in the environment, passes through untouched, so a caller with
@@ -44,14 +57,60 @@ usage() {
     exit 2
 }
 
-[ $# -ge 2 ] || usage
-path=$1
-shift
+name=
+if [ "${1:-}" = --name ]; then
+    [ $# -ge 3 ] || usage
+    case $2 in
+        '' | */*) echo "new-worktree: --name takes a bare name, not a path: '$2'." >&2; exit 2 ;;
+    esac
+    name=$2
+    shift 2
+else
+    [ $# -ge 2 ] || usage
+    path=$1
+    shift
+fi
 
-root=$(git rev-parse --show-toplevel)
+main=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+main=$(cd "$main" && pwd -P)
+[ -z "$name" ] || path="$main/.claude/worktrees/$name"
 
-git -C "$root" fetch origin
-git -C "$root" worktree add "$path" "$@"
+# The absolute, symlink-free form of <path>: the deepest part that exists,
+# resolved by `pwd -P`, then the rest appended. The path does not exist yet.
+case $path in
+    /*) abs=$path ;;
+    *) abs="$(pwd)/$path" ;;
+esac
+head=$abs
+tail=
+while [ ! -d "$head" ]; do
+    tail="/$(basename "$head")$tail"
+    head=$(dirname "$head")
+done
+abs="$(cd "$head" && pwd -P)$tail"
+
+trees=$(git -C "$main" worktree list --porcelain | sed -n 's/^worktree //p')
+set -f
+old_ifs=$IFS
+IFS='
+'
+for tree in $trees; do
+    [ "$tree" = "$main" ] && continue
+    case "$abs/" in
+        "$tree"/*)
+            echo "new-worktree: $abs is inside the linked worktree $tree." >&2
+            echo "  A root from \`git rev-parse --show-toplevel\` there answers that tree, not the main checkout." >&2
+            echo "  Use $main/.claude/worktrees/$(basename "$abs"), or --name $(basename "$abs")." >&2
+            exit 1
+            ;;
+    esac
+done
+IFS=$old_ifs
+set +f
+path=$abs
+
+git -C "$main" fetch origin
+git -C "$main" worktree add "$path" "$@"
 
 if [ ! -f "$path/engine/Cargo.toml" ]; then
     echo "new-worktree: no engine/Cargo.toml under $path; nothing to build." >&2
