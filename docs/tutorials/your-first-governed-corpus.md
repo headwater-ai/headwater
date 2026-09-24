@@ -113,7 +113,10 @@ vendored headwater/standard 4.2.0
   31 files, all of them the pinned bytes
   digest sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
   doctrine at .headwater/packages/headwater-standard/doctrine/
+  pinned taxonomy.digest in .headwater/taxonomy.yml
 ```
+
+The last line says that `vendor` wrote the digest you passed into `.headwater/taxonomy.yml`, in place of the commented `# digest:` line that step 2 wrote. It writes it only after the files match it, and only where the file pins no digest yet.
 
 The two paths in that account are two different trees. `packages/headwater-standard` is where the package sits inside the release tag the script fetched, and a tag's tree never moves. `.headwater/packages/headwater-standard` is where `vendor` installed it in yours ([HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)).
 
@@ -135,7 +138,7 @@ Step 2 named two routes, and this step took the second. `headwater taxonomy vend
 
 `taxonomy/headwater-standard/v<version>` is the taxonomy-only route. It publishes `headwater/standard` alone, with no engine release. A release workflow of this repository cuts a tag of this form whenever the package authors choose to. It needs no new engine version.
 
-A second route pins a fixed version of the engine and of this package. The README's *Obtaining a named version* section names both. Step 5 pins the version this pulled, `4.2.0`, and the digest this block already printed. Step 16 reads back what the second pin buys.
+A second route pins a fixed version of the engine and of this package. The README's *Obtaining a named version* section names both. This step already pinned the digest, and step 5 pins the version this pulled, `4.2.0`. Step 16 reads back what the second pin buys.
 
 ### Step 4 — Meet the first refusal
 
@@ -152,9 +155,9 @@ headwater: the taxonomy did not resolve, so no lock is possible
 
 A refusal here is the design and not a fault. A **lock** is a validated taxonomy, so a taxonomy that does not validate produces no lock at all. `headwater init` wrote `version: 0.0.0`, because it had no package in front of it to read a number from.
 
-### Step 5 — Pin the version and the digest, and meet the second refusal
+### Step 5 — Pin the version, and meet the second refusal
 
-Open `.headwater/taxonomy.yml`. Change `  version: 0.0.0` to `  version: 4.2.0`, and change `  # digest: sha256:<the digest the publisher printed>` to the digest step 3 printed: `  digest: sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5`.
+Open `.headwater/taxonomy.yml`. Change `  version: 0.0.0` to `  version: 4.2.0`. The `digest` line above it is the one step 3 wrote.
 
 **Check.** `grep -E 'digest:|version:' .headwater/taxonomy.yml` prints two lines:
 
@@ -176,7 +179,7 @@ headwater: the taxonomy does not validate, so no lock is written. A lock is a va
 
 **Check.** `echo $?` prints `1`.
 
-The message names the second thing a package cannot know. A package that shipped a namespace would give every adopter the same one, so it ships none and refuses until you supply yours. The digest plays no part in this refusal. `headwater taxonomy resolve` reads the version and never the digest, so pinning it here changes nothing about what you see next. It matters starting at step 16.
+The message names the second thing a package cannot know. A package that shipped a namespace would give every adopter the same one, so it ships none and refuses until you supply yours. The digest plays no part in this refusal. `headwater taxonomy resolve` reads the version and never the digest, so the pin that step 3 wrote changes nothing about what you see next. It matters starting at step 16.
 
 ### Step 6 — Answer the question in the overlay
 
@@ -517,7 +520,7 @@ L1 reached, against headwater/standard 4.2.0
 
 **Check.** The last line of the levels block reads `L1 reached, against headwater/standard 4.2.0`.
 
-Your corpus already stands on the first two rungs, which a package copied by hand never reaches. `pin.current` is what carried you there. It reads the digest step 5 pinned against the record `.headwater/packages/headwater-standard/release.yml` carries, and step 3 already gave you both. A package you copy from a source directory has no digest to pin, because nobody has published it. That route never reaches this rung: it stays off the ladder for the whole life of a corpus built that way. One gap is left, and it closes with a command:
+Your corpus already stands on the first two rungs, which a package copied by hand never reaches. `pin.current` is what carried you there. It reads the digest step 3 pinned against the record `.headwater/packages/headwater-standard/release.yml` carries, and step 3 already gave you both. A package you copy from a source directory has no digest to pin, because nobody has published it. That route never reaches this rung: it stays off the ladder for the whole life of a corpus built that way. One gap is left, and it closes with a command:
 
 ```sh
 headwater generate

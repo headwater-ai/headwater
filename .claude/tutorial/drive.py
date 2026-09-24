@@ -355,11 +355,12 @@ def main():
                 ('the vendor route', '`headwater taxonomy vendor <dir-or-location>`'),
                 ('where the version comes from',
                  'the version that package declares'),
-                ('the field the vendor route needs first', '# digest:')]:
+                ('the field the vendor route needs first, which step 3 filled', '  digest: sha256:')]:
             assert_true('step 4: what init wrote names ' + claim, token in declaration)
 
-        # Step 5. The tutorial names the two lines to change rather than a
-        # command, so this makes the edit the reader would make by hand.
+        # Step 5. The tutorial names the line to change rather than a command,
+        # so this makes the edit the reader would make by hand. The digest line
+        # is the one `vendor --expect` wrote at step 3 (#1063).
         #
         # The new lines are read out of block 10, which is the output the page
         # says `grep -E 'digest:|version:' .headwater/taxonomy.yml` prints after
@@ -370,18 +371,17 @@ def main():
         # tutorial that was right.
         path = os.path.join(cwd['at'], '.headwater/taxonomy.yml')
         source = open(path).read()
-        assert_true('step 5: the lines the tutorial names are in the file',
-                    '  # digest: sha256:<the digest the publisher printed>' in source
-                    and '  version: 0.0.0' in source)
+        assert_true('step 5: the line the tutorial names is in the file',
+                    '  version: 0.0.0' in source)
         lines = blocks[10].strip('\n').split('\n')
         assert_true('step 5: the page states the digest and the version to pin',
                     len(lines) == 2
                     and lines[0].startswith('  digest: sha256:')
                     and lines[1].startswith('  version: ') and lines[1] != '  version: 0.0.0',
                     blocks[10])
-        source = source.replace(
-            '  # digest: sha256:<the digest the publisher printed>\n  version: 0.0.0',
-            lines[0] + '\n' + lines[1])
+        assert_true('step 5: step 3 wrote the digest the page states',
+                    lines[0] + '\n  version: 0.0.0' in source, source)
+        source = source.replace('  version: 0.0.0', lines[1])
         open(path, 'w').write(source)
         whole("step 5: grep -E 'digest:|version:'",
               run("grep -E 'digest:|version:' .headwater/taxonomy.yml").stdout, 10)
@@ -474,7 +474,7 @@ def main():
         # Step 15.
         whole('step 15: route', run(used(40).strip()).stdout, 41)
 
-        # Step 16. Pinning the digest in step 5 already carried this corpus onto
+        # Step 16. Pinning the digest in step 3 already carried this corpus onto
         # `L0` and `L1`, unlike the copy route the page used to take, so the
         # only gap left here is `projections.current`.
         result = run(used(42).strip())
