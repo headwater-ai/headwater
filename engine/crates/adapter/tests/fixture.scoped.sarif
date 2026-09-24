@@ -109,12 +109,12 @@
             {
               "id": "relation.target.suspect",
               "shortDescription": {
-                "text": "edge scope, one relation instance and both endpoints"
+                "text": "edge scope, one relation instance and both endpoints, and the injected clock"
               },
               "properties": {
                 "headwater": {
                   "scope": "edge",
-                  "version": 1,
+                  "version": 2,
                   "obligations": [
                     "OB-FIX-27"
                   ],

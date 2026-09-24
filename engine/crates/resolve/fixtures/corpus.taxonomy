@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.4.2
+version: 4.6.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -608,6 +608,10 @@ relations:
       - code_path
     cardinality: many
     created_by: hook
+    attributes:
+      verified_revision:
+        type: string
+        owner: edge
   constrains:
     family: governance
     from:
@@ -995,7 +999,7 @@ obligations:
     prevents: content.inconsistent
     severity: high
   OB-REL-6:
-    statement: "An edge an import wrote names its upstream item at the revision the edge was verified against"
+    statement: "An edge whose target a resolver states a revision for names that target at the revision the edge was verified against"
     rationale: "An upstream item moves under an edge that nobody touched, so the corpus keeps asserting a claim that was checked against a state the far end has left. The pin says the snapshot advanced and says nothing about which document now carries a stale claim, and the author who could re-verify the edge is the one person the advance never reaches"
     class: cohesion
     prevents: content.inconsistent
