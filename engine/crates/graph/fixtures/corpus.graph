@@ -1,6 +1,8 @@
 anchors
   code_path `.claude/agents/headwater-maintainer.md` via source-tree
     cited by HW-SPEC-ai-integration
+  code_path `.claude/agents/headwater-product-owner.md` via source-tree
+    cited by HW-PD-0008
   code_path `.claude/agents/hw-adjudicate.md` via source-tree
     cited by HW-SPEC-orchestration-architecture
   code_path `.claude/agents/hw-build.md` via source-tree
