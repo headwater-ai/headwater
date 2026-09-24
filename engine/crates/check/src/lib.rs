@@ -136,6 +136,7 @@ pub mod basis;
 pub mod cache;
 pub mod change;
 pub mod claim;
+pub mod command;
 pub mod context;
 pub mod coverage;
 pub mod declaration;
@@ -213,7 +214,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 35] = [
+pub const RULES: [&str; 36] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -235,6 +236,7 @@ pub const RULES: [&str; 35] = [
     language::RULE,
     retired::RULE,
     surface::RULE,
+    command::RULE,
     source_form::RULE,
     sections::RULE,
     fragment::RULE,
@@ -504,6 +506,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_exports::<surface::LocalPath>(),
         ),
         (
+            command::RULE,
+            scope::document_scope::<command::Undeclared>(),
+            scope::document_version::<command::Undeclared>(),
+            scope::document_exports::<command::Undeclared>(),
+        ),
+        (
             source_form::RULE,
             scope::document_scope::<source_form::SourceForm>(),
             scope::document_version::<source_form::SourceForm>(),
@@ -685,6 +693,7 @@ pub fn run(
     let language = language::Language::over(declared.shape);
     let retired = retired::Retired::over(declared.shape);
     let surface = surface::LocalPath::over(declared.shape);
+    let commands = command::Undeclared::over(declared.shape);
     let source_form = source_form::SourceForm::over(declared.shape);
     let sections = sections::Sections::over(declared.shape);
     // Whether a fragment names a heading of the document it points at, whether
@@ -842,6 +851,7 @@ pub fn run(
     instances.extend(scope::over_documents(&language, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&retired, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&surface, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(&commands, census, graph, ctx, cache));
     instances.extend(scope::over_documents(
         &source_form,
         census,

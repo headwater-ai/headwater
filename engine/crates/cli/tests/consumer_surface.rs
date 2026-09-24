@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! `surface.local_path.instructed`, held against the manifest it reads.
+//! `surface.local_path.instructed` and `surface.command.undeclared`, held
+//! against the manifest they read.
 //!
 //! # What this target is evidence of
 //!
@@ -50,6 +51,8 @@ fn copy(from: &Path, to: &Path) {
 
 struct Root {
     at: PathBuf,
+    /// This repository's overlay, before a case adds its `override` block.
+    overlay: String,
 }
 
 impl Root {
@@ -76,20 +79,27 @@ impl Root {
             at.join(".headwater/taxonomy.yml"),
         )
         .expect("the declaration copies");
-        let mut overlay = std::fs::read_to_string(repository.join(".headwater/overlay.yml"))
+        let overlay = std::fs::read_to_string(repository.join(".headwater/overlay.yml"))
             .expect("the overlay reads");
         assert!(
             !overlay.lines().any(|line| line == "override:"),
             "the overlay grew an `override` block, so this case must merge into it"
         );
+        let root = Root { at, overlay };
+        root.override_with(adopter, "");
+        root
+    }
+
+    /// Write the overlay again with this `override` block, and resolve.
+    fn override_with(&self, adopter: &[&str], more: &str) {
+        let mut overlay = self.overlay.clone();
         overlay.push_str(&format!(
-            "\noverride:\n  surface.adopter_documents: [{}]\n",
+            "\noverride:\n  surface.adopter_documents: [{}]\n{more}",
             adopter.join(", ")
         ));
-        std::fs::write(at.join(".headwater/overlay.yml"), overlay).expect("the overlay writes");
-
-        let root = Root { at };
-        let resolved = root.run(&["taxonomy", "resolve"]);
+        std::fs::write(self.at.join(".headwater/overlay.yml"), overlay)
+            .expect("the overlay writes");
+        let resolved = self.run(&["taxonomy", "resolve"]);
         assert_eq!(
             resolved.0,
             Some(0),
@@ -97,7 +107,6 @@ impl Root {
             resolved.1,
             resolved.2
         );
-        root
     }
 
     fn contract(&self, slug: &str, body: &str) {
@@ -149,20 +158,27 @@ impl Root {
     /// The message of each finding of this rule on one document that no escape
     /// hides, read from the JSON report, which prints one member per line.
     fn findings(&self, slug: &str) -> Vec<String> {
+        self.findings_of(RULE, slug)
+    }
+
+    /// The same, for any rule of the surface.
+    fn findings_of(&self, rule: &str, slug: &str) -> Vec<String> {
         let (_, out, _) = self.run(&["check", "--format", "json"]);
         let path = format!("\"path\": \"docs/interfaces/{slug}.md\",");
         let lines: Vec<&str> = out.lines().map(str::trim).collect();
         let mut messages = Vec::new();
         for (at, line) in lines.iter().enumerate() {
-            if *line != format!("\"rule\": \"{RULE}\",") {
+            if *line != format!("\"rule\": \"{rule}\",") {
                 continue;
             }
-            // One finding runs to the next `rule` member. A finding the runner
-            // filtered is still in the report, with its escape named, and only
-            // an unescaped one is a verdict a reader meets.
+            // One finding runs to the brace that closes it, and the last one
+            // would otherwise run on into the read set, which names every
+            // page. A finding the runner filtered is still in the report, with
+            // its escape named, and only an unescaped one is a verdict a
+            // reader meets.
             let end = lines[at + 1..]
                 .iter()
-                .position(|l| l.starts_with("\"rule\""))
+                .position(|l| l.starts_with("\"rule\"") || l.starts_with('}'))
                 .map_or(lines.len(), |next| at + 1 + next);
             let finding = &lines[at..end];
             if finding.contains(&path.as_str())
@@ -232,10 +248,165 @@ fn the_rule_reads_the_manifest_and_honors_a_passage_that_says_so() {
             && w.iter().any(|f| f.contains("tools/quote.sh")),
         "a path behind a shell variable and a code span in a block quote are both reported\n{w:#?}"
     );
+    // The generation step reads the adopter list, so a page the list does not
+    // name has no instance of the rule at all, rather than an instance that
+    // passes without being read (#1051). Three of the four typed documents are
+    // on the list.
+    assert!(
+        out.lines()
+            .any(|line| line.trim() == format!("3 instances of {RULE}")),
+        "the rule instantiates on the three listed pages and not on `z.md`\n{out}"
+    );
     assert_eq!(
         root.findings("z"),
         Vec::<String>::new(),
         "a page the manifest does not list is not an adopter's page, and the rule reads the \
          manifest rather than a list of its own"
+    );
+}
+
+/// The page `headwater generate` writes from the `surface` block (#1051).
+const PAGE: &str = "docs/interfaces/consumer-surface.md";
+
+#[test]
+fn the_surface_block_generates_a_page_that_goes_stale_with_it() {
+    let root = Root::new("page", &["docs/interfaces/x.md"]);
+    root.contract("x", "");
+    let generated = root.run(&["generate"]);
+    let page = std::fs::read_to_string(root.at.join(PAGE)).unwrap_or_else(|_| {
+        panic!(
+            "`generate` writes the consumer surface page\n{}{}",
+            generated.1, generated.2
+        )
+    });
+    assert!(
+        page.starts_with("<!-- headwater:generated consumer_surface"),
+        "the page carries the marker on its first line\n{page}"
+    );
+    for member in [
+        "`LICENSE`",
+        "`site_generator`",
+        "`mkdocs`",
+        "`curl`",
+        "`headwater probe`",
+        "`tar`",
+    ] {
+        assert!(page.contains(member), "the page names {member}\n{page}");
+    }
+    let clean = root.run(&["generate", "--check"]);
+    assert_eq!(
+        clean.0,
+        Some(0),
+        "a tree that was just generated is not stale\n{}{}",
+        clean.1,
+        clean.2
+    );
+
+    // (a) A hand edit to the page.
+    std::fs::write(
+        root.at.join(PAGE),
+        format!("{page}\nA line somebody typed.\n"),
+    )
+    .expect("the page writes");
+    let edited = root.run(&["generate", "--check"]);
+    assert_ne!(
+        edited.0,
+        Some(0),
+        "a hand edit to the generated page is stale\n{}{}",
+        edited.1,
+        edited.2
+    );
+    std::fs::write(root.at.join(PAGE), &page).expect("the page writes back");
+
+    // (b) An edit to the `surface` block with no regeneration.
+    root.override_with(
+        &["docs/interfaces/x.md"],
+        "  surface.prerequisites: [git, sh, curl, tar, unzip]\n",
+    );
+    let moved = root.run(&["generate", "--check"]);
+    assert_ne!(
+        moved.0,
+        Some(0),
+        "a `surface` block that moved leaves the page stale\n{}{}",
+        moved.1,
+        moved.2
+    );
+    root.run(&["generate"]);
+    let again = std::fs::read_to_string(root.at.join(PAGE)).expect("the page reads");
+    assert!(
+        again.contains("`unzip`"),
+        "the page follows the block\n{again}"
+    );
+}
+
+/// The command rule (#1051). A page on the list holds four blocks, and only
+/// the first one is a command the surface does not declare:
+///
+/// - (a) an `sh` block that runs `cargo`, which `commands` does not list,
+/// - (b) a `yaml` block whose first word is `name:`,
+/// - (c) an untagged block of output whose first word is `wrote`,
+/// - (d) an `sh` block that runs `headwater` behind a `$ ` prompt.
+///
+/// A rule that reads untagged blocks reports (c), a rule that ignores the info
+/// string reports (b), and a rule that does not strip the prompt reports (d).
+const COMMANDS: &str = "\n```sh\ncargo install headwater\n```\n\n```yaml\nname: acme\n```\n\n```\nwrote docs/x.md\n```\n\n```sh\n$ headwater check\n```\n";
+
+#[test]
+fn the_command_rule_reads_only_shell_blocks_on_a_listed_page() {
+    const COMMAND: &str = "surface.command.undeclared";
+    let root = Root::new("commands", &["docs/interfaces/c.md"]);
+    root.override_with(
+        &["docs/interfaces/c.md"],
+        "  surface.commands: [headwater]\n",
+    );
+    root.contract("c", COMMANDS);
+    root.contract("d", COMMANDS);
+
+    let (_, out, err) = root.run(&["check"]);
+    let c = root.findings_of(COMMAND, "c");
+    assert_eq!(
+        c.len(),
+        1,
+        "only the `sh` block that runs `cargo` is reported\n{c:#?}\n{out}{err}"
+    );
+    assert!(c[0].contains("`cargo`"), "{c:#?}");
+    assert!(
+        out.lines()
+            .any(|line| line.trim() == format!("1 instances of {COMMAND}")),
+        "the rule instantiates on the listed page and not on `d.md`\n{out}"
+    );
+    assert_eq!(
+        root.findings_of(COMMAND, "d"),
+        Vec::<String>::new(),
+        "a page the manifest does not list has no instance of the rule"
+    );
+}
+
+/// The two readings the first case does not reach. A `console` block is a
+/// shell block, and in it a line with no `$ ` prompt is output. A program
+/// named by its path is compared by the last segment of the path, so
+/// `/usr/bin/cargo` is `cargo` and not a name `commands` could never hold.
+const CONSOLE: &str = "\n```console\n$ /usr/bin/cargo install headwater\nwrote docs/x.md\n```\n";
+
+#[test]
+fn a_console_block_reads_its_prompted_lines_by_the_last_segment_of_the_path() {
+    const COMMAND: &str = "surface.command.undeclared";
+    let root = Root::new("console", &["docs/interfaces/e.md"]);
+    root.override_with(
+        &["docs/interfaces/e.md"],
+        "  surface.commands: [headwater]\n",
+    );
+    root.contract("e", CONSOLE);
+
+    let (_, out, err) = root.run(&["check"]);
+    let e = root.findings_of(COMMAND, "e");
+    assert_eq!(
+        e.len(),
+        1,
+        "the prompted line is one command and the output line is none\n{e:#?}\n{out}{err}"
+    );
+    assert!(
+        e[0].contains("runs `cargo`"),
+        "the program is named by the last segment of its path\n{e:#?}"
     );
 }

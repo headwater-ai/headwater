@@ -352,7 +352,7 @@ def main():
         declaration = open(os.path.join(cwd['at'], '.headwater/taxonomy.yml')).read()
         for claim, token in [
                 ('the copy route', 'Copy a package directory into `.headwater/packages/`'),
-                ('the vendor route', '`headwater taxonomy vendor <dir>`'),
+                ('the vendor route', '`headwater taxonomy vendor <dir-or-location>`'),
                 ('where the version comes from',
                  'the version that package declares'),
                 ('the field the vendor route needs first', '# digest:')]:

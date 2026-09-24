@@ -926,6 +926,8 @@ projections:
     for:
       - interfaces
     output: docs/interfaces/README.md
+  - kind: consumer_surface
+    output: docs/interfaces/consumer-surface.md
   - kind: graph_export
     profile: site
     output: ".headwater/export.json"
@@ -1486,6 +1488,14 @@ surface:
     - sh
     - curl
     - tar
+    - cd
+    - echo
+    - grep
+    - mkdir
+    - printf
+    - rm
+    - wc
+    - xargs
   companions:
     - "headwater probe"
     - "headwater neighbors"

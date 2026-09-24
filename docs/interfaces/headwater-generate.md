@@ -38,6 +38,8 @@ A descriptor that records no emitter set is a descriptor an earlier engine wrote
 
 Under *what this verb does not write, and why*, a run reports every projection kind this engine does not emit. It reports a kind the taxonomy declared at the output path of that declaration, and a kind no declaration named at `no declaration names one`. A reason is a property of this engine rather than of the corpus, so a reader gets it before writing the declaration.
 
+A `consumer_surface` declaration writes one page from the `surface` block of the taxonomy. The page lists the archive, the integration points with what each one needs, the prerequisites, the companions and the commands. It does not list `adopter_documents` or `local_roots`, because they configure a check and an adopter does not receive or run them. A taxonomy with no `surface` block writes no page, and the run reports the declaration under *what this verb does not write, and why*. A change to the block makes the page stale, and `--check` reports it.
+
 ## Preconditions
 
 The repository must have a readable consumer declaration, taxonomy lock, corpus and generated projection declarations. Existing generated targets must satisfy their write preconditions.

@@ -125,10 +125,11 @@ declarations:
   controls: {map: {block: control}}
 
   # The consumer surface of HW-DR-0077: everything an adopter receives, is told
-  # to run, or must have installed, as one closed list. `language.local_path`
-  # reads `adopter_documents`, `local_roots` and `commands`; the other members
-  # are the declaration the rest of the record names, and a reader of each
-  # arrives with the issue that needs it (#976).
+  # to run, or must have installed, as one closed list.
+  # `surface.local_path.instructed` reads `adopter_documents` and
+  # `local_roots`, and `surface.command.undeclared` reads `adopter_documents`
+  # and `commands` (#1051). The other members are the declaration the rest of
+  # the record names, and the `consumer_surface` projection renders them.
   surface: {block: surface}
 
 # --- the root of an overlay source ------------------------------------------
@@ -513,7 +514,7 @@ definitions:
       # descriptor of Q14. Neither takes its output path from a declaration, and
       # a taxonomy that named either here would put a second copy of one
       # artifact at a path the engine did not fix. So the enum below is the
-      # declarable ten, and `headwater generate` writes the other two whether
+      # declarable eleven, and `headwater generate` writes the other two whether
       # or not any taxonomy mentions a projection at all.
       #
       # `verb_index` is the tenth, and #257 added it. Its rows are not the
@@ -522,6 +523,10 @@ definitions:
       # because whether a corpus commits one, and where, is a schema decision
       # like every other output path. `for` names the one shelf that holds the
       # documents which describe a verb.
+      #
+      # `consumer_surface` is the eleventh, and #1051 added it. Its rows are the
+      # `surface` block below, so the consumer surface an adopter reads is the
+      # declaration a check reads. It takes no `for`.
       kind:
         enum:
           - shelf_index
@@ -534,6 +539,7 @@ definitions:
           - transcription
           - probe_result
           - verb_index
+          - consumer_surface
         required: true
       for: {seq: {scalar: string}}
       output: {scalar: string, required: true}

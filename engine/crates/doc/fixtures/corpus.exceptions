@@ -10,6 +10,8 @@ docs/how-to/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/interfaces/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/interfaces/consumer-surface.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/obligations/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/probe-results/README.md

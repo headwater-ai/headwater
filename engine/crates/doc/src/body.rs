@@ -22,7 +22,7 @@
 
 use crate::lines::Lines;
 use headwater_yaml::{Position, Span};
-use pulldown_cmark::{Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd};
 
 /// Who wrote a run of text.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -104,6 +104,12 @@ pub struct Block {
     /// difference here rather than leaving each rule to guess it from a line
     /// count.
     pub soft_breaks: Vec<Span>,
+    /// The first word of a fenced code block's info string, such as `sh` for
+    /// a fence opened with "```sh". `None` on an untagged fence, on an indented
+    /// code block and on every block that is not code. A rule that reads the
+    /// commands of a page reads only a block its author tagged as a shell,
+    /// because an untagged block is as often output as input (#1051).
+    pub info: Option<String>,
 }
 
 impl Block {
@@ -250,7 +256,13 @@ pub fn scan(source: &str, body: &str, offset: usize) -> Body {
                 Tag::TableCell => {
                     open.push(block(BlockKind::TableCell, span_of(range), quote_depth));
                 }
-                Tag::CodeBlock(_) => open.push(block(BlockKind::Code, span_of(range), quote_depth)),
+                Tag::CodeBlock(kind) => {
+                    let mut code = block(BlockKind::Code, span_of(range), quote_depth);
+                    if let CodeBlockKind::Fenced(info) = kind {
+                        code.info = info.split_whitespace().next().map(str::to_string);
+                    }
+                    open.push(code);
+                }
                 Tag::Link {
                     link_type,
                     dest_url,
@@ -354,6 +366,7 @@ fn block(kind: BlockKind, span: Span, quote_depth: usize) -> Block {
         quote_depth,
         runs: Vec::new(),
         soft_breaks: Vec::new(),
+        info: None,
     }
 }
 
@@ -808,5 +821,19 @@ mod tests {
     fn a_code_block_keeps_its_breaks_on_the_code_block() {
         let body = body_of("```\nfirst\nsecond\n```\n");
         assert_eq!(body.blocks[0].kind, BlockKind::Code);
+    }
+
+    /// The first word of a fence's info string is kept, because a rule that
+    /// reads commands reads only a block its author tagged as a shell (#1051).
+    /// An untagged fence and an indented block carry none.
+    #[test]
+    fn a_fenced_block_keeps_the_first_word_of_its_info_string() {
+        let tagged = body_of("```sh title=x\nx\n```\n");
+        assert_eq!(tagged.blocks[0].info.as_deref(), Some("sh"));
+        let untagged = body_of("```\nx\n```\n");
+        assert_eq!(untagged.blocks[0].info, None);
+        let indented = body_of("Text.\n\n    x\n");
+        assert_eq!(indented.blocks[1].kind, BlockKind::Code);
+        assert_eq!(indented.blocks[1].info, None);
     }
 }

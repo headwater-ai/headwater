@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:6bb728047dc5ac7c566cdfc8bdf3f58fa3151a6ced1819110b6f456a0491bf59
+  digest: sha256:deab3dd08dac291500cfce1e02cb0f87abef414b5a62c9b8cb1fb70fbbc3160f
   rules: 2
   package: headwater/standard
   version: 4.4.2
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:a1d0295f3af618bb371291f264a5f3d85925aabdd171ccea64629ee42a0e1c24
     - path: .headwater/overlay.yml
-      digest: sha256:d2345afdd73b2ce644eb0d987f1984e30e221cad6f9356c10613352b7db7dac4
+      digest: sha256:24ca87a7891b8eb3df66629b973b5e347382b71769e51064e151662bbf2dd19b
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -989,6 +989,8 @@ resolved:
       for:
         - interfaces
       output: docs/interfaces/README.md
+    - kind: consumer_surface
+      output: docs/interfaces/consumer-surface.md
     - kind: graph_export
       profile: site
       output: ".headwater/export.json"
@@ -1549,6 +1551,14 @@ resolved:
       - sh
       - curl
       - tar
+      - cd
+      - echo
+      - grep
+      - mkdir
+      - printf
+      - rm
+      - wc
+      - xargs
     companions:
       - "headwater probe"
       - "headwater neighbors"

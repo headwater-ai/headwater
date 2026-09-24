@@ -126,6 +126,7 @@ nav:
       - "Wire headwater check into your own workflow": "how-to/wire-headwater-check-into-your-own-workflow.md"
   - "The command surface":
       - "The command surface": "interfaces/README.md"
+      - "The consumer surface": "interfaces/consumer-surface.md"
       - "headwater capture": "interfaces/headwater-capture.md"
       - "headwater change": "interfaces/headwater-change.md"
       - "headwater check": "interfaces/headwater-check.md"

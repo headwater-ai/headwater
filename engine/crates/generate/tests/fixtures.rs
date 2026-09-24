@@ -577,14 +577,14 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its twenty-four artifacts, and it says why for
+/// This repository generates its twenty-five artifacts, and it says why for
 /// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Fourteen of the twenty-four are shelf indexes, one per shelf that holds a
+/// **Fourteen of the twenty-five are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
 /// file until #124 filled that shelf. The other thirteen are the overlay's own
@@ -598,13 +598,14 @@ fn every_output_carries_its_own_marker() {
 /// produced a reason rather than a file, the same way `specifications` still
 /// does below.
 ///
-/// **Five of the other ten are one each, and five are one per committed
+/// **Six of the other eleven are one each, and five are one per committed
 /// transcript.** The count in the name of this test therefore moves when a
 /// transcript lands on `docs/probe-runs/`, and this paragraph is the only
 /// thing that says so. The redirect map that the open-questions
 /// tombstone carries. The verb index #257 asked for, which reads the binary
 /// rather than the `interfaces` shelf and is why that shelf is absent from the
-/// index list above. The graph export #414 names: the whole graph, for the
+/// index list above. The consumer surface page #1051 asked for, which reads
+/// the `surface` block of the taxonomy and no shelf. The graph export #414 names: the whole graph, for the
 /// reader Q16 draws with no principal to filter for. The site navigation
 /// HW-DR-0036 and #418 name: MkDocs's `nav:` over the reading order
 /// `by_precedence` derives. The descriptor, at the path Q14 fixes. And one
@@ -624,7 +625,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_twenty_four_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_twenty_five_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -706,12 +707,14 @@ fn this_repository_generates_its_twenty_four_artifacts_and_accounts_for_the_rest
             "docs/probe-results/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md",
             "docs/probe-results/regression-probe-transcript-for-2026-09-17.md",
             "docs/interfaces/README.md",
+            "docs/interfaces/consumer-surface.md",
             ".headwater/export.json",
             ".headwater/nav.yml",
             descriptor::PATH
         ],
         "this repository writes an index for each of its thirteen shelves that hold a \
-         document, then the redirect map, the verb index, the graph export, the \
+         document, then the redirect map, the verb index, the consumer surface page, the \
+         graph export, the \
          site navigation and the descriptor, in that order"
     );
     // One declared shelf holds no document, `specifications`. The

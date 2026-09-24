@@ -46,9 +46,14 @@
 //!
 //! # What it does not read
 //!
+//! A page that the adopter list does not name has no instance of the rule.
+//! The list is read at the generation step, through
+//! [`DocumentCheck::selects`], and not in the evaluation.
+//!
 //! A document the census does not type reaches no document check, so a page on
 //! the list that is not typed goes unread. `README.md` at the root is one. The
-//! `commands` member of `surface`, the second half of #976, has no reader yet.
+//! `commands` member of `surface`, the second half of #976, is read by
+//! [`crate::command`], which holds the shell blocks of the same pages.
 
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
@@ -105,11 +110,19 @@ impl DocumentCheck for LocalPath {
     ///
     /// Edition three: `$HOME/` no longer counts as a variable before a local
     /// root, so a user-level path is not reported.
+    ///
+    /// Selecting the adopter list at the generation step (#1051) did not
+    /// raise the edition: the verdict on every page that keeps an instance
+    /// is the one edition three reached, so a cached verdict stays true.
     const VERSION: u32 = 3;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, _kind: &str) -> bool {
         self.declared()
+    }
+
+    fn selects(&self, path: &str) -> bool {
+        self.for_an_adopter(path)
     }
 
     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
