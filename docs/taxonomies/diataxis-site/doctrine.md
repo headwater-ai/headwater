@@ -4,6 +4,7 @@ status: current
 status_since: 2026-09-11
 summary: "Why the diataxis-site bundle makes tutorial, how-to, reference and explanation concrete kinds of a documentation site, one shelf for each."
 last_verified: 2026-09-24
+title: "Diátaxis as a documentation-site kind set"
 ---
 
 # Diátaxis as a documentation-site kind set

@@ -151,6 +151,16 @@ nav:
       - "headwater route": "interfaces/headwater-route.md"
       - "headwater sweep": "interfaces/headwater-sweep.md"
       - "headwater taxonomy": "interfaces/headwater-taxonomy.md"
+  - "Library doctrine":
+      - "The brd-prd taxonomy": "taxonomies/brd-prd/doctrine.md"
+      - "The decision-record taxonomy": "taxonomies/decision-record/doctrine.md"
+      - "The design-spec taxonomy": "taxonomies/design-spec/doctrine.md"
+      - "Diátaxis as a documentation-site kind set": "taxonomies/diataxis-site/doctrine.md"
+      - "The Diátaxis taxonomy": "taxonomies/diataxis/doctrine.md"
+      - "The evidence-and-obligation taxonomy": "taxonomies/evidence-and-obligation/doctrine.md"
+      - "The standards-spec taxonomy": "taxonomies/standards-spec/doctrine.md"
+  - "The library index":
+      - "The canonical taxonomy library": "taxonomies/README.md"
   - "Obligation records":
       - "Obligation records": "obligations/README.md"
       - "The promotion fix has no reading of the assisted fraction": "obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md"

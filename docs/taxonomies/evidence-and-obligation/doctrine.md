@@ -4,6 +4,7 @@ status: current
 status_since: 2026-09-08
 summary: "Why the evidence-and-obligation bundle ships the evaluation kind and two reader intents alone, so that decision-record does not require all of design-spec."
 last_verified: 2026-09-24
+title: "The evidence-and-obligation taxonomy"
 ---
 
 # The evidence-and-obligation taxonomy

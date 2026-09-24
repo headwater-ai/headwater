@@ -4,6 +4,7 @@ status: current
 status_since: 2026-09-15
 summary: "Why the Diátaxis entry ships the four reader modes as one facet over the kinds a corpus already has, and not as kinds of its own."
 last_verified: 2026-09-24
+title: "The Diátaxis taxonomy"
 ---
 
 # The Diátaxis taxonomy

@@ -4,6 +4,7 @@ status: current
 status_since: 2026-09-21
 summary: "Why the decision-record entry keeps one decision per document forever, replaces a changed choice with a new record, and types what the corpus owes."
 last_verified: 2026-09-24
+title: "The decision-record taxonomy"
 ---
 
 # The decision-record taxonomy

@@ -4,6 +4,7 @@ status: current
 status_since: 2026-09-21
 summary: "What a library entry is, the seven criteria that admit one, what each entry ships, what admits an assembly, and the rulings every draft works under."
 last_verified: 2026-09-24
+title: "The canonical taxonomy library"
 ---
 
 # The canonical taxonomy library

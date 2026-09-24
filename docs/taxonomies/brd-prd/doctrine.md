@@ -4,6 +4,7 @@ status: current
 status_since: 2026-09-08
 summary: "Why the brd-prd entry types the requirements handoff as a business requirements document and a product requirements document, and why each declaration is there."
 last_verified: 2026-09-24
+title: "The brd-prd taxonomy"
 ---
 
 # The brd-prd taxonomy

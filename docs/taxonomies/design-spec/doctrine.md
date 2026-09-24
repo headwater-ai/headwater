@@ -4,6 +4,7 @@ status: current
 status_since: 2026-09-11
 summary: "Why the design-spec entry types a numbered series of parts that state one design, from the IETF, research-paper and software-design traditions it draws on."
 last_verified: 2026-09-24
+title: "The design-spec taxonomy"
 ---
 
 # The design-spec taxonomy
