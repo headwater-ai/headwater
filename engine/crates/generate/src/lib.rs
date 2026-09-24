@@ -937,7 +937,7 @@ pub fn plan(
             }
             Kind::VerbIndex => verb_index::emit(surface, declaration, verbs, &mut plan),
             Kind::ConsumerSurface => {
-                consumer_surface::emit(projections.surface.as_ref(), declaration, &mut plan)
+                consumer_surface::emit(projections.surface.as_ref(), declaration, &mut plan);
             }
             Kind::SiteNav => navs.push(declaration),
             // Only a declarable kind with no emitter arm above reaches here,
