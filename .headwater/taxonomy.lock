@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:2a4191ce08c70644f168218e608177911b3e94bc5cabbdefc0597ad445a65db9
+  digest: sha256:6ffe1f7785cafcbf6b5247cb0a033bfe346e066a90039b788f000c1aed6c0686
   rules: 2
   package: headwater/standard
   version: 4.5.0
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:a1d0295f3af618bb371291f264a5f3d85925aabdd171ccea64629ee42a0e1c24
     - path: .headwater/overlay.yml
-      digest: sha256:23e93312ea2aa572c559198d1594d693854f4078652b779794e8b10a5493083b
+      digest: sha256:13a509c0b789fd4a2b7644bf5e33aa205b24cc71dbde93f55b5953cac3f1f948
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -474,6 +474,14 @@ resolved:
           - Files
           - "See also"
       voice: declarative
+    library_doctrine:
+      identifier:
+        scheme: library_doctrine_id
+      is_a: governed_document
+      language: ste_house
+      lifecycle: standard
+      purpose: rationale
+      voice: declarative
     obligation_record:
       facets:
         require:
@@ -814,6 +822,16 @@ resolved:
       kind: interface_contract
       path: "docs/interfaces/**"
       title: "The command surface"
+    library_doctrine:
+      homogeneous: true
+      kind: library_doctrine
+      path: "docs/taxonomies/*/doctrine.md"
+      title: "Library doctrine"
+    library_index:
+      homogeneous: true
+      kind: library_doctrine
+      path: docs/taxonomies/README.md
+      title: "The library index"
     obligations:
       homogeneous: true
       kind: obligation_record
@@ -897,6 +915,10 @@ resolved:
       allocation: minted-once
       namespace: HW
       pattern: "{namespace}-IFACE-{slug}"
+    library_doctrine_id:
+      allocation: minted-once
+      namespace: HW
+      pattern: "{namespace}-LIB-{slug}"
     obligation_record_id:
       allocation: reconcile-first
       namespace: HW

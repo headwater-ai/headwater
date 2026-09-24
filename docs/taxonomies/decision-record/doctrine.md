@@ -1,3 +1,11 @@
+---
+id: HW-LIB-decision-record
+status: current
+status_since: 2026-09-21
+summary: "Why the decision-record entry keeps one decision per document forever, replaces a changed choice with a new record, and types what the corpus owes."
+last_verified: 2026-09-24
+---
+
 # The decision-record taxonomy
 
 One decision, one document, kept forever. A team writes down the choice it made, the forces that produced it, and what the choice costs. It never edits the document afterward. When the choice changes, a new document replaces the old one and says so, and the old one stays where it is.
@@ -26,7 +34,7 @@ The item that names that remedy has no anchor, which is why the sentence above n
 
 **One decision per record.** The temptation to violate it is constant, and the cost is exact. Two decisions in one record cannot be superseded apart. The first of them to fall takes the second with it, or it leaves the second alive under a heading that nobody reads.
 
-**The log is read as a log.** A reader scans it by title and by date. That is the property that this entry meets a wall on, and [the title facet](#the-title-facet-and-what-it-does-not-reach) is what it does about it.
+**The log is read as a log.** A reader scans it by title and by date. That is the property that this entry meets a wall on, and [the title facet](#the-title-facet-where-it-went-and-what-declaring-it-did-not-do) is what it does about it.
 
 ## The base package already carries most of this tradition
 

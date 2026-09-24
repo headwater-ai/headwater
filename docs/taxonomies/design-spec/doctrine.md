@@ -1,3 +1,11 @@
+---
+id: HW-LIB-design-spec
+status: current
+status_since: 2026-09-11
+summary: "Why the design-spec entry types a numbered series of parts that state one design, from the IETF, research-paper and software-design traditions it draws on."
+last_verified: 2026-09-24
+---
+
 # The design-spec taxonomy
 
 A numbered series of documents that state one design, read in order, with the argument split across the parts. Academic papers, IETF RFCs and software design documents all arrive at that shape, and they arrive at it separately. This entry models it.
