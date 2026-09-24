@@ -91,13 +91,14 @@ impl LocalPath {
             .any(|glob| glob_matches(glob, path))
     }
 
-    /// The local root a token opens with, if it opens with one.
+    /// The local root a token opens with, if it opens with one, or the root a
+    /// token is when it names the root with no trailing `/`.
     fn root_of(&self, token: &str) -> Option<&str> {
         let token = strip_variable(token);
         let token = token.strip_prefix("./").unwrap_or(token);
         self.local_roots
             .iter()
-            .find(|root| token.starts_with(root.as_str()))
+            .find(|root| token.starts_with(root.as_str()) || token == root.trim_end_matches('/'))
             .map(String::as_str)
     }
 }
@@ -114,7 +115,11 @@ impl DocumentCheck for LocalPath {
     /// Selecting the adopter list at the generation step (#1051) did not
     /// raise the edition: the verdict on every page that keeps an instance
     /// is the one edition three reached, so a cached verdict stays true.
-    const VERSION: u32 = 3;
+    ///
+    /// Edition four (#976): a token that is a local root with its trailing
+    /// `/` removed counts, so the bare directory of a `git config
+    /// core.hooksPath` line is reported.
+    const VERSION: u32 = 4;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, _kind: &str) -> bool {
