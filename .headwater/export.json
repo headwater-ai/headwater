@@ -3623,7 +3623,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How one member of the JSON object on standard input reaches a caller, and the one answer that stands for every way a read reaches no scalar.",
-          "last_verified": "2026-09-06",
+          "last_verified": "2026-09-24",
           "title": "headwater json",
           "relations": {
             "governs": [

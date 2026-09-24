@@ -178,18 +178,21 @@ fn escape(text: &str, out: &mut String) {
     out.push('"');
 }
 
-/// One member of a JSON document, addressed by a path of keys.
+/// One member of a JSON document, addressed by a path of steps.
 ///
-/// `field(payload, ["tool_input", "file_path"])` reads `.tool_input.file_path`.
+/// `field(payload, ["tool_input", "file_path"])` reads `.tool_input.file_path`,
+/// and `field(payload, ["related", "0", "target"])` reads `.related[0].target`:
+/// a step into an array is a decimal index.
 /// The answer is the text of a scalar: a string as it stands with its escapes
 /// resolved, a number as it was written, and `true` or `false` for a boolean,
 /// which is what a caller reading a flag off a wire compares against.
 ///
 /// `None` is every way the read does not reach a scalar, and a caller that
 /// distinguished them would be a caller acting on the shape of a message it
-/// did not write. The document will not parse, a step of the path is not a
-/// mapping, a key is absent, the member is an array or an object, or it
-/// resolves to null. A hook treats all six as "the harness said nothing", and
+/// did not write. The document will not parse, a step of the path is one the
+/// member cannot take (a key into an array, an index past its end, or any
+/// step into a scalar), a key is absent, the member is an array or an object,
+/// or it resolves to null. A hook treats all six as "the harness said nothing", and
 /// the [hook contract](../../../../docs/spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
 /// makes that silence an outcome rather than a failure.
 pub fn field(document: &str, path: &[String]) -> Option<String> {
@@ -216,7 +219,19 @@ pub fn count(document: &str, path: &[String]) -> Option<usize> {
     }
 }
 
-/// The node a path of keys reaches, or `None`.
+/// A step into an array: decimal digits only, so `+0`, `-1` and `0x1` are
+/// steps the array cannot take rather than spellings of an index.
+fn index(step: &str) -> Option<usize> {
+    match !step.is_empty() && step.bytes().all(|byte| byte.is_ascii_digit()) {
+        true => step.parse().ok(),
+        false => None,
+    }
+}
+
+/// The node a path of steps reaches, or `None`.
+///
+/// A step into a mapping is a key, and a step into an array is a decimal
+/// index counted from 0. Any other step is a path the member cannot take.
 ///
 /// The reader is [`crate::load`], because JSON is a subset of the YAML 1.2 core
 /// schema that the loader already implements. This function is therefore the
@@ -224,8 +239,11 @@ pub fn count(document: &str, path: &[String]) -> Option<usize> {
 /// `saphyr-parser`'s rather than one written here.
 fn walk(document: &str, path: &[String]) -> Option<crate::span::Spanned<crate::value::Value>> {
     let mut node = crate::load(document).ok()?;
-    for key in path {
-        let next = node.value.as_map()?.get(key)?.clone();
+    for step in path {
+        let next = match &node.value {
+            crate::value::Value::Seq(items) => items.get(index(step)?)?.clone(),
+            other => other.as_map()?.get(step)?.clone(),
+        };
         node = next;
     }
     Some(node)
