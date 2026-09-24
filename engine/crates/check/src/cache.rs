@@ -540,12 +540,39 @@ fn encode_patch(patch: Option<&Patch>) -> String {
             escape(expect),
             escape(replacement)
         ),
-        Some(Patch::Half { path, relation, id }) => format!(
+        Some(Patch::Half {
+            path,
+            relation,
+            id,
+            attributes,
+        }) if attributes.is_empty() => format!(
             "half\t{}\t{}\t{}",
             escape(path),
             escape(relation),
             escape(id)
         ),
+        // A half with attributes is its own shape word, so a record an earlier
+        // engine wrote as `half` reads exactly as it did. The count comes
+        // first because one record holds several findings in a row and a
+        // reader has to know where this patch ends.
+        Some(Patch::Half {
+            path,
+            relation,
+            id,
+            attributes,
+        }) => {
+            let mut record = format!(
+                "attributed\t{}\t{}\t{}\t{}",
+                escape(path),
+                escape(relation),
+                escape(id),
+                attributes.len()
+            );
+            for (name, value) in attributes {
+                record.push_str(&format!("\t{}\t{}", escape(name), escape(value)));
+            }
+            record
+        }
         Some(Patch::Create { path, contents }) => {
             format!("create\t{}\t{}", escape(path), escape(contents))
         }
@@ -572,7 +599,24 @@ fn decode_patch<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<Option
             path: unescape(fields.next()?),
             relation: unescape(fields.next()?),
             id: unescape(fields.next()?),
+            attributes: Vec::new(),
         })),
+        "attributed" => {
+            let path = unescape(fields.next()?);
+            let relation = unescape(fields.next()?);
+            let id = unescape(fields.next()?);
+            let count: usize = fields.next()?.parse().ok()?;
+            let mut attributes = Vec::with_capacity(count);
+            for _ in 0..count {
+                attributes.push((unescape(fields.next()?), unescape(fields.next()?)));
+            }
+            Some(Some(Patch::Half {
+                path,
+                relation,
+                id,
+                attributes,
+            }))
+        }
         "create" => Some(Some(Patch::Create {
             path: unescape(fields.next()?),
             contents: unescape(fields.next()?),

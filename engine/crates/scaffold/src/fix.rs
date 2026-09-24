@@ -363,7 +363,13 @@ fn one_file(root: &Path, path: &str, patches: &[&Patch]) -> Result<Option<Fixed>
 fn halves_of(path: &str, patches: &[&Patch]) -> Vec<Half> {
     let mut out: Vec<Half> = Vec::new();
     for patch in patches {
-        let Patch::Half { relation, id, .. } = patch else {
+        let Patch::Half {
+            relation,
+            id,
+            attributes,
+            ..
+        } = patch
+        else {
             continue;
         };
         if out
@@ -376,7 +382,7 @@ fn halves_of(path: &str, patches: &[&Patch]) -> Vec<Half> {
             path: path.to_string(),
             relation: relation.clone(),
             id: id.clone(),
-            attributes: Vec::new(),
+            attributes: attributes.clone(),
         });
     }
     out
@@ -739,6 +745,7 @@ mod tests {
                 path: "b.md".to_string(),
                 relation: "cited_by".to_string(),
                 id: "D-1".to_string(),
+                attributes: Vec::new(),
             }],
         );
         assert!(composed.refused.is_empty(), "{:?}", composed.refused);
@@ -755,6 +762,7 @@ mod tests {
             path: "b.md".to_string(),
             relation: "cited_by".to_string(),
             id: "D-1".to_string(),
+            attributes: Vec::new(),
         };
         let composed = compose(dir.path(), &[half.clone(), half]);
         assert!(composed.refused.is_empty(), "{:?}", composed.refused);
