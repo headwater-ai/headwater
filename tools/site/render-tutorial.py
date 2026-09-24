@@ -129,6 +129,14 @@ def strip_front_matter(text):
     return "\n".join(lines[end + 1:])
 
 
+def is_fence(line):
+    """Whether `line` opens or closes a fence. An opening fence may carry an
+    info string, as every command block of the tutorial does (` ```sh `,
+    #1051), and a closing one is bare. `.claude/tutorial/drive.py` holds the
+    same rule as `FENCE_MARKER` and says what a bare-backtick match broke."""
+    return re.match(r"^(`{3,}|~{3,})", line.strip()) is not None
+
+
 def top_level_sections(body):
     """`{heading text: body}` for every `## ` heading not inside a fence,
     plus the text before the first one."""
@@ -137,7 +145,7 @@ def top_level_sections(body):
     name, buf, inside = None, [], False
     intro = []
     for line in lines:
-        if line.strip() == "```":
+        if is_fence(line):
             inside = not inside
             (buf if name is not None else intro).append(line)
             continue
@@ -159,7 +167,7 @@ def split_steps(steps_body):
     lines = steps_body.split("\n")
     steps, current, buf, inside = [], None, [], False
     for line in lines:
-        if line.strip() == "```":
+        if is_fence(line):
             inside = not inside
             if current is not None:
                 buf.append(line)
@@ -197,7 +205,7 @@ def walk_fences(chunk):
     fences = []
     current, inside, paragraph, fresh = [], False, "", True
     for line in lines:
-        if line.strip() == "```":
+        if is_fence(line):
             if inside:
                 fences.append(Fence("\n".join(current), paragraph, fresh))
                 current, fresh = [], False
@@ -240,7 +248,7 @@ def paragraphs(chunk, want):
     order."""
     out, para, inside = [], [], False
     for line in chunk.split("\n") + [""]:
-        if line.strip() == "```":
+        if is_fence(line):
             inside = not inside
             continue
         if inside:

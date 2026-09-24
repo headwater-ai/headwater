@@ -125,10 +125,11 @@ declarations:
   controls: {map: {block: control}}
 
   # The consumer surface of HW-DR-0077: everything an adopter receives, is told
-  # to run, or must have installed, as one closed list. `language.local_path`
-  # reads `adopter_documents`, `local_roots` and `commands`; the other members
-  # are the declaration the rest of the record names, and a reader of each
-  # arrives with the issue that needs it (#976).
+  # to run, or must have installed, as one closed list.
+  # `surface.local_path.instructed` reads `adopter_documents` and
+  # `local_roots`, and `surface.command.undeclared` reads `adopter_documents`
+  # and `commands` (#1051). The other members are the declaration the rest of
+  # the record names, and the `consumer_surface` projection renders them.
   surface: {block: surface}
 
 # --- the root of an overlay source ------------------------------------------

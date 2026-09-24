@@ -1186,13 +1186,16 @@ add:
   # declaration holds it. This is that declaration. `surface.local_path.instructed`
   # reads `adopter_documents` and `local_roots`: a page on the first list that
   # points at a file under the second, in a code span, a code block or a
-  # front-matter path, is reported. `archive`, `integration_points`,
-  # `prerequisites`, `companions` and `commands` state the rest of the record
-  # as data. The `consumer_surface` projection renders each of them into
-  # `docs/interfaces/consumer-surface.md`, which is a reader and not a check.
-  # No check reads them yet, and #1051 keeps the command rule. A page may still cite population 4 as the way this
-  # repository does a thing, under a block directive with
-  # `reason=accepted_deviation`, which is the passage "that says so".
+  # front-matter path, is reported. `surface.command.undeclared` reads
+  # `adopter_documents` and `commands`: a shell block on a page of the first
+  # list that runs a program the second does not name is reported.
+  # `archive`, `integration_points`, `prerequisites` and `companions` state
+  # the rest of the record as data. The `consumer_surface` projection renders
+  # every member into `docs/interfaces/consumer-surface.md`, which is a reader
+  # and not a check, and no check reads those four. A page may still cite
+  # population 4 as the way this repository does a thing, under a block
+  # directive with `reason=accepted_deviation`, which is the passage "that
+  # says so".
 
   surface:
     archive:
@@ -1225,7 +1228,14 @@ add:
       - docs/how-to/relocate-a-shelf.md
       - docs/how-to/wire-headwater-check-into-your-own-workflow.md
     local_roots: [tools/, .githooks/, .claude/, .github/, site/, mkdocs/]
-    commands: [headwater, git, sh, curl, tar]
+    # HW-DR-0077 clause 1: `sh` and the tools of the operating system are
+    # platform prerequisites, and the surface declares each one by name. The
+    # names after `tar` are the POSIX utilities and `sh` builtins that the
+    # tutorial and the relocation how-to tell an adopter to run, found by
+    # `surface.command.undeclared` on the day it landed (#1051). `cargo` is
+    # not here: no Rust toolchain is mandatory, and the one step that runs it
+    # carries a directive until #975 replaces it.
+    commands: [headwater, git, sh, curl, tar, cd, echo, grep, mkdir, printf, rm, wc, xargs]
 
 # --- projections ------------------------------------------------------------
 # `projections` is a list in the base, so an `add` cannot reach it, and this is

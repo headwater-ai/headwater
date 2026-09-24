@@ -52,8 +52,8 @@
 //!
 //! A document the census does not type reaches no document check, so a page on
 //! the list that is not typed goes unread. `README.md` at the root is one. The
-//! `commands` member of `surface`, the second half of #976, has no check that
-//! reads it yet.
+//! `commands` member of `surface`, the second half of #976, is read by
+//! [`crate::command`], which holds the shell blocks of the same pages.
 
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
