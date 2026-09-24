@@ -1187,8 +1187,10 @@ add:
   # reads `adopter_documents` and `local_roots`: a page on the first list that
   # points at a file under the second, in a code span, a code block or a
   # front-matter path, is reported. `archive`, `integration_points`,
-  # `prerequisites`, `companions` and `commands` have no reader yet. They state
-  # the rest of the record as data, and #1051 gives the first reader to each. A page may still cite population 4 as the way this
+  # `prerequisites`, `companions` and `commands` state the rest of the record
+  # as data. The `consumer_surface` projection renders each of them into
+  # `docs/interfaces/consumer-surface.md`, which is a reader and not a check.
+  # No check reads them yet, and #1051 keeps the command rule. A page may still cite population 4 as the way this
   # repository does a thing, under a block directive with
   # `reason=accepted_deviation`, which is the passage "that says so".
 
@@ -1367,6 +1369,16 @@ add_to:
     - kind: verb_index
       for: [interfaces]
       output: docs/interfaces/README.md
+
+    # The consumer surface of HW-DR-0077, as a page an adopter reads: the
+    # archive, the integration points with what each needs, the
+    # prerequisites, the companions and the commands a page may tell a reader
+    # to run. Its rows are the `surface` block above and nothing else, so the
+    # page goes stale the day the block moves (#1051). It reads no shelf, and
+    # it sits beside the verb index because the two are the two halves of what
+    # an adopter runs.
+    - kind: consumer_surface
+      output: docs/interfaces/consumer-surface.md
 
     # The whole graph, for the reader Q16 names and spec 5's server-reader
     # carve-out anticipates: a consumer outside this repository, with no

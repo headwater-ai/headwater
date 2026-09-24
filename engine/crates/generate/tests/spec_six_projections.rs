@@ -26,7 +26,7 @@
 //!
 //! `verbs.rs` needs a hardcoded `GRAMMAR_MAY_WAIT` list because the only place
 //! a waiting verb is declared is that paragraph's own prose. This file needs no
-//! such list: `unbuilt` **is** the declared-wait structure, over all twelve
+//! such list: `unbuilt` **is** the declared-wait structure, over all thirteen
 //! kinds, so both directions read the engine.
 //!
 //! # What this does not hold
@@ -61,7 +61,7 @@ use headwater_query::Surface;
 /// A sentence rather than a heading, because the `## Projections` section
 /// opens with a different fenced block (the `headwater generate` contract) and
 /// anchoring on the heading would read that one.
-const ANCHOR: &str = "The block below names all twelve";
+const ANCHOR: &str = "The block below names all thirteen";
 
 /// The two group labels the block uses, left-aligned inside the fence.
 const RUNS: &str = "runs";
@@ -128,7 +128,7 @@ fn spec_six_projection_groups() -> (BTreeSet<String>, BTreeSet<String>) {
     (runs, waits)
 }
 
-/// Every name in the block is a `Kind::name()`, and the block names all twelve.
+/// Every name in the block is a `Kind::name()`, and the block names all thirteen.
 ///
 /// D3 and D4 of the four assertions. Without the second, a renamed sentence or
 /// a moved fence makes the extractor read a smaller set and every other case
@@ -139,7 +139,7 @@ fn spec_six_projection_groups() -> (BTreeSet<String>, BTreeSet<String>) {
 /// Renaming the anchor sentence panics in the extractor, naming the file.
 /// Deleting one line from either group fails the count, naming the count.
 #[test]
-fn the_projection_kinds_block_of_spec_6_names_the_twelve_kinds_this_engine_declares() {
+fn the_projection_kinds_block_of_spec_6_names_the_thirteen_kinds_this_engine_declares() {
     let (runs, waits) = spec_six_projection_groups();
     let named: BTreeSet<&String> = runs.union(&waits).collect();
 

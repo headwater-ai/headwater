@@ -114,7 +114,7 @@ headwater generate --check    # fail if any committed output differs
 
 **One write is one run, and it can be several passes.** A generated document is a document of the corpus, so one projection can print a value that another projection writes in the same run. `headwater generate` therefore reads the tree again after it writes, and it stops at the first pass that writes nothing. That pass is what shows that `--check` accepts the tree. A run that still writes on its fourth pass exits non-zero and says so. The declarations then form a cycle, and more passes do not settle it.
 
-**Twelve projection kinds exist, and this engine emits seven of them.** The block below names all twelve, as a taxonomy writes each name. A kind under `runs` has an emitter here. A kind under `waits` has a slot that a declaration opens and no emitter fills.
+**Thirteen projection kinds exist, and this engine emits eight of them.** The block below names all thirteen, as a taxonomy writes each name. A kind under `runs` has an emitter here. A kind under `waits` has a slot that a declaration opens and no emitter fills.
 
 ```
 runs
@@ -124,6 +124,7 @@ runs
   graph_export
   probe_result
   verb_index
+  consumer_surface
   corpus_descriptor
 
 waits
@@ -134,7 +135,7 @@ waits
   coverage_report
 ```
 
-A shelf index and a shelf sections file each carry the documents of one shelf. A probe result carries the verdicts of one graded run, and [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document) declares it. A verb index carries the command surface of the binary, and [the paragraph below](#a-verb-index-reads-the-command-surface-of-the-engine) declares it. Site navigation, a graph export and the corpus descriptor each carry one file that a reader outside this corpus opens.
+A shelf index and a shelf sections file each carry the documents of one shelf. A probe result carries the verdicts of one graded run, and [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document) declares it. A verb index carries the command surface of the binary, and [the paragraph below](#a-verb-index-reads-the-command-surface-of-the-engine) declares it. A consumer surface page carries the `surface` block of the taxonomy: what an adopter receives, runs and must have installed. [HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) rules that the block holds that list. Site navigation, a graph export and the corpus descriptor each carry one file that a reader outside this corpus opens.
 
 A relation view carries decision lineage and a traceability matrix. A template carries the permitted relations, facets and sections of one kind. An agent rule file is the artifact [the glossary](glossary.md#projection) names. A transcription reads a pinned external snapshot, and [Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record) leaves it to the first adopter who asks. `engine/crates/generate/src/lib.rs` states beside each of these four what no document says, and `headwater generate` prints all four over any corpus. `engine/crates/generate/tests/spec_six_projections.rs` holds the block above against that statement.
 

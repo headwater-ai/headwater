@@ -478,6 +478,19 @@ pub trait DocumentCheck {
         true
     }
 
+    /// The second half of the generation step: whether this template has an
+    /// instance over the document at this corpus-relative path. It reads the
+    /// taxonomy and the path the census walked, and never the document.
+    ///
+    /// A rule whose population is a declared list of paths rather than a set
+    /// of kinds selects here, so a document off the list has no instance
+    /// rather than an instance that passes unread (#1051). The default selects
+    /// every path.
+    fn selects(&self, path: &str) -> bool {
+        let _ = path;
+        true
+    }
+
     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome;
 }
 
@@ -1363,7 +1376,7 @@ pub fn over_documents<C: DocumentCheck>(
         let Classification::Typed { kind, derivation } = &row.outcome else {
             continue;
         };
-        if !check.instantiates(kind) {
+        if !check.instantiates(kind) || !check.selects(&row.path) {
             continue;
         }
         // Bound once, before anything else about this row is read. A run with
