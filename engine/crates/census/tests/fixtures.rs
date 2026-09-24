@@ -209,7 +209,10 @@ fn no_generated_document_is_declared_unmergeable() {
         .filter(|member| member.shape == headwater_census::derived::Shape::Fold)
         .map(|member| member.path.as_str())
         .collect();
-    let stale: Vec<&&str> = declared.iter().filter(|path| !folds.contains(*path)).collect();
+    let stale: Vec<&&str> = declared
+        .iter()
+        .filter(|path| !folds.contains(*path))
+        .collect();
     assert!(
         stale.is_empty(),
         "these are declared `-merge` and no producer writes them as a fold: {stale:#?}"

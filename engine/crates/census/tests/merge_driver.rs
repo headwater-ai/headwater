@@ -565,9 +565,12 @@ fn a_clone_without_the_driver_config_conflicts_on_a_declared_page() {
         an_obligation,
     );
     assert!(
-        git(&repo, &["config", "--get", "merge.headwater-regenerate.driver"])
-            .stdout
-            .is_empty()
+        git(
+            &repo,
+            &["config", "--get", "merge.headwater-regenerate.driver"]
+        )
+        .stdout
+        .is_empty()
             && !repo.join(".git/info/attributes").exists(),
         "this clone configures no driver and selects none"
     );
@@ -585,7 +588,10 @@ fn a_clone_without_the_driver_config_conflicts_on_a_declared_page() {
         "the page and nothing else is conflicted"
     );
     let page = read(&repo, "site/index.html");
-    assert!(!page.contains("<<<<<<<"), "the page carries no marker:\n{page}");
+    assert!(
+        !page.contains("<<<<<<<"),
+        "the page carries no marker:\n{page}"
+    );
     assert_eq!(
         page,
         git_ok(&repo, &["show", "HEAD:site/index.html"]),

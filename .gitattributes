@@ -62,13 +62,14 @@
 # driver is selected per clone and never here, because git reads a driver that
 # no config defines as an ordinary text merge, which is the anomaly above
 # (#1058). A clone that sets the driver config adds the override to its own
-# `info/attributes`, which wins over this file:
+# `info/attributes`, which wins over this file. `.githooks/select-merge-driver`
+# writes those lines once the clone has run the two lines in `CLAUDE.md`, and
+# `post-checkout`, `post-merge` and `pre-commit` run it:
 #
 #     git config merge.headwater-regenerate.name "regenerate a derived artifact"
 #     git config merge.headwater-regenerate.driver ".githooks/merge-regenerate %O %A %B %P"
-#     awk '!/^#/ && $2 == "-merge" { print $1 " merge=headwater-regenerate" }' .gitattributes >> "$(git rev-parse --git-path info/attributes)"
 #
-# `.githooks/pre-commit` reports a clone that has one half and not the other.
+# `.githooks/pre-commit` reports a clone that has not set them.
 # The driver refuses rather than reconciling, and `.githooks/merge-regenerate`
 # says why it cannot regenerate during a merge.
 #

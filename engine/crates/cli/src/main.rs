@@ -6326,10 +6326,16 @@ const COMMITTED_ATTRIBUTE: &str = "-merge";
 /// [#1058](https://github.com/headwater-ai/headwater/issues/1058) measured:
 /// git reads a driver that no config defines as a text merge.
 ///
+/// **Only a fold takes a line.** A generated file whose opening states no
+/// count or digest is one record per entity, and #1058 measured each one
+/// merging as text to what the producer writes. So for an adopter the set is
+/// the lock, unless a generated file states a fold.
+///
 /// **The override and the config land together or not at all.** An override
 /// that names a driver no config defines is the text merge again. So the
-/// override is written only under `--git-config`, after both `git config`
-/// lines succeed, and without it both are printed.
+/// override is written under `--git-config`, after both `git config` lines
+/// succeed, or where the clone's config already names the driver, which is a
+/// clone an earlier release configured. Otherwise both are printed.
 ///
 /// **It appends and never rewrites.** `.gitattributes` is the adopter's own
 /// file, so a line already declaring `-merge` is left alone and every other
@@ -6411,9 +6417,9 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
             text.push('\n');
         }
         let header = "# Written by `headwater init --git`. Each path is a derived artifact that holds a fold,\n\
-                      # so a merge keeps the current side and marks it conflicted, in every clone and on a\n\
-                      # forge. A clone that also ran `headwater init --git --git-config` names the verb that\n\
-                      # rebuilds it. `headwater derived` reports a producer output with no line here.\n";
+                      # so a merge keeps the current side and marks it conflicted in every clone. A forge\n\
+                      # ignores it. A clone that also ran `headwater init --git --git-config` names the verb\n\
+                      # that rebuilds it. `headwater derived` reports a fold with no line here.\n";
         if !text.contains(header) {
             if !text.is_empty() {
                 text.push('\n');

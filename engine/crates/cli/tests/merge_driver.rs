@@ -16,9 +16,11 @@
 //!
 //! Two branches each move the taxonomy lock, and so the corpus descriptor that
 //! records the lock digest, to different values. With the git step `init`
-//! writes, the merge stops with both folds conflicted, no marker in either,
-//! the current side's bytes in place and the producer named on standard error.
-//! Without it, the same merge writes conflict markers into both folds. The
+//! writes, the lock is left conflicted with no marker and the current side's
+//! bytes in place, and in a configured clone the producer is named on standard
+//! error. The descriptor is one record per entity (#1058), so it takes no
+//! attribute and conflicts as text on the digest line both branches moved.
+//! Without the step, the same merge writes conflict markers into both. The
 //! second arm is what makes the first one a measurement: a guard with no failing
 //! arm beside it passes on a tree where it guards nothing.
 //!

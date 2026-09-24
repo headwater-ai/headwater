@@ -30,14 +30,13 @@ Exception: documents under `docs/reviews/` are point-in-time review records and 
 
 ## What a check does with these rules
 
-Every rule above is a check that `headwater check` runs, declared in this repository's taxonomy, and no second copy of any rule lives in a script. A rule is an error when its remedy is mechanical and total: a contraction, a British spelling, a hard-wrapped block, and a retired term that names its replacement. A rule is advisory when the remedy is a rewrite: a sentence past 25 words, a semicolon, a stock metaphor, and every voice category. `.githooks/pre-commit` runs `headwater check --strict`, which fails on an error and reports everything else, and CI runs the same check on every pull request. Each clone needs these four once, and the gate prints them when a clone has not set them:
+Every rule above is a check that `headwater check` runs, declared in this repository's taxonomy, and no second copy of any rule lives in a script. A rule is an error when its remedy is mechanical and total: a contraction, a British spelling, a hard-wrapped block, and a retired term that names its replacement. A rule is advisory when the remedy is a rewrite: a sentence past 25 words, a semicolon, a stock metaphor, and every voice category. `.githooks/pre-commit` runs `headwater check --strict`, which fails on an error and reports everything else, and CI runs the same check on every pull request. Each clone needs these three once, and the gate prints them when a clone has not set them:
 
     git config core.hooksPath .githooks
     git config merge.headwater-regenerate.name "regenerate a derived artifact"
     git config merge.headwater-regenerate.driver ".githooks/merge-regenerate %O %A %B %P"
-    awk '!/^#/ && $2 == "-merge" { print $1 " merge=headwater-regenerate" }' .gitattributes >> "$(git rev-parse --git-path info/attributes)"
 
-`.gitattributes` commits `-merge` for each derived fold, so a clone without these lines still conflicts on one. The last line selects the driver in this clone alone, and it goes in only after the two `git config` lines, because git reads a driver that no config defines as a text merge.
+`.gitattributes` commits `-merge` for each derived fold, so a clone without these lines still conflicts on one. `.githooks/select-merge-driver` selects the driver in the clone's own `info/attributes` once the two `git config` lines are set, and the hooks run it on checkout, merge and commit. The driver line never goes in `.gitattributes`, because git reads a driver that no config defines as a text merge.
 
 `headwater check --fix` writes the corrections the engine can derive without judgment and prints what it wrote on standard error. It leaves every finding whose remedy is a rewrite, and it refuses a file rather than half-writing one. Read the diff before you commit it.
 

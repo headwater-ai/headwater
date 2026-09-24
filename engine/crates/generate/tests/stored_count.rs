@@ -23,10 +23,11 @@
 //! merges each page as text. The merged page must be the page that
 //! `headwater generate` writes over the merged tree.
 //!
-//! A shelf page still keeps `-merge` after this change,
-//! because its row order is a fold over the relation graph of the shelf and
-//! not a record order. The second case places the two new documents where no
-//! relation moves an existing row, so it measures the count alone.
+//! A shelf page carries no merge attribute after #1058. Its row order is
+//! derived over the relation graph of the shelf, and 1058-a measured pairs that
+//! move rows by supersession merging as text to the producer's bytes as well.
+//! The second case places the two new documents where no relation moves an
+//! existing row, so it measures the count alone.
 
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
