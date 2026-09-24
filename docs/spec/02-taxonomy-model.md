@@ -135,6 +135,7 @@ relations:
     reciprocal: required
     nuclearity: multinuclear           # both ends stand alone
     on_target: {set_state: superseded}
+    lifecycle_sensitive: true          # its ends have a lifecycle
     created_by: scaffold               # who pays for this edge
 
   derives_from:

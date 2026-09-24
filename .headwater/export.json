@@ -2062,8 +2062,8 @@
           "id": "HW-DR-0072",
           "status": "current",
           "status_since": "2026-09-17",
-          "summary": "An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test; a network fetch left the list under HW-DR-0075; and the change manifest fails the test and is a defect.",
-          "last_verified": "2026-09-19",
+          "summary": "An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test, a network fetch left the list under HW-DR-0075, and a verb writes the change manifest.",
+          "last_verified": "2026-09-24",
           "title": "The binary is the only interface an adopter must run, and every integration point outside it is declared",
           "provenance": {
             "warrant": "accepted",
@@ -3649,7 +3649,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How one member of the JSON object on standard input reaches a caller, and the one answer that stands for every way a read reaches no scalar.",
-          "last_verified": "2026-09-06",
+          "last_verified": "2026-09-24",
           "title": "headwater json",
           "relations": {
             "governs": [
@@ -10772,7 +10772,7 @@
           "id": "HW-SPEC-harness-support",
           "status": "current",
           "status_since": "2026-09-06",
-          "summary": "The ten capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.",
+          "summary": "The eleven capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.",
           "last_verified": "2026-09-09",
           "doc_type": "design_spec",
           "sequence": "16",
