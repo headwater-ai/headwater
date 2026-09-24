@@ -6310,8 +6310,8 @@ const DRIVER_ATTRIBUTE: &str = "merge=headwater-regenerate";
 /// `headwater derived` knows four producers, and two of them are a script and a
 /// toolchain of the repository that maintains this engine. An adopter holds
 /// neither, so a line this step wrote for one of them would name a producer
-/// the adopter cannot run. `Producer::held_by` is the one predicate, and
-/// `headwater derived` reads it too. The lock is always in the set, because
+/// the adopter cannot run. `Producer::held_by` is the one predicate. The
+/// population applies it, so this step and `headwater derived` read one set. The lock is always in the set, because
 /// `headwater taxonomy resolve` writes it and nothing else does, whether or
 /// not it has run yet.
 ///
@@ -6329,7 +6329,8 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
     let mut paths: Vec<String> = population
         .outputs
         .iter()
-        .filter(|output| output.producer.held_by(root))
+        // No filter here: `population` already drops the output of every
+        // producer the tree does not hold, by `Producer::held_by`.
         .map(|output| output.path.clone())
         .collect();
     paths.push(LOCK.to_string());

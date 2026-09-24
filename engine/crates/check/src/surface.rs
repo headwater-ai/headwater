@@ -68,6 +68,7 @@ pub const RULE: &str = "surface.local_path.instructed";
 pub struct LocalPath {
     adopter_documents: Vec<String>,
     local_roots: Vec<String>,
+    programs: Vec<String>,
 }
 
 impl LocalPath {
@@ -78,6 +79,7 @@ impl LocalPath {
         LocalPath {
             adopter_documents: shape.surface.adopter_documents.clone(),
             local_roots: shape.surface.local_roots.clone(),
+            programs: shape.surface.programs.clone(),
         }
     }
 
@@ -92,13 +94,17 @@ impl LocalPath {
     }
 
     /// The local root a token opens with, if it opens with one, or the root a
-    /// token is when it names the root with no trailing `/`.
+    /// token is when it names the root with no trailing `/` and is not the
+    /// name of a program the surface declares.
     fn root_of(&self, token: &str) -> Option<&str> {
         let token = strip_variable(token);
         let token = token.strip_prefix("./").unwrap_or(token);
         self.local_roots
             .iter()
-            .find(|root| token.starts_with(root.as_str()) || token == root.trim_end_matches('/'))
+            .find(|root| {
+                token.starts_with(root.as_str())
+                    || (token == root.trim_end_matches('/') && !self.programs.iter().any(|p| p == token))
+            })
             .map(String::as_str)
     }
 }
@@ -118,7 +124,9 @@ impl DocumentCheck for LocalPath {
     ///
     /// Edition four (#976): a token that is a local root with its trailing
     /// `/` removed counts, so the bare directory of a `git config
-    /// core.hooksPath` line is reported.
+    /// core.hooksPath` line is reported. A bare token that the surface
+    /// declares as a program, as `mkdocs` is, names that program and does not
+    /// count.
     const VERSION: u32 = 4;
     const NEEDS_BODY: bool = true;
 
