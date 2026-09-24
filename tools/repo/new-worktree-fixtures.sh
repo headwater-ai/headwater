@@ -117,5 +117,75 @@ else
     echo "  FAIL  a missing worktree-add argument is refused (exit $status)"
 fi
 
+echo "from inside a linked worktree, a nested path is refused and the main checkout is used (#848)"
+# An agent whose session inherited a linked worktree computes its root with
+# `git rev-parse --show-toplevel`, which answers that linked tree, and asks
+# for a new tree under it. The tool must refuse that path, name the one under
+# the main checkout, and leave the inherited tree exactly as it was.
+: > "$log"
+inherited="$clone/.claude/worktrees/inherited"
+git -C "$clone" worktree add -q -b inherited-branch "$inherited" origin/main 2>/dev/null
+inh_head=$(git -C "$inherited" rev-parse HEAD)
+inh_real=$(cd "$inherited" && pwd -P)
+clone_real=$(cd "$clone" && pwd -P)
+nested="$(cd "$inherited" && git rev-parse --show-toplevel)/.claude/worktrees/new"
+(cd "$inherited" && LOG="$log" sh "$tool" "$nested" -b nested-branch origin/main) > "$scratch/out" 2>"$scratch/err"
+status=$?
+if [ "$status" -ne 0 ] && [ ! -e "$nested" ] && [ ! -e "$inh_real/.claude/worktrees/new" ] \
+    && grep -qF "$clone_real/.claude/worktrees/new" "$scratch/err"; then
+    passed=$((passed + 1))
+    echo "  ok    a path inside the inherited worktree is refused and the main-checkout path is named"
+else
+    failed=$((failed + 1))
+    echo "  FAIL  a path inside the inherited worktree is refused (exit $status, nested exists: $([ -e "$nested" ] && echo yes || echo no))"
+    echo "        err: $(cat "$scratch/err")"
+fi
+
+(cd "$inherited" && LOG="$log" sh "$tool" "$clone/.claude/worktrees/new" -b new-branch origin/main) > "$scratch/out" 2>"$scratch/err"
+status=$?
+if [ "$status" -eq 0 ] && [ "$(git -C "$clone/.claude/worktrees/new" branch --show-current 2>/dev/null)" = new-branch ]; then
+    passed=$((passed + 1))
+    echo "  ok    the main-checkout path, called from the inherited tree, makes the new tree there"
+else
+    failed=$((failed + 1))
+    echo "  FAIL  the main-checkout path from the inherited tree (exit $status)"
+    echo "        err: $(cat "$scratch/err")"
+fi
+
+(cd "$inherited" && LOG="$log" sh "$tool" --name named -b named-branch origin/main) > "$scratch/out" 2>"$scratch/err"
+status=$?
+if [ "$status" -eq 0 ] && [ "$(git -C "$clone/.claude/worktrees/named" branch --show-current 2>/dev/null)" = named-branch ] \
+    && [ ! -e "$inh_real/.claude/worktrees/named" ]; then
+    passed=$((passed + 1))
+    echo "  ok    --name places the tree under the main checkout, not the inherited one"
+else
+    failed=$((failed + 1))
+    echo "  FAIL  --name places the tree under the main checkout (exit $status)"
+    echo "        err: $(cat "$scratch/err")"
+fi
+
+if [ "$(git -C "$inherited" branch --show-current)" = inherited-branch ] \
+    && [ "$(git -C "$inherited" rev-parse HEAD)" = "$inh_head" ] \
+    && [ -z "$(git -C "$inherited" status --porcelain)" ]; then
+    passed=$((passed + 1))
+    echo "  ok    the inherited tree keeps its branch, its HEAD and a clean status"
+else
+    failed=$((failed + 1))
+    echo "  FAIL  the inherited tree changed: branch $(git -C "$inherited" branch --show-current), status: $(git -C "$inherited" status --porcelain | tr '\n' ' ')"
+fi
+
+echo "a relative path is read against the caller's directory, not the main checkout"
+: > "$log"
+(cd "$clone" && LOG="$log" sh "$tool" ../relwt -b rel-branch origin/main) > "$scratch/out" 2>"$scratch/err"
+status=$?
+if [ "$status" -eq 0 ] && [ -d "$scratch/relwt" ]; then
+    passed=$((passed + 1))
+    echo "  ok    ../relwt from the clone lands beside it"
+else
+    failed=$((failed + 1))
+    echo "  FAIL  a relative path (exit $status)"
+    echo "        err: $(cat "$scratch/err")"
+fi
+
 echo "$passed passed; $failed failed"
 [ "$failed" -eq 0 ]
