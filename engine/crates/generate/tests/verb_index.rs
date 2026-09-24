@@ -256,6 +256,17 @@ fn every_verb_gets_a_row_and_the_undescribed_ones_are_marked() {
         rows[0].contains("what the first screen says about `check`"),
         "the row carries the summary the dispatch table holds\n{bytes}"
     );
+    // #1058: the opening sentence counts nothing. A count of the contracts on
+    // this shelf is a fold that a text merge of two branches gets wrong, and
+    // the mark in the last column already says which verb has none.
+    let opening = bytes
+        .lines()
+        .find(|line| line.starts_with('`'))
+        .unwrap_or_else(|| panic!("the index opens with a sentence\n{bytes}"));
+    assert!(
+        !opening.chars().any(|c| c.is_ascii_digit()),
+        "the index stores a count of the verbs or of their contracts:\n{opening}"
+    );
     for group in ["## Reading", "## Sampling"] {
         assert!(
             bytes.contains(group),
