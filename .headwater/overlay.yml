@@ -1212,6 +1212,13 @@ add:
   # a pattern that claimed it with the entries would be `docs/taxonomies/**`
   # again. Neither pattern claims a path the exclusions in
   # `.headwater/taxonomy.yml` claim, and neither claims a path of another shelf.
+  #
+  # **`headwater new library_doctrine` refuses, and that is known.** The kind
+  # sits on two shelves, and neither shelf names a directory that a new file
+  # could go into: one is a fixed file name under a glob, and one is a single
+  # file. A doctrine page is written with its library entry, by hand, and the
+  # front matter of a sibling is the shape. A split into two kinds does not
+  # help, because the scaffolder places neither pattern.
 
   identifier_schemes.library_doctrine_id:
     pattern: "{namespace}-LIB-{slug}"
