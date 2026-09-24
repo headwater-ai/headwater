@@ -1007,7 +1007,7 @@ fn declarations(root: &Path) -> Vec<(String, Treatment)> {
 /// root glob whose last component is `.gitattributes`, and that entry is still
 /// named and is still a disagreement, only under the other heading.
 pub fn is_a_nested_attributes_file(entry: &str) -> bool {
-    !is_a_pattern(entry) && entry.ends_with("/.gitattributes")
+    entry.ends_with("/.gitattributes")
 }
 
 /// Whether a `.gitattributes` pattern reaches more than the path it spells.
