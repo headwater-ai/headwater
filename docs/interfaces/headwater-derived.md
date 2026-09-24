@@ -27,9 +27,17 @@ Four producers answer, and each one has its own rule. `headwater generate` claim
 
 The fourth rule reads the shape of the artifact and not the name of the file. [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) decomposed two recorded fixtures into one record for each entity, so that they merge correctly. A decomposed artifact must not declare the merge driver. What separates the two groups is the fold, and a fold shows in the first lines of the artifact as a count over the corpus or as a digest over the whole canonical text.
 
-The verb then holds the computed set against the `merge=headwater-regenerate` attribute in `.gitattributes`, and it reports both directions. A producer output that carries no attribute merges as an ordinary file, and two branches that move it to one value merge it in silence. A path that carries the attribute and no producer writes refuses a merge of text that a person now edits. `.gitattributes` names the second failure the worse of the two.
+The verb then holds the computed set against the `merge=headwater-regenerate` attribute, and it reports both directions. A producer output that carries no attribute merges as an ordinary file, and two branches that move it to one value merge it in silence. A path that carries the attribute and no producer writes refuses a merge of text that a person now edits. `.gitattributes` names the second failure the worse of the two.
 
-The verb reads the tree and nothing else. It reads no lock, resolves no taxonomy and runs no producer. So it answers on a tree whose lock is stale, and on a tree in the middle of a merge, which are the two moments a caller asks the question.
+The verb reads the tree. It also asks git two questions about the tree: which paths git ignores, and which merge attribute git gives each path. It reads no lock, resolves no taxonomy and runs no producer. So it answers on a tree whose lock is stale, and on a tree in the middle of a merge, which are the two moments a caller asks the question.
+
+### Where the merge attribute comes from
+
+**Inside a git repository, git gives the merge attribute.** The verb runs `git check-attr merge` one time, for every file of its walk, every literal path of the root `.gitattributes`, and the lock. Git applies its own precedence. A `.gitattributes` in a deeper directory wins over one nearer the root, `$GIT_DIR/info/attributes` wins over every `.gitattributes`, and `core.attributesFile` applies below all of them. Git also expands its own patterns and macros, so the `binary` macro and `-merge` both give a path no merge attribute. The answer of the verb is the answer that a merge gets.
+
+**Outside a git repository, the verb reads the root `.gitattributes` alone.** It reads that file as a list of literal paths. It does not read a nested file, and it does not expand a pattern. No merge reads the attributes of such a tree, so this reader is for a tree that is not a repository yet.
+
+The verb is not on the check-evaluation path. [Spec 12](../spec/12-check-layer.md) keeps version control commands off that path, and `headwater check` does not call this verb.
 
 ### The shape of a record, and the treatment that shape takes
 
@@ -47,7 +55,7 @@ Three rules give the shape, and they are read in this order:
 
 **The third rule covers two rows of the table, and the verb says both rather than guessing one.** Nothing in the structure of an artifact separates a fold over the records from a fold over everything. The separation costs nothing here, because the two rows take one merge attribute. A fold of either kind is derived rather than merged. The evaluation gives the two rows different cures rather than different attributes.
 
-**The reported set is wider than the computed population.** The population holds what a producer writes. The shape report adds every path that `.gitattributes` gives a merge attribute, and every decomposed recorded fixture. A row of the table with no member in the report stops being read in silence. Over this repository the population is the smaller of the two.
+**The reported set is wider than the computed population.** The population holds what a producer writes. The shape report adds every path that has a merge attribute, and every decomposed recorded fixture. A row of the table with no member in the report stops being read in silence. Over this repository the population is the smaller of the two.
 
 ### A disagreement between a shape and a treatment
 
@@ -62,7 +70,9 @@ Three rules give the shape, and they are read in this order:
 | A fold | None | Two branches that move the fold to one value merge it in silence, into a value true of neither |
 | A fold | `merge=union` | Two folds interleave into a value true of nothing, which is the worst of them and which nothing else of this repository reports |
 
-**A merge attribute that this verb cannot read is reported too.** The verb reads `.gitattributes` as a list of paths. A pattern that carries a merge attribute and a glob character reaches files this reader cannot enumerate. The verb names such a line rather than passing over it, because a declaration nothing reads looks the same as a declaration that agrees.
+**A merge driver that this verb does not know is reported by its name.** Git can give a path a driver such as `merge=ours`. The verb cannot say what that driver does with a shape. So the report names the path and the driver, and a path with a shape and such a driver is a disagreement. The verb does not read the driver as no attribute, because a driver that nothing reads looks the same as a path that agrees.
+
+**Outside a git repository, a merge attribute that this verb cannot read is reported too.** The root-file reader reads `.gitattributes` as a list of paths. A pattern that carries a merge attribute and a glob character reaches files this reader cannot enumerate. The verb names such a line rather than passing over it. Inside a repository, git expands every pattern, and this finding does not occur.
 
 **The check layer does not carry this rule, and the reason is the grain.** A check of this repository runs at the grain of a document or of the corpus. [Spec 12](../spec/12-check-layer.md) gives a finding a document to hang on. Most paths here are not documents: a lock, a site page, a record of a test run, and a store of readings. A rule whose subject is a path that no shelf claims has no document grain to run at. So it lives in the verb that already computes the population.
 
@@ -70,7 +80,9 @@ Three rules give the shape, and they are read in this order:
 
 ## Preconditions
 
-The repository root must hold a readable `.gitattributes`. A root without one reports every producer output as undeclared.
+Inside a git repository, the `git` executable must be on the `PATH`. The verb already needs it to read the ignore rules. A repository with no file that declares `merge=headwater-regenerate` reports every producer output as undeclared.
+
+Outside a git repository, the root must hold a readable `.gitattributes`. A root without one reports every producer output as undeclared.
 
 No producer has to run first. The verb reads what each producer last wrote, and it does not compare that against what a producer would write now. `headwater generate --check` and `headwater taxonomy resolve --check` are the verbs that ask the second question.
 
@@ -88,17 +100,17 @@ The verb takes no option of its own. It computes one answer about one tree, and 
 
 **0** means that the computed set and the declared set agree, and that every reported path carries the merge attribute its shape takes.
 
-**1** means that at least one of those disagrees. Four things give this status. A producer output carries no attribute. A declared path has no producer. A shape carries an attribute that is not its treatment. A merge attribute is one this verb cannot read. The report prints the whole answer, on standard output, under either status.
+**1** means that at least one of those disagrees. Four things give this status. A producer output carries no attribute. A declared path has no producer. A shape carries an attribute that is not its treatment. Outside a git repository, a merge attribute is one this verb cannot read. The report prints the whole answer, on standard output, under either status.
 
 ## Environment
 
-No environment variable reaches this verb. The root comes from the command line, and every other input comes from the tree.
+The verb reads no environment variable itself. The root comes from the command line, and every other input comes from the tree. Inside a git repository, git reads the configuration of the clone and its own environment, such as `GIT_DIR`. So `core.attributesFile` and `$GIT_DIR/info/attributes` can change the merge attribute of a path, as they change what a merge does.
 
 ## Files
 
 | Path | How this verb treats it |
 |---|---|
-| `.gitattributes` | Read for the merge attribute of every path it names. A path declares `merge=headwater-regenerate`, or `merge=union`, or neither, and all three answers are held against the shape of that path. |
+| `.gitattributes`, in any directory | Inside a git repository, git reads every one of them, with `$GIT_DIR/info/attributes` and `core.attributesFile`, and the verb takes the answer of `git check-attr`. Outside a repository, the verb reads the root file alone. A path has `merge=headwater-regenerate`, `merge=union`, no merge attribute, or a driver this verb does not know. The verb holds each answer against the shape of that path. |
 | `.headwater/taxonomy.lock` | Claimed as the output of `headwater taxonomy resolve`. Its content is not read. |
 | `.headwater/capture-cost.jsonl`, `.headwater/adoption.jsonl` | Read for their shape. No producer writes either one, and both carry `merge=union`. |
 | Every other file of the tree | Read, to ask each producer rule whether the file is its own, and to compute the shape of the ones the report names. |
