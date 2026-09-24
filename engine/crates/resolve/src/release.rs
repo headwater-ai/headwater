@@ -14,14 +14,14 @@
 //!
 //! [Spec 0](../../../../docs/spec/00-vision-and-scope.md#non-negotiables)
 //! forbids a network dependency at check time, and no crate the checking loop
-//! reaches depends on the network. `headwater taxonomy vendor` takes the path of
-//! a directory that the caller already fetched, by whatever moves a directory in
-//! the organization it runs in. So the guarantee is a property of this crate
-//! rather than a rule anybody polices: a verb that takes a path opens no socket
-//! here, and there is no code path in this crate that could.
+//! reaches depends on the network. This crate reads a directory. When
+//! `headwater taxonomy vendor` is given a location, `headwater-fetch` turns it
+//! into a directory first, and
 //! [HW-DR-0075](../../../../docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)
-//! rules that `vendor` may accept a location too, confined to a crate this one
-//! stays free of.
+//! confines that crate to the binary. So the guarantee is a property of this
+//! crate rather than a rule anybody polices: there is no code path in this
+//! crate that opens a socket, and `crates/cli/tests/network_boundary.rs` fails
+//! if one arrives through a dependency.
 //!
 //! # What the digest proves, and what it does not
 //!

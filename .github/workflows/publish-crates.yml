@@ -122,8 +122,10 @@ jobs:
           # `headwater-hash`: it depends on nothing and `headwater-check`
           # depends on it, so it goes anywhere before that crate.
           # `headwater-vcs` joined at #929 as a third: it depends on nothing,
-          # and only `headwater-cli` depends on it.
-          order="headwater-hash headwater-mark headwater-paint headwater-vcs headwater-verbs headwater-yaml \
+          # and only `headwater-cli` depends on it. `headwater-fetch` joined at
+          # #959 as a fourth, on the same terms: no workspace dependency, and
+          # `headwater-cli` its one dependent (HW-DR-0075).
+          order="headwater-hash headwater-mark headwater-paint headwater-vcs headwater-fetch headwater-verbs headwater-yaml \
                  headwater-doc headwater-ref headwater-meta headwater-resolve \
                  headwater-census headwater-graph headwater-lock headwater-check \
                  headwater-probe headwater-scaffold headwater-sweep \

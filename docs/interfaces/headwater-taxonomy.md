@@ -52,7 +52,7 @@ The consumer declaration and package sources must be readable for source operati
 | `resolve [--check]` | Writes or checks `.headwater/taxonomy.lock`. |
 | `audit [--now <date>] [--record]` | Measures the taxonomy against the corpus. `--record` appends one adoption reading to `.headwater/adoption.jsonl`, and refuses a reading the store already holds at this lock and this date. |
 | `publish [--package <name>] [--from <dir>] [--assembly <name>] [--out <dir>] [--clear-killed] [--json]` | Writes a package artifact and release record, or a flattened artifact from the named assembly. `--clear-killed` removes the files a killed publish left at the output directory, and publishes in the same run. `--json` writes the record as one JSON document on standard output. |
-| `vendor <dir> [--expect <digest>]` | Installs a fetched artifact after digest validation. It reports a second artifact installed under the version already there, with both digests and both member counts. |
+| `vendor <dir-or-location> [--expect <digest>]` | Installs an artifact after digest validation, from a directory somebody already fetched or from an `https://` location this verb fetches. It reports a second artifact installed under the version already there, with both digests and both member counts. |
 | `diff <dir> [--to <version>] [--now <date>]` | Compares a fetched artifact with the current taxonomy. |
 | `migrate <dir> [--to <version>] [--apply] [--now <date>]` | Reports or applies migration steps. It reads the version it migrates from out of the lock header against no pin, and it refuses a transition that is not forward. |
 | `--root <path>` | Selects the repository to load. |

@@ -354,8 +354,8 @@ pub const VERBS: &[Verb] = &[
             },
             Word {
                 name: "vendor",
-                summary: "check a fetched artifact against the pinned digest",
-                description: "Check an artifact that somebody already fetched against the digest this repository pinned, and install it under `.headwater/packages/`. It refuses an artifact that is not the pinned one, and it names every file that moved. Nothing here fetches: this verb depends on nothing that opens a socket, so it takes the path of a directory and never a location.",
+                summary: "check an artifact against the pinned digest and install it",
+                description: "Check an artifact against the digest this repository pinned, and install it under `.headwater/packages/`. The argument is a directory somebody already fetched, or the `https://` location of a published artifact zip, which this verb fetches and unpacks first. It refuses an artifact that is not the pinned one, and it names every file that moved. The fetch lives in `headwater-fetch`, which only the binary links, so no crate of the checking loop opens a socket.",
             },
             Word {
                 name: "diff",

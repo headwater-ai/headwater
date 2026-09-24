@@ -1160,10 +1160,10 @@ pub enum TaxonomyWord {
     },
     Vendor {
         #[arg(
-            value_name = "dir",
-            help = "the directory of an artifact somebody already fetched. This verb opens no \
-                    socket today, so it takes a path here and never a location (HW-DR-0075 rules \
-                    that a location may reach it too, from a crate this one never links)"
+            value_name = "dir-or-location",
+            help = "the directory of an artifact somebody already fetched, or the https:// \
+                    location of a published artifact zip, which this verb fetches through \
+                    `headwater-fetch`, a crate nothing in the checking loop links (HW-DR-0075)"
         )]
         path: Option<String>,
         #[arg(

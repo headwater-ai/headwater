@@ -22,7 +22,23 @@ path = "src/main.rs"
 # decision this file makes about which library value to read, which is the one
 # thing a test of a library under it cannot see. Three defects of that shape
 # have been found here, so the exception is narrow and it is not a consumer.
+# `fetch` is on by default, so the released binary can take a location for
+# `taxonomy vendor` (HW-DR-0075, decided in #959). The 0.2 bar is adoption from
+# the binary alone, and an adopter who has only the binary has no other way to
+# fetch a published taxonomy. `--no-default-features` is a distributor's
+# opt-out: the binary it builds opens no socket anywhere, and `vendor` refuses a
+# location with one line that names the path form. `release.yml` builds with
+# the default features, so every released binary carries it.
+[features]
+default = ["fetch"]
+fetch = ["dep:headwater-fetch"]
+
 [dependencies]
+# The one crate of this workspace that opens a socket, and this binary is the
+# one crate that names it. `tests/network_boundary.rs` reads `Cargo.lock` and
+# fails when anything else reaches it or the client under it.
+headwater-fetch = { workspace = true, optional = true }
+
 # The sampler, which is not a check and is a separate crate for that reason.
 # Nothing in `headwater-check` names it, so no rule can read a sweep finding
 # and `--strict` can never see one.
@@ -120,6 +136,12 @@ clap = { version = "4.6.6", features = ["derive"] }
 # the same argument the verb index makes: a completion script written by hand
 # would be the sixth copy of the verb list #257 was filed about.
 clap_complete = { version = "4.6.9", default-features = false }
+
+[dev-dependencies]
+# `tests/publish.rs` packs a published artifact into the zip a release carries
+# and serves it on 127.0.0.1, to hold `vendor <location>` to `vendor <dir>`.
+# The same version `headwater-fetch` reads with, so the lock gains nothing.
+zip = { version = "5.1.1", default-features = false, features = ["deflate-flate2"] }
 
 [lints]
 workspace = true
