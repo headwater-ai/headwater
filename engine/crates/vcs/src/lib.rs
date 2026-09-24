@@ -313,8 +313,10 @@ pub fn merge_attributes(root: &Path, paths: &[String]) -> Option<Vec<(String, St
         .collect();
     Some(
         fields
-            .chunks_exact(3)
-            .map(|triple| (triple[0].clone(), triple[2].clone()))
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .map(|[path, _, value]| (path.clone(), value.clone()))
             .collect(),
     )
 }
