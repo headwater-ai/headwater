@@ -234,11 +234,12 @@ pub(crate) fn front_matter(
         out.push_str(&format!("{facet}: {name}\n"));
         written.push(facet.to_string());
     }
-    for (facet, value) in crate::derived::members(surface, identity, output, composed, &written)? {
+    let derived = crate::derived::members(surface, identity, output, composed, &written)?;
+    for (facet, value) in derived.values {
         out.push_str(&format!("{facet}: {value}\n"));
         written.push(facet);
     }
-    unwritable(surface, identity, &written)?;
+    unwritable(surface, identity, &written, &derived.unsupplied)?;
     let owed = reciprocals(surface, identity, output);
     if !owed.is_empty() {
         out.push_str(&format!("{}:\n", config.relations_facet));
@@ -285,10 +286,20 @@ pub(crate) fn front_matter(
 /// [`Surface`], and [`Surface::shape`] carries `required_facets`. It also has
 /// the shelf that claims the output path, which is what decides whether the
 /// discriminator is a facet the block writes at all.
+///
+/// # Two causes, and two sentences
+///
+/// A facet in no role this engine reads and no shelf layout is the taxonomy's
+/// defect, and the sentence below says so. A facet in a role the engine derives,
+/// whose sources carry no value, is not: the repair is a value on a source
+/// document, and `unsupplied` carries that cause from [`crate::derived`]. Until
+/// #820 both got the first sentence, which sent the reader to a taxonomy where
+/// nothing was wrong.
 fn unwritable(
     surface: &Surface<'_>,
     identity: &DeclaredIdentity,
     written: &[String],
+    unsupplied: &[(String, String)],
 ) -> Result<(), String> {
     let missing: Vec<String> = surface
         .shape()
@@ -300,19 +311,47 @@ fn unwritable(
         return Ok(());
     }
     let kind = &identity.kind;
-    let facets = missing
+    let cause_of = |facet: &String| {
+        unsupplied
+            .iter()
+            .find(|(named, _)| named == facet)
+            .map(|(_, cause)| cause.as_str())
+    };
+    let mut reasons: Vec<String> = missing
+        .iter()
+        .filter_map(|facet| {
+            cause_of(facet).map(|cause| {
+                format!(
+                    "declares the kind `{kind}`, and `{kind}` requires the facet `{facet}`, which \
+                     this file cannot carry: {cause}"
+                )
+            })
+        })
+        .collect();
+    let unread: Vec<&String> = missing
+        .iter()
+        .filter(|facet| cause_of(facet).is_none())
+        .collect();
+    if unread.is_empty() {
+        return Err(reasons.join(". "));
+    }
+    let facets = unread
         .iter()
         .map(|facet| format!("`{facet}`"))
         .collect::<Vec<_>>()
         .join(", ");
-    Err(format!(
-        "declares the kind `{kind}`, and `{kind}` requires the facet {facets}, which nothing \
+    reasons.insert(
+        0,
+        format!(
+            "declares the kind `{kind}`, and `{kind}` requires the facet {facets}, which nothing \
          writing this file can supply. This block writes the identifier, the discriminator of a \
          heterogeneous shelf and the facet in the `name` role, and the engine derives a state, \
          the two dates and the summary. A facet outside all of those carries no role this engine \
          reads and no shelf layout names it. A generated document is the one document whose only \
          writer is this engine, so such a facet is one no author can add and no check reads"
-    ))
+        ),
+    );
+    Err(reasons.join(". "))
 }
 
 /// The reason no file can be written when the kind requires a section that the

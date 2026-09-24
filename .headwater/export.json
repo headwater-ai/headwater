@@ -8669,7 +8669,7 @@
           "status": "current",
           "status_since": "2026-09-08",
           "summary": "A caller that passes the plain color mode forever is a defect that no type and no piped test can report.",
-          "last_verified": "2026-09-11",
+          "last_verified": "2026-09-24",
           "title": "A renderer's color mode is wired at a call site that no type forbids from being wrong",
           "waiting_on": "build",
           "provenance": {
@@ -10745,7 +10745,7 @@
           "id": "HW-SPEC-harness-support",
           "status": "current",
           "status_since": "2026-09-06",
-          "summary": "The ten capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.",
+          "summary": "The eleven capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.",
           "last_verified": "2026-09-09",
           "doc_type": "design_spec",
           "sequence": "16",

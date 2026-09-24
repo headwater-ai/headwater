@@ -580,13 +580,13 @@ $out" ;;
     # The agent tells its reader to drive the write hook by hand, one path at a
     # time. If that invocation stops working the agent's third part is empty and
     # nothing else reports it.
-    sentence='hook_event_name":"PostToolUse'
+    sentence='hook_event_name":"PreToolUse'
     if ! grep -qF "$sentence" "$agents/headwater-maintainer.md"; then
         fail 'the impact invocation the agent prints answers' \
-            'the agent no longer names the PostToolUse position'
+            'the agent no longer names the PreToolUse position'
     else
         export HEADWATER_HOOK_ROOT="$root"
-        out=$(printf '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/write.sh"}}' |
+        out=$(printf '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/write.sh"}}' |
             sh "$root/.claude/hooks/write.sh" 2>&1)
         case $out in
             *docs/spec/05-ai-integration.md*)
@@ -626,7 +626,7 @@ $out" ;;
         fail "$name" 'the agent no longer says what a governed crate answers'
     else
         export HEADWATER_HOOK_ROOT="$root"
-        out=$(printf '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}' |
+        out=$(printf '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}' |
             sh "$root/.claude/hooks/write.sh" 2>/dev/null)
         if [ -z "$out" ]; then
             fail "$name" 'the hook said nothing at all'

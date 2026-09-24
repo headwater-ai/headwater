@@ -1,12 +1,21 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # The smallest shape that exercises `headwater_graph::anchors::CommentScan`
-# end to end: one kind whose `governs` reaches a `test_site` anchor, and two
-# documents whose target files differ in one line only, the comment each one
-# carries. `unminted/sample.rs` cites an identifier this taxonomy's own list
-# does not hold, and `minted/sample.rs` cites the one it does. Both files are
-# otherwise identical, so a difference in what `headwater_check::run` reports
-# for the two can come from nothing but the resolver reading that one line.
+# end to end: one kind whose `governs` reaches a `test_site` anchor, and four
+# documents whose target files differ only in the comment each one carries.
+# A `comment-scan` edge binds only where the target's comment cites the
+# identifier of the document that asserts the edge, and that identifier is
+# minted (#967). So `minted/` cites its own minted identifier and is clean,
+# `unminted/` cites its own identifier, which the test's list does not hold,
+# `other/` cites a different minted identifier and nothing else, and `two/`
+# cites that other identifier first and its own second.
+#
+# The scheme is `{namespace}-VER-{seq:04d}` with namespace `HW`, and not the
+# `CS-FIX-{slug}` it was before #967, so that each document's own identifier
+# carries the `HW-VER-` prefix the resolver scans for. That is the shape of
+# the verification identifier this repository's overlay declares, so the
+# fixture exercises the prefix an adopter meets rather than one invented for
+# the test.
 #
 # `Resolvers::over` is not enough here: `comment-scan` is not `source-tree`, so
 # this file's test builds a `Resolvers` set by hand, with a
@@ -37,7 +46,7 @@ regimes:
       transitions: {draft: [current], current: [retired]}
 
 identifier_schemes:
-  fixture_id: {pattern: "CS-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+  fixture_id: {pattern: "{namespace}-VER-{seq:04d}", namespace: HW, allocation: minted-once}
 
 anchors:
   test_site: {resolver: comment-scan}
