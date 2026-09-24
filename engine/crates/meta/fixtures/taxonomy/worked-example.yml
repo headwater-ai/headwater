@@ -64,6 +64,7 @@ relations:
     reciprocal: required
     nuclearity: multinuclear
     on_target: {set_state: superseded}
+    lifecycle_sensitive: true
     created_by: scaffold
   derives_from:
     family: derivation
