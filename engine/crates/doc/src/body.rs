@@ -809,4 +809,18 @@ mod tests {
         let body = body_of("```\nfirst\nsecond\n```\n");
         assert_eq!(body.blocks[0].kind, BlockKind::Code);
     }
+
+    /// The first word of a fence's info string is kept, because a rule that
+    /// reads commands reads only a block its author tagged as a shell (#1051).
+    /// An untagged fence and an indented block carry none.
+    #[test]
+    fn a_fenced_block_keeps_the_first_word_of_its_info_string() {
+        let tagged = body_of("```sh title=x\nx\n```\n");
+        assert_eq!(tagged.blocks[0].info.as_deref(), Some("sh"));
+        let untagged = body_of("```\nx\n```\n");
+        assert_eq!(untagged.blocks[0].info, None);
+        let indented = body_of("Text.\n\n    x\n");
+        assert_eq!(indented.blocks[1].kind, BlockKind::Code);
+        assert_eq!(indented.blocks[1].info, None);
+    }
 }

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! `surface.local_path.instructed`, held against the manifest it reads.
+//! `surface.local_path.instructed` and `surface.command.undeclared`, held
+//! against the manifest they read.
 //!
 //! # What this target is evidence of
 //!
@@ -157,12 +158,17 @@ impl Root {
     /// The message of each finding of this rule on one document that no escape
     /// hides, read from the JSON report, which prints one member per line.
     fn findings(&self, slug: &str) -> Vec<String> {
+        self.findings_of(RULE, slug)
+    }
+
+    /// The same, for any rule of the surface.
+    fn findings_of(&self, rule: &str, slug: &str) -> Vec<String> {
         let (_, out, _) = self.run(&["check", "--format", "json"]);
         let path = format!("\"path\": \"docs/interfaces/{slug}.md\",");
         let lines: Vec<&str> = out.lines().map(str::trim).collect();
         let mut messages = Vec::new();
         for (at, line) in lines.iter().enumerate() {
-            if *line != format!("\"rule\": \"{RULE}\",") {
+            if *line != format!("\"rule\": \"{rule}\",") {
                 continue;
             }
             // One finding runs to the next `rule` member. A finding the runner
@@ -328,5 +334,48 @@ fn the_surface_block_generates_a_page_that_goes_stale_with_it() {
     assert!(
         again.contains("`unzip`"),
         "the page follows the block\n{again}"
+    );
+}
+
+/// The command rule (#1051). A page on the list holds four blocks, and only
+/// the first one is a command the surface does not declare:
+///
+/// - (a) an `sh` block that runs `cargo`, which `commands` does not list,
+/// - (b) a `yaml` block whose first word is `name:`,
+/// - (c) an untagged block of output whose first word is `wrote`,
+/// - (d) an `sh` block that runs `headwater` behind a `$ ` prompt.
+///
+/// A rule that reads untagged blocks reports (c), a rule that ignores the info
+/// string reports (b), and a rule that does not strip the prompt reports (d).
+const COMMANDS: &str = "\n```sh\ncargo install headwater\n```\n\n```yaml\nname: acme\n```\n\n```\nwrote docs/x.md\n```\n\n```sh\n$ headwater check\n```\n";
+
+#[test]
+fn the_command_rule_reads_only_shell_blocks_on_a_listed_page() {
+    const COMMAND: &str = "surface.command.undeclared";
+    let root = Root::new("commands", &["docs/interfaces/c.md"]);
+    root.override_with(
+        &["docs/interfaces/c.md"],
+        "  surface.commands: [headwater]\n",
+    );
+    root.contract("c", COMMANDS);
+    root.contract("d", COMMANDS);
+
+    let (_, out, err) = root.run(&["check"]);
+    let c = root.findings_of(COMMAND, "c");
+    assert_eq!(
+        c.len(),
+        1,
+        "only the `sh` block that runs `cargo` is reported\n{c:#?}\n{out}{err}"
+    );
+    assert!(c[0].contains("`cargo`"), "{c:#?}");
+    assert!(
+        out.lines()
+            .any(|line| line.trim() == format!("1 instances of {COMMAND}")),
+        "the rule instantiates on the listed page and not on `d.md`\n{out}"
+    );
+    assert_eq!(
+        root.findings_of(COMMAND, "d"),
+        Vec::<String>::new(),
+        "a page the manifest does not list has no instance of the rule"
     );
 }
