@@ -316,7 +316,7 @@ headwater taxonomy    validate | resolve [--check]
                     | audit [--now <date>] [--record]
                     | publish [--package <name> | --from <dir>] [--assembly <name>] --out <dir>
                               [--clear-killed] [--json]
-                    | vendor <dir> [--expect <digest>]
+                    | vendor <dir-or-location> [--expect <digest>]
 headwater coverage    [--format ...]
 headwater probe       plan [--tier regression|campaign] [--arm present|absent]
                            [--category <name>] [--seed <n>]
