@@ -32,7 +32,7 @@ Three answers were open, and the hook contract constrains all three. Its third t
 
 ## Decision
 
-`headwater json` reads the JSON object on standard input. `field` prints one member, addressed by a path of keys. `count` prints how many elements the array or the object at a path holds. `quote` writes standard input back as one JSON string literal. The three hooks call these and call no interpreter.
+`headwater json` reads the JSON object on standard input. `field` prints one member, addressed by a path of steps. A step is a key into an object or a decimal index into an array. The index step arrived on 2026-09-24 (#1008), because a hook must read each element of the `related` array that `headwater explain --json` writes. `count` prints how many elements the array or the object at a path holds. `quote` writes standard input back as one JSON string literal. The three hooks call these and call no interpreter.
 
 **The verb is outside the third term rather than inside an exception to it.** It answers nothing about a corpus, so no second answer exists for it to drift from. It names no moment, so no position of a harness is spelled anywhere in the engine. A harness field name stays in the hook, which is the file that knows which harness it serves.
 
@@ -40,7 +40,7 @@ Three answers were open, and the hook contract constrains all three. Its third t
 
 **An input form on `route` and on `explain` is refused because of what it moves.** Those verbs would then carry the field names of three harnesses, which is a fact about a client rather than about a corpus. The review position reads a payload and calls no verb of the engine, so no input form reaches it at all.
 
-**The verb prints its member and nothing else, and it exits non-zero where the read reaches no scalar.** Six states share that one answer. They are a document that does not parse, and a step of the path that is not an object. The other four are an absent key, an array, an object, and a null. A caller that told them apart would act on the shape of a message it did not write.
+**The verb prints its member and nothing else, and it exits non-zero where the read reaches no scalar.** Six states share that one answer. They are a document that does not parse, and a step of the path that the member cannot take. The other four are an absent key, an array, an object, and a null. A caller that told them apart would act on the shape of a message it did not write.
 
 **Segregation is the group and not the name.** The verb prints under a heading of its own, which is the mechanism the first screen already carries. A hidden verb is refused for three reasons. `engine/crates/cli/tests/verbs.rs` holds the parsed command tree against `headwater_verbs::VERBS` in both directions. `headwater generate` writes the verb index out of the same table. A name a reader cannot discover is a name nobody types.
 

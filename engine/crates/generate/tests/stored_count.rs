@@ -23,10 +23,11 @@
 //! merges each page as text. The merged page must be the page that
 //! `headwater generate` writes over the merged tree.
 //!
-//! A shelf page still keeps `merge=headwater-regenerate` after this change,
-//! because its row order is a fold over the relation graph of the shelf and
-//! not a record order. The second case places the two new documents where no
-//! relation moves an existing row, so it measures the count alone.
+//! A shelf page carries no merge attribute after #1058. Its row order is
+//! derived over the relation graph of the shelf, and 1058-a measured pairs that
+//! move rows by supersession merging as text to the producer's bytes as well.
+//! The second case places the two new documents where no relation moves an
+//! existing row, so it measures the count alone.
 
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
@@ -75,8 +76,12 @@ fn identity() -> Identity {
 
 /// The plan over the tree under `at`, whose corpus root is `at/generate`.
 fn planned(at: &Path) -> Plan {
+    planned_over(at, load_map(&fixtures_dir().join("generate.taxonomy.yml")))
+}
+
+/// The same plan, over a taxonomy the case supplies.
+fn planned_over(at: &Path, root: Mapping) -> Plan {
     let corpus = Corpus::new(at.to_path_buf(), "generate");
-    let root = load_map(&fixtures_dir().join("generate.taxonomy.yml"));
     let taxonomy = Taxonomy::read(&root).expect("the taxonomy reads");
     let relations = Declarations::read(&root).expect("the declarations read");
     let shape = Shape::read(&root).expect("the shape reads");
@@ -284,4 +289,51 @@ fn a_driverless_merge_of_two_additions_writes_what_the_merged_tree_generates() {
     for at in [&base, &ours, &theirs, &merged, &pages] {
         let _ = std::fs::remove_dir_all(at);
     }
+}
+
+/// The front-matter `summary` of a shelf index that carries an identity names no number.
+///
+/// The fixture taxonomy declares no shelf index with an `identity` block, so
+/// the case adds one over the `decisions` shelf. The summary is composed in
+/// `shelf_index.rs` and counts nothing today. This case holds that, because a
+/// count there is the stored fold of #1058 written into front matter, where
+/// two branches that each add a document both write the same line.
+#[test]
+fn a_shelf_index_with_an_identity_states_no_number_in_its_summary() {
+    const INDEX: &str = "generate/archive/INDEX.md";
+    let path = fixtures_dir().join("generate.taxonomy.yml");
+    let text = std::fs::read_to_string(&path).expect("the fixture taxonomy reads");
+    let anchor = "  - {kind: shelf_index, for: [decisions, guides, archive], output: \"{shelf}/README.md\"}\n";
+    assert!(
+        text.contains(anchor),
+        "the fixture taxonomy declares the shelf index"
+    );
+    let text = text.replace(
+        anchor,
+        &format!(
+            "{anchor}  - kind: shelf_index\n    for: [decisions]\n    output: {INDEX}\n    identity:\n      id: GD-FIX-index\n      kind: guide\n"
+        ),
+    );
+    let root = headwater_yaml::load(&text)
+        .unwrap_or_else(|errors| panic!("the edited taxonomy: {errors:?}"))
+        .value
+        .as_map()
+        .expect("the edited taxonomy is a mapping")
+        .clone();
+
+    let at = scratch("summary");
+    for number in [3, 5, 7] {
+        add_decision(&at, number);
+    }
+    let plan = planned_over(&at, root);
+    let _ = std::fs::remove_dir_all(&at);
+    let bytes = written(&plan, INDEX);
+    let summary = bytes
+        .lines()
+        .find(|line| line.starts_with("summary:"))
+        .unwrap_or_else(|| panic!("{INDEX} carries no front-matter summary:\n{bytes}"));
+    assert!(
+        !summary.chars().any(|c| c.is_ascii_digit()),
+        "{INDEX} stores a number in its summary, which a text merge gets wrong:\n{summary}"
+    );
 }

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Select the merge driver for the folds `.gitattributes` names, in a clone that
+# configured it. `.githooks/select-merge-driver` says why, and it never fails a
+# checkout or a merge: git ignores the status of this hook.
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+select="$root/.githooks/select-merge-driver"
+# A `core.hooksPath` outside this tree runs this body from there, and a tree
+# that holds no copy of the script takes the one beside this hook.
+[ -x "$select" ] || select="$(dirname "$0")/select-merge-driver"
+[ -x "$select" ] && "$select"
+exit 0
