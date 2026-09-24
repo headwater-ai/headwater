@@ -29,7 +29,7 @@ Four producers answer, and each one has its own rule. `headwater generate` claim
 
 The fourth rule reads the shape of the artifact and not the name of the file. [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) decomposed two recorded fixtures into one record for each entity, so that they merge correctly. A decomposed artifact must not declare the merge driver. What separates the two groups is the fold, and a fold shows in the first lines of the artifact as a count over the corpus or as a digest over the whole canonical text.
 
-The verb then holds the computed set against the `merge=headwater-regenerate` attribute, and it reports both directions. A producer output that carries no attribute merges as an ordinary file, and two branches that move it to one value merge it in silence. A path that carries the attribute and no producer writes refuses a merge of text that a person now edits. `.gitattributes` names the second failure the worse of the two.
+The verb then holds each fold of the computed set against the `-merge` and `merge=headwater-regenerate` attributes, and it reports both directions. A fold that carries neither merges as an ordinary file, and two branches that move it to one value merge it in silence. A path that carries `merge=headwater-regenerate` and no producer writes refuses a merge of text that a person now edits. A literal `-merge` line of the root `.gitattributes` is held in this direction too. The `binary` macro and a pattern are not, because they are how a repository marks a file that a person makes, such as an image. `.gitattributes` names the second failure the worse of the two.
 
 The verb reads the tree. It also asks git two questions about the tree: which paths git ignores, and which merge attribute git gives each path. It reads no lock, resolves no taxonomy and runs no producer. So it answers on a tree whose lock is stale, and on a tree in the middle of a merge, which are the two moments a caller asks the question.
 
@@ -56,8 +56,12 @@ Three rules give the shape, and they are read in this order:
 | The shape | How the verb computes it | The treatment |
 |---|---|---|
 | A line that depends on nothing | Every line of the file is one complete record, which is the shape `headwater capture` reads | `merge=union` |
-| One record for each entity, in a fixed order | A recorded corpus fixture whose opening states no fold, which is the artifact [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) decomposed so that it merges | No merge attribute, because an ordinary conflict is the correct report |
-| A fold over those records, or a fold over everything | A producer writes it, which is the membership rule above | `merge=headwater-regenerate` |
+| One record for each entity, in a fixed order | A generated file or a recorded corpus fixture whose opening states no fold. The recorded one is the artifact [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) decomposed so that it merges | No merge attribute, because an ordinary conflict is the correct report |
+| A fold over those records, or a fold over everything | A producer writes it, and for `headwater generate` the opening of the file states a count or a digest after the marker | `-merge` in `.gitattributes`, or `merge=headwater-regenerate` from the `info/attributes` of a configured clone |
+
+**A generated file whose opening states no fold is one record per entity.** It lists one row for each document, and it takes no merge attribute. [#1058](https://github.com/headwater-ai/headwater/issues/1058) measured each generated file of this repository. Every one of them merged as text to the bytes that `headwater generate` writes over the merged tree. The verb reads the opening of the file rather than a list. So a generated file that starts to state a count is a fold again, and the verb reports it until it is declared.
+
+**A fold takes either of two attributes, because git gives a clone the one that it can honor.** The committed `-merge` keeps the current side and conflicts in every clone ([#1058](https://github.com/headwater-ai/headwater/issues/1058)). `headwater init --git --git-config` writes the driver into the `info/attributes` of the clone, which wins. Both answers agree, so this verb exits 0 in CI and in a configured clone.
 
 **The third rule covers two rows of the table, and the verb says both rather than guessing one.** Nothing in the structure of an artifact separates a fold over the records from a fold over everything. The separation costs nothing here, because the two rows take one merge attribute. A fold of either kind is derived rather than merged. The evaluation gives the two rows different cures rather than different attributes.
 
@@ -73,6 +77,8 @@ Three rules give the shape, and they are read in this order:
 | A line that depends on nothing | `merge=headwater-regenerate` | No producer rewrites an append store, so the driver refuses the merge that `union` resolves correctly |
 | One record for each entity | `merge=headwater-regenerate` | The driver refuses the merge the record was decomposed to take |
 | One record for each entity | `merge=union` | Two record streams interleave out of the fixed order, into a file no producer writes |
+| One record for each entity | `-merge` | The merge keeps one side of every record and conflicts, which refuses the merge the record was decomposed to take |
+| A line that depends on nothing | `-merge` | Two branches that each appended a reading conflict, and the merge keeps the readings of one side alone |
 | A fold | None | Two branches that move the fold to one value merge it in silence, into a value true of neither |
 | A fold | `merge=union` | Two folds interleave into a value true of nothing, which is the worst of them and which nothing else of this repository reports |
 
@@ -86,7 +92,7 @@ Three rules give the shape, and they are read in this order:
 
 ## Preconditions
 
-Inside a git repository, the `git` executable must be on the `PATH`. The verb already needs it to read the ignore rules. A repository with no file that declares `merge=headwater-regenerate` reports every producer output as undeclared.
+Inside a git repository, the `git` executable must be on the `PATH`. The verb already needs it to read the ignore rules. A repository with no file that declares `-merge` or `merge=headwater-regenerate` reports every producer output as undeclared.
 
 Outside a git repository, the root must hold a readable `.gitattributes`. A root without one reports every producer output as undeclared.
 

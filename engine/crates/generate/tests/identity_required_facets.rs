@@ -61,6 +61,11 @@
 //! the block writes it and no derivation computes it. There the repair is a
 //! change to the taxonomy rather than to the declaration.
 //!
+//! `fixtures/unsourced.taxonomy.yml` is the opposite of `unrolled`. Its facet
+//! is in the `freshness` role, which the engine derives, and no source document
+//! carries a value for it. The repair is a value on a source document, so the
+//! refusal names those documents and not the taxonomy (#820).
+//!
 //! `fixtures/unheld.taxonomy.yml` is the third refusal, and it is the only one
 //! about the body rather than the block. The `guide` kind requires the section
 //! `Consequences`, and the `shelf_sections` declaration that writes
@@ -111,6 +116,12 @@
 //! and the gate agree on it. This case was written after a review of
 //! [#816](https://github.com/headwater-ai/headwater/pull/816) read the filter in
 //! `incoming` and asked why the fold had no equivalent.
+//!
+//! At `41af2e84`, with `unsourced.taxonomy.yml` in the tree and one sentence
+//! for every missing facet,
+//! `a_required_facet_whose_role_finds_no_value_in_the_sources_names_the_sources`
+//! failed on the wording: the refusal said that `last_verified` carries no role
+//! this engine reads, and it is in the `freshness` role.
 
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
@@ -412,6 +423,85 @@ fn a_required_facet_in_no_role_is_refused_because_nothing_can_write_it() {
         refusal.reason.contains("tier"),
         "the refusal of `{OUTPUT}` does not name the facet nothing can write. It reads: {}",
         refusal.reason
+    );
+    assert!(
+        refusal.reason.contains(NO_ROLE),
+        "the refusal of `{OUTPUT}` does not say that `tier` carries no role this engine reads, \
+         which is the cause here and the reason the repair is the taxonomy. It reads: {}",
+        refusal.reason
+    );
+    assert!(
+        !refusal.reason.contains(NO_VALUE),
+        "the refusal of `{OUTPUT}` blames the source documents for `tier`, a facet no role \
+         derives from them. It reads: {}",
+        refusal.reason
+    );
+}
+
+/// The sentence the refusal gives a facet in no role this engine reads.
+const NO_ROLE: &str = "carries no role this engine reads";
+
+/// The sentence the refusal gives a facet in a role whose sources carry nothing.
+const NO_VALUE: &str = "carries no value for it";
+
+/// The opposite of the case above: a facet in a role the engine derives, and
+/// no source document carries a value for it (#820).
+///
+/// The refusal used to say the same thing in both cases, that the facet
+/// carries no role this engine reads. Here that is false. `last_verified` is
+/// in the `freshness` role, which the engine derives as the stalest value over
+/// the documents the projection read, and the repair is a value on one of those
+/// documents rather than a change to the taxonomy. A reason that sends the
+/// reader to the taxonomy sends them to a file where nothing is wrong.
+#[test]
+fn a_required_facet_whose_role_finds_no_value_in_the_sources_names_the_sources() {
+    let plan = plan_over("unsourced.taxonomy.yml");
+
+    assert!(
+        !plan.outputs.iter().any(|output| output.path == OUTPUT),
+        "`{OUTPUT}` was written by a declaration whose kind requires `last_verified`, and no \
+         source document carries one. The outputs were: {:?}",
+        plan.outputs
+            .iter()
+            .map(|output| output.path.as_str())
+            .collect::<Vec<_>>()
+    );
+    let refusal = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == OUTPUT)
+        .unwrap_or_else(|| {
+            panic!(
+                "nothing reported the declaration that writes `{OUTPUT}`. The plan declined {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| unwritten.at.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    let reason = refusal.reason.as_str();
+    assert!(
+        !reason.contains(NO_ROLE),
+        "the refusal of `{OUTPUT}` says `last_verified` carries no role this engine reads, and \
+         it is in the `freshness` role. It reads: {reason}"
+    );
+    for wanted in [
+        "last_verified",
+        "freshness",
+        NO_VALUE,
+        "generate/decisions/0001-store-the-graph.md",
+        "generate/decisions/0002-rebuild-the-graph.md",
+    ] {
+        assert!(
+            reason.contains(wanted),
+            "the refusal of `{OUTPUT}` does not name `{wanted}`, which the reader needs to find \
+             the repair. It reads: {reason}"
+        );
+    }
+    assert!(
+        !reason.contains("taxonomy"),
+        "the refusal of `{OUTPUT}` sends the reader to the taxonomy, and the repair is a value \
+         on a source document. It reads: {reason}"
     );
 }
 
