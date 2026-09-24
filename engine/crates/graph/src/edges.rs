@@ -631,7 +631,7 @@ fn read_relation_entry(
         };
 
         let raw_target = raws.join(", ");
-        let target = bind(&raws, permitted, index, declarations, resolvers);
+        let target = bind(&raws, &source.id, permitted, index, declarations, resolvers);
         let edge = Edge {
             source: source.clone(),
             name: name.clone(),
@@ -707,9 +707,11 @@ fn encode_list_identity(patterns: &[&str]) -> String {
 /// `raws` is never empty. A single entry is bound in the order the module
 /// comment states, unchanged from before a list existed; a list is bound only
 /// against an anchor kind, and only where every pattern it holds binds under
-/// the same one.
+/// the same one. `asserter` is the identifier of the document that declares
+/// the edge, which a resolver such as `comment-scan` binds against (#967).
 fn bind(
     raws: &[String],
+    asserter: &str,
     permitted: &[String],
     index: &Index,
     declarations: &Declarations,
@@ -749,7 +751,7 @@ fn bind(
         let mut bindings = Vec::with_capacity(raws.len());
         let mut dead: Option<Unbound> = None;
         for raw in raws {
-            match resolver.resolve(raw) {
+            match resolver.resolve_for(raw, asserter) {
                 binding @ (Binding::Resolved { .. } | Binding::Withheld { .. }) => {
                     bindings.push(binding);
                 }
