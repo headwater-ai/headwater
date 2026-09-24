@@ -425,6 +425,17 @@ jobs:
           # reach it. This turns "DID NOT RUN" into a failure instead of a
           # quiet skip that goes green regardless.
           HEADWATER_MOUNT_REQUIRED: 1
+      - name: A pooled cargo slot links each worktree's own crates
+        # `tools/hw-cargo` shares one target directory per slot across
+        # worktrees, and cargo reads another worktree's copy of a workspace
+        # crate as fresh there, so a build can exit 0 and link code the
+        # building tree does not carry (#849). This suite compiles a toy
+        # workspace in two worktrees through one slot and runs the second
+        # binary, so it needs the toolchain this job installed, unlike the
+        # fake-cargo suite in the `headwater` job. It runs a plain-cargo
+        # control first, so a cargo that stops reproducing the defect fails
+        # here rather than letting the real case pass over nothing.
+        run: sh tools/hw-cargo-link-fixtures.sh
       - name: Unmount the mount point above
         # Only the hosted runner made a mount above to remove: the
         # self-hosted runner's container is one job long, and its tmpfs goes
