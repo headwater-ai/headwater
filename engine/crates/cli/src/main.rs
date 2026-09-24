@@ -816,12 +816,36 @@ fn validate(root: &Path) -> ExitCode {
     );
     print!("{}", headwater_resolve::rules::render(mode));
 
-    if findings.is_empty() {
+    // The first refusal of this verb that reads the tree (#951). A governed
+    // scope pattern that matches no entry is a claim about nothing, so it is
+    // refused here, through the anchor kind's own resolver: "matches an entry"
+    // means for a scope what it means for an anchor.
+    let unmatched = match Declarations::read(&repository.resolution.taxonomy) {
+        Ok(declarations) => {
+            let consumer = &repository.consumer;
+            let corpus = Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions);
+            headwater_graph::scope::Scope::declared(&declarations)
+                .unmatched(&headwater_graph::anchors::Resolvers::over(&corpus))
+        }
+        Err(_) => Vec::new(),
+    };
+
+    if findings.is_empty() && unmatched.is_empty() {
         println!("\n{} is valid", repository.consumer.package);
         return ExitCode::SUCCESS;
     }
     println!("\n{} is not valid", repository.consumer.package);
-    eprint!("{}", indent(&err(&render_errors(&findings))));
+    if !findings.is_empty() {
+        eprint!("{}", indent(&err(&render_errors(&findings))));
+    }
+    for (pattern, why) in &unmatched {
+        eprintln!(
+            "  {}",
+            err(&format!(
+                "governed scope pattern `{pattern}` matches no entry of the tree: {why}"
+            ))
+        );
+    }
     advise(root, &repository.consumer);
     ExitCode::FAILURE
 }

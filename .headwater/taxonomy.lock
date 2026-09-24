@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:deab3dd08dac291500cfce1e02cb0f87abef414b5a62c9b8cb1fb70fbbc3160f
+  digest: sha256:7de53d37fdd2a5e08e96c46b5c8c1d2df355c82af72cf6abe23f81477b84afce
   rules: 2
   package: headwater/standard
   version: 4.4.2
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:a1d0295f3af618bb371291f264a5f3d85925aabdd171ccea64629ee42a0e1c24
     - path: .headwater/overlay.yml
-      digest: sha256:23e93312ea2aa572c559198d1594d693854f4078652b779794e8b10a5493083b
+      digest: sha256:a11bb3f0edff2ae34147fa365264243c16c66cc878a473600df98ce1bb6b59d5
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -333,6 +333,14 @@ resolved:
   anchors:
     code_path:
       resolver: source-tree
+      scope:
+        - "engine/crates/**/src/**/*.rs"
+        - ".githooks/**"
+        - ".claude/hooks/**"
+        - ".claude/agents/**"
+        - ".claude/skills/**"
+        - "tools/**"
+        - "site/**"
     check_rule:
       resolver: check-rule
     test_site:

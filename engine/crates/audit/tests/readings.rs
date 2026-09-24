@@ -1064,10 +1064,11 @@ const AUDIT_ROLES: [Role; 3] = [Role::Heading, Role::Path, Role::Obligation];
 ///
 /// `findings` is written from one of two arms and both write the same literal,
 /// so the count is one either way.
-const AUDIT_HEADINGS: [&str; 11] = [
+const AUDIT_HEADINGS: [&str; 12] = [
     "taxonomy audit of",
     "findings",
     "relations, by the creator each one declares",
+    "the governed scope, and what reaches it",
     "relation families",
     "facets, and what each one separates",
     "shelves that hold several kinds",

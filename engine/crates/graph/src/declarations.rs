@@ -194,6 +194,10 @@ pub struct AnchorKind {
     /// is the one place it is read, and the meta-schema comment on
     /// `anchor.pattern` states why it lives here rather than in a new root.
     pub pattern: Option<String>,
+    /// The governed scope this anchor kind declares, as the patterns were
+    /// written. [`crate::scope::Scope`] is the one reader, and an anchor kind
+    /// that declares none carries an empty list (#951).
+    pub scope: Vec<String>,
     pub span: Span,
 }
 
@@ -422,10 +426,13 @@ fn read_anchor(name: &str, value: &Value, span: Span) -> Result<AnchorKind, Decl
         .and_then(|value| value.value.as_scalar())
         .map(|scalar| scalar.text.clone());
 
+    let scope = sequence(map, "scope").unwrap_or_default();
+
     Ok(AnchorKind {
         name: name.to_string(),
         resolver,
         pattern,
+        scope,
         span,
     })
 }
