@@ -3,17 +3,18 @@ id: HW-DR-0075
 status: current
 status_since: 2026-09-24
 summary: "`headwater taxonomy vendor` may accept a location, ruled yes with a boundary: the fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it."
-last_verified: 2026-09-19
+last_verified: 2026-09-24
 title: "The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links"
 relations:
   constrains:
     - HW-DR-0072
     - HW-DR-0022
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-sonnet-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 ---
 

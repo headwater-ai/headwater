@@ -40,7 +40,8 @@ headwater-check = { workspace = true }
 # a projection whose source is a committed transcript, so this crate reaches the
 # one component of the measurement layer that returns a verdict. The direction
 # is safe in both senses that matter: `headwater-probe` names `headwater-check`
-# and never this crate, and no crate in this workspace opens a socket.
+# and never this crate, and neither of them reaches `headwater-fetch`, the one
+# crate of this workspace that opens a socket (HW-DR-0075).
 headwater-probe = { workspace = true }
 
 # The dispatch table of the binary. A verb index is a projection over it, and

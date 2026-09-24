@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-probe"
-description = "The parts of the probe harness that are deterministic. probe is the one verb that reaches the network, so it never runs inside check and never gates"
+description = "The parts of the probe harness that are deterministic. probe reaches a model over the network, so it never runs inside check and never gates"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
