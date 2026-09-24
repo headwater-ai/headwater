@@ -81,7 +81,7 @@ wrote .headwater/overlay.yml
 
 what this read off the tree
   corpus root docs
-  package headwater/standard is not under `.headwater/packages/`, and nothing here fetches one. Two routes reach a lock, and each one needs a different field of `.headwater/taxonomy.yml`. Copy a package directory into `.headwater/packages/`, and pin `taxonomy.version` at the version that package declares. Or run `headwater taxonomy vendor <dir>` on a published artifact: that verb reads `taxonomy.digest` and refuses until it holds the digest the publisher printed, and `headwater taxonomy resolve` reads `taxonomy.version` after it, so the vendor route needs the digest first and the version as well
+  package headwater/standard is not under `.headwater/packages/`. Two routes reach a lock, and each one needs a different field of `.headwater/taxonomy.yml`. Copy a package directory into `.headwater/packages/`, and pin `taxonomy.version` at the version that package declares. Or run `headwater taxonomy vendor <dir-or-location>` on a published artifact, unpacked or at the `https://` location of its zip: that verb reads `taxonomy.digest` and refuses until it holds the digest the publisher printed, and `headwater taxonomy resolve` reads `taxonomy.version` after it, so the vendor route needs the digest first and the version as well
 
 what it cannot read off a tree, and asked instead
   the phrases each purpose answers, which decide what a task routes to
@@ -97,7 +97,7 @@ The first heading names what a tree states about itself: the **corpus** is `docs
 
 ### Step 3 — Fetch the package into your tree
 
-`headwater taxonomy vendor <dir> --expect <digest>` is the whole of the vendor route Step 2 named. Point it at a package directory you have, fetched by whatever means your organization allows — the GitHub release page, a mirror, an air-gapped copy. It checks the digest and installs the result. This step fetches that directory over the network for you, then runs exactly that command. The script below does the fetching. It is a convenience over the verb, and not a substitute for it.
+`headwater taxonomy vendor <dir> --expect <digest>` is the directory form of the vendor route Step 2 named, and it is the form this tutorial takes. Point it at a package directory you have, fetched by whatever means your organization allows — the GitHub release page, a mirror, an air-gapped copy. It checks the digest and installs the result. This step fetches that directory over the network for you, then runs exactly that command. The script below does the fetching. It is a convenience over the verb, and not a substitute for it.
 
 ```
 curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/main/tools/headwater-bootstrap.sh | sh -s -- --tag taxonomy/headwater-standard/v4.2.0 --expect sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5

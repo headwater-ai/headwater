@@ -197,7 +197,6 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0082](../obligations/0082-the-lock-is-half-generated-and-half-authored-and-nothing.md) — The lock is half generated and half authored, and nothing states the rule for the seam
 - [HW-OBL-0083](../obligations/0083-the-pair-grain-absorbs-a-second-violation-inside-one-cell.md) — The pair grain absorbs a second violation inside one cell
 - [HW-OBL-0084](../obligations/0084-debt-that-no-rule-states-cannot-enter-a-payload.md) — Debt that no rule states cannot enter a payload
-- [HW-OBL-0085](../obligations/0085-headwater-init-cannot-reach-a-package-that-is-not-already.md) — `headwater init` cannot reach a package that is not already vendored
 - [HW-OBL-0088](../obligations/0088-correcting-an-identifier-is-mechanical-and-it-is-not-local.md) — Correcting an identifier is mechanical and it is not local
 - [HW-OBL-0089](../obligations/0089-a-profile-names-its-rules-and-never-states-them.md) — A profile names its rules and never states them
 - [HW-OBL-0090](../obligations/0090-one-rule-carries-four-sub-rules-and-a-suppression.md) — One rule carries four sub-rules, and a suppression cannot separate them
@@ -232,6 +231,8 @@ The second said that a control declares one posture and that spec 4 writes two v
 [HW-OBL-0193](../obligations/0193-admission-criterion-5-has-no-reading-for-an-entry-that-serves-neither-core-purpose.md) is discharged and it is not in the list above. [HW-DR-0079](../decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md) rules that a full entry which serves neither core purpose with a kind of its own names the base declaration that serves the purpose, or extends a base kind that already serves it. `decision-record` and `brd-prd` each take one of those two readings.
 
 [HW-OBL-0186](../obligations/0186-a-facet-only-entry-has-no-kind-and-the-entry-anatomy-asks-for-two-things-that-presume-one.md) is discharged and it is not in the list above. The [library index](../taxonomies/README.md) now states criterion 4's own reading. A facet-only entry's worked corpus borrows a kind from another entry. It names the kind it borrows, and it demonstrates its own facet, not the borrowed kind's purpose. The `diataxis` entry took this reading before the criterion stated it, and its record carries the reason.
+
+[HW-OBL-0085](../obligations/0085-headwater-init-cannot-reach-a-package-that-is-not-already.md) is discharged and it is not in the list above. [#959](https://github.com/headwater-ai/headwater/issues/959) gave the fetch a stated form: `headwater taxonomy vendor` takes an `https://` location and checks the digest of what it fetches. `headwater init` names that argument in the line it prints and in the comment it writes. A test in `engine/crates/cli/tests/init.rs` takes the route from a location to a resolved version. No released binary carries the fetch yet, and the record states what that costs a reader.
 
 ## What else each decision left open
 

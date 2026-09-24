@@ -73,20 +73,21 @@ taxonomy:
 ";
 
 /// The version block of the arm that found no package, which is an interview
-/// stub, eight lines of comment and one commented field.
+/// stub, nine lines of comment and one commented field.
 ///
 /// This constant is a copy of a string in the verb, and a copy checked against
 /// nothing but itself is what #641 cost. The last case in this file runs the
 /// route these bytes name, so the bytes have a reader that is not another copy
 /// of them.
-const NO_PACKAGE_VERSION: &str = r"  # INTERVIEW: no package of this name is under `.headwater/packages/`, and nothing in this
-  # engine fetches one. Two routes reach a lock, and each one needs a different
-  # field below. Copy a package directory into `.headwater/packages/`, and pin `version` at
-  # the version that package declares. Or run `headwater taxonomy vendor <dir>`
-  # on a published artifact: that verb reads `digest` and refuses until it holds
-  # the digest the publisher printed, and `headwater taxonomy resolve` reads
-  # `version` after it, so the vendor route needs the digest first and the
-  # version as well.
+const NO_PACKAGE_VERSION: &str = r"  # INTERVIEW: no package of this name is under `.headwater/packages/`. Two routes
+  # reach a lock, and each one needs a different field below.
+  # Copy a package directory into `.headwater/packages/`, and pin `version` at
+  # the version that package declares. Or run
+  # `headwater taxonomy vendor <dir-or-location>` on a published artifact,
+  # unpacked or at the `https://` location of its zip: that verb reads `digest`
+  # and refuses until it holds the digest the publisher printed, and
+  # `headwater taxonomy resolve` reads `version` after it, so the vendor route
+  # needs the digest first and the version as well.
   # digest: sha256:<the digest the publisher printed>
   version: 0.0.0
 ";
@@ -619,5 +620,226 @@ fn the_overlay_example_the_interview_prints_reaches_a_lock() {
         Some(0),
         "the example `INTERVIEW 2` prints resolves:\n{stderr}\nthe overlay it was run \
          against:\n{patched}"
+    );
+}
+
+/// The argument `taxonomy vendor` takes, as the interface contract states it.
+///
+/// `docs/interfaces/headwater-taxonomy.md` is the contract for the verb, so the
+/// placeholder `init` prints is held to that row rather than to a copy of it in
+/// this file. A contract that renames the argument moves this case with it.
+fn the_vendor_argument_the_contract_states() -> String {
+    let contract =
+        std::fs::read_to_string(repository().join("docs/interfaces/headwater-taxonomy.md"))
+            .expect("the interface contract reads");
+    let rows: Vec<String> = contract
+        .lines()
+        .filter_map(|line| line.strip_prefix("| `vendor <"))
+        .filter_map(|rest| {
+            rest.split_once('>')
+                .map(|(argument, _)| argument.to_string())
+        })
+        .collect();
+    assert_eq!(
+        rows.len(),
+        1,
+        "the contract states one `vendor` row, and it states {}",
+        rows.len()
+    );
+    rows[0].clone()
+}
+
+/// Every argument placeholder that follows `headwater taxonomy vendor` in `text`.
+fn vendor_placeholders(text: &str) -> Vec<String> {
+    let squeezed = text
+        .lines()
+        .map(|line| line.trim_start().trim_start_matches('#').trim())
+        .collect::<Vec<_>>()
+        .join(" ");
+    squeezed
+        .match_indices("headwater taxonomy vendor <")
+        .filter_map(|(at, marker)| {
+            squeezed[at + marker.len()..]
+                .split_once('>')
+                .map(|(argument, _)| argument.to_string())
+        })
+        .collect()
+}
+
+/// Pack a published artifact directory into the zip `release-taxonomy.yml`
+/// uploads: every member at the root of the archive, deflated.
+///
+/// A copy of the helper of the same name in `publish.rs`. Two targets of one
+/// crate share no module unless one is written for them, and `tests/common`
+/// carries nothing about a published artifact.
+#[cfg(feature = "fetch")]
+fn zipped(artifact: &Path) -> Vec<u8> {
+    use std::io::Write;
+    let mut members = Vec::new();
+    let mut pending = vec![artifact.to_path_buf()];
+    while let Some(dir) = pending.pop() {
+        for entry in std::fs::read_dir(&dir).expect("the artifact directory reads") {
+            let path = entry.expect("the entry reads").path();
+            if path.is_dir() {
+                pending.push(path);
+            } else {
+                members.push(path);
+            }
+        }
+    }
+    members.sort();
+    let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    for path in members {
+        let name = path
+            .strip_prefix(artifact)
+            .expect("under the artifact")
+            .to_str()
+            .expect("the path is UTF-8")
+            .replace('\\', "/");
+        writer.start_file(name, options).expect("the member starts");
+        writer
+            .write_all(&std::fs::read(&path).expect("the member reads"))
+            .expect("the member writes");
+    }
+    writer.finish().expect("the archive closes").into_inner()
+}
+
+/// Serve `body` at `/<name>` on 127.0.0.1 for as long as the test process
+/// lives, and give back the location. `headwater-fetch` takes plain `http`
+/// to a loopback host alone, so the suite reaches no other host.
+#[cfg(feature = "fetch")]
+fn serve(name: &str, body: Vec<u8>) -> String {
+    use std::io::{Read, Write};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("a loopback port binds");
+    let location = format!(
+        "http://{}/{name}",
+        listener.local_addr().expect("the port reads")
+    );
+    let wanted = format!("/{name}");
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut request = [0_u8; 4096];
+            let read = stream.read(&mut request).unwrap_or(0);
+            let line = String::from_utf8_lossy(&request[..read]).to_string();
+            let found = line.split_whitespace().nth(1) == Some(wanted.as_str());
+            let (head, payload): (String, &[u8]) = if found {
+                (
+                    format!(
+                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                        body.len()
+                    ),
+                    &body,
+                )
+            } else {
+                (
+                    "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                        .to_string(),
+                    &[],
+                )
+            };
+            let _ = stream.write_all(head.as_bytes());
+            let _ = stream.write_all(payload);
+        }
+    });
+    location
+}
+
+/// The vendor route `init` names takes the location a release publishes.
+///
+/// # Why this case exists
+///
+/// `HW-OBL-0085` recorded that this engine fetched no package, and `init`
+/// said so in both messages of its no-package arm. [#959] gave
+/// `taxonomy vendor` a location, so that sentence became false and the remedy
+/// named `<dir>` alone. An adopter with no copy of the artifact on disk read
+/// that they had to fetch and unpack it by other means. This is the #271 and
+/// [#641] failure again: the first verb an adopter runs states a remedy that
+/// does not match the binary in front of them.
+///
+/// # What it asserts
+///
+/// Both messages name the argument the interface contract states for the
+/// verb. The case then takes that route as a reader would. It pins the digest
+/// in the field the declaration names, and it vendors from a zip served on
+/// 127.0.0.1 in the place of the placeholder. `taxonomy resolve` then gets
+/// past the version, as the case above asserts for the directory form.
+///
+/// [#641]: https://github.com/headwater-ai/headwater/issues/641
+/// [#959]: https://github.com/headwater-ai/headwater/issues/959
+#[cfg(feature = "fetch")]
+#[test]
+fn the_vendor_route_init_names_takes_the_location_a_release_publishes() {
+    let root = Root::over("vendor-location");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["init", "--root"])
+        .arg(&root.at)
+        .output()
+        .expect("the binary runs");
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "`headwater init` writes both files"
+    );
+    let report = String::from_utf8_lossy(&output.stdout).into_owned();
+    let declaration = root.read(".headwater/taxonomy.yml");
+
+    let argument = the_vendor_argument_the_contract_states();
+    for (name, text) in [
+        ("the printed report", &report),
+        ("the declaration", &declaration),
+    ] {
+        assert_eq!(
+            vendor_placeholders(text),
+            vec![argument.clone()],
+            "{name} names `headwater taxonomy vendor <{argument}>`, the argument the contract \
+             states:\n{text}"
+        );
+        assert!(
+            !text.contains("fetches one"),
+            "{name} no longer says that nothing fetches a package:\n{text}"
+        );
+    }
+
+    let version = maintained_version();
+    let commented = declaration
+        .lines()
+        .find(|line| line.trim_start().starts_with("# digest:"))
+        .expect("the declaration names the field `taxonomy vendor` reads");
+    let pinned = declaration
+        .replace(commented, &format!("  digest: {digest}"))
+        .replace("  version: 0.0.0\n", &format!("  version: {version}\n"));
+    root.write(".headwater/taxonomy.yml", &pinned);
+
+    let location = serve(
+        &format!("headwater-standard-{version}.zip"),
+        zipped(&artifact),
+    );
+    let (code, stderr) = root.run(&["taxonomy", "vendor", location.as_str()], None);
+    assert_eq!(
+        code,
+        Some(0),
+        "`headwater taxonomy vendor <{argument}>` accepts the location a release \
+         publishes:\n{stderr}"
+    );
+    assert_eq!(
+        declared_version_at(
+            &root
+                .at
+                .join(".headwater/packages/headwater-standard/package.yml")
+        ),
+        version,
+        "the fetched package is the one the declaration pins"
+    );
+
+    let (_, stderr) = root.run(&["taxonomy", "resolve"], None);
+    assert!(
+        !stderr.contains("this takes headwater/standard"),
+        "`headwater taxonomy resolve` is past the version after a fetch:\n{stderr}"
     );
 }
