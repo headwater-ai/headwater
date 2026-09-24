@@ -119,6 +119,23 @@ impl Producer {
         }
     }
 
+    /// Whether the tree at `root` holds this producer, so that it can be run there.
+    ///
+    /// The two verbs are held by every tree that has the engine. The figure
+    /// script and the blessing run belong to the repository that maintains the
+    /// engine, and a tree holds each one only where it carries the file that
+    /// runs it: [`REFRESH_SCRIPT`] and [`ENGINE_MANIFEST`]. A producer that a
+    /// tree does not hold claims no file of that tree, so `headwater derived`
+    /// never names its command there and `headwater init --git` writes no line
+    /// for it. This is the one predicate both read.
+    pub fn held_by(self, root: &Path) -> bool {
+        match self {
+            Producer::Generate | Producer::TaxonomyResolve => true,
+            Producer::FigureRefresh => true,
+            Producer::RecordedFold => true,
+        }
+    }
+
     /// The rule by which this producer's output set is enumerated.
     pub fn rule(self) -> &'static str {
         match self {
@@ -553,6 +570,12 @@ pub const PRODUCERS: &[Producer] = &[
     Producer::FigureRefresh,
     Producer::RecordedFold,
 ];
+
+/// The script that the figure producer runs, which a tree holds or does not.
+pub const REFRESH_SCRIPT: &str = "tools/site/refresh-figures.sh";
+
+/// The engine workspace that the blessing run needs, which a tree holds or does not.
+pub const ENGINE_MANIFEST: &str = "engine/Cargo.toml";
 
 /// The path the taxonomy resolver writes.
 pub const LOCK: &str = ".headwater/taxonomy.lock";
