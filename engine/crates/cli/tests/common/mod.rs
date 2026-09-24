@@ -113,6 +113,25 @@ impl Root {
                 .expect("the declaration copies");
         }
 
+        // The overlay declares a governed scope, and `taxonomy validate`
+        // refuses a scope pattern that matches no entry of the tree (#951).
+        // The copy carries the taxonomy and not the tree, so one entry under
+        // each pattern stands in for it.
+        for entry in [
+            "engine/crates/stub/src/lib.rs",
+            ".githooks/stub",
+            ".claude/hooks/stub",
+            ".claude/agents/stub",
+            ".claude/skills/stub",
+            "tools/stub",
+            "site/stub",
+        ] {
+            let to = at.join(entry);
+            std::fs::create_dir_all(to.parent().expect("it has a parent"))
+                .expect("the scope directory is there");
+            std::fs::write(to, "").expect("the scope entry writes");
+        }
+
         prepare(&at);
         pin(&at, "1.0.0");
 

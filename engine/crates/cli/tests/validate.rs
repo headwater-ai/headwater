@@ -72,6 +72,24 @@ impl Root {
             std::fs::copy(repository.join(".headwater").join(name), to)
                 .expect("the declaration copies");
         }
+        // The overlay declares a governed scope, and `taxonomy validate`
+        // refuses a scope pattern that matches no entry of the tree (#951).
+        // The copy carries the taxonomy and not the tree, so one entry under
+        // each pattern stands in for it.
+        for entry in [
+            "engine/crates/stub/src/lib.rs",
+            ".githooks/stub",
+            ".claude/hooks/stub",
+            ".claude/agents/stub",
+            ".claude/skills/stub",
+            "tools/stub",
+            "site/stub",
+        ] {
+            let to = at.join(entry);
+            std::fs::create_dir_all(to.parent().expect("it has a parent"))
+                .expect("the scope directory is there");
+            std::fs::write(to, "").expect("the scope entry writes");
+        }
         Root { at }
     }
 
@@ -526,4 +544,30 @@ fn shipped_bundles() -> Vec<String> {
     names.sort();
     assert!(names.len() > 1, "the package ships bundles: {names:?}");
     names
+}
+
+/// A governed scope pattern that matches no entry is refused (#951).
+///
+/// The copy's stub entries satisfy every pattern the overlay declares, so the
+/// one refusal here is the pattern this case adds, and the verb names it.
+#[test]
+fn validate_refuses_a_governed_scope_pattern_that_matches_no_entry() {
+    let root = Root::new("scope-nowhere");
+    let overlay = root.at.join(".headwater/overlay.yml");
+    let text = std::fs::read_to_string(&overlay).expect("the overlay reads");
+    let anchor = "    - site/**\n";
+    assert!(text.contains(anchor), "the overlay still declares site/**");
+    std::fs::write(
+        &overlay,
+        text.replacen(anchor, &format!("{anchor}    - nowhere/**\n"), 1),
+    )
+    .expect("the overlay writes");
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err
+            .contains("governed scope pattern `nowhere/**` matches no entry"),
+        "{ran:?}"
+    );
+    assert!(!ran.err.contains("`site/**` matches no entry"), "{ran:?}");
 }
