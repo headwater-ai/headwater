@@ -101,11 +101,13 @@ impl LocalPath {
         let token = token.strip_prefix("./").unwrap_or(token);
         self.local_roots
             .iter()
-            .find(|root| {
-                token.starts_with(root.as_str())
-                    || (token == root.trim_end_matches('/') && !self.programs.iter().any(|p| p == token))
-            })
+            .find(|root| token.starts_with(root.as_str()) || self.bare(token, root))
             .map(String::as_str)
+    }
+
+    /// Whether a token is a root with no trailing `/` and no declared program.
+    fn bare(&self, token: &str, root: &str) -> bool {
+        token == root.trim_end_matches('/') && !self.programs.iter().any(|name| name == token)
     }
 }
 
