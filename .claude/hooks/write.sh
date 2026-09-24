@@ -3,21 +3,32 @@
 # opposite postures, so this file registers on two events and dispatches on the
 # one the harness names.
 #
-#   PreToolUse  Write|Edit   backfill. A new document written straight to disk
+#   PreToolUse  Write|Edit   backfill, then impact detection, in that order.
+#
+#                            Backfill: a new document written straight to disk
 #                            invents its front matter, its identifier, its
 #                            placement and its sections. `headwater new` derives
 #                            all four from the committed lock and refuses
 #                            eighteen ways before it writes a byte. So this
 #                            refuses the raw write and names the verb.
 #
-#   PostToolUse Write|Edit   impact detection. A document may declare that it
-#                            governs a code path, written as a pattern or as a
-#                            list of them (HW-DR-0074), and an edit to any path
-#                            a pattern admits raises an advisory prompt that
-#                            names the documents at risk. Spec 5 makes it
+#                            Impact detection, for every call the refusal does
+#                            not deny: a document may declare that it governs a
+#                            code path, written as a pattern or as a list of
+#                            them (HW-DR-0074), and an edit to any path a
+#                            pattern admits raises an advisory prompt that names
+#                            the documents at risk. It comes before the edit,
+#                            so the agent reads the governing set while the
+#                            change is still a plan (#953). Spec 5 makes it
 #                            advisory on purpose: a gate here trains an author
 #                            to answer "no doc impact" by reflex, and that
 #                            destroys the signal.
+#
+#   PostToolUse Write|Edit   silent. The advisory moved before the edit, and
+#                            printing it again here would say the same pointers
+#                            twice. #952 gives this position its one line: the
+#                            edges the edit made suspect, once a `governs` edge
+#                            can go suspect at all.
 #
 # What it passes to the engine: one path. What it gets back: for the refusal,
 # the classification `headwater explain` reports on standard error for a path
@@ -74,13 +85,28 @@ case $path in
     *) rel=$path ;;
 esac
 
+# The impact advisory, on standard output, or nothing. It names the documents
+# that govern the path and is worded for an edit that has not happened yet.
+advise() {
+    pointers=$(hw_governing_pointers "$rel") || exit 0
+    advisory="Headwater impact detection: a document in this corpus declares that it governs \`$rel\`, which you are about to change.
+
+$pointers
+
+This is advisory. Read each one before the edit, and say whether the change invalidates it. Nothing here blocks the edit."
+    quoted=$(hw_quote "$advisory") || exit 0
+    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":%s}}\n' "$quoted"
+    exit 0
+}
+
 case $event in
 PreToolUse)
-    # Only a file that does not exist yet. An edit to a document that already
-    # has front matter is what `check --fix` and the commit hook hold, and
-    # refusing it here would refuse every edit this repository is made of.
-    [ -e "$hw_root/$rel" ] && exit 0
-    case $rel in *.md) ;; *) exit 0 ;; esac
+    # The refusal is for a file that does not exist yet. An edit to a document
+    # that already has front matter is what `check --fix` and the commit hook
+    # hold, and refusing it here would refuse every edit this repository is
+    # made of. Every call the refusal does not deny gets the advisory instead.
+    [ -e "$hw_root/$rel" ] && advise
+    case $rel in *.md) ;; *) advise ;; esac
 
     # Whether the corpus claims this path is a question `headwater explain`
     # now answers for a path with no file behind it — the same
@@ -93,7 +119,7 @@ PreToolUse)
     account=$("$engine" explain --root "$hw_root" "$rel" 2>&1 >/dev/null)
     case $account in
         *'is a path of this corpus, with no document written there yet'*) ;;
-        *) exit 0 ;;
+        *) advise ;;
     esac
 
     reason="\`$rel\` is a new document under this corpus, and a raw write invents what the taxonomy already decides.
@@ -108,19 +134,8 @@ If the file is genuinely not a document of any kind this taxonomy declares, it d
     exit 0
     ;;
 PostToolUse)
-    engine=$(hw_engine) || exit 0
-    route=$("$engine" route --root "$hw_root" "$rel" 2>/dev/null) || exit 0
-    printf '%s\n' "$route" | grep -q 'names the anchor' || exit 0
-    pointers=$(printf '%s\n' "$route" | grep ' — ')
-    [ -n "$pointers" ] || exit 0
-
-    advisory="Headwater impact detection: a document in this corpus declares that it governs \`$rel\`, which you just changed.
-
-$pointers
-
-This is advisory. Read each one and say whether the change invalidated it. Nothing here blocks the edit."
-    quoted=$(hw_quote "$advisory") || exit 0
-    printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":%s}}\n' "$quoted"
+    # Silent on purpose: the advisory runs before the edit now, and #952 is
+    # the issue that gives this position its one line.
     exit 0
     ;;
 *)

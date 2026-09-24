@@ -192,3 +192,22 @@ hw_patch_path() {
     [ -n "$_first" ] || return 1
     printf '%s' "$_first"
 }
+
+# The pointer lines of every document that declares it governs one path, or
+# nothing and a non-zero status when none does. The read position and the
+# pre-edit position both say the same set, and this is the one place that asks
+# for it, so the two cannot drift into two answers (#953).
+#
+# It asks `headwater route` for the path, the verb that ships, and keeps the
+# rendered ` — ` lines as the engine wrote them. It composes no line of its own.
+# `route` names the anchor when a `governs` edge admits the path, and a route
+# that names no anchor has reached documents by their terms rather than by a
+# declaration, which is not the set this answers for.
+hw_governing_pointers() {
+    _engine=$(hw_engine) || return 1
+    _route=$("$_engine" route --root "$hw_root" "$1" 2>/dev/null) || return 1
+    printf '%s\n' "$_route" | grep -q 'names the anchor' || return 1
+    _pointers=$(printf '%s\n' "$_route" | grep ' — ')
+    [ -n "$_pointers" ] || return 1
+    printf '%s\n' "$_pointers"
+}
