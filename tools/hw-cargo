@@ -178,8 +178,18 @@ if [ -n "$root" ] && [ -d "$root/engine/crates" ]; then
     fi
 fi
 
+# The slot's lock lives on descriptor 9 of this shell, and this shell holds it
+# until it exits, so cargo needs no copy of it. Closing it for cargo is what
+# keeps a daemon out of the slot: a rustc wrapper such as sccache starts its
+# server from inside the build, the server inherits every open descriptor and
+# outlives the build, and a server holding descriptor 9 holds the slot. Run
+# 20260923-0733 lost the integrate slot and slot 1 that way, once for about
+# nine minutes and once for good, and three daemons had to be killed by hand.
+# Measured on 2026-09-24 against a private sccache 0.13 server: started with
+# the lock open it kept the lock after its parent exited, and started with
+# `9>&-` it did not.
 status=0
-nice -n "$nice_by" cargo "$@" || status=$?
+nice -n "$nice_by" cargo "$@" 9>&- || status=$?
 
 # Copy the engine back into the worktree. `.githooks/pre-commit`, every hook
 # under `.claude/hooks/` and several scripts under `tools/` resolve the engine

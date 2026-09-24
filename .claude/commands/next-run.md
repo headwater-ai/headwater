@@ -34,19 +34,19 @@ Ten lines the parent of a build-order run obeys on every turn. `.claude/commands
 
 ## The loop
 
-`sh tools/run/run-dir.sh start` makes the run directory under the git common dir, doctrine copied in and the last run's lessons and decisions seeded; it prints the path, and every dispatch carries it. That directory is the ledger ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)): `run-dir.sh log` takes one line per iteration, `run-dir.sh tail` is what you read, `run-dir.sh net` derives opened minus closed, and `lessons.md` and `decisions.md` are yours to append with `Edit`. Read `lessons.md` by heading, only the parent's sections, never whole. Append to the integrator queue; never rewrite it. Ask an agent one line by `SendMessage`, never `ListAgents`.
+`sh tools/run/run-dir.sh start` makes the run directory, seeded from the last run, and prints its path, which every dispatch carries. That directory is the ledger ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)): its `log` takes one line per iteration, `tail` is what you read, `net` derives opened minus closed, and `lessons.md` and `decisions.md` are yours to append with `Edit`. Read `lessons.md` by heading, only the parent's sections, never whole. Append to the integrator queue; never rewrite it. Ask an agent one line by `SendMessage`, never `ListAgents`.
 
-1. **Top of the run.** Dispatch `headwater-product-owner` and `hw-queue` in one turn. The queue agent writes the ordered eligible issues into the run directory; read its report and nothing else. Put the product owner's `RULING` blocks to the owner before you fill.
+1. **Top of the run.** Dispatch `headwater-product-owner` and `hw-queue` in one turn. Read the queue agent's report and nothing else. Put the product owner's `RULING` blocks to the owner before you fill.
 2. **Fill.** While fewer than N issues are in flight and the queue holds one, dispatch `hw-adjudicate` for the next issue with the template below.
 3. **On an adjudicate report.** `VERDICT: BUILD` claims the footprint with `sh tools/run/run-dir.sh claim <run> <issue> <branch> <artifacts>` and dispatches `hw-build` with the same template, the adjudication note's path, and any `WAITS-ON` the claim printed. `VERDICT: REFUSE` is ruled by the three kinds in the `hw-run-policy` skill, written into the run's decisions file, and the next issue is taken in the same turn.
 4. **On a build report.** Dispatch `hw-verify` with the branch, the pull request number, the adjudication note, and the attacks you chose from the `hw-verification-bar` skill. Choosing the attacks is the judgment you keep; running them is not.
 5. **On a verify report.** `VERDICT: PASS` is your cue to rule. If you merge, append the ruling to the integrator queue and dispatch the next adjudicate in the same turn. `VERDICT: FAIL` is the veto below.
-6. **The integrator slot.** Depth one. When nothing is integrating and the queue holds a ruling, dispatch a fresh `hw-integrate` with the pull request, the ruling and the footprint the adjudicator declared. Never a second one while the first runs, and never one long-lived integrator ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
-7. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`: it rules on intake.
+6. **The integrator slot.** Depth one. When nothing is integrating and the queue holds a ruling, dispatch a fresh `hw-integrate` with the pull request, the ruling and the footprint the adjudicator declared. Never two at once, and never a long-lived one ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
+7. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`: it rules on intake, so a question for it is an intake line, never a decisions note.
 
 ## The veto
 
-A `FAIL` goes back to the `hw-build` agent that wrote the branch, by `SendMessage` to its id, with the verifier's finding and nothing you added. A resumed agent keeps its settled design; a fresh one throws it away. When it returns, dispatch `hw-verify` again. Two consecutive iterations failing their own bar is the stop condition: something upstream is wrong and a third will not find it.
+A `FAIL` goes back to the `hw-build` agent that wrote the branch, by `SendMessage` to its id, with the verifier's finding and nothing you added. A resumed agent keeps its settled design; a fresh one throws it away. When it returns, read `## Follow-up` in its `build.md`, then dispatch `hw-verify` again. Two consecutive iterations failing their own bar is the stop condition: something upstream is wrong and a third will not find it.
 
 ## The dispatch
 
@@ -66,4 +66,4 @@ Composed with `Write` into the issue's scratch directory and passed as a path. N
 
 ## Stop
 
-Report at the end of the run, when a decision needs an owner, or when a human asks: a table of issue, pull request and result; what verification caught that a report did not, and what was your own error; anything you would not merge again without a ruling; what `run-dir.sh end` prints.
+Report at the end of the run, when a decision needs an owner, or when a human asks: a table of issue, pull request and result; what verification caught that a report did not, and what was your own error; anything you would not merge again without a ruling; the branches left for the owner; what `run-dir.sh end` prints. `ls` each file a command for the owner names.

@@ -107,6 +107,11 @@ else
     echo "  FAIL  a close that did not take is reported (exit $status)"
 fi
 
+echo "closes asks GraphQL for the closing references of the pull request"
+run closes 1050 > "$scratch/out"
+check_logged "a graphql call with the number as a typed variable" "api graphql -F n=1050"
+check_logged "  and the closingIssuesReferences field" "closingIssuesReferences"
+
 echo "a non-numeric issue is refused before any gh call"
 : > "$log"
 PATH="$fakebin:$PATH" LOG="$log" sh "$tool" body abc > "$scratch/out" 2>"$scratch/err"
