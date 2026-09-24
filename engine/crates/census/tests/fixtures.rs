@@ -1219,8 +1219,9 @@ fn derived_agrees_with_git_check_attr_on_every_path() {
 /// Outside a git repository, the verb reads the root `.gitattributes` alone.
 ///
 /// The same layouts as the case above, with no `git init`. No git answer
-/// exists here, so the root file is the whole declaration. A nested file is
-/// not read, and a glob in the root file is named as unreadable.
+/// exists here, so the root file gives every treatment. A nested file is not
+/// read, and it is named as unreadable with the glob in the root file, so the
+/// verb exits 1 rather than report agreement for a layout it did not read.
 #[test]
 fn outside_a_git_repository_the_root_gitattributes_alone_is_read() {
     use headwater_census::derived::Treatment;
@@ -1254,8 +1255,61 @@ fn outside_a_git_repository_the_root_gitattributes_alone_is_read() {
     }
     assert_eq!(
         population.unreadable,
-        vec!["glob/*.md".to_string()],
-        "the root reader did not name the glob it cannot expand:\n{report}"
+        [
+            "c/.gitattributes",
+            "glob/*.md",
+            "m/.gitattributes",
+            "other/.gitattributes",
+            "sub/.gitattributes",
+        ]
+        .map(String::from)
+        .to_vec(),
+        "the root reader did not name the glob it cannot expand and every \
+         nested file it does not read:\n{report}"
+    );
+    assert!(!population.agrees(), "the report claims the tree agrees");
+    assert!(
+        report.contains(
+            "these `.gitattributes` files are below the root, and this reader \
+             does not read them, so no shape of this tree was held against them:\n    \
+             c/.gitattributes\n    m/.gitattributes\n    other/.gitattributes\n    \
+             sub/.gitattributes\n"
+        ),
+        "the report does not name the nested files under their own heading:\n{report}"
+    );
+    assert!(
+        report.contains(
+            "these carry a merge attribute behind a pattern this reader cannot \
+             expand, so no shape of this tree was held against them:\n    glob/*.md\n"
+        ),
+        "the report does not name the glob under its own heading:\n{report}"
+    );
+}
+
+/// Outside a git repository, a leading `/` of a root line is an anchor.
+///
+/// The companion of `a_root_declaration_with_a_leading_slash_is_asked_of_git_without_it`.
+/// The `/` anchors the pattern to the root and is not part of the path, so
+/// `/gen.md` declares the produced `gen.md`. Read with the `/`, the report
+/// shows `gen.md` undeclared and `/gen.md` unproduced.
+#[test]
+fn outside_a_git_repository_a_leading_slash_of_a_root_line_is_not_part_of_the_path() {
+    let root = TempTree::new("leading-slash-no-repository");
+    root.write(".gitattributes", "/gen.md merge=headwater-regenerate\n");
+    root.write(
+        "gen.md",
+        "<!-- headwater:generated shelf_index. -->\n\n# 48 decisions\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    assert!(
+        population.undeclared.is_empty(),
+        "the produced path was not read as declared:\n{report}"
+    );
+    assert!(
+        population.unproduced.is_empty(),
+        "the anchor was read as part of the path:\n{report}"
     );
 }
 
