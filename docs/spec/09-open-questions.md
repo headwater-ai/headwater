@@ -121,6 +121,10 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0021](../decisions/0021-terminological-succession-and-validity-under-merge.md) — A retired-term lexicon sits in the language regime, and a verdict reports the read set that a merge may void.
 
+## The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links
+
+[HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) — `headwater taxonomy vendor` may accept a location, ruled yes with a boundary: the fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it.
+
 ## Q22 — The integrity posture of a published package
 
 [HW-DR-0022](../decisions/0022-q22-the-integrity-posture-of-a-published-package.md) — A package digest checks a fetched artifact against a pin that a person committed, and it is never a signature. The in-house SHA-256 is held against a second implementation rather than replaced by a dependency.
@@ -316,10 +320,6 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## A route offers a document and never a heading inside it
 
 [HW-DR-0071](../decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md) — A route does not read headings and offers no anchor inside a document. A measured heading surface never reached spec 02 or spec 03 for the task that raised the question. At every threshold, function words reached wrong anchors.
-
-## The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links
-
-[HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) — `headwater taxonomy vendor` may accept a location, ruled yes with a boundary: the fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it. (asserted, and no human has accepted it)
 
 ## The binary is the only interface an adopter must run, and every integration point outside it is declared
 

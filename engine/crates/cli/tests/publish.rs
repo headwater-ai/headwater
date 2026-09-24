@@ -2601,3 +2601,176 @@ fn record_at(out: &Path) -> headwater_resolve::release::Release {
     )
     .expect("the published record reads")
 }
+
+/// Every file under `dir`, by its path relative to `dir`, with its bytes.
+fn tree(dir: &Path) -> std::collections::BTreeMap<PathBuf, Vec<u8>> {
+    let mut files = std::collections::BTreeMap::new();
+    let mut stack = vec![dir.to_path_buf()];
+    while let Some(at) = stack.pop() {
+        for entry in std::fs::read_dir(&at).expect("the directory reads") {
+            let path = entry.expect("the entry reads").path();
+            if path.is_dir() {
+                stack.push(path);
+            } else {
+                let bytes = std::fs::read(&path).expect("the file reads");
+                files.insert(
+                    path.strip_prefix(dir).expect("under dir").to_path_buf(),
+                    bytes,
+                );
+            }
+        }
+    }
+    files
+}
+
+/// Pack a published artifact directory into the zip `release-taxonomy.yml`
+/// uploads: every member at the root of the archive, deflated.
+fn zipped(artifact: &Path) -> Vec<u8> {
+    use std::io::Write;
+    let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    for (path, bytes) in tree(artifact) {
+        let name = path.to_str().expect("the path is UTF-8").replace('\\', "/");
+        writer.start_file(name, options).expect("the member starts");
+        writer.write_all(&bytes).expect("the member writes");
+    }
+    writer.finish().expect("the archive closes").into_inner()
+}
+
+/// Serve `body` at `/x.zip` on 127.0.0.1, with `/moved` answering 302 to it,
+/// for as long as the test process lives. Returns the base URL.
+fn serve_artifact(body: Vec<u8>) -> String {
+    use std::io::{Read, Write};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("a loopback port binds");
+    let base = format!("http://{}", listener.local_addr().expect("the port reads"));
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut request = [0_u8; 4096];
+            let read = stream.read(&mut request).unwrap_or(0);
+            let line = String::from_utf8_lossy(&request[..read]).to_string();
+            let path = line.split_whitespace().nth(1).unwrap_or("").to_string();
+            let (head, payload): (String, &[u8]) = match path.as_str() {
+                "/moved" => (
+                    "HTTP/1.1 302 Found\r\nLocation: /x.zip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                        .to_string(),
+                    &[],
+                ),
+                "/x.zip" => (
+                    format!(
+                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                        body.len()
+                    ),
+                    &body,
+                ),
+                _ => (
+                    "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                        .to_string(),
+                    &[],
+                ),
+            };
+            let _ = stream.write_all(head.as_bytes());
+            let _ = stream.write_all(payload);
+        }
+    });
+    base
+}
+
+/// #959: `vendor <location>` installs what `vendor <dir>` installs.
+///
+/// HW-DR-0075 lets the verb take a location on the condition that the fetch
+/// changes nothing but where the bytes come from. So the same published
+/// artifact is vendored twice, once by path and once from a zip served on
+/// 127.0.0.1 behind a 302, and the two installed trees are compared byte for
+/// byte. A wrong digest refuses after the fetch and leaves the package area
+/// as it found it. The suite reaches no host but this one.
+#[cfg(feature = "fetch")]
+#[test]
+fn a_location_vendors_the_bytes_the_same_artifact_vendors_by_path() {
+    let root = Root::scratch("vendor-location");
+    let publisher = root.path().join("publisher");
+    write(
+        &publisher.join(".headwater/packages/acme-fixture/package.yml"),
+        "package: acme/fixture\nversion: 4.2.0\ncontents:\n  taxonomy: taxonomy.yml\n  doctrine: doctrine/\n",
+    );
+    write(
+        &publisher.join(".headwater/packages/acme-fixture/taxonomy.yml"),
+        "taxonomy: acme/fixture\nversion: 4.2.0\npurposes:\n  rationale: {intent: explain why a choice was made and what it forecloses}\n",
+    );
+    write(
+        &publisher.join(".headwater/packages/acme-fixture/doctrine/method.md"),
+        "# Method\n\nWhy this taxonomy shelves what it shelves.\n",
+    );
+    let artifact = root.path().join("artifact");
+    let (code, _stdout, stderr) = consumer_run(
+        &publisher,
+        &[
+            "taxonomy",
+            "publish",
+            "--package",
+            "acme/fixture",
+            "--out",
+            artifact.to_str().expect("the path is UTF-8"),
+        ],
+    );
+    assert_eq!(code, Some(0), "{stderr}");
+    let record = record_at(&artifact);
+    let base = serve_artifact(zipped(&artifact));
+
+    let refused = root.path().join("refused");
+    std::fs::create_dir_all(&refused).expect("the adopter root is made");
+    let wrong = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+    let location = format!("{base}/x.zip");
+    let (code, _stdout, stderr) = consumer_run(
+        &refused,
+        &["taxonomy", "vendor", &location, "--expect", wrong],
+    );
+    assert_eq!(code, Some(1), "a wrong digest was accepted:\n{stderr}");
+    assert!(
+        stderr.contains(&location) && !stderr.contains("headwater-fetch-"),
+        "the refusal names the temporary directory rather than the location:\n{stderr}"
+    );
+    assert!(
+        !refused.join(package::PACKAGES).exists(),
+        "a refused vendor wrote into the package area"
+    );
+
+    let by_path = root.path().join("by-path");
+    std::fs::create_dir_all(&by_path).expect("the adopter root is made");
+    let (code, _stdout, stderr) = consumer_run(
+        &by_path,
+        &[
+            "taxonomy",
+            "vendor",
+            artifact.to_str().expect("the path is UTF-8"),
+            "--expect",
+            &record.digest,
+        ],
+    );
+    assert_eq!(code, Some(0), "{stderr}");
+
+    let by_location = root.path().join("by-location");
+    std::fs::create_dir_all(&by_location).expect("the adopter root is made");
+    let moved = format!("{base}/moved");
+    let (code, stdout, stderr) = consumer_run(
+        &by_location,
+        &["taxonomy", "vendor", &moved, "--expect", &record.digest],
+    );
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(
+        stdout.contains(&moved),
+        "the report does not name the location it fetched:\n{stdout}"
+    );
+
+    let installed_by_path = tree(&by_path.join(package::PACKAGES));
+    assert!(
+        !installed_by_path.is_empty(),
+        "the path form installed nothing"
+    );
+    assert_eq!(
+        installed_by_path,
+        tree(&by_location.join(package::PACKAGES)),
+        "a location installed other bytes than the same artifact by path"
+    );
+}

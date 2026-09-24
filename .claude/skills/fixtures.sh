@@ -692,12 +692,14 @@ $out" ;;
         fail "$name" "these run it:$callers"
     fi
 
-    # No socket. The middle part of a sweep needs a model and no crate of this
-    # engine can reach one, so an unreachable model is an absent file rather
-    # than a failed build.
-    name='no crate of this engine depends on a network client'
+    # No socket. The middle part of a sweep needs a model and no crate the sweep
+    # reaches can reach one, so an unreachable model is an absent file rather
+    # than a failed build. `headwater-fetch` is the one crate with a client, for
+    # `taxonomy vendor <location>`, and only the binary links it (HW-DR-0075,
+    # held crate by crate in `engine/crates/cli/tests/network_boundary.rs`).
+    name='no crate but headwater-fetch depends on a network client'
     reached=$(grep -lE '^(reqwest|hyper|ureq|curl|isahc|surf|attohttpc|tungstenite|native-tls|rustls|openssl) *=' \
-        "$root"/engine/crates/*/Cargo.toml 2>/dev/null)
+        "$root"/engine/crates/*/Cargo.toml 2>/dev/null | grep -v '/engine/crates/fetch/Cargo.toml$')
     if [ -z "$reached" ]; then
         pass "$name"
     else

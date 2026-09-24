@@ -108,7 +108,7 @@ There is no precondition about a model, about a network, or about a plan having 
 
 **One variable reaches this binary, and neither half reads it.** `COLUMNS` says how wide the help and the report of `headwater check` are laid out. `engine/crates/cli/src/paint.rs` reads it, and only where the raw command line carries `--wide`, which both halves refuse because neither half lays anything out. That call is the one `std::env::var` under `engine/crates/` outside a test target.
 
-There is no variable that names a model, a key or an endpoint, and there is nowhere for one to be read. No crate of this engine depends on a network client.
+There is no variable that names a model, a key or an endpoint, and there is nowhere for one to be read. No crate that the sweep verbs reach depends on a network client. The one crate with a client serves `taxonomy vendor` alone ([HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)).
 
 ## Files
 
