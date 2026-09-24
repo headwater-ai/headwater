@@ -1322,6 +1322,45 @@ fn a_merge_driver_the_verb_does_not_know_is_named() {
     assert!(!population.agrees(), "{report}");
 }
 
+/// Inside a repository, a declared path with no file still reaches git.
+///
+/// Git answers only for the paths it is asked about, and the walk asks only
+/// about files on disk. So the verb also asks about every literal path of the
+/// root `.gitattributes`, and about the lock. Without the first, a
+/// declaration whose file is gone drops out of the `unproduced` direction.
+/// Without the second, a nested file that declares the lock before
+/// `headwater taxonomy resolve` has written it is not seen, and
+/// `headwater init --git` appends a second declaration.
+#[test]
+fn a_declared_path_with_no_file_is_asked_of_git_inside_a_repository() {
+    let root = TempTree::new("absent");
+    root.git_init();
+    root.write(
+        ".gitattributes",
+        "docs/gone.md merge=headwater-regenerate\n",
+    );
+    root.write(
+        ".headwater/.gitattributes",
+        "taxonomy.lock merge=headwater-regenerate\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    assert!(
+        population.unproduced.contains(&"docs/gone.md".to_string()),
+        "a root declaration whose file is gone was not reported:\n{report}"
+    );
+    assert!(
+        !population.agrees(),
+        "the report claims the tree agrees:\n{report}"
+    );
+    assert!(
+        headwater_census::derived::declared_paths(root.path())
+            .contains(&headwater_census::derived::LOCK.to_string()),
+        "a nested declaration of the lock, before the lock exists, was not read:\n{report}"
+    );
+}
+
 /// The producer outputs `plant_attribute_layouts` writes.
 const FOLDS: &[&str] = &[
     "top.md",
