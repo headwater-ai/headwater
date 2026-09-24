@@ -225,6 +225,12 @@ mod tests {
                 );
             }
             assert!(!scope.contains("tools-old/c.sh"), "`{spelling}`");
+            // The path is normalized as well as the pattern, so a caller that
+            // holds a path as a hook or a document writes it gets one answer.
+            for path in ["./tools/a.sh", "tools\\site\\b.py", "tools//a.sh"] {
+                assert!(scope.contains(path), "`{spelling}` does not contain `{path}`");
+            }
+            assert!(!scope.contains("./tools-old/c.sh"), "`{spelling}`");
         }
         let _ = std::fs::remove_dir_all(&at);
     }
@@ -245,6 +251,17 @@ mod tests {
             assert_eq!(refused.len(), 1, "`{spelling}`: {refused:?}");
             assert!(refused[0].1.contains("directory"), "{refused:?}");
             assert!(!scope.contains("tools/a.sh"));
+        }
+        // An empty directory has nothing under it, as a file has not, and it
+        // is still a directory.
+        std::fs::create_dir_all(at.join("tools/zz-empty")).expect("the directory is made");
+        for spelling in ["tools/zz-empty", "./tools/zz-empty/"] {
+            let scope = scope(&[spelling]);
+            let resolvers = resolvers(&at);
+            assert!(scope.reach(&resolvers)[0].entries.is_empty(), "`{spelling}`");
+            let refused = scope.unmatched(&resolvers);
+            assert_eq!(refused.len(), 1, "`{spelling}`: {refused:?}");
+            assert!(refused[0].1.contains("directory"), "{refused:?}");
         }
         // A literal file is an entry, and contains agrees.
         let scope = scope(&["./tools/a.sh"]);
