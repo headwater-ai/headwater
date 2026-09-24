@@ -1019,7 +1019,10 @@ mod tests {
         let resolver = CommentScan::new(
             &dir,
             "HW-VER-",
-            ["HW-VER-0001", "HW-VER-0002"].into_iter().map(String::from).collect(),
+            ["HW-VER-0001", "HW-VER-0002"]
+                .into_iter()
+                .map(String::from)
+                .collect(),
         );
         let Binding::Unresolved(why) = resolver.resolve_for("sample.rs", "HW-VER-0001") else {
             panic!("a citation of another document's identifier resolved");
@@ -1043,7 +1046,10 @@ mod tests {
         let resolver = CommentScan::new(
             &dir,
             "HW-VER-",
-            ["HW-VER-0001", "HW-VER-0002"].into_iter().map(String::from).collect(),
+            ["HW-VER-0001", "HW-VER-0002"]
+                .into_iter()
+                .map(String::from)
+                .collect(),
         );
         let outcome = resolver.resolve_for("sample.rs", "HW-VER-0001");
         std::fs::remove_dir_all(&dir).ok();
