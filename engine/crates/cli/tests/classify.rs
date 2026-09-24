@@ -260,3 +260,93 @@ fn repoint_bundles(package: &std::path::Path) {
     let to = format!("  bundles: {up}docs/taxonomies");
     std::fs::write(&manifest, text.replace(from, &to)).expect("the scratch manifest writes");
 }
+
+/// [#350](https://github.com/headwater-ai/headwater/issues/350), the decisive
+/// fixture. The library's doctrine is the prose an adopter reads before
+/// choosing an entry, and until this case `docs/taxonomies/**` excluded it
+/// whole, so no rule read a word of it. The same defects are planted twice:
+/// in `design-spec/doctrine.md`, where every rule of the house regime must
+/// now name them, and in a file under `design-spec/fixtures/corpus/`, which
+/// is a corpus another root walks and holds defects on purpose, so it must
+/// stay excluded and draw nothing. The first half catches the gap; the second
+/// catches the over-correction that lets planted fixture defects into this
+/// corpus.
+const PLANTED: &str = "\nWe will colour this entry in a later release, and it doesn't matter\nhow the next line starts, because this block is wrapped by hand.\n\nThis sentence runs on with many more words than the house profile admits, so that the count of its words goes well past the limit of twenty five words that the regime states. It is a load-bearing claim.\n";
+
+/// Every `(path, rule)` pair a human-readable report names. A finding opens
+/// on `  <path>:<line>:<column> <severity>` and the next line opens on the
+/// rule identifier.
+fn findings(out: &str) -> Vec<(String, String)> {
+    let lines: Vec<&str> = out.lines().collect();
+    let mut pairs = Vec::new();
+    for (at, line) in lines.iter().enumerate() {
+        let Some(rest) = line.strip_prefix("  ") else {
+            continue;
+        };
+        if rest.starts_with(' ') || !rest.starts_with("docs/") {
+            continue;
+        }
+        let Some((path, _)) = rest.split_once(':') else {
+            continue;
+        };
+        let Some(next) = lines.get(at + 1) else {
+            continue;
+        };
+        let rule = next.trim_start().split([' ', ':']).next().unwrap_or("");
+        pairs.push((path.to_owned(), rule.to_owned()));
+    }
+    pairs
+}
+
+#[test]
+fn the_library_doctrine_is_checked_and_a_fixture_corpus_under_it_is_not() {
+    let root = Root::new("doctrine-governed");
+    let doctrine = "docs/taxonomies/design-spec/doctrine.md";
+    let fixture = "docs/taxonomies/design-spec/fixtures/corpus/docs/planted-350.md";
+    let path = root.at.join(doctrine);
+    let mut text = std::fs::read_to_string(&path).expect("the doctrine reads");
+    text.push_str(PLANTED);
+    std::fs::write(&path, text).expect("the doctrine writes");
+    let planted = root.at.join(fixture);
+    std::fs::create_dir_all(planted.parent().expect("it has a parent"))
+        .expect("the fixture directory is there");
+    std::fs::write(&planted, format!("# A planted fixture page\n{PLANTED}"))
+        .expect("the fixture page writes");
+
+    let explained = root.run(&["explain", doctrine]);
+    assert_eq!(explained.code, Some(0), "the doctrine is a document: {explained:?}");
+    assert!(
+        explained.out.contains("library_doctrine"),
+        "the doctrine page is typed `library_doctrine`: {explained:?}"
+    );
+    let excluded = root.run(&["explain", fixture]);
+    assert!(
+        excluded.err.contains("is excluded by `docs/taxonomies/*/fixtures/**`"),
+        "a fixture corpus page is excluded by the fixture rule: {excluded:?}"
+    );
+
+    let checked = root.run(&["check", "--strict"]);
+    assert_ne!(checked.code, Some(0), "the planted errors fail a strict run: {checked:?}");
+    let pairs = findings(&checked.out);
+    for rule in [
+        "language.source_form.not_met",
+        "language.controlled.not_met",
+        "language.retired_term.used",
+        "voice.forbidden_construction",
+    ] {
+        assert!(
+            pairs.iter().any(|(p, r)| p == doctrine && r == rule),
+            "{rule} names {doctrine}: {pairs:?}\n{}",
+            checked.out
+        );
+    }
+    assert!(
+        !pairs.iter().any(|(p, _)| p.starts_with("docs/taxonomies/design-spec/fixtures/")),
+        "no finding names a fixture corpus page: {pairs:?}"
+    );
+    assert!(
+        !checked.out.contains("planted-350.md"),
+        "the planted fixture page draws no instance and no census row: {}",
+        checked.out
+    );
+}
