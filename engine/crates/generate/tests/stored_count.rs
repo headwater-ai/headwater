@@ -153,7 +153,9 @@ fn add_decision(at: &Path, number: u32) {
          A row of the shelf and nothing else.\n"
     );
     std::fs::write(
-        at.join(format!("generate/decisions/{number:04}-fixture-decision.md")),
+        at.join(format!(
+            "generate/decisions/{number:04}-fixture-decision.md"
+        )),
         body,
     )
     .expect("the decision is written");

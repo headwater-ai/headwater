@@ -22,7 +22,7 @@ A transcript that fails any of the five confirmations is refused whole, so there
 
 ## What reads this result
 
-This result carries no verdict, so a rate taken off it is a rate over none. 2 documents of this corpus link this result or the transcript it graded, and each one is where a reader meets a measurement this corpus does not hold:
+This result carries no verdict, so a rate taken off it is a rate over none. The documents of this corpus below link this result or the transcript it graded, and each one is where a reader meets a measurement this corpus does not hold:
 
 - `docs/obligations/0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md`
 - `docs/spec/05-ai-integration.md`

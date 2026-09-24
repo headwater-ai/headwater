@@ -2,7 +2,7 @@
 
 # Evaluations
 
-28 documents on this shelf, in the reading order this corpus derives.
+The documents on this shelf, in the reading order this corpus derives.
 
 - [A probe task section is the prompt, so commentary under that heading is prompt](a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md) — Two probes leaked commentary into the section a recorder sends as the prompt, and a third declared an answer set with no output contract. (asserted, and no human has accepted it)
 - [Adjacent work and tooling](adjacent-work.md) — Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.

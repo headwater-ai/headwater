@@ -14,8 +14,8 @@
 #                                               JSON does not carry (untyped,
 #                                               excluded, not a document) and
 #                                               the obligation register
-#     3. `docs/interfaces/README.md`            the verb count and the group
-#                                               count. That file is a generated
+#     3. `docs/interfaces/README.md`            the verb rows and the group
+#                                               headings. That file is a generated
 #                                               projection (`verb_index`), and
 #                                               `headwater generate --check`
 #                                               holds it, so it is a run too
@@ -334,21 +334,21 @@ put("taxonomy.lock", check["taxonomy"]["lock"][:19] + "…",
 put("run.date", check["clock"], "check --json .clock")
 
 # --- 6. the command surface, from the generated verb index ----------------
-# `verb_index.rs` renders "verb"/"verbs" and "has"/"have" each on its own
-# count, singular at exactly 1, so a corpus whose contracted or uncontracted
-# count is exactly 1 writes "1 has a contract" or "1 has none" (#811). The
-# pattern read both instead of the plural alone, which matched neither and
-# refused every run over such a tree.
+# The index states no count since #1058, because a count is a fold that a
+# text merge writes wrong. So this reads the rows: one row for each verb the
+# binary dispatches, and the mark `**no contract**` in the last cell of a verb
+# nothing describes.
 verbs = (root / "docs/interfaces/README.md").read_text()
-m = re.search(r"dispatches (\d+) verbs?\. (\d+) of them (?:has|have) a "
-              r"contract on this shelf, and (\d+) (?:has|have) none", verbs)
-if not m:
-    sys.exit("refresh-figures.sh: docs/interfaces/README.md does not state a "
-             "verb count in the form this script reads")
-put("verbs.count", m.group(1),
-    "docs/interfaces/README.md, a generated `verb_index` projection")
-put("verbs.contracts", m.group(2), "the same sentence of the same file")
-put("verbs.nocontract", m.group(3), "the same sentence of the same file")
+rows = re.findall(r"^\| `[^`]+` \|.*$", verbs, re.M)
+if not rows:
+    sys.exit("refresh-figures.sh: docs/interfaces/README.md holds no verb row "
+             "in the form this script reads")
+bare = [row for row in rows if "**no contract**" in row]
+put("verbs.count", len(rows),
+    "docs/interfaces/README.md, a generated `verb_index` projection, its rows")
+put("verbs.contracts", len(rows) - len(bare),
+    "the same rows, less the ones marked `**no contract**`")
+put("verbs.nocontract", len(bare), "the rows marked `**no contract**`")
 put("verbs.groups", len(re.findall(r"^## ", verbs, re.M)),
     "docs/interfaces/README.md, its `## ` headings, which are the groups "
     "`headwater --help` prints")

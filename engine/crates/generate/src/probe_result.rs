@@ -623,10 +623,12 @@ fn read_set_of_this_result(read_by: &[String]) -> String {
             let _ = writeln!(
                 out,
                 "This result carries no verdict, so a rate taken off it is a rate over \
-                 none. {} of this corpus link this result or the transcript it graded, and \
-                 each one is where a reader meets a measurement this corpus does not hold:",
-                count(readers.len(), "document")
+                 none. The documents of this corpus below link this result or the transcript \
+                 it graded, and each one is where a reader meets a measurement this corpus \
+                 does not hold:"
             );
+            // The list stays and its count goes: a count of the readers is a
+            // fold that a text merge of two branches writes wrong (#1058).
             let _ = writeln!(out);
             for reader in readers {
                 let _ = writeln!(out, "- `{reader}`");

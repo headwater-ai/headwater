@@ -5,7 +5,7 @@ the plan
 
 # decisions
 
-2 documents on this shelf, in the reading order this corpus derives.
+The documents on this shelf, in the reading order this corpus derives.
 
 - [Rebuild the graph on every run](0002-rebuild-the-graph.md) — the graph is rebuilt on every run and never stored, which supersedes DR-FIX-0001
 - [Store the graph on disk](0001-store-the-graph.md) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
@@ -15,7 +15,7 @@ the plan
 
 # guides
 
-2 documents on this shelf, in the reading order this corpus derives.
+The documents on this shelf, in the reading order this corpus derives.
 
 - [The first run](first-run.md) — what to do on a first run, and what to read when it refuses
 - [GD-FIX-recovery](recovery.md) — how to recover a corpus whose lock and sources disagree (asserted, and no human has accepted it)
@@ -25,7 +25,7 @@ the plan
 
 # decisions
 
-2 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+The documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Rebuild the graph on every run
 
@@ -42,7 +42,7 @@ id: GD-FIX-archive
 doc_type: guide
 status: current
 status_since: 2026-02-01
-summary: "One heading for each of the 2 documents on the `decisions` shelf, so that a citation naming one of them resolves in this file."
+summary: "One heading for each document on the `decisions` shelf, so that a citation naming one of them resolves in this file."
 relations:
   governed_by:
     - DR-FIX-0002
@@ -50,7 +50,7 @@ relations:
 
 # decisions
 
-2 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+The documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Rebuild the graph on every run
 

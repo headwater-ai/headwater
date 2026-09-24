@@ -176,35 +176,17 @@ fn render(output: &str, verbs: &[Verb], described: &[(String, String)]) -> Strin
         let name = verb.described_as();
         described.iter().find(|(called, _)| called == &name)
     };
-    let with = verbs
-        .iter()
-        .filter(|verb| contract_of(verb).is_some())
-        .count();
-    let without = verbs.len() - with;
-
     let mut out = String::new();
     let mark = headwater_mark::marker(Kind::VerbIndex.name(), output)
         .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
     out.push_str(&mark);
     out.push_str("\n\n# The command surface\n\n");
+    // No count of the verbs or of their contracts. The contracts are documents
+    // on this shelf, and a count of them is a fold that a text merge of two
+    // branches writes wrong with no conflict (#1058). The rows say how many.
     out.push_str(&format!(
-        "`{}` dispatches {} {}. {} of them {} a contract on this shelf, and {} {} none.\n\n",
+        "`{}` dispatches the verbs below, one row each.\n\n",
         headwater_verbs::BINARY,
-        verbs.len(),
-        match verbs.len() {
-            1 => "verb",
-            _ => "verbs",
-        },
-        with,
-        match with {
-            1 => "has",
-            _ => "have",
-        },
-        without,
-        match without {
-            1 => "has",
-            _ => "have",
-        },
     ));
     out.push_str(
         "A verb with no contract carries a mark in the last column, and that cell is what this \
