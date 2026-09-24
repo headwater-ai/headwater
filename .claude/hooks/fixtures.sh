@@ -268,8 +268,10 @@ expect 'the refusal is a deny decision the harness can act on' \
 expect 'an absolute path inside the repository is refused the same way' \
     write.sh 0 '"permissionDecision":"deny"' \
     "{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$root/docs/obligations/9999-absolute.md\"}}"
-expect 'an edit to a document that already exists passes' \
-    write.sh 0 '' \
+# #1008: an edit to spec 5 now carries the reverse advisory, because other
+# documents declare an edge onto it. "Passes" is the absence of a refusal.
+refute 'an edit to a document that already exists passes' \
+    write.sh 'permissionDecision' \
     '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/spec/05-ai-integration.md"}}'
 expect 'a file outside the corpus root passes' \
     write.sh 0 '' \
@@ -341,8 +343,8 @@ printf '\n# write.sh, on PreToolUse: Copilot names the same field `path`\n'
 expect 'a Copilot-shaped write of a new document under the corpus root is refused the same way' \
     write.sh 0 'headwater new' \
     '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"path":"docs/obligations/9999-a-record-nobody-scaffolded.md","file_text":"placeholder"}}'
-expect 'a Copilot-shaped edit of a document that already exists passes' \
-    write.sh 0 '' \
+refute 'a Copilot-shaped edit of a document that already exists passes' \
+    write.sh 'permissionDecision' \
     '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"path":"docs/spec/05-ai-integration.md","old_str":"a","new_str":"b"}}'
 
 printf '\n# write.sh, on PreToolUse: an apply_patch command in place of a file_path\n'
@@ -353,8 +355,8 @@ printf '\n# write.sh, on PreToolUse: an apply_patch command in place of a file_p
 expect 'an apply_patch add of a new document under the corpus root is refused the same way' \
     write.sh 0 'headwater new' \
     '{"hook_event_name":"PreToolUse","tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Add File: docs/obligations/9999-a-record-nobody-scaffolded.md\n+placeholder\n*** End Patch"}}'
-expect 'an apply_patch update of a document that already exists passes' \
-    write.sh 0 '' \
+refute 'an apply_patch update of a document that already exists passes' \
+    write.sh 'permissionDecision' \
     '{"hook_event_name":"PreToolUse","tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Update File: docs/spec/05-ai-integration.md\n@@\n-old\n+new\n*** End Patch"}}'
 expect 'a tool_input with neither a file_path nor an apply_patch command is silent' \
     write.sh 0 '' \
@@ -431,6 +433,98 @@ if [ -x "$engine" ]; then
         '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/obligations/9999-a-record-nobody-scaffolded.md"}}'
 else
     skip 'write.sh PreToolUse impact cases' 'no built engine'
+fi
+
+printf '\n# write.sh, on PreToolUse: the reverse advisory, for an edit to a governing document\n'
+# #1008: PR #1004 edited HW-PD-0007 and heard nothing about the three files
+# that decision governs, because the advisory answered one direction only.
+# Every fact of the reverse part is read from `headwater explain --json`.
+if [ -x "$engine" ]; then
+    pd7='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md"}}'
+    expect 'an edit to a governing decision names the first path it governs' \
+        write.sh 0 '.claude/hooks/wait.sh' "$pd7"
+    expect 'an edit to a governing decision names the second path it governs' \
+        write.sh 0 'tools/run/run-census.sh' "$pd7"
+    expect 'an edit to a governing decision names the third path it governs' \
+        write.sh 0 '.claude/skills/hw-run-policy/SKILL.md' "$pd7"
+    expect 'an edit to a governing decision names the document that traces to it' \
+        write.sh 0 'docs/spec/17-orchestration-architecture.md (traces_to of)' "$pd7"
+    expect 'the reverse advisory is worded for an edit that has not happened yet' \
+        write.sh 0 'which you are about to change, is a document that other files depend on' "$pd7"
+    expect 'the reverse advisory says it blocks nothing' \
+        write.sh 0 'Nothing here blocks the edit' "$pd7"
+    refute 'the reverse advisory carries no permission decision' \
+        write.sh 'permissionDecision' "$pd7"
+
+    # Independence: the forward advisory on a governed code path is unchanged,
+    # and a code path is no document, so the reverse part is absent.
+    wait_edit='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/wait.sh"}}'
+    expect 'a governed code path still hears the decision that governs it' \
+        write.sh 0 'docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md' "$wait_edit"
+    refute 'a code path carries no reverse advisory' \
+        write.sh 'is a document that other files depend on' "$wait_edit"
+
+    # A scratch corpus, so the inbound half, both halves at once, and the
+    # silent document are each provoked on purpose. Alpha governs a path, Beta
+    # traces to Alpha, Gamma governs Alpha's own path, and Delta has no edge.
+    reverse_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-reverse-XXXXXX")
+    mkdir -p "$reverse_root/.headwater/packages" "$reverse_root/docs/process/decisions" \
+        "$reverse_root/engine/target/release" "$reverse_root/tools"
+    cp -r "$root/taxonomy-source/headwater-standard" "$reverse_root/.headwater/packages/headwater-standard"
+    sed -i 's|bundles: \.\./\.\./docs/taxonomies|bundles: ../../../docs/taxonomies|' \
+        "$reverse_root/.headwater/packages/headwater-standard/package.yml"
+    cp -r "$root/docs/taxonomies" "$reverse_root/docs/taxonomies"
+    cp "$root/.headwater/overlay.yml" "$root/.headwater/taxonomy.yml" "$reverse_root/.headwater/"
+    cp "$engine" "$reverse_root/engine/target/release/headwater"
+    : > "$reverse_root/tools/alpha.sh"
+    reverse_doc() {
+        printf -- '---\nid: %s\nstatus: current\nstatus_since: 2026-09-24\nsummary: "%s"\nlast_verified: 2026-09-24\n%b---\n\n# %s\n\n## Context\n\nA fixture.\n\n## Decision\n\nA fixture.\n\n## Consequences\n\nA fixture.\n' \
+            "$2" "$3" "$4" "$3" > "$reverse_root/docs/process/decisions/$1"
+    }
+    reverse_doc 0001-alpha.md HW-PD-0001 'Alpha is the edited document' 'relations:\n  governs:\n    - tools/alpha.sh\n'
+    reverse_doc 0002-beta.md HW-PD-0002 'Beta traces to alpha' 'relations:\n  traces_to:\n    - HW-PD-0001\n'
+    reverse_doc 0003-gamma.md HW-PD-0003 'Gamma governs alpha' 'relations:\n  governs:\n    - docs/process/decisions/0001-alpha.md\n'
+    reverse_doc 0004-delta.md HW-PD-0004 'Delta has no edge' ''
+
+    if resolved=$("$reverse_root/engine/target/release/headwater" taxonomy resolve --root "$reverse_root" 2>&1); then
+        HEADWATER_HOOK_ROOT="$reverse_root"
+        export HEADWATER_HOOK_ROOT
+        alpha='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0001-alpha.md"}}'
+        expect 'an edit to a document names the document that declares an edge onto it' \
+            write.sh 0 'docs/process/decisions/0002-beta.md (traces_to of)' "$alpha"
+        expect 'a document both governed and governing hears the forward part' \
+            write.sh 0 'docs/process/decisions/0003-gamma.md' "$alpha"
+        expect 'a document both governed and governing hears the reverse part' \
+            write.sh 0 'tools/alpha.sh' "$alpha"
+        # One call, one object: the harness reads the first JSON object a hook
+        # writes, so two objects would lose one part.
+        out=$(printf '%s' "$alpha" | sh "$hooks/write.sh" 2>/dev/null)
+        objects=$(printf '%s\n' "$out" | grep -c 'hookSpecificOutput')
+        if [ "$objects" -eq 1 ] && printf '%s' "$out" | "$engine" json field hookSpecificOutput additionalContext >/dev/null 2>&1; then
+            printf 'ok   %s\n' 'both parts arrive in one JSON object'
+            passed=$((passed + 1))
+        else
+            printf 'FAIL %s\n  expected one parseable object, got:\n%s\n' 'both parts arrive in one JSON object' "$out"
+            failed=$((failed + 1))
+        fi
+        expect 'a document with no edge in either direction is silent' \
+            write.sh 0 '' \
+            '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0004-delta.md"}}'
+        expect 'a document that does not exist yet gets the refusal alone' \
+            write.sh 0 '"permissionDecision":"deny"' \
+            '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/process/decisions/0005-epsilon.md"}}'
+        expect 'the reverse advisory is silent after the edit' \
+            write.sh 0 '' \
+            '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0001-alpha.md"}}'
+        HEADWATER_HOOK_ROOT="$root"
+        export HEADWATER_HOOK_ROOT
+    else
+        printf 'FAIL the reverse advisory (setup)\n  the scratch corpus did not resolve:\n%s\n' "$resolved"
+        failed=$((failed + 1))
+    fi
+    rm -rf "$reverse_root"
+else
+    skip 'write.sh PreToolUse reverse advisory cases' 'no built engine'
 fi
 
 printf '\n# write.sh, on PostToolUse: silent until #952 gives it its one line\n'
@@ -559,6 +653,15 @@ if [ -x "$engine" ]; then
     rm -f "$open_root/engine/target/release/headwater"
     expect 'a PreToolUse that cannot read its input denies nothing' \
         write.sh 0 '' "$deny_payload"
+    cp "$engine" "$open_root/engine/target/release/headwater"
+
+    # #1008: the reverse advisory on the same terms, with its control first.
+    reverse_payload='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md"}}'
+    expect 'the control for: the reverse advisory with no engine' \
+        write.sh 0 'tools/run/run-census.sh' "$reverse_payload"
+    rm -f "$open_root/engine/target/release/headwater"
+    expect 'the reverse advisory with no engine is silent, and the edit proceeds' \
+        write.sh 0 '' "$reverse_payload"
     cp "$engine" "$open_root/engine/target/release/headwater"
 
     # No position runs an interpreter, which is HW-DR-0055 and the discharge of
