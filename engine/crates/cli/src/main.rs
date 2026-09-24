@@ -354,7 +354,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             )),
             Some(JsonWord::Field { path }) => match path.is_empty() {
                 true => fail(
-                    "`json field` takes the path of keys to a member. Try \
+                    "`json field` takes the path of steps to a member. Try \
                      `headwater json field tool_input file_path`",
                 ),
                 false => json_field(&path),

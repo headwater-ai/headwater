@@ -24,6 +24,15 @@
 #                            to answer "no doc impact" by reflex, and that
 #                            destroys the signal.
 #
+#                            The reverse direction, in the same call and the
+#                            same JSON object: an edit to a document that
+#                            governs code paths, or that other documents
+#                            declare an edge onto, names those paths and those
+#                            documents (#1008). A document edited as if it
+#                            stood alone is how a governing decision drifts
+#                            from the code it rules. Every fact of this part
+#                            is read from `headwater explain --json`.
+#
 #   PostToolUse Write|Edit   silent. The advisory moved before the edit, and
 #                            printing it again here would say the same pointers
 #                            twice. #952 gives this position its one line: the
@@ -38,7 +47,8 @@
 # `headwater hook write` verb: spec 5's hook contract states "no hook
 # introduces a verb", because "two entry points to one answer are two answers
 # as soon as one drifts". For the advisory, the pointers `headwater route`
-# resolves from the anchor.
+# resolves from the anchor, and the `related` entries `headwater explain
+# --json` reports for a document.
 #
 # What a refusal means: the harness does not run the tool call, and the agent
 # reads the reason. What happens when the harness ignores it: the write lands.
@@ -85,13 +95,29 @@ case $path in
     *) rel=$path ;;
 esac
 
-# The impact advisory, on standard output, or nothing. It names the documents
-# that govern the path and is worded for an edit that has not happened yet.
+# The impact advisory, on standard output, or nothing. It is one JSON object
+# with up to two parts, worded for an edit that has not happened yet. The
+# forward part names the documents that govern the path. The reverse part,
+# for a path that is itself a document, names the code paths it governs and
+# the documents that declare an edge onto it (#1008). Either part can be
+# absent, and a call with neither prints nothing.
 advise() {
-    pointers=$(hw_governing_pointers "$rel") || exit 0
-    advisory="Headwater impact detection: a document in this corpus declares that it governs \`$rel\`, which you are about to change.
+    advisory=
+    if pointers=$(hw_governing_pointers "$rel"); then
+        advisory="Headwater impact detection: a document in this corpus declares that it governs \`$rel\`, which you are about to change.
 
-$pointers
+$pointers"
+    fi
+    if reverse=$(hw_governed_by_document "$rel"); then
+        [ -n "$advisory" ] && advisory="$advisory
+
+"
+        advisory="${advisory}Headwater impact detection: \`$rel\`, which you are about to change, is a document that other files depend on.
+
+$reverse"
+    fi
+    [ -n "$advisory" ] || exit 0
+    advisory="$advisory
 
 This is advisory. Read each one before the edit, and say whether the change invalidates it. Nothing here blocks the edit."
     quoted=$(hw_quote "$advisory") || exit 0

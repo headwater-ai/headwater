@@ -947,9 +947,11 @@ pub enum JsonWord {
     Field {
         #[arg(
             value_name = "key",
-            help = "the path of keys to the member, outermost first. \
+            help = "the path of steps to the member, outermost first. A step into an object \
+                    is a key, and a step into an array is a decimal index counted from 0. \
                     `headwater json field tool_input file_path` reads the `file_path` member of \
-                    the `tool_input` member. Without one, the object is read and no member of it \
+                    the `tool_input` member, and `headwater json field related 0 target` reads \
+                    the `target` member of the first element of `related`. Without one, the object is read and no member of it \
                     is named, which is refused"
         )]
         path: Vec<String>,
@@ -957,8 +959,8 @@ pub enum JsonWord {
     Count {
         #[arg(
             value_name = "key",
-            help = "the path of keys to the array or the object whose elements are counted, \
-                    outermost first. Without one, the object on standard input is the one counted"
+            help = "the path of steps to the array or the object whose elements are counted, \
+                    outermost first, where a step into an array is a decimal index. Without one, the object on standard input is the one counted"
         )]
         path: Vec<String>,
     },

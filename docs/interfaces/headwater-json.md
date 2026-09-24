@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-json
 status: current
 status_since: 2026-09-06
 summary: "How one member of the JSON object on standard input reaches a caller, and the one answer that stands for every way a read reaches no scalar."
-last_verified: 2026-09-06
+last_verified: 2026-09-24
 title: "headwater json"
 relations:
   governs:
@@ -25,7 +25,7 @@ The command reads one JSON object on standard input. `field` and `count` write o
 
 `headwater json` is the one verb of this binary that reads no corpus. A harness hands a hook one JSON object on standard input. A hook that read it alone would need an interpreter that nothing else in a session requires. [HW-DR-0055](../decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) rules that the engine answers this and that no `headwater hook <moment>` verb exists.
 
-`field` takes a path of keys, outermost first, and prints the member at the end of it. `headwater json field tool_input file_path` prints the `file_path` member of the `tool_input` member. A string arrives with its escapes resolved, a number as it was written, and a boolean as `true` or `false`.
+`field` takes a path of steps, outermost first, and prints the member at the end of it. A step is a key into an object or a decimal index into an array, counted from 0. `headwater json field tool_input file_path` prints the `file_path` member of the `tool_input` member. `headwater json field related 0 target` prints the `target` member of the first element of the `related` array. A string arrives with its escapes resolved, a number as it was written, and a boolean as `true` or `false`.
 
 `count` prints how many elements the array or the object at that path holds. It is the read `field` cannot do. An empty array and an absent member both give a caller nothing back through `field`, and they are different facts about a message.
 
@@ -41,7 +41,7 @@ Standard input carries one JSON document and is text. The verb reads it to the e
 
 | Option | What it does |
 |---|---|
-| `<key>...` | The path to the member, outermost first. `field` requires at least one. `count` with none counts the document on standard input itself. |
+| `<key>...` | The path to the member, outermost first. A step into an array is a decimal index. `field` requires at least one. `count` with none counts the document on standard input itself. |
 | `--root <path>` | Accepted for the global parser. This verb reads nothing under it. |
 | `--no-color` | Force plain text on both streams. The artifact carries no color at any setting, and the account on standard error does. |
 | `--no-banner` | Accepted and does nothing, since only the root help screen prints a masthead. |
@@ -51,7 +51,7 @@ Standard input carries one JSON document and is text. The verb reads it to the e
 
 **0** when the read reaches a scalar for `field`, an array or an object for `count`, or text for `quote`. The artifact is on standard output and standard error is empty.
 
-**1** when the read reaches nothing. One answer stands for six states. They are a document that does not parse, and a step of the path that is not an object. The other four are an absent key, an array, an object, and a null. Standard output is empty and standard error names the path. A caller that told the six apart would act on the shape of a message it did not write.
+**1** when the read reaches nothing. One answer stands for six states. They are a document that does not parse, and a step of the path that the member cannot take. A key into an array, an index past the end of an array, and any step into a scalar are all that second state. The other four are an absent key, an array, an object, and a null. Standard output is empty and standard error names the path. A caller that told the six apart would act on the shape of a message it did not write.
 
 **1** when standard input is not text, when a second word is absent, and when `field` is given no key. A second word this verb does not carry is refused the same way.
 

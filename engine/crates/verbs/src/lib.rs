@@ -397,8 +397,8 @@ pub const VERBS: &[Verb] = &[
         words: &[
             Word {
                 name: "field",
-                summary: "one member, addressed by a path of keys",
-                description: "Print one member of the object on standard input, addressed by a path of keys. `headwater json field tool_input file_path` reads the `file_path` member of the `tool_input` member. A string is printed with its escapes resolved, a number as it was written, and a boolean as `true` or `false`. It prints nothing and exits non-zero where the read reaches no scalar, which is one answer for six states: the document will not parse, a step of the path is not an object, the key is absent, the member is an array, the member is an object, or the member is null. A caller that told those apart would act on the shape of a message it did not write.",
+                summary: "one member, addressed by a path of keys and array indices",
+                description: "Print one member of the object on standard input, addressed by a path of steps. A step into an object is a key, and a step into an array is a decimal index counted from 0. `headwater json field tool_input file_path` reads the `file_path` member of the `tool_input` member, and `headwater json field related 0 target` reads the `target` member of the first element of `related`. A string is printed with its escapes resolved, a number as it was written, and a boolean as `true` or `false`. It prints nothing and exits non-zero where the read reaches no scalar, which is one answer for six states: the document will not parse, a step of the path is one the member cannot take, the key is absent, the member is an array, the member is an object, or the member is null. A caller that told those apart would act on the shape of a message it did not write.",
             },
             Word {
                 name: "count",
