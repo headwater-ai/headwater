@@ -349,6 +349,80 @@ core:
         assert_eq!(check(&base, &inert, &[], &[]).len(), 1);
     }
 
+    /// A taxonomy whose `evidence` family must be lifecycle-sensitive, with
+    /// `cites` spelled `{cites}` so each case writes its own relation. It is
+    /// its own string rather than an edit of `BASE`, because the boolean case
+    /// below rewrites every `lifecycle_sensitive: true` in `BASE`.
+    fn evidence(cites: &str) -> String {
+        format!(
+            "\
+purposes:
+  rationale: {{intent: why}}
+facets:
+  status: {{role: state}}
+kinds:
+  decision: {{purpose: rationale}}
+relations:
+  supersedes: {{family: succession, on_target: {{set_state: superseded}}}}
+  cites: {cites}
+core:
+  requires:
+    - facet_role: state
+    - purpose: rationale
+    - relation_family: succession
+      lifecycle_sensitive: true
+    - relation_family: evidence
+      lifecycle_sensitive: true
+"
+        )
+    }
+
+    /// HW-DR-0065: a relation is lifecycle-sensitive when either reading marks
+    /// it. A citation writes no state onto what it cites, so before the member
+    /// was read no relation of an evidence family could satisfy a requirement
+    /// that it be lifecycle-sensitive.
+    #[test]
+    fn an_evidence_family_requirement_is_satisfied_by_a_relation_that_declares_the_word_and_writes_no_state()
+     {
+        let taxonomy = tree(&evidence("{family: evidence, lifecycle_sensitive: true}"));
+        assert!(check(&taxonomy, &taxonomy, &[], &[]).is_empty());
+    }
+
+    /// The requirement is not vacuous: without the member, and with no
+    /// `on_target`, nothing satisfies it.
+    #[test]
+    fn an_evidence_relation_that_declares_neither_reading_does_not_satisfy_the_core() {
+        let taxonomy = tree(&evidence("{family: evidence}"));
+        let found = check(&taxonomy, &taxonomy, &[], &[]);
+        assert_eq!(found.len(), 1);
+        assert!(found[0].to_string().contains("relation_family: evidence"));
+    }
+
+    /// The member is a boolean read through the core schema, as
+    /// `read_relation` reads it, and never as its text.
+    #[test]
+    fn the_declared_member_is_read_as_the_core_schema_resolves_it() {
+        for spelling in ["true", "True", "TRUE"] {
+            let taxonomy = tree(&evidence(&format!(
+                "{{family: evidence, lifecycle_sensitive: {spelling}}}"
+            )));
+            assert!(
+                check(&taxonomy, &taxonomy, &[], &[]).is_empty(),
+                "`lifecycle_sensitive: {spelling}` marks the relation"
+            );
+        }
+        for spelling in ["\"true\"", "false"] {
+            let taxonomy = tree(&evidence(&format!(
+                "{{family: evidence, lifecycle_sensitive: {spelling}}}"
+            )));
+            assert_eq!(
+                check(&taxonomy, &taxonomy, &[], &[]).len(),
+                1,
+                "`lifecycle_sensitive: {spelling}` does not mark the relation"
+            );
+        }
+    }
+
     /// `True` is the boolean the core schema resolves, so a requirement that
     /// spells it that way is the same requirement. The reading here was a
     /// comparison against the text `true`, which read the two other spellings
