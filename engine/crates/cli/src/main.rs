@@ -1798,7 +1798,7 @@ fn fetch_location(source: &str) -> Result<Option<NoFetch>, ExitCode> {
 /// `headwater taxonomy diff`: measured compatibility between two versions, over
 /// this corpus.
 ///
-/// **It takes a directory, for the reason [`vendor`] does today.** Spec 7 writes
+/// **It takes a directory, and only [`vendor`] takes a location.** Spec 7 writes
 /// the invocation as `taxonomy diff --to 4.0.0`, and this function reaches no
 /// crate that opens a socket, so the artifact is one the caller already
 /// fetched. `--to` is
