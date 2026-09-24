@@ -177,7 +177,7 @@ pub const VERBS: &[Verb] = &[
         name: "derived",
         group: "Checking a corpus",
         summary: "which files a producer writes, computed rather than listed",
-        description: "Compute which files of this repository a producer writes, by asking each producer for its own output set, and report both directions of its disagreement with `.gitattributes`. A producer output that carries no `merge=headwater-regenerate` merges silently when two branches move it to one value; a path that declares the attribute and no producer writes refuses a merge of hand-written text. It holds no list of the population, so a producer output added to a tree changes its answer with no edit to the engine. It exits non-zero on a disagreement in either direction.",
+        description: "Compute which files of this repository a producer writes, by asking each producer for its own output set, and report both directions of its disagreement with `.gitattributes`. A fold that a producer writes and that carries neither `-merge` nor `merge=headwater-regenerate` merges silently when two branches move it to one value; a path that declares either and no producer writes refuses a merge of hand-written text. It holds no list of the population, so a producer output added to a tree changes its answer with no edit to the engine. It exits non-zero on a disagreement in either direction.",
         words: &[],
     },
     // The one verb git calls rather than a person. HW-DR-0077 rules that merge
@@ -189,7 +189,7 @@ pub const VERBS: &[Verb] = &[
         name: "merge-driver",
         group: "Checking a corpus",
         summary: "the merge driver git calls for a derived fold",
-        description: "The merge driver that git calls for a path `.gitattributes` gives `merge=headwater-regenerate`, as `headwater merge-driver %O %A %B %P`. It leaves the current side byte for byte, names on standard error the producer that rebuilds the path, and exits non-zero so that git records a conflict with no marker in the file. It never regenerates, because a driver runs one path at a time over a tree the merge has not finished. `headwater init --git` writes the attribute lines and prints the configuration that names it.",
+        description: "The merge driver that git calls for a path a clone's `info/attributes` gives `merge=headwater-regenerate`, as `headwater merge-driver %O %A %B %P`. It leaves the current side byte for byte, names on standard error the producer that rebuilds the path, and exits non-zero so that git records a conflict with no marker in the file. It never regenerates, because a driver runs one path at a time over a tree the merge has not finished. `headwater init --git` commits `-merge` for each fold and prints the configuration and the override lines that select it.",
         words: &[],
     },
     Verb {

@@ -825,19 +825,21 @@ pub enum Verb {
         package: Option<String>,
         #[arg(
             long,
-            help = "append a `merge=headwater-regenerate` line to `.gitattributes` for each file \
+            help = "append a `-merge` line to `.gitattributes` for each fold \
                     `headwater taxonomy resolve` and `headwater generate` write in this tree, and \
-                    print the two `git config` lines that name `headwater merge-driver` as the \
-                    driver. It runs after the first `headwater generate`, and on a repository that \
-                    is already bound it does this and nothing else"
+                    print the two `git config` lines that name `headwater merge-driver` and the \
+                    `info/attributes` lines that select it. A clone that already names the driver \
+                    gets those lines written. It runs after the first `headwater generate`, and on \
+                    a repository that is already bound it does this and nothing else"
         )]
         git: bool,
         #[arg(
             long = "git-config",
             requires = "git",
-            help = "also run the two `git config` lines `--git` prints, in this clone. Git takes \
-                    no driver from a repository, so without this flag the lines are printed and \
-                    the adopter runs them"
+            help = "also run the two `git config` lines `--git` prints, in this clone, and then \
+                    write the `info/attributes` lines that select the driver. Git takes no driver \
+                    from a repository, so without this flag the lines are printed and the adopter \
+                    runs them"
         )]
         git_config: bool,
     },

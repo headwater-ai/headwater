@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The decisive fixture for `headwater_graph::anchors::CommentScan`: a
-//! `governs` edge onto a `test_site` anchor fails `headwater check` where the
-//! target file's comment cites an identifier shaped like one this corpus
-//! mints and unminted, and passes clean where it cites one that is minted.
+//! `governs` edge onto a `test_site` anchor passes `headwater check` only
+//! where the target file's comment cites the identifier of the document that
+//! asserts the edge, and that identifier is minted.
 //!
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor this file meets: a check ships with a fixture it fails and
@@ -13,12 +13,23 @@
 //! [HW-DR-0073](../../../../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
 //! ruling 4 asked for.
 //!
-//! `engine/crates/check/fixtures/comment-scan-target-src/` holds two files
-//! that differ in one line: which identifier their opening comment cites.
-//! `engine/crates/check/fixtures/comment-scan-target/` holds the two
-//! documents that `governs` them. Both trees are otherwise identical, so a
-//! difference in what `run` reports for the two arms can come from nothing
-//! but the resolver reading that one line.
+//! `engine/crates/check/fixtures/comment-scan-target-src/` holds four files
+//! that differ only in which identifiers their opening comment cites.
+//! `engine/crates/check/fixtures/comment-scan-target/` holds the four
+//! documents that `governs` them, one each. The trees are otherwise
+//! identical, so a difference in what `run` reports for two arms can come
+//! from nothing but the resolver reading those lines against the identifier
+//! of the document that asserts the edge.
+//!
+//! | arm | asserter | the file cites | expected |
+//! |---|---|---|---|
+//! | `minted` | `HW-VER-0001` | `HW-VER-0001` | clean |
+//! | `unminted` | `HW-VER-9999` | `HW-VER-9999`, never minted | reported, names the near miss |
+//! | `other` | `HW-VER-0003` | `HW-VER-0002`, minted | reported, names both |
+//! | `two` | `HW-VER-0004` | `HW-VER-0002`, then `HW-VER-0004` | clean |
+//!
+//! `other` is the arm #967 found: before it, any minted identifier in the
+//! file bound the edge, whoever asserted it.
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
@@ -37,13 +48,16 @@ fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
 
-/// Every claim [`CommentScan`] treats as minted, for this test alone: the one
-/// identifier `comment-scan-target-src/minted/sample.rs` cites, and nothing
-/// else. `engine/crates/cli/src/main.rs` is what reads a real claim store off
+/// Every claim [`CommentScan`] treats as minted, for this test alone: every
+/// identifier the four arms name except `HW-VER-9999`, the one the
+/// `unminted` arm exists to refuse. `engine/crates/cli/src/main.rs` is what reads a real claim store off
 /// disk; this file holds the resolver's own behavior once it has a set to
 /// check against.
 fn minted() -> BTreeSet<String> {
-    BTreeSet::from(["HW-VER-0001".to_string()])
+    ["HW-VER-0001", "HW-VER-0002", "HW-VER-0003", "HW-VER-0004"]
+        .into_iter()
+        .map(String::from)
+        .collect()
 }
 
 fn run() -> Run {
@@ -91,11 +105,15 @@ fn run() -> Run {
     )
 }
 
-fn reported(run: &Run, arm: &str) -> bool {
+fn finding<'a>(run: &'a Run, arm: &str) -> Option<&'a headwater_check::Finding> {
     let prefix = format!("comment-scan-target/{arm}/");
     run.findings
         .iter()
-        .any(|finding| finding.rule == RULE && finding.path.starts_with(&prefix))
+        .find(|finding| finding.rule == RULE && finding.path.starts_with(&prefix))
+}
+
+fn reported(run: &Run, arm: &str) -> bool {
+    finding(run, arm).is_some()
 }
 
 /// The decisive fixture. An identifier this taxonomy never minted, cited in
@@ -116,16 +134,45 @@ fn an_unminted_citation_fails_and_a_minted_one_passes() {
         run.findings
     );
 
-    let finding = run
-        .findings
-        .iter()
-        .find(|finding| {
-            finding.rule == RULE && finding.path.starts_with("comment-scan-target/unminted/")
-        })
-        .expect("the unminted arm reported the rule");
+    let finding = finding(&run, "unminted").expect("the unminted arm reported the rule");
     assert!(
         finding.message.contains("HW-VER-9999"),
         "the refusal does not name the near miss: {}",
         finding.message
+    );
+}
+
+/// The decisive arm of #967. The file cites `HW-VER-0002`, which is minted,
+/// and the document that asserts the edge is `HW-VER-0003`. A citation of a
+/// different document proves nothing about this one, so the edge is refused,
+/// and the refusal names both identifiers.
+#[test]
+fn a_citation_of_a_different_minted_identifier_is_refused_and_names_both() {
+    let run = run();
+
+    let finding = finding(&run, "other").unwrap_or_else(|| {
+        panic!(
+            "a citation of another document's identifier bound the edge: {:#?}",
+            run.findings
+        )
+    });
+    assert!(
+        finding.message.contains("HW-VER-0002") && finding.message.contains("HW-VER-0003"),
+        "the refusal does not name both the cited identifier and the asserter: {}",
+        finding.message
+    );
+}
+
+/// Order does not matter: the asserter's identifier binds the edge wherever
+/// it sits among the citations, and a different identifier before it does
+/// not stop the scan.
+#[test]
+fn the_asserter_cited_after_another_identifier_still_binds() {
+    let run = run();
+
+    assert!(
+        !reported(&run, "two"),
+        "the asserter's own citation, second in the file, was not read: {:#?}",
+        run.findings
     );
 }
