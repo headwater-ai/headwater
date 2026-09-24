@@ -1,18 +1,20 @@
 ---
 id: HW-DR-0075
-status: draft
-status_since: 2026-09-19
+status: current
+status_since: 2026-09-24
 summary: "`headwater taxonomy vendor` may accept a location, ruled yes with a boundary: the fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it."
-last_verified: 2026-09-19
+last_verified: 2026-09-24
 title: "The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links"
 relations:
   constrains:
     - HW-DR-0072
+    - HW-DR-0022
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-sonnet-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 ---
 
@@ -51,3 +53,7 @@ An exhaustive grep for the property's wording, run against this branch, finds it
 **[#930](https://github.com/headwater-ai/headwater/issues/930), the documentation half, is unaffected by this record alone.** It can still close the moment `vendor` itself accepts a location; until then, the path form is what adopter-facing prose points to, on a proxy, a mirror or an air-gapped host as much as anywhere else, per HW-DR-0072's own note that a location is additive and never a replacement for the path form.
 
 **[#959](https://github.com/headwater-ai/headwater/issues/959), the follow-up issue that implements the fetch, inherits this record's boundary as a constraint, not as a suggestion.** A `resolve`, `probe` or `import` crate that grows a network dependency to satisfy that issue is the defect this record was written to prevent, and a reviewer of that issue checks the crate graph against it.
+
+**[HW-DR-0022](0022-q22-the-integrity-posture-of-a-published-package.md) is narrowed by this record, from #959 on.** Its sentence "The engine never fetches" held while `vendor` took a path alone. Now the crates of the checking loop never fetch, and `headwater-fetch` fetches for `taxonomy vendor <location>` alone. The integrity posture of that record does not change, because the digest check is the same for either form.
+
+**#959 decided the build question that this record left open: the fetch is a default-on cargo feature, `fetch`, on `headwater-cli`.** The 0.2 bar is adoption from the binary alone, so the released binary fetches, and `release.yml` builds it with the default features. `--no-default-features` is the opt-out for a distributor, and that binary refuses a location with one line that names the path form. The crate is `headwater-fetch`. `engine/crates/cli/tests/network_boundary.rs` reads `engine/Cargo.lock` and fails when any crate other than `headwater-cli` reaches it or its client.

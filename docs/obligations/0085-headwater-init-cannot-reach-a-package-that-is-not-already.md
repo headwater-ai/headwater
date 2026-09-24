@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 7](../spec/07-distribution-and-federation.md#publishing) says that distribution is over the registry or repository an organization already uses. It also says that the engine needs only to fetch a version and check its digest. Nothing in this engine fetches anything. `headwater_resolve::package` reads `.headwater/packages/` on disk and no other place.
+[Spec 7](../spec/07-distribution-and-federation.md#publishing) says that distribution is over the registry or repository an organization already uses. It also says that the engine needs only to fetch a version and check its digest. Nothing in this engine fetched anything when this record was written. `headwater_resolve::package` reads `.headwater/packages/` on disk and no other place.
 
 ## Obligation
 
@@ -31,3 +31,5 @@ So the one verb that a new adopter runs first cannot complete on a repository th
 ## Discharge
 
 `init` reports the miss by name rather than writing a version it invented, which moves the failure to the verb that caused it. What closes it is a stated form for the fetch.
+
+[#959](https://github.com/headwater-ai/headwater/issues/959) states that form on another verb: `headwater taxonomy vendor <location> --expect <digest>` fetches a published artifact zip over `https://` and checks it against the pin. This record stays open. The miss that `init` reports still names the copy and the directory form, and no test holds a line that names the location form.
