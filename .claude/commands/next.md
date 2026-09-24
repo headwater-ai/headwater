@@ -15,7 +15,7 @@ The stages are the same five agent definitions the run uses, dispatched by `suba
 
 **Width is one and the parent is this session.** There is no run directory unless you make one; the scratch directory under `$CLAUDE_JOB_DIR/tmp/issue-<N>/` is enough for one iteration's notes.
 
-**The merge is the human's unless they said otherwise.** Report the verifier's verdict and your ruling, and dispatch `hw-integrate` only when the person in the session says merge. A run has a standing licence to merge; a single iteration by hand does not.
+**The merge is the human's unless they said otherwise.** Report the verifier's verdict and your ruling, and dispatch `hw-integrate` only when the person in the session says merge. A run has a standing license to merge; a single iteration by hand does not.
 
 **A refusal stops here.** When `hw-adjudicate` returns `VERDICT: REFUSE`, say what changed and ask, because the second reader is a person rather than a run that can redirect.
 

@@ -4,7 +4,7 @@ This file holds only what every agent in this repository must obey, because ever
 
 ## Work in a worktree
 
-Call `EnterWorktree` at the start of every session in this repository, before reading or editing a file, unless the user has already put the session in a worktree another way. Two sessions editing the checkout the harness runs from collide, and a worktree keeps a change isolated until it is ready to commit. `EnterWorktree` rewrites `core.hooksPath` absolute on every call, but every `.githooks/` hook hands off to the committing worktree's own copy regardless (#925/#946), so only a branch with no copy of that hook yet runs the wrong body.
+Call `EnterWorktree` at the start of every session in this repository, before reading or editing a file, unless the user has already put the session in a worktree another way. Two sessions editing the checkout the harness runs from collide, and a worktree keeps a change isolated until it is ready to commit.
 
 ## The name is Headwater
 
@@ -38,9 +38,9 @@ Every rule above is a check that `headwater check` runs, declared in this reposi
 
 `headwater check --fix` writes the corrections the engine can derive without judgment and prints what it wrote on standard error. It leaves every finding whose remedy is a rewrite, and it refuses a file rather than half-writing one. Read the diff before you commit it.
 
-The hook needs a built engine and fails open with one printed line when there is none. Build it with `cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked`; the newer of the two profiles answers, and `--release` is for the shipped artifact rather than a checked commit. Run `headwater check` yourself to read the advisory findings, which the hook does not print.
+The hook needs a built engine and fails open with one printed line when there is none. Build it with `cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked`, never `--release` for a checked commit. Run `headwater check` yourself to read the advisory findings, which the hook does not print.
 
-One harness hook you will meet: `.claude/hooks/write.sh` refuses a raw `Write` of a document under `docs/` that does not exist yet and names `headwater new`; an edit to an existing document passes. No harness hook binds. What holds a change is the commit gate and the CI job.
+One harness hook you will meet: `.claude/hooks/write.sh` refuses a raw `Write` of a document under `docs/` that does not exist yet and names `headwater new`; an edit to an existing document passes.
 
 **Two escape hatches.** A directive on the offending block marks a deliberate exception, with the reason in the source where a reader will find it:
 
@@ -52,7 +52,7 @@ One harness hook you will meet: `.claude/hooks/write.sh` refuses a raw `Write` o
 
 ## The skills, and when each one loads
 
-Nothing makes a skill load. A harness reads a description and a model picks, which [spec 5](docs/spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) states as a measurement rather than a property. This table is the one mechanism stronger than a description, and it costs context on every session.
+Nothing makes a skill load ([spec 5](docs/spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does)). This table is the one mechanism stronger than a description.
 
 | skill | invoke it before |
 |---|---|
@@ -74,4 +74,4 @@ Nothing makes a skill load. A harness reads a description and a model picks, whi
 
 ## The identifier claim store
 
-`headwater new` mints under a `reconcile-first` scheme by reading the tree, and two branches cut from one `main` mint the same number and merge silently. `.headwater/ids/<scheme>/<identifier>` is the answer ([HW-DR-0054](docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)): one file per claim, written once, so two branches that claim one value hit an `add/add` conflict. Three things bind a change: **a claim file is never empty**, **`.gitattributes` sets no `merge` attribute on `.headwater/ids/**`**, and **both writers create and never overwrite**. Before minting, scan every remote branch for the highest identifier in use, not only `main`.
+`headwater new` claims each identifier it mints as one file under `.headwater/ids/<scheme>/<identifier>`, written once, so two branches that claim one value hit an `add/add` conflict ([HW-DR-0054](docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)). Three things bind a change: **a claim file is never empty**, **`.gitattributes` sets no `merge` attribute on `.headwater/ids/**`**, and **both writers create and never overwrite**. Before minting, scan every remote branch for the highest identifier in use, not only `main`.

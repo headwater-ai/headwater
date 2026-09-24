@@ -2,7 +2,7 @@
 
 # Process decisions
 
-7 documents on this shelf, in the reading order this corpus derives.
+8 documents on this shelf, in the reading order this corpus derives.
 
 - [Orchestration prose has one owner per sentence](0001-orchestration-prose-has-one-owner-per-sentence.md) — Every sentence of orchestration prose has exactly one home, decided by who must obey it and whether it changes per dispatch, so the command holds only what the parent decides and each agent loads only what it must obey. (asserted, and no human has accepted it)
 - [Adjudication is a separate stage, and refusal is licensed](0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md) — Adjudication runs as its own stage before construction and its prompt licenses refusal, because a run that separated them returned a refusal or a correction from six of eight slots, and that costs one parent turn per issue which is paid. (asserted, and no human has accepted it)
@@ -11,3 +11,4 @@
 - [The ledger is split, its tabular parts are JSONL, and its totals are derived](0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md) — The run ledger is one directory of small files rather than one markdown file, its per-iteration log and its findings are JSONL read by the line, every total is derived and never stored, and a database is deferred until a cross-run question asks for one. (asserted, and no human has accepted it)
 - [The entrypoint keeps its name and becomes a resumable run](0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md) — The build order keeps the name next-run and gains a run directory it writes as it goes, so that a compaction, a crash or a second invocation resumes from a doctrine block of ten lines and a log read by the line, with each stage's model declared in its own frontmatter. (asserted, and no human has accepted it)
 - [A background wait caps below the cache lifetime and re-issues itself](0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md) — A wait that might outlive the five-minute prompt-cache lifetime is wrapped in a timeout under it and re-issued on return, so a background wait still ends the turn without paying to rewrite a context the cache would otherwise have kept warm. (asserted, and no human has accepted it)
+- [The board has an owner of its structure, and its milestones are capped versions](0008-the-board-has-an-owner-of-its-structure-and-its-milestones-are-capped-versions.md) — One agent owns where work sits on the board and never what the work is, and each milestone is a capped version. (asserted, and no human has accepted it)

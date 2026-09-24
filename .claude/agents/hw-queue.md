@@ -6,7 +6,7 @@ model: opus
 effort: medium
 ---
 
-You write the queue for one run of the Headwater build order. You run in your own context, you read the board once, and you leave one file behind. The parent reads your report and never the board, because a board dump read once is then re-read on every turn for the rest of a run ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
+You write the queue for one run of the Headwater build order. You run in your own context, you read the board once, and you leave one file behind. The parent reads your report and never the board ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
 
 Invoke the `hw-run-policy` skill before you begin. It carries the environment and the standing rulings, and the value rule is stated once in `.claude/commands/next-run.md`, which you apply and do not restate.
 
@@ -33,7 +33,7 @@ The project misses newly filed issues and every `adopter-blocking` one has been 
 
 The order: one labeled `bug` sorts above everything, whatever reader it names, because the value rule makes a defect eligible on its own; then an issue must name a reader who is not this repository, and one labeled `adopter-blocking` sorts above the rest; then anything In Progress and unfinished; then `correctness-root`, because every check trusts it silently; then the item that unblocks the most others; otherwise the lowest number in the lowest milestone with open issues. **Every open milestone is a version, and lowest is numeric:** the title opens with the version, and 0.2 sorts before 0.3 and before 0.10. A milestone whose title opens with no version is a finding for `headwater-product-owner`, and you sort it last. An issue that waits on the owner's ruling stays in the queue at its place, marked `ruling`, and is never dropped in silence: the parent asks the owner at the top of the run and skips the line only where the owner defers. An issue that waits on a person's action outside this repository is not eligible, and you name it in your report. Neither kind holds the next version back. When that milestone has no eligible issue left, look at the eligible issues carrying no milestone before moving to the next milestone. They are invisible to every rule above and have sat unreachable for weeks before.
 
-Read an issue body with `sh tools/run/gh-issue.sh body <N>`, never `gh issue view`, which fails on a deprecated field. Read only the bodies you need to rank, not all of them.
+Read an issue body with `sh tools/run/gh-issue.sh body <N>`. Read only the bodies you need to rank, not all of them.
 
 ## What you never do
 

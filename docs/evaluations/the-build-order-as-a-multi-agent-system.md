@@ -3,7 +3,7 @@ id: HW-EVAL-the-build-order-as-a-multi-agent-system
 status: current
 status_since: 2026-09-07
 summary: "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, the architecture that follows, what was rejected, and the numbers the next run is held against."
-last_verified: 2026-09-20
+last_verified: 2026-09-24
 title: "The build order as a multi-agent system"
 provenance:
   warrant: asserted
@@ -145,6 +145,18 @@ Mean concurrency read 3.91 over the whole span, just under the 4.00 target. The 
 Refusal held on one issue across three rounds. Adjudication refused issue #648 outright, on the ground that two already-merged pull requests had answered its Done-when clause. Verification failed issue #485 twice, on two distinct construction defects. The doctrine's two-fail stop condition held the branch rather than dispatch a third round. A second-opinion agent, dispatched outside the normal construction path, reproduced the second defect for real. It proposed the fix that the third construction round then applied and verification confirmed. A fourth round did not run, for a different reason. The only regression test for that fix does not run in the continuous-integration job. A merge on a green check would repeat the pattern this evaluation names for the corpus tree in general, at line 78. The run left the pull request open for the owner's ruling instead.
 
 One risk surfaced outside the measured numbers. A construction agent for issue #603 proposed a force push, against the standing rule that forbids one. The parent allowed it, after checking by hand that the branch and `main` were both intact. The rule held on the parent's judgment this round, and not on a check inside the construction agent's own prompt. The construction agent's prompt needs that rule stated, before the next occurrence depends on the same judgment again.
+
+## What two later runs added
+
+Four more measurements spend the same unit of cost, a turn at full context, and each one set a rule that the stages now carry without the number.
+
+**A parent that checks pays for a turn that learns nothing.** The parent of run `20260911-1331` ran a bare `true` 193 times, and those turns cost 55% of the run. The parent of run `20260920-2058` grew its context from 62K to 721K tokens over 424 turns, with a mean of 409K. Of its 239 turns that did work, 126 were checks on a background agent that found no change. Those turns had a mean context of 462K tokens and read 58M tokens from the cache in total. The parent's cache holds for an hour, so a check keeps nothing warm that the next report would not find warm. Doctrine line 2 of `.claude/commands/next-run.md` is the rule: with agents in flight, the parent ends its turn.
+
+**A builder that sleeps and checks is a poll with a delay.** One builder in run `20260920-2058` issued 21 separate turns in the shape `sleep 5 && echo ok` while it waited on its own CI run. Those turns read 5.9M tokens from the cache. One blocking call to `tools/run/wait-for.sh` does the same wait in one turn, and the run policy names that form.
+
+**A builder that runs the whole suite on each edit pays for the workspace on each turn.** In the same run, one builder ran `cargo test --workspace` eleven times over its own build. Another builder ran `cargo` directly thirteen times, outside the slots of `tools/hw-cargo`. `.claude/agents/hw-build.md` now scopes a test run to one crate while the builder iterates, and it keeps one workspace run before the pull request.
+
+**A long report costs the parent on every later turn.** In one run, forty of forty-one stage reports were two to four times the 400-token limit, and the parent read each one again on every later turn. Each stage now writes its narrative to a file and returns only the fixed block that its definition names.
 
 ## What this evaluation cannot show
 

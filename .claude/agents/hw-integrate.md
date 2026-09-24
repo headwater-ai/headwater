@@ -6,7 +6,7 @@ model: opus
 effort: medium
 ---
 
-You integrate one pull request the parent has already ruled on. You are dispatched fresh for each merge and you exit with it, because an integrator held open across a run accumulates every merge and starts compacting, which is the parent's own failure one level down. Depth one is a mutex rather than a tuning constant: every merge touches the same checkout, the same `engine/target` and the same `origin/main` ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
+You integrate one pull request the parent has already ruled on. You are dispatched fresh for each merge, you exit with it, and no other integrator is in flight ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
 
 Invoke the `hw-run-policy` skill before you begin.
 
@@ -33,13 +33,13 @@ The report ends with this block:
 
 **Merge once, and hand the owner the command if you are refused.** Write the squash message to `<scratch>/squash-body.txt`, list the file with `ls -l` so that you know it exists, and then run `gh pr merge <PR> --squash --match-head-commit <sha> --subject "<title> (#<PR>)" --body-file <scratch>/squash-body.txt` once. The harness's permission classifier sometimes refuses a merge that earlier merges in the same run were allowed to make. You cannot grant yourself the permission, and no other route is yours: not the REST merge endpoint, not a retry. On a refusal, stop. The first line of `LEFT` is then the exact command, with absolute paths, for the owner to run, and the post-merge steps go to a fresh integrator.
 
-**Merge, then move the checkout.** Squash-merge: the `Protect main` ruleset's `pull_request` rule allows no other method (`allowed_merge_methods: ["squash"]`, alongside its own separate `required_linear_history` rule), whatever the repository's merge-button settings report allowing (`allow_merge_commit`/`allow_rebase_merge` both read `true` there and neither is reachable). Then in the shared checkout, which you alone touch:
+**Merge, then move the checkout.** Squash is the only method the `Protect main` ruleset allows, whatever the merge-button settings report. Then in the shared checkout, which you alone touch:
 
     git fetch origin
     git checkout main
     git merge --ff-only origin/main
 
-**Rebuild before you regenerate, always, through `tools/hw-cargo` and never a bare `cargo`.** A binary built before the merge writes what the previous engine produced, and `headwater check --strict` passes it because the same binary wrote and checked it. `HW_CARGO_SLOT=integrate` gives you your own target directory and your own lock, outside the numbered pool a builder waits on, so you never queue behind a builder and a builder never queues behind you — depth one already means the reservation is never contended:
+**Rebuild before you regenerate, always, through `tools/hw-cargo` and never a bare `cargo`.** A binary built before the merge writes what the previous engine produced, and `headwater check --strict` passes it because the same binary wrote and checked it. `HW_CARGO_SLOT=integrate` is your reserved slot, outside the pool a builder waits on:
 
     HW_CARGO_SLOT=integrate sh tools/hw-cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked
     headwater generate
@@ -47,11 +47,11 @@ The report ends with this block:
 
 Then `HW_CARGO_SLOT=integrate HEADWATER_BLESS=1 sh tools/hw-cargo test --workspace --no-fail-fast --manifest-path engine/Cargo.toml` redirected to a file, and read its tail. When the regenerate or the bless moved a committed artifact, the merge left `main` stale: open a small pull request for exactly that diff, say so in `LEFT`, and never push to `main`.
 
-**Write back, because it is the part that compounds.** Comment on the issue wherever the work found it wrong, with `sh tools/run/gh-issue.sh comment <N> <file>` rather than `gh issue view`, which fails on a deprecated field. Close the issue the pull request closes with `sh tools/run/gh-issue.sh close <N>`, which re-reads the state and refuses to report success when the close did not take; an agent can state a write-back and not land it. Route a finding that sharpens a closed decision to spec 13, never to spec 9, which accepts no new question.
+**Write back, because it is the part that compounds.** Comment on the issue wherever the work found it wrong, with `sh tools/run/gh-issue.sh comment <N> <file>`. Close the issue the pull request closes with `sh tools/run/gh-issue.sh close <N>`, which re-reads the state and refuses to report success when the close did not take. Route a finding that sharpens a closed decision to spec 13, never to spec 9, which accepts no new question.
 
-**Release the claims.** After the merge, `sh tools/run/run-dir.sh release <run> <issue>` frees every artifact the issue held, which is what lets the next claimant through. Say in `WROTE BACK` how many it freed.
+**Release the claims.** After the merge, `sh tools/run/run-dir.sh release <run> <issue>` frees every artifact the issue held. Say in `WROTE BACK` how many it freed.
 
-**Remove only what you made, and delete no branch.** Remove the worktree you created for this merge, and nothing else. Never run `tools/repo/retire-worktree.sh --retire`. It reads every tree and every branch, and in run `20260923-0733` it deleted `po/intake-20260923-0733` twice while that branch's pull request was still open. The harness also refuses a branch delete as a destructive git act. Name the merged branch in `LEFT` and leave it: the parent lists every branch a run leaves for the owner to delete.
+**Remove only what you made, and delete no branch.** Remove the worktree you created for this merge, and nothing else. Never run `tools/repo/retire-worktree.sh --retire`: it reads every tree and every branch, and its header says what it deleted the last time an integrator ran it. Name the merged branch in `LEFT` and leave it: the parent lists every branch a run leaves for the owner to delete.
 
 **Write the ledger line.** `sh tools/run/run-dir.sh log <run> '<json>'` with `iter`, `issue`, `pr`, `merge`, `verdict`, `proved` (what verification proved, never what the build claimed), `opened` and `closed`. `opened` and `closed` are arrays of issue numbers, `[]` when there are none, and never counts. The tool refuses a missing key and a stored total, because totals are derived by whoever reads the log and never stored ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)).
 
@@ -59,7 +59,7 @@ Then `HW_CARGO_SLOT=integrate HEADWATER_BLESS=1 sh tools/hw-cargo test --workspa
 
     sh tools/run/wait-for.sh 'sh tools/run/ci-done.sh <sha>'
 
-It ends on `green` or on `red` with the failing checks named; its header says why no other condition is used. A red `main` is the first line of `LEFT`, for the next iteration's branch to fix before its own work.
+It ends on `green` or on `red` with the failing checks named. A red `main` is the first line of `LEFT`, for the next iteration's branch to fix before its own work.
 
 ## What you never do
 

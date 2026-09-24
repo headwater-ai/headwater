@@ -5,7 +5,7 @@ description: The adversarial checks a branch of the Headwater build order must s
 
 # The verification bar
 
-Resetting a worktree to the branch and running the suite, the linter and the CLI is necessary and nowhere near sufficient: it catches almost nothing the build agent has not already caught. What follows is what does. The parent chooses which of these to dispatch, by heading, and the verifier runs them and reports which fired, which held and what it could not check. The bar lives here rather than in the parent's command because two stages read it and the parent only chooses from it ([HW-PD-0001](../../../docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md)).
+Resetting a worktree to the branch and running the suite, the linter and the CLI is necessary and nowhere near sufficient: it catches almost nothing the build agent has not already caught. What follows is what does. The parent chooses which of these to dispatch, by heading, and the verifier runs them and reports which fired, which held and what it could not check.
 
 Three of these run on every branch without being chosen: *Make the new thing fail*, *Re-derive one number by hand*, and *Suspect your own check first*.
 

@@ -52,6 +52,12 @@
 # Reporting is the default because the action is destructive and a forgotten
 # flag must not read as a clean sweep. The report says so in its last line.
 #
+# No stage of a build-order run passes --retire. hw-integrate did after every
+# merge until run 20260923-0733, where the sweep deleted the branch
+# po/intake-20260923-0733 twice while its pull request was still open, and
+# the harness refuses a branch delete as a destructive git act in any case.
+# The owner runs it after a run, through the repo-cleanup skill.
+#
 # It needs `git`. It uses `gh` to read pull request state and says so when there
 # is none, and it reads `/proc` for the in-use guard and says so when there is
 # none. `HEADWATER_RETIRE_PR_STATE` names a file of `branch<TAB>STATE<TAB>oid`
