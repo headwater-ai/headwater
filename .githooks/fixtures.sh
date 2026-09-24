@@ -882,6 +882,12 @@ unset_driver=$(cd "$scratch" && git config --unset merge.headwater-regenerate.dr
 judge 'the gate reports a clone with no merge driver configured' 0 0 \
     'this clone has no merge driver for a derived artifact' "$unset_driver"
 
+# And a clone that sets the driver and never selects it in `info/attributes`,
+# where the committed `-merge` keeps every fold from the driver (#1058).
+no_override=$(cd "$scratch" && git config merge.headwater-regenerate.driver ".githooks/merge-regenerate %O %A %B %P" && rm -f "$(git rev-parse --git-path info/attributes)" && sh .githooks/pre-commit 2>&1)
+judge 'the gate reports a clone whose info/attributes does not select the driver' 0 0 \
+    'does not' "$no_override"
+
 # And the gate reports an absolute `core.hooksPath`, which `EnterWorktree`
 # writes on every call, and says nothing about the relative one `CLAUDE.md`
 # instructs. Both arms exit 0. This invocation is by a relative path from

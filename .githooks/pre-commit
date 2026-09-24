@@ -128,22 +128,36 @@ if [ -z "${HEADWATER_ALLOW_SITE_DELETE:-}" ]; then
     fi
 fi
 
-# The merge driver for a derived artifact needs one command per clone, because
+# The merge driver for a derived artifact needs two steps per clone, because
 # git will not take a driver from a repository: it is an executable, and a clone
 # that ran one it had not been asked about would be running code it never read.
-# So the attribute in `.gitattributes` selects the file and this config supplies
-# the driver, and a clone with the first and not the second falls back to an
-# ordinary merge. That failure is silent by construction — the merge succeeds,
-# and what it leaves is a count true of neither branch — so this reports it.
+# `.gitattributes` commits `-merge` for each fold, which every clone honors: a
+# merge keeps the current side and conflicts (#1058). A clone that also sets the
+# driver config and the override lines in its own `info/attributes` gets the
+# driver instead, which names the producer to rerun. The override without the
+# config is the defect again, because git reads a driver no config defines as an
+# ordinary text merge, so this reports that case as well.
 #
-# It reports and does not block. A clone that has not run the command is behind
+# It reports and does not block. A clone that has not run the steps is behind
 # on a setup step, which is not a defect in the commit in front of it, and the
 # same reasoning is why the missing engine above exits 0.
+override_file=$(git rev-parse --git-path info/attributes 2>/dev/null)
+override_missing=$(awk '!/^#/ && $2 == "-merge" { print $1 }' .gitattributes 2>/dev/null |
+    while read -r fold; do
+        grep -qxF "$fold merge=headwater-regenerate" "$override_file" 2>/dev/null || echo "$fold"
+    done | head -n 1)
 if [ -z "$(git config merge.headwater-regenerate.driver 2>/dev/null)" ]; then
     echo "headwater: this clone has no merge driver for a derived artifact, so a"
-    echo "  merge of one would be reconciled rather than refused. Set it once:"
+    echo "  merge of one conflicts without naming the command that rebuilds it. Set it once:"
     echo "        git config merge.headwater-regenerate.name \"regenerate a derived artifact\""
     echo "        git config merge.headwater-regenerate.driver \".githooks/merge-regenerate %O %A %B %P\""
+    if [ -f "$override_file" ] && grep -q "merge=headwater-regenerate" "$override_file"; then
+        echo "  $override_file names the driver, so until then those paths merge as ordinary text."
+    fi
+elif [ -n "$override_missing" ]; then
+    echo "headwater: this clone sets the merge driver and $override_file does not"
+    echo "  select it for $override_missing and maybe others, so the driver never runs. Add them once:"
+    echo "        awk '!/^#/ && \$2 == \"-merge\" { print \$1 \" merge=headwater-regenerate\" }' .gitattributes >> \"\$(git rev-parse --git-path info/attributes)\""
 fi
 
 # `core.hooksPath` is still shared by every worktree of a clone, but the

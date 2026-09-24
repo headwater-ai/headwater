@@ -22,7 +22,7 @@ Git runs the verb, and a person does not. The configuration names it as `headwat
 
 A derived artifact that holds a fold states one value over the whole corpus. Two branches that each move the fold write two values. A three-way merge of the two gives a value that is true of neither tree. [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) rules that such a file is rebuilt after a merge and never reconciled.
 
-`.gitattributes` gives each such path `merge=headwater-regenerate`, and git then calls this verb for the path. The verb does three things:
+A clone gives each such path `merge=headwater-regenerate` in its own `info/attributes`, and git then calls this verb for the path. The committed `.gitattributes` gives the path `-merge`, which conflicts with no driver. The verb does three things:
 
 1. It leaves the current side (`%A`) byte for byte. Git reads the merge result from that file.
 2. It writes to standard error the path and the command that rebuilds it. The command is `headwater taxonomy resolve` for `.headwater/taxonomy.lock` and `headwater generate` for every other path.
@@ -38,13 +38,15 @@ Git writes no conflict marker for a custom driver. So the file stays readable, a
 
 **Git calls no driver when the two branches wrote the same bytes.** A driver is a content merge. Git compares the two blobs first, and it resolves a path that has one blob at the tree level. Two branches that each add one document of one kind can write one identical fold. That merge gives a value true of neither tree, and git does not call this verb. `engine/crates/census/tests/merge_driver.rs` measures this case.
 
-The check on the merged tree is what reaches that case, and the driver is its fallback. `headwater generate --check` and `headwater taxonomy resolve --check` are that check. An adopter runs them after a merge and in CI. This repository also runs them from a commit hook while a merge is in progress. No verb carries that hook, because HW-DR-0077 gives its exception to the driver alone, and a second verb for a hook needs its own ruling.
+**A forge calls no driver, and it does not read `-merge`.** We measured this on GitHub on 2026-09-24. A pull request that moved a `-merge` path showed as mergeable, and its test merge held the edits of both branches.
+
+The check on the merged tree is what reaches these cases, and the driver is its fallback. `headwater generate --check` and `headwater taxonomy resolve --check` are that check. An adopter runs them after a merge and in CI. This repository also runs them from a commit hook while a merge is in progress. No verb carries that hook, because HW-DR-0077 gives its exception to the driver alone, and a second verb for a hook needs its own ruling.
 
 ## Preconditions
 
 Git must find `headwater` on the `PATH` that it runs with. The verb reads no corpus and no lock, so it runs on a tree in the middle of a merge.
 
-Git calls the verb only for a path whose attribute is `merge=headwater-regenerate`, in a clone whose configuration names the driver. `headwater init --git` writes the attribute lines and prints the two configuration lines. `headwater init --git --git-config` also runs them.
+Git calls the verb only for a path whose attribute is `merge=headwater-regenerate`, in a clone whose configuration names the driver. A clone without the configuration reads the driver as an ordinary text merge. So the attribute goes in the `info/attributes` of the clone and never in `.gitattributes`. `headwater init --git` commits `-merge` and prints the configuration and override lines. `headwater init --git --git-config` also writes them.
 
 ## Options
 
@@ -70,6 +72,7 @@ No environment variable reaches this verb. Git finds the binary through `PATH`, 
 
 | Path | How this verb treats it |
 |---|---|
+| `info/attributes` in the git directory | Not read by the verb. Git reads it, and a `merge=headwater-regenerate` line there is what makes git call the verb. |
 | The `<current>` file | Left byte for byte. Git reads the merge result from it. |
 | The `<ancestor>` and `<other>` files | Not read. |
 | `.headwater/taxonomy.lock` | Named in the message, with `headwater taxonomy resolve`, when it is the `<path>`. |
@@ -79,9 +82,9 @@ The verb writes no file, and nothing on standard output, because standard output
 
 ## See also
 
-[`headwater init`](headwater-init.md) writes the `.gitattributes` lines and prints the configuration that names this verb.
+[`headwater init`](headwater-init.md) writes the `.gitattributes` lines, and prints the configuration and override that select this verb.
 
-[`headwater derived`](headwater-derived.md) computes which files a producer writes, and it reports a producer output that carries no `merge=headwater-regenerate`.
+[`headwater derived`](headwater-derived.md) computes which files a producer writes, and it reports a producer output that carries neither `-merge` nor `merge=headwater-regenerate`.
 
 [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) rules that a fold is derived and never stored. [HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) rules that merge safety ships as this verb.
 
