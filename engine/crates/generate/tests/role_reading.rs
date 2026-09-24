@@ -731,7 +731,7 @@ struct Reader {
 /// against the source. The set is mechanical; which candidates are facet-role
 /// lookups is the one judgment, so it is written here by name and with a
 /// reason rather than inferred.
-const LOOKUPS: [(&str, &str, bool); 4] = [
+const LOOKUPS: [(&str, &str, bool); 5] = [
     // The lookup. Everything below `Shape` reaches a role through it.
     ("engine/crates/check/src/shape.rs", "facet_in_role", true),
     // A one-line closure over `facet_in_role`, called four times in the same
@@ -755,6 +755,10 @@ const LOOKUPS: [(&str, &str, bool); 4] = [
         "role_is_terminal",
         false,
     ),
+    // NOT a lookup. It takes the name of a role only to write it into the
+    // sentence of a refusal, after `role_of` has already looked the facet up
+    // and the fold over its sources found no value (#820).
+    ("engine/crates/generate/src/derived.rs", "unsourced", false),
 ];
 
 /// The set of role lookups is the declared one.
