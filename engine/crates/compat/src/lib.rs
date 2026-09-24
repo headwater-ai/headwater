@@ -39,6 +39,7 @@
 
 use headwater_census::census::{Census, Outcome as Row};
 use headwater_check::instance::{Instance, Outcome as Verdict};
+use headwater_check::paint::{paint, ColorMode, Role};
 use headwater_check::scope::Grain;
 use headwater_check::Run;
 use headwater_generate::Plan;
@@ -907,11 +908,27 @@ impl Report {
         out
     }
 
-    pub fn render(&self) -> String {
+    /// The report a reader meets, in the palette of HW-DR-0045.
+    ///
+    /// Every cell that is padded into a column is padded plain and painted
+    /// whole afterwards, so the escape bytes never count toward the width and
+    /// the columns stand where they stand in `Plain`. The pty arm
+    /// `strips_to_the_plain_bytes` in `tools/engine/color-fixtures.sh` holds
+    /// that over the real call site.
+    pub fn render(&self, mode: ColorMode) -> String {
+        let heading = |text: &str| paint(Role::Heading, text, mode);
         let mut out = String::new();
-        out.push_str(&format!("package  {}\n", self.package));
-        out.push_str(&format!("taking   {} (the lock)\n", self.from));
-        out.push_str(&format!("against  {} (the artifact)\n\n", self.to));
+        out.push_str(&format!("{}  {}\n", heading("package"), self.package));
+        out.push_str(&format!(
+            "{}   {} (the lock)\n",
+            heading("taking"),
+            self.from
+        ));
+        out.push_str(&format!(
+            "{}  {} (the artifact)\n\n",
+            heading("against"),
+            self.to
+        ));
         out.push_str(self.base.sentence());
         out.push_str("\n\n");
         for (name, outcome) in self.measured.dimensions() {
@@ -924,16 +941,20 @@ impl Report {
                 }
                 _ => outcome.word(),
             };
-            out.push_str(&format!("  {name:<18} {word}\n"));
+            let word = match outcome {
+                Outcome::Broken(_) => paint(Role::Error, &word, mode),
+                Outcome::Preserved | Outcome::NotMeasured(_) => word,
+            };
+            out.push_str(&format!("  {} {word}\n", heading(&format!("{name:<18}"))));
         }
         for (name, outcome) in self.measured.dimensions() {
             let breaks = outcome.breaks();
             if breaks.is_empty() {
                 continue;
             }
-            out.push_str(&format!("\n{name}\n"));
+            out.push_str(&format!("\n{}\n", heading(name)));
             for entry in breaks {
-                out.push_str(&format!("  {}\n", entry.at));
+                out.push_str(&format!("  {}\n", paint(Role::Path, &entry.at, mode)));
                 out.push_str(&format!("    was  {}\n", entry.was));
                 out.push_str(&format!("    now  {}\n", entry.now));
             }
@@ -941,12 +962,22 @@ impl Report {
         // Between the readings and the verdict, because a caveat is about what
         // the verdict below rests on and a reader meets it in that order.
         for caveat in self.caveats() {
-            out.push_str(&format!("\n{}\n", caveat.heading()));
+            out.push_str(&format!("\n{}\n", heading(caveat.heading())));
             for line in caveat.lines() {
                 out.push_str(&format!("  {line}\n"));
             }
         }
-        out.push_str(&format!("\n{}\n", self.bump().sentence()));
+        // A required major is `Error`, the role a `BROKEN` dimension already
+        // takes, because it is the consequence of one and a publisher acts on
+        // it before releasing. An undecided bump is `Warn`: nothing is broken,
+        // and the run still owes an answer. The one clean verdict stays plain.
+        let bump = self.bump();
+        let sentence = match bump {
+            Bump::Major => paint(Role::Error, bump.sentence(), mode),
+            Bump::Undecided => paint(Role::Warn, bump.sentence(), mode),
+            Bump::NoMajor => bump.sentence().to_string(),
+        };
+        out.push_str(&format!("\n{sentence}\n"));
         out
     }
 }
@@ -1129,7 +1160,7 @@ mod tests {
         assert!(!report.measured.complete());
         assert_eq!(report.bump(), Bump::Undecided);
         assert!(report
-            .render()
+            .render(ColorMode::Plain)
             .contains("decides nothing about the version"));
         assert!(report.caveats().is_empty(), "{:?}", report.caveats());
     }
@@ -1175,7 +1206,7 @@ mod tests {
     fn an_identical_base_beside_a_broken_addressability_is_reported_as_unsettled() {
         let report = reported(Base::Same, a_break(), Vec::new());
         assert_eq!(report.caveats(), vec![Caveat::FoundingOutsideTheDigest]);
-        let rendered = report.render();
+        let rendered = report.render(ColorMode::Plain);
         assert!(rendered.contains("this run cannot settle it"), "{rendered}");
         assert!(
             rendered.contains("`headwater taxonomy resolve` rewrites"),
@@ -1230,7 +1261,7 @@ mod tests {
         let moved = vec![".headwater/packages/acme/taxonomy.yml".to_string()];
         let report = reported(Base::Moved, Outcome::Preserved, moved.clone());
         assert_eq!(report.caveats(), vec![Caveat::SourcesMoved(moved.clone())]);
-        let rendered = report.render();
+        let rendered = report.render(ColorMode::Plain);
         assert!(rendered.contains("whose sources have moved"), "{rendered}");
         assert!(
             rendered.contains(".headwater/packages/acme/taxonomy.yml"),
@@ -1357,5 +1388,90 @@ mod tests {
             now: "no instance".to_string(),
         }]);
         assert!(outcome.forces_major());
+    }
+
+    /// The palette a compatibility report reaches, in the shape
+    /// `each_line_reaches_the_role_the_palette_gives_it` in
+    /// `headwater-check`'s `gate.rs` already uses: a substring per role,
+    /// checked under [`ColorMode::Ansi`]. The pty case in
+    /// `tools/engine/color-fixtures.sh` reaches only a report in which every
+    /// dimension is preserved, so the broken rows are held here.
+    #[test]
+    fn each_line_reaches_the_role_the_palette_gives_it() {
+        struct Case {
+            what: &'static str,
+            contains: &'static str,
+        }
+        let cases = [
+            Case {
+                what: "the package label is a heading, bold in the default color",
+                contains: "\u{1b}[1mpackage\u{1b}[0m  acme/fixture\n",
+            },
+            Case {
+                what: "the taking label keeps its three spaces outside the paint",
+                contains: "\u{1b}[1mtaking\u{1b}[0m   1.0.0 (the lock)\n",
+            },
+            Case {
+                what: "a dimension name is padded plain and painted whole",
+                contains: "  \u{1b}[1maddressability    \u{1b}[0m \u{1b}[1;31mBROKEN, 1 of them\u{1b}[0m\n",
+            },
+            Case {
+                what: "a preserved dimension word stays plain",
+                contains: "\u{1b}[1mclassification    \u{1b}[0m preserved\n",
+            },
+            Case {
+                what: "a broken dimension's section heading is a heading",
+                contains: "\n\u{1b}[1maddressability\u{1b}[0m\n",
+            },
+            Case {
+                what: "where a break is is a path, cyan",
+                contains: "  \u{1b}[36madd.kinds.zz_thing.voice\u{1b}[0m\n",
+            },
+            Case {
+                what: "a caveat heading is a heading",
+                contains: "\u{1b}[1mthe base and the founding record disagree",
+            },
+            Case {
+                what: "a required major is an error, as the broken dimension it follows from is",
+                contains: "\u{1b}[1;31ma dimension is broken, so this change requires a major version\u{1b}[0m",
+            },
+        ];
+        let painted = reported(Base::Same, a_break(), Vec::new()).render(ColorMode::Ansi);
+        for case in cases {
+            assert!(
+                painted.contains(case.contains),
+                "{}: no `{}` in\n{}",
+                case.what,
+                case.contains.escape_debug(),
+                painted.escape_debug()
+            );
+        }
+        let undecided = Report {
+            package: "acme/fixture".into(),
+            from: "1.0.0".into(),
+            to: "2.0.0".into(),
+            base: Base::Unresolved,
+            moved_sources: Vec::new(),
+            measured: Measured::against_nothing(Outcome::Preserved, "nothing resolved"),
+        }
+        .render(ColorMode::Ansi);
+        assert!(
+            undecided.contains("\u{1b}[1;33mno dimension that ran is broken"),
+            "an undecided bump is a warning: {}",
+            undecided.escape_debug()
+        );
+    }
+
+    /// `Plain` writes not one escape byte, on the promise `tests/diff.rs` and
+    /// every pipe a report reaches depend on.
+    #[test]
+    fn plain_mode_writes_no_escape_sequence() {
+        for report in [
+            reported(Base::Same, a_break(), vec!["a.yml".into()]),
+            reported(Base::Moved, Outcome::Preserved, Vec::new()),
+        ] {
+            let rendered = report.render(ColorMode::Plain);
+            assert!(!rendered.contains('\u{1b}'), "{}", rendered.escape_debug());
+        }
     }
 }
