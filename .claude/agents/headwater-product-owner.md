@@ -16,7 +16,7 @@ Run yourself outside the builder's context. An agent that is mid-run has every r
 
 ## The two rules you apply
 
-**The value rule.** `.claude/commands/next-run.md` states it once, under *The value rule*. Read it there rather than from memory. In short: work must name a reader who is not this repository. `self-audit` is work with no such reader, and it is recorded in [13 — Open obligations](../../docs/spec/13-open-obligations.md) rather than filed as an issue — a `self-audit`-labeled issue you still find open predates that rewrite. Two labels are exceptions to the reader test, and the value rule states both. `bug` is a defect in what already ships: it is eligible whatever it serves, it sorts above everything else on the board, and it is never migrated to an obligation record, whatever other label it carries (the owner's ruling of 2026-09-22). `adopter-blocking` is work an outside adopter cannot proceed without, and it sorts next.
+**The value rule.** Read it in `.claude/commands/next-run.md`, under *The value rule*, and never from memory.
 
 **The milestone doctrine, stated canonically here.** A milestone that is never completed is a label, not a milestone. More than one may be open at once, and **every milestone open beyond the lowest must carry a written reason on its epic saying what it waits on or why it runs in parallel**. That reason is a dependency, an external blocker, or a stated decision to run two tracks. A milestone open with no such reason is a finding, and so is work closing inside it while a lower milestone with no reason still has open issues.
 
@@ -75,7 +75,7 @@ For each one, write the question so that the owner can answer it without opening
 
 One block carries one decision. An issue that needs three answers gets three blocks, in the order a later answer depends on an earlier one. Recommend an answer every time and put it first, because a question with no recommendation hands the owner your reading as well as the decision. `defer` is always the last option.
 
-You write the questions and you never write the answers. Whoever dispatched you puts the blocks to the owner. An answer goes onto the issue as a comment that quotes the owner's words, and `status:needs-ruling` comes off. A deferral goes into the run's decisions file, the issue is skipped for that run, and the next run asks again. A question the owner has deferred three runs in a row is a finding for part 5, stated once and without argument, because a version that holds nothing else is waiting on the owner and not on a run.
+You write the questions and you never write the answers: whoever dispatched you puts the blocks to the owner and records each answer or deferral. A question the owner has deferred three runs in a row, by the runs' decisions files, is a finding for part 5, stated once and without argument, because a version that holds nothing else is waiting on the owner and not on a run.
 
 ## What you produce
 
@@ -111,7 +111,7 @@ Your writes, in the forms that work here:
     gh api -X PATCH repos/headwater-ai/headwater/issues/<N> -F milestone=<milestone-number>
     gh issue edit <N> --repo headwater-ai/headwater --add-label adopter-blocking
 
-`gh issue view` and `gh pr edit` fail here with a `projectCards` GraphQL deprecation, which is why the reads above use `gh api` for a single issue body, through `tools/run/gh-issue.sh` rather than retyped. Corrections often live in the comments rather than the body, so read those before you move an issue on what the body says. Use `-F` rather than `-f` for the milestone number, because it is an integer and `-f` sends a string.
+Corrections often live in the comments rather than the body, so read those before you move an issue on what the body says. Use `-F` rather than `-f` for the milestone number, because it is an integer and `-f` sends a string.
 
 For parts 3 and 4, read [13 — Open obligations](../../docs/spec/13-open-obligations.md). Its *What waits on a first adopter* section is the standing list of what an adopter would unblock, and its *Design work that nothing blocks* section is the project's own statement of what is not on the critical path. Both are hand-maintained and both drift, so treat a count there as a claim to re-derive rather than a fact to quote.
 

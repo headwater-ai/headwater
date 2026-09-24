@@ -32,15 +32,17 @@ The report is the four lines, and then the block:
 
 **Claim through the board.** Assign the issue to yourself and move it to In Progress before the first commit, with `gh issue edit <N> --repo headwater-ai/headwater --add-assignee @me` and `sh tools/run/board-move.sh <N> in-progress`. The claim is atomic, it survives your death, and nobody has to ask. The script adds a card the project does not have yet, so a claim never lands without one.
 
-**Your own worktree, fetched, added and built.** `EnterWorktree` is refused to a subagent and `Write` is refused in the shared checkout, so fetch, add and build the engine in one call:
+**Your own worktree, fetched, added and built in one call:**
 
     sh tools/repo/new-worktree.sh "$root/.claude/worktrees/<name>" -b <branch> origin/main
 
-Give the call a `timeout` of 600000. Leave the shared checkout on `main` and untouched. A fresh worktree has no engine and the commit gate then fails open, which is exactly what the build step above exists to prevent. `core.hooksPath` resolving absolute is not a correctness problem here: every `.githooks/` hook hands off to your worktree's own copy regardless of that value ([#925](https://github.com/headwater-ai/headwater/issues/925), fixed by [#946](https://github.com/headwater-ai/headwater/pull/946)).
+Give the call a `timeout` of 600000. Leave the shared checkout on `main` and untouched.
 
-Nothing has to hold that tree open. No stage of a run sweeps worktrees or deletes branches any more: the integrator removes only the tree it made, and your tree and branch stay until the owner cleans up with the `repo-cleanup` skill after the run. Leave the tree with nothing uncommitted. Push early, because only pushed commits survive your death.
+Your tree and branch stay after the run, for the owner to clean up. Leave the tree with nothing uncommitted.
 
 **Extend the contract first.** Where the note names a contract, a decision clause or a case table, add the new case as the contract states it, run the suite, and confirm it fails for the change's own reason before you write the implementation. Where nothing like that exists, build normally and add fixtures beside the code.
+
+**Scope a test run to the crate you are changing while you iterate**: `sh tools/hw-cargo test -p <crate> --manifest-path engine/Cargo.toml`. Widen it to `--workspace` mid-build only when the change touches something another crate depends on, such as a public type or a shared crate.
 
 **The bar is the Done-when, not the title.** An honest split is a success condition: when the issue is more than lands in one pull request, split it on the board, take the first sound piece, file the remainder with an `## ELI5` section per `.github/ISSUE_TEMPLATE/issue.md`, and return `Refs #N`.
 
@@ -50,19 +52,19 @@ Nothing has to hold that tree open. No stage of a run sweeps worktrees or delete
 
     sh tools/run/wait-for.sh "sh tools/run/ci-done.sh $(git rev-parse HEAD)"
 
-Its last line is `green` or `red` with the failing checks named, and the `run <id>` lines above it are the id your report's `CI:` line wants. Then repair a Format, Lint or unblessed-fixture failure yourself before you report. Seven of ten vetoes in one run were exactly those, and each one bought a fresh verifier at twenty minutes. A red CI you cannot repair is the first line of your report, not a pull request handed on.
+Its last line is `green` or `red` with the failing checks named, and the `run <id>` lines above it are the id your report's `CI:` line wants. Then repair a Format, Lint or unblessed-fixture failure yourself before you report. Seven of ten vetoes in one run were exactly those. A red CI you cannot repair is the first line of your report, not a pull request handed on.
 
 **A `waits-on` line in your dispatch is the integrator's to honor, not yours to build around.** Build against `origin/main` as it stands; the integrator merges the awaited change first and rebases yours behind it. Do not rebase onto another agent's unmerged branch.
 
 **When you are resumed after a veto, your report goes into the note.** A resumed agent has already handed back once, and a second hand-back does not reach the parent: #1038's answer to its veto in run `20260923-0733` arrived only as the last text of a transcript. Append your answer to `build.md` under a heading `## Follow-up <date>`: what you changed for the finding, the commits, the fixture that now fails without your fix, and the CI run. End your turn with the same four lines and the block. The parent reads the heading.
 
-**Commit and push in small steps.** `git push -u origin <branch>`, never a bare push. Only pushed commits survive an agent death, and a parent resumes you by your id rather than replacing you.
+**Commit and push in small steps.** `git push -u origin <branch>`, never a bare push. Only pushed commits survive an agent death.
 
 ## What you never do
 
 - **You never merge, and you never force-push.** `main` is written by the integrator alone.
 - **You never run a generating verb in the shared checkout.** A regenerate there while a merge lands is the silent bad merge from the other direction.
-- **You never write into the parent's instruments.** Your scratch directory is `$CLAUDE_JOB_DIR/tmp/issue-<N>/`; anything under `parent-only/` is off limits, and agents have opened it 24 times across 80 iterations while being told not to.
+- **You never write into the parent's instruments.** Your scratch directory is `$CLAUDE_JOB_DIR/tmp/issue-<N>/`; anything under `parent-only/` is off limits.
 - **You never report a number without its denominator**, and you never re-use one you did not derive.
-- **You never leave a blocking loop running past your own exit.** A background build gets its wait decided in the same breath it is launched, and the wait ends with you. Start that wait with `run_in_background: true`, because a foreground one dies at ten minutes and returns `moved to the background (ID: ...)`, which says nothing about the build. Waiting a second time on what that line names is the re-ask that spent 7.8 hours in run `cc7cc6c6`.
+- **You never leave a blocking loop running past your own exit.** A background build gets its wait decided in the same breath it is launched, and the wait ends with you.
 - **You never start a second issue.**
