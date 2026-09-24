@@ -61,6 +61,11 @@
 //! the block writes it and no derivation computes it. There the repair is a
 //! change to the taxonomy rather than to the declaration.
 //!
+//! `fixtures/unsourced.taxonomy.yml` is the opposite of `unrolled`. Its facet
+//! is in the `freshness` role, which the engine derives, and no source document
+//! carries a value for it. The repair is a value on a source document, so the
+//! refusal names those documents and not the taxonomy (#820).
+//!
 //! `fixtures/unheld.taxonomy.yml` is the third refusal, and it is the only one
 //! about the body rather than the block. The `guide` kind requires the section
 //! `Consequences`, and the `shelf_sections` declaration that writes
@@ -111,6 +116,12 @@
 //! and the gate agree on it. This case was written after a review of
 //! [#816](https://github.com/headwater-ai/headwater/pull/816) read the filter in
 //! `incoming` and asked why the fold had no equivalent.
+//!
+//! At `41af2e84`, with `unsourced.taxonomy.yml` in the tree and one sentence
+//! for every missing facet,
+//! `a_required_facet_whose_role_finds_no_value_in_the_sources_names_the_sources`
+//! failed on the wording: the refusal said that `last_verified` carries no role
+//! this engine reads, and it is in the `freshness` role.
 
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
