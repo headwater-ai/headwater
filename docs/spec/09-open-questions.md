@@ -235,7 +235,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list
 
-[HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) — An adopter needs the binary, a data-only package, git and a downloader, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling.
+[HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) — An adopter needs the binary, a data-only package, Git, `sh`, `curl`, `tar` and eight POSIX utilities, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling.
 
 ## A corpus-wide fold is derived and never stored
 
