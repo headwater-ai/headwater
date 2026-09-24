@@ -367,6 +367,11 @@ pub const VERBS: &[Verb] = &[
                 summary: "apply the migration payload a published artifact ships",
                 description: "Apply the migration payload a published artifact ships, to this corpus. It takes the path of a directory somebody already fetched, because this verb fetches nothing. Without `--apply` it reports every file each step would write and writes nothing.",
             },
+            Word {
+                name: "graph",
+                summary: "print the resolved taxonomy as a Mermaid flowchart",
+                description: "Print the resolved taxonomy as a Mermaid flowchart on standard output: one lane for each purpose, holding its concrete kinds, one hexagon for each anchor, and one edge for each pair a relation declares, labeled with the relation. A pair with an abstract kind at one end is not drawn, because the abstract kind stands for every concrete kind declared under it, and the drawing lists each such pair in a caption instead. It reads `.headwater/taxonomy.lock` and never the sources, and it writes no file.",
+            },
         ],
     },
     // A verb that reads no corpus, and the only one.

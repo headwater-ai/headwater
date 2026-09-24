@@ -70,6 +70,7 @@
 //! strings here are written as one long line each and reach a caller folded.
 
 pub mod paint;
+pub mod taxonomy_graph;
 
 /// What every output-target help says about a run that refuses.
 ///
@@ -1228,6 +1229,7 @@ pub enum TaxonomyWord {
         )]
         now: Option<Date>,
     },
+    Graph,
     #[command(external_subcommand)]
     Other(Vec<String>),
 }
