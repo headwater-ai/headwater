@@ -409,3 +409,69 @@ fn a_state_a_relation_sets_that_the_vocabulary_does_not_admit_at_all_is_refused_
         refusal.reason
     );
 }
+
+/// The output whose kind's incoming edge sets a state its own regime names, so
+/// the file is written.
+const WRITTEN: &str = "lifecycle-regime/notices/WRITTEN.md";
+
+/// The one value of `facet` in the front-matter block of `bytes`.
+fn member<'a>(bytes: &'a str, facet: &str) -> Option<&'a str> {
+    let prefix = format!("{facet}:");
+    bytes
+        .split("---")
+        .nth(1)?
+        .lines()
+        .find_map(|line| line.strip_prefix(&prefix))
+        .map(str::trim)
+}
+
+/// The written half of the edge locus: an edge sets a state the target's own
+/// regime names, and the file carries it (#820).
+///
+/// Every other edge case in this file is a refusal, so until this case the
+/// three values HW-DR-0063's table derives for such a file were held by the
+/// blessed corpus alone. The fixture separates the two sources of each date.
+/// The setter, `lifecycle-regime/flaggers/0002-retiring-decision.md`, sits on
+/// a shelf the projection does not read and carries `status_since: 2026-04-01`
+/// and `last_verified: 2026-05-01`. The one document the projection reads
+/// carries `2026-01-01` and `2026-02-01`. So a fold that took `state_entered`
+/// from the read set writes `2026-01-01`, and a fold that took freshness from
+/// the setter writes `2026-05-01`, and this case refuses both.
+#[test]
+fn a_state_a_relation_sets_that_the_kinds_own_regime_admits_is_written_with_the_setters_date() {
+    let plan = plan_over_lifecycle_regime();
+
+    let output = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == WRITTEN)
+        .unwrap_or_else(|| {
+            panic!(
+                "`{WRITTEN}` was not written, even though the `flags_written` edge sets `retired` \
+                 and `written_notice` binds `wide`, which names it. The plan declined {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| (unwritten.at.as_str(), unwritten.reason.as_str()))
+                    .collect::<Vec<_>>()
+            )
+        });
+    let bytes = output.bytes.as_str();
+    assert_eq!(
+        member(bytes, "status"),
+        Some("retired"),
+        "`{WRITTEN}` does not stand at the state its incoming edge sets. It reads:\n{bytes}"
+    );
+    assert_eq!(
+        member(bytes, "status_since"),
+        Some("2026-04-01"),
+        "`{WRITTEN}` did not take the date it entered its state from the document whose edge \
+         set it (2026-04-01). `2026-01-01` is the read set's date. It reads:\n{bytes}"
+    );
+    assert_eq!(
+        member(bytes, "last_verified"),
+        Some("2026-02-01"),
+        "`{WRITTEN}` did not take its freshness from the documents the projection read \
+         (2026-02-01). `2026-05-01` is the setter's date, and the setter was not read. It \
+         reads:\n{bytes}"
+    );
+}

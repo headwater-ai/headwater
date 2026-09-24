@@ -351,42 +351,78 @@ fn the_git_step_writes_attributes_for_the_two_verb_producers_and_prints_the_conf
     );
 }
 
-/// A producer output of this repository's own script is reported by
-/// `headwater derived` and never written by `init --git`.
+/// A producer that only this repository holds is neither named by
+/// `headwater derived` nor written by `init --git` in an adopter's tree.
 ///
-/// `derived` asks four producers, and two of them are a script and a test run
-/// that only the repository maintaining this engine holds. A page under `site/`
-/// carrying a `data-figure` element is what the script claims, so the tree below
-/// holds one. The first assertion is what makes the second a measurement: a
-/// page `derived` did not claim would be absent from `.gitattributes` whatever
-/// the filter did.
+/// `derived` knows four producers, and two of them are a script and a blessing
+/// run that only the repository maintaining this engine holds. Each row below
+/// plants a file that producer would claim here, and the file whose presence
+/// makes a tree hold it. In the adopter's tree the file is claimed by nobody,
+/// so the report names neither the file nor the command, and `init --git`
+/// writes no line. Once the tree holds the producer, the same file is claimed
+/// and written, which is what makes the first half a measurement of the
+/// predicate rather than of a filter that admits nothing.
 #[test]
 fn the_git_step_writes_no_line_for_a_producer_the_adopter_does_not_hold() {
-    let tree = Tree::adopted("script-producer");
-    const PAGE: &str = "site/index.html";
-    std::fs::create_dir_all(tree.at.join("site")).expect("the site directory is made");
-    tree.write(
-        PAGE,
-        "<p>The corpus holds <span data-figure=\"census.seen\">1</span> files.</p>\n",
-    );
+    let rows: [(&str, &str, &str, &str, &str); 2] = [
+        (
+            "script-producer",
+            "site/index.html",
+            "<p>The corpus holds <span data-figure=\"census.seen\">1</span> files.</p>\n",
+            "sh tools/site/refresh-figures.sh",
+            "tools/site/refresh-figures.sh",
+        ),
+        (
+            "blessing-producer",
+            "engine/crates/a/fixtures/corpus.a",
+            "426 files\nsha256:0a1b\n",
+            "HEADWATER_BLESS=1 cargo test",
+            "engine/Cargo.toml",
+        ),
+    ];
+    for (label, path, body, command, holder) in rows {
+        let tree = Tree::adopted(label);
+        let plant = |relative: &str, text: &str| {
+            let at = tree.at.join(relative);
+            std::fs::create_dir_all(at.parent().expect("a parent")).expect("the directory is made");
+            std::fs::write(at, text).expect("the file writes");
+        };
+        plant(path, body);
 
-    let derived = tree.headwater(&["derived"]);
-    let report = String::from_utf8_lossy(&derived.stdout).into_owned();
-    assert!(
-        report.contains(PAGE),
-        "`headwater derived` claims {PAGE} for the figure producer:\n{report}"
-    );
+        let derived = tree.headwater(&["derived"]);
+        let report = String::from_utf8_lossy(&derived.stdout).into_owned();
+        assert!(
+            !report.contains(path) && !report.contains(command),
+            "`headwater derived` names {path} or `{command}` in a tree without \
+             {holder}:\n{report}"
+        );
+        tree.headwater_ok(&["init", "--git"]);
+        let attributes = tree.read(".gitattributes");
+        assert!(
+            !attributes.contains(path),
+            "`init --git` writes a line for {path}, whose producer the adopter does \
+             not hold:\n{attributes}"
+        );
+        assert!(
+            attributes.contains(".headwater/corpus.json merge=headwater-regenerate"),
+            "the verb producers' outputs are still written:\n{attributes}"
+        );
 
-    tree.headwater_ok(&["init", "--git"]);
-    let attributes = tree.read(".gitattributes");
-    assert!(
-        !attributes.contains(PAGE),
-        "`init --git` writes no line for a producer an adopter does not hold:\n{attributes}"
-    );
-    assert!(
-        attributes.contains(".headwater/corpus.json merge=headwater-regenerate"),
-        "the verb producers' outputs are still written:\n{attributes}"
-    );
+        plant(holder, "held\n");
+        let derived = tree.headwater(&["derived"]);
+        let report = String::from_utf8_lossy(&derived.stdout).into_owned();
+        assert!(
+            report.contains(path) && report.contains(command),
+            "with {holder} present, `headwater derived` claims {path} for \
+             `{command}`:\n{report}"
+        );
+        tree.headwater_ok(&["init", "--git"]);
+        let attributes = tree.read(".gitattributes");
+        assert!(
+            attributes.contains(&format!("{path} merge=headwater-regenerate")),
+            "with {holder} present, `init --git` writes {path}:\n{attributes}"
+        );
+    }
 }
 
 /// The verb, called as git calls it, with nothing of git around it.

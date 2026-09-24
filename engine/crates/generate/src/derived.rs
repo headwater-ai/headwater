@@ -45,6 +45,30 @@
 //! own answer on every later run. Neither declaration in this repository reaches
 //! that shape, which is why a fixture taxonomy has to build it.
 //!
+//! # The date a state was entered, when no edge set the state
+//!
+//! An edge that sets the state also dates it: the state was entered when the
+//! document that declares the edge says it was, so [`members`] folds the
+//! setters' dates. With no such edge the state is the `live` fallback of
+//! [`standing`], and the date is the stalest `state_entered` over the
+//! documents the projection read, which HW-DR-0063 rules.
+//!
+//! **That reading has no argument yet, and the one offered for it does not
+//! hold** (#820). The argument was that a generated document stands at `live`
+//! because its inputs do, so it cannot have entered that state before its
+//! oldest input did. That bounds the date from below and does not pick the
+//! minimum. If the premise held, the file would stand at `live` only once its
+//! last input did, which is the maximum. And the premise does not hold: an
+//! index of superseded decisions is still a current index, because the
+//! fallback reads no input's state. The minimum is right for freshness, where
+//! a file is only as fresh as its oldest confirmation. For the date a state was
+//! entered, neither fold is a fact the inputs state. The fold is left as ruled,
+//! and the question is recorded for a ruling rather than answered here. The
+//! case that holds the two sources apart is
+//! `a_state_a_relation_sets_that_the_kinds_own_regime_admits_is_written_with_the_setters_date`
+//! in `tests/lifecycle_state_admission.rs`, where the setter's date and the
+//! read set's date differ.
+//!
 //! # The roles, and never the facet names
 //!
 //! `title` means something in one taxonomy and nothing in the next, which is
@@ -131,13 +155,30 @@ pub(crate) struct Composed<'a> {
     pub sources: Vec<&'a str>,
 }
 
+/// What [`members`] computed, and why it could not compute the rest.
+pub(crate) struct Members {
+    /// Every required facet this module answered, as `(facet, value)` in the
+    /// order the kind requires them.
+    pub values: Vec<(String, String)>,
+    /// Every required facet this module reads and could not answer here, as
+    /// `(facet, cause)`. The cause is a clause that names where the repair is.
+    ///
+    /// A required facet that is in neither list is one this module does not
+    /// read at all: no role it derives and no layout names it. That cause is
+    /// the taxonomy's, and [`crate::identity`] keeps that wording for it.
+    /// A facet here is different. Its role or its layout is one this module
+    /// reads, so the repair is where the value should have come from (#820).
+    pub unsupplied: Vec<(String, String)>,
+}
+
 /// Every required facet of this kind that the `identity` block does not write,
-/// as `(facet, value)` in the order the kind requires them.
+/// and the cause of each one this module reads and could not answer.
 ///
 /// `written` names the facets the block already wrote, so that a facet is
 /// stated once. A required facet that neither the block nor this module can
-/// answer is left out, and [`crate::identity`] refuses the declaration over
-/// what remains.
+/// answer is left out of [`Members::values`], and [`crate::identity`] refuses
+/// the declaration over what remains, with the cause from
+/// [`Members::unsupplied`] where this module has one.
 ///
 /// The one facet this can refuse outright, rather than merely leave out, is
 /// the state: a value [`standing`] computes and the kind's own lifecycle
@@ -149,7 +190,7 @@ pub(crate) fn members(
     output: &str,
     composed: &Composed<'_>,
     written: &[String],
-) -> Result<Vec<(String, String)>, String> {
+) -> Result<Members, String> {
     let kind = identity.kind.as_str();
     let id = identity.id.as_str();
     let shape = surface.shape();
@@ -160,36 +201,96 @@ pub(crate) fn members(
     let freshness = role_of(FRESHNESS);
     let sources = documents(surface, composed, output);
 
-    let mut out = Vec::new();
+    let read: Vec<String> = sources
+        .iter()
+        .map(|document| document.path.to_string())
+        .collect();
+
+    let mut out = Members {
+        values: Vec::new(),
+        unsupplied: Vec::new(),
+    };
     for facet in shape.required_facets(kind) {
         if written.contains(&facet) {
             continue;
         }
-        let value = if scent.as_deref() == Some(facet.as_str()) {
-            Some(headwater_resolve::render::quoted(&composed.summary))
+        // `Ok(None)` is a facet this module does not read. `Err` is one it
+        // reads and could not answer, with the cause.
+        let value: Result<Option<String>, String> = if scent.as_deref() == Some(facet.as_str()) {
+            Ok(Some(headwater_resolve::render::quoted(&composed.summary)))
         } else if state.as_deref() == Some(facet.as_str()) {
+            // No standing means no edge sets a state and the vocabulary holds
+            // no `live` value. That is a taxonomy cause, so it keeps the
+            // taxonomy wording.
             match standing(surface, id, output) {
-                Some(standing) => Some(admitted(surface, kind, standing)?),
-                None => None,
+                Some(standing) => Ok(Some(admitted(surface, kind, standing)?)),
+                None => Ok(None),
             }
         } else if entered.as_deref() == Some(facet.as_str()) {
             match set_by(surface, id, output) {
                 // The state came from an incoming edge, so the date it was
                 // entered is a date of the documents that declare that edge
                 // rather than of the documents this projection read.
-                Some(setters) => stalest(surface, &setters, entered.as_deref()),
-                None => stalest_of(&sources, entered.as_deref()),
+                Some(setters) => stalest(surface, &setters, entered.as_deref()).ok_or_else(|| {
+                    unsourced(
+                        &facet,
+                        STATE_ENTERED,
+                        "the documents whose edges set this document's state",
+                        &setters,
+                    )
+                }),
+                None => stalest_of(&sources, entered.as_deref()).ok_or_else(|| {
+                    unsourced(
+                        &facet,
+                        STATE_ENTERED,
+                        "the documents this projection read",
+                        &read,
+                    )
+                }),
             }
+            .map(Some)
         } else if freshness.as_deref() == Some(facet.as_str()) {
             stalest_of(&sources, freshness.as_deref())
+                .ok_or_else(|| {
+                    unsourced(
+                        &facet,
+                        FRESHNESS,
+                        "the documents this projection read",
+                        &read,
+                    )
+                })
+                .map(Some)
         } else {
             from_layout(surface, output, &facet)
         };
-        if let Some(value) = value {
-            out.push((facet, value));
+        match value {
+            Ok(Some(value)) => out.values.push((facet, value)),
+            Ok(None) => {}
+            Err(cause) => out.unsupplied.push((facet, cause)),
         }
     }
     Ok(out)
+}
+
+/// The cause of a date this module reads from documents and found in none.
+///
+/// It names the role, the facet and every document the fold read, because the
+/// repair is a value on one of those documents. It does not name the
+/// taxonomy, where nothing is wrong.
+fn unsourced(facet: &str, in_role: &str, what: &str, paths: &[String]) -> String {
+    if paths.is_empty() {
+        return format!(
+            "the engine derives `{facet}`, the facet in the `{in_role}` role, from {what}, and there \
+             are none, so the file carries no value for it. Add a document that carries \
+             `{facet}` to what this declaration reads"
+        );
+    }
+    format!(
+        "the engine derives `{facet}`, the facet in the `{in_role}` role, as the stalest value over \
+         {what} ({}), and each of them carries no value for it. Add `{facet}` to one of those \
+         documents",
+        paths.join(", ")
+    )
 }
 
 /// Where a computed state came from, which a refusal over it must name.
@@ -344,9 +445,13 @@ fn standing(surface: &Surface<'_>, id: &str, output: &str) -> Option<(String, Lo
 
 /// The state that an incoming edge puts on this document, where one does.
 ///
-/// Two relations declaring one state agree, and two declaring different states
-/// are a defect of the taxonomy rather than of this document, so the first in
-/// sorted order answers and the disagreement is left to the rule that owns it.
+/// Two relations declaring one state agree. Two declaring different states
+/// get the first in sorted order, and nothing reports the disagreement. That is
+/// a gap and not a ruling: no rule in the resolver or the check layer owns it,
+/// and [spec 13](../../../../docs/spec/13-open-obligations.md) records it under
+/// *Two relations can put two different states on one generated document, and
+/// no rule reports it* (#820). The sorted order only keeps the answer the same
+/// on every run until a rule reports the clash.
 fn set_state(surface: &Surface<'_>, id: &str, output: &str) -> Option<String> {
     let mut found: Vec<String> = incoming(surface, id, output)
         .into_iter()
@@ -450,41 +555,164 @@ fn stalest_of(documents: &[Document<'_>], facet: Option<&str>) -> Option<String>
 /// rules against, and the two would disagree about a path this engine wrote
 /// itself.
 ///
+/// A placeholder is matched to a facet by its key alone. `{seq}` in an
+/// identifier pattern names the sequence of an identifier scheme and never a
+/// facet, so a layout that wrote `{seq}` names no facet here, and only a key
+/// that is the facet's own name, such as `{sequence:02d}`, does.
+///
+/// `Ok(None)` where the layout names no such facet, which is a cause this
+/// module does not own. `Err` where it names the facet and the file name does
+/// not read back as exactly one value: see [`read_layout`].
+fn from_layout(surface: &Surface<'_>, output: &str, facet: &str) -> Result<Option<String>, String> {
+    let Some(shelf) = crate::shelf_of(output, surface) else {
+        return Ok(None);
+    };
+    let Some(layout) = shelf.layout.as_deref() else {
+        return Ok(None);
+    };
+    let name = output.rsplit('/').next().unwrap_or(output);
+    let segments = headwater_scaffold::segments(layout);
+    let named = segments.iter().any(|segment| {
+        matches!(segment, headwater_scaffold::Segment::Placeholder { key, .. } if *key == facet)
+    });
+    if !named {
+        return Ok(None);
+    }
+    match read_layout(&segments, name, facet) {
+        Some(value) => Ok(Some(value)),
+        None => Err(format!(
+            "the shelf layout `{layout}` names `{facet}`, and the file name `{name}` does not read \
+             back against that layout as exactly one value. Change the output path so that it \
+             reads back as one value"
+        )),
+    }
+}
+
+/// The value of `facet` in `name`, where `name` reads back against `segments`
+/// in exactly one way.
+///
+/// A placeholder whose specifier is a width, such as `02d`, matches digits
+/// alone, which is what [`headwater_scaffold::render_layout`] writes for it.
+/// Any other placeholder matches one character or more. Every split of the
+/// name that fits the whole layout is found, and **more than one is no
+/// answer**. The earlier reader took the first occurrence of the literal after
+/// each placeholder, so under `{slug}-{sequence:02d}.md` the slug `a-b` read
+/// `sequence` as `b-07` and wrote that text as the value (#820). Digits alone
+/// read that name once, as `7`. A layout of two free placeholders around a
+/// separator that a value also contains reads more than once, and is refused
+/// rather than guessed.
+///
 /// The padding specifier is deliberately dropped. `{sequence:02d}` writes `09`
 /// and the facet is an integer, so the value is `9`, which is what every
 /// authored document of that shelf carries.
-fn from_layout(surface: &Surface<'_>, output: &str, facet: &str) -> Option<String> {
-    let shelf = crate::shelf_of(output, surface)?;
-    let layout = shelf.layout.as_deref()?;
-    let name = output.rsplit('/').next()?;
-    let segments = headwater_scaffold::segments(layout);
-    let mut rest = name;
-    let mut wanted = None;
-    for (index, segment) in segments.iter().enumerate() {
-        match segment {
-            headwater_scaffold::Segment::Literal(text) => {
-                rest = rest.strip_prefix(text)?;
-            }
-            headwater_scaffold::Segment::Placeholder { key, .. } => {
-                // The literal that follows delimits this value. A placeholder
-                // at the end of the layout runs to the end of the name.
-                let end = match segments.get(index + 1) {
-                    Some(headwater_scaffold::Segment::Literal(next)) => rest.find(next)?,
-                    _ => rest.len(),
-                };
-                let (value, tail) = rest.split_at(end);
-                if *key == facet {
-                    wanted = Some(value.to_string());
-                }
-                rest = tail;
-            }
-        }
+fn read_layout(
+    segments: &[headwater_scaffold::Segment<'_>],
+    name: &str,
+    facet: &str,
+) -> Option<String> {
+    let mut found = Vec::new();
+    splits(segments, name, facet, None, &mut found);
+    if found.len() != 1 {
+        return None;
     }
-    let value = wanted?;
+    let value = found.pop()??;
     // An integer facet carries the number and never the padding the layout
     // asked a file name for.
     match value.parse::<i64>() {
         Ok(number) => Some(number.to_string()),
         Err(_) => Some(value),
+    }
+}
+
+/// Every way `rest` fits `segments`, as the value of `facet` in each. Stops
+/// at two, which is already no answer.
+fn splits(
+    segments: &[headwater_scaffold::Segment<'_>],
+    rest: &str,
+    facet: &str,
+    wanted: Option<&str>,
+    found: &mut Vec<Option<String>>,
+) {
+    if found.len() > 1 {
+        return;
+    }
+    let Some((segment, after)) = segments.split_first() else {
+        if rest.is_empty() {
+            found.push(wanted.map(str::to_string));
+        }
+        return;
+    };
+    match segment {
+        headwater_scaffold::Segment::Literal(text) => {
+            if let Some(tail) = rest.strip_prefix(text) {
+                splits(after, tail, facet, wanted, found);
+            }
+        }
+        headwater_scaffold::Segment::Placeholder { key, specifier } => {
+            let digits = specifier.is_some_and(|specifier| specifier.ends_with('d'));
+            for end in 1..=rest.len() {
+                if !rest.is_char_boundary(end) {
+                    continue;
+                }
+                let (value, tail) = rest.split_at(end);
+                if digits && !value.bytes().all(|byte| byte.is_ascii_digit()) {
+                    break;
+                }
+                let wanted = if *key == facet { Some(value) } else { wanted };
+                splits(after, tail, facet, wanted, found);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::read_layout;
+
+    fn read(layout: &str, name: &str, facet: &str) -> Option<String> {
+        read_layout(&headwater_scaffold::segments(layout), name, facet)
+    }
+
+    /// The layouts this repository's lock declares, which must read as before.
+    #[test]
+    fn a_leading_number_reads_as_before() {
+        assert_eq!(
+            read(
+                "{sequence:02d}-{slug}.md",
+                "09-open-questions.md",
+                "sequence"
+            )
+            .as_deref(),
+            Some("9")
+        );
+        assert_eq!(
+            read("{seq:04d}-{slug}.md", "0042-a-b.md", "slug").as_deref(),
+            Some("a-b")
+        );
+    }
+
+    /// The case #820 named: the value before the number carries the separator.
+    /// The first-occurrence reader wrote `b-07`.
+    #[test]
+    fn a_separator_inside_an_earlier_value_does_not_move_the_number() {
+        assert_eq!(
+            read("{slug}-{sequence:02d}.md", "a-b-07.md", "sequence").as_deref(),
+            Some("7")
+        );
+        assert_eq!(
+            read("{slug}-{sequence:02d}.md", "a-b-07.md", "slug").as_deref(),
+            Some("a-b")
+        );
+    }
+
+    /// Two free placeholders around a separator a value contains read twice,
+    /// and a name that fits no split reads never. Both are no answer.
+    #[test]
+    fn a_name_that_reads_back_more_than_once_or_never_is_no_answer() {
+        assert_eq!(read("{slug}-{tier}.md", "a-b-c.md", "tier"), None);
+        assert_eq!(
+            read("{slug}-{sequence:02d}.md", "a-b-xy.md", "sequence"),
+            None
+        );
     }
 }

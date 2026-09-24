@@ -241,21 +241,41 @@ else
 fi
 rm -f "$gate_read_set"
 
-# `new`, `import`, `probe record`, `probe grade`, `taxonomy diff`, `taxonomy
-# vendor`, `taxonomy publish` and `taxonomy migrate` are also wired (each
-# renderer now takes a `ColorMode` and the call site in `main.rs` supplies
-# one), and are not exercised here. `new` writes a document into the tree this
-# script runs against, and this suite fabricates no scratch corpus to write
-# one into instead. `import`, `probe record` and `probe grade` need a declared
-# import, a recorded transcript or a graded selection this repository does not
-# carry. `taxonomy diff`, `vendor`, `publish` and `migrate` need a second,
-# fetched copy of the package this repository already carries at
-# `taxonomy-source/headwater-standard/` — buildable with `taxonomy publish
-# --from`, but not attempted here in the time this build had. Each is held
-# instead by the palette unit tests beside its renderer, which exercise
-# `ColorMode::Ansi` and `ColorMode::Plain` directly, and none of the four
-# `taxonomy` sub-verbs above changed their machine (`--json`) output: none of
-# the four writes one.
+# `taxonomy diff`, which #1018 wired. It needs a published artifact to compare
+# the lock against, and `taxonomy publish --from` writes one from the maintained
+# source into a temp directory and nothing into this tree. The artifact is this
+# repository's own package at the version the lock already holds, so the report
+# says every dimension is preserved and carries no migration payload: the payload
+# section and a BROKEN dimension are held by the palette unit tests beside
+# `Report::render` and `Accounting::render` in `headwater-compat`, not here.
+# The report pads each dimension name into a column, so the fifth arm below is
+# what says the color did not shift it.
+diff_artifact_dir=$(mktemp -d "${TMPDIR:-/tmp}/headwater-color-diff.XXXXXX")
+diff_artifact="$diff_artifact_dir/published"
+if "$engine" taxonomy publish --from taxonomy-source/headwater-standard \
+    --out "$diff_artifact" --root . >/dev/null 2>&1; then
+    senses_its_terminal 'taxonomy diff' "$engine taxonomy diff $diff_artifact --root ."
+    strips_to_the_plain_bytes 'taxonomy diff' "$engine taxonomy diff $diff_artifact --root ."
+else
+    echo "FAIL taxonomy diff — \`taxonomy publish --from\` wrote no artifact to compare against"
+    failed=$((failed + 1))
+fi
+rm -rf "$diff_artifact_dir"
+
+# `new`, `import`, `probe record`, `probe grade`, `taxonomy vendor`, `taxonomy
+# publish` and `taxonomy migrate` are also wired (each renderer now takes a
+# `ColorMode` and the call site in `main.rs` supplies one), and are not
+# exercised here. `new` writes a document into the tree this script runs
+# against, and this suite fabricates no scratch corpus to write one into
+# instead. `import`, `probe record` and `probe grade` need a declared import, a
+# recorded transcript or a graded selection this repository does not carry.
+# `vendor`, `publish` and `migrate` could run over the same published
+# artifact `taxonomy diff` uses above, and were not measured by #1018, which
+# wired only the diff. Each is held instead by the palette unit tests beside its
+# renderer, which exercise `ColorMode::Ansi` and `ColorMode::Plain` directly,
+# and none of the three `taxonomy` sub-verbs here writes a machine (`--json`)
+# output. Until #1018, this paragraph also listed `taxonomy diff` as wired,
+# and its report body took no mode at all.
 
 # The help family, which is four templates rather than one. The root screen is
 # written by `first_screen`, a verb page is `clap`'s own `{options}` renderer, a
