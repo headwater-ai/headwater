@@ -106,6 +106,15 @@ pub struct Relation {
     /// about a whole relation, and it is the only thing the graph holds that
     /// separates an imported edge from an authored one.
     pub created_by: Option<String>,
+    /// The names of the instance attributes the relation declares under
+    /// `attributes:`, in declaration order.
+    ///
+    /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
+    /// says an attribute the relation type does not declare is a finding. The
+    /// one reader today is `headwater_check::suspect`, which offers to write
+    /// `verified_revision` onto an edge only where the relation declares it,
+    /// so that a fix never writes the attribute a later rule refuses.
+    pub attributes: Vec<String>,
     /// The span of the relation's name, which a finding about the
     /// *declaration* points at.
     pub span: Span,
@@ -356,6 +365,17 @@ fn read_relation(name: &str, value: &Value, span: Span) -> Result<Relation, Decl
         nuclearity: scalar("nuclearity"),
         nucleus: scalar("nucleus"),
         created_by: scalar("created_by"),
+        attributes: map
+            .get("attributes")
+            .and_then(|value| value.value.as_map())
+            .map(|block| {
+                block
+                    .entries()
+                    .iter()
+                    .map(|entry| entry.key.value.clone())
+                    .collect()
+            })
+            .unwrap_or_default(),
         inverse: map
             .get("inverse")
             .and_then(|value| value.value.as_scalar())

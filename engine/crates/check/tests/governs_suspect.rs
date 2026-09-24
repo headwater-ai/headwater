@@ -104,11 +104,18 @@ fn recorded(root: &Path) -> Vec<String> {
         .collect()
 }
 
+fn taxonomy() -> String {
+    std::fs::read_to_string(fixtures_dir().join("governs-suspect.taxonomy.yml"))
+        .expect("the fixture taxonomy")
+}
+
 fn run(root: &Path, today: &str, cache: &mut Cache) -> Run {
+    run_under(root, today, cache, &taxonomy())
+}
+
+fn run_under(root: &Path, today: &str, cache: &mut Cache, source: &str) -> Run {
     let corpus = Corpus::new(root, "governs-suspect");
-    let source = std::fs::read_to_string(fixtures_dir().join("governs-suspect.taxonomy.yml"))
-        .expect("the fixture taxonomy");
-    let value = headwater_yaml::load(&source)
+    let value = headwater_yaml::load(source)
         .expect("the fixture taxonomy loads")
         .value
         .as_map()
@@ -413,6 +420,23 @@ fn a_directory_literal_reports_no_revision_and_passes() {
         &["    - to: .githooks\n      verified_revision: \"sha256:0\"".to_string()],
     );
     let ran = cold(&root, TODAY);
+    assert!(suspect(&ran).is_empty(), "{:?}", suspect(&ran));
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A relation that does not declare `verified_revision` is offered no fix and
+/// no advisory on an unrecorded edge, because spec 2 makes an attribute the
+/// relation does not declare a finding, and a fix must not write one.
+#[test]
+fn no_fix_is_offered_where_the_relation_does_not_declare_the_attribute() {
+    let root = scratch("undeclared");
+    document(&root, TODAY, &["    - .githooks/pre-commit".to_string()]);
+    let undeclared = taxonomy().replace(
+        "    attributes:\n      verified_revision: {type: string, owner: edge}\n",
+        "",
+    );
+    assert_ne!(undeclared, taxonomy(), "the declaration was removed");
+    let ran = run_under(&root, TODAY, &mut Cache::disabled(), &undeclared);
     assert!(suspect(&ran).is_empty(), "{:?}", suspect(&ran));
     let _ = std::fs::remove_dir_all(&root);
 }

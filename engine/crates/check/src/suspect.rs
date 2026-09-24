@@ -88,7 +88,8 @@
 //! document's freshness facet (`last_verified` in the standard package) is at
 //! or after the run's clock, so its author has just re-read it, and the rule
 //! reports at `Info` with a patch that records the digest the edge reaches
-//! now. That patch is the one way a digest is recorded without typing it.
+//! now. Only where the relation declares `verified_revision`, because spec 2
+//! makes an attribute the relation does not declare a finding. That patch is the one way a digest is recorded without typing it.
 //!
 //! # When a fix is offered, and why the clock decides it
 //!
@@ -223,7 +224,15 @@ impl EdgeCheck for Suspect<'_> {
             .and_then(|entry| entry.value.value.as_scalar())
             .map(|scalar| scalar.text.as_str());
 
-        let today = self.verified_today(view);
+        // A fix writes `verified_revision`, so it is offered only where the
+        // relation declares that attribute: spec 2 makes an undeclared one a
+        // finding, and a fix must not write what a later rule refuses.
+        let today = self.verified_today(view)
+            && self
+                .declared
+                .iter()
+                .find(|known| known.name == view.relation())
+                .is_some_and(|known| known.attributes.iter().any(|a| a == VERIFIED_REVISION));
         let (line, column) = at(Some(edge.span));
         let finding = |severity, message, remediation, patch| Finding {
             rule: self::RULE,
