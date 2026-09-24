@@ -402,8 +402,8 @@ core:
     /// was read no relation of an evidence family could satisfy a requirement
     /// that it be lifecycle-sensitive.
     #[test]
-    fn an_evidence_family_requirement_is_satisfied_by_a_relation_that_declares_the_word_and_writes_no_state()
-     {
+    fn an_evidence_family_requirement_is_satisfied_by_a_relation_that_declares_the_word_and_writes_no_state(
+    ) {
         let taxonomy = tree(&evidence("{family: evidence, lifecycle_sensitive: true}"));
         assert!(check(&taxonomy, &taxonomy, &[], &[]).is_empty());
     }
