@@ -306,6 +306,11 @@ fn merge_two_branches(
 
     if let Some(text) = attributes {
         write(&repo, ".gitattributes", text);
+        // A configured clone overrides each committed `-merge` with the driver
+        // in its own `info/attributes`, which wins over `.gitattributes`
+        // (#1058). The committed file alone keeps the current side with no
+        // driver, which is what an unconfigured clone and a forge do.
+        write(&repo, ".git/info/attributes", &configured_override(text));
     }
     for name in BASE {
         write(&repo, &format!("docs/{name}.md"), &format!("# {name}\n"));
@@ -403,6 +408,21 @@ fn documents(repo: &Path) -> usize {
             name.ends_with(".md") && name != "README.md"
         })
         .count()
+}
+
+/// The `info/attributes` of a configured clone: the driver on every committed `-merge` path.
+fn configured_override(attributes: &str) -> String {
+    attributes
+        .lines()
+        .filter(|line| !line.starts_with('#'))
+        .filter_map(|line| {
+            let mut fields = line.split_whitespace();
+            let path = fields.next()?;
+            fields
+                .any(|field| field == "-merge")
+                .then(|| format!("{path} merge=headwater-regenerate\n"))
+        })
+        .collect()
 }
 
 /// The repository's own declaration, which is what these cases are a function
@@ -574,6 +594,7 @@ fn a_site_merge_warns_when_non_figure_content_differs() {
         ],
     );
     write(&repo, ".gitattributes", &attributes());
+    write(&repo, ".git/info/attributes", &configured_override(&attributes()));
     write(
         &repo,
         "site/index.html",
@@ -679,6 +700,7 @@ fn a_refused_site_merge_leaves_a_marker_that_pre_push_refuses_until_acknowledged
         ],
     );
     write(&repo, ".gitattributes", &attributes());
+    write(&repo, ".git/info/attributes", &configured_override(&attributes()));
     plant_ack_script(&repo);
     write(
         &repo,
@@ -848,6 +870,7 @@ fn a_rebase_around_a_site_conflict_is_reported_by_post_rewrite_and_still_blocks_
         ],
     );
     write(&repo, ".gitattributes", &attributes());
+    write(&repo, ".git/info/attributes", &configured_override(&attributes()));
     plant_ack_script(&repo);
     write(
         &repo,
