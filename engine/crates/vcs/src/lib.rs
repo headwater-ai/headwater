@@ -254,6 +254,96 @@ pub fn ignored(root: &Path) -> Vec<String> {
     }
 }
 
+/// The `merge` attribute git gives each of `paths`, asked of git itself.
+///
+/// One run of `git check-attr -z --stdin merge`, with every path on standard
+/// input, NUL-separated and relative to `root`. Git applies its own
+/// precedence: every `.gitattributes` of the tree, the deeper file first,
+/// then `$GIT_DIR/info/attributes`, and `core.attributesFile` from the
+/// configuration of the clone. It expands its own patterns and macros, so a
+/// caller reads the answer and never a pattern.
+///
+/// Each value is the one git prints: `unspecified`, `unset`, `set`, or the
+/// name of a driver. The order of the result is the order of `paths`.
+///
+/// `None` where `root` is not inside a git work tree, the same posture
+/// [`ignored`] takes: no attribute file binds a tree that git does not see,
+/// and the caller then reads the declarations some other way.
+///
+/// `Some(Err(..))` where `root` is inside a work tree and git refused the
+/// question, with what git printed. Git refuses the whole run for one path it
+/// rejects, such as a path outside the work tree, so a caller that has to
+/// ask about a path it did not find on disk filters such a path out first.
+/// The refusal is kept apart from `None`, because a caller that read it as
+/// "no repository" would fall back in silence inside one.
+pub fn merge_attributes(
+    root: &Path,
+    paths: &[String],
+) -> Option<Result<Vec<(String, String)>, String>> {
+    let inside = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["rev-parse", "--is-inside-work-tree"])
+        .output()
+        .ok()?;
+    if !inside.status.success() || String::from_utf8_lossy(&inside.stdout).trim() != "true" {
+        return None;
+    }
+    let mut input = Vec::new();
+    for path in paths {
+        input.extend_from_slice(path.as_bytes());
+        input.push(0);
+    }
+    Some(check_attr(root, input))
+}
+
+/// One run of `git check-attr -z --stdin merge` over `input`, parsed.
+fn check_attr(root: &Path, input: Vec<u8>) -> Result<Vec<(String, String)>, String> {
+    let mut child = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["check-attr", "-z", "--stdin", "merge"])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|error| format!("git did not run: {error}"))?;
+    // Written from a second thread, so that a large input cannot block on a
+    // full output pipe that nothing reads yet. A write that fails because git
+    // exited early is not the error to report: git's own message is.
+    let mut stdin = child
+        .stdin
+        .take()
+        .ok_or_else(|| "git took no standard input".to_string())?;
+    let writer = std::thread::spawn(move || {
+        use std::io::Write;
+        stdin.write_all(&input)
+    });
+    let output = child
+        .wait_with_output()
+        .map_err(|error| format!("git did not finish: {error}"))?;
+    let written = writer.join();
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    }
+    match written {
+        Ok(Ok(())) => {}
+        _ => return Err("the paths did not reach git".to_string()),
+    }
+    // `-z` prints each answer as three fields: path, attribute, value.
+    let fields: Vec<String> = output
+        .stdout
+        .split(|byte| *byte == 0)
+        .map(|field| String::from_utf8_lossy(field).into_owned())
+        .collect();
+    Ok(fields
+        .as_chunks::<3>()
+        .0
+        .iter()
+        .map(|[path, _, value]| (path.clone(), value.clone()))
+        .collect())
+}
+
 fn split_nul(bytes: &[u8]) -> Vec<String> {
     bytes
         .split(|byte| *byte == 0)
@@ -504,6 +594,64 @@ mod tests {
             vec!["build/".to_string(), "notes.local.md".to_string()]
         );
         let _ = fs::remove_dir_all(&repo.at);
+    }
+
+    /// Git's answer for each path, in the order asked, with a nested file
+    /// winning over the root and a driver name passed through as git prints it.
+    #[test]
+    fn merge_attributes_are_git_answers_in_the_order_asked() {
+        let repo = Repo::new("merge-attributes");
+        repo.write(
+            ".gitattributes",
+            "a.md merge=headwater-regenerate\nsub/b.md merge=headwater-regenerate\n",
+        );
+        repo.write("sub/.gitattributes", "b.md -merge\nc.md merge=ours\n");
+        let paths: Vec<String> = ["sub/c.md", "a.md", "sub/b.md", "none.md"]
+            .iter()
+            .map(|path| path.to_string())
+            .collect();
+        let answers = merge_attributes(&repo.at, &paths)
+            .expect("a repository")
+            .expect("git answers");
+        assert_eq!(
+            answers,
+            vec![
+                ("sub/c.md".to_string(), "ours".to_string()),
+                ("a.md".to_string(), "headwater-regenerate".to_string()),
+                ("sub/b.md".to_string(), "unset".to_string()),
+                ("none.md".to_string(), "unspecified".to_string()),
+            ]
+        );
+        let _ = fs::remove_dir_all(&repo.at);
+    }
+
+    /// Inside a repository, a path git rejects is a refusal that names
+    /// itself, and never reads as "no repository".
+    #[test]
+    fn merge_attributes_names_a_refusal_inside_a_repository() {
+        let repo = Repo::new("merge-attributes-refused");
+        repo.write(".gitattributes", "a.md merge=union\n");
+        let paths = vec!["a.md".to_string(), "../outside.md".to_string()];
+        let refusal = merge_attributes(&repo.at, &paths)
+            .expect("a repository")
+            .expect_err("git refuses a path outside the work tree");
+        assert!(refusal.contains("outside"), "{refusal}");
+        let _ = fs::remove_dir_all(&repo.at);
+    }
+
+    /// A tree git does not see has no git answer, and the caller reads it
+    /// some other way.
+    #[test]
+    fn merge_attributes_outside_a_repository_is_none() {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-vcs-tests-attributes-no-repository-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&at);
+        fs::create_dir_all(&at).expect("the directory is there");
+        fs::write(at.join(".gitattributes"), "a.md merge=union\n").expect("the file writes");
+        assert_eq!(merge_attributes(&at, &["a.md".to_string()]), None);
+        let _ = fs::remove_dir_all(&at);
     }
 
     /// A tree with no `.git` at all — the shape this crate's own tests build

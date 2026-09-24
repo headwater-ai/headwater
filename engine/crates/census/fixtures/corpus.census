@@ -242,6 +242,8 @@ docs/how-to/wire-headwater-check-into-your-own-workflow.md
   typed: how_to
 docs/interfaces/README.md
   generated: `verb_index`, and `headwater generate --check` holds it rather than this census
+docs/interfaces/consumer-surface.md
+  generated: `consumer_surface`, and `headwater generate --check` holds it rather than this census
 docs/interfaces/headwater-capture.md
   typed: interface_contract
 docs/interfaces/headwater-change.md
