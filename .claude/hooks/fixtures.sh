@@ -484,7 +484,7 @@ else
     skip 'read.sh PreToolUse cases' 'no built engine'
 fi
 
-printf '\n# write.sh, on PostToolUse: it fails open, and the control says so\n'
+printf '\n# write.sh and read.sh, on PreToolUse: they fail open, and the control says so\n'
 # Three sabotages, one per thing a hook cannot assume it has. Each one must let
 # the edit proceed: exit 0, and not one byte written.
 #

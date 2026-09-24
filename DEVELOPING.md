@@ -228,18 +228,19 @@ The two merge-driver lines are what `.gitattributes` needs to refuse a merge of 
 
 ### What runs before commit time, in this harness
 
-`.claude/settings.json` registers three hooks in `.claude/hooks/`, one for each moment [spec 5](docs/spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind) names. Git does not install them and Claude Code loads them when the repository opens, which is the opposite of the line above.
+`.claude/settings.json` registers the hooks in `.claude/hooks/`, one or more for each moment [spec 5](docs/spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind) names. Git does not install them and Claude Code loads them when the repository opens, which is the opposite of the line above.
 
 | Position | Script | What it does |
 |---|---|---|
 | `UserPromptSubmit` | `intent.sh` | `headwater route` on your prompt, and nothing at all when the route is silent |
-| `PreToolUse` on `Write`/`Edit` | `write.sh` | refuses a raw write of a document that does not exist yet, and names `headwater new`. An edit to an existing document passes |
-| `PostToolUse` on `Write`/`Edit` | `write.sh` | names the documents that declare `governs` over the path you just edited. Advisory, and it blocks nothing |
+| `PreToolUse` on `Read` | `read.sh` | names the documents that declare `governs` over the path you are about to read. Context only, and it blocks nothing |
+| `PreToolUse` on `Write`/`Edit` | `write.sh` | refuses a raw write of a document that does not exist yet, and names `headwater new`. Every other call gets the documents that declare `governs` over the path you are about to change. Advisory, and it blocks nothing |
+| `PostToolUse` on `Write`/`Edit` | `write.sh` | nothing yet. [#952](https://github.com/headwater-ai/headwater/issues/952) gives it one line: the edges the edit made suspect |
 | `Stop` | `review.sh` | runs `.githooks/pre-commit` and stops the turn on what would stop the commit |
 
 Each one calls a verb that already ships, and none carries a rule of its own. The review hook invokes the commit hook rather than repeating it, so this repository still runs exactly one thing at commit time. Every one of them fails open: no built engine, or an input it cannot read, and the action proceeds. `sh` and that engine are the whole of what a session needs, because the harness payload is read by `headwater json` rather than by an interpreter ([HW-DR-0055](docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md)). The review position needs the engine for its re-entry guard, so a host with no engine ends the turn rather than stopping it twice.
 
-None of them binds. A `Bash` call that writes a file matches no matcher, `disableAllHooks` turns all of them off with no record anywhere, and `git commit --no-verify` skips the gate below them. What holds a change is the commit gate and the CI job. `sh .claude/hooks/fixtures.sh` runs all four positions against recorded input, including every refusal.
+None of them binds. A `Bash` call that writes a file matches no matcher, `disableAllHooks` turns all of them off with no record anywhere, and `git commit --no-verify` skips the gate below them. What holds a change is the commit gate and the CI job. `sh .claude/hooks/fixtures.sh` runs every position against recorded input, including every refusal.
 
 The same three scripts are registered a second and a third time, in `.codex/hooks.json` and `.github/hooks/*.json`, for the two harnesses [spec 16](docs/spec/16-harness-support.md) records. `sh .claude/hooks/fixtures-live.sh` is what holds that binding rather than the shape it assumes: a real `codex exec` and a real `copilot -p`, over a scratch clone, spending real AI credits against a real login. It skips a harness that is not installed or not authenticated rather than failing on it, nothing gates on it, and no CI job runs it, the same posture as `headwater probe`.
 

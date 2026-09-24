@@ -51,7 +51,7 @@
 #
 # This is the one script spec 16 registers under three names: `.claude/`,
 # `.codex/hooks.json` and `.github/hooks/*.json` all point a `PreToolUse` and
-# a `PostToolUse` position at this file, because a binding calls a verb that
+# a `PostToolUse` position at this file, the second silent for now, because a binding calls a verb that
 # ships and carries no rule of its own. `hook_event_name` and `tool_name`
 # agree across all three, confirmed live, and the one path a call names is the
 # one field that does not: Claude Code passes `tool_input.file_path`, Copilot
