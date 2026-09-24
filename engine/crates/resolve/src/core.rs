@@ -23,16 +23,24 @@
 //! it. Spec 2's own worked overlay renames every lifecycle state and stays
 //! conformant, and only dropping the `terminal-retained` role would fail.
 //!
-//! # `lifecycle_sensitive` is read as an effect on the target's state
+//! # `lifecycle_sensitive` is read from either of two declarations
 //!
 //! The base writes `relation_family: succession` with `lifecycle_sensitive:
-//! true`, and the relation that satisfies it is `supersedes`, which declares
-//! `on_target: {set_state: superseded}`. Spec 2 states the requirement in prose
-//! — "lineage remains expressible and lifecycle-sensitive" — and names no
-//! field. `on_target` is the only declaration in the language that makes a
-//! relation act on a state, so it is what the check reads. A relation family
-//! whose members declare no `on_target` is expressible lineage that no
-//! lifecycle follows, which is the case the requirement exists to refuse.
+//! true`. Spec 2 states the requirement in prose — "lineage remains
+//! expressible and lifecycle-sensitive" — and names no field. A relation of
+//! the family satisfies it when it declares `lifecycle_sensitive: true` itself,
+//! or when it declares `on_target: {set_state: ...}`.
+//!
+//! The declared member is the word the requirement uses, and it is the only
+//! reading that a relation which writes no state can meet: an `evidence`
+//! family whose ends have a lifecycle is one. The `on_target` reading stays
+//! because a relation that writes a state onto its target is
+//! lifecycle-sensitive by construction, and because a taxonomy pinned to
+//! headwater-standard 4.4.2 or earlier declares `supersedes` with `on_target`
+//! and no member. Dropping it would refuse a published package that did not
+//! change. A relation family whose members declare neither is expressible
+//! lineage that no lifecycle follows, which is the case the requirement
+//! exists to refuse.
 
 /// Whether a role on a state value names a terminal state.
 ///
@@ -172,12 +180,7 @@ pub fn satisfiers(tree: &Mapping, requirement: &Requirement) -> Vec<Vec<String>>
             lifecycle_sensitive,
         } => named_with(tree, "relations", |body| {
             scalar(body, "family").as_deref() == Some(family.as_str())
-                && (!lifecycle_sensitive
-                    || body
-                        .get("on_target")
-                        .and_then(|node| node.value.as_map())
-                        .and_then(|node| node.get("set_state"))
-                        .is_some())
+                && (!lifecycle_sensitive || is_lifecycle_sensitive(body))
         }),
         Kind::IdentifierScheme(scheme) => {
             match merge::lookup(tree, &["identifier_schemes".into(), scheme.clone()]) {
@@ -187,6 +190,23 @@ pub fn satisfiers(tree: &Mapping, requirement: &Requirement) -> Vec<Vec<String>>
         }
         Kind::Unknown => Vec::new(),
     }
+}
+
+/// Whether a relation's declaration marks it lifecycle-sensitive.
+///
+/// Either reading marks it, as
+/// [HW-DR-0065](../../../../docs/decisions/0065-a-relation-declares-lifecycle-sensitive-for-itself-and-a-core-requirement-demands-it-of-a-family.md)
+/// decides: the declared `lifecycle_sensitive` member, read through the core
+/// schema as `read_relation` in the graph crate reads it, or an `on_target`
+/// that writes a state. The `core.requires` flag is not a third reading,
+/// because a requirement that satisfied itself would refuse nothing.
+fn is_lifecycle_sensitive(body: &Mapping) -> bool {
+    headwater_yaml::core_schema::flag(body, "lifecycle_sensitive").unwrap_or(false)
+        || body
+            .get("on_target")
+            .and_then(|node| node.value.as_map())
+            .and_then(|node| node.get("set_state"))
+            .is_some()
 }
 
 /// Check the core on the result, and blame the operation that emptied it.
