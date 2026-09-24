@@ -1471,3 +1471,50 @@ controls:
         window: "one release of the taxonomy over an adopting corpus"
         threshold: "no false positive, because the rule reports a date comparison between a task's own declared `until` and the injected clock, deriving nothing else"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
+surface:
+  adopter_documents:
+    - "docs/interfaces/*.md"
+    - "docs/tutorials/*.md"
+    - docs/how-to/relocate-a-shelf.md
+    - docs/how-to/wire-headwater-check-into-your-own-workflow.md
+  archive:
+    - headwater
+    - LICENSE
+  commands:
+    - headwater
+    - git
+    - sh
+    - curl
+    - tar
+  companions:
+    - "headwater probe"
+    - "headwater neighbors"
+    - "headwater sweep"
+  integration_points:
+    agent_harness:
+      depends_on: []
+    ci_forge:
+      depends_on: []
+    git:
+      depends_on:
+        - git
+        - sh
+    shell:
+      depends_on:
+        - sh
+    site_generator:
+      depends_on:
+        - mkdocs
+        - python3
+  local_roots:
+    - tools/
+    - ".githooks/"
+    - ".claude/"
+    - ".github/"
+    - site/
+    - mkdocs/
+  prerequisites:
+    - git
+    - sh
+    - curl
+    - tar

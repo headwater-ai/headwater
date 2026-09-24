@@ -1,6 +1,6 @@
 # tools
 
-Scripts this repository runs on itself. Nothing here ships to an adopter, and nothing here is a governed document: the corpus root is `docs` and no shelf claims this directory.
+Scripts this repository runs on itself. Every file here is local to this repository, which is population 4 of [HW-DR-0077](../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md), and no page for an adopter may tell a reader to run one. `surface.local_path.instructed` holds that, over the pages that `surface.adopter_documents` in `.headwater/overlay.yml` lists. Two scripts here are still on an adopter's path today, and each one leaves: `headwater-bootstrap.sh` when `headwater taxonomy vendor` takes a location (#959), and `cite/check-citations.py` when it moves out of this directory as a companion. Nothing here is a governed document: the corpus root is `docs` and no shelf claims this directory.
 
 One directory per subject, because the thing a script acts on is what a reader is looking for. A fixture suite lives beside the thing it holds rather than with the other fixture suites, which is the convention `.githooks/fixtures.sh` and `.claude/skills/fixtures.sh` already follow.
 

@@ -23,6 +23,8 @@ relations:
 
 # Diagnose an isolation failure
 
+**Audience:** a contributor to this repository. An adopter of Headwater needs no step of this guide, and the consumer surface in `.headwater/overlay.yml` does not list it.
+
 ## Before you start
 
 An isolation failure belongs to the checkout rather than to the change inside it. Several agent sessions build this repository at the same time. Each one works in a worktree under `.claude/worktrees/`. All of them share one clone, one set of git hooks, one pool of compiler output and one directory of shared state. A defect in that sharing arrives as a defect in your code. Two of them arrive as a pass.

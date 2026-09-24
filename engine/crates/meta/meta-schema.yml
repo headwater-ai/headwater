@@ -124,6 +124,13 @@ declarations:
   obligations: {map: {block: obligation}}
   controls: {map: {block: control}}
 
+  # The consumer surface of HW-DR-0077: everything an adopter receives, is told
+  # to run, or must have installed, as one closed list. `language.local_path`
+  # reads `adopter_documents`, `local_roots` and `commands`; the other members
+  # are the declaration the rest of the record names, and a reader of each
+  # arrives with the issue that needs it (#976).
+  surface: {block: surface}
+
 # --- the root of an overlay source ------------------------------------------
 #
 # An overlay is a taxonomy source of a second shape: operations at addresses
@@ -259,6 +266,30 @@ definitions:
       term: {scalar: string, required: true}
       reason: {scalar: string, required: true}
       replacement: {scalar: string}
+
+  # --- the consumer surface ---------------------------------------------------
+
+  surface:
+    members:
+      # The files of a release archive, as paths inside it.
+      archive: {seq: {scalar: string}}
+      # The five integration points of HW-DR-0077, each with what it needs
+      # beyond the binary.
+      integration_points: {map: {block: integration_point}}
+      # Programs an adopter installs that are not this project's.
+      prerequisites: {seq: {scalar: string}}
+      # Tools an adopter may run and that no conformance level requires.
+      companions: {seq: {scalar: string}}
+      # Globs over the corpus: every document an adopter reads.
+      adopter_documents: {seq: {scalar: string}}
+      # Directory prefixes that hold population 4, local to this repository.
+      local_roots: {seq: {scalar: string}}
+      # The first word of every command an adopter page may tell a reader to run.
+      commands: {seq: {scalar: string}}
+
+  integration_point:
+    members:
+      depends_on: {seq: {scalar: string}}
 
   # --- relations ------------------------------------------------------------
 

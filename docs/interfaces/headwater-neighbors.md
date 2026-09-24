@@ -22,9 +22,9 @@ Every word after `neighbors` forms the task description.
 
 ## Description
 
-`headwater neighbors` ranks the typed documents of the corpus by the similarity in meaning between each summary and the task description. It is the embedding path of [HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md). Its only caller is `.claude/hooks/intent.sh`, which writes the result into the shadow-mode routing log. No agent reads the ranking, and `headwater route` does not read it.
+`headwater neighbors` ranks the typed documents of the corpus by the similarity in meaning between each summary and the task description. It is the embedding path of [HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md). Its only caller is a harness hook of this repository, which writes the result into the shadow-mode routing log. No agent reads the ranking, and `headwater route` does not read it.
 
-The verb reads the model pin at `.headwater/embedding.yml`. The pin names each model file by URL and by digest. The verb does not fetch a file. `tools/embed/fetch-model.sh` fetches the files. The verb calculates the digest of each file before it loads the model, and refuses a file that does not match. A verified file that has not changed since is not hashed again, as the Files table states.
+The verb reads the model pin at `.headwater/embedding.yml`. The pin names each model file by URL and by digest. The verb does not fetch a file. `tools/embed/fetch-model.sh` fetches the files. The verb calculates the digest of each file before it loads the model, and refuses a file that does not match. A verified file that has not changed since is not hashed again, as the Files table states. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=accepted_deviation note=the model fetch is a companion that HW-DR-0077 moves out of tools/ -->
 
 Inference runs locally in pure Rust. The verb opens no network connection. It calculates one unit-length vector for the task and one for each summary. It ranks the documents by the dot product of the two vectors. A tie goes to the lower path in byte order. A document with no summary is not ranked.
 

@@ -20,6 +20,8 @@ relations:
 
 # Wire headwater check into your own workflow
 
+**Audience:** an adopter of Headwater, in a repository of their own. The consumer surface in `.headwater/overlay.yml` lists this guide, and `headwater check` holds it to that list.
+
 ## Before you start
 
 You need a GitHub Actions runner on Linux x86_64, for example `ubuntu-24.04` or `ubuntu-latest`. `headwater-ai/headwater` publishes a release binary for that platform alone. A runner of a different kind refuses cleanly, and it names the platform it needed. It does not download a binary that cannot run there.
@@ -30,7 +32,7 @@ Your workflow needs `permissions: security-events: write` if you want the SARIF 
 
 ## Steps
 
-Add one step to a workflow file, for example `.github/workflows/headwater-check.yml`:
+Add one step to a workflow file, for example `.github/workflows/headwater-check.yml`: <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=the workflow file is in the repository of the adopter, which is the CI forge integration point -->
 
 ```yaml
 name: headwater check

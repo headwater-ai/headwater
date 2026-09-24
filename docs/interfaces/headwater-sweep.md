@@ -125,7 +125,7 @@ There is no variable that names a model, a key or an endpoint, and there is nowh
 
 [`headwater check`](headwater-check.md) is the deterministic half of the same reporting pipeline. It shares the finding shape and shares nothing else. No finding of this verb reaches a rule, a cache, a read set or an exit status of that one.
 
-`.claude/skills/headwater-sweep/SKILL.md` is the instruction a model reads between the two halves in this repository.
+`.claude/skills/headwater-sweep/SKILL.md` is the instruction a model reads between the two halves in this repository. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=accepted_deviation note=how this repository runs the two halves -->
 
 [The command surface](README.md) lists every verb this binary dispatches, and it marks the ones that no contract describes. `headwater generate` writes it.
 

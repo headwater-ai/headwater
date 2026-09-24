@@ -19,6 +19,8 @@ relations:
 
 # Relocate a shelf
 
+**Audience:** an adopter of Headwater, in a repository of their own. The consumer surface in `.headwater/overlay.yml` lists this guide, and `headwater check` holds it to that list.
+
 ## Before you start
 
 You need three things.

@@ -131,7 +131,7 @@ A **package** carries a taxonomy: the kinds, the facets, the shelves and the rul
 
 Step 2 named two routes, and this step took the second. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. This fetch just checked it, file by file, against the digest you passed. `headwater-bootstrap.sh` is the harness around that verb, and not a part of this engine. It fetches a tagged release into a scratch directory nothing here keeps, extracts one package, and hands the result to `vendor`. Nothing under `engine/` opened a socket to get it. `vendor` itself takes a path and never a location. The script is what reached the network on `vendor`'s behalf.
 
-`taxonomy/headwater-standard/v<version>` is the taxonomy-only route. It publishes `headwater/standard` alone, with no engine release. `.github/workflows/release-taxonomy.yml` cuts a tag of this form whenever the package authors choose to. It needs no new engine version.
+`taxonomy/headwater-standard/v<version>` is the taxonomy-only route. It publishes `headwater/standard` alone, with no engine release. A release workflow of this repository cuts a tag of this form whenever the package authors choose to. It needs no new engine version.
 
 A second route pins a fixed version of the engine and of this package. The README's *Obtaining a named version* section names both. Step 5 pins the version this pulled, `4.2.0`, and the digest this block already printed. Step 16 reads back what the second pin buys.
 

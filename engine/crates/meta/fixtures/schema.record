@@ -161,6 +161,15 @@ declarations
             reasoning (required) scalar:string | members
           produces_facts (required) members
             reasoning (required) scalar:string]
+  surface members
+    archive seq of scalar:string
+    integration_points map of members
+        depends_on seq of scalar:string
+    prerequisites seq of scalar:string
+    companions seq of scalar:string
+    adopter_documents seq of scalar:string
+    local_roots seq of scalar:string
+    commands seq of scalar:string
 
 operations
   taxonomy scalar:string

@@ -634,6 +634,12 @@
       ]
     },
     {
+      "rule": "surface.local_path.instructed",
+      "scope": "document",
+      "version": 3,
+      "obligations": []
+    },
+    {
       "rule": "language.source_form.not_met",
       "scope": "document",
       "version": 1,
