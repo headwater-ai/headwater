@@ -393,10 +393,10 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             }
             Some(TaxonomyWord::Vendor { path, expect }) => match path {
                 None => fail(
-                    "`taxonomy vendor` takes the path of a package somebody already fetched. \
-                     This verb opens no socket today, so it checks a directory it is handed",
+                    "`taxonomy vendor` takes the path of an artifact somebody already fetched, \
+                     or the https:// location of a published artifact zip",
                 ),
-                Some(path) => vendor(root, Path::new(&path), expect.as_deref()),
+                Some(path) => vendor(root, &path, expect.as_deref()),
             },
             Some(TaxonomyWord::Diff { path, to, now }) => match path {
                 None => fail(
@@ -1628,14 +1628,20 @@ fn publish(
 
 /// `headwater taxonomy vendor`.
 ///
-/// The consumer's half, and the reason it takes a path today is the guarantee
-/// it keeps. Spec 0 forbids a network dependency at check time, and this
-/// function reaches nothing that carries one. So the fetch is the caller's, by
-/// whatever the organization uses, and this checks the bytes that arrived.
+/// The consumer's half. The argument is a directory somebody already fetched,
+/// or a location: the URL of a published artifact zip.
 /// [HW-DR-0075](../../../../docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)
-/// rules that a location may reach this verb too, resolved by a crate this one
-/// never links.
-fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
+/// rules that a location may reach this verb, resolved by `headwater-fetch`, a
+/// crate only this binary links. So the fetch is present here and absent from
+/// every crate the checking loop reaches, which is what keeps spec 0's
+/// guarantee: no network dependency at check time. The fetch writes a
+/// temporary directory, and the same `package::vendor` reads it as it reads a
+/// directory handed in by path, with the same digest check.
+///
+/// The pin is read before any fetch, so a run that would refuse for want of
+/// a pin opens no socket. A binary built without the `fetch` feature refuses a
+/// location with one line that names the path form.
+fn vendor(root: &Path, source: &str, expect: Option<&str>) -> ExitCode {
     let mode = headwater_cli::paint::stdout_color();
     let declared = headwater_resolve::package::consumer(root)
         .ok()
@@ -1653,7 +1659,15 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
         );
     };
 
-    let vendored = match headwater_resolve::package::vendor(root, fetched, &pinned) {
+    // Held until the end of this function: the temporary directory is removed
+    // when it drops, and `package::vendor` has copied what it installs by then.
+    let fetched = match fetch_location(source) {
+        Ok(fetched) => fetched,
+        Err(code) => return code,
+    };
+    let from = fetched.as_ref().map_or(Path::new(source), |fetched| fetched.path());
+
+    let vendored = match headwater_resolve::package::vendor(root, from, &pinned) {
         Ok(vendored) => vendored,
         Err(errors) => {
             eprintln!("headwater: {}", err("nothing was vendored"));
@@ -1673,7 +1687,7 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
         "  from {}",
         headwater_cli::paint::paint(
             headwater_cli::paint::Role::Path,
-            &fetched.display().to_string(),
+            source,
             mode
         )
     );
@@ -1741,6 +1755,44 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
         );
     }
     ExitCode::SUCCESS
+}
+
+/// Resolve a location to a temporary directory, or pass a path through as
+/// `None`. The `Err` is the exit code of a refusal already printed.
+#[cfg(feature = "fetch")]
+fn fetch_location(source: &str) -> Result<Option<headwater_fetch::Fetched>, ExitCode> {
+    if !headwater_fetch::is_location(source) {
+        return Ok(None);
+    }
+    headwater_fetch::fetch(source).map(Some).map_err(|error| {
+        eprintln!("headwater: {}", err("nothing was vendored"));
+        eprint!("{}", indent(&err(&error.to_string())));
+        ExitCode::FAILURE
+    })
+}
+
+/// Nothing: a binary built without the `fetch` feature never holds a fetch.
+#[cfg(not(feature = "fetch"))]
+enum NoFetch {}
+
+#[cfg(not(feature = "fetch"))]
+impl NoFetch {
+    fn path(&self) -> &Path {
+        match *self {}
+    }
+}
+
+/// This binary was built without the `fetch` feature, so it takes a path alone.
+#[cfg(not(feature = "fetch"))]
+fn fetch_location(source: &str) -> Result<Option<NoFetch>, ExitCode> {
+    if source.starts_with("https://") || source.starts_with("http://") {
+        return Err(fail(
+            "this binary was built without the `fetch` feature, so it takes no location. Fetch \
+             the artifact zip by other means, unpack it, and pass the directory: `headwater \
+             taxonomy vendor <dir> --expect <digest>`",
+        ));
+    }
+    Ok(None)
 }
 
 /// `headwater taxonomy diff`: measured compatibility between two versions, over

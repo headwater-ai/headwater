@@ -10,6 +10,7 @@ members = [
     "crates/conformance",
     "crates/doc",
     "crates/embed",
+    "crates/fetch",
     "crates/generate",
     "crates/graph",
     "crates/hash",
@@ -127,6 +128,7 @@ headwater-compat = { path = "crates/compat", version = "0.2.0" }
 headwater-conformance = { path = "crates/conformance", version = "0.2.0" }
 headwater-doc = { path = "crates/doc", version = "0.2.0" }
 headwater-embed = { path = "crates/embed", version = "0.2.0" }
+headwater-fetch = { path = "crates/fetch", version = "0.2.0" }
 headwater-generate = { path = "crates/generate", version = "0.2.0" }
 headwater-graph = { path = "crates/graph", version = "0.2.0" }
 headwater-hash = { path = "crates/hash", version = "0.2.0" }
