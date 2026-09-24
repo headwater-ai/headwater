@@ -321,8 +321,9 @@ fn the_library_doctrine_is_checked_and_a_fixture_corpus_under_it_is_not() {
     );
     let excluded = root.run(&["explain", fixture]);
     assert!(
-        excluded.err.contains("is excluded by `docs/taxonomies/*/fixtures/**`"),
-        "a fixture corpus page is excluded by the fixture rule: {excluded:?}"
+        excluded.out.contains("no kind, so nothing is required of it")
+            && excluded.out.contains("    docs/taxonomies/*/fixtures/**\n"),
+        "a fixture corpus page is excluded by the fixture rule and no other: {excluded:?}"
     );
 
     let checked = root.run(&["check", "--strict"]);
@@ -344,9 +345,19 @@ fn the_library_doctrine_is_checked_and_a_fixture_corpus_under_it_is_not() {
         !pairs.iter().any(|(p, _)| p.starts_with("docs/taxonomies/design-spec/fixtures/")),
         "no finding names a fixture corpus page: {pairs:?}"
     );
+    // The census gives an excluded file a row, and that row is the only place
+    // the page may appear: no finding and no read-set input names it.
     assert!(
-        !checked.out.contains("planted-350.md"),
-        "the planted fixture page draws no instance and no census row: {}",
+        checked.out.contains(&format!(
+            "  {fixture}\n    excluded: docs/taxonomies/*/fixtures/**\n"
+        )),
+        "the census row says the fixture rule excludes the page: {}",
+        checked.out
+    );
+    assert_eq!(
+        checked.out.matches("planted-350.md").count(),
+        1,
+        "the planted fixture page appears in its census row and nowhere else: {}",
         checked.out
     );
 }
