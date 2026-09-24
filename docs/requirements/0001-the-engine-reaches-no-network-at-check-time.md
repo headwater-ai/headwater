@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-Three documents state this property and no document holds it. Spec 2 states the rule and gives both reasons, which `engine/crates/graph/src/anchors.rs` quotes: check time stays offline, and a resolution result stays reproducible. `docs/tutorials/your-first-governed-corpus.md` tells a new reader that nothing in this engine fetches a package over a network. CLAUDE.md states that no crate of this engine opens a socket. Each of those is a sentence inside a larger document. A reader who asks whether the property is met, and by what, has nowhere to look.
+Two documents state this property and no document holds it. Spec 2 states the rule and gives both reasons, which `engine/crates/graph/src/anchors.rs` quotes: check time stays offline, and a resolution result stays reproducible. CLAUDE.md states that no crate of this engine opens a socket. Each of those is a sentence inside a larger document. `docs/tutorials/your-first-governed-corpus.md` was a third, because it quoted `headwater init` saying that nothing in this engine fetches a package. That line is gone, because `headwater taxonomy vendor` now fetches an artifact at setup time, which the scope below puts outside this requirement. A reader who asks whether the property is met, and by what, has nowhere to look.
 
 The property is worth stating on its own for two reasons beyond the bookkeeping. A check that reaches a network has a verdict that depends on a host the corpus does not name. Two runs over one commit can then disagree, which is the reproducibility half of the rule. A gate that reaches a network fails when the network fails, and `.githooks/pre-commit` runs this engine on every commit in this repository.
 
