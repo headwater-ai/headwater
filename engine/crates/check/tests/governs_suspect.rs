@@ -31,10 +31,22 @@ const DOCUMENT: &str = "governs-suspect/hooks.md";
 
 /// The four hook files #946 touched, with the bytes each one starts at.
 const HOOKS: [(&str, &str); 4] = [
-    (".githooks/pre-commit", "#!/bin/sh\nexec headwater check --strict\n"),
-    (".githooks/merge-regenerate", "#!/bin/sh\nexec headwater generate\n"),
-    (".claude/hooks/write.sh", "#!/bin/sh\n. .claude/hooks/lib.sh\n"),
-    (".claude/hooks/lib.sh", "refuse() { printf '%s\\n' \"$1\"; }\n"),
+    (
+        ".githooks/pre-commit",
+        "#!/bin/sh\nexec headwater check --strict\n",
+    ),
+    (
+        ".githooks/merge-regenerate",
+        "#!/bin/sh\nexec headwater generate\n",
+    ),
+    (
+        ".claude/hooks/write.sh",
+        "#!/bin/sh\n. .claude/hooks/lib.sh\n",
+    ),
+    (
+        ".claude/hooks/lib.sh",
+        "refuse() { printf '%s\\n' \"$1\"; }\n",
+    ),
 ];
 
 fn fixtures_dir() -> PathBuf {
@@ -42,10 +54,8 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn scratch(label: &str) -> PathBuf {
-    let root = std::env::temp_dir().join(format!(
-        "hw-governs-suspect-{label}-{}",
-        std::process::id()
-    ));
+    let root =
+        std::env::temp_dir().join(format!("hw-governs-suspect-{label}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     for (path, bytes) in HOOKS {
         write(&root, path, bytes);
@@ -217,7 +227,10 @@ fn one_changed_byte_in_one_hook_is_one_suspect_entry_and_a_touch_is_none() {
     let third = cold(&root, TODAY);
     let reported = suspect(&third);
     assert_eq!(reported.len(), 1, "{reported:?}");
-    assert_eq!(reported[0].path, DOCUMENT, "reported at the declaring document");
+    assert_eq!(
+        reported[0].path, DOCUMENT,
+        "reported at the declaring document"
+    );
     assert!(
         reported[0].message.contains(".githooks/pre-commit"),
         "{}",
@@ -278,7 +291,11 @@ fn the_digest_is_a_function_of_bytes_and_not_of_modification_time() {
         Some(expected(&one, &[".githooks/pre-commit"]).as_str())
     );
 
-    write(&two, ".githooks/pre-commit", "#!/bin/sh\nexec headwater check --strict \n");
+    write(
+        &two,
+        ".githooks/pre-commit",
+        "#!/bin/sh\nexec headwater check --strict \n",
+    );
     assert_ne!(first, resolve(&two));
     let _ = std::fs::remove_dir_all(&one);
     let _ = std::fs::remove_dir_all(&two);
@@ -296,8 +313,10 @@ fn an_unrecorded_entry_verified_before_today_is_silent() {
     );
     let ran = cold(&root, TODAY);
     assert!(suspect(&ran).is_empty(), "{:?}", suspect(&ran));
-    assert!(ran.findings.iter().all(|finding| finding.patch.is_none()
-        || finding.rule != RULE));
+    assert!(ran
+        .findings
+        .iter()
+        .all(|finding| finding.patch.is_none() || finding.rule != RULE));
     let _ = std::fs::remove_dir_all(&root);
 }
 
@@ -311,7 +330,10 @@ fn an_unrecorded_entry_verified_today_offers_the_digest() {
     let ran = cold(&root, TODAY);
     let reported = suspect(&ran);
     assert_eq!(reported.len(), 1, "{reported:?}");
-    assert_eq!(reported[0].severity, headwater_check::finding::Severity::Info);
+    assert_eq!(
+        reported[0].severity,
+        headwater_check::finding::Severity::Info
+    );
     let digest = expected(&root, &[".githooks/pre-commit"]);
     match &reported[0].patch {
         Some(Patch::Half {
@@ -323,10 +345,7 @@ fn an_unrecorded_entry_verified_today_offers_the_digest() {
             assert_eq!(path, DOCUMENT);
             assert_eq!(relation, "governs");
             assert_eq!(id, ".githooks/pre-commit");
-            assert_eq!(
-                attributes,
-                &vec![("verified_revision".to_string(), digest)]
-            );
+            assert_eq!(attributes, &vec![("verified_revision".to_string(), digest)]);
         }
         other => panic!("a patch that records the digest: {other:?}"),
     }
@@ -338,15 +357,26 @@ fn an_unrecorded_entry_verified_today_offers_the_digest() {
 /// because the patch would record a verification that nobody performed.
 #[test]
 fn a_moved_digest_is_fixable_only_on_a_document_verified_today() {
-    for (label, last_verified, fixable) in [("moved-today", TODAY, true), ("moved-old", YESTERDAY, false)] {
+    for (label, last_verified, fixable) in [
+        ("moved-today", TODAY, true),
+        ("moved-old", YESTERDAY, false),
+    ] {
         let root = scratch(label);
         document(&root, last_verified, &recorded(&root));
         write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
         let ran = cold(&root, TODAY);
         let reported = suspect(&ran);
         assert_eq!(reported.len(), 1, "{label}: {reported:?}");
-        assert_eq!(reported[0].severity, headwater_check::finding::Severity::Warn);
-        assert_eq!(reported[0].patch.is_some(), fixable, "{label}: {:?}", reported[0].patch);
+        assert_eq!(
+            reported[0].severity,
+            headwater_check::finding::Severity::Warn
+        );
+        assert_eq!(
+            reported[0].patch.is_some(),
+            fixable,
+            "{label}: {:?}",
+            reported[0].patch
+        );
         if let Some(Patch::Half { attributes, .. }) = &reported[0].patch {
             assert_eq!(
                 attributes,
@@ -392,7 +422,10 @@ fn a_moved_wildcard_names_its_pattern_and_its_match_count() {
 #[test]
 fn a_list_entry_goes_suspect_when_one_member_moves() {
     let root = scratch("list");
-    let digest = expected(&root, &[".githooks/pre-commit", ".githooks/merge-regenerate"]);
+    let digest = expected(
+        &root,
+        &[".githooks/pre-commit", ".githooks/merge-regenerate"],
+    );
     document(
         &root,
         YESTERDAY,

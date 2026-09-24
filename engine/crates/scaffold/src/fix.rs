@@ -795,7 +795,10 @@ mod tests {
         );
         assert!(composed.refused.is_empty(), "{:?}", composed.refused);
         let text = &composed.files[0].text;
-        assert!(text.contains("      verified_revision: sha256:new\n"), "{text}");
+        assert!(
+            text.contains("      verified_revision: sha256:new\n"),
+            "{text}"
+        );
         assert!(text.contains("      cue: the gate\n"), "{text}");
         assert!(!text.contains("sha256:old"), "{text}");
         assert_eq!(text.matches(".githooks/pre-commit").count(), 1, "{text}");

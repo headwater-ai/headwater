@@ -295,7 +295,13 @@ impl EdgeCheck for Suspect<'_> {
                 reread(current),
             ),
             _ => (
-                message(&edge.source.id, &edge.name, &edge.raw_target, verified, current),
+                message(
+                    &edge.source.id,
+                    &edge.name,
+                    &edge.raw_target,
+                    verified,
+                    current,
+                ),
                 remediation(current),
             ),
         };
