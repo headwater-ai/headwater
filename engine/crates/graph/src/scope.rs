@@ -92,10 +92,7 @@ impl Scope {
             .map(|member| Reach {
                 anchor_kind: member.anchor_kind.clone(),
                 pattern: member.pattern.source().to_string(),
-                entries: match bind(member, resolvers) {
-                    Ok(entries) => entries,
-                    Err(_) => Vec::new(),
-                },
+                entries: bind(member, resolvers).unwrap_or_default(),
             })
             .collect()
     }
