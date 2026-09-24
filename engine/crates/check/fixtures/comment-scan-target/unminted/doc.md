@@ -1,5 +1,5 @@
 ---
-id: CS-FIX-unminted
+id: HW-VER-9999
 status: current
 status_since: 2026-01-05
 summary: governs a file whose comment cites an identifier this taxonomy never minted
@@ -10,4 +10,4 @@ relations:
 
 # Governs an unminted citation
 
-`sample.rs` cites `HW-VER-9999`, which is shaped like the identifiers this taxonomy mints and is not one of them.
+`sample.rs` cites `HW-VER-9999`, the identifier of this document, which is shaped like the identifiers this taxonomy mints and is not one of them.
