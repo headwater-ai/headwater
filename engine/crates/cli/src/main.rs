@@ -1672,8 +1672,15 @@ fn vendor(root: &Path, source: &str, expect: Option<&str>) -> ExitCode {
     let vendored = match headwater_resolve::package::vendor(root, from, &pinned) {
         Ok(vendored) => vendored,
         Err(errors) => {
+            // A fetched artifact sits in a temporary directory that is gone
+            // by the time a person reads this, so the refusal names the
+            // location they typed rather than that directory.
+            let mut text = render_errors(&errors);
+            if from != Path::new(source) {
+                text = text.replace(&from.display().to_string(), source);
+            }
             eprintln!("headwater: {}", err("nothing was vendored"));
-            eprint!("{}", indent(&err(&render_errors(&errors))));
+            eprint!("{}", indent(&err(&text)));
             return ExitCode::FAILURE;
         }
     };
@@ -1783,7 +1790,8 @@ impl NoFetch {
 /// This binary was built without the `fetch` feature, so it takes a path alone.
 #[cfg(not(feature = "fetch"))]
 fn fetch_location(source: &str) -> Result<Option<NoFetch>, ExitCode> {
-    if source.starts_with("https://") || source.starts_with("http://") {
+    let scheme = source.split_once("://").map_or("", |(scheme, _)| scheme);
+    if scheme.eq_ignore_ascii_case("https") || scheme.eq_ignore_ascii_case("http") {
         return Err(fail(
             "this binary was built without the `fetch` feature, so it takes no location. Fetch \
              the artifact zip by other means, unpack it, and pass the directory: `headwater \

@@ -31,6 +31,10 @@ fn serve(count: usize) -> String {
             let line = String::from_utf8_lossy(&request[..read]).to_string();
             let path = line.split_whitespace().nth(1).unwrap_or("").to_string();
             let (head, payload): (String, &[u8]) = match path.as_str() {
+                "/away" => (
+                    "HTTP/1.1 302 Found\r\nLocation: http://example.invalid/x.zip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string(),
+                    &[],
+                ),
                 "/moved" => (
                     "HTTP/1.1 302 Found\r\nLocation: /x.zip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string(),
                     &[],
@@ -84,4 +88,18 @@ fn an_error_status_is_a_transport_error_that_names_the_location() {
         "{error}"
     );
     assert!(error.to_string().contains(&location), "{error}");
+}
+
+#[test]
+fn a_redirect_from_loopback_to_plain_http_elsewhere_is_refused_before_it_is_followed() {
+    let base = serve(1);
+    let error = headwater_fetch::fetch(&format!("{base}/away")).unwrap_err();
+    assert!(
+        matches!(error, headwater_fetch::Error::Scheme(_)),
+        "{error}"
+    );
+    assert!(
+        error.to_string().contains("http://example.invalid/x.zip"),
+        "{error}"
+    );
 }

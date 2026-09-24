@@ -2728,6 +2728,10 @@ fn a_location_vendors_the_bytes_the_same_artifact_vendors_by_path() {
     );
     assert_eq!(code, Some(1), "a wrong digest was accepted:\n{stderr}");
     assert!(
+        stderr.contains(&location) && !stderr.contains("headwater-fetch-"),
+        "the refusal names the temporary directory rather than the location:\n{stderr}"
+    );
+    assert!(
         !refused.join(package::PACKAGES).exists(),
         "a refused vendor wrote into the package area"
     );

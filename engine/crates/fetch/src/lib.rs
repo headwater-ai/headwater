@@ -26,12 +26,61 @@ use std::sync::atomic::{AtomicU64, Ordering};
 /// megabyte; the cap is there so that a wrong URL cannot fill the disk.
 const LIMIT: u64 = 64 * 1024 * 1024;
 
+/// The most redirects one fetch follows. A release asset takes one.
+const MAX_REDIRECTS: u32 = 10;
+
 /// Whether a command-line argument names a location rather than a directory.
 /// A directory whose name begins `http://` or `https://` is not a case this
 /// verb serves, and `./https:/...` still reaches it as a path.
 #[must_use]
 pub fn is_location(argument: &str) -> bool {
-    argument.starts_with("https://") || argument.starts_with("http://")
+    scheme(argument).is_some()
+}
+
+/// The scheme of `location` when it is `http` or `https`, in lower case. A
+/// scheme is case-insensitive, so `HTTPS://` is a location and not a path.
+fn scheme(location: &str) -> Option<&'static str> {
+    let (scheme, _) = location.split_once("://")?;
+    if scheme.eq_ignore_ascii_case("https") {
+        Some("https")
+    } else if scheme.eq_ignore_ascii_case("http") {
+        Some("http")
+    } else {
+        None
+    }
+}
+
+/// Whether a request may go to `location`. A fetch that began over https
+/// stays on https for every hop, and plain http reaches only this machine,
+/// whichever hop names it. This is the one gate, read at the first request
+/// and again at every redirect.
+fn allowed(started_https: bool, location: &str) -> bool {
+    match scheme(location) {
+        Some("https") => true,
+        Some("http") => !started_https && loopback(host(location)),
+        _ => false,
+    }
+}
+
+/// The absolute URL a `Location` header names, read against the URL that
+/// answered with it.
+fn resolve(base: &str, target: &str) -> String {
+    if scheme(target).is_some() {
+        return target.to_string();
+    }
+    let (base_scheme, rest) = base.split_once("://").unwrap_or(("https", base));
+    if let Some(network) = target.strip_prefix("//") {
+        return format!("{base_scheme}://{network}");
+    }
+    let authority_end = rest.find(['/', '?', '#']).unwrap_or(rest.len());
+    let origin = &base[..base_scheme.len() + 3 + authority_end];
+    if target.starts_with('/') {
+        return format!("{origin}{target}");
+    }
+    let path = &rest[authority_end..];
+    let path = path.split(['?', '#']).next().unwrap_or(path);
+    let directory = path.rfind('/').map_or("/", |at| &path[..=at]);
+    format!("{origin}{directory}{target}")
 }
 
 /// Why a fetch did not produce a directory. Each variant carries the one
@@ -111,25 +160,52 @@ fn loopback(host: &str) -> bool {
 /// status, [`Error::Archive`] for a body that is not a readable zip, and
 /// [`Error::Io`] when the directory cannot be written.
 pub fn fetch(location: &str) -> Result<Fetched, Error> {
-    let https = location.starts_with("https://");
-    if !https && !(location.starts_with("http://") && loopback(host(location))) {
-        return Err(Error::Scheme(format!(
-            "{location} is not an https:// location. This verb fetches over https only, and plain \
-             http:// only from this machine"
-        )));
-    }
-
-    // `https_only` holds a redirect to the scheme the location began with, so
-    // an https location never lands on plain http.
+    let started_https = scheme(location) == Some("https");
+    // The client follows no redirect itself. Each hop is read here and put
+    // through the same gate as the first request, so a redirect can neither
+    // turn an https fetch into plain http nor send plain http off this machine.
     let agent: ureq::Agent = ureq::Agent::config_builder()
-        .https_only(https)
-        .max_redirects(10)
+        .max_redirects(0)
         .build()
         .into();
-    let mut response = agent
-        .get(location)
-        .call()
-        .map_err(|error| Error::Transport(format!("fetching {location} failed: {error}")))?;
+    let mut at = location.to_string();
+    let mut hops = 0;
+    let mut response = loop {
+        if !allowed(started_https, &at) {
+            return Err(Error::Scheme(if at == location {
+                format!(
+                    "{location} is not an https:// location. This verb fetches over https only, \
+                     and plain http:// only from this machine"
+                )
+            } else {
+                format!(
+                    "{location} redirected to {at}, which this verb does not fetch. A fetch that \
+                     began over https stays on https, and plain http:// reaches only this machine"
+                )
+            }));
+        }
+        let response = agent
+            .get(&at)
+            .call()
+            .map_err(|error| Error::Transport(format!("fetching {at} failed: {error}")))?;
+        if !response.status().is_redirection() {
+            break response;
+        }
+        hops += 1;
+        let next = response
+            .headers()
+            .get("location")
+            .and_then(|value| value.to_str().ok())
+            .ok_or_else(|| {
+                Error::Transport(format!("{at} answered with a redirect and no location"))
+            })?;
+        if hops > MAX_REDIRECTS {
+            return Err(Error::Transport(format!(
+                "{location} redirected more than {MAX_REDIRECTS} times"
+            )));
+        }
+        at = resolve(&at, next);
+    };
     let body = response
         .body_mut()
         .with_config()
@@ -180,6 +256,39 @@ mod tests {
         assert_eq!(host("https://u:p@example.org/a"), "example.org");
         assert_eq!(host("http://[::1]:9/a"), "::1");
         assert_eq!(host("http://localhost"), "localhost");
+    }
+
+    #[test]
+    fn an_https_fetch_stays_on_https_at_every_hop() {
+        assert!(allowed(true, "https://objects.example.org/x.zip"));
+        assert!(!allowed(true, "http://127.0.0.1/x.zip"));
+        assert!(!allowed(true, "http://example.org/x.zip"));
+    }
+
+    #[test]
+    fn plain_http_reaches_only_this_machine_at_every_hop() {
+        assert!(allowed(false, "http://127.0.0.1:9/x.zip"));
+        assert!(allowed(false, "https://example.org/x.zip"));
+        assert!(!allowed(false, "http://example.org/x.zip"));
+        assert!(!allowed(false, "ftp://127.0.0.1/x.zip"));
+    }
+
+    #[test]
+    fn a_scheme_is_read_in_any_case() {
+        assert!(is_location("HTTPS://example.org/x.zip"));
+        assert!(is_location("Http://127.0.0.1/x.zip"));
+        assert!(!is_location("./https:/x"));
+        assert!(allowed(true, "HTTPS://example.org/x.zip"));
+    }
+
+    #[test]
+    fn a_redirect_target_is_read_against_the_url_that_sent_it() {
+        let base = "http://127.0.0.1:8/a/b/moved?x=1";
+        assert_eq!(resolve(base, "/x.zip"), "http://127.0.0.1:8/x.zip");
+        assert_eq!(resolve(base, "x.zip"), "http://127.0.0.1:8/a/b/x.zip");
+        assert_eq!(resolve(base, "//h.org/y"), "http://h.org/y");
+        assert_eq!(resolve(base, "https://h.org/y"), "https://h.org/y");
+        assert_eq!(resolve("http://h:1", "/x"), "http://h:1/x");
     }
 
     #[test]
