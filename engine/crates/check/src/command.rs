@@ -236,8 +236,7 @@ fn segments(command: &str) -> Vec<(usize, &str)> {
             (None, '|' | '&' | ';') => {
                 // `>&` and `&>` redirect a stream and start no program.
                 let redirect = (c == '&')
-                    && ((at > 0 && bytes[at - 1] == b'>')
-                        || bytes.get(at + 1) == Some(&b'>'));
+                    && ((at > 0 && bytes[at - 1] == b'>') || bytes.get(at + 1) == Some(&b'>'));
                 if !redirect {
                     out.push((start, &command[start..at]));
                     while at + 1 < bytes.len() && matches!(bytes[at + 1], b'|' | b'&' | b';') {
