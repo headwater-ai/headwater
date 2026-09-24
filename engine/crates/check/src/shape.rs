@@ -69,7 +69,9 @@ pub struct Shape {
 /// names four populations. The documents an adopter reads and the roots of the
 /// population local to the repository are the two lists a page is held
 /// against, and the declared commands are what its shell blocks are held
-/// against. The rest of the block is declaration that no check reads. The
+/// against. The declared programs are what a bare local root is held against,
+/// so that a program is not read as a directory of the same name. The rest of
+/// the block is declaration that no check reads. The
 /// `consumer_surface` projection of `headwater-generate` renders it as a page.
 #[derive(Clone, Debug, Default)]
 pub struct Surface {
@@ -80,6 +82,11 @@ pub struct Surface {
     /// The programs a page for an adopter may tell them to run, by name.
     /// [`crate::command`] reads it, and it is the only list that rule reads.
     pub commands: Vec<String>,
+    /// Every program the surface declares by name: `commands`,
+    /// `prerequisites`, and the `depends_on` of each integration point.
+    /// [`crate::surface`] reads it, so that a bare token that names a declared
+    /// program is not read as a local root of the same name.
+    pub programs: Vec<String>,
 }
 
 /// An identifier scheme: the shape a minted identifier takes.
@@ -526,6 +533,7 @@ impl Shape {
                     })
                     .collect(),
                 commands: sequence(surface, "commands"),
+                programs: programs(surface),
             };
         }
 
@@ -1010,6 +1018,25 @@ fn scalar(map: &Mapping, key: &str) -> Option<String> {
     map.get(key)
         .and_then(|node| node.value.as_scalar())
         .map(|scalar| scalar.text.clone())
+}
+
+/// Every program a `surface` block names, sorted and without repeats.
+fn programs(surface: &Mapping) -> Vec<String> {
+    let mut found = sequence(surface, "commands");
+    found.extend(sequence(surface, "prerequisites"));
+    if let Some(points) = surface
+        .get("integration_points")
+        .and_then(|node| node.value.as_map())
+    {
+        for point in points {
+            if let Some(map) = point.value.value.as_map() {
+                found.extend(sequence(map, "depends_on"));
+            }
+        }
+    }
+    found.sort();
+    found.dedup();
+    found
 }
 
 fn sequence(map: &Mapping, key: &str) -> Vec<String> {

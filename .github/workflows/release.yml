@@ -198,6 +198,44 @@ jobs:
           cat "$checksum"
           mkdir dist
           mv "$asset" "$checksum" dist/
+      - name: The manifest of the workflow's own commit
+        # `surface.archive` in the overlay is the one list of what an archive
+        # holds (HW-DR-0077). It is read at `github.sha` and not at the tag,
+        # because a hand run checks out a tag cut before the manifest existed.
+        # On a tag push the two are the same commit.
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: manifest
+          sparse-checkout: .headwater/overlay.yml
+          sparse-checkout-cone-mode: false
+      - name: The archive holds the members the consumer surface declares
+        # The list lives only in the overlay, so this step reads it rather
+        # than carrying a copy. A member the archive has and the list does not,
+        # or the other way round, is named and stops the release.
+        env:
+          TAG: ${{ needs.tag.outputs.tag }}
+        run: |
+          set -eo pipefail
+          declared=$(awk '
+              /^  surface:/ { surface = 1; next }
+              surface && /^  [^ ]/ { surface = 0 }
+              surface && /^    archive:/ { archive = 1; next }
+              archive && /^      - / { sub(/^      - /, ""); print; next }
+              archive { archive = 0 }
+          ' manifest/.headwater/overlay.yml | sort)
+          if [ -z "$declared" ]; then
+              echo "::error::the overlay at ${{ github.sha }} declares no surface.archive, so this step would pass any archive" && exit 1
+          fi
+          held=$(tar -tzf "dist/${{ matrix.archive }}" | sed 's|^\./||' | grep -v '^$' | sort)
+          extra=$(comm -13 <(printf '%s\n' "$declared") <(printf '%s\n' "$held"))
+          missing=$(comm -23 <(printf '%s\n' "$declared") <(printf '%s\n' "$held"))
+          if [ -n "$extra" ] || [ -n "$missing" ]; then
+              [ -z "$extra" ] || echo "::error::the archive holds members surface.archive does not declare: $(echo $extra)"
+              [ -z "$missing" ] || echo "::error::the archive lacks members surface.archive declares: $(echo $missing)"
+              exit 1
+          fi
+          echo "the archive holds exactly surface.archive: $(echo $declared)"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}

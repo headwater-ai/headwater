@@ -3,7 +3,7 @@ id: HW-OBL-0180
 status: current
 status_since: 2026-09-08
 summary: "A caller that passes the plain color mode forever is a defect that no type and no piped test can report."
-last_verified: 2026-09-11
+last_verified: 2026-09-24
 title: "A renderer's color mode is wired at a call site that no type forbids from being wrong"
 waiting_on: build
 provenance:
@@ -38,6 +38,8 @@ The count is 29 `.render(` sites in `engine/crates/cli/src/main.rs` on 2026-09-0
 On 2026-09-11 the count is thirty occurrences of `.render(` in that one file, and the thirty is not thirty report surfaces. Twelve of them are not a report on standard output at all. They are two prints to standard error, two digest inputs, two file writes and two date fields. The last four are one JSON value, one refusal message, one appended store line and one cache statistic. Of the eighteen that remain, nine passed a mode that reads the stream at `d6ac7c93` and ten do after the `derived` build of #479. The other eight still print a report that no case of this repository has seen under a terminal.
 
 The two figures this paragraph replaces said twenty-nine and seventeen. Both were one low, because `headwater_compat::payload::account(…).render()` prints to standard output and was counted as something else. Read thirty and eighteen. `tools/engine/color-fixtures.sh` names fifteen surfaces, from fourteen.
+
+On 2026-09-24, after #1018, the count is 31 occurrences of `.render(` in that file. Thirteen of them are not a report on standard output: the twelve above, and one JSON string that `headwater json quote` writes. Of the eighteen that remain, seventeen pass a mode that reads the stream. #1018 wired three of the seventeen. They are two surfaces, the `taxonomy diff` report body and its migration payload account. One site still prints a report with no mode, and it is `Staleness::render` in `headwater-probe`. `tools/engine/color-fixtures.sh` makes 19 `senses_its_terminal` calls, from 18, and `taxonomy diff` is the new one.
 
 **The eight that remain are not eight equal pieces of work, and nothing recorded that until the dependency graph was read.** `headwater-check` depends on `headwater-census`, `headwater-resolve` and `headwater-lock`. While the palette was a module of `headwater-check`, a renderer inside any of those three could not name it: cargo refuses the cycle before a line compiles. Six of the eleven command lines that still broke the published promise render in exactly those crates — `derived` in `headwater-census`, and `taxonomy validate`, `resolve`, `publish`, `vendor` and `migrate` in `headwater-resolve` and `headwater-lock`.
 
