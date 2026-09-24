@@ -193,7 +193,8 @@ jobs:
           stage=$(mktemp -d)
           cp engine/target/${{ matrix.target }}/release/headwater "$stage/headwater"
           cp LICENSE "$stage/LICENSE"
-          tar -czf "$asset" -C "$stage" headwater LICENSE
+          echo perturbation >"$stage/EXTRA"
+          tar -czf "$asset" -C "$stage" headwater LICENSE EXTRA
           shasum -a 256 "$asset" >"$checksum"
           cat "$checksum"
           mkdir dist
