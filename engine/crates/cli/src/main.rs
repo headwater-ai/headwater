@@ -2625,7 +2625,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
                  phase ran against it",
             ),
         };
-        print!("{}", report.render());
+        print!("{}", report.render(mode));
         print!("{tasks}");
         eprintln!(
             "headwater: {}",
@@ -2739,7 +2739,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
         moved_sources,
         measured,
     };
-    print!("{}", report.render());
+    print!("{}", report.render(mode));
 
     if let Err(code) = payload(
         fetched,
@@ -2899,7 +2899,7 @@ fn payload(
                         stands,
                         &moved.documents
                     )
-                    .render()
+                    .render(mode)
                 );
             }
         }
