@@ -329,6 +329,14 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0206](../obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness.md) — hw-run-policy names a worktree-add workaround that Write/Edit refuses under this harness
 - [HW-OBL-0207](../obligations/0207-the-plan-usage-of-one-issue-is-known-only-as-the-average-of-its-run.md) — The plan usage of one issue is known only as the average of its run
 - [HW-OBL-0208](../obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md) — Four small test and wording gaps from run 20260923-0733 filed together
+- [HW-OBL-0209](../obligations/0209-a-build-order-dispatch-passes-no-isolation-so-a-stage-can-inherit-the-parent-worktree-as-its-working-directory.md) — A build-order dispatch passes no isolation, so a stage can inherit the parent worktree as its working directory
+- [HW-OBL-0210](../obligations/0210-no-fixture-holds-the-symlink-case-of-new-worktree-sh-and-a-bare-name-of-two-dots-leaves-a-branch-behind.md) — No fixture holds the symlink case of new-worktree.sh, and a bare name of two dots leaves a branch behind
+- [HW-OBL-0211](../obligations/0211-two-hand-remedy-lines-for-hw-cargo-in-hw-run-policy-may-no-longer-earn-their-cost-on-every-dispatch.md) — Two hand-remedy lines for hw-cargo in hw-run-policy may no longer earn their cost on every dispatch
+- [HW-OBL-0212](../obligations/0212-ci-done-sh-reads-a-cancelled-run-of-another-branch-as-a-red-result-on-a-main-merge-commit.md) — ci-done.sh reads a cancelled run of another branch as a red result on a main merge commit
+- [HW-OBL-0213](../obligations/0213-ci-builds-no-mkdocs-site-so-a-generated-page-under-docs-is-never-checked-against-a-strict-build-before-merge.md) — CI builds no MkDocs site, so a generated page under docs/ is never checked against a strict build before merge
+- [HW-OBL-0214](../obligations/0214-the-commit-gate-does-not-see-docs-taxonomies-readme-md-drift-from-its-vendored-copy.md) — The commit gate does not see docs/taxonomies/README.md drift from its vendored copy
+- [HW-OBL-0215](../obligations/0215-a-bless-run-of-the-conformance-render-tests-races-two-tests-over-one-fixture-file.md) — A bless run of the conformance render tests races two tests over one fixture file
+- [HW-OBL-0216](../obligations/0216-two-merge-hooks-of-this-repository-print-a-resolve-flag-that-the-verb-refuses.md) — Two merge hooks of this repository print a resolve flag that the verb refuses
 
 ## What the first typing of this corpus found
 
