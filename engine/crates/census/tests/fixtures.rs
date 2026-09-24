@@ -1287,6 +1287,53 @@ fn a_merge_attribute_behind_a_glob_is_expanded_by_git_inside_a_repository() {
     );
 }
 
+/// A fold that the committed file declares `-merge` agrees, in a clone with no override.
+///
+/// This is the tree CI checks out and the tree an unconfigured clone holds
+/// ([#1058](https://github.com/headwater-ai/headwater/issues/1058)): the
+/// committed `.gitattributes` unsets the merge of each fold, so a merge keeps
+/// the current side and records a conflict, and only a clone that ran
+/// `headwater init --git --git-config` overrides it with the driver in
+/// `$GIT_DIR/info/attributes`. Both answers agree for a fold. The second arm
+/// is what makes the first one a measurement: the same fold with no attribute
+/// is still reported.
+#[test]
+fn a_fold_declared_unset_in_the_committed_file_agrees_with_or_without_the_override() {
+    use headwater_census::derived::Treatment;
+    let fold = "<!-- headwater:generated shelf_index. -->\n\n# Decisions\n";
+
+    let root = TempTree::new("unset-fold");
+    root.git_init();
+    root.write(".gitattributes", "k/README.md -merge\n");
+    root.write("k/README.md", fold);
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    let member = population
+        .members
+        .iter()
+        .find(|member| member.path == "k/README.md")
+        .unwrap_or_else(|| panic!("k/README.md is not in the report:\n{report}"));
+    assert_eq!(member.treatment, Treatment::Refuse, "{report}");
+    assert!(population.agrees(), "a `-merge` fold with no override agrees:\n{report}");
+    assert_eq!(
+        headwater_census::derived::declared_paths(root.path()),
+        vec!["k/README.md".to_string()],
+        "a `-merge` line is a declaration, so `init --git` appends no second one"
+    );
+
+    root.write(".git/info/attributes", "k/README.md merge=headwater-regenerate\n");
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    assert!(population.agrees(), "a fold under the override agrees:\n{report}");
+
+    let bare = TempTree::new("unattributed-fold");
+    bare.git_init();
+    bare.write("k/README.md", fold);
+    let population = headwater_census::derived::population(bare.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    assert!(!population.agrees(), "a fold with no attribute is reported:\n{report}");
+}
+
 /// A merge driver that the verb does not know is named in the report.
 ///
 /// `merge=ours` is not a treatment that a shape takes. A fold under it is a
@@ -1513,7 +1560,8 @@ fn git_treatment(root: &Path, path: &str) -> headwater_census::derived::Treatmen
     match value {
         "union" => Treatment::Union,
         "headwater-regenerate" => Treatment::Regenerate,
-        "unspecified" | "unset" | "set" | "text" | "binary" => Treatment::Unset,
+        "unset" | "binary" => Treatment::Refuse,
+        "unspecified" | "set" | "text" => Treatment::Unset,
         other => panic!("this tree plants no merge driver named {other}"),
     }
 }
