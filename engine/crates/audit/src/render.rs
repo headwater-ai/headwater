@@ -9,9 +9,9 @@
 //! written out in words rather than printed as a zero.
 
 use crate::{Audit, Finding};
-use std::collections::BTreeMap;
 use headwater_check::filled;
 use headwater_check::paint::{paint, ColorMode, Role};
+use std::collections::BTreeMap;
 use std::fmt::Write;
 
 /// A token painted into text that is already folded.
@@ -154,7 +154,11 @@ impl Audit {
         let _ = writeln!(
             out,
             "\n{}",
-            paint(Role::Heading, "the governed scope, and what reaches it", mode)
+            paint(
+                Role::Heading,
+                "the governed scope, and what reaches it",
+                mode
+            )
         );
         if self.scope.is_empty() {
             out.push_str(

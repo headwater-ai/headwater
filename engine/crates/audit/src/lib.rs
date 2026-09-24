@@ -504,8 +504,7 @@ impl ScopeReading {
     /// The share of in-scope entries an edge reaches, and `None` for a
     /// pattern that admits nothing, which `taxonomy validate` refuses.
     pub fn fraction(&self) -> Option<f64> {
-        (!self.entries.is_empty())
-            .then(|| 100.0 * self.governed as f64 / self.entries.len() as f64)
+        (!self.entries.is_empty()).then(|| 100.0 * self.governed as f64 / self.entries.len() as f64)
     }
 
     /// The in-scope entries no edge reaches, sorted.

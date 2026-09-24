@@ -19,7 +19,9 @@
 //! Read the diff before committing it. A blessed fixture is the change.
 
 use headwater_audit::reading::{Reading, TaskReading};
-use headwater_audit::{Audit, Finding, Series, Subject, Supply, Waiting, CREATORS, DERIVED, WARRANTS};
+use headwater_audit::{
+    Audit, Finding, Series, Subject, Supply, Waiting, CREATORS, DERIVED, WARRANTS,
+};
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
@@ -390,7 +392,9 @@ fn a_scope_pattern_that_matches_no_entry_is_refused_and_no_scope_prints_no_fract
         .expect("a mapping")
         .clone();
     let corpus = Corpus::new(fixtures_dir(), "audit");
-    let report = Built::over(&corpus, &root).audit(AT).render(ColorMode::Plain);
+    let report = Built::over(&corpus, &root)
+        .audit(AT)
+        .render(ColorMode::Plain);
     assert!(
         report.contains("no anchor kind declares a governed scope"),
         "{report}"
