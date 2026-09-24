@@ -2160,7 +2160,8 @@
           "title": "The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links",
           "relations": {
             "constrains": [
-              "HW-DR-0072"
+              "HW-DR-0072",
+              "HW-DR-0022"
             ]
           },
           "provenance": {
@@ -13454,6 +13455,17 @@
           "bound": "document",
           "id": "HW-DR-0072",
           "path": "docs/decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0022",
+          "path": "docs/decisions/0022-q22-the-integrity-posture-of-a-published-package.md",
           "kind": "decision"
         }
       },

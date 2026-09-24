@@ -3417,7 +3417,7 @@ pub fn doctrine(manifest: &Mapping) -> Option<PathBuf> {
 ///
 /// **[`reachable`] holds the same path at publish, and that is not this read.**
 /// `publish` reads a package directory that a publisher wrote. `vendor` reads
-/// an artifact that arrived by a route no crate of this engine can see, and
+/// an artifact that arrived by a route this crate cannot see, and
 /// nothing says the two ran on one machine or on one version of this engine.
 /// The digest proves the manifest and the prose are the bytes the pin was
 /// written for, and it proves nothing about whether any verb ever read either.

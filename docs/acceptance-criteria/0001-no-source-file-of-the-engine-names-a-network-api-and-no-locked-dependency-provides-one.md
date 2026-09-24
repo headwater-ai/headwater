@@ -25,7 +25,7 @@ Two facts, and both are true of the tree at the commit that carries this documen
 
 **No source file outside `headwater-fetch` names one of six network APIs, except in two test files.** `engine/crates/fetch/` is excluded by name, because it is the one crate that carries a client ([HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)). This command returns two lines, and both are in tests. `engine/crates/cli/tests/publish.rs` binds a `std::net::TcpListener` on `127.0.0.1` to serve an artifact to `taxonomy vendor`. `engine/crates/cli/tests/network_boundary.rs` names `ureq` as a package that no other crate may reach.
 
-    grep -rn "std::net\|reqwest\|hyper\|ureq\|tokio::net\|TcpStream" engine/crates/ --include=*.rs --exclude-dir=fetch
+    grep -rn "std::net\|reqwest\|hyper\|ureq\|tokio::net\|TcpStream" engine/crates/ --include=*.rs | grep -v '^engine/crates/fetch/'
 
 Measured on 2026-09-24 on the branch of #959, which returned those 2 lines. On 2026-08-25 against `9a87b75`, the grep with no exclusion returned 0 lines. The six names are the standard library module, the three common client crates, the async transport, and the raw socket type.
 
@@ -41,7 +41,7 @@ Inspection, and the guidance of the facet is the reason: read the artifact again
 
 Two commands produce what a reader inspects, and neither is a test.
 
-    grep -rn "std::net\|reqwest\|hyper\|ureq\|tokio::net\|TcpStream" engine/crates/ --include=*.rs --exclude-dir=fetch
+    grep -rn "std::net\|reqwest\|hyper\|ureq\|tokio::net\|TcpStream" engine/crates/ --include=*.rs | grep -v '^engine/crates/fetch/'
     grep '^name = ' engine/Cargo.lock
 
 The first produces the first fact. The second produces the second, as a list a person reads. The judgment is on that list, which is why the method is inspection rather than test. A person decides whether a package name opens a socket, and no command decides it.
