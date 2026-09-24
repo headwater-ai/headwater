@@ -13,6 +13,7 @@
 #     sh tools/run/gh-issue.sh patch-body <N> <file>      replace the body from a file
 #     sh tools/run/gh-issue.sh comment <N> <file>         post a new comment from a file
 #     sh tools/run/gh-issue.sh close <N>                  close the issue, and confirm the close took
+#     sh tools/run/gh-issue.sh closes <PR>                the issues a pull request's merge closes, as a JSON array
 #
 # `patch-body` and `comment` read the file rather than a shell argument,
 # because a long note as an argument is context as permanent as any result,
@@ -22,6 +23,12 @@
 # can state a write-back and not land it — hw-run-policy names this as a
 # measured failure mode of its own, and a close that did not take is silent
 # without the re-read.
+#
+# `closes` asks GraphQL for `closingIssuesReferences`, the one field that says
+# which issues a merge closes. `gh pr view --json` on this host's gh has no
+# such field, and a title's `(#N)` or a body's `Refs #N` closes nothing. The
+# query lives here because its braces, typed inline, are refused by worktree
+# isolation as a construct too complex to verify.
 #
 # The repository is fixed at headwater-ai/headwater, the one this tree's
 # tools already hardcode; this is not a general gh wrapper.
@@ -83,11 +90,19 @@ close() {
     fi
 }
 
+closes() {
+    n=$1
+    need_number "$n" closes
+    q='query($n:Int!){repository(owner:"headwater-ai",name:"headwater"){pullRequest(number:$n){closingIssuesReferences(first:50){nodes{number}}}}}'
+    gh api graphql -F "n=$n" -f "query=$q" --jq '[.data.repository.pullRequest.closingIssuesReferences.nodes[].number]'
+}
+
 case ${1:-} in
     body) [ $# -eq 2 ] || usage; body "$2" ;;
     comments) [ $# -eq 2 ] || usage; comments "$2" ;;
     patch-body) [ $# -eq 3 ] || usage; patch_body "$2" "$3" ;;
     comment) [ $# -eq 3 ] || usage; comment "$2" "$3" ;;
     close) [ $# -eq 2 ] || usage; close "$2" ;;
+    closes) [ $# -eq 2 ] || usage; closes "$2" ;;
     *) usage ;;
 esac
