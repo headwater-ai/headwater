@@ -23,7 +23,7 @@
 //! prefix walk, the same corpus exclusions, and the same refusal of a pattern
 //! that opens on a wildcard. No second matcher exists here.
 
-use crate::anchors::{Binding, Resolvers};
+use crate::anchors::{normalize, Binding, Resolvers};
 use crate::declarations::Declarations;
 use headwater_meta::pattern::Pattern;
 
@@ -32,7 +32,13 @@ use headwater_meta::pattern::Pattern;
 pub struct Member {
     pub anchor_kind: String,
     pub resolver: String,
-    pub pattern: Pattern,
+    /// The pattern as the taxonomy wrote it, which is what a report names.
+    pub written: String,
+    /// The pattern after [`crate::anchors::normalize`], the same lexical pass
+    /// the resolver applies to an anchor, or the reason it refused. Both
+    /// [`Scope::contains`] and the walk read this form, so `./tools/**`,
+    /// `tools\**` and `tools/**` are one pattern to both of them.
+    pub pattern: Result<Pattern, String>,
 }
 
 /// Every scope pattern the taxonomy declares, in declaration order.
@@ -45,8 +51,9 @@ pub struct Scope {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Reach {
     pub anchor_kind: String,
+    /// The pattern as the taxonomy wrote it.
     pub pattern: String,
-    /// The entries the pattern matched, sorted and with no duplicate. Empty
+    /// The files the pattern matched, sorted and with no duplicate. Empty
     /// where the resolver bound nothing, which `taxonomy validate` refuses.
     pub entries: Vec<String>,
 }
@@ -59,10 +66,11 @@ impl Scope {
                 .anchors
                 .iter()
                 .flat_map(|anchor| {
-                    anchor.scope.iter().map(|pattern| Member {
+                    anchor.scope.iter().map(|written| Member {
                         anchor_kind: anchor.name.clone(),
                         resolver: anchor.resolver.clone(),
-                        pattern: Pattern::new(pattern),
+                        written: written.clone(),
+                        pattern: normalize(written).map(|normalized| Pattern::new(&normalized)),
                     })
                 })
                 .collect(),
@@ -74,61 +82,87 @@ impl Scope {
     }
 
     /// Whether any scope pattern admits `path`, a path relative to the
-    /// repository root with `/` separators.
+    /// repository root.
     ///
-    /// The test is the pattern alone. A corpus exclusion is the walk's to
-    /// apply, so a caller that holds one path and cares about exclusions asks
-    /// the corpus as well.
+    /// The path and the patterns both pass through the resolver's lexical
+    /// normalization first, so this answers as [`Scope::reach`] does for
+    /// every file the walk finds. The test is the pattern alone and walks
+    /// nothing. A corpus exclusion is the walk's to apply, so a caller that
+    /// holds one path and cares about exclusions asks the corpus as well.
     pub fn contains(&self, path: &str) -> bool {
-        self.members
-            .iter()
-            .any(|member| member.pattern.matches(path))
+        let Ok(path) = normalize(path) else {
+            return false;
+        };
+        self.members.iter().any(|member| {
+            member
+                .pattern
+                .as_ref()
+                .is_ok_and(|pattern| pattern.matches(&path))
+        })
     }
 
-    /// Each pattern with the entries its anchor kind's resolver matched.
+    /// Each pattern with the files its anchor kind's resolver matched.
     pub fn reach(&self, resolvers: &Resolvers) -> Vec<Reach> {
         self.members
             .iter()
             .map(|member| Reach {
                 anchor_kind: member.anchor_kind.clone(),
-                pattern: member.pattern.source().to_string(),
+                pattern: member.written.clone(),
                 entries: bind(member, resolvers).unwrap_or_default(),
             })
             .collect()
     }
 
-    /// Each pattern that matches no entry, with the resolver's reason.
+    /// Each pattern that matches no file, with the reason.
     pub fn unmatched(&self, resolvers: &Resolvers) -> Vec<(String, String)> {
         self.members
             .iter()
             .filter_map(|member| match bind(member, resolvers) {
                 Ok(_) => None,
-                Err(why) => Some((member.pattern.source().to_string(), why)),
+                Err(why) => Some((member.written.clone(), why)),
             })
             .collect()
     }
 }
 
 fn bind(member: &Member, resolvers: &Resolvers) -> Result<Vec<String>, String> {
+    let pattern = member.pattern.as_ref().map_err(Clone::clone)?;
     let Some(resolver) = resolvers.get(&member.resolver) else {
         return Err(format!(
             "anchor kind `{}` names the resolver `{}`, and this engine carries none by that name",
             member.anchor_kind, member.resolver
         ));
     };
-    match resolver.resolve(member.pattern.source()) {
-        Binding::Resolved { matched, .. } if !matched.is_empty() => Ok(matched),
-        Binding::Resolved { .. } => Err(format!(
-            "no entry in the source tree matches `{}`",
-            member.pattern.source()
-        )),
-        Binding::Unresolved(why) => Err(why),
-        Binding::Withheld { profile } => Err(format!(
-            "the resolver `{}` withheld `{}` under the export profile `{profile}`",
-            member.resolver,
-            member.pattern.source()
-        )),
+    let source = pattern.source();
+    let matched = match resolver.resolve(source) {
+        Binding::Resolved { matched, .. } if !matched.is_empty() => matched,
+        Binding::Resolved { .. } => {
+            return Err(format!("no entry in the source tree matches `{source}`"))
+        }
+        Binding::Unresolved(why) => return Err(why),
+        Binding::Withheld { profile } => {
+            return Err(format!(
+                "the resolver `{}` withheld `{source}` under the export profile `{profile}`",
+                member.resolver
+            ))
+        }
+    };
+    // A literal pattern resolves when the path exists, and a directory exists.
+    // A scope counts files, so a directory would be one entry standing for
+    // everything under it. A file has nothing under it, so the resolver's own
+    // walk of `<literal>/**` tells the two apart without a second reader of
+    // the tree.
+    if pattern.is_literal() {
+        if let Binding::Resolved { matched: under, .. } = resolver.resolve(&format!("{source}/**"))
+        {
+            if !under.is_empty() {
+                return Err(format!(
+                    "`{source}` names a directory, and a scope pattern admits files: write `{source}/**`"
+                ));
+            }
+        }
     }
+    Ok(matched)
 }
 
 #[cfg(test)]
@@ -185,7 +219,10 @@ mod tests {
                 "`{spelling}` reaches"
             );
             for path in &reach[0].entries {
-                assert!(scope.contains(path), "`{spelling}` does not contain `{path}`");
+                assert!(
+                    scope.contains(path),
+                    "`{spelling}` does not contain `{path}`"
+                );
             }
             assert!(!scope.contains("tools-old/c.sh"), "`{spelling}`");
         }
@@ -200,7 +237,10 @@ mod tests {
         for spelling in ["tools/", "tools"] {
             let scope = scope(&[spelling]);
             let resolvers = resolvers(&at);
-            assert!(scope.reach(&resolvers)[0].entries.is_empty(), "`{spelling}`");
+            assert!(
+                scope.reach(&resolvers)[0].entries.is_empty(),
+                "`{spelling}`"
+            );
             let refused = scope.unmatched(&resolvers);
             assert_eq!(refused.len(), 1, "`{spelling}`: {refused:?}");
             assert!(refused[0].1.contains("directory"), "{refused:?}");

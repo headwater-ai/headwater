@@ -435,7 +435,10 @@ fn an_edge_outside_the_governance_family_does_not_govern_an_entry() {
     let taxonomy = at.join("audit.taxonomy.yml");
     let text = std::fs::read_to_string(&taxonomy).expect("the taxonomy reads");
     let from = "    family: evidence\n    from: [governed_document]\n    to:   [governed_document]";
-    assert!(text.contains(from), "the fixture still declares `catalogues`");
+    assert!(
+        text.contains(from),
+        "the fixture still declares `catalogues`"
+    );
     let text = text.replacen(
         from,
         "    family: evidence\n    from: [governed_document]\n    to:   [governed_document, code_path]",
@@ -444,7 +447,10 @@ fn an_edge_outside_the_governance_family_does_not_govern_an_entry() {
     let first = at.join("audit/decisions/first.md");
     let document = std::fs::read_to_string(&first).expect("the document reads");
     let edge = "  catalogues:\n    - AUD-FIX-0004\n";
-    assert!(document.contains(edge), "first.md still declares `catalogues`");
+    assert!(
+        document.contains(edge),
+        "first.md still declares `catalogues`"
+    );
     std::fs::write(
         &first,
         document.replacen(edge, &format!("{edge}    - app/render.rs\n"), 1),
@@ -459,8 +465,11 @@ fn an_edge_outside_the_governance_family_does_not_govern_an_entry() {
         .clone();
     let built = Built::over(&Corpus::new(at.clone(), "audit"), &root);
     assert!(
-        built.graph.edges.iter().any(|edge| edge.declared == "catalogues"
-            && edge.raw_target == "app/render.rs"),
+        built
+            .graph
+            .edges
+            .iter()
+            .any(|edge| edge.declared == "catalogues" && edge.raw_target == "app/render.rs"),
         "the evidence edge onto app/render.rs was built"
     );
     let audit = built.audit(AT);
