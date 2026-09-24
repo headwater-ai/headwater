@@ -40,7 +40,9 @@ Three facts about the blocks below.
 
 Install the engine once.
 
-```
+<!-- headwater allow=surface.command.undeclared scope=block until=2026-12-31 reason=accepted_deviation note=HW-DR-0077 makes no Rust toolchain mandatory and #975 carries the archive that replaces this step -->
+
+```sh
 cargo install headwater-cli
 ```
 
@@ -54,7 +56,7 @@ This installs whatever the newest version published on crates.io. It does not ge
 
 ### Step 1 — Make a repository that nothing describes
 
-```
+```sh
 mkdir -p ~/headwater-tutorial/docs/decisions
 cd ~/headwater-tutorial
 git init
@@ -71,7 +73,7 @@ A repository with documentation in it, and nothing that says what the documentat
 
 ### Step 2 — Ask the engine what it can read off the tree
 
-```
+```sh
 headwater init
 ```
 
@@ -99,7 +101,7 @@ The first heading names what a tree states about itself: the **corpus** is `docs
 
 `headwater taxonomy vendor <dir> --expect <digest>` is the directory form of the vendor route Step 2 named, and it is the form this tutorial takes. Point it at a package directory you have, fetched by whatever means your organization allows — the GitHub release page, a mirror, an air-gapped copy. It checks the digest and installs the result. This step fetches that directory over the network for you, then runs exactly that command. The script below does the fetching. It is a convenience over the verb, and not a substitute for it.
 
-```
+```sh
 curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/main/tools/headwater-bootstrap.sh | sh -s -- --tag taxonomy/headwater-standard/v4.2.0 --expect sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
 ```
 
@@ -137,7 +139,7 @@ A second route pins a fixed version of the engine and of this package. The READM
 
 ### Step 4 — Meet the first refusal
 
-```
+```sh
 headwater taxonomy resolve
 ```
 
@@ -163,7 +165,7 @@ Open `.headwater/taxonomy.yml`. Change `  version: 0.0.0` to `  version: 4.2.0`,
 
 Now resolve again.
 
-```
+```sh
 headwater taxonomy resolve
 ```
 
@@ -189,7 +191,7 @@ add:
 
 The overlay answers the question the refusal asked. Resolve again.
 
-```
+```sh
 headwater taxonomy resolve
 ```
 
@@ -206,7 +208,7 @@ The lock is the one file every later command reads. An edit to the package or to
 
 ### Step 7 — Check a corpus that nobody has typed
 
-```
+```sh
 headwater check
 ```
 
@@ -239,7 +241,7 @@ census
 
 Delete the note, and let the engine write the document in its place.
 
-```
+```sh
 rm docs/decisions/postgres-note.md
 headwater new decision --title "Store attempts in Postgres" --summary "The queue keeps every delivery attempt in Postgres."
 ```
@@ -297,7 +299,7 @@ A **facet** is a property of one document, declared in the front matter. `status
 
 ### Step 9 — Check again, and read the difference
 
-```
+```sh
 headwater check
 ```
 
@@ -322,7 +324,7 @@ The corpus did not grow. The count of checks that ran went from 4 to 17, because
 
 Git refuses a commit from an author it cannot name. `git config user.name` prints yours. If it prints nothing, run `git config --global user.name "Your Name"` and then `git config --global user.email "you@example.com"` with your own values.
 
-```
+```sh
 git add -A
 git commit -m "A first governed corpus"
 ```
@@ -344,7 +346,7 @@ git commit -m "A first governed corpus"
 
 ### Step 11 — Declare an edge between two documents
 
-```
+```sh
 headwater new decision --title "Deliver at least once" --relates supersedes=ACME-DR-0001 --summary "Retrying a delivery is safe, so the queue may send one attempt twice."
 ```
 
@@ -367,7 +369,7 @@ A **relation** is a typed edge between two documents, and it names its target by
 
 ### Step 12 — Break one half, and read the finding
 
-```
+```sh
 git checkout -- docs/decisions/0001-store-attempts-in-postgres.md
 headwater check
 ```
@@ -418,7 +420,7 @@ The word `mechanical` on the fix line is the second thing to read. A rule is an 
 
 ### Step 13 — Let the engine make the repair
 
-```
+```sh
 headwater check --fix
 ```
 
@@ -440,7 +442,7 @@ relations:
 
 ### Step 14 — Ask the engine what it knows about one document
 
-```
+```sh
 headwater explain ACME-DR-0002
 ```
 
@@ -473,7 +475,7 @@ Every word this tutorial taught is on that screen at once. There you read the sh
 
 ### Step 15 — Ask a question in your own words
 
-```
+```sh
 headwater route "why do we keep attempts in postgres"
 ```
 
@@ -494,7 +496,7 @@ A **purpose** is the reader intent that a kind exists to serve. The base package
 
 ### Step 16 — Ask what you have not wired up
 
-```
+```sh
 headwater conformance
 ```
 
@@ -517,7 +519,7 @@ L1 reached, against headwater/standard 4.2.0
 
 Your corpus already stands on the first two rungs, which a package copied by hand never reaches. `pin.current` is what carried you there. It reads the digest step 5 pinned against the record `.headwater/packages/headwater-standard/release.yml` carries, and step 3 already gave you both. A package you copy from a source directory has no digest to pin, because nobody has published it. That route never reaches this rung: it stays off the ladder for the whole life of a corpus built that way. One gap is left, and it closes with a command:
 
-```
+```sh
 headwater generate
 headwater conformance
 ```
@@ -550,7 +552,7 @@ Four more words earn their place beside those five.
 
 **Point the engine at your own repository.** The steps above used a corpus made for the purpose. A tutorial cannot state what you should now see about a tree it has never read. Your own tree is the one that answers whether this is worth adopting. Run `headwater init` in it, fetch the package as step 3 did, resolve, and then run this:
 
-```
+```sh
 headwater infer
 ```
 

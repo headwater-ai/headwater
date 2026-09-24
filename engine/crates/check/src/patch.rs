@@ -355,6 +355,7 @@ mod tests {
             quote_depth: 0,
             runs: vec![run],
             soft_breaks: Vec::new(),
+            info: None,
         };
         let body = Body {
             blocks: vec![block],

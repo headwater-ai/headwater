@@ -68,7 +68,8 @@ pub struct Shape {
 /// [HW-DR-0077](../../../../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)
 /// names four populations. The documents an adopter reads and the roots of the
 /// population local to the repository are the two lists a page is held
-/// against. The rest of the block is declaration that no check reads yet. The
+/// against, and the declared commands are what its shell blocks are held
+/// against. The rest of the block is declaration that no check reads. The
 /// `consumer_surface` projection of `headwater-generate` renders it as a page.
 #[derive(Clone, Debug, Default)]
 pub struct Surface {
@@ -76,6 +77,9 @@ pub struct Surface {
     pub adopter_documents: Vec<String>,
     /// Directory prefixes, each ending in `/`.
     pub local_roots: Vec<String>,
+    /// The programs a page for an adopter may tell them to run, by name.
+    /// [`crate::command`] reads it, and it is the only list that rule reads.
+    pub commands: Vec<String>,
 }
 
 /// An identifier scheme: the shape a minted identifier takes.
@@ -521,6 +525,7 @@ impl Shape {
                         false => format!("{root}/"),
                     })
                     .collect(),
+                commands: sequence(surface, "commands"),
             };
         }
 

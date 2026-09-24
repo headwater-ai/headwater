@@ -77,6 +77,8 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   surface.local_path.instructed
     document scope, one document, its front matter and its body
+  surface.command.undeclared
+    document scope, one document, its front matter and its body
   language.source_form.not_met
     document scope, one document, its front matter and its body
   section.required.missing
@@ -134,6 +136,7 @@ register
   language.controlled.not_met reaches no obligation, so it names none
   language.retired_term.used reaches no obligation, so it names none
   surface.local_path.instructed reaches no obligation, so it names none
+  surface.command.undeclared reaches no obligation, so it names none
   language.source_form.not_met reaches no obligation, so it names none
   section.required.missing reaches no obligation, so it names none
   link.fragment.unresolved reaches no obligation, so it names none

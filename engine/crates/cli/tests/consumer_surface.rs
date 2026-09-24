@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! `surface.local_path.instructed`, held against the manifest it reads.
+//! `surface.local_path.instructed` and `surface.command.undeclared`, held
+//! against the manifest they read.
 //!
 //! # What this target is evidence of
 //!
@@ -157,20 +158,27 @@ impl Root {
     /// The message of each finding of this rule on one document that no escape
     /// hides, read from the JSON report, which prints one member per line.
     fn findings(&self, slug: &str) -> Vec<String> {
+        self.findings_of(RULE, slug)
+    }
+
+    /// The same, for any rule of the surface.
+    fn findings_of(&self, rule: &str, slug: &str) -> Vec<String> {
         let (_, out, _) = self.run(&["check", "--format", "json"]);
         let path = format!("\"path\": \"docs/interfaces/{slug}.md\",");
         let lines: Vec<&str> = out.lines().map(str::trim).collect();
         let mut messages = Vec::new();
         for (at, line) in lines.iter().enumerate() {
-            if *line != format!("\"rule\": \"{RULE}\",") {
+            if *line != format!("\"rule\": \"{rule}\",") {
                 continue;
             }
-            // One finding runs to the next `rule` member. A finding the runner
-            // filtered is still in the report, with its escape named, and only
-            // an unescaped one is a verdict a reader meets.
+            // One finding runs to the brace that closes it, and the last one
+            // would otherwise run on into the read set, which names every
+            // page. A finding the runner filtered is still in the report, with
+            // its escape named, and only an unescaped one is a verdict a
+            // reader meets.
             let end = lines[at + 1..]
                 .iter()
-                .position(|l| l.starts_with("\"rule\""))
+                .position(|l| l.starts_with("\"rule\"") || l.starts_with('}'))
                 .map_or(lines.len(), |next| at + 1 + next);
             let finding = &lines[at..end];
             if finding.contains(&path.as_str())
@@ -328,5 +336,77 @@ fn the_surface_block_generates_a_page_that_goes_stale_with_it() {
     assert!(
         again.contains("`unzip`"),
         "the page follows the block\n{again}"
+    );
+}
+
+/// The command rule (#1051). A page on the list holds four blocks, and only
+/// the first one is a command the surface does not declare:
+///
+/// - (a) an `sh` block that runs `cargo`, which `commands` does not list,
+/// - (b) a `yaml` block whose first word is `name:`,
+/// - (c) an untagged block of output whose first word is `wrote`,
+/// - (d) an `sh` block that runs `headwater` behind a `$ ` prompt.
+///
+/// A rule that reads untagged blocks reports (c), a rule that ignores the info
+/// string reports (b), and a rule that does not strip the prompt reports (d).
+const COMMANDS: &str = "\n```sh\ncargo install headwater\n```\n\n```yaml\nname: acme\n```\n\n```\nwrote docs/x.md\n```\n\n```sh\n$ headwater check\n```\n";
+
+#[test]
+fn the_command_rule_reads_only_shell_blocks_on_a_listed_page() {
+    const COMMAND: &str = "surface.command.undeclared";
+    let root = Root::new("commands", &["docs/interfaces/c.md"]);
+    root.override_with(
+        &["docs/interfaces/c.md"],
+        "  surface.commands: [headwater]\n",
+    );
+    root.contract("c", COMMANDS);
+    root.contract("d", COMMANDS);
+
+    let (_, out, err) = root.run(&["check"]);
+    let c = root.findings_of(COMMAND, "c");
+    assert_eq!(
+        c.len(),
+        1,
+        "only the `sh` block that runs `cargo` is reported\n{c:#?}\n{out}{err}"
+    );
+    assert!(c[0].contains("`cargo`"), "{c:#?}");
+    assert!(
+        out.lines()
+            .any(|line| line.trim() == format!("1 instances of {COMMAND}")),
+        "the rule instantiates on the listed page and not on `d.md`\n{out}"
+    );
+    assert_eq!(
+        root.findings_of(COMMAND, "d"),
+        Vec::<String>::new(),
+        "a page the manifest does not list has no instance of the rule"
+    );
+}
+
+/// The two readings the first case does not reach. A `console` block is a
+/// shell block, and in it a line with no `$ ` prompt is output. A program
+/// named by its path is compared by the last segment of the path, so
+/// `/usr/bin/cargo` is `cargo` and not a name `commands` could never hold.
+const CONSOLE: &str = "\n```console\n$ /usr/bin/cargo install headwater\nwrote docs/x.md\n```\n";
+
+#[test]
+fn a_console_block_reads_its_prompted_lines_by_the_last_segment_of_the_path() {
+    const COMMAND: &str = "surface.command.undeclared";
+    let root = Root::new("console", &["docs/interfaces/e.md"]);
+    root.override_with(
+        &["docs/interfaces/e.md"],
+        "  surface.commands: [headwater]\n",
+    );
+    root.contract("e", CONSOLE);
+
+    let (_, out, err) = root.run(&["check"]);
+    let e = root.findings_of(COMMAND, "e");
+    assert_eq!(
+        e.len(),
+        1,
+        "the prompted line is one command and the output line is none\n{e:#?}\n{out}{err}"
+    );
+    assert!(
+        e[0].contains("runs `cargo`"),
+        "the program is named by the last segment of its path\n{e:#?}"
     );
 }

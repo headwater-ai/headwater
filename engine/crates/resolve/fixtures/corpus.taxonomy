@@ -1488,6 +1488,14 @@ surface:
     - sh
     - curl
     - tar
+    - cd
+    - echo
+    - grep
+    - mkdir
+    - printf
+    - rm
+    - wc
+    - xargs
   companions:
     - "headwater probe"
     - "headwater neighbors"

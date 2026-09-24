@@ -53,7 +53,7 @@ override:
 
 ### Resolve the override
 
-```
+```sh
 headwater taxonomy resolve
 ```
 
@@ -71,7 +71,7 @@ wrote .headwater/taxonomy.lock
 
 ### Check before you move one file
 
-```
+```sh
 headwater check
 ```
 
@@ -86,11 +86,11 @@ Every document under `docs/decisions/` now reads as untyped, because the `decisi
 
 ### Move the directory
 
-```
+```sh
 git mv docs/decisions docs/adr
 ```
 
-```
+```sh
 headwater check --strict
 ```
 
@@ -119,7 +119,7 @@ No fix here is mechanical, so `headwater check --fix` writes none of these. A ru
 
 Find every file that links into the old path.
 
-```
+```sh
 grep -rl -E ']\((\.\./)+decisions/|]\(docs/decisions/' --include="*.md" docs | wc -l
 ```
 
@@ -129,14 +129,14 @@ grep -rl -E ']\((\.\./)+decisions/|]\(docs/decisions/' --include="*.md" docs | w
 
 Sixty-six files carried the 207 broken links between them. Rewrite the relative prefix in each one.
 
-```
+```sh
 grep -rlZ -E ']\((\.\./)+decisions/|]\(docs/decisions/' --include="*.md" docs \
   | xargs -0 sed -i \
       -e 's#](\(\.\./\)\+decisions/#](\1adr/#g' \
       -e 's#](docs/decisions/#](docs/adr/#g'
 ```
 
-```
+```sh
 headwater check --strict
 ```
 
@@ -147,7 +147,7 @@ headwater check --strict
 
 Two errors remain, and neither is a link this repair missed. Both are a link the repair got wrong. A relative prefix depends on how deep the *linking* file sits, and one substitution assumed one depth for every file. `docs/process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md` links `../decisions/0054-….md`. From `docs/process/decisions/`, `../` reaches `docs/process/`, not `docs/`, so the rewrite needs `../../adr/`, not `../adr/`. `headwater check` named both files. Fix the two paths it names, at the depth each one needs.
 
-```
+```sh
 headwater check --strict
 ```
 
@@ -159,7 +159,7 @@ Zero errors. The count matches this repository's own advisory baseline before th
 
 ### Regenerate the shelf index
 
-```
+```sh
 headwater generate
 ```
 
@@ -173,7 +173,7 @@ The shelf index lists documents by their own filename, not by the shelf's path, 
 
 ## How to know it worked
 
-```
+```sh
 headwater check --strict
 echo $?
 ```
@@ -182,7 +182,7 @@ echo $?
 0
 ```
 
-```
+```sh
 headwater explain HW-DR-0054
 ```
 

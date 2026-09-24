@@ -1683,10 +1683,12 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // root, so nothing smaller than the corpus holds either question.
             Grain::Corpus,
             Grain::Corpus,
-            // The six Document-origin rules, which read the body rather than
+            // The seven Document-origin rules, which read the body rather than
             // the front matter. The grain is the same and the view is not:
             // each one declares `NEEDS_BODY`. `surface.local_path.instructed`
-            // is the sixth, and it reads front matter as well.
+            // is the fourth, and it reads front matter as well.
+            // `surface.command.undeclared` is the fifth (#1051).
+            Grain::Document,
             Grain::Document,
             Grain::Document,
             Grain::Document,
@@ -1754,6 +1756,7 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             language::RULE,
             retired::RULE,
             headwater_check::surface::RULE,
+            headwater_check::command::RULE,
             source_form::RULE,
             sections::RULE,
         ]
