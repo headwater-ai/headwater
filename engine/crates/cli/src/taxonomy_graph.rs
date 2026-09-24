@@ -51,7 +51,7 @@ pub fn render(package: &str, version: &str, resolved: &Mapping) -> String {
         lanes.entry(Some(purpose.clone())).or_default();
     }
     if let Some(kinds) = kinds {
-        for entry in kinds.iter() {
+        for entry in kinds {
             let name = entry.key.value.clone();
             let declared = entry.value.value.as_map();
             if declared.and_then(|k| scalar(k, "abstract")).as_deref() == Some("true") {
@@ -71,7 +71,7 @@ pub fn render(package: &str, version: &str, resolved: &Mapping) -> String {
     let mut drawn: Vec<(String, String, String, Option<String>)> = Vec::new();
     let mut captioned: Vec<(String, String, String)> = Vec::new();
     if let Some(relations) = map(resolved, "relations") {
-        for entry in relations.iter() {
+        for entry in relations {
             let Some(relation) = entry.value.value.as_map() else {
                 continue;
             };
