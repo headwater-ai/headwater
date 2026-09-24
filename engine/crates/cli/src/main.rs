@@ -6537,14 +6537,15 @@ taxonomy:
         // a declaration that pins nothing and meet the same refusal on the next
         // clone.
         None => declaration_text.push_str(
-            "  # INTERVIEW: no package of this name is under `.headwater/packages/`, and nothing in this\n\
-             \x20 # engine fetches one. Two routes reach a lock, and each one needs a different\n\
-             \x20 # field below. Copy a package directory into `.headwater/packages/`, and pin `version` at\n\
-             \x20 # the version that package declares. Or run `headwater taxonomy vendor <dir>`\n\
-             \x20 # on a published artifact: that verb reads `digest` and refuses until it holds\n\
-             \x20 # the digest the publisher printed, and `headwater taxonomy resolve` reads\n\
-             \x20 # `version` after it, so the vendor route needs the digest first and the\n\
-             \x20 # version as well.\n\
+            "  # INTERVIEW: no package of this name is under `.headwater/packages/`. Two routes\n\
+             \x20 # reach a lock, and each one needs a different field below.\n\
+             \x20 # Copy a package directory into `.headwater/packages/`, and pin `version` at\n\
+             \x20 # the version that package declares. Or run\n\
+             \x20 # `headwater taxonomy vendor <dir-or-location>` on a published artifact,\n\
+             \x20 # unpacked or at the `https://` location of its zip: that verb reads `digest`\n\
+             \x20 # and refuses until it holds the digest the publisher printed, and\n\
+             \x20 # `headwater taxonomy resolve` reads `version` after it, so the vendor route\n\
+             \x20 # needs the digest first and the version as well.\n\
              \x20 # digest: sha256:<the digest the publisher printed>\n\
              \x20 version: 0.0.0\n",
         ),
@@ -6639,24 +6640,34 @@ add: {{}}
         // **Two routes, because this verb cannot know which one the reader
         // holds.** The line said "Vendor it before resolving" until
         // [#276](https://github.com/headwater-ai/headwater/issues/276) ruled on
-        // it. `vendor` in this engine takes a published artifact, and
-        // `HW-OBL-0085` records that nothing here fetches one, so the old line
-        // named the single action a reader on a fresh tree cannot perform — in
-        // the first verb an adopter runs. A newcomer read it as *copy*, which is
+        // it. `vendor` in this engine took a published artifact and nothing
+        // here fetched one, which `HW-OBL-0085` recorded, so the old line named
+        // the single action a reader on a fresh tree could not perform — in the
+        // first verb an adopter runs. A newcomer read it as *copy*, which is
         // the misreading #271 was filed from and which the tutorial spent a
         // paragraph repairing. So the copy is named, because it is what an
         // adopter can do, and `vendor` keeps its own sense with the artifact
         // beside it.
         //
+        // **The vendor route names the argument the contract states.**
+        // [#959](https://github.com/headwater-ai/headwater/issues/959) gave
+        // `vendor` an `https://` location, so the clause that said this engine
+        // fetched nothing became false, and `<dir>` told a reader with no copy on disk to fetch and
+        // unpack the artifact by other means. The placeholder is the one
+        // `docs/interfaces/headwater-taxonomy.md` states, and `tests/init.rs`
+        // holds both messages to that row and runs the route from a location.
+        // That discharges `HW-OBL-0085`.
+        //
         // The routes need different fields, which is the same correction the
         // written comment carries and for the same reason. See the arm above,
         // and [#641](https://github.com/headwater-ai/headwater/issues/641).
         None => println!(
-            "  package {package} is not under `.headwater/packages/`, and nothing here fetches one. Two \
-             routes reach a lock, and each one needs a different field of \
-             `.headwater/taxonomy.yml`. Copy a package directory into `.headwater/packages/`, and pin \
-             `taxonomy.version` at the version that package declares. Or run `headwater taxonomy \
-             vendor <dir>` on a published artifact: that verb reads `taxonomy.digest` and refuses \
+            "  package {package} is not under `.headwater/packages/`. Two routes reach a lock, and \
+             each one needs a different field of `.headwater/taxonomy.yml`. Copy a package \
+             directory into `.headwater/packages/`, and pin `taxonomy.version` at the version that \
+             package declares. Or run `headwater taxonomy vendor <dir-or-location>` on a published \
+             artifact, unpacked or at the `https://` location of its zip: that verb reads \
+             `taxonomy.digest` and refuses \
              until it holds the digest the publisher printed, and `headwater taxonomy resolve` \
              reads `taxonomy.version` after it, so the vendor route needs the digest first and \
              the version as well"

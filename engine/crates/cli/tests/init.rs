@@ -73,20 +73,21 @@ taxonomy:
 ";
 
 /// The version block of the arm that found no package, which is an interview
-/// stub, eight lines of comment and one commented field.
+/// stub, nine lines of comment and one commented field.
 ///
 /// This constant is a copy of a string in the verb, and a copy checked against
 /// nothing but itself is what #641 cost. The last case in this file runs the
 /// route these bytes name, so the bytes have a reader that is not another copy
 /// of them.
-const NO_PACKAGE_VERSION: &str = r"  # INTERVIEW: no package of this name is under `.headwater/packages/`, and nothing in this
-  # engine fetches one. Two routes reach a lock, and each one needs a different
-  # field below. Copy a package directory into `.headwater/packages/`, and pin `version` at
-  # the version that package declares. Or run `headwater taxonomy vendor <dir>`
-  # on a published artifact: that verb reads `digest` and refuses until it holds
-  # the digest the publisher printed, and `headwater taxonomy resolve` reads
-  # `version` after it, so the vendor route needs the digest first and the
-  # version as well.
+const NO_PACKAGE_VERSION: &str = r"  # INTERVIEW: no package of this name is under `.headwater/packages/`. Two routes
+  # reach a lock, and each one needs a different field below.
+  # Copy a package directory into `.headwater/packages/`, and pin `version` at
+  # the version that package declares. Or run
+  # `headwater taxonomy vendor <dir-or-location>` on a published artifact,
+  # unpacked or at the `https://` location of its zip: that verb reads `digest`
+  # and refuses until it holds the digest the publisher printed, and
+  # `headwater taxonomy resolve` reads `version` after it, so the vendor route
+  # needs the digest first and the version as well.
   # digest: sha256:<the digest the publisher printed>
   version: 0.0.0
 ";
@@ -628,12 +629,16 @@ fn the_overlay_example_the_interview_prints_reaches_a_lock() {
 /// placeholder `init` prints is held to that row rather than to a copy of it in
 /// this file. A contract that renames the argument moves this case with it.
 fn the_vendor_argument_the_contract_states() -> String {
-    let contract = std::fs::read_to_string(repository().join("docs/interfaces/headwater-taxonomy.md"))
-        .expect("the interface contract reads");
+    let contract =
+        std::fs::read_to_string(repository().join("docs/interfaces/headwater-taxonomy.md"))
+            .expect("the interface contract reads");
     let rows: Vec<String> = contract
         .lines()
         .filter_map(|line| line.strip_prefix("| `vendor <"))
-        .filter_map(|rest| rest.split_once('>').map(|(argument, _)| argument.to_string()))
+        .filter_map(|rest| {
+            rest.split_once('>')
+                .map(|(argument, _)| argument.to_string())
+        })
         .collect();
     assert_eq!(
         rows.len(),
@@ -746,8 +751,8 @@ fn serve(name: &str, body: Vec<u8>) -> String {
 ///
 /// # Why this case exists
 ///
-/// `HW-OBL-0085` recorded that nothing in this engine fetches a package, and
-/// `init` said so in both messages of its no-package arm. [#959] gave
+/// `HW-OBL-0085` recorded that this engine fetched no package, and `init`
+/// said so in both messages of its no-package arm. [#959] gave
 /// `taxonomy vendor` a location, so that sentence became false and the remedy
 /// named `<dir>` alone. An adopter with no copy of the artifact on disk read
 /// that they had to fetch and unpack it by other means. This is the #271 and
@@ -776,12 +781,19 @@ fn the_vendor_route_init_names_takes_the_location_a_release_publishes() {
         .arg(&root.at)
         .output()
         .expect("the binary runs");
-    assert_eq!(output.status.code(), Some(0), "`headwater init` writes both files");
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "`headwater init` writes both files"
+    );
     let report = String::from_utf8_lossy(&output.stdout).into_owned();
     let declaration = root.read(".headwater/taxonomy.yml");
 
     let argument = the_vendor_argument_the_contract_states();
-    for (name, text) in [("the printed report", &report), ("the declaration", &declaration)] {
+    for (name, text) in [
+        ("the printed report", &report),
+        ("the declaration", &declaration),
+    ] {
         assert_eq!(
             vendor_placeholders(text),
             vec![argument.clone()],
@@ -789,7 +801,7 @@ fn the_vendor_route_init_names_takes_the_location_a_release_publishes() {
              states:\n{text}"
         );
         assert!(
-            !text.contains("nothing here fetches") && !text.contains("nothing in this"),
+            !text.contains("fetches one"),
             "{name} no longer says that nothing fetches a package:\n{text}"
         );
     }

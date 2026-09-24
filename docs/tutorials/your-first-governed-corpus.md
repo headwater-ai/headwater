@@ -81,7 +81,7 @@ wrote .headwater/overlay.yml
 
 what this read off the tree
   corpus root docs
-  package headwater/standard is not under `.headwater/packages/`, and nothing here fetches one. Two routes reach a lock, and each one needs a different field of `.headwater/taxonomy.yml`. Copy a package directory into `.headwater/packages/`, and pin `taxonomy.version` at the version that package declares. Or run `headwater taxonomy vendor <dir>` on a published artifact: that verb reads `taxonomy.digest` and refuses until it holds the digest the publisher printed, and `headwater taxonomy resolve` reads `taxonomy.version` after it, so the vendor route needs the digest first and the version as well
+  package headwater/standard is not under `.headwater/packages/`. Two routes reach a lock, and each one needs a different field of `.headwater/taxonomy.yml`. Copy a package directory into `.headwater/packages/`, and pin `taxonomy.version` at the version that package declares. Or run `headwater taxonomy vendor <dir-or-location>` on a published artifact, unpacked or at the `https://` location of its zip: that verb reads `taxonomy.digest` and refuses until it holds the digest the publisher printed, and `headwater taxonomy resolve` reads `taxonomy.version` after it, so the vendor route needs the digest first and the version as well
 
 what it cannot read off a tree, and asked instead
   the phrases each purpose answers, which decide what a task routes to
