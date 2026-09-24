@@ -57,19 +57,26 @@
 # commit, which is a file nobody reads, and the count it would replace moves on
 # every commit anyway.
 #
-# `merge=headwater-regenerate` needs one command per clone, which git will not
-# take from a repository because a merge driver is an executable:
+# Each path below is `-merge`, which needs no configuration: git keeps the
+# current side, writes no marker and records a conflict, in every clone. The
+# driver is selected per clone and never here, because git reads a driver that
+# no config defines as an ordinary text merge, which is the anomaly above
+# (#1058). A clone that sets the driver config adds the override to its own
+# `info/attributes`, which wins over this file. `.githooks/select-merge-driver`
+# writes those lines once the clone has run the two lines in `CLAUDE.md`, and
+# `post-checkout`, `post-merge` and `pre-commit` run it:
 #
 #     git config merge.headwater-regenerate.name "regenerate a derived artifact"
 #     git config merge.headwater-regenerate.driver ".githooks/merge-regenerate %O %A %B %P"
 #
-# Without it git falls back to an ordinary merge and the anomaly above is
-# available again, so `.githooks/pre-commit` reports a clone that has not run it.
+# `.githooks/pre-commit` reports a clone that has not set them.
 # The driver refuses rather than reconciling, and `.githooks/merge-regenerate`
 # says why it cannot regenerate during a merge.
 #
 # **This reaches a local merge and a rebase, and it does not reach the merge
-# button on the forge.** A server-side merge runs no driver from this file. What
+# button on the forge.** A server-side merge runs no driver, and GitHub does not
+# read `-merge` either: measured on 2026-09-24, a pull request that moved a
+# `-merge` path showed as mergeable and its test merge held both branches' edits. What
 # covers that is the pull-request run, which builds `refs/pull/N/merge` and holds
 # each of these artifacts with `--check`, and that run is only conclusive while
 # the branch is current with `main`.
@@ -94,82 +101,42 @@
 # hook here needs, and the hook file says why that position and not
 # `pre-merge-commit`.
 #
-# # Which of these paths two branches can actually write alike
+# # Which derived paths are folds
 #
-# Measured rather than assumed, over every path this file declares, twice, and `headwater derived` recomputes that set from the producers rather than restating its size.
+# Measured rather than assumed, and `headwater derived` computes the shape of each path from the file rather than from this list.
 #
-# The experiment: three trees from one corpus,
-# a baseline and two arms that each add one document of the same kind, every
-# producer run in each, and the bytes compared. Once with a `decision` and once
-# with a `process_decision`, and a control arm that added nothing moved nothing.
+# #1058 (1058-a) measured every producer output against one question: can two
+# branches that each add or edit one document text-merge it to exit 0 with
+# bytes that `headwater generate` does not write over the merged tree? The
+# experiment ran seven pairs over a copy of this tree: two plain decisions, a
+# decision that supersedes Q40 beside a plain one, two decisions that supersede
+# the adjacent Q39 and Q40, a decision beside an obligation, two obligations,
+# two interface contracts, and a contract beside a decision. Each pair merged
+# every derived path with `git merge-file` and compared the result with the
+# producer's output over both documents.
 #
-# - **Two arms wrote one byte string**, so no driver is called: `site/index.html`
-#   and `site/proof/index.html`. Both times. They carry figures and nothing that
-#   names a document, so two documents of one kind are one page.
-# - **The two arms differed**, so the driver is called and refuses:
-#   `.headwater/export.json`, `.headwater/nav.yml`, the shelf index of the kind
-#   that moved, and `docs/spec/09-open-questions.md` for a decision. Each carries
-#   an entry per document, which is what tells the two arms apart.
-# - **Neither arm moved it**, so there is no merge of it to reach:
-#   `.headwater/corpus.json`, `.headwater/taxonomy.lock`,
-#   `site/how-it-works/index.html`, and every shelf index of a kind neither arm
-#   added.
-# - **Not measured by that experiment**:
-#   `engine/crates/check/fixtures/corpus.checks` and
-#   `engine/crates/lock/fixtures/corpus.lock`. Their producer is a cargo test run
-#   rather than a verb, so `merged-fold-check` does not run it either and says so
-#   where it stops. CI runs the whole suite against `refs/pull/N/merge`, which is
-#   what holds those two.
+# - **No generated file merged wrong in any pair.** Each one either
+#   conflicted, merged to the producer's bytes, or did not move. Since #1058 no
+#   generated file states a count, and each one lists one row per entity in an
+#   order that both branches compute the same way. A supersession moves the new
+#   row next to the one it supersedes, which both arms see alike. So they carry
+#   no merge attribute here, and `headwater derived` computes that shape from
+#   the file rather than from this list: a generated file whose opening states a
+#   count or a digest is a fold again and is reported until it is listed.
+# - **What is listed below is a fold by construction.** The lock carries a
+#   digest over its whole canonical text. The two recorded fixtures open with a
+#   count and a digest, and `.githooks/fixtures.sh` measures that two sides that
+#   write one count merge to a number true of neither tree. The three pages
+#   under `site/` carry figures, which the block after this one measures.
 #
-# The set that escapes is a function of the kind, not a fixed list: any path
-# whose content depends on the corpus only through an aggregate can be written
-# alike by two branches, and any path that names the document cannot.
+# The cost of that split is one conflict less per pair of branches: two branches
+# that each add a document no longer stop on every shelf page, the nav and the
+# export, and CI's `headwater generate --check` over `refs/pull/N/merge` still
+# holds each of them.
 
-.headwater/corpus.json merge=headwater-regenerate
-.headwater/export.json merge=headwater-regenerate
-.headwater/nav.yml merge=headwater-regenerate
-.headwater/taxonomy.lock merge=headwater-regenerate
-engine/crates/check/fixtures/corpus.checks merge=headwater-regenerate
-engine/crates/lock/fixtures/corpus.lock merge=headwater-regenerate
-
-# The generated documents. None of them stores a count since #1058, so a text
-# merge no longer writes a number true of neither branch. Each one still lists
-# its entries in an order the corpus derives. A shelf page orders its rows by
-# precedence over the relations of the shelf, so a document that governs one
-# entry and is governed by another moves two rows that neither branch touched,
-# and a text merge of two branches can land that order wrong with no conflict.
-# The probe-result pages and `docs/interfaces/README.md` list the answer of a
-# query over the whole corpus, which is the same fold. `headwater generate`
-# writes every one of them.
-#
-# They are listed rather than matched. `docs/*/README.md` would reach
-# `docs/taxonomies/README.md` and `docs/w3id/README.md`, which nobody generates
-# and somebody edits by hand, and refusing a merge of a hand-authored file is a
-# worse failure than the one this list prevents. A list goes stale instead, so
-# `the_generated_documents_are_declared_unmergeable` in the census crate holds
-# every row the census calls generated against this block.
-docs/acceptance-criteria/README.md merge=headwater-regenerate
-docs/decisions/README.md merge=headwater-regenerate
-docs/evaluations/README.md merge=headwater-regenerate
-docs/how-to/README.md merge=headwater-regenerate
-docs/interfaces/README.md merge=headwater-regenerate
-docs/interfaces/consumer-surface.md merge=headwater-regenerate
-docs/obligations/README.md merge=headwater-regenerate
-docs/probes/README.md merge=headwater-regenerate
-docs/process/decisions/README.md merge=headwater-regenerate
-docs/requirements/README.md merge=headwater-regenerate
-docs/reviews/README.md merge=headwater-regenerate
-docs/spec/09-open-questions.md merge=headwater-regenerate
-docs/spec/README.md merge=headwater-regenerate
-docs/tutorials/README.md merge=headwater-regenerate
-docs/verifications/README.md merge=headwater-regenerate
-docs/probe-results/README.md merge=headwater-regenerate
-docs/probe-runs/README.md merge=headwater-regenerate
-docs/probe-results/regression-probe-transcript-for-2026-09-09.md merge=headwater-regenerate
-docs/probe-results/regression-probe-transcript-for-2026-09-11.md merge=headwater-regenerate
-docs/probe-results/regression-probe-transcript-for-2026-09-16.md merge=headwater-regenerate
-docs/probe-results/regression-probe-transcript-for-2026-09-17.md merge=headwater-regenerate
-docs/probe-results/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md merge=headwater-regenerate
+.headwater/taxonomy.lock -merge
+engine/crates/check/fixtures/corpus.checks -merge
+engine/crates/lock/fixtures/corpus.lock -merge
 
 # The hand-built pages that carry a measured figure. `tools/site/refresh-figures.sh`
 # substitutes 34 measured keys into every element marked `data-figure` on every
@@ -213,9 +180,9 @@ docs/probe-results/regression-probe-transcript-for-2026-09-17-after-the-probe-co
 # refreshed the tokens wrote the same bytes and used to merge, and now they stop
 # and ask. The remedy the driver names rewrites the figures and leaves the token
 # block untouched, so the resolution is one command either way.
-site/how-it-works/index.html merge=headwater-regenerate
-site/index.html merge=headwater-regenerate
-site/proof/index.html merge=headwater-regenerate
+site/how-it-works/index.html -merge
+site/index.html -merge
+site/proof/index.html -merge
 
 # Vendor snapshots retain upstream bytes, including whitespace that this
 # repository does not own. Their fixture README pins their source revisions.

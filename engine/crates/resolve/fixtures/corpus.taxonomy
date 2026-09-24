@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.4.2
+version: 4.5.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -599,6 +599,7 @@ relations:
     nuclearity: multinuclear
     on_target:
       set_state: superseded
+    lifecycle_sensitive: true
     created_by: scaffold
   governs:
     family: governance
