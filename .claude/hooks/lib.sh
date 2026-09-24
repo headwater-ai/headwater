@@ -211,3 +211,47 @@ hw_governing_pointers() {
     [ -n "$_pointers" ] || return 1
     printf '%s\n' "$_pointers"
 }
+
+# The reverse of the set above: what one document governs, and which documents
+# declare an edge onto it. It prints two lists, each under a heading line that
+# carries its count, or nothing and a non-zero status when both lists are
+# empty. A path that is not a document gets nothing, because `explain` refuses
+# a path outside every corpus root and a file that does not exist yet (#1008).
+#
+# Every fact comes from `headwater explain --json` through `headwater json`,
+# one element of `related` at a time, and no line of rendered text is read.
+# An outbound entry counts only where its relation is `governs`, and every
+# inbound entry counts, whatever its relation. `related` of a heavily cited
+# specification part holds twenty entries or more, and the list names each.
+hw_governed_by_document() {
+    _engine=$(hw_engine) || return 1
+    _explain=$("$_engine" explain --json --root "$hw_root" "$1" 2>/dev/null) || return 1
+    _total=$(hw_count "$_explain" related) || return 1
+    _governs= _governs_n=0 _cites= _cites_n=0 _at=0
+    while [ "$_at" -lt "$_total" ]; do
+        _relation=$(hw_field "$_explain" related "$_at" relation) || _relation=
+        _inbound=$(hw_field "$_explain" related "$_at" inbound) || _inbound=
+        _target=$(hw_field "$_explain" related "$_at" target) || _target=
+        _at=$((_at + 1))
+        [ -n "$_target" ] || continue
+        case $_inbound:$_relation in
+            false:governs)
+                _governs="$_governs
+  $_target"
+                _governs_n=$((_governs_n + 1)) ;;
+            true:*)
+                _cites="$_cites
+  $_target ($_relation)"
+                _cites_n=$((_cites_n + 1)) ;;
+        esac
+    done
+    [ "$_governs_n" -gt 0 ] || [ "$_cites_n" -gt 0 ] || return 1
+    if [ "$_governs_n" -gt 0 ]; then
+        printf 'It governs these code paths (%s):%s\n' "$_governs_n" "$_governs"
+        [ "$_cites_n" -gt 0 ] && printf '\n'
+    fi
+    if [ "$_cites_n" -gt 0 ]; then
+        printf 'These documents declare an edge onto it (%s):%s\n' "$_cites_n" "$_cites"
+    fi
+    return 0
+}
