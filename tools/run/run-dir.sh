@@ -157,6 +157,14 @@ log() {
             exit 1
         fi
     done
+    # `opened` and `closed` name the issues, as an array of issue numbers, so a
+    # reader can say which ones and derive how many. A bare count is still read
+    # from an older log, but never written: run 20260923-0733 wrote both shapes
+    # into one log and `net` failed on the mix.
+    if ! printf '%s' "$line" | jq -e '[.opened, .closed] | all(type == "array" and all(.[]; type == "number"))' >/dev/null; then
+        echo "run-dir: \`opened\` and \`closed\` are each an array of issue numbers, such as [] or [1029]." >&2
+        exit 1
+    fi
     if printf '%s' "$line" | jq -e 'keys[] | select(test("^(net|total|totals|cumulative)"))' >/dev/null; then
         echo "run-dir: the log line stores a total, and a total is derived by the reader and" >&2
         echo "  never stored (HW-DR-0049, HW-PD-0005). Drop it; \`run-dir.sh net\` derives it." >&2
@@ -209,7 +217,7 @@ plan_usage() {
     jq -r -n --slurpfile log "$dir/log.jsonl" '
         [inputs] as $s
         | ($log | map(select(.verdict == "merged" or ((.merge | type) == "string" and .merge != ""))) | length) as $merges
-        | ($log | map(.closed // 0) | add // 0) as $closed
+        | ($log | map(.closed | if type == "array" then length elif type == "number" then . else 0 end) | add // 0) as $closed
         | def spent($w):
             [$s[] | .[$w] | select(. != null and .used_percentage != null)] as $p
             | if ($p | length) < 2 then null else
@@ -247,9 +255,12 @@ net() {
     need_jq
     dir=$1
     [ -f "$dir/log.jsonl" ] || { echo "run-dir: no log at $dir." >&2; exit 1; }
-    jq -s 'map(.opened) | add // 0' "$dir/log.jsonl" > /dev/null || exit 1
-    opened=$(jq -s 'map(.opened) | add // 0' "$dir/log.jsonl")
-    closed=$(jq -s 'map(.closed) | add // 0' "$dir/log.jsonl")
+    # An array names issues and counts its length; a number is an older log's
+    # count and counts as itself.
+    count='def n: if type == "array" then length elif type == "number" then . else 0 end;'
+    jq -s "$count"' map(.opened | n) | add // 0' "$dir/log.jsonl" > /dev/null || exit 1
+    opened=$(jq -s "$count"' map(.opened | n) | add // 0' "$dir/log.jsonl")
+    closed=$(jq -s "$count"' map(.closed | n) | add // 0' "$dir/log.jsonl")
     lines=$(wc -l < "$dir/log.jsonl" | tr -d ' ')
     printf 'iterations %s  opened %s  closed %s  net %s\n' "$lines" "$opened" "$closed" $((opened - closed))
 }
@@ -300,6 +311,17 @@ claim() {
     shift 3
     [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
     [ $# -gt 0 ] || { echo "run-dir: claim needs at least one artifact." >&2; exit 2; }
+    # An artifact is one path or one glob, so whitespace means a footprint was
+    # quoted as one argument. That stores one joined slug, which collides with
+    # nothing, and in run 20260923-0733 it hid three real overlaps until a
+    # claim printed no WAITS-ON against an obvious one. Refuse before writing.
+    for artifact in "$@"; do
+        case "$artifact" in
+            *[[:space:]]*)
+                echo "run-dir: \`$artifact\` holds whitespace. Pass each artifact as its own argument." >&2
+                exit 2 ;;
+        esac
+    done
     mkdir -p "$dir/claims/artifacts" "$dir/claims/issues"
     printf 'issue %s\nbranch %s\n' "$issue" "$branch" > "$dir/claims/issues/$issue"
     waits=''

@@ -38,7 +38,7 @@ The report is the four lines, and then the block:
 
 Give the call a `timeout` of 600000. Leave the shared checkout on `main` and untouched. A fresh worktree has no engine and the commit gate then fails open, which is exactly what the build step above exists to prevent. `core.hooksPath` resolving absolute is not a correctness problem here: every `.githooks/` hook hands off to your worktree's own copy regardless of that value ([#925](https://github.com/headwater-ai/headwater/issues/925), fixed by [#946](https://github.com/headwater-ai/headwater/pull/946)).
 
-Nothing has to hold that tree open. `tools/repo/retire-worktree.sh` keeps a tree that holds no commit `origin/main` lacks, and keeps its branch with it, so a tree you have not committed to is safe from the sweep and needs no lock. Push early for the other reason, which is that only pushed commits survive your death.
+Nothing has to hold that tree open. No stage of a run sweeps worktrees or deletes branches any more: the integrator removes only the tree it made, and your tree and branch stay until the owner cleans up with the `repo-cleanup` skill after the run. Leave the tree with nothing uncommitted. Push early, because only pushed commits survive your death.
 
 **Extend the contract first.** Where the note names a contract, a decision clause or a case table, add the new case as the contract states it, run the suite, and confirm it fails for the change's own reason before you write the implementation. Where nothing like that exists, build normally and add fixtures beside the code.
 
@@ -53,6 +53,8 @@ Nothing has to hold that tree open. `tools/repo/retire-worktree.sh` keeps a tree
 Its last line is `green` or `red` with the failing checks named, and the `run <id>` lines above it are the id your report's `CI:` line wants. Then repair a Format, Lint or unblessed-fixture failure yourself before you report. Seven of ten vetoes in one run were exactly those, and each one bought a fresh verifier at twenty minutes. A red CI you cannot repair is the first line of your report, not a pull request handed on.
 
 **A `waits-on` line in your dispatch is the integrator's to honor, not yours to build around.** Build against `origin/main` as it stands; the integrator merges the awaited change first and rebases yours behind it. Do not rebase onto another agent's unmerged branch.
+
+**When you are resumed after a veto, your report goes into the note.** A resumed agent has already handed back once, and a second hand-back does not reach the parent: #1038's answer to its veto in run `20260923-0733` arrived only as the last text of a transcript. Append your answer to `build.md` under a heading `## Follow-up <date>`: what you changed for the finding, the commits, the fixture that now fails without your fix, and the CI run. End your turn with the same four lines and the block. The parent reads the heading.
 
 **Commit and push in small steps.** `git push -u origin <branch>`, never a bare push. Only pushed commits survive an agent death, and a parent resumes you by your id rather than replacing you.
 

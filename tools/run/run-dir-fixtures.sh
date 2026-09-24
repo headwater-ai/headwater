@@ -78,7 +78,7 @@ case $(cat "$scratch/err") in
 esac
 
 printf '\n# log\n'
-line='{"iter":1,"issue":101,"pr":9,"merge":"abc123","verdict":"PASS","proved":"the new rule fired on an injected defect","opened":2,"closed":1}'
+line='{"iter":1,"issue":101,"pr":9,"merge":"abc123","verdict":"PASS","proved":"the new rule fired on an injected defect","opened":[201,202],"closed":[101]}'
 sh "$tool" log "$dir" "$line" 2>"$scratch/err"; status=$?
 same 'a line with every key is appended' 0 "$status"
 same '  and the log holds one line' 1 "$(wc -l < "$dir/log.jsonl" | tr -d ' ')"
@@ -92,7 +92,7 @@ case $(cat "$scratch/err") in
 esac
 same '  and nothing was appended' 1 "$(wc -l < "$dir/log.jsonl" | tr -d ' ')"
 
-with_total='{"iter":2,"issue":102,"pr":10,"merge":"def456","verdict":"PASS","proved":"x","opened":0,"closed":3,"net_delta":-1}'
+with_total='{"iter":2,"issue":102,"pr":10,"merge":"def456","verdict":"PASS","proved":"x","opened":[],"closed":[102,104,105],"net_delta":-1}'
 sh "$tool" log "$dir" "$with_total" 2>"$scratch/err"; status=$?
 same 'a line that stores a total is refused' 1 "$status"
 case $(cat "$scratch/err") in
@@ -103,12 +103,23 @@ esac
 sh "$tool" log "$dir" 'not json' 2>"$scratch/err"; status=$?
 same 'a line that is not JSON is refused' 1 "$status"
 
+as_count='{"iter":2,"issue":102,"pr":10,"merge":"def456","verdict":"PASS","proved":"x","opened":0,"closed":1}'
+sh "$tool" log "$dir" "$as_count" 2>"$scratch/err"; status=$?
+same 'a line that stores opened or closed as a count is refused' 1 "$status"
+case $(cat "$scratch/err") in
+    *'array of issue numbers'*) pass '  and the refusal names the shape' ;;
+    *) fail '  and the refusal names the shape' "$(cat "$scratch/err")" ;;
+esac
+same '  and nothing was appended' 1 "$(wc -l < "$dir/log.jsonl" | tr -d ' ')"
+
 printf '\n# tail and net\n'
-sh "$tool" log "$dir" '{"iter":2,"issue":102,"pr":10,"merge":"def456","verdict":"PASS","proved":"x","opened":0,"closed":3}' >/dev/null 2>&1
-sh "$tool" log "$dir" '{"iter":3,"issue":103,"pr":11,"merge":"","verdict":"FAIL","proved":"a regression stayed green","opened":1,"closed":0}' >/dev/null 2>&1
+sh "$tool" log "$dir" '{"iter":2,"issue":102,"pr":10,"merge":"def456","verdict":"PASS","proved":"x","opened":[],"closed":[102,104,105]}' >/dev/null 2>&1
+sh "$tool" log "$dir" '{"iter":3,"issue":103,"pr":11,"merge":"","verdict":"FAIL","proved":"a regression stayed green","opened":[203],"closed":[]}' >/dev/null 2>&1
 same 'tail returns the last n lines' 2 "$(sh "$tool" tail "$dir" 2 | wc -l | tr -d ' ')"
 same '  and the last of them is the last written' 103 "$(sh "$tool" tail "$dir" 1 | jq -r .issue)"
 same 'net is derived from the lines, never read from one' 'iterations 3  opened 3  closed 4  net -1' "$(sh "$tool" net "$dir")"
+printf '%s\n' '{"iter":4,"issue":106,"pr":12,"merge":"x","verdict":"PASS","proved":"x","opened":0,"closed":1}' >> "$dir/log.jsonl"
+same '  and an older line that stored counts is still counted' 'iterations 4  opened 3  closed 5  net -2' "$(sh "$tool" net "$dir")"
 
 printf '\n# a second run seeds its prose from the first\n'
 printf 'A lesson the first run learned.\n' > "$dir/lessons.md"
@@ -150,6 +161,16 @@ same '  and the Lessons section reaches lessons.md' 2 "$(grep -c '^- ' "$third/l
 same '  and a later heading of the same name is not taken' 0 "$(grep -c 'Not the ledger' "$third/lessons.md")"
 same '  and the decisions reach decisions.md' '- A decision.' "$(grep '^- ' "$third/decisions.md")"
 same '  and the old log is kept whole rather than parsed' 1 "$(grep -c '^|' "$third/log-imported.md")"
+
+printf '\n# claims: a footprint quoted as one argument\n'
+joined=$(sh "$tool" start joined 2>/dev/null)
+sh "$tool" claim "$joined" 40 issue-40 '.headwater/export.json docs/decisions/README.md' >/dev/null 2>"$scratch/err"; status=$?
+same 'an artifact holding whitespace is refused' 2 "$status"
+case $(cat "$scratch/err") in
+    *'its own argument'*) pass '  and the refusal says to pass each artifact separately' ;;
+    *) fail '  and the refusal says to pass each artifact separately' "$(cat "$scratch/err")" ;;
+esac
+same '  and nothing was claimed' 0 "$(ls "$joined/claims/artifacts" 2>/dev/null | wc -l | tr -d ' ')"
 
 printf '\n# claims: two claimants over one artifact\n'
 run=$(sh "$tool" start claims 2>/dev/null)
@@ -231,7 +252,7 @@ plant() {
     printf '{"session_id":"%s","last_activity":%s,"five_hour":{"used_percentage":%s,"resets_at":"%s"},"seven_day":{"used_percentage":%s,"resets_at":"W"}}\n' \
         "$1" "$2" "$3" "$4" "$5" > "$HEADWATER_USAGE_DIR/$1.json"
 }
-merged='{"iter":1,"issue":1,"pr":2,"merge":"abc","verdict":"merged","proved":"p","opened":0,"closed":1}'
+merged='{"iter":1,"issue":1,"pr":2,"merge":"abc","verdict":"merged","proved":"p","opened":[],"closed":[1]}'
 
 plant aaaa1111-parent 100 10 R1 40
 plant bbbb2222-other 200 99 R1 99
