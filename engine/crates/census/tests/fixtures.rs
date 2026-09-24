@@ -1097,6 +1097,284 @@ fn a_merge_attribute_behind_a_glob_is_reported_rather_than_skipped() {
     );
 }
 
+/// A path that two shape rules both match takes the shape of the first rule.
+///
+/// The contract reads the rules in a fixed order, and a producer output is a
+/// fold before it is anything else. Each file below is written by a producer
+/// and is also one complete record on every line. So the record-stream rule
+/// also matches it, and read first it would call the fold `union`-safe. Swap
+/// the fold and record-stream arms of `shape_of`, and this case fails.
+///
+/// A generated JSON projection is not planted here. The marker rule reads the
+/// `headwater:generated` key only at the start of a line, and a line of a
+/// record stream starts with `{`, so no generated file can be both.
+#[test]
+fn a_producer_output_whose_every_line_is_a_record_is_a_fold() {
+    use headwater_census::derived::{Producer, Shape};
+
+    let root = TempTree::new("order");
+    root.write(".gitattributes", "");
+    root.write(
+        "engine/crates/a/fixtures/corpus.a",
+        "{\"digest\":\"sha256:0a1b\"}\n{\"seen\":426}\n",
+    );
+    root.write(
+        "site/figure/index.html",
+        "{<span data-figure=\"census.seen\">426</span>}\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    for (path, producer) in [
+        ("engine/crates/a/fixtures/corpus.a", Producer::RecordedFold),
+        ("site/figure/index.html", Producer::FigureRefresh),
+    ] {
+        assert!(
+            population
+                .outputs
+                .iter()
+                .any(|output| output.path == path && output.producer == producer),
+            "{path} is not claimed by {producer:?}, so it cannot test the rule \
+             order:\n{report}"
+        );
+        let member = population
+            .members
+            .iter()
+            .find(|member| member.path == path)
+            .unwrap_or_else(|| panic!("{path} is not in the report:\n{report}"));
+        assert_eq!(
+            member.shape,
+            Shape::Fold,
+            "{path} is a producer output and every line of it is a record; the \
+             record-stream rule was read before the fold rule:\n{report}"
+        );
+    }
+}
+
+/// Inside a git repository, the merge attribute of every path is git's answer.
+///
+/// The verb once read the root `.gitattributes` alone, as a list of literal
+/// paths. Git reads more than that: a `.gitattributes` in any directory, where
+/// the deeper file wins; `$GIT_DIR/info/attributes`, which wins over all of
+/// them; macros such as `binary`; a pattern with no slash, which matches at any
+/// depth below its file; a glob; and a root file that opens with a byte order
+/// mark. This tree plants each one, and each one gives git an answer the root
+/// reader did not.
+///
+/// There is no table of expected layouts here. For every file of the tree the
+/// case asks `git check-attr merge` and holds the verb's answer against it, so
+/// the case passes only when the verb's answer is git's answer.
+#[test]
+fn derived_agrees_with_git_check_attr_on_every_path() {
+    let root = TempTree::new("check-attr");
+    root.git_init();
+    plant_attribute_layouts(&root, true);
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    let attributes = headwater_census::derived::merge_attributes(root.path());
+
+    let files = files_of(root.path());
+    assert!(files.len() >= 10, "the planted tree is missing files: {files:#?}");
+    for path in &files {
+        let git = git_treatment(root.path(), path);
+        let verb = attributes
+            .iter()
+            .find(|(declared, _)| declared == path)
+            .map(|(_, treatment)| *treatment)
+            .unwrap_or(headwater_census::derived::Treatment::Unset);
+        assert_eq!(
+            verb, git,
+            "the verb gives {path} {verb:?}, and `git check-attr merge` gives {git:?}:\n{report}"
+        );
+        if let Some(member) = population.members.iter().find(|member| member.path == *path) {
+            assert_eq!(
+                member.treatment, git,
+                "the report gives {path} {:?}, and `git check-attr merge` gives {git:?}:\n{report}",
+                member.treatment
+            );
+        }
+    }
+    for fold in FOLDS {
+        assert!(
+            population.members.iter().any(|member| member.path == *fold),
+            "{fold} is a producer output and is not in the report:\n{report}"
+        );
+    }
+    assert!(
+        population.unreadable.is_empty(),
+        "git expands its own patterns, so no merge attribute is unreadable \
+         inside a repository: {:#?}",
+        population.unreadable
+    );
+}
+
+/// Outside a git repository, the verb reads the root `.gitattributes` alone.
+///
+/// The same layouts as the case above, with no `git init`. No git answer
+/// exists here, so the root file is the whole declaration. A nested file is
+/// not read, and a glob in the root file is named as unreadable.
+#[test]
+fn outside_a_git_repository_the_root_gitattributes_alone_is_read() {
+    use headwater_census::derived::Treatment;
+
+    let root = TempTree::new("no-repository");
+    plant_attribute_layouts(&root, false);
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    let treatment_of = |path: &str| {
+        population
+            .members
+            .iter()
+            .find(|member| member.path == path)
+            .unwrap_or_else(|| panic!("{path} is not in the report:\n{report}"))
+            .treatment
+    };
+    for (path, expected) in [
+        // The root declares it, and the nested `-merge` is not read.
+        ("sub/out.md", Treatment::Regenerate),
+        // Only a nested file declares it.
+        ("other/gen.md", Treatment::Unset),
+        // The root declares it, and the nested `binary` is not read.
+        ("m/README.md", Treatment::Regenerate),
+        // The byte order mark is part of the first pattern for this reader.
+        ("top.md", Treatment::Unset),
+    ] {
+        assert_eq!(
+            treatment_of(path),
+            expected,
+            "outside a repository {path} did not take the root file's answer:\n{report}"
+        );
+    }
+    assert_eq!(
+        population.unreadable,
+        vec!["glob/*.md".to_string()],
+        "the root reader did not name the glob it cannot expand:\n{report}"
+    );
+}
+
+/// A merge attribute behind a glob is expanded by git inside a repository.
+///
+/// The companion of `a_merge_attribute_behind_a_glob_is_reported_rather_than_skipped`,
+/// which holds the same tree with no repository.
+#[test]
+fn a_merge_attribute_behind_a_glob_is_expanded_by_git_inside_a_repository() {
+    let root = TempTree::new("glob-git");
+    root.git_init();
+    root.write(
+        ".gitattributes",
+        "docs/**/*.md merge=headwater-regenerate\n\
+         vendor/** whitespace=-trailing-space\n",
+    );
+    root.write("docs/shelf/README.md", "# hand written\n");
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    assert!(
+        population.unreadable.is_empty(),
+        "git expands the glob, so nothing is unreadable:\n{report}"
+    );
+    assert_eq!(
+        population.unproduced,
+        vec!["docs/shelf/README.md".to_string()],
+        "the glob reaches a hand-written file, and the report did not say so:\n{report}"
+    );
+}
+
+/// The producer outputs `plant_attribute_layouts` writes.
+const FOLDS: &[&str] = &[
+    "top.md",
+    "sub/out.md",
+    "other/gen.md",
+    "m/README.md",
+    "c/d/README.md",
+    "i/README.md",
+    "glob/a.md",
+    "plain/README.md",
+];
+
+/// Every layout by which git gives a path a merge attribute that the root file does not state.
+///
+/// Every file except the `.gitattributes` files and the store is a producer
+/// output, so each one is a member of the report and carries a treatment.
+fn plant_attribute_layouts(root: &TempTree, repository: bool) {
+    let fold = "<!-- headwater:generated shelf_index. -->\n\n# 48 decisions\n";
+    root.write(
+        ".gitattributes",
+        "\u{feff}top.md merge=headwater-regenerate\n\
+         sub/out.md merge=headwater-regenerate\n\
+         m/README.md merge=headwater-regenerate\n\
+         c/d/README.md merge=headwater-regenerate\n\
+         i/README.md merge=headwater-regenerate\n\
+         glob/*.md merge=headwater-regenerate\n\
+         plain/README.md merge=headwater-regenerate\n\
+         store/readings.jsonl merge=union\n",
+    );
+    // A nested file unsets the root's driver.
+    root.write("sub/.gitattributes", "out.md -merge\n");
+    // A nested file declares a producer output that the root does not name.
+    root.write("other/.gitattributes", "gen.md merge=headwater-regenerate\n");
+    // The `binary` macro expands to `-merge`.
+    root.write("m/.gitattributes", "README.md binary\n");
+    // A pattern with no slash matches at any depth below its file.
+    root.write("c/.gitattributes", "README.md merge=union\n");
+    if repository {
+        // `$GIT_DIR/info/attributes` wins over every `.gitattributes`.
+        root.write(".git/info/attributes", "i/README.md merge=union\n");
+    }
+    for path in FOLDS {
+        root.write(path, fold);
+    }
+    root.write("store/readings.jsonl", "{\"a\":1}\n");
+}
+
+/// Every file of a tree except git's own state, relative to its root.
+fn files_of(root: &Path) -> Vec<String> {
+    fn walk(dir: &Path, root: &Path, found: &mut Vec<String>) {
+        for entry in std::fs::read_dir(dir).expect("a directory").flatten() {
+            let path = entry.path();
+            if entry.file_name() == ".git" {
+                continue;
+            }
+            if path.is_dir() {
+                walk(&path, root, found);
+            } else {
+                let relative = path.strip_prefix(root).expect("under the root");
+                found.push(relative.to_string_lossy().replace('\\', "/"));
+            }
+        }
+    }
+    let mut found = Vec::new();
+    walk(root, root, &mut found);
+    found.sort();
+    found
+}
+
+/// The treatment `git check-attr merge` gives a path, asked of git directly.
+fn git_treatment(root: &Path, path: &str) -> headwater_census::derived::Treatment {
+    use headwater_census::derived::Treatment;
+    let output = std::process::Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["check-attr", "merge", "--", path])
+        .output()
+        .expect("git runs");
+    assert!(output.status.success(), "git check-attr failed on {path}");
+    let text = String::from_utf8_lossy(&output.stdout);
+    let value = text
+        .trim_end()
+        .rsplit(": ")
+        .next()
+        .expect("git prints a value");
+    match value {
+        "union" => Treatment::Union,
+        "headwater-regenerate" => Treatment::Regenerate,
+        "unspecified" | "unset" | "set" | "text" | "binary" => Treatment::Unset,
+        other => panic!("this tree plants no merge driver named {other}"),
+    }
+}
+
 /// A tree under a directory this process owns, removed when the case ends.
 ///
 /// Keyed on the process identifier and a label, because `cargo` runs the cases
