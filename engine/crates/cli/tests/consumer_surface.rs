@@ -265,6 +265,32 @@ fn the_rule_reads_the_manifest_and_honors_a_passage_that_says_so() {
     );
 }
 
+/// A local root named bare, with no trailing `/`, in code; and the same word
+/// in prose (#976).
+const BARE: &str = "\nWire the hooks once.\n\n```sh\ngit config core.hooksPath .githooks\n```\n\nThe site word in prose names nothing.\n";
+
+/// A bare local root in code is reported, and the same word in prose is not.
+///
+/// Edition three matched a token that opens with a declared root, `.githooks/`
+/// with its slash, so the bare `.githooks` that `git config core.hooksPath`
+/// sets passed. The prose sentence carries `site`, which is also a declared
+/// root, and the rule reads no prose.
+#[test]
+fn a_bare_local_root_in_code_is_reported_and_a_word_of_prose_is_not() {
+    let root = Root::new("bare", &["docs/interfaces/b.md"]);
+    root.contract("b", BARE);
+    let (_, out, err) = root.run(&["check"]);
+    let b = root.findings("b");
+    assert!(
+        b.iter().any(|f| f.contains("names `.githooks`,")),
+        "the bare `.githooks` of a `git config` line is reported\n{b:#?}\n{out}{err}"
+    );
+    assert!(
+        !b.iter().any(|f| f.contains("names `site`")),
+        "a word of prose is not reported\n{b:#?}"
+    );
+}
+
 /// The page `headwater generate` writes from the `surface` block (#1051).
 const PAGE: &str = "docs/interfaces/consumer-surface.md";
 
