@@ -491,6 +491,17 @@ impl Resolver for CommentScan {
             return Binding::Unresolved(format!("no `{normalized}` in the source tree"));
         };
 
+        // An asserter outside the declared prefix can never be cited, because
+        // `candidates` returns only tokens that open with it. So the refusal
+        // names the identifier and the prefix, and never a citation to add.
+        if !asserter.starts_with(self.prefix.as_str()) {
+            return Binding::Unresolved(format!(
+                "`{asserter}`, the document that asserts this edge, does not start `{}`, so no \
+                 comment in `{normalized}` can cite it",
+                self.prefix
+            ));
+        }
+
         let text = crate::comments::rust_comment_text(&source);
         let candidates = Self::candidates(&text, &self.prefix);
         let Some(first) = candidates.first() else {
@@ -1076,5 +1087,57 @@ mod tests {
         std::fs::remove_dir_all(&dir).ok();
 
         assert!(why.contains("the document that asserts the edge"), "{why}");
+    }
+
+    /// The asserter's own citation binds only if the asserter is minted. A
+    /// different minted identifier beside it does not stand in for it, which
+    /// is #967 in a second shape.
+    #[test]
+    fn an_unminted_asserter_cited_beside_a_minted_identifier_is_refused() {
+        let dir = scratch("unminted-beside-minted");
+        std::fs::write(
+            dir.join("sample.rs"),
+            "//! proves HW-VER-0001\n//! proves HW-VER-9999\nfn f() {}\n",
+        )
+        .expect("a fixture file");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
+        );
+        let Binding::Unresolved(why) = resolver.resolve_for("sample.rs", "HW-VER-9999") else {
+            panic!("an unminted asserter bound because another citation is minted");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(why.contains("HW-VER-9999"), "{why}");
+        assert!(why.contains("no document mints it"), "{why}");
+    }
+
+    /// An asserter whose identifier lacks the declared prefix can never be
+    /// cited, so the refusal names the identifier and the prefix and asks
+    /// for no citation.
+    #[test]
+    fn an_asserter_outside_the_prefix_is_refused_and_names_the_prefix() {
+        let dir = scratch("asserter-outside-prefix");
+        std::fs::write(dir.join("sample.rs"), "//! proves HW-VER-0001\nfn f() {}\n")
+            .expect("a fixture file");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            ["HW-VER-0001", "HW-SPEC-x"]
+                .into_iter()
+                .map(String::from)
+                .collect(),
+        );
+        let Binding::Unresolved(why) = resolver.resolve_for("sample.rs", "HW-SPEC-x") else {
+            panic!("an asserter outside the prefix resolved");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(why.contains("HW-SPEC-x"), "{why}");
+        assert!(why.contains("does not start `HW-VER-`"), "{why}");
     }
 }
