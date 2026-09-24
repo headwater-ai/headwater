@@ -1643,10 +1643,11 @@ fn publish(
 /// location with one line that names the path form.
 fn vendor(root: &Path, source: &str, expect: Option<&str>) -> ExitCode {
     let mode = headwater_cli::paint::stdout_color();
-    let declared = headwater_resolve::package::consumer(root)
-        .ok()
-        .and_then(|consumer| consumer.digest);
-    let Some(pinned) = expect.map(str::to_string).or(declared) else {
+    let consumer = headwater_resolve::package::consumer(root).ok();
+    let declared = consumer
+        .as_ref()
+        .and_then(|consumer| consumer.digest.clone());
+    let Some(pinned) = expect.map(str::to_string).or_else(|| declared.clone()) else {
         // Stays at `fail` (#455): `--expect` reaches past this on the command
         // line, which is the whole test, and a caller who does not know the
         // flag exists is the caller the grammar pointer is for. The consumer
@@ -1733,6 +1734,51 @@ fn vendor(root: &Path, source: &str, expect: Option<&str>) -> ExitCode {
          the lock this package produces."
     );
 
+    // **The pin `--expect` verified is recorded, and a declared pin is never
+    // replaced** (#1063). The value came from the publisher by the caller's
+    // hand and the artifact has just matched it, so it is not a pin against
+    // itself (spec 7). Without this write the identical next run with no flag
+    // refused with "nothing pins this artifact", which is #641.
+    //
+    // A tree whose declaration does not read is not edited. The install stands,
+    // as it did before #1063, and the report says where the pin goes.
+    if let Some(expected) = expect {
+        match (&consumer, &declared) {
+            (None, _) => println!(
+                "  {} does not read as a consumer declaration, so no pin was written. Write \
+                 `digest: {expected}` under `taxonomy:` there",
+                headwater_resolve::package::CONSUMER
+            ),
+            (Some(_), None) => match record_pin(root, expected) {
+                Ok(()) => println!(
+                    "  pinned taxonomy.digest in {}",
+                    headwater_cli::paint::paint(
+                        headwater_cli::paint::Role::Path,
+                        headwater_resolve::package::CONSUMER,
+                        mode
+                    )
+                ),
+                Err(reason) => {
+                    eprintln!(
+                        "headwater: {}",
+                        err(&format!(
+                            "the package is installed, and the pin was not written: {reason}. \
+                             Write `digest: {expected}` under `taxonomy:` in {} by hand",
+                            headwater_resolve::package::CONSUMER
+                        ))
+                    );
+                    return ExitCode::FAILURE;
+                }
+            },
+            (Some(_), Some(declared)) if declared != expected => println!(
+                "  {} declares taxonomy.digest {declared}, and this run installed {expected}. \
+                 The declared pin is left as it is",
+                headwater_resolve::package::CONSUMER
+            ),
+            (Some(_), Some(_)) => {}
+        }
+    }
+
     // The one fact this run can see that no other run of this engine can, so it
     // is said last, where a reader who read nothing else still meets it.
     // `package::vendor` decided it and carried it out; nothing here re-reads the
@@ -1760,6 +1806,79 @@ fn vendor(root: &Path, source: &str, expect: Option<&str>) -> ExitCode {
         );
     }
     ExitCode::SUCCESS
+}
+
+/// Write `digest: <value>` into the `taxonomy:` block of the consumer
+/// declaration, as a one-line edit of its text.
+///
+/// The file is not re-serialized, so every comment and every key keeps its
+/// bytes. The commented `# digest:` line that `init` writes is replaced where it
+/// is there. Otherwise the line goes after `version:`, or after the last key of
+/// the block, at the indentation of its sibling keys. The file is read back
+/// through the parser every verb reads it with, and a result that does not
+/// declare this digest puts the original bytes back and refuses.
+fn record_pin(root: &Path, digest: &str) -> Result<(), String> {
+    let path = root.join(headwater_resolve::package::CONSUMER);
+    let original = std::fs::read_to_string(&path).map_err(|error| error.to_string())?;
+    let edited = with_pin(&original, digest)
+        .ok_or_else(|| "no block `taxonomy:` with keys on their own lines is there".to_string())?;
+    std::fs::write(&path, &edited).map_err(|error| error.to_string())?;
+    let read_back = headwater_resolve::package::consumer(root)
+        .ok()
+        .and_then(|consumer| consumer.digest);
+    if read_back.as_deref() == Some(digest) {
+        return Ok(());
+    }
+    std::fs::write(&path, &original).map_err(|error| error.to_string())?;
+    Err("the edited file did not read back with this digest, so it was restored".to_string())
+}
+
+/// The declaration text with one `digest:` line in its `taxonomy:` block, or
+/// `None` where that block is not a block of keys on their own lines.
+fn with_pin(text: &str, digest: &str) -> Option<String> {
+    let lines: Vec<&str> = text.split_inclusive('\n').collect();
+    let start = lines
+        .iter()
+        .position(|line| line.trim_end() == "taxonomy:")?;
+    // The block ends at the next line at column zero that is not a comment.
+    let end = lines[start + 1..]
+        .iter()
+        .position(|line| {
+            let first = line.chars().next();
+            !matches!(first, None | Some(' ' | '\t' | '#' | '\n' | '\r'))
+        })
+        .map_or(lines.len(), |offset| start + 1 + offset);
+    let block = &lines[start + 1..end];
+    let is_key = |line: &str| {
+        let trimmed = line.trim_start();
+        line.starts_with(' ') && !trimmed.starts_with('#') && trimmed.contains(':')
+    };
+    let first_key = block.iter().find(|line| is_key(line))?;
+    let indent = &first_key[..first_key.len() - first_key.trim_start().len()];
+    // A sibling key sits at exactly this indentation; a deeper line is a value.
+    let is_key = |line: &str| {
+        is_key(line) && line.starts_with(indent) && !line[indent.len()..].starts_with([' ', '\t'])
+    };
+    let pin = format!("{indent}digest: {digest}\n");
+
+    let mut out: Vec<String> = lines.iter().map(|line| (*line).to_string()).collect();
+    let commented = block
+        .iter()
+        .position(|line| line.trim_start().starts_with("# digest:"));
+    if let Some(offset) = commented {
+        out[start + 1 + offset] = pin;
+    } else {
+        let after = block
+            .iter()
+            .position(|line| is_key(line) && line.trim_start().starts_with("version:"))
+            .or_else(|| block.iter().rposition(|line| is_key(line)))?;
+        let at = start + 1 + after;
+        if !out[at].ends_with('\n') {
+            out[at].push('\n');
+        }
+        out.insert(at + 1, pin);
+    }
+    Some(out.concat())
 }
 
 /// Resolve a location to a temporary directory, or pass a path through as
@@ -2281,20 +2400,19 @@ fn migrate(
              {{version: {from}, digest: {digest}}} and `adoption.to` becomes {to} \
              (HW-DR-0046). The open task set, if any, is carried through unchanged"
         ),
-        // The remedy names hand authorship, and it named `taxonomy vendor`
-        // until #516 was adjudicated. That verb pins nothing: `--expect`
-        // verifies the artifact against a digest the caller supplied, installs
-        // it, exits 0 and leaves the declaration byte-identical, and the
-        // identical next `vendor` refuses with "nothing pins this artifact".
-        // So the sentence sent an adopter with no pin to a verb that refuses
-        // them and sends them back here. The pin is authored (spec 7), and
+        // The remedy named hand authorship alone from #516 until #1063. Until
+        // then `vendor --expect` installed the artifact and left the
+        // declaration byte-identical, so the next `vendor` refused with
+        // "nothing pins this artifact". It now records the digest it verified
+        // where none is declared, so the remedy names it beside the hand edit.
         // `apply_with_no_pinned_digest_writes_no_migration_state` performs
         // every clause of what stands here now.
         None => println!(
             "  `.headwater/taxonomy.yml` pins no digest, so this run cannot write a verifiable \
-             `adoption.from` (HW-DR-0046). The pin is authored: take the digest the publisher \
-             states and write it as `taxonomy.digest` in `.headwater/taxonomy.yml` by hand, and \
-             a later run of this verb records the migration. Every other file below is still \
+             `adoption.from` (HW-DR-0046). Take the digest the publisher states and write it as \
+             `taxonomy.digest` in `.headwater/taxonomy.yml`, by hand or with `headwater taxonomy \
+             vendor <dir-or-location> --expect <digest>`, and a later run of this verb records \
+             the migration. Every other file below is still \
              written on `--apply`"
         ),
     }
@@ -6529,10 +6647,12 @@ taxonomy:
         // the only place an adopter learns the key exists, and it is left
         // commented because the value is theirs to write.
         //
-        // `--expect <digest>` is deliberately not named here. It exits 0 and
-        // writes nothing into this file, so an adopter who took it would commit
-        // a declaration that pins nothing and meet the same refusal on the next
-        // clone.
+        // `--expect <digest>` was deliberately not named here until #1063,
+        // because it wrote nothing into this file and an adopter who took it
+        // committed a declaration that pinned nothing. It now writes the
+        // digest it verified into the commented line below, so either route
+        // leaves a pin. The text is unchanged because what it says still holds
+        // for a run with no flag.
         None => declaration_text.push_str(
             "  # INTERVIEW: no package of this name is under `.headwater/packages/`. Two routes\n\
              \x20 # reach a lock, and each one needs a different field below.\n\

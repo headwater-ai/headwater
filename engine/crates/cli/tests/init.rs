@@ -884,7 +884,11 @@ fn vendor_with_expect_writes_the_pin_the_next_run_reads() {
         &["taxonomy", "vendor", "--expect", digest.as_str()],
         Some(&artifact),
     );
-    assert_eq!(code, Some(0), "`vendor --expect` accepts the artifact:\n{stderr}");
+    assert_eq!(
+        code,
+        Some(0),
+        "`vendor --expect` accepts the artifact:\n{stderr}"
+    );
     assert_eq!(
         pinned_digest(&root),
         Some(digest.clone()),
@@ -934,7 +938,11 @@ fn vendor_with_a_wrong_expect_leaves_the_declaration_byte_identical() {
         &["taxonomy", "vendor", "--expect", wrong.as_str()],
         Some(&artifact),
     );
-    assert_eq!(code, Some(1), "an artifact the digest does not name is refused");
+    assert_eq!(
+        code,
+        Some(1),
+        "an artifact the digest does not name is refused"
+    );
     assert_eq!(
         root.read(".headwater/taxonomy.yml"),
         before,
@@ -970,7 +978,11 @@ fn vendor_with_expect_never_overwrites_a_declared_pin() {
             &["taxonomy", "vendor", "--expect", digest.as_str()],
             Some(&artifact),
         );
-        assert_eq!(code, Some(0), "`vendor --expect` installs the artifact:\n{stderr}");
+        assert_eq!(
+            code,
+            Some(0),
+            "`vendor --expect` installs the artifact:\n{stderr}"
+        );
         assert_eq!(
             root.read(".headwater/taxonomy.yml"),
             pinned,
@@ -993,14 +1005,71 @@ fn vendor_with_expect_from_a_location_writes_the_pin() {
         zipped(&artifact),
     );
     let (code, stderr) = root.run(
-        &["taxonomy", "vendor", location.as_str(), "--expect", digest.as_str()],
+        &[
+            "taxonomy",
+            "vendor",
+            location.as_str(),
+            "--expect",
+            digest.as_str(),
+        ],
         None,
     );
-    assert_eq!(code, Some(0), "`vendor <location> --expect` accepts the artifact:\n{stderr}");
+    assert_eq!(
+        code,
+        Some(0),
+        "`vendor <location> --expect` accepts the artifact:\n{stderr}"
+    );
     assert_eq!(
         pinned_digest(&root),
         Some(digest),
         "`vendor <location> --expect` wrote the pin it verified:\n{}",
         root.read(".headwater/taxonomy.yml")
+    );
+}
+
+/// On a declaration with no commented `digest` line, the pin is one line added
+/// after `version:` at the indentation of its siblings, and every other byte
+/// stays.
+#[test]
+fn vendor_with_expect_adds_one_line_to_a_declaration_with_no_commented_digest() {
+    let root = Root::over("vendor-expect-one-line");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+    root.init();
+    // An authored declaration: the commented line removed, the version set.
+    let written = root.read(".headwater/taxonomy.yml");
+    let commented = written
+        .lines()
+        .find(|line| line.trim_start().starts_with("# digest:"))
+        .expect("the declaration names the field `taxonomy vendor` reads");
+    let before = written.replace(&format!("{commented}\n"), "").replace(
+        "  version: 0.0.0\n",
+        &format!("  version: {}\n", maintained_version()),
+    );
+    root.write(".headwater/taxonomy.yml", &before);
+
+    let (code, stderr) = root.run(
+        &["taxonomy", "vendor", "--expect", digest.as_str()],
+        Some(&artifact),
+    );
+    assert_eq!(
+        code,
+        Some(0),
+        "`vendor --expect` accepts the artifact:\n{stderr}"
+    );
+    assert_eq!(pinned_digest(&root), Some(digest.clone()));
+
+    let version_line = before
+        .lines()
+        .find(|line| line.starts_with("  version:"))
+        .expect("the declaration pins a version");
+    assert_eq!(
+        root.read(".headwater/taxonomy.yml"),
+        before.replacen(
+            &format!("{version_line}\n"),
+            &format!("{version_line}\n  digest: {digest}\n"),
+            1
+        ),
+        "the pin is the one line that moved"
     );
 }

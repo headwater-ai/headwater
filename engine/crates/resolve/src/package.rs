@@ -113,10 +113,12 @@ pub struct Consumer {
     /// The digest of the published artifact this repository takes, where it
     /// declares one.
     ///
-    /// The pin is authored and it is never written by a verb. A digest that the
+    /// The engine never takes the pin from the artifact. A digest that the
     /// engine recorded from whatever it had just fetched would be a pin against
     /// itself, so `vendor` refuses to run without one rather than trusting the
-    /// first artifact it meets. See [`crate::release`].
+    /// first artifact it meets. One verb writes it: `vendor --expect <digest>`
+    /// records the value the caller supplied, after the artifact matched it and
+    /// only where no pin is declared (#1063). See [`crate::release`].
     pub digest: Option<String>,
     pub overlay: Option<String>,
     /// The corpus root, as written, relative to the repository root.

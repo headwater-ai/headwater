@@ -1229,23 +1229,22 @@ fn apply_records_the_migration_state_in_the_lock() {
 /// output with a passing case over it. A prefix cannot see the end of a
 /// sentence, so the end of the sentence is what the case now carries.
 const NO_PIN_REMEDY: &str = "  `.headwater/taxonomy.yml` pins no digest, so this run cannot write \
-                             a verifiable `adoption.from` (HW-DR-0046). The pin is authored: take \
-                             the digest the publisher states and write it as `taxonomy.digest` in \
-                             `.headwater/taxonomy.yml` by hand, and a later run of this verb \
+                             a verifiable `adoption.from` (HW-DR-0046). Take the digest the \
+                             publisher states and write it as `taxonomy.digest` in \
+                             `.headwater/taxonomy.yml`, by hand or with `headwater taxonomy vendor \
+                             <dir-or-location> --expect <digest>`, and a later run of this verb \
                              records the migration. Every other file below is still written on \
                              `--apply`";
 
 /// A run with no digest pinned writes every other file and leaves the lock
 /// exactly as it was, rather than writing a `from` this run cannot verify.
 ///
-/// It also holds the remedy that run prints, by performing both halves of it.
-/// `taxonomy vendor --expect <digest>` is run first, on the artifact this case
-/// published, and the declaration is read back byte for byte: the check passes,
-/// the artifact installs, and no pin is recorded. Then the digest is written
-/// into the declaration by hand and the same `migrate --apply` is run again,
-/// and the lock records the `adoption.from` the first run could not write. So
-/// the sentence is measured at both ends rather than quoted from the source
-/// beside it.
+/// It also holds the remedy that run prints, by performing it. After the first
+/// run, `taxonomy vendor --expect <digest>` is run on the artifact this case
+/// published: the check passes, the artifact installs, and the pin is recorded
+/// (#1063). The same `migrate --apply` is run again, and the lock records the
+/// `adoption.from` the first run could not write. So the sentence is measured
+/// at both ends rather than quoted from the source beside it.
 #[test]
 fn apply_with_no_pinned_digest_writes_no_migration_state() {
     let root = Root::new("no-digest-no-lock-write");
@@ -1273,9 +1272,26 @@ fn apply_with_no_pinned_digest_writes_no_migration_state() {
     root.candidate(Some(&payload()));
     assert_eq!(root.publish("2.0.0").code, Some(0));
 
-    // The first half of the remedy, measured. A passing `--expect` check
-    // installs the artifact and records nothing, which is what makes the
-    // sentence below a measurement rather than a restatement of the source.
+    let before =
+        std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads");
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        ran.out.contains(NO_PIN_REMEDY),
+        "the run states why, and the whole sentence stands: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("wrote 1 value in 1 file"),
+        "every other file is still written: {ran:?}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads"),
+        before,
+        "and the lock is byte for byte what it was"
+    );
+
+    // The remedy, performed by the verb it names. A passing `--expect` check
+    // installs the artifact and records the digest it verified (#1063).
     //
     // The maintained source moves aside first and comes back after. `taxonomy
     // vendor` refuses to write over a `.headwater/packages/<name>` that carries no release
@@ -1297,51 +1313,14 @@ fn apply_with_no_pinned_digest_writes_no_migration_state() {
     ]);
     assert_eq!(vendored.code, Some(0), "the check passes: {vendored:?}");
     assert!(
-        vendored.out.contains(&digest),
-        "over the digest this case published: {vendored:?}"
-    );
-    assert!(
-        !root.read(".headwater/taxonomy.yml").contains("digest: "),
-        "and it wrote no pin: {}",
+        root.read(".headwater/taxonomy.yml")
+            .contains(&format!("  digest: {digest}\n")),
+        "and it wrote the pin: {}",
         root.read(".headwater/taxonomy.yml")
     );
     std::fs::remove_dir_all(&maintained).expect("the vendored artifact goes");
     std::fs::rename(&aside, &maintained).expect("the maintained source comes back");
 
-    let before =
-        std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads");
-    let ran = root.migrate("2.0.0", &["--apply"]);
-    assert_eq!(ran.code, Some(0), "{ran:?}");
-    assert!(
-        ran.out.contains(NO_PIN_REMEDY),
-        "the run states why, and the whole sentence stands: {ran:?}"
-    );
-    assert!(
-        !ran.out.contains("`taxonomy vendor` pins"),
-        "and it names no verb that would refuse this adopter: {ran:?}"
-    );
-    assert!(
-        ran.out.contains("wrote 1 value in 1 file"),
-        "every other file is still written: {ran:?}"
-    );
-    assert_eq!(
-        std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads"),
-        before,
-        "and the lock is byte for byte what it was"
-    );
-
-    // The second half of the remedy, performed. The digest goes into the
-    // declaration by hand, where the sentence says it goes, and the same run
-    // then writes the migration state it refused to write above.
-    let repinned = std::fs::read_to_string(root.at.join(".headwater/taxonomy.yml"))
-        .expect("the consumer declaration reads")
-        .replace(
-            "\n  version: ",
-            &format!("\n  digest: {digest}\n  version: "),
-        );
-    assert!(repinned.contains(&digest), "the pin is written by hand");
-    std::fs::write(root.at.join(".headwater/taxonomy.yml"), repinned)
-        .expect("the consumer declaration writes");
     let after = root.migrate("2.0.0", &["--apply"]);
     assert_eq!(after.code, Some(0), "{after:?}");
     assert!(
