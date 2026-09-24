@@ -149,18 +149,13 @@ fn bind(member: &Member, resolvers: &Resolvers) -> Result<Vec<String>, String> {
     };
     // A literal pattern resolves when the path exists, and a directory exists.
     // A scope counts files, so a directory would be one entry standing for
-    // everything under it. A file has nothing under it, so the resolver's own
-    // walk of `<literal>/**` tells the two apart without a second reader of
-    // the tree.
-    if pattern.is_literal() {
-        if let Binding::Resolved { matched: under, .. } = resolver.resolve(&format!("{source}/**"))
-        {
-            if !under.is_empty() {
-                return Err(format!(
-                    "`{source}` names a directory, and a scope pattern admits files: write `{source}/**`"
-                ));
-            }
-        }
+    // everything under it, or for nothing when it is empty. The resolver
+    // answers which of the two a literal names, because a walk of
+    // `<literal>/**` finds nothing under an empty directory either.
+    if pattern.is_literal() && resolver.names_directory(source) {
+        return Err(format!(
+            "`{source}` names a directory, and a scope pattern admits files: write `{source}/**`"
+        ));
     }
     Ok(matched)
 }
