@@ -126,14 +126,14 @@ fn expected(lock: &str) -> Expected {
     let top = loaded.value.as_map().expect("the lock is a mapping");
     let resolved = map(top, "resolved");
     let mut out = Expected::default();
-    for entry in map(resolved, "purposes").iter() {
+    for entry in map(resolved, "purposes") {
         out.purposes.insert(entry.key.value.clone());
     }
-    for entry in map(resolved, "anchors").iter() {
+    for entry in map(resolved, "anchors") {
         out.anchors.insert(entry.key.value.clone());
     }
     let kinds = map(resolved, "kinds");
-    for entry in kinds.iter() {
+    for entry in kinds {
         let kind = entry.value.value.as_map().expect("a kind is a mapping");
         if scalar(kind, "abstract").as_deref() == Some("true") {
             out.abstracts.insert(entry.key.value.clone());
@@ -142,7 +142,7 @@ fn expected(lock: &str) -> Expected {
             out.lanes.insert((purpose, entry.key.value.clone()));
         }
     }
-    for entry in map(resolved, "relations").iter() {
+    for entry in map(resolved, "relations") {
         let relation = entry.value.value.as_map().expect("a relation is a mapping");
         for from in names(relation.get("from")) {
             for to in names(relation.get("to")) {
