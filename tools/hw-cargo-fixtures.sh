@@ -171,19 +171,28 @@ sleep 30 &
 echo \$! >"$scratch/daemon.pid"
 EOF
     chmod +x "$daemonbin/cargo"
-    rm -rf "$pool"
+    rm -rf "$pool" "$scratch/daemon.pid"
     (
         cd "$worktree_b" || exit 1
         PATH="$daemonbin:$PATH" HW_CARGO_POOL="$pool" HW_CARGO_SLOTS=1 sh "$tool" build --profile dev-release -p headwater-cli --locked
     ) >"$scratch/out" 2>"$scratch/err"
-    if (flock -n 9) 9>>"$pool/slot.1.lock"; then
+    # A free lock proves nothing unless the tool took it and the daemon it
+    # would have leaked to is still alive when the lock is probed.
+    daemon=$(cat "$scratch/daemon.pid" 2>/dev/null || true)
+    if [ ! -e "$pool/slot.1.lock" ]; then
+        failed=$((failed + 1))
+        echo "  FAIL  the tool never opened slot 1's lock, so the probe below would prove nothing"
+    elif [ -z "$daemon" ] || ! kill -0 "$daemon" 2>/dev/null; then
+        failed=$((failed + 1))
+        echo "  FAIL  the fake cargo's daemon is not running, so the tool never ran cargo or the daemon died"
+    elif (flock -n 9) 9>>"$pool/slot.1.lock"; then
         passed=$((passed + 1))
         echo "  ok    slot 1 is free once the tool returns, with its daemon still running"
     else
         failed=$((failed + 1))
         echo "  FAIL  a process the build started still holds slot 1's lock"
     fi
-    kill "$(cat "$scratch/daemon.pid")" 2>/dev/null
+    [ -n "$daemon" ] && kill "$daemon" 2>/dev/null
 else
     failed=$((failed + 1))
     echo "  FAIL  no flock on this host, so the lock this case holds is never taken; unrun"
