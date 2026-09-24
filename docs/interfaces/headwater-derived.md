@@ -35,6 +35,10 @@ The verb reads the tree. It also asks git two questions about the tree: which pa
 
 **Inside a git repository, git gives the merge attribute.** The verb runs `git check-attr merge` one time, for every file of its walk, every literal path of the root `.gitattributes`, and the lock. Git applies its own precedence. A `.gitattributes` in a deeper directory wins over one nearer the root, `$GIT_DIR/info/attributes` wins over every `.gitattributes`, and `core.attributesFile` applies below all of them. Git also expands its own patterns and macros, so the `binary` macro and `-merge` both give a path no merge attribute. The answer of the verb is the answer that a merge gets.
 
+The verb asks about a literal path of the root file without its leading `/`, because git refuses a path that begins with one. It does not ask about a path that climbs out of the tree through `..`. Git refuses that path too, and a pattern that names it matches no file of the tree.
+
+**Where git refuses the question inside a repository, the report says so.** The verb then uses the root-file reader for the whole tree. The report prints what git printed, and it states that nested files, `info/attributes` and `core.attributesFile` were not read. The verb exits 1.
+
 **Outside a git repository, the verb reads the root `.gitattributes` alone.** It reads that file as a list of literal paths. It does not read a nested file, and it does not expand a pattern. No merge reads the attributes of such a tree, so this reader is for a tree that is not a repository yet.
 
 The verb is not on the check-evaluation path. [Spec 12](../spec/12-check-layer.md) keeps version control commands off that path, and `headwater check` does not call this verb.
@@ -100,7 +104,7 @@ The verb takes no option of its own. It computes one answer about one tree, and 
 
 **0** means that the computed set and the declared set agree, and that every reported path carries the merge attribute its shape takes.
 
-**1** means that at least one of those disagrees. Four things give this status. A producer output carries no attribute. A declared path has no producer. A shape carries an attribute that is not its treatment. Outside a git repository, a merge attribute is one this verb cannot read. The report prints the whole answer, on standard output, under either status.
+**1** means that at least one of those disagrees. Five things give this status. A producer output carries no attribute. A declared path has no producer. A shape carries an attribute that is not its treatment. Outside a git repository, a merge attribute is one this verb cannot read. Inside one, git refused to give the merge attributes. The report prints the whole answer, on standard output, under either status.
 
 ## Environment
 

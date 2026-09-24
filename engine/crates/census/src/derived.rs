@@ -334,19 +334,26 @@ pub struct Population {
     /// Every path that carries a merge driver this verb does not know, and
     /// the driver's name, as git reports it.
     pub drivers: Vec<(String, String)>,
+    /// What git printed where it refused `git check-attr` inside a repository.
+    ///
+    /// The root-file reader answered in its place, which reads less than a
+    /// merge does. So a refusal is a disagreement in its own right: the report
+    /// names it and the verb exits 1, rather than fall back in silence.
+    pub refused: Option<String>,
 }
 
 impl Population {
     /// Whether the tree, the producers and the shapes all agree.
     ///
-    /// Four things can disagree, and each one is a reason to exit 1: a producer
+    /// Five things can disagree, and each one is a reason to exit 1: a producer
     /// output with no attribute, a declared path with no producer, a shape whose
-    /// attribute is not its treatment, and a declaration this reader cannot
-    /// expand.
+    /// attribute is not its treatment, a declaration this reader cannot
+    /// expand, and a repository where git refused to give the attributes.
     pub fn agrees(&self) -> bool {
         self.undeclared.is_empty()
             && self.unproduced.is_empty()
             && self.unreadable.is_empty()
+            && self.refused.is_none()
             && self.disagreements().next().is_none()
     }
 
@@ -504,6 +511,14 @@ impl Population {
                 }
             }
         }
+        if let Some(refusal) = &self.refused {
+            out.push_str(
+                "git refused `git check-attr` in this repository, so the merge \
+                 attributes above are the root `.gitattributes` alone, and a nested \
+                 file, `info/attributes` and `core.attributesFile` were not read:\n",
+            );
+            out.push_str(&format!("    {refusal}\n"));
+        }
         if !self.drivers.is_empty() {
             out.push_str(
                 "these carry a merge driver this verb does not know, so it cannot \
@@ -564,6 +579,7 @@ pub fn population(root: &Path) -> Population {
         found: attributes,
         unreadable,
         drivers,
+        refused,
     } = attributes_of(root, &files);
     let declared: Vec<String> = attributes
         .iter()
@@ -623,6 +639,7 @@ pub fn population(root: &Path) -> Population {
         members,
         unreadable,
         drivers,
+        refused,
     }
 }
 
@@ -779,6 +796,8 @@ struct Attributes {
     unreadable: Vec<String>,
     /// Every path with a driver this verb does not know, and the driver.
     drivers: Vec<(String, String)>,
+    /// What git printed when it refused the question inside a repository.
+    refused: Option<String>,
 }
 
 /// The merge attribute of each path, from git where there is a repository.
@@ -791,8 +810,18 @@ struct Attributes {
 /// `core.attributesFile`. Nothing is unreadable here, because git expands its
 /// own patterns.
 ///
+/// A literal path of the root file is asked as git names it: a leading `/`
+/// anchors a pattern to the root and is not part of the path, and git refuses
+/// the whole run for a path that begins with one. A path that leaves the tree
+/// through `..` is not asked at all. Git refuses it too, and no pattern that
+/// names it can match a file of the tree, so git's answer for it is nothing.
+///
 /// **Outside a repository, the root `.gitattributes` alone is read**, as a
 /// list of literal paths, and a pattern with a glob is named as unreadable.
+///
+/// **Where git refuses the question inside a repository**, the root-file
+/// reader answers, and [`Population::refused`] carries what git printed, so
+/// the report says which reader answered and the verb exits 1.
 fn attributes_of(root: &Path, files: &[String]) -> Attributes {
     let declarations = declarations(root);
     let mut candidates: Vec<String> = files.to_vec();
@@ -800,32 +829,36 @@ fn attributes_of(root: &Path, files: &[String]) -> Attributes {
         declarations
             .iter()
             .filter(|(pattern, _)| !is_a_pattern(pattern))
-            .map(|(pattern, _)| pattern.trim_start_matches('/').to_string()),
+            .map(|(pattern, _)| pattern.trim_start_matches('/').to_string())
+            .filter(|path| stays_inside_the_tree(path)),
     );
     candidates.push(LOCK.to_string());
     candidates.sort();
     candidates.dedup();
 
-    let Some(answers) = headwater_vcs::merge_attributes(root, &candidates) else {
-        let mut found: Vec<(String, Treatment)> = declarations
-            .iter()
-            .filter(|(pattern, _)| !is_a_pattern(pattern))
-            .cloned()
-            .collect();
-        found.sort();
-        found.dedup();
-        let mut unreadable: Vec<String> = declarations
-            .into_iter()
-            .filter(|(pattern, _)| is_a_pattern(pattern))
-            .map(|(pattern, _)| pattern)
-            .collect();
-        unreadable.sort();
-        unreadable.dedup();
-        return Attributes {
-            found,
-            unreadable,
-            drivers: Vec::new(),
-        };
+    attributes_from(
+        headwater_vcs::merge_attributes(root, &candidates),
+        declarations,
+    )
+}
+
+/// Git's answer read into treatments, or the root file where git gave none.
+///
+/// Split from [`attributes_of`] so that a refusal, which no tree of a test can
+/// provoke once the candidates are filtered, is still held by a case.
+fn attributes_from(
+    answer: Option<Result<Vec<(String, String)>, String>>,
+    declarations: Vec<(String, Treatment)>,
+) -> Attributes {
+    let answers = match answer {
+        Some(Ok(answers)) => answers,
+        Some(Err(refusal)) => {
+            return Attributes {
+                refused: Some(refusal),
+                ..root_file_reading(declarations)
+            };
+        }
+        None => return root_file_reading(declarations),
     };
 
     let mut found = Vec::new();
@@ -850,6 +883,50 @@ fn attributes_of(root: &Path, files: &[String]) -> Attributes {
         found,
         unreadable: Vec::new(),
         drivers,
+        refused: None,
+    }
+}
+
+/// Whether a path, read relative to the root, stays inside the tree.
+///
+/// Git accepts `x/../y` and refuses a path that climbs above the root, so the
+/// depth is counted component by component rather than by a search for `..`.
+fn stays_inside_the_tree(path: &str) -> bool {
+    let mut depth = 0usize;
+    for component in path.split('/') {
+        match component {
+            "" | "." => {}
+            ".." => match depth.checked_sub(1) {
+                Some(up) => depth = up,
+                None => return false,
+            },
+            _ => depth += 1,
+        }
+    }
+    depth > 0
+}
+
+/// The merge attributes that the root `.gitattributes` states, read by hand.
+fn root_file_reading(declarations: Vec<(String, Treatment)>) -> Attributes {
+    let mut found: Vec<(String, Treatment)> = declarations
+        .iter()
+        .filter(|(pattern, _)| !is_a_pattern(pattern))
+        .cloned()
+        .collect();
+    found.sort();
+    found.dedup();
+    let mut unreadable: Vec<String> = declarations
+        .into_iter()
+        .filter(|(pattern, _)| is_a_pattern(pattern))
+        .map(|(pattern, _)| pattern)
+        .collect();
+    unreadable.sort();
+    unreadable.dedup();
+    Attributes {
+        found,
+        unreadable,
+        drivers: Vec::new(),
+        refused: None,
     }
 }
 
@@ -987,6 +1064,7 @@ mod tests {
             members: Vec::new(),
             unreadable: Vec::new(),
             drivers: Vec::new(),
+            refused: None,
         }
     }
 
@@ -1063,6 +1141,42 @@ mod tests {
         }
         stripped.push_str(rest);
         assert_eq!(stripped, population.render(ColorMode::Plain));
+    }
+
+    /// A refusal of `git check-attr` inside a repository is a disagreement, and
+    /// the report names it and what git printed.
+    #[test]
+    fn a_refusal_of_git_check_attr_is_carried_rather_than_read_as_no_repository() {
+        let declarations = vec![("a.md".to_string(), super::Treatment::Union)];
+        let refused = super::attributes_from(
+            Some(Err("fatal: an invented refusal".to_string())),
+            declarations.clone(),
+        );
+        assert_eq!(
+            refused.refused.as_deref(),
+            Some("fatal: an invented refusal")
+        );
+        assert_eq!(refused.found, declarations);
+        let outside = super::attributes_from(None, declarations);
+        assert_eq!(outside.refused, None);
+    }
+
+    #[test]
+    fn a_refusal_of_git_check_attr_is_named_and_does_not_agree() {
+        let population = Population {
+            refused: Some("fatal: an invented refusal".to_string()),
+            ..Population::default()
+        };
+        assert!(!population.agrees());
+        let rendered = population.render(ColorMode::Plain);
+        assert!(
+            rendered.contains("git refused `git check-attr`"),
+            "{rendered}"
+        );
+        assert!(
+            rendered.contains("    fatal: an invented refusal\n"),
+            "{rendered}"
+        );
     }
 
     /// A population that agrees prints its two agreement sentences plain under

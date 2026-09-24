@@ -1361,6 +1361,67 @@ fn a_declared_path_with_no_file_is_asked_of_git_inside_a_repository() {
     );
 }
 
+/// A root declaration that begins with `/` is asked of git without the `/`.
+///
+/// The `/` anchors a pattern to the root, and git refuses the whole
+/// `check-attr` run for a path that begins with one. Asked with it, git's
+/// answer for every path of the tree is lost, and the nested declaration of
+/// `sub/notes.md` below drops out of the report.
+#[test]
+fn a_root_declaration_with_a_leading_slash_is_asked_of_git_without_it() {
+    let root = TempTree::new("leading-slash");
+    root.git_init();
+    root.write(".gitattributes", "/gone.md merge=headwater-regenerate\n");
+    root.write(
+        "sub/.gitattributes",
+        "notes.md merge=headwater-regenerate\n",
+    );
+    root.write("sub/notes.md", "# hand written\n");
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    assert_eq!(
+        population.refused, None,
+        "git refused the question:\n{report}"
+    );
+    assert_eq!(
+        population.unproduced,
+        vec!["gone.md".to_string(), "sub/notes.md".to_string()],
+        "a declared path with no producer was not reported:\n{report}"
+    );
+}
+
+/// A root declaration of a path outside the tree does not cost git's answer.
+///
+/// Git refuses the whole `check-attr` run for `../escape.md`, and no pattern
+/// that names it can match a file of the tree. So the verb does not ask about
+/// it, and the nested declaration of the lock is still read.
+#[test]
+fn a_root_declaration_outside_the_tree_does_not_discard_git_s_answer() {
+    let root = TempTree::new("escape");
+    root.git_init();
+    root.write(
+        ".gitattributes",
+        "../escape.md merge=headwater-regenerate\n",
+    );
+    root.write(
+        ".headwater/.gitattributes",
+        "taxonomy.lock merge=headwater-regenerate\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    assert_eq!(
+        population.refused, None,
+        "git refused the question:\n{report}"
+    );
+    assert!(
+        headwater_census::derived::declared_paths(root.path())
+            .contains(&headwater_census::derived::LOCK.to_string()),
+        "the nested declaration of the lock was lost:\n{report}"
+    );
+}
+
 /// The producer outputs `plant_attribute_layouts` writes.
 const FOLDS: &[&str] = &[
     "top.md",
