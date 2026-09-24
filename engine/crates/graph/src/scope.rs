@@ -130,3 +130,86 @@ fn bind(member: &Member, resolvers: &Resolvers) -> Result<Vec<String>, String> {
         )),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::declarations::AnchorKind;
+    use headwater_census::walk::Corpus;
+    use std::path::{Path, PathBuf};
+
+    /// A tree of two files under `tools/`, keyed on the case name, because the
+    /// cases of one target run as threads of one process.
+    fn tree(label: &str) -> PathBuf {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-graph-scope-{}-{label}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&at);
+        for file in ["tools/a.sh", "tools/site/b.py", "tools-old/c.sh"] {
+            let path = at.join(file);
+            std::fs::create_dir_all(path.parent().expect("a parent")).expect("the tree is made");
+            std::fs::write(path, "").expect("the file writes");
+        }
+        at
+    }
+
+    fn scope(patterns: &[&str]) -> Scope {
+        Scope::declared(&Declarations {
+            relations: Vec::new(),
+            anchors: vec![AnchorKind {
+                name: "code_path".to_string(),
+                resolver: "source-tree".to_string(),
+                pattern: None,
+                scope: patterns.iter().map(|p| p.to_string()).collect(),
+                span: Default::default(),
+            }],
+        })
+    }
+
+    fn resolvers(at: &Path) -> Resolvers {
+        Resolvers::over(&Corpus::new(at.to_path_buf(), "."))
+    }
+
+    /// `contains` and `reach` answer one question, so a spelling the
+    /// resolver normalizes is a spelling `contains` normalizes too.
+    #[test]
+    fn contains_agrees_with_reach_for_every_spelling_the_resolver_normalizes() {
+        let at = tree("spellings");
+        for spelling in ["tools/**", "./tools/**", "tools\\**"] {
+            let scope = scope(&[spelling]);
+            let reach = scope.reach(&resolvers(&at));
+            assert_eq!(
+                reach[0].entries,
+                ["tools/a.sh", "tools/site/b.py"],
+                "`{spelling}` reaches"
+            );
+            for path in &reach[0].entries {
+                assert!(scope.contains(path), "`{spelling}` does not contain `{path}`");
+            }
+            assert!(!scope.contains("tools-old/c.sh"), "`{spelling}`");
+        }
+        let _ = std::fs::remove_dir_all(&at);
+    }
+
+    /// A literal pattern that names a directory admits no file, so it is
+    /// refused rather than counted as one entry of the denominator.
+    #[test]
+    fn a_literal_pattern_that_names_a_directory_is_refused_and_counts_nothing() {
+        let at = tree("directory");
+        for spelling in ["tools/", "tools"] {
+            let scope = scope(&[spelling]);
+            let resolvers = resolvers(&at);
+            assert!(scope.reach(&resolvers)[0].entries.is_empty(), "`{spelling}`");
+            let refused = scope.unmatched(&resolvers);
+            assert_eq!(refused.len(), 1, "`{spelling}`: {refused:?}");
+            assert!(refused[0].1.contains("directory"), "{refused:?}");
+            assert!(!scope.contains("tools/a.sh"));
+        }
+        // A literal file is an entry, and contains agrees.
+        let scope = scope(&["./tools/a.sh"]);
+        assert_eq!(scope.reach(&resolvers(&at))[0].entries, ["tools/a.sh"]);
+        assert!(scope.contains("tools/a.sh"));
+        let _ = std::fs::remove_dir_all(&at);
+    }
+}

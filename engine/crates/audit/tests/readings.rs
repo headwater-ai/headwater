@@ -402,6 +402,74 @@ fn a_scope_pattern_that_matches_no_entry_is_refused_and_no_scope_prints_no_fract
     assert!(!report.contains("0.0% governed"), "{report}");
 }
 
+/// Copy a directory, for a case that edits the fixture tree without moving
+/// the recorded report.
+fn copy_tree(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("the copy is made");
+    for entry in std::fs::read_dir(from).expect("the tree reads") {
+        let entry = entry.expect("an entry");
+        let target = to.join(entry.file_name());
+        if entry.file_type().expect("a type").is_dir() {
+            copy_tree(&entry.path(), &target);
+        } else {
+            std::fs::copy(entry.path(), target).expect("the file copies");
+        }
+    }
+}
+
+/// An edge of a relation outside the `governance` family governs nothing.
+///
+/// A copy of the fixture tree lets `catalogues`, an `evidence` relation, reach
+/// `code_path` and name `app/render.rs`. The entry stays ungoverned. A reading
+/// that counted every edge onto the anchor kind, whatever its family, counts
+/// it as governed and fails here (#951).
+#[test]
+fn an_edge_outside_the_governance_family_does_not_govern_an_entry() {
+    let at = std::env::temp_dir().join(format!(
+        "headwater-audit-scope-family-{}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&at);
+    copy_tree(&fixtures_dir(), &at);
+
+    let taxonomy = at.join("audit.taxonomy.yml");
+    let text = std::fs::read_to_string(&taxonomy).expect("the taxonomy reads");
+    let from = "    family: evidence\n    from: [governed_document]\n    to:   [governed_document]";
+    assert!(text.contains(from), "the fixture still declares `catalogues`");
+    let text = text.replacen(
+        from,
+        "    family: evidence\n    from: [governed_document]\n    to:   [governed_document, code_path]",
+        1,
+    );
+    let first = at.join("audit/decisions/first.md");
+    let document = std::fs::read_to_string(&first).expect("the document reads");
+    let edge = "  catalogues:\n    - AUD-FIX-0004\n";
+    assert!(document.contains(edge), "first.md still declares `catalogues`");
+    std::fs::write(
+        &first,
+        document.replacen(edge, &format!("{edge}    - app/render.rs\n"), 1),
+    )
+    .expect("the document writes");
+
+    let root = headwater_yaml::load(&text)
+        .expect("the edited taxonomy loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let built = Built::over(&Corpus::new(at.clone(), "audit"), &root);
+    assert!(
+        built.graph.edges.iter().any(|edge| edge.declared == "catalogues"
+            && edge.raw_target == "app/render.rs"),
+        "the evidence edge onto app/render.rs was built"
+    );
+    let audit = built.audit(AT);
+    let _ = std::fs::remove_dir_all(&at);
+    let reading = &audit.scope[0];
+    assert_eq!(reading.governed, 1, "{}", audit.render(ColorMode::Plain));
+    assert_eq!(reading.ungoverned(), ["app/render.rs"]);
+}
+
 /// A half whose document states no freshness date is counted apart, and never
 /// as fresh.
 ///
