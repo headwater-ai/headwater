@@ -34,9 +34,11 @@ The report is the four lines, and then the block:
 
 **Your own worktree, fetched, added and built in one call:**
 
-    sh tools/repo/new-worktree.sh "$root/.claude/worktrees/<name>" -b <branch> origin/main
+    sh tools/repo/new-worktree.sh --name <name> -b <branch> origin/main
 
-Give the call a `timeout` of 600000. Leave the shared checkout on `main` and untouched.
+Give the call a `timeout` of 600000. Leave the shared checkout on `main` and untouched. `--name` places the tree at `<main>/.claude/worktrees/<name>`, where the script finds the main checkout from `git rev-parse --git-common-dir`. Do not compute a root yourself: `--show-toplevel` in a linked worktree answers that worktree, and the script refuses a path inside one.
+
+If your session was launched inside a worktree, create yours with the script in one call and address it by absolute path in every later call. Never `git switch` inside the tree you were handed, because another agent owns it. Where `Write` or `Edit` then refuses a file in your tree, [HW-OBL-0206](../../docs/obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness.md) records the refusal.
 
 Your tree and branch stay after the run, for the owner to clean up. Leave the tree with nothing uncommitted.
 
