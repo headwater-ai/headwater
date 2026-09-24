@@ -3,6 +3,7 @@ id: DR-FIX-0001
 title: First decision
 status: current
 status_since: 2026-01-01
+last_verified: 2026-02-01
 summary: the one document on the `decisions` shelf, read as the source of the four identity-bearing declarations that this fixture is written to exercise.
 relations:
   flags:

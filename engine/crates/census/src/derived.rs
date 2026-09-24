@@ -28,6 +28,11 @@
 //! | `tools/site/refresh-figures.sh` | a page under `site/` carrying a `data-figure` element, which is the set the script substitutes into |
 //! | a recorded corpus fixture | a `corpus.*` fixture of an engine crate whose opening states a fold: a count over the corpus, or a digest over the whole canonical text |
 //!
+//! A tree is asked only about the producers it holds, by
+//! [`Producer::held_by`]. An adopter's tree holds the two verbs and neither the
+//! script nor the engine workspace, so a report there names no command that
+//! the tree cannot run.
+//!
 //! The fourth is the one that needs its rule stated, because most recorded
 //! fixtures are **not** members. HW-DR-0049 decomposed `corpus.census` and
 //! `corpus.graph` into one record per entity precisely so that they merge, and
@@ -116,6 +121,23 @@ impl Producer {
             Producer::TaxonomyResolve => "headwater taxonomy resolve",
             Producer::FigureRefresh => "sh tools/site/refresh-figures.sh",
             Producer::RecordedFold => "HEADWATER_BLESS=1 cargo test",
+        }
+    }
+
+    /// Whether the tree at `root` holds this producer, so that it can be run there.
+    ///
+    /// The two verbs are held by every tree that has the engine. The figure
+    /// script and the blessing run belong to the repository that maintains the
+    /// engine, and a tree holds each one only where it carries the file that
+    /// runs it: [`REFRESH_SCRIPT`] and [`ENGINE_MANIFEST`]. A producer that a
+    /// tree does not hold claims no file of that tree, so `headwater derived`
+    /// never names its command there and `headwater init --git` writes no line
+    /// for it. This is the one predicate both read.
+    pub fn held_by(self, root: &Path) -> bool {
+        match self {
+            Producer::Generate | Producer::TaxonomyResolve => true,
+            Producer::FigureRefresh => root.join(REFRESH_SCRIPT).is_file(),
+            Producer::RecordedFold => root.join(ENGINE_MANIFEST).is_file(),
         }
     }
 
@@ -308,6 +330,8 @@ pub struct Output {
 /// The computed population, and both directions of its disagreement with the tree.
 #[derive(Clone, Debug, Default)]
 pub struct Population {
+    /// The producers the tree holds, in report order, by [`Producer::held_by`].
+    pub held: Vec<Producer>,
     /// Every producer output, sorted, one entry per path.
     pub outputs: Vec<Output>,
     /// Every path `.gitattributes` declares `merge=headwater-regenerate`.
@@ -386,12 +410,12 @@ impl Population {
             &format!(
                 "{} derived artifacts, computed from {} producers",
                 self.outputs.len(),
-                PRODUCERS.len()
+                self.held.len()
             ),
             mode,
         ));
         out.push('\n');
-        for producer in PRODUCERS {
+        for producer in &self.held {
             let mine: Vec<&Output> = self
                 .outputs
                 .iter()
@@ -570,6 +594,12 @@ pub const PRODUCERS: &[Producer] = &[
     Producer::RecordedFold,
 ];
 
+/// The script that the figure producer runs, which a tree holds or does not.
+pub const REFRESH_SCRIPT: &str = "tools/site/refresh-figures.sh";
+
+/// The engine workspace that the blessing run needs, which a tree holds or does not.
+pub const ENGINE_MANIFEST: &str = "engine/Cargo.toml";
+
 /// The path the taxonomy resolver writes.
 pub const LOCK: &str = ".headwater/taxonomy.lock";
 
@@ -579,10 +609,16 @@ pub const FIGURE: &str = "data-figure=";
 /// Compute the population of a tree, and hold it against that tree's attributes.
 pub fn population(root: &Path) -> Population {
     let files = files_of(root);
+    let held: Vec<Producer> = PRODUCERS
+        .iter()
+        .copied()
+        .filter(|producer| producer.held_by(root))
+        .collect();
+    let blessing = held.contains(&Producer::RecordedFold);
 
     let mut outputs: Vec<Output> = Vec::new();
     for path in &files {
-        if let Some(producer) = claimed_by(root, path) {
+        if let Some(producer) = claimed_by(root, path).filter(|producer| held.contains(producer)) {
             outputs.push(Output {
                 path: path.clone(),
                 producer,
@@ -618,7 +654,7 @@ pub fn population(root: &Path) -> Population {
     reported.extend(
         files
             .iter()
-            .filter(|path| is_recorded_fixture(path))
+            .filter(|path| blessing && is_recorded_fixture(path))
             .cloned(),
     );
     reported.extend(record_streams(root, &files));
@@ -632,7 +668,7 @@ pub fn population(root: &Path) -> Population {
                 .iter()
                 .find(|output| output.path == *path)
                 .map(|output| output.producer);
-            let shape = shape_of(root, path, producer)?;
+            let shape = shape_of(root, path, producer, blessing)?;
             let treatment = attributes
                 .iter()
                 .find(|(declared, _)| declared == path)
@@ -642,12 +678,13 @@ pub fn population(root: &Path) -> Population {
                 path: path.clone(),
                 shape,
                 treatment,
-                rebuild: rebuild_of(path, producer),
+                rebuild: rebuild_of(path, producer, blessing),
             })
         })
         .collect();
 
     Population {
+        held,
         outputs,
         declared,
         undeclared,
@@ -686,8 +723,8 @@ fn record_streams(root: &Path, files: &[String]) -> Vec<String> {
 /// writes it from the corpus. Reading the record-stream rule first would let a
 /// producer output that happened to be one line per record be reported as
 /// `union`-safe, and `union` on a fold is the worst failure of the six.
-fn shape_of(root: &Path, path: &str, producer: Option<Producer>) -> Option<Shape> {
-    if is_recorded_fixture(path) && producer.is_none() {
+fn shape_of(root: &Path, path: &str, producer: Option<Producer>, blessing: bool) -> Option<Shape> {
+    if blessing && is_recorded_fixture(path) && producer.is_none() {
         // A recorded fixture the fold rule did not claim is the decomposed one.
         return Some(Shape::RecordPerEntity);
     }
@@ -717,13 +754,13 @@ fn is_a_record_stream(text: &str) -> bool {
 }
 
 /// What rewrites a path, where anything of this repository does.
-fn rebuild_of(path: &str, producer: Option<Producer>) -> Option<&'static str> {
+fn rebuild_of(path: &str, producer: Option<Producer>, blessing: bool) -> Option<&'static str> {
     match producer {
         Some(producer) => Some(producer.command()),
         // A decomposed fixture is written by the same blessing run that writes
         // the folded ones, and it is deliberately not a member of the
         // population. The command is the one thing a reader mid-conflict needs.
-        None if is_recorded_fixture(path) => Some(Producer::RecordedFold.command()),
+        None if blessing && is_recorded_fixture(path) => Some(Producer::RecordedFold.command()),
         None => None,
     }
 }
@@ -1100,6 +1137,7 @@ mod tests {
             producer: Producer::TaxonomyResolve,
         };
         Population {
+            held: super::PRODUCERS.to_vec(),
             outputs: vec![lock, generated.clone()],
             declared: vec![
                 ".headwater/taxonomy.lock".to_string(),

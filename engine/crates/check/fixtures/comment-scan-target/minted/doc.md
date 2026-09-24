@@ -1,5 +1,5 @@
 ---
-id: CS-FIX-minted
+id: HW-VER-0001
 status: current
 status_since: 2026-01-05
 summary: governs a file whose comment cites an identifier this taxonomy did mint
@@ -10,4 +10,4 @@ relations:
 
 # Governs a minted citation
 
-`sample.rs` cites `HW-VER-0001`, which the test that reads this tree treats as minted.
+`sample.rs` cites `HW-VER-0001`, the identifier of this document, which the test that reads this tree treats as minted.

@@ -21,6 +21,15 @@
 # the edge sets `unheard_of`, a value the state facet does not admit at all,
 # which is a different defect that a lifecycle regime has no part in.
 #
+# `written_notice` is the one case here that writes a file with an edge-set
+# state (#820). It binds `wide`, and the `flags_written` edge sets `retired`,
+# which `wide` names, so the file is written and its `status`, `status_since`
+# and `last_verified` are read back. The setter sits on the `flaggers` shelf,
+# which the projection does not read, and its dates differ from the one
+# document the projection does read. So the date the state was entered, which
+# comes from the setter, and the freshness date, which comes from the read
+# set, cannot be confused with one another.
+#
 # This repository's own lock cannot exercise any of the three failing cases:
 # every concrete kind it declares binds a regime that admits every state the
 # vocabulary names, and no relation in it sets a state its target's regime, or
@@ -46,6 +55,10 @@ facets:
   summary:
     role: scent
     required: true
+  # The facet in the `freshness` role. Only `written_notice` requires it.
+  last_verified:
+    role: freshness
+    required: false
   # The facet in the `name` role. `shelf_sections` reads it to head the one
   # section this fixture's declarations write.
   title:
@@ -53,7 +66,7 @@ facets:
     required: false
   # The discriminator of the heterogeneous shelf below.
   doc_type:
-    values: [decision, wide_notice, narrow_notice, edge_notice, bogus_notice]
+    values: [decision, wide_notice, narrow_notice, edge_notice, bogus_notice, written_notice]
 
 regimes:
   lifecycle:
@@ -96,6 +109,12 @@ kinds:
     purpose: rationale
     identifier: {scheme: bogus_id}
     lifecycle: wide
+  written_notice:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: written_id}
+    lifecycle: wide
+    facets: {require: [last_verified]}
 
 identifier_schemes:
   decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: FIX, allocation: minted-once}
@@ -103,6 +122,7 @@ identifier_schemes:
   narrow_id: {pattern: "NR-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
   edge_id: {pattern: "ED-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
   bogus_id: {pattern: "BG-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+  written_id: {pattern: "WR-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
 
 relations:
   # The edge locus. The one document on the `decisions` shelf declares this
@@ -124,9 +144,21 @@ relations:
     on_target: {set_state: unheard_of}
     inverse: flagged_by_bogus
     reciprocal: required
+  # The written locus. `retired` is a value the vocabulary holds and `wide`,
+  # the regime `written_notice` binds, names, so the file is written.
+  flags_written:
+    family: governance
+    from: [decision]
+    to: [written_notice]
+    on_target: {set_state: retired}
+    inverse: flagged_by_written
+    reciprocal: required
 
 shelves:
   decisions: {path: "lifecycle-regime/decisions/**", homogeneous: true, kind: decision}
+  # The setter of `written_notice`'s state. No projection reads this shelf, so
+  # its dates reach a generated file only through the edge it declares.
+  flaggers: {path: "lifecycle-regime/flaggers/**", homogeneous: true, kind: decision}
   # Heterogeneous, so an `identity` block can pick any notice kind by its
   # discriminator, the same shape `generate.taxonomy.yml`'s `archive` shelf
   # uses for `guide`.
@@ -134,7 +166,7 @@ shelves:
     path: "lifecycle-regime/notices/**"
     homogeneous: false
     discriminator: doc_type
-    kinds: [decision, wide_notice, narrow_notice, edge_notice, bogus_notice]
+    kinds: [decision, wide_notice, narrow_notice, edge_notice, bogus_notice, written_notice]
 
 projections:
   # The passing half: `wide_notice` binds a regime that admits the fallback
@@ -170,3 +202,11 @@ projections:
     identity:
       id: BG-FIX-bogus
       kind: bogus_notice
+  # The written case: the `flags_written` edge from the one document on the
+  # `flaggers` shelf sets `retired`, which `wide` names.
+  - kind: shelf_sections
+    for: [decisions]
+    output: lifecycle-regime/notices/WRITTEN.md
+    identity:
+      id: WR-FIX-written
+      kind: written_notice

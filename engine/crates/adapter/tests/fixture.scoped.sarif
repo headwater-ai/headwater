@@ -329,7 +329,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 3,
+                  "version": 4,
                   "obligations": [],
                   "exportable_as": []
                 }
