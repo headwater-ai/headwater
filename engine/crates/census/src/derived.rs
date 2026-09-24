@@ -352,13 +352,16 @@ pub struct Population {
     /// file-shaped rows of the evaluation table have no member in the
     /// population. The module header says why that matters.
     pub members: Vec<Member>,
-    /// A `.gitattributes` pattern that carries a merge attribute and a glob.
+    /// What the root-file reader could not read, sorted: each root
+    /// `.gitattributes` pattern that carries a merge attribute and a glob, and
+    /// each `.gitattributes` file below the root, by its path.
     ///
-    /// Empty inside a git repository, where git expands its own patterns.
-    /// Outside one, the root-file reader expands no pattern, so such a line
-    /// reaches files it cannot enumerate. It is named rather than passed over,
-    /// because a declaration that nothing reads looks exactly like a
-    /// declaration that agrees.
+    /// Empty inside a git repository, where git expands its own patterns and
+    /// reads every nested file. Outside one, the root-file reader expands no
+    /// pattern and reads no nested file, so either can reach files it cannot
+    /// see. Each is named rather than passed over, because a declaration that
+    /// nothing reads looks exactly like a declaration that agrees.
+    /// [`is_a_nested_attributes_file`] tells the two kinds apart.
     pub unreadable: Vec<String>,
     /// Every path that carries a merge driver this verb does not know, and
     /// the driver's name, as git reports it.
@@ -557,7 +560,20 @@ impl Population {
                 out.push_str(&format!("    {path} merge={driver}\n"));
             }
         }
-        match self.unreadable.is_empty() {
+        let (nested, patterns): (Vec<&String>, Vec<&String>) = self
+            .unreadable
+            .iter()
+            .partition(|entry| is_a_nested_attributes_file(entry));
+        if !nested.is_empty() {
+            out.push_str(
+                "these `.gitattributes` files are below the root, and this reader \
+                 does not read them, so no shape of this tree was held against them:\n",
+            );
+            for file in nested {
+                out.push_str(&format!("    {file}\n"));
+            }
+        }
+        match patterns.is_empty() {
             true => {
                 out.push_str("no merge attribute is behind a pattern this verb cannot expand\n");
             }
@@ -566,7 +582,7 @@ impl Population {
                     "these carry a merge attribute behind a pattern this reader cannot \
                      expand, so no shape of this tree was held against them:\n",
                 );
-                for pattern in &self.unreadable {
+                for pattern in patterns {
                     out.push_str(&format!("    {pattern}\n"));
                 }
             }
@@ -880,9 +896,11 @@ pub fn merge_attributes(root: &Path) -> Vec<(String, Treatment)> {
     attributes_of(root, &files_of(root)).found
 }
 
-/// Every `.gitattributes` pattern that carries a merge attribute and a glob.
+/// Every `.gitattributes` pattern that carries a merge attribute and a glob,
+/// and every `.gitattributes` file below the root, by its path.
 ///
-/// Empty inside a git repository, which expands its own patterns.
+/// Empty inside a git repository, which expands its own patterns and reads
+/// every nested file.
 pub fn unreadable_patterns(root: &Path) -> Vec<String> {
     attributes_of(root, &files_of(root)).unreadable
 }
@@ -891,7 +909,8 @@ pub fn unreadable_patterns(root: &Path) -> Vec<String> {
 struct Attributes {
     /// Every path with a merge attribute, sorted, and the treatment it takes.
     found: Vec<(String, Treatment)>,
-    /// Every pattern the root-file reader cannot expand.
+    /// Every pattern the root-file reader cannot expand, and every nested
+    /// `.gitattributes` file it does not read.
     unreadable: Vec<String>,
     /// Every path with a driver this verb does not know, and the driver.
     drivers: Vec<(String, String)>,
@@ -916,7 +935,8 @@ struct Attributes {
 /// names it can match a file of the tree, so git's answer for it is nothing.
 ///
 /// **Outside a repository, the root `.gitattributes` alone is read**, as a
-/// list of literal paths, and a pattern with a glob is named as unreadable.
+/// list of literal paths. A pattern with a glob is named as unreadable, and so
+/// is each `.gitattributes` file of the walk below the root, by its path.
 ///
 /// **Where git refuses the question inside a repository**, the root-file
 /// reader answers, and [`Population::refused`] carries what git printed, so
@@ -938,6 +958,7 @@ fn attributes_of(root: &Path, files: &[String]) -> Attributes {
     attributes_from(
         headwater_vcs::merge_attributes(root, &candidates),
         declarations,
+        files,
     )
 }
 
@@ -948,16 +969,17 @@ fn attributes_of(root: &Path, files: &[String]) -> Attributes {
 fn attributes_from(
     answer: Option<Result<Vec<(String, String)>, String>>,
     declarations: Vec<(String, Treatment)>,
+    files: &[String],
 ) -> Attributes {
     let answers = match answer {
         Some(Ok(answers)) => answers,
         Some(Err(refusal)) => {
             return Attributes {
                 refused: Some(refusal),
-                ..root_file_reading(declarations)
+                ..root_file_reading(declarations, files)
             };
         }
-        None => return root_file_reading(declarations),
+        None => return root_file_reading(declarations, files),
     };
 
     let mut found = Vec::new();
@@ -1007,11 +1029,17 @@ fn stays_inside_the_tree(path: &str) -> bool {
 }
 
 /// The merge attributes that the root `.gitattributes` states, read by hand.
-fn root_file_reading(declarations: Vec<(String, Treatment)>) -> Attributes {
+///
+/// A leading `/` of a literal path anchors it to the root and is not part of
+/// the path, so it is removed, as it is for the question put to git. A nested
+/// `.gitattributes` among `files` is not read. It is named in `unreadable`
+/// instead, because git would read it and this reader cannot say what it
+/// changes.
+fn root_file_reading(declarations: Vec<(String, Treatment)>, files: &[String]) -> Attributes {
     let mut found: Vec<(String, Treatment)> = declarations
         .iter()
         .filter(|(pattern, _)| !is_a_pattern(pattern))
-        .cloned()
+        .map(|(pattern, treatment)| (pattern.trim_start_matches('/').to_string(), *treatment))
         .collect();
     found.sort();
     found.dedup();
@@ -1019,6 +1047,12 @@ fn root_file_reading(declarations: Vec<(String, Treatment)>) -> Attributes {
         .into_iter()
         .filter(|(pattern, _)| is_a_pattern(pattern))
         .map(|(pattern, _)| pattern)
+        .chain(
+            files
+                .iter()
+                .filter(|file| is_a_nested_attributes_file(file))
+                .cloned(),
+        )
         .collect();
     unreadable.sort();
     unreadable.dedup();
@@ -1063,6 +1097,18 @@ fn declarations(root: &Path) -> Vec<(String, Treatment)> {
             Some((pattern.to_string(), treatment))
         })
         .collect()
+}
+
+/// Whether an entry of [`Population::unreadable`] is a nested `.gitattributes`
+/// file rather than a root pattern, read from its last component alone.
+///
+/// A walk path is a file name and not a pattern, so a directory such as
+/// `br[1]` does not make it one: a test for glob characters here would drop
+/// that file from the report in silence. The one entry this reads wrongly is a
+/// root glob whose last component is `.gitattributes`, and that entry is still
+/// named and is still a disagreement, only under the other heading.
+pub fn is_a_nested_attributes_file(entry: &str) -> bool {
+    entry.ends_with("/.gitattributes")
 }
 
 /// Whether a `.gitattributes` pattern reaches more than the path it spells.
@@ -1252,14 +1298,37 @@ mod tests {
         let refused = super::attributes_from(
             Some(Err("fatal: an invented refusal".to_string())),
             declarations.clone(),
+            &[],
         );
         assert_eq!(
             refused.refused.as_deref(),
             Some("fatal: an invented refusal")
         );
         assert_eq!(refused.found, declarations);
-        let outside = super::attributes_from(None, declarations);
+        let outside = super::attributes_from(None, declarations, &[]);
         assert_eq!(outside.refused, None);
+    }
+
+    /// Where git refuses, the root-file reader answers, and it names each
+    /// nested `.gitattributes` of the walk as it does outside a repository.
+    #[test]
+    fn a_refusal_of_git_check_attr_names_each_nested_attributes_file() {
+        let files = [
+            ".gitattributes",
+            "a.md",
+            "sub/.gitattributes",
+            "sub/deep/.gitattributes",
+        ]
+        .map(String::from);
+        let refused = super::attributes_from(
+            Some(Err("fatal: an invented refusal".to_string())),
+            Vec::new(),
+            &files,
+        );
+        assert_eq!(
+            refused.unreadable,
+            ["sub/.gitattributes", "sub/deep/.gitattributes"].map(String::from)
+        );
     }
 
     #[test]
