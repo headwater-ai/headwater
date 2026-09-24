@@ -114,7 +114,7 @@ headwater generate --check    # fail if any committed output differs
 
 **One write is one run, and it can be several passes.** A generated document is a document of the corpus, so one projection can print a value that another projection writes in the same run. `headwater generate` therefore reads the tree again after it writes, and it stops at the first pass that writes nothing. That pass is what shows that `--check` accepts the tree. A run that still writes on its fourth pass exits non-zero and says so. The declarations then form a cycle, and more passes do not settle it.
 
-**Twelve projection kinds exist, and this engine emits seven of them.** The block below names all twelve, as a taxonomy writes each name. A kind under `runs` has an emitter here. A kind under `waits` has a slot that a declaration opens and no emitter fills.
+**Thirteen projection kinds exist, and this engine emits eight of them.** The block below names all thirteen, as a taxonomy writes each name. A kind under `runs` has an emitter here. A kind under `waits` has a slot that a declaration opens and no emitter fills.
 
 ```
 runs
@@ -124,6 +124,7 @@ runs
   graph_export
   probe_result
   verb_index
+  consumer_surface
   corpus_descriptor
 
 waits
@@ -134,7 +135,7 @@ waits
   coverage_report
 ```
 
-A shelf index and a shelf sections file each carry the documents of one shelf. A probe result carries the verdicts of one graded run, and [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document) declares it. A verb index carries the command surface of the binary, and [the paragraph below](#a-verb-index-reads-the-command-surface-of-the-engine) declares it. Site navigation, a graph export and the corpus descriptor each carry one file that a reader outside this corpus opens.
+A shelf index and a shelf sections file each carry the documents of one shelf. A probe result carries the verdicts of one graded run, and [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document) declares it. A verb index carries the command surface of the binary, and [the paragraph below](#a-verb-index-reads-the-command-surface-of-the-engine) declares it. A consumer surface page carries the `surface` block of the taxonomy: what an adopter receives, runs and must have installed. [HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) rules that the block holds that list. Site navigation, a graph export and the corpus descriptor each carry one file that a reader outside this corpus opens.
 
 A relation view carries decision lineage and a traceability matrix. A template carries the permitted relations, facets and sections of one kind. An agent rule file is the artifact [the glossary](glossary.md#projection) names. A transcription reads a pinned external snapshot, and [Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record) leaves it to the first adopter who asks. `engine/crates/generate/src/lib.rs` states beside each of these four what no document says, and `headwater generate` prints all four over any corpus. `engine/crates/generate/tests/spec_six_projections.rs` holds the block above against that statement.
 
@@ -316,7 +317,7 @@ headwater taxonomy    validate | resolve [--check]
                     | audit [--now <date>] [--record]
                     | publish [--package <name> | --from <dir>] [--assembly <name>] --out <dir>
                               [--clear-killed] [--json]
-                    | vendor <dir> [--expect <digest>]
+                    | vendor <dir-or-location> [--expect <digest>]
 headwater coverage    [--format ...]
 headwater probe       plan [--tier regression|campaign] [--arm present|absent]
                            [--category <name>] [--seed <n>]
@@ -340,7 +341,7 @@ headwater completions bash|zsh|fish|powershell
 
 **`sweep` is two verbs and neither one reaches a model.** `plan` writes the briefing an agent reads, and `report` reads back the file the agent wrote. The part between them needs a model and no engine code performs it, so no build ever waits for one. Both exit 0 whatever they find, neither writes into the corpus, and the sampler is a crate that `headwater-check` cannot name. Both exit non-zero over a corpus that does not load, which is a fact about the caller rather than about a finding. [Spec 12](12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) states what each of those four facts enforces.
 
-**`taxonomy vendor` takes a path, and that is what keeps the network out of the engine.** [Spec 7](07-distribution-and-federation.md#consuming) says a consumer fetches a package and checks its digest. The fetch is the caller's, by whatever moves a directory in the organization that runs it, and the verb checks the bytes it is handed. A verb that took a location would need a client, and a client is a crate that opens a socket. So the [non-negotiable](00-vision-and-scope.md#non-negotiables) is a property of the argument rather than a rule that somebody keeps. `publish` is the other half, and it writes the artifact that `vendor` reads.
+**`taxonomy vendor` takes a path or a location, and one crate keeps the network out of the checking loop.** [Spec 7](07-distribution-and-federation.md#consuming) says a consumer fetches a package and checks its digest. A location is the URL of a published artifact zip. The verb fetches it through `headwater-fetch` and unpacks it into a temporary directory. It then checks those bytes as it checks a directory that the caller fetched by other means. `headwater-fetch` is the one crate with a client, and only `headwater-cli` links it ([HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)). `engine/crates/cli/tests/network_boundary.rs` reads the lock file and fails when any other crate reaches the client. That test holds the crate graph: no library crate can call the client. It does not hold the binary, where `check` and `vendor` share one crate. So inside `headwater-cli`, the [non-negotiable](00-vision-and-scope.md#non-negotiables) rests on one call site, the `vendor` arm, and a reviewer reads it. A distributor can build the binary without the `fetch` feature, and that binary opens no socket anywhere. `publish` is the other half, and it writes the artifact that `vendor` reads.
 
 **`json` is the one verb that reads no corpus.** A harness hands a hook one JSON object on standard input. A hook that read it alone would need an interpreter that nothing else in a session requires. `field` prints one member, addressed by a path of keys. `count` prints how many elements the array or the object at a path holds, which is the read `field` cannot do. `quote` writes standard input back as one JSON string literal, for the object a hook writes to a harness. The reader is the loader this engine already carries, because JSON is a subset of the YAML 1.2 core schema. [HW-DR-0055](../decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) rules why a verb answers this and an interpreter does not, and [spec 5](05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind) carries the term that constrains it.
 

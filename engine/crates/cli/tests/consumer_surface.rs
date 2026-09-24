@@ -50,6 +50,8 @@ fn copy(from: &Path, to: &Path) {
 
 struct Root {
     at: PathBuf,
+    /// This repository's overlay, before a case adds its `override` block.
+    overlay: String,
 }
 
 impl Root {
@@ -76,20 +78,27 @@ impl Root {
             at.join(".headwater/taxonomy.yml"),
         )
         .expect("the declaration copies");
-        let mut overlay = std::fs::read_to_string(repository.join(".headwater/overlay.yml"))
+        let overlay = std::fs::read_to_string(repository.join(".headwater/overlay.yml"))
             .expect("the overlay reads");
         assert!(
             !overlay.lines().any(|line| line == "override:"),
             "the overlay grew an `override` block, so this case must merge into it"
         );
+        let root = Root { at, overlay };
+        root.override_with(adopter, "");
+        root
+    }
+
+    /// Write the overlay again with this `override` block, and resolve.
+    fn override_with(&self, adopter: &[&str], more: &str) {
+        let mut overlay = self.overlay.clone();
         overlay.push_str(&format!(
-            "\noverride:\n  surface.adopter_documents: [{}]\n",
+            "\noverride:\n  surface.adopter_documents: [{}]\n{more}",
             adopter.join(", ")
         ));
-        std::fs::write(at.join(".headwater/overlay.yml"), overlay).expect("the overlay writes");
-
-        let root = Root { at };
-        let resolved = root.run(&["taxonomy", "resolve"]);
+        std::fs::write(self.at.join(".headwater/overlay.yml"), overlay)
+            .expect("the overlay writes");
+        let resolved = self.run(&["taxonomy", "resolve"]);
         assert_eq!(
             resolved.0,
             Some(0),
@@ -97,7 +106,6 @@ impl Root {
             resolved.1,
             resolved.2
         );
-        root
     }
 
     fn contract(&self, slug: &str, body: &str) {
@@ -232,10 +240,93 @@ fn the_rule_reads_the_manifest_and_honors_a_passage_that_says_so() {
             && w.iter().any(|f| f.contains("tools/quote.sh")),
         "a path behind a shell variable and a code span in a block quote are both reported\n{w:#?}"
     );
+    // The generation step reads the adopter list, so a page the list does not
+    // name has no instance of the rule at all, rather than an instance that
+    // passes without being read (#1051). Three of the four typed documents are
+    // on the list.
+    assert!(
+        out.lines()
+            .any(|line| line.trim() == format!("3 instances of {RULE}")),
+        "the rule instantiates on the three listed pages and not on `z.md`\n{out}"
+    );
     assert_eq!(
         root.findings("z"),
         Vec::<String>::new(),
         "a page the manifest does not list is not an adopter's page, and the rule reads the \
          manifest rather than a list of its own"
+    );
+}
+
+/// The page `headwater generate` writes from the `surface` block (#1051).
+const PAGE: &str = "docs/interfaces/consumer-surface.md";
+
+#[test]
+fn the_surface_block_generates_a_page_that_goes_stale_with_it() {
+    let root = Root::new("page", &["docs/interfaces/x.md"]);
+    root.contract("x", "");
+    let generated = root.run(&["generate"]);
+    let page = std::fs::read_to_string(root.at.join(PAGE)).unwrap_or_else(|_| {
+        panic!(
+            "`generate` writes the consumer surface page\n{}{}",
+            generated.1, generated.2
+        )
+    });
+    assert!(
+        page.starts_with("<!-- headwater:generated consumer_surface"),
+        "the page carries the marker on its first line\n{page}"
+    );
+    for member in [
+        "`LICENSE`",
+        "`site_generator`",
+        "`mkdocs`",
+        "`curl`",
+        "`headwater probe`",
+        "`tar`",
+    ] {
+        assert!(page.contains(member), "the page names {member}\n{page}");
+    }
+    let clean = root.run(&["generate", "--check"]);
+    assert_eq!(
+        clean.0,
+        Some(0),
+        "a tree that was just generated is not stale\n{}{}",
+        clean.1,
+        clean.2
+    );
+
+    // (a) A hand edit to the page.
+    std::fs::write(
+        root.at.join(PAGE),
+        format!("{page}\nA line somebody typed.\n"),
+    )
+    .expect("the page writes");
+    let edited = root.run(&["generate", "--check"]);
+    assert_ne!(
+        edited.0,
+        Some(0),
+        "a hand edit to the generated page is stale\n{}{}",
+        edited.1,
+        edited.2
+    );
+    std::fs::write(root.at.join(PAGE), &page).expect("the page writes back");
+
+    // (b) An edit to the `surface` block with no regeneration.
+    root.override_with(
+        &["docs/interfaces/x.md"],
+        "  surface.prerequisites: [git, sh, curl, tar, unzip]\n",
+    );
+    let moved = root.run(&["generate", "--check"]);
+    assert_ne!(
+        moved.0,
+        Some(0),
+        "a `surface` block that moved leaves the page stale\n{}{}",
+        moved.1,
+        moved.2
+    );
+    root.run(&["generate"]);
+    let again = std::fs::read_to_string(root.at.join(PAGE)).expect("the page reads");
+    assert!(
+        again.contains("`unzip`"),
+        "the page follows the block\n{again}"
     );
 }

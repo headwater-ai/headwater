@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-fetch"
+description = "The one crate of this engine that opens a socket: it fetches a published taxonomy artifact for `taxonomy vendor`, and only the binary links it"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+# HW-DR-0075: a location may reach `taxonomy vendor`, and the client that
+# fetches it lives here, in a crate `headwater-cli` alone names. No crate of the
+# checking loop depends on this one, and `crates/cli/tests/network_boundary.rs`
+# reads `engine/Cargo.lock` to hold that.
+[dependencies]
+# The client. `rustls` on the `ring` provider with the Mozilla roots compiled
+# in, and never `aws-lc-rs`, which needs cmake and nasm on the musl and macOS
+# release rows. No `gzip`: an artifact is a zip, which is compressed already.
+# The client reads `HTTPS_PROXY` and `ALL_PROXY` by default.
+ureq = { version = "3.4.2", default-features = false, features = ["rustls"] }
+
+# The archive reader. `release-taxonomy.yml` writes a deflate zip, so deflate
+# through `flate2`'s pure-Rust backend is the one method this reads.
+zip = { version = "5.1.1", default-features = false, features = ["deflate-flate2"] }
+
+# `zip` names `flate2` with no backend, so this line picks one: the default,
+# pure-Rust `miniz_oxide`, which the lock already carries for another crate.
+# It adds no package.
+flate2 = "1.1.10"
+
+[lints]
+workspace = true

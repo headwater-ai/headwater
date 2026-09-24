@@ -29,6 +29,7 @@ nav:
       - "Q19 — Inbound integration: an external system of record": "decisions/0019-inbound-integration-an-external-system-of-record.md"
       - "Q20 — Where scent lives": "decisions/0020-where-scent-lives.md"
       - "Q21 — Terminological succession, and validity under merge": "decisions/0021-terminological-succession-and-validity-under-merge.md"
+      - "The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links": "decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md"
       - "Q22 — The integrity posture of a published package": "decisions/0022-q22-the-integrity-posture-of-a-published-package.md"
       - "Q23 — The engine lint floor": "decisions/0023-the-engine-lint-floor.md"
       - "Q24 — Readability, and what a sweep can be asked about": "decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md"
@@ -78,7 +79,6 @@ nav:
       - "A paragraph limit counts sentences under the language rule and never words": "decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md"
       - "The matched purposes take turns at a route budget, and each pointer states what reached it": "decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md"
       - "A route offers a document and never a heading inside it": "decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md"
-      - "The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links": "decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md"
       - "The binary is the only interface an adopter must run, and every integration point outside it is declared": "decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md"
       - "A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither": "decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md"
       - "Criterion 5 admits naming or extending a core-serving kind, and a facet-only entry ships no templates directory under criterion 2": "decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md"
@@ -126,6 +126,7 @@ nav:
       - "Wire headwater check into your own workflow": "how-to/wire-headwater-check-into-your-own-workflow.md"
   - "The command surface":
       - "The command surface": "interfaces/README.md"
+      - "The consumer surface": "interfaces/consumer-surface.md"
       - "headwater capture": "interfaces/headwater-capture.md"
       - "headwater change": "interfaces/headwater-change.md"
       - "headwater check": "interfaces/headwater-check.md"

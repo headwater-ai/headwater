@@ -158,6 +158,10 @@ fn labelling(kind: Kind) -> Labelling {
              this table reads as an address rather than as a label. See the comment above: \
              the question is open and this is the reading taken",
         ),
+        Kind::ConsumerSurface => Labelling::NoDocumentLabel(
+            "it renders the `surface` block of the taxonomy, which names programs, files and \
+             integration points and no document of the corpus",
+        ),
         Kind::CorpusDescriptor => Labelling::NoDocumentLabel(
             "an entry point is `{shelf, path, id}` for a machine, and the `id` member is \
              absent where the document has none. It offers a reader no string at all",

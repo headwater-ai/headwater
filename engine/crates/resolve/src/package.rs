@@ -29,11 +29,10 @@
 //! writes an artifact with a digest over every file in it, a caller moves that
 //! artifact by whatever the organization already uses, and `vendor` checks it
 //! against the digest this repository pinned before anything is installed. This
-//! crate opens no socket at any point, which is why the verb takes a path
-//! rather than a location.
-//! [HW-DR-0075](../../../../docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)
-//! rules that a location may reach `vendor` too, confined to a crate this one
-//! never links.
+//! crate opens no socket at any point, which is why this function takes a
+//! path. The verb also takes a location, and `headwater-fetch` resolves it to a
+//! directory before this reads it, in a crate this one never links
+//! ([HW-DR-0075](../../../../docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)).
 //!
 //! [`crate::release`] holds the record and argues what its digest proves.
 
@@ -3418,7 +3417,7 @@ pub fn doctrine(manifest: &Mapping) -> Option<PathBuf> {
 ///
 /// **[`reachable`] holds the same path at publish, and that is not this read.**
 /// `publish` reads a package directory that a publisher wrote. `vendor` reads
-/// an artifact that arrived by a route no crate of this engine can see, and
+/// an artifact that arrived by a route this crate cannot see, and
 /// nothing says the two ran on one machine or on one version of this engine.
 /// The digest proves the manifest and the prose are the bytes the pin was
 /// written for, and it proves nothing about whether any verb ever read either.

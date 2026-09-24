@@ -76,7 +76,7 @@ Three failures share one cause, which is compiler output that belongs to a diffe
 
     cargo clean -p <crate>
 
-**`cannot find function` in a crate your change never touched, under `--profile dev-release` alone.** `tools/hw-cargo` pools one target directory for each of its three slots, so two worktrees build into one directory. A link against the other tree's copy of a crate is the result, and the `test` profile of the same source compiles correctly. [#849](https://github.com/headwater-ai/headwater/issues/849) carries it, and the remedy is the same command with the profile named:
+**`cannot find function` in a crate your change never touched, or a binary that does not do what your source says, under `--profile dev-release` alone.** Two worktrees built into one target directory, and cargo linked the other tree's copy of a workspace crate. The build can also exit 0 and link the other tree's code with no error. `tools/hw-cargo` pools one target directory for each slot, and it now recovers from this without your help. It records the worktree that built last in each slot. When a different worktree builds there, it makes every workspace crate of that tree compile again. `sh tools/hw-cargo-link-fixtures.sh` compiles two worktrees into one slot and holds that recovery. So you see this failure only from a build that did not go through `tools/hw-cargo`, such as a plain `cargo` with a shared `CARGO_TARGET_DIR`. A slot with no `.root` file is safe, because the tool reads a missing file as a different worktree. [#849](https://github.com/headwater-ai/headwater/issues/849) carries it, and the remedy is the same command with the profile named:
 
     cargo clean --manifest-path engine/Cargo.toml --profile dev-release -p <crate>
 
