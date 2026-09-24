@@ -152,22 +152,21 @@ fn the_census_rows_are_in_path_order() {
     );
 }
 
-/// Every generated document is declared unmergeable, and a list is why this runs.
+/// No generated document carries a merge attribute, because none is a fold.
 ///
-/// A generated document opens with a count of the shelf below it, which is a
-/// fold, and [HW-DR-0049](../../../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
-/// rules that a fold answers to a check on the merged state rather than to a
-/// merge. `.gitattributes` names each one, and it names them one at a time
-/// rather than by a pattern, because `docs/*/README.md` reaches two files that
-/// nobody generates and somebody edits by hand.
+/// Before [#1058](https://github.com/headwater-ai/headwater/issues/1058) a
+/// generated document opened with a count of the shelf below it, and
+/// `.gitattributes` named each one. The count is gone, and 1058-a measured
+/// every generated file of this repository merging as text to the bytes
+/// `headwater generate` writes over the merged tree. So a `-merge` on one would
+/// stop every pair of branches that each add a document, for nothing.
 ///
-/// A list goes stale, and this is the guard on it. A new shelf brings a new
-/// index, `headwater generate` writes it, and nothing else would notice that
-/// the new file merges the way the old ones must not. The census already knows
-/// which files are generated, so the list is checked against the corpus rather
-/// than against somebody's memory of it.
+/// Both directions are held. A generated document that the census reports
+/// carries no merge attribute in `.gitattributes`, and every `-merge` line
+/// there names a path that some producer writes as a fold, which
+/// `headwater derived` computes.
 #[test]
-fn the_generated_documents_are_declared_unmergeable() {
+fn no_generated_document_is_declared_unmergeable() {
     let root = repository_root();
     let taken = census::take(&corpus_of(&root), &resolved_taxonomy(&root));
 
@@ -179,9 +178,8 @@ fn the_generated_documents_are_declared_unmergeable() {
         .filter_map(|line| line.split_whitespace().next())
         .collect();
     assert!(
-        declared.len() > 5,
-        "only {} paths declare the driver, so this proves nothing",
-        declared.len()
+        !declared.is_empty(),
+        "no path is declared `-merge`, so this proves nothing"
     );
 
     let generated: Vec<&str> = taken
@@ -194,16 +192,27 @@ fn the_generated_documents_are_declared_unmergeable() {
         !generated.is_empty(),
         "the census reports no generated document, so this proves nothing"
     );
-
-    let missing: Vec<&str> = generated
+    let refused: Vec<&&str> = generated
         .iter()
-        .filter(|path| !declared.contains(*path))
-        .copied()
+        .filter(|path| declared.contains(*path))
         .collect();
     assert!(
-        missing.is_empty(),
-        "these generated documents merge like ordinary files, and each one opens \
-         with a count that two branches would both move: {missing:#?}"
+        refused.is_empty(),
+        "these generated documents are one record per entity and still refuse \
+         every merge, so two branches that each add a document always stop: {refused:#?}"
+    );
+
+    let population = headwater_census::derived::population(&root);
+    let folds: Vec<&str> = population
+        .members
+        .iter()
+        .filter(|member| member.shape == headwater_census::derived::Shape::Fold)
+        .map(|member| member.path.as_str())
+        .collect();
+    let stale: Vec<&&str> = declared.iter().filter(|path| !folds.contains(*path)).collect();
+    assert!(
+        stale.is_empty(),
+        "these are declared `-merge` and no producer writes them as a fold: {stale:#?}"
     );
 }
 
@@ -915,7 +924,7 @@ fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
     // A fold declared union: the worst of the six, and nothing reported it.
     root.write(
         "docs/interleaved/README.md",
-        "<!-- headwater:generated shelf_index. -->\n\n# 48 decisions\n",
+        "<!-- headwater:generated shelf_index. -->\n\n48 decisions\n",
     );
     // A fold declared nothing: the direction the verb already reported.
     root.write(
@@ -1300,7 +1309,7 @@ fn a_merge_attribute_behind_a_glob_is_expanded_by_git_inside_a_repository() {
 #[test]
 fn a_fold_declared_unset_in_the_committed_file_agrees_with_or_without_the_override() {
     use headwater_census::derived::Treatment;
-    let fold = "<!-- headwater:generated shelf_index. -->\n\n# Decisions\n";
+    let fold = "<!-- headwater:generated shelf_index. -->\n\n48 decisions\n";
 
     let root = TempTree::new("unset-fold");
     root.git_init();
@@ -1346,6 +1355,32 @@ fn a_fold_declared_unset_in_the_committed_file_agrees_with_or_without_the_overri
     );
 }
 
+/// A literal `-merge` line on a path no producer writes is reported, and `binary` is not.
+///
+/// The reverse direction of the declaration. A `-merge` left behind on a file
+/// that a person now edits keeps one side of every merge of it, which is the
+/// worse failure `.gitattributes` names. `*.png binary` and a `binary` line
+/// are how a repository marks a file a person made, so neither is held.
+#[test]
+fn a_stale_unset_line_is_reported_and_a_binary_one_is_not() {
+    let root = TempTree::new("stale-unset");
+    root.git_init();
+    root.write(
+        ".gitattributes",
+        "docs/handbook.md -merge\nlogo.png binary\n*.jpg binary\n",
+    );
+    root.write("docs/handbook.md", "# A handbook a person edits\n");
+    root.write("logo.png", "not really a picture\n");
+    root.write("photo.jpg", "not really a picture\n");
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    assert_eq!(
+        population.unproduced,
+        vec!["docs/handbook.md".to_string()],
+        "{report}"
+    );
+}
+
 /// A merge driver that the verb does not know is named in the report.
 ///
 /// `merge=ours` is not a treatment that a shape takes. A fold under it is a
@@ -1360,7 +1395,7 @@ fn a_merge_driver_the_verb_does_not_know_is_named() {
     root.write(".gitattributes", "k/README.md merge=ours\n");
     root.write(
         "k/README.md",
-        "<!-- headwater:generated shelf_index. -->\n\n# 48 decisions\n",
+        "<!-- headwater:generated shelf_index. -->\n\n48 decisions\n",
     );
 
     let population = headwater_census::derived::population(root.path());
@@ -1498,7 +1533,7 @@ const FOLDS: &[&str] = &[
 /// Every file except the `.gitattributes` files and the store is a producer
 /// output, so each one is a member of the report and carries a treatment.
 fn plant_attribute_layouts(root: &TempTree, repository: bool) {
-    let fold = "<!-- headwater:generated shelf_index. -->\n\n# 48 decisions\n";
+    let fold = "<!-- headwater:generated shelf_index. -->\n\n48 decisions\n";
     root.write(
         ".gitattributes",
         "\u{feff}top.md merge=headwater-regenerate\n\

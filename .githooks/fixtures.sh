@@ -882,11 +882,17 @@ unset_driver=$(cd "$scratch" && git config --unset merge.headwater-regenerate.dr
 judge 'the gate reports a clone with no merge driver configured' 0 0 \
     'this clone has no merge driver for a derived artifact' "$unset_driver"
 
-# And a clone that sets the driver and never selects it in `info/attributes`,
-# where the committed `-merge` keeps every fold from the driver (#1058).
+# And a clone that sets the driver and has not selected it in
+# `info/attributes`, where the committed `-merge` alone would keep every fold
+# from the driver and its site-review marker (#1058). The gate selects it.
 no_override=$(cd "$scratch" && git config merge.headwater-regenerate.driver ".githooks/merge-regenerate %O %A %B %P" && rm -f "$(git rev-parse --git-path info/attributes)" && sh .githooks/pre-commit 2>&1)
-judge 'the gate reports a clone whose info/attributes does not select the driver' 0 0 \
-    'does not' "$no_override"
+judge 'the gate selects the driver in a clone that configured it' 0 0 \
+    'selected the merge driver for' "$no_override"
+selected=$(cd "$scratch" && cat "$(git rev-parse --git-path info/attributes)" 2>/dev/null)
+judge 'and the selection names the site pages the marker guards' 0 0 \
+    'site/index.html merge=headwater-regenerate' "$selected"
+again=$(cd "$scratch" && sh .githooks/select-merge-driver 2>&1)
+refute 'and a second run selects nothing more' 'selected the merge driver' "$again"
 
 # And the gate reports an absolute `core.hooksPath`, which `EnterWorktree`
 # writes on every call, and says nothing about the relative one `CLAUDE.md`

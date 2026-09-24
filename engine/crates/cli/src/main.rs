@@ -6341,8 +6341,17 @@ const COMMITTED_ATTRIBUTE: &str = "-merge";
 /// [HW-DR-0077](../../../../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)
 /// keeps that consent with the adopter.
 fn init_git(root: &Path, configure: bool) -> ExitCode {
-    use headwater_census::derived::{Producer, Treatment, LOCK};
+    use headwater_census::derived::{Producer, Shape, Treatment, LOCK};
     let population = headwater_census::derived::population(root);
+    // A fold alone owes a line. A generated file that is one record per entity
+    // merges as text to what the producer writes, as #1058 measured, and a
+    // `-merge` on it would stop every pair of branches that each add a document.
+    let folds: Vec<&str> = population
+        .members
+        .iter()
+        .filter(|member| member.shape == Shape::Fold)
+        .map(|member| member.path.as_str())
+        .collect();
     let mut paths: Vec<String> = population
         .outputs
         .iter()
@@ -6352,6 +6361,7 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
                 Producer::Generate | Producer::TaxonomyResolve
             )
         })
+        .filter(|output| folds.contains(&output.path.as_str()))
         .map(|output| output.path.clone())
         .collect();
     paths.push(LOCK.to_string());
@@ -6432,6 +6442,15 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
         ("merge.headwater-regenerate.driver", DRIVER_LINE),
     ];
     let unwritten: Vec<&String> = paths.iter().filter(|path| !overridden(path)).collect();
+    // A clone whose configuration already names the driver consented to it at
+    // an earlier run. Without the override its committed `-merge` would
+    // deselect the driver in silence, so the override is written here too.
+    let configured = std::process::Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["config", "--get", "merge.headwater-regenerate.driver"])
+        .output()
+        .is_ok_and(|output| output.status.success() && !output.stdout.is_empty());
     match configure {
         false => {
             println!(
@@ -6449,6 +6468,18 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
                 println!("  {path} {DRIVER_ATTRIBUTE}");
             }
             println!("\nor run `headwater init --git --git-config` to do both here");
+            if configured && !unwritten.is_empty() {
+                let Some(override_path) = &override_path else {
+                    return refuse("git names no `info/attributes` path for this clone");
+                };
+                if let Err(reason) = append_override(override_path, &override_text, &unwritten) {
+                    return refuse(&reason);
+                }
+                println!(
+                    "\nthis clone already names the driver, so the step wrote the override to {}",
+                    override_path.display()
+                );
+            }
         }
         true => {
             for (key, value) in lines {
@@ -6471,23 +6502,8 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
                 return refuse("git names no `info/attributes` path for this clone");
             };
             if !unwritten.is_empty() {
-                let mut text = override_text.clone();
-                if !text.is_empty() && !text.ends_with('\n') {
-                    text.push('\n');
-                }
-                for path in &unwritten {
-                    text.push_str(&format!("{path} {DRIVER_ATTRIBUTE}\n"));
-                }
-                if let Some(parent) = override_path.parent() {
-                    if let Err(error) = std::fs::create_dir_all(parent) {
-                        return refuse(&format!("cannot make {}: {error}", parent.display()));
-                    }
-                }
-                if let Err(error) = std::fs::write(&override_path, &text) {
-                    return refuse(&format!(
-                        "cannot write {}: {error}",
-                        override_path.display()
-                    ));
+                if let Err(reason) = append_override(&override_path, &override_text, &unwritten) {
+                    return refuse(&reason);
                 }
                 println!("wrote {}", override_path.display());
                 for path in &unwritten {
@@ -6501,6 +6517,22 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
          step again after a producer writes a new file, and `headwater derived` names any it missed"
     );
     ExitCode::SUCCESS
+}
+
+/// Append one driver line for each of `paths` to the clone's own attributes file.
+fn append_override(at: &Path, existing: &str, paths: &[&String]) -> Result<(), String> {
+    let mut text = existing.to_string();
+    if !text.is_empty() && !text.ends_with('\n') {
+        text.push('\n');
+    }
+    for path in paths {
+        text.push_str(&format!("{path} {DRIVER_ATTRIBUTE}\n"));
+    }
+    if let Some(parent) = at.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|error| format!("cannot make {}: {error}", parent.display()))?;
+    }
+    std::fs::write(at, &text).map_err(|error| format!("cannot write {}: {error}", at.display()))
 }
 
 /// The path git gives `relative` inside this clone's git directory.

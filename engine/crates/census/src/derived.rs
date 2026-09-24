@@ -341,7 +341,7 @@ pub struct Population {
     pub outputs: Vec<Output>,
     /// Every path git's attributes declare `-merge` or `merge=headwater-regenerate`.
     pub declared: Vec<String>,
-    /// A producer writes it and no attribute covers it: a merge of it is silent.
+    /// A producer writes a fold and no attribute covers it: a merge of it is silent.
     pub undeclared: Vec<Output>,
     /// An attribute covers it and no producer writes it: a merge of hand-written
     /// text is refused, which `.gitattributes` names the worse of the two.
@@ -615,17 +615,25 @@ pub fn population(root: &Path) -> Population {
         .filter(|(_, treatment)| treatment.stops_a_merge())
         .map(|(path, _)| path.clone())
         .collect();
+    // Only a fold owes an attribute. A producer output that is one record per
+    // entity merges as text and needs none (#1058, 1058-a).
     let undeclared: Vec<Output> = outputs
         .iter()
+        .filter(|output| shape_of(root, &output.path, Some(output.producer)) == Some(Shape::Fold))
         .filter(|output| !declared.contains(&output.path))
         .cloned()
         .collect();
-    // Only the driver is held in this direction. `-merge` is also git's word
-    // for a binary file, and `*.png binary` on hand-made images is no claim
-    // that a producer writes them.
+    // The driver, and a literal `-merge` line of the root file, are held in
+    // this direction. The `binary` macro and a pattern are not, because
+    // `*.png binary` on hand-made images is no claim that a producer writes
+    // them.
+    let literal = literal_unsets(root);
     let unproduced: Vec<String> = attributes
         .iter()
-        .filter(|(_, treatment)| *treatment == Treatment::Regenerate)
+        .filter(|(path, treatment)| {
+            *treatment == Treatment::Regenerate
+                || (*treatment == Treatment::Refuse && literal.contains(path))
+        })
         .map(|(path, _)| path)
         .filter(|path| !outputs.iter().any(|output| output.path == **path))
         .cloned()
@@ -709,8 +717,23 @@ fn shape_of(root: &Path, path: &str, producer: Option<Producer>) -> Option<Shape
         // A recorded fixture the fold rule did not claim is the decomposed one.
         return Some(Shape::RecordPerEntity);
     }
-    if producer.is_some() {
-        return Some(Shape::Fold);
+    match producer {
+        // A generated file is one record per entity unless its opening states a
+        // fold, which is the rule the recorded fixtures take. Since #1058 no
+        // generated file of this repository states a count, and 1058-a
+        // measured every one of them merging as text to what the producer
+        // writes over the merged tree.
+        Some(Producer::Generate) => {
+            let text = std::fs::read_to_string(root.join(path)).ok()?;
+            return Some(match states_a_fold(&text) {
+                true => Shape::Fold,
+                false => Shape::RecordPerEntity,
+            });
+        }
+        // The lock carries a digest over its whole canonical text, a figure is
+        // a count, and a recorded fold opens with one.
+        Some(_) => return Some(Shape::Fold),
+        None => {}
     }
     let text = std::fs::read_to_string(root.join(path)).ok()?;
     is_a_record_stream(&text).then_some(Shape::IndependentLines)
@@ -783,9 +806,11 @@ fn is_recorded_fixture(path: &str) -> bool {
 /// HW-DR-0049's own words for what a fold is: "a count over the whole corpus,
 /// or a digest over the whole canonical text". A recorded artifact that states
 /// one opens with it. A decomposed artifact opens with its first record, which
-/// is a path or an anchor name, and it states no total anywhere.
+/// is a path or an anchor name, and it states no total anywhere. A generated
+/// file is read the same way after its marker line.
 fn states_a_fold(text: &str) -> bool {
     text.lines()
+        .filter(|line| !line.contains("headwater:generated") && !line.trim().is_empty())
         .take(2)
         .any(|line| line.starts_with(|c: char| c.is_ascii_digit()) || line.contains("sha256:"))
 }
@@ -825,6 +850,26 @@ pub fn root_declarations(root: &Path) -> Vec<(String, Treatment)> {
         found.push((path, treatment));
     }
     found
+}
+
+/// Every literal path that a root `.gitattributes` line gives `-merge`, by that word.
+///
+/// The `binary` macro also unsets the merge, and it is left out on purpose: it
+/// is how a repository marks a file a person made, such as an image.
+fn literal_unsets(root: &Path) -> Vec<String> {
+    let Ok(text) = std::fs::read_to_string(root.join(".gitattributes")) else {
+        return Vec::new();
+    };
+    text.lines()
+        .map(|line| line.trim().trim_start_matches('\u{feff}'))
+        .filter(|line| !line.starts_with('#'))
+        .filter_map(|line| {
+            let mut fields = line.split_whitespace();
+            let pattern = fields.next()?;
+            (fields.any(|field| field == "-merge") && !is_a_pattern(pattern))
+                .then(|| pattern.trim_start_matches('/').to_string())
+        })
+        .collect()
 }
 
 /// Every path of the tree that carries a merge attribute, and which one.

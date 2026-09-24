@@ -277,6 +277,26 @@ fn merge_two_branches(
     first: Figures,
     second: Figures,
 ) -> (PathBuf, Output) {
+    merge_two_branches_in(Setup::Configured, case, attributes, gate, first, second)
+}
+
+/// What a clone has set up for the driver.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Setup {
+    /// The two `git config` lines, and the override in `info/attributes`.
+    Configured,
+    /// Neither: a fresh clone, or the merge a forge runs (#1058).
+    Unconfigured,
+}
+
+fn merge_two_branches_in(
+    clone: Setup,
+    case: &str,
+    attributes: Option<&str>,
+    gate: Gate,
+    first: Figures,
+    second: Figures,
+) -> (PathBuf, Output) {
     let repo = scratch(case);
     let driver = repository_root().join(".githooks/merge-regenerate");
     assert!(driver.is_file(), "{} is not there", driver.display());
@@ -286,23 +306,26 @@ fn merge_two_branches(
     git_ok(&repo, &["config", "user.email", "fixture@example.invalid"]);
     git_ok(&repo, &["config", "commit.gpgsign", "false"]);
     // Without this git falls back to an ordinary merge, the driver never runs,
-    // and a declared case passes for the wrong reason. It is set in every case.
-    git_ok(
-        &repo,
-        &[
-            "config",
-            "merge.headwater-regenerate.name",
-            "regenerate a derived artifact",
-        ],
-    );
-    git_ok(
-        &repo,
-        &[
-            "config",
-            "merge.headwater-regenerate.driver",
-            &format!("{} %O %A %B %P", driver.display()),
-        ],
-    );
+    // and a declared case passes for the wrong reason. A configured clone sets
+    // it in every case.
+    if clone == Setup::Configured {
+        git_ok(
+            &repo,
+            &[
+                "config",
+                "merge.headwater-regenerate.name",
+                "regenerate a derived artifact",
+            ],
+        );
+        git_ok(
+            &repo,
+            &[
+                "config",
+                "merge.headwater-regenerate.driver",
+                &format!("{} %O %A %B %P", driver.display()),
+            ],
+        );
+    }
 
     if let Some(text) = attributes {
         write(&repo, ".gitattributes", text);
@@ -310,7 +333,9 @@ fn merge_two_branches(
         // in its own `info/attributes`, which wins over `.gitattributes`
         // (#1058). The committed file alone keeps the current side with no
         // driver, which is what an unconfigured clone and a forge do.
-        write(&repo, ".git/info/attributes", &configured_override(text));
+        if clone == Setup::Configured {
+            write(&repo, ".git/info/attributes", &configured_override(text));
+        }
     }
     for name in BASE {
         write(&repo, &format!("docs/{name}.md"), &format!("# {name}\n"));
@@ -509,6 +534,65 @@ fn an_undeclared_page_merges_to_a_figure_true_of_neither_branch() {
     );
 }
 
+/// The decisive case of #1058: the repository's own declaration, in a clone
+/// that configured nothing.
+///
+/// This is every fresh clone, and the merge a forge would run if it read the
+/// attribute. The same two branches as the case above move the page to two
+/// values, and a text merge of them is the silent figure true of neither
+/// branch. Before #1058 the committed line named a driver, and git reads a
+/// driver that no config defines as a text merge, so this merge exited 0. The
+/// committed `-merge` keeps the current side and records a conflict with no
+/// driver and no configuration.
+#[test]
+fn a_clone_without_the_driver_config_conflicts_on_a_declared_page() {
+    let a_decision = Figures {
+        seen: 4,
+        decisions: 2,
+        obligations: 1,
+    };
+    let an_obligation = Figures {
+        seen: 4,
+        decisions: 1,
+        obligations: 2,
+    };
+    let (repo, merged) = merge_two_branches_in(
+        Setup::Unconfigured,
+        "unconfigured",
+        Some(&attributes()),
+        Gate::None,
+        a_decision,
+        an_obligation,
+    );
+    assert!(
+        git(&repo, &["config", "--get", "merge.headwater-regenerate.driver"])
+            .stdout
+            .is_empty()
+            && !repo.join(".git/info/attributes").exists(),
+        "this clone configures no driver and selects none"
+    );
+
+    assert!(
+        !merged.status.success(),
+        "the merge succeeded in a clone with no driver config, so the page \
+         reconciled silently: it reads {} where the tree holds {}",
+        figure(&repo, "census.seen"),
+        documents(&repo)
+    );
+    assert_eq!(
+        conflicted(&repo),
+        vec!["site/index.html".to_owned()],
+        "the page and nothing else is conflicted"
+    );
+    let page = read(&repo, "site/index.html");
+    assert!(!page.contains("<<<<<<<"), "the page carries no marker:\n{page}");
+    assert_eq!(
+        page,
+        git_ok(&repo, &["show", "HEAD:site/index.html"]),
+        "the page holds the current side's bytes"
+    );
+}
+
 /// With the repository's own declaration that merge refuses and names the cure.
 ///
 /// The attributes are copied out of the real `.gitattributes` rather than
@@ -703,12 +787,11 @@ fn a_refused_site_merge_leaves_a_marker_that_pre_push_refuses_until_acknowledged
             &format!("{} %O %A %B %P", driver.display()),
         ],
     );
+    // No `info/attributes`: this is a clone that ran the two `git config`
+    // lines and nothing else, which is every contributor clone before #1058.
+    // The hooks select the driver on the first checkout, and the marker below
+    // depends on that (`.githooks/select-merge-driver`).
     write(&repo, ".gitattributes", &attributes());
-    write(
-        &repo,
-        ".git/info/attributes",
-        &configured_override(&attributes()),
-    );
     plant_ack_script(&repo);
     write(
         &repo,
@@ -722,6 +805,11 @@ fn a_refused_site_merge_leaves_a_marker_that_pre_push_refuses_until_acknowledged
     git_ok(&repo, &["commit", "-q", "-m", "base"]);
 
     git_ok(&repo, &["checkout", "-q", "-b", "stale"]);
+    let selected = read(&repo, ".git/info/attributes");
+    assert!(
+        selected.contains("site/index.html merge=headwater-regenerate\n"),
+        "the hooks did not select the driver for the page on checkout:\n{selected}"
+    );
     git_ok(&repo, &["checkout", "-q", "main"]);
     write(
         &repo,

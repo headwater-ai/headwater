@@ -250,12 +250,14 @@ fn a_merge_that_moves_a_fold_stops_with_the_current_side_and_names_the_producer(
     tree.headwater_ok(&["init", "--git", "--git-config"]);
     let override_ = std::fs::read_to_string(tree.info_attributes())
         .expect("`--git-config` writes the clone's own attributes file");
-    for path in [LOCK, DESCRIPTOR] {
-        assert!(
-            override_.contains(&format!("{path} merge=headwater-regenerate\n")),
-            "the override names the driver for {path}:\n{override_}"
-        );
-    }
+    assert!(
+        override_.contains(&format!("{LOCK} merge=headwater-regenerate\n")),
+        "the override names the driver for the lock:\n{override_}"
+    );
+    assert!(
+        !override_.contains(DESCRIPTOR),
+        "the descriptor is one record per entity, so nothing selects a driver for it:\n{override_}"
+    );
     tree.git(&["add", "-A"]);
     tree.git(&["commit", "-q", "-m", "adopt headwater"]);
 
@@ -272,18 +274,17 @@ fn a_merge_that_moves_a_fold_stops_with_the_current_side_and_names_the_producer(
             unmerged.iter().any(|listed| listed == path),
             "{path} is left conflicted, and the conflicted paths are {unmerged:?}"
         );
-        let merged = tree.read(path);
-        assert!(
-            !merged.contains("<<<<<<<"),
-            "{path} carries no conflict marker:\n{merged}"
-        );
-        let current = tree.git(&["show", &format!("HEAD:{path}")]);
-        assert_eq!(merged, current, "{path} holds the current side's bytes");
     }
+    let merged = tree.read(LOCK);
     assert!(
-        stderr.contains(DESCRIPTOR) && stderr.contains("headwater generate"),
-        "the driver names the descriptor and `headwater generate`:\n{stderr}"
+        !merged.contains("<<<<<<<"),
+        "the lock carries no conflict marker:\n{merged}"
     );
+    let current = tree.git(&["show", &format!("HEAD:{LOCK}")]);
+    assert_eq!(merged, current, "the lock holds the current side's bytes");
+    // The descriptor records the lock's digest on one line, which both
+    // branches moved, so it conflicts as text: the record shape's ordinary
+    // conflict, and `headwater generate` rewrites it below.
     assert!(
         stderr.contains(LOCK) && stderr.contains("headwater taxonomy resolve"),
         "the driver names the lock and `headwater taxonomy resolve`:\n{stderr}"
@@ -318,26 +319,22 @@ fn the_same_merge_without_the_git_step_writes_markers_into_the_folds() {
 /// The decisive case of #1058: the committed attributes, and no driver config.
 ///
 /// This is every clone that has not run `git config`, and it is the merge a
-/// forge runs. Two branches each add one decision to one shelf, far enough
-/// apart that their rows of the shelf index are two hunks with an unchanged row
-/// between them. A text merge of that index exits 0 with no conflict, which is
-/// the silent merge the committed attribute exists to stop. With `-merge`
-/// committed, git keeps the current side, writes no marker and records a
-/// conflict, and no driver or configuration is needed for it.
+/// forge runs. Before #1058 `init --git` committed `merge=headwater-regenerate`,
+/// and git reads a driver that no config defines as a text merge, so the lock
+/// took conflict markers. With `-merge` committed, git keeps the current side,
+/// writes no marker and records a conflict, and no driver or configuration is
+/// needed for it.
+///
+/// The lock is the one fold an adopter's two verb producers write. Its digest
+/// line moves on every change, so two branches that move it always conflict,
+/// and what `-merge` changes is the file left behind: the current side, which
+/// `headwater taxonomy resolve` reads, rather than a file with markers in it.
+/// The quiet case, a fold that a text merge takes to exit 0, is a page under
+/// `site/`, and `engine/crates/census/tests/merge_driver.rs` holds it.
 #[test]
 fn a_clone_with_the_committed_attributes_and_no_driver_config_conflicts_on_a_fold() {
-    const SHELF: &str = "docs/decisions/README.md";
     let tree = Tree::adopted("unconfigured");
-    for seq in ["0001", "0003", "0005"] {
-        tree.decide(seq);
-    }
-    tree.headwater_ok(&["generate"]);
     tree.headwater_ok(&["init", "--git"]);
-    assert!(
-        tree.read(".gitattributes").contains(&format!("{SHELF} ")),
-        "`init --git` declares the shelf index it found:\n{}",
-        tree.read(".gitattributes")
-    );
     tree.git(&["add", "-A"]);
     tree.git(&["commit", "-q", "-m", "adopt headwater"]);
     let configured =
@@ -350,6 +347,55 @@ fn a_clone_with_the_committed_attributes_and_no_driver_config_conflicts_on_a_fol
         !tree.info_attributes().exists(),
         "this clone holds no attribute override"
     );
+
+    let merge = tree.diverge_and_merge();
+    let said = format!(
+        "{}{}",
+        String::from_utf8_lossy(&merge.stdout),
+        String::from_utf8_lossy(&merge.stderr)
+    );
+    assert!(
+        !merge.status.success(),
+        "a merge that moves a fold in an unconfigured clone stops:\n{said}"
+    );
+    let unmerged = tree.unmerged();
+    assert!(
+        unmerged.iter().any(|listed| listed == LOCK),
+        "the lock is left conflicted, and the conflicted paths are {unmerged:?}"
+    );
+    let merged = tree.read(LOCK);
+    assert!(
+        !merged.contains("<<<<<<<"),
+        "the lock carries no conflict marker:\n{merged}"
+    );
+    let current = tree.git(&["show", &format!("HEAD:{LOCK}")]);
+    assert_eq!(merged, current, "the lock holds the current side's bytes");
+}
+
+/// A shelf index is one record per entity, so it carries no attribute and a
+/// text merge of it is what `headwater generate` writes over the merged tree.
+///
+/// Two branches each add one decision, far enough apart that their rows are
+/// two hunks with an unchanged row between them. This is the pair #1058
+/// measured over every generated file of this repository (1058-a): no pair
+/// merged to bytes the producer does not write. A `-merge` here would stop
+/// every pair of branches that each add a document.
+#[test]
+fn a_shelf_index_carries_no_attribute_and_merges_to_what_generate_writes() {
+    const SHELF: &str = "docs/decisions/README.md";
+    let tree = Tree::adopted("record-shaped");
+    for seq in ["0001", "0003", "0005"] {
+        tree.decide(seq);
+    }
+    tree.headwater_ok(&["generate"]);
+    tree.headwater_ok(&["init", "--git"]);
+    assert!(
+        !tree.read(".gitattributes").contains(SHELF),
+        "`init --git` declares no attribute for a record-shaped index:\n{}",
+        tree.read(".gitattributes")
+    );
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "adopt headwater"]);
 
     tree.git(&["checkout", "-q", "-b", "a"]);
     tree.decide("0002");
@@ -364,32 +410,32 @@ fn a_clone_with_the_committed_attributes_and_no_driver_config_conflicts_on_a_fol
     tree.git(&["commit", "-q", "-m", "another decision"]);
 
     let merge = tree.git_output(&["merge", "--no-edit", "a"]);
-    let said = format!(
-        "{}{}",
-        String::from_utf8_lossy(&merge.stdout),
+    assert!(
+        merge.status.success(),
+        "the two rows merge as text:\n{}",
         String::from_utf8_lossy(&merge.stderr)
     );
-    assert!(
-        !merge.status.success(),
-        "a merge that moves a fold in an unconfigured clone stops:\n{said}"
-    );
-    let unmerged = tree.unmerged();
-    assert!(
-        unmerged.iter().any(|listed| listed == SHELF),
-        "{SHELF} is left conflicted, and the conflicted paths are {unmerged:?}"
-    );
-    let merged = tree.read(SHELF);
-    assert!(
-        !merged.contains("<<<<<<<"),
-        "{SHELF} carries no conflict marker:\n{merged}"
-    );
-    let current = tree.git(&["show", &format!("HEAD:{SHELF}")]);
-    assert_eq!(merged, current, "{SHELF} holds the current side's bytes");
-
-    tree.headwater_ok(&["generate"]);
-    tree.git(&["add", SHELF]);
-    tree.git(&["commit", "-q", "--no-edit"]);
     tree.headwater_ok(&["generate", "--check"]);
+}
+
+/// A clone that ran the old `init --git --git-config` has the driver config
+/// and no override. Running the step again selects the driver there, because
+/// the committed `-merge` would otherwise deselect it in silence.
+#[test]
+fn the_git_step_selects_the_driver_in_a_clone_that_already_configured_it() {
+    let tree = Tree::adopted("migrated");
+    tree.git(&[
+        "config",
+        "merge.headwater-regenerate.driver",
+        "headwater merge-driver %O %A %B %P",
+    ]);
+    tree.headwater_ok(&["init", "--git"]);
+    let override_ = std::fs::read_to_string(tree.info_attributes())
+        .expect("a configured clone gets the override without `--git-config`");
+    assert!(
+        override_.contains(&format!("{LOCK} merge=headwater-regenerate\n")),
+        "the override selects the driver for the lock:\n{override_}"
+    );
 }
 
 /// What `init --git` writes, read byte for byte: attribute lines and comments,
@@ -417,8 +463,9 @@ fn the_git_step_writes_attributes_for_the_two_verb_producers_and_prints_the_conf
         .collect();
     assert_eq!(
         declared,
-        vec![".headwater/corpus.json -merge", ".headwater/taxonomy.lock -merge",],
-        "the attribute lines unset the merge of each output of the two verb producers:\n{attributes}"
+        vec![".headwater/taxonomy.lock -merge"],
+        "the attribute lines unset the merge of each fold of the two verb producers, \
+         and the descriptor is one record per entity:\n{attributes}"
     );
     assert!(
         !tree.info_attributes().exists(),
@@ -443,12 +490,10 @@ fn the_git_step_writes_attributes_for_the_two_verb_producers_and_prints_the_conf
         stdout.contains("git config merge.headwater-regenerate.name"),
         "the step prints the name line:\n{stdout}"
     );
-    for path in [LOCK, DESCRIPTOR] {
-        assert!(
-            stdout.contains(&format!("{path} merge=headwater-regenerate")),
-            "the step prints the override line for {path}:\n{stdout}"
-        );
-    }
+    assert!(
+        stdout.contains(&format!("{LOCK} merge=headwater-regenerate")),
+        "the step prints the override line for the lock:\n{stdout}"
+    );
     assert!(
         stdout.contains("git rev-parse --git-path info/attributes"),
         "the step names where the override goes:\n{stdout}"
@@ -501,7 +546,7 @@ fn the_git_step_writes_no_line_for_a_producer_the_adopter_does_not_hold() {
         "`init --git` writes no line for a producer an adopter does not hold:\n{attributes}"
     );
     assert!(
-        attributes.contains(".headwater/corpus.json -merge"),
+        attributes.contains(".headwater/taxonomy.lock -merge"),
         "the verb producers' outputs are still written:\n{attributes}"
     );
 }

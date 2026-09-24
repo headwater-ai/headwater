@@ -1,0 +1,42 @@
+#!/bin/sh
+# Select the merge driver for every `-merge` path in this clone, where the
+# clone's configuration already names it.
+#
+# `.gitattributes` commits `-merge` for each fold, which every clone and the
+# forge honor with no configuration (#1058). The driver is selected per clone,
+# in the file `git rev-parse --git-path info/attributes` names, because git
+# reads a driver that no config defines as an ordinary text merge. A clone that
+# ran the two `git config` lines in `CLAUDE.md` consented to the driver, so this
+# writes the lines that select it rather than asking a second time. Without
+# that config it writes nothing, because the override alone is the text merge
+# again.
+#
+# `.githooks/post-checkout`, `.githooks/post-merge` and `.githooks/pre-commit`
+# run it, so a clone selects the driver on the first checkout, pull or commit
+# after `.gitattributes` gains a path. What that keeps is the driver's refusal,
+# which names the producer, and the site-review marker it writes under
+# `<git-common-dir>/headwater-pending-site-review/`, which `.githooks/pre-push`
+# blocks on. It appends and never rewrites, and a second run writes nothing.
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -n "$root" ] || exit 0
+[ -n "$(git config merge.headwater-regenerate.driver 2>/dev/null)" ] || exit 0
+[ -f "$root/.gitattributes" ] || exit 0
+override=$(git rev-parse --git-path info/attributes 2>/dev/null) || exit 0
+case $override in
+    /*) ;;
+    *) override="$root/$override" ;;
+esac
+
+missing=$(awk '!/^#/ && $2 == "-merge" { print $1 }' "$root/.gitattributes" |
+    while read -r fold; do
+        grep -qxF "$fold merge=headwater-regenerate" "$override" 2>/dev/null || echo "$fold"
+    done)
+[ -n "$missing" ] || exit 0
+
+mkdir -p "$(dirname "$override")" || exit 0
+printf '%s\n' "$missing" | while read -r fold; do
+    printf '%s merge=headwater-regenerate\n' "$fold"
+done >> "$override" || exit 0
+count=$(printf '%s\n' "$missing" | wc -l | tr -d ' ')
+echo "headwater: selected the merge driver for $count derived path(s) in $override" >&2
+exit 0
