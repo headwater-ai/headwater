@@ -359,6 +359,30 @@ mod tests {
         assert_eq!(count(PAYLOAD, &path(&["session_id"])), None);
     }
 
+    /// A decimal step indexes an array, so a caller can read each element of
+    /// one without parsing a rendered list. Every other step on an array is a
+    /// path the member cannot take, and it is the same one answer.
+    #[test]
+    fn a_decimal_step_indexes_an_array_and_every_other_step_on_one_reaches_nothing() {
+        assert_eq!(
+            field(PAYLOAD, &path(&["matched", "0", "purpose"])).as_deref(),
+            Some("rationale")
+        );
+        assert_eq!(count(PAYLOAD, &path(&["matched", "0"])), Some(1));
+        // An index past the end.
+        assert_eq!(field(PAYLOAD, &path(&["matched", "1", "purpose"])), None);
+        assert_eq!(count(PAYLOAD, &path(&["matched", "1"])), None);
+        assert_eq!(count(PAYLOAD, &path(&["pointers", "0"])), None);
+        // A step that is not a decimal index.
+        assert_eq!(field(PAYLOAD, &path(&["matched", "x"])), None);
+        assert_eq!(field(PAYLOAD, &path(&["matched", "-1", "purpose"])), None);
+        assert_eq!(field(PAYLOAD, &path(&["matched", "+0", "purpose"])), None);
+        // An element that is an object is not a scalar.
+        assert_eq!(field(PAYLOAD, &path(&["matched", "0"])), None);
+        // A decimal step into a mapping is still a key, and here an absent one.
+        assert_eq!(field(PAYLOAD, &path(&["tool_input", "0"])), None);
+    }
+
     /// The writer and the reader are the two halves the hooks use, and a value
     /// that survives both is a value a hook may put on the wire.
     #[test]
