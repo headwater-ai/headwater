@@ -2209,8 +2209,8 @@
           "id": "HW-DR-0077",
           "status": "current",
           "status_since": "2026-09-20",
-          "summary": "An adopter needs the binary, a data-only package, git and a downloader, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling.",
-          "last_verified": "2026-09-20",
+          "summary": "An adopter needs the binary, a data-only package, Git, `sh`, `curl`, `tar` and eight POSIX utilities, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling.",
+          "last_verified": "2026-09-24",
           "title": "The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list",
           "relations": {
             "constrains": [
@@ -9187,10 +9187,10 @@
         "id": "HW-OBL-0204",
         "facets": {
           "id": "HW-OBL-0204",
-          "status": "draft",
-          "status_since": "2026-09-23",
-          "summary": "A sentence in decision 0077 says HW-DR-0049's acceptance still owes a rewrite of itself. #574 already made that rewrite, so the sentence now describes a past event as future.",
-          "last_verified": "2026-09-23",
+          "status": "current",
+          "status_since": "2026-09-24",
+          "summary": "Decision 0077 called HW-DR-0049's rewrite pending after #574 made it. #1070 rewrote that sentence, and the record waits only for its move to discharged.",
+          "last_verified": "2026-09-24",
           "title": "docs/decisions/0077 still describes HW-DR-0049's rewrite as pending, after #574 made it",
           "waiting_on": "build"
         }

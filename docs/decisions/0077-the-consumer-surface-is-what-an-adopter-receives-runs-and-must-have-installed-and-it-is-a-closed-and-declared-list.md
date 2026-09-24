@@ -2,8 +2,8 @@
 id: HW-DR-0077
 status: current
 status_since: 2026-09-20
-summary: "An adopter needs the binary, a data-only package, git and a downloader, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling."
-last_verified: 2026-09-20
+summary: "An adopter needs the binary, a data-only package, Git, `sh`, `curl`, `tar` and eight POSIX utilities, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling."
+last_verified: 2026-09-24
 title: "The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list"
 relations:
   constrains:
@@ -44,7 +44,7 @@ The owner's statement for release 0.2 is that an adopter needs nothing but the `
 
 **Four populations make the whole tree, and every file belongs to exactly one.**
 
-1. **Mandatory.** The `headwater` binary and a taxonomy package that holds data and no executable file. Git, `sh` and the download and unpack tools of the operating system are platform prerequisites. They are not this project's, and the surface declares each one by name. No Rust toolchain, no Python and no script of this repository is mandatory.
+1. **Mandatory.** The `headwater` binary and a taxonomy package that holds data and no executable file. The platform prerequisites are Git, `sh`, and `curl` and `tar` as the download and unpack tools of the operating system. Eight POSIX utilities and `sh` builtins are also platform prerequisites, and a page for an adopter may assume each one. They are `cd`, `echo`, `grep`, `mkdir`, `printf`, `rm`, `wc` and `xargs`. These prerequisites are not this project's, and the surface declares each one by name. The surface also declares `headwater` as a command, and it is not a prerequisite, because it is the mandatory binary of this population. No Rust toolchain, no Python and no script of this repository is mandatory.
 2. **A declared integration point.** Another program calls Headwater here. The five points are git, a CI forge, an agent harness, a shell and a site generator. At each point the executable that the other program calls is a `headwater` verb. The binary writes or prints the configuration, and the explicit command of the adopter is the consent. Each point declares its dependencies beyond the binary.
 3. **A companion.** A tool that an adopter may run and that no conformance level requires. The citation checker, the probe recorder and the model fetch are companions. `headwater probe`, `headwater neighbors` and `headwater sweep` sit outside the bar of 0.2 with their helper scripts. A companion states its dependencies and lives outside `tools/`.
 4. **Local to this repository.** `tools/`, `.githooks/`, `.claude/`, `.github/`, `site/` and `mkdocs/`. No page for an adopter instructs a file of this population. Such a page may cite one as the way this repository does a thing, in a passage that says so.
@@ -71,7 +71,7 @@ The owner's statement for release 0.2 is that an adopter needs nothing but the `
 
 **HW-DR-0072 is accepted and rests on HW-DR-0075, which is a draft.** #959 does not build until HW-DR-0075 is accepted.
 
-**The sentence of HW-DR-0049 about an adopter does not describe what ships.** An adopter inherits the rule and also the verbs that hold it. That record is a draft, and its acceptance carries the rewrite of that sentence.
+**The sentence of HW-DR-0049 about an adopter did not describe what ships.** An adopter inherits the rule and also the verbs that hold it. [#574](https://github.com/headwater-ai/headwater/issues/574) accepted HW-DR-0049 on 2026-09-23 and rewrote that sentence to say so.
 
 **Spec 0 and spec 5 state a delivery that no release makes.** Spec 0 says that release 0.1 carries the skills and the hooks, and no release carries them. An obligation record holds that gap, and the correction of the sentence is part of the work under #892.
 
@@ -87,5 +87,7 @@ The owner's statement for release 0.2 is that an adopter needs nothing but the `
 [#833](https://github.com/headwater-ai/headwater/issues/833) packages the CI integration point, and its action downloads a release archive and never runs `cargo`. [#977](https://github.com/headwater-ai/headwater/issues/977) and [#978](https://github.com/headwater-ai/headwater/issues/978) carry the site generator point in release 0.6.
 
 **One directory holds what the binary cannot carry.** A CI action and a generator configuration are files that an adopter copies, and the binary cannot be either. They live together in one directory outside `tools/`. The location of a file then answers which population it belongs to. #833 names that directory when it lands the first file.
+
+**Amended 2026-09-24: population 1 names the POSIX utilities that the pages for an adopter use.** The first text named Git, `sh` and the download and unpack tools. The tutorial and the relocation how-to also tell an adopter to run eight POSIX utilities. The owner ruled at the fifth merge of run 20260924-0411 to widen the clause by name and not to rewrite the pages. [#1051](https://github.com/headwater-ai/headwater/issues/1051) raised the ruling, and [#1070](https://github.com/headwater-ai/headwater/issues/1070) carries the amendment. The record is not superseded, and the other clauses do not change.
 
 **Whether `headwater neighbors` ships at all is a separate decision.** Its only caller is `.claude/hooks/intent.sh`, which is local to this repository. This record places the verb among the companions and rules nothing more about it.
