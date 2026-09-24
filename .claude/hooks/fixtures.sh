@@ -360,30 +360,30 @@ expect 'a tool_input with neither a file_path nor an apply_patch command is sile
     write.sh 0 '' \
     '{"hook_event_name":"PreToolUse","tool_name":"some_other_tool","tool_input":{"argument":"nothing this hook reads"}}'
 
-printf '\n# write.sh, on PostToolUse: impact detection\n'
+printf '\n# write.sh, on PreToolUse: impact detection, before the edit\n'
 if [ -x "$engine" ]; then
     expect 'an edit to a path a document governs names that document' \
         write.sh 0 'docs/spec/05-ai-integration.md' \
-        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/write.sh"}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/write.sh"}}'
     expect 'the advisory says it blocks nothing' \
         write.sh 0 'Nothing here blocks the edit' \
-        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/intent.sh"}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/intent.sh"}}'
     expect 'an edit to a path nothing governs is silent' \
         write.sh 0 '' \
-        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
     # HW-DR-0074 discharged HW-OBL-0104: a `code_path` anchor is a pattern, and
     # spec 5 now governs `.claude/hooks/**` rather than five files by name, so
     # a new file under that directory is named too.
     expect 'a path under a governed pattern names the document, per HW-DR-0074' \
         write.sh 0 'docs/spec/05-ai-integration.md' \
-        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/nothing-governs-this.sh"}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/nothing-governs-this.sh"}}'
 
     # An `interface_contract` over a crate. This is the same position reaching a
     # document whose subject is the code being edited rather than a document
     # that happens to name the file.
     expect 'an edit to a crate a contract governs names the contract' \
         write.sh 0 'docs/interfaces/headwater-check.md' \
-        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
 
     # The parenthesized span, and not the bare words. The contract's summary
     # holds `headwater check` in its own prose, so a case asserting that alone
@@ -392,7 +392,7 @@ if [ -x "$engine" ]; then
     # role.
     expect 'the contract is named by the command it describes' \
         write.sh 0 '(headwater check)' \
-        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
 
     # Two contracts govern `main.rs`, because that file holds the flag parsing
     # and the exit statuses of every verb. Both are named. The fan-in is a fact
@@ -400,7 +400,7 @@ if [ -x "$engine" ]; then
     # would be a rule this position does not have.
     expect 'a file two contracts govern names both of them' \
         write.sh 0 'docs/interfaces/headwater-sweep.md' \
-        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/cli/src/main.rs"}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/cli/src/main.rs"}}'
 
     # `runner.rs` sits beside a file `docs/interfaces/headwater-check.md`
     # governs by a literal, one-file anchor. HW-DR-0074 lets an author widen
@@ -408,9 +408,80 @@ if [ -x "$engine" ]; then
     # so the edge still answers for no file beside the one it names.
     expect 'a file beside a governed crate file is silent, until its contract adopts a pattern' \
         write.sh 0 '' \
-        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/runner.rs"}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/runner.rs"}}'
+
+    # #953: the advisory is heard before the edit, and it says so. Until then
+    # this branch exited at once for a path that exists, so the case above on
+    # `.claude/hooks/write.sh` printed nothing and the agent heard the governing
+    # set only after it had already changed the file.
+    expect 'the advisory is worded for an edit that has not happened yet' \
+        write.sh 0 'which you are about to change' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/write.sh"}}'
+    expect 'the pre-edit advisory adds context and never decides the call' \
+        write.sh 0 '"additionalContext"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/write.sh"}}'
+    refute 'the pre-edit advisory carries no permission decision' \
+        write.sh 'permissionDecision' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/write.sh"}}'
+
+    # The refusal keeps its precedence. A new document under the corpus is
+    # denied, and the advisory never takes the place of the denial.
+    refute 'a refused raw write carries the refusal and not the advisory' \
+        write.sh 'additionalContext' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/obligations/9999-a-record-nobody-scaffolded.md"}}'
+else
+    skip 'write.sh PreToolUse impact cases' 'no built engine'
+fi
+
+printf '\n# write.sh, on PostToolUse: silent until #952 gives it its one line\n'
+# The advisory moved to PreToolUse, so the post-edit position says nothing and
+# no edit prints the same pointers twice. These are the payloads that printed
+# the advisory before #953.
+if [ -x "$engine" ]; then
+    expect 'an edit to a path a document governs is silent after the edit' \
+        write.sh 0 '' \
+        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/write.sh"}}'
+    expect 'an edit to a crate a contract governs is silent after the edit' \
+        write.sh 0 '' \
+        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
 else
     skip 'write.sh PostToolUse cases' 'no built engine'
+fi
+
+printf '\n# read.sh, on PreToolUse: the governing set before a read\n'
+# #953: a session heard the governing set only after an edit, and never when it
+# opened a file. This position routes the one path a read names and adds the
+# pointers as context. It never decides the call, so a read always proceeds.
+if [ -x "$engine" ]; then
+    expect 'a read of a crate a contract governs names the contract' \
+        read.sh 0 'docs/interfaces/headwater-check.md' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+    expect 'the read advisory arrives as added context' \
+        read.sh 0 '"additionalContext"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+    refute 'the read advisory carries no permission decision' \
+        read.sh 'permissionDecision' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+    expect 'a read of a path nothing governs is silent' \
+        read.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+    expect 'a read of an absolute path inside the root names what governs it' \
+        read.sh 0 'docs/spec/05-ai-integration.md' \
+        "{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$root/.claude/hooks/write.sh\"}}"
+    expect 'a read of a path outside the root is silent' \
+        read.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"/etc/hostname"}}'
+    expect 'a Copilot-shaped read, with the path under `path`, is read the same way' \
+        read.sh 0 'docs/interfaces/headwater-check.md' \
+        '{"hook_event_name":"PreToolUse","tool_name":"view","tool_input":{"path":"engine/crates/check/src/lib.rs"}}'
+    expect 'a read position on any other event is silent' \
+        read.sh 0 '' \
+        '{"hook_event_name":"PostToolUse","tool_name":"Read","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+    expect 'a read payload with no path is silent' \
+        read.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{}}'
+else
+    skip 'read.sh PreToolUse cases' 'no built engine'
 fi
 
 printf '\n# write.sh, on PostToolUse: it fails open, and the control says so\n'
@@ -437,7 +508,8 @@ if [ -x "$engine" ]; then
     done
     mkdir -p "$open_root/engine/target/release" "$open_root/bin"
     ln -s "$root/engine/crates" "$open_root/engine/crates"
-    open_payload='{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+    open_payload='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+    read_payload='{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
     deny_payload='{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/obligations/9999-a-record-nobody-scaffolded.md"}}'
 
     # Every case below runs against the scratch root and with the scratch `bin`
@@ -459,6 +531,12 @@ if [ -x "$engine" ]; then
         expect "the control for: $1" write.sh 0 '(headwater check)' "$open_payload"
         eval "$2"
         expect "$1" write.sh 0 '' "$open_payload"
+        eval "$3"
+        # The read position meets the same three sabotages, over the same root,
+        # and a read has to proceed through each of them the way an edit does.
+        expect "the control for, at the read position: $1" read.sh 0 '(headwater check)' "$read_payload"
+        eval "$2"
+        expect "at the read position: $1" read.sh 0 '' "$read_payload"
         eval "$3"
     }
 
@@ -502,6 +580,8 @@ if [ -x "$engine" ]; then
 
     expect 'the write position runs at full strength with no interpreter behind it' \
         write.sh 0 '(headwater check)' "$open_payload"
+    expect 'the read position runs at full strength with no interpreter behind it' \
+        read.sh 0 '(headwater check)' "$read_payload"
     expect 'the refusal position runs at full strength with no interpreter behind it' \
         write.sh 0 '"permissionDecision":"deny"' "$deny_payload"
     expect 'the intent position runs at full strength with no interpreter behind it' \
@@ -1316,8 +1396,8 @@ expect_streams() {
 # The standing half of clause 5: no declaration may fall back to the bare
 # `sh "$CLAUDE_PROJECT_DIR/.claude/hooks/<name>.sh"` this issue found, with no
 # guard around it. This reads `.claude/settings.json` itself rather than a
-# count of declarations, so a seventh one added later in this exact shape is
-# caught here rather than shipped, whether or not this file's other six cases
+# count of declarations, so an eighth one added later in this exact shape is
+# caught here rather than shipped, whether or not this file's other seven cases
 # below are ever updated to know about it.
 bare=$(grep -nE '"command": *"sh \\"\$CLAUDE_PROJECT_DIR/\.claude/hooks/[A-Za-z_.]+\.sh\\""' "$root/.claude/settings.json") || true
 if [ -n "$bare" ]; then
@@ -1329,7 +1409,7 @@ else
     passed=$((passed + 1))
 fi
 
-# The two directions of the six declarations themselves, run through their
+# The two directions of the seven declarations themselves, run through their
 # own command string exactly as `.claude/settings.json` holds it — not a
 # paraphrase of it — with the script it names moved aside and then replaced
 # by a stub that refuses on purpose. Mirrors the shape `review.sh`'s own
@@ -1338,7 +1418,7 @@ fi
 #
 # The ordinal of each declaration is its position in `.claude/settings.json`
 # file order (`intent.sh`, `write.sh` PreToolUse, `touch.sh`, `wait.sh`,
-# `write.sh` PostToolUse, `review.sh`); the bare-pattern scan just above is
+# `read.sh`, `write.sh` PostToolUse, `review.sh`); the bare-pattern scan just above is
 # the one of the two checks that does not depend on this list staying
 # up to date with that order.
 hw_settings_case() {
@@ -1389,8 +1469,9 @@ hw_settings_case 1 intent.sh
 hw_settings_case 2 write.sh
 hw_settings_case 3 touch.sh
 hw_settings_case 4 wait.sh
-hw_settings_case 5 write.sh
-hw_settings_case 6 review.sh
+hw_settings_case 5 read.sh
+hw_settings_case 6 write.sh
+hw_settings_case 7 review.sh
 
 printf '\n%s passed, %s failed, %s skipped\n' "$passed" "$failed" "$skipped"
 # A caller that knows an engine should be there says so, and this answers
