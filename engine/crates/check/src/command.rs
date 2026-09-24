@@ -18,8 +18,9 @@
 //!
 //! # Which blocks it reads
 //!
-//! A fenced code block whose info string opens with `sh`, `shell`, `bash` or
-//! `console`, and nothing else. Over this repository's adopter pages on the day
+//! A fenced code block whose info string has `sh`, `shell`, `bash` or
+//! `console` as its first word, compared exactly, so `SH` and `shell-session`
+//! are not read. Over this repository's adopter pages on the day
 //! the rule landed, 67 of 70 fenced blocks carried no info string, and most of
 //! those were program output, YAML or a file listing. A rule that read an
 //! untagged block would report each of them, so the author states which blocks

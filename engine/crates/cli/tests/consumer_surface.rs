@@ -381,3 +381,32 @@ fn the_command_rule_reads_only_shell_blocks_on_a_listed_page() {
         "a page the manifest does not list has no instance of the rule"
     );
 }
+
+/// The two readings the first case does not reach. A `console` block is a
+/// shell block, and in it a line with no `$ ` prompt is output. A program
+/// named by its path is compared by the last segment of the path, so
+/// `/usr/bin/cargo` is `cargo` and not a name `commands` could never hold.
+const CONSOLE: &str = "\n```console\n$ /usr/bin/cargo install headwater\nwrote docs/x.md\n```\n";
+
+#[test]
+fn a_console_block_reads_its_prompted_lines_by_the_last_segment_of_the_path() {
+    const COMMAND: &str = "surface.command.undeclared";
+    let root = Root::new("console", &["docs/interfaces/e.md"]);
+    root.override_with(
+        &["docs/interfaces/e.md"],
+        "  surface.commands: [headwater]\n",
+    );
+    root.contract("e", CONSOLE);
+
+    let (_, out, err) = root.run(&["check"]);
+    let e = root.findings_of(COMMAND, "e");
+    assert_eq!(
+        e.len(),
+        1,
+        "the prompted line is one command and the output line is none\n{e:#?}\n{out}{err}"
+    );
+    assert!(
+        e[0].contains("runs `cargo`"),
+        "the program is named by the last segment of its path\n{e:#?}"
+    );
+}

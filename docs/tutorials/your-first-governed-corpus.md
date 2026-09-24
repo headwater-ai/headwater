@@ -40,7 +40,7 @@ Three facts about the blocks below.
 
 Install the engine once.
 
-<!-- headwater allow=surface.command.undeclared scope=block until=2027-03-31 reason=accepted_deviation note=HW-DR-0077 makes no Rust toolchain mandatory and #975 carries the archive that replaces this step -->
+<!-- headwater allow=surface.command.undeclared scope=block until=2026-12-31 reason=accepted_deviation note=HW-DR-0077 makes no Rust toolchain mandatory and #975 carries the archive that replaces this step -->
 
 ```sh
 cargo install headwater-cli
