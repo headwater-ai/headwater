@@ -515,7 +515,7 @@ impl Population {
         }
         match self.unreadable.is_empty() {
             true => {
-                out.push_str("no merge attribute is behind a pattern this verb cannot expand\n")
+                out.push_str("no merge attribute is behind a pattern this verb cannot expand\n");
             }
             false => {
                 out.push_str(
