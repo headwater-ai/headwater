@@ -594,7 +594,11 @@ fn a_site_merge_warns_when_non_figure_content_differs() {
         ],
     );
     write(&repo, ".gitattributes", &attributes());
-    write(&repo, ".git/info/attributes", &configured_override(&attributes()));
+    write(
+        &repo,
+        ".git/info/attributes",
+        &configured_override(&attributes()),
+    );
     write(
         &repo,
         "site/index.html",
@@ -700,7 +704,11 @@ fn a_refused_site_merge_leaves_a_marker_that_pre_push_refuses_until_acknowledged
         ],
     );
     write(&repo, ".gitattributes", &attributes());
-    write(&repo, ".git/info/attributes", &configured_override(&attributes()));
+    write(
+        &repo,
+        ".git/info/attributes",
+        &configured_override(&attributes()),
+    );
     plant_ack_script(&repo);
     write(
         &repo,
@@ -870,7 +878,11 @@ fn a_rebase_around_a_site_conflict_is_reported_by_post_rewrite_and_still_blocks_
         ],
     );
     write(&repo, ".gitattributes", &attributes());
-    write(&repo, ".git/info/attributes", &configured_override(&attributes()));
+    write(
+        &repo,
+        ".git/info/attributes",
+        &configured_override(&attributes()),
+    );
     plant_ack_script(&repo);
     write(
         &repo,

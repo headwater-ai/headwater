@@ -1314,24 +1314,36 @@ fn a_fold_declared_unset_in_the_committed_file_agrees_with_or_without_the_overri
         .find(|member| member.path == "k/README.md")
         .unwrap_or_else(|| panic!("k/README.md is not in the report:\n{report}"));
     assert_eq!(member.treatment, Treatment::Refuse, "{report}");
-    assert!(population.agrees(), "a `-merge` fold with no override agrees:\n{report}");
+    assert!(
+        population.agrees(),
+        "a `-merge` fold with no override agrees:\n{report}"
+    );
     assert_eq!(
         headwater_census::derived::declared_paths(root.path()),
         vec!["k/README.md".to_string()],
         "a `-merge` line is a declaration, so `init --git` appends no second one"
     );
 
-    root.write(".git/info/attributes", "k/README.md merge=headwater-regenerate\n");
+    root.write(
+        ".git/info/attributes",
+        "k/README.md merge=headwater-regenerate\n",
+    );
     let population = headwater_census::derived::population(root.path());
     let report = population.render(headwater_paint::ColorMode::Plain);
-    assert!(population.agrees(), "a fold under the override agrees:\n{report}");
+    assert!(
+        population.agrees(),
+        "a fold under the override agrees:\n{report}"
+    );
 
     let bare = TempTree::new("unattributed-fold");
     bare.git_init();
     bare.write("k/README.md", fold);
     let population = headwater_census::derived::population(bare.path());
     let report = population.render(headwater_paint::ColorMode::Plain);
-    assert!(!population.agrees(), "a fold with no attribute is reported:\n{report}");
+    assert!(
+        !population.agrees(),
+        "a fold with no attribute is reported:\n{report}"
+    );
 }
 
 /// A merge driver that the verb does not know is named in the report.

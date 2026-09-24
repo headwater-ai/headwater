@@ -340,7 +340,8 @@ fn a_clone_with_the_committed_attributes_and_no_driver_config_conflicts_on_a_fol
     );
     tree.git(&["add", "-A"]);
     tree.git(&["commit", "-q", "-m", "adopt headwater"]);
-    let configured = tree.git_output(&["config", "--get-regexp", "^merge\\.headwater-regenerate\\."]);
+    let configured =
+        tree.git_output(&["config", "--get-regexp", "^merge\\.headwater-regenerate\\."]);
     assert!(
         !configured.status.success(),
         "this clone configures no driver"

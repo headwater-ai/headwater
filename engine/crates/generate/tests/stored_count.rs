@@ -303,7 +303,10 @@ fn a_shelf_index_with_an_identity_states_no_number_in_its_summary() {
     let path = fixtures_dir().join("generate.taxonomy.yml");
     let text = std::fs::read_to_string(&path).expect("the fixture taxonomy reads");
     let anchor = "  - {kind: shelf_index, for: [decisions, guides, archive], output: \"{shelf}/README.md\"}\n";
-    assert!(text.contains(anchor), "the fixture taxonomy declares the shelf index");
+    assert!(
+        text.contains(anchor),
+        "the fixture taxonomy declares the shelf index"
+    );
     let text = text.replace(
         anchor,
         &format!(
