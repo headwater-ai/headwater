@@ -24,11 +24,13 @@
 //! the artifact would tell them. A declaration of either would put a second copy
 //! of one artifact at a path the engine did not fix.
 //!
-//! So [`Kind`] carries all twelve and [`Kind::declarable`] separates them. The
-//! meta-schema's enum holds the ten. The tenth is `verb_index`, and
+//! So [`Kind`] carries all thirteen and [`Kind::declarable`] separates them.
+//! The meta-schema's enum holds the eleven. The tenth is `verb_index`, and
 //! [#257](https://github.com/headwater-ai/headwater/issues/257) added it: its
 //! rows are the dispatch table of this binary and its empty cell is a verb that
-//! no document describes.
+//! no document describes. The eleventh is `consumer_surface`, and
+//! [#1051](https://github.com/headwater-ai/headwater/issues/1051) added it: its
+//! rows are the `surface` block of the taxonomy.
 //!
 //! # The marker is the record of the previous run
 //!
@@ -97,6 +99,7 @@ use headwater_query::{Document, Pointer, Surface};
 use headwater_yaml::value::{Mapping, Value};
 use std::path::Path;
 
+pub mod consumer_surface;
 mod derived;
 pub mod descriptor;
 pub mod emitters;
@@ -243,6 +246,9 @@ pub enum Kind {
     /// it where one exists. The rows come from the engine rather than from the
     /// graph, and the empty cell is the point of the artifact.
     VerbIndex,
+    /// #1051: the consumer surface of HW-DR-0077, as a page an adopter reads.
+    /// The rows are the `surface` block of the taxonomy and nothing else.
+    ConsumerSurface,
     /// Spec 4: the register, engine-defined and non-optional.
     CoverageReport,
     /// Q14: `.headwater/corpus.json`, engine-defined and non-optional.
@@ -263,8 +269,23 @@ impl Kind {
             Kind::Transcription => "transcription",
             Kind::ProbeResult => "probe_result",
             Kind::VerbIndex => "verb_index",
+            Kind::ConsumerSurface => "consumer_surface",
             Kind::CoverageReport => "coverage_report",
             Kind::CorpusDescriptor => "corpus_descriptor",
+        }
+    }
+
+    /// The label a navigation entry gives the page this kind writes, for a
+    /// generated page that is neither a shelf index nor a document of the
+    /// graph. `None` for every kind whose output a `site_nav` already reaches
+    /// another way, or never lists.
+    ///
+    /// A fixed string, because such a page carries no front matter and no
+    /// `name` facet to read one from, and a label is the title MkDocs serves.
+    pub fn page_label(self) -> Option<&'static str> {
+        match self {
+            Kind::ConsumerSurface => Some("The consumer surface"),
+            _ => None,
         }
     }
 
@@ -278,11 +299,11 @@ impl Kind {
     /// Every kind, declarable or engine-defined.
     ///
     /// A hand-kept list, and the compiler does not hold it complete: a
-    /// thirteenth variant added without a line here compiles. What forces an
+    /// fourteenth variant added without a line here compiles. What forces an
     /// author into this file is [`unbuilt`], whose `match` is exhaustive, and
     /// [`Kind::name`], whose `match` is too. `DECLARABLE` below carries the
     /// identical exposure and has since #257 added the tenth entry.
-    pub const ALL: [Kind; 12] = [
+    pub const ALL: [Kind; 13] = [
         Kind::ShelfIndex,
         Kind::ShelfSections,
         Kind::RelationView,
@@ -293,12 +314,13 @@ impl Kind {
         Kind::Transcription,
         Kind::ProbeResult,
         Kind::VerbIndex,
+        Kind::ConsumerSurface,
         Kind::CoverageReport,
         Kind::CorpusDescriptor,
     ];
 
     /// The declarable kinds, in the order the meta-schema lists them.
-    pub const DECLARABLE: [Kind; 10] = [
+    pub const DECLARABLE: [Kind; 11] = [
         Kind::ShelfIndex,
         Kind::ShelfSections,
         Kind::RelationView,
@@ -309,6 +331,7 @@ impl Kind {
         Kind::Transcription,
         Kind::ProbeResult,
         Kind::VerbIndex,
+        Kind::ConsumerSurface,
     ];
 
     fn parse(text: &str) -> Option<Kind> {
@@ -377,6 +400,9 @@ pub struct Projections {
     /// one. Assembled by [`profile::group`], which refuses a profile that two
     /// entries describe differently.
     pub profiles: Vec<Profile>,
+    /// The `surface` block, which a `consumer_surface` projection renders.
+    /// `None` for a taxonomy that declares no block.
+    pub surface: Option<consumer_surface::Declared>,
 }
 
 impl Projections {
@@ -399,7 +425,10 @@ impl Projections {
     /// emitter with a name no emitter answers to.
     pub fn read(root: &Mapping) -> Result<Self, Vec<DeclarationError>> {
         let mut errors = Vec::new();
-        let mut out = Projections::default();
+        let mut out = Projections {
+            surface: consumer_surface::Declared::read(root),
+            ..Projections::default()
+        };
         let Some(node) = root.get("projections") else {
             return Ok(out);
         };
@@ -907,6 +936,11 @@ pub fn plan(
                 probe_result::emit(surface, census, declaration, runs, identity, &mut plan);
             }
             Kind::VerbIndex => verb_index::emit(surface, declaration, verbs, &mut plan),
+            Kind::ConsumerSurface => consumer_surface::emit(
+                projections.surface.as_ref(),
+                declaration,
+                &mut plan,
+            ),
             Kind::SiteNav => navs.push(declaration),
             // Only a declarable kind with no emitter arm above reaches here,
             // and `unbuilt` answers `Some` for every one of those. A `None`
@@ -935,7 +969,20 @@ pub fn plan(
             .iter()
             .map(|output| output.path.clone())
             .collect();
-        site_nav::emit(surface, census, declaration, identity, &written, &mut plan);
+        let pages: Vec<(String, &str)> = plan
+            .outputs
+            .iter()
+            .filter_map(|output| output.kind.page_label().map(|label| (output.path.clone(), label)))
+            .collect();
+        site_nav::emit(
+            surface,
+            census,
+            declaration,
+            identity,
+            &written,
+            &pages,
+            &mut plan,
+        );
     }
     descriptor::emit(surface, identity, projections, &mut plan);
     plan.unwritten.extend(undeclared(projections));
@@ -1119,6 +1166,7 @@ pub fn unbuilt(kind: Kind) -> Option<&'static str> {
         | Kind::GraphExport
         | Kind::ProbeResult
         | Kind::VerbIndex
+        | Kind::ConsumerSurface
         | Kind::SiteNav
         | Kind::CorpusDescriptor => None,
     }

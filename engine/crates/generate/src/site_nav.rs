@@ -88,6 +88,11 @@ use headwater_query::{Pointer, Surface};
 struct Group {
     shelf: String,
     index: Option<String>,
+    /// Generated pages in the shelf's own directory that are neither its index
+    /// nor a document of the graph, each with its label. The consumer surface
+    /// page is the one kind today (#1051). Without an entry here such a page is
+    /// served and named by no sidebar, which is #528 again.
+    pages: Vec<(String, String)>,
     ordered: Vec<Pointer>,
 }
 
@@ -97,6 +102,7 @@ pub(crate) fn emit(
     declaration: &Declaration,
     identity: &Identity,
     written: &[String],
+    pages: &[(String, &str)],
     plan: &mut Plan,
 ) {
     let taxonomy = surface.taxonomy();
@@ -148,6 +154,7 @@ pub(crate) fn emit(
             // takes the key.
             shelf: crate::shelf_label(shelf),
             index: index_of(shelf.pattern.source(), written, &documents),
+            pages: pages_of(shelf.pattern.source(), pages, &documents),
             ordered,
         });
     }
@@ -194,6 +201,23 @@ fn index_of(pattern: &str, written: &[String], documents: &[&str]) -> Option<Str
     found.first().map(|path| (*path).clone())
 }
 
+/// The labelled generated pages directly in a shelf's own directory that no
+/// document of the graph is, in path order.
+fn pages_of(pattern: &str, pages: &[(String, &str)], documents: &[&str]) -> Vec<(String, String)> {
+    let directory = crate::shelf_index::directory_of(pattern);
+    let mut found: Vec<(String, String)> = pages
+        .iter()
+        .filter(|(path, _)| {
+            path.rsplit_once('/')
+                .is_some_and(|(parent, _)| parent == directory)
+                && !documents.contains(&path.as_str())
+        })
+        .map(|(path, label)| (path.clone(), (*label).to_string()))
+        .collect();
+    found.sort();
+    found
+}
+
 /// A double-quoted YAML scalar: `"` and `\` escaped, never written bare.
 ///
 /// The one correctness-critical detail this emitter carries. A title in this
@@ -225,6 +249,7 @@ fn render(output: &str, groups: &[Group], corpus_root: &str) -> String {
     for Group {
         shelf,
         index,
+        pages,
         ordered,
     } in groups
     {
@@ -236,6 +261,13 @@ fn render(output: &str, groups: &[Group], corpus_root: &str) -> String {
             out.push_str(&format!(
                 "      - {}: {}\n",
                 quoted(shelf),
+                quoted(&crate::shelf_index::relative(corpus_root, path))
+            ));
+        }
+        for (path, label) in pages {
+            out.push_str(&format!(
+                "      - {}: {}\n",
+                quoted(label),
                 quoted(&crate::shelf_index::relative(corpus_root, path))
             ));
         }

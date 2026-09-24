@@ -1368,6 +1368,16 @@ add_to:
       for: [interfaces]
       output: docs/interfaces/README.md
 
+    # The consumer surface of HW-DR-0077, as a page an adopter reads: the
+    # archive, the integration points with what each needs, the
+    # prerequisites, the companions and the commands a page may tell a reader
+    # to run. Its rows are the `surface` block above and nothing else, so the
+    # page goes stale the day the block moves (#1051). It reads no shelf, and
+    # it sits beside the verb index because the two are the two halves of what
+    # an adopter runs.
+    - kind: consumer_surface
+      output: docs/interfaces/consumer-surface.md
+
     # The whole graph, for the reader Q16 names and spec 5's server-reader
     # carve-out anticipates: a consumer outside this repository, with no
     # principal to filter for. Q17 rules that Headwater has no principals, so
