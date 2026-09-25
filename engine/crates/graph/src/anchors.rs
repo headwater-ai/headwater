@@ -78,17 +78,23 @@ pub enum Binding {
         /// What the resolver's source says the target is at now, and `None`
         /// where the resolver has no such notion.
         ///
-        /// A committed snapshot is the one resolver that has one: it pins an
-        /// identity and a revision for every item in it, so the answer carries
-        /// both. [`SourceTree`] answers `None`, because a path in a working
-        /// tree is at no revision that this engine can name, and inventing a
-        /// commit for it would put a value in a cache key that no source
-        /// stated.
+        /// Two resolvers have one. A committed snapshot pins an identity and a
+        /// revision for every item in it, so its answer carries both.
+        /// [`SourceTree`] answers with [`tree_revision`]: a digest of the
+        /// bytes of every entry the anchor matched, keyed by path. That is
+        /// not a commit, and it is not meant to be one. A working tree is at
+        /// no commit this engine can name without a version-control call,
+        /// which the check layer rules out, but its bytes are what a
+        /// governing document was written against, and a digest of them is a
+        /// value the tree itself states (#952). A literal that names a
+        /// directory answers `None`: see [`tree_revision`]. Every other
+        /// resolver answers `None`.
         ///
         /// Two components read it. `headwater_check::suspect` compares it
-        /// against the `verified_revision` an import wrote onto the edge, which
-        /// is the drift report [spec 7](../../../../docs/spec/07-distribution-and-federation.md#upstream-awareness)
-        /// asks for per edge. And `Target::resolution` renders it into the
+        /// against the `verified_revision` recorded on the edge, which is the
+        /// drift report [spec 7](../../../../docs/spec/07-distribution-and-federation.md#upstream-awareness)
+        /// asks for per edge, and which a `governs` edge now receives as
+        /// well. And `Target::resolution` renders it into the
         /// cache key of every edge instance, so a verdict about an edge cannot
         /// outlive the advance that falsifies it
         /// ([#160](https://github.com/headwater-ai/headwater/issues/160)).
@@ -117,6 +123,19 @@ pub trait Resolver {
     fn resolve_for(&self, raw: &str, asserter: &str) -> Binding {
         let _ = asserter;
         self.resolve(raw)
+    }
+
+    /// The revision of a set of entries this resolver matched, and `None`
+    /// where it has no such notion.
+    ///
+    /// A list anchor holds several patterns and one edge, so its revision is
+    /// one value over the union of what every member matched rather than any
+    /// one member's. `crate::edges` asks this for the union. The default is
+    /// `None`, because a snapshot names one item at one revision and a list is
+    /// admitted only where the resolver is `source-tree`.
+    fn revision_of(&self, matched: &[String]) -> Option<String> {
+        let _ = matched;
+        None
     }
 
     /// Whether a normalized literal names a directory rather than a file. A
@@ -267,13 +286,12 @@ impl Resolver for SourceTree {
                 .find(|exclusion| exclusion.pattern.matches(&normalized))
                 .map(|exclusion| exclusion.pattern.source().to_string());
 
+            let matched = vec![normalized.clone()];
             return Binding::Resolved {
-                matched: vec![normalized.clone()],
+                revision: tree_revision(&self.base, &matched),
+                matched,
                 normalized,
                 excluded_by,
-                // A path in a working tree is at no revision this resolver can
-                // name. See the field.
-                revision: None,
             };
         }
 
@@ -336,10 +354,55 @@ impl Resolver for SourceTree {
         Binding::Resolved {
             normalized,
             excluded_by: None,
-            revision: None,
+            revision: tree_revision(&self.base, &matched),
             matched,
         }
     }
+
+    fn revision_of(&self, matched: &[String]) -> Option<String> {
+        tree_revision(&self.base, matched)
+    }
+}
+
+/// The digest of what a set of tree entries holds, read from their bytes.
+///
+/// Each entry is one line of a manifest: its path relative to `base`, a NUL,
+/// and [`headwater_hash::digest`] of its bytes. The lines are sorted by path
+/// and the manifest is digested once. So the value is a function of paths and
+/// bytes and of nothing else. A modification time, an owner and a permission
+/// bit reach no line, and no version-control call is made, which is the rule
+/// `headwater_check::change` states for the check layer. A file added under a
+/// governed pattern, or removed from it, changes the manifest, and so does one
+/// changed byte of any entry.
+///
+/// `None` when any entry cannot be read as a file. That is a directory named
+/// by a literal, the one shape this corpus declares where it happens
+/// (`.headwater/packages`), and an entry that went away between the walk and
+/// the read. A directory gets no digest on purpose: which entries under it a
+/// document governs is the pattern language's to state, and a literal with no
+/// wildcard names the directory and nothing under it
+/// ([HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)).
+/// A digest over a walk of it would state a reach the author did not write.
+/// The cost is that such an edge never ages, so the suspect rule reports a
+/// directory literal at `Info` and names `**` after the directory as the
+/// remedy, rather than passing it in silence.
+pub fn tree_revision(base: &Path, matched: &[String]) -> Option<String> {
+    let mut sorted: Vec<&String> = matched.iter().collect();
+    sorted.sort();
+    sorted.dedup();
+    let mut manifest = String::new();
+    for path in sorted {
+        let at = base.join(path);
+        if at.is_dir() {
+            return None;
+        }
+        let bytes = std::fs::read(&at).ok()?;
+        manifest.push_str(path);
+        manifest.push('\0');
+        manifest.push_str(&headwater_hash::digest(&bytes));
+        manifest.push('\n');
+    }
+    Some(headwater_hash::digest(manifest.as_bytes()))
 }
 
 /// The `comment-scan` resolver: a path binds only where a comment inside it

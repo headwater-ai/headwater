@@ -143,11 +143,13 @@ pub enum Target {
         /// [`crate::anchors::Binding::Resolved`].
         excluded_by: Option<String>,
         /// What the resolver's source says the target is at now, carried
-        /// through from [`crate::anchors::Binding::Resolved`]. `None` for every
-        /// resolver but a committed snapshot's, and for every anchor that
-        /// holds more than one pattern: a snapshot resolver names one item at
-        /// one revision, and this ruling admits a list only where the
-        /// resolver is `source-tree`.
+        /// through from [`crate::anchors::Binding::Resolved`]: a snapshot's
+        /// pinned revision, or `source-tree`'s digest of the bytes the anchor
+        /// matched ([`crate::anchors::tree_revision`]). An anchor that holds
+        /// more than one pattern carries one value over the union of every
+        /// member's matched entries, from [`crate::anchors::Resolver::revision_of`].
+        /// `None` for every other resolver, and for a literal that names a
+        /// directory.
         revision: Option<String>,
         /// One entry per pattern the anchor holds, in the identity order
         /// above. A value with no wildcard is one anchor with one member here.
@@ -837,9 +839,27 @@ fn bind(
         // before a list existed. A list, or a wildcard pattern, drops an
         // excluded hit from the matched count instead of naming one exclusion
         // for the whole set — see `PatternMember` and `Binding::Resolved`.
+        //
+        // A list carries one revision over the union of what its members
+        // matched, sorted by path, and never `None` for want of a rule: one
+        // entry of a list is one edge, and an edge with no revision can never
+        // go suspect (#952). The resolver computes it, because the resolver is
+        // what reads the entries.
         let (excluded_by, revision) = match resolved.as_slice() {
             [member] => (member.excluded_by.clone(), member.revision.clone()),
-            _ => (None, None),
+            members => {
+                let mut union: Vec<String> = members
+                    .iter()
+                    .flat_map(|member| member.matched.iter().cloned())
+                    .collect();
+                union.sort();
+                union.dedup();
+                let revision = declarations
+                    .anchor(anchor_kind)
+                    .and_then(|anchor| resolvers.get(&anchor.resolver))
+                    .and_then(|resolver| resolver.revision_of(&union));
+                (None, revision)
+            }
         };
         let patterns = resolved
             .into_iter()

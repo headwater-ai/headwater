@@ -1,6 +1,7 @@
-593 seen, 404 classified, 404 checked, 7684 check instances
+593 seen, 404 classified, 404 checked, 8228 check instances
      22 generated, held to regeneration by `headwater generate --check`
      23 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+    309 skipped: the target is a document, which holds no revision for an edge to be verified against
       3 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-16`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
@@ -21,6 +22,7 @@ adoption
     404 instances of identifier.pattern.not_met
     404 instances of shelf.placement_is_primary
     761 instances of relation.target.unresolved
+    544 instances of relation.target.suspect
      91 instances of relation.reciprocity.missing
     435 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
@@ -69,7 +71,7 @@ rules, and for each the scope that binds it
   relation.target.unresolved
     edge scope, one relation instance and both endpoints
   relation.target.suspect
-    edge scope, one relation instance and both endpoints
+    edge scope, one relation instance and both endpoints, and the injected clock
   relation.reciprocity.missing
     edge scope, one relation instance and both endpoints
   relation.endpoint.not_permitted
