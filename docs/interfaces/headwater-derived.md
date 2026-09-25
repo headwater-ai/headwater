@@ -39,7 +39,7 @@ The verb reads the tree. It also asks git two questions about the tree: which pa
 
 The verb asks about a literal path of the root file without its leading `/`, because git refuses a path that begins with one. It does not ask about a path that climbs out of the tree through `..`. Git refuses that path too, and a pattern that names it matches no file of the tree.
 
-**Where git refuses the question inside a repository, the report says so.** The verb then uses the root-file reader for the whole tree. The report prints what git printed, and it states that nested files, `info/attributes` and `core.attributesFile` were not read. It also names each nested `.gitattributes` that the walk finds, as it does outside a repository. The verb exits 1.
+**Where git does not answer the question inside a repository, the report says so.** Git does not answer when it refuses the question. It also does not answer when it does not run, for example because it is not on the `PATH`. Where git does not run, a `.git` entry in the root or in a directory above it shows that the tree is in a repository. A linked worktree holds a `.git` file, and the verb counts it as a `.git` entry. The verb then uses the root-file reader for the whole tree. The report prints what git printed, or why git did not run. It states that nested files, `info/attributes` and `core.attributesFile` were not read. It also names each nested `.gitattributes` that the walk finds, as it does outside a repository. The verb exits 1.
 
 **Outside a git repository, the verb reads the root `.gitattributes` alone.** It reads that file as a list of literal paths. A leading `/` of a line anchors the pattern to the root and is not part of the path, so this reader also removes it. The reader does not expand a pattern, and the report names each pattern that carries a merge attribute. The reader does not read a nested `.gitattributes`. The report names each nested file that the walk finds, under its own heading, and the verb exits 1. A nested file can set or unset a merge attribute. A report that passed over it would state agreement for a layout that the verb did not read. No merge reads the attributes of such a tree, so this reader is for a tree that is not a repository yet.
 
@@ -57,9 +57,9 @@ Three rules give the shape, and they are read in this order:
 |---|---|---|
 | A line that depends on nothing | Every line of the file is one complete record, which is the shape `headwater capture` reads | `merge=union` |
 | One record for each entity, in a fixed order | A generated file or a recorded corpus fixture whose opening states no fold. The recorded one is the artifact [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) decomposed so that it merges | No merge attribute, because an ordinary conflict is the correct report |
-| A fold over those records, or a fold over everything | A producer writes it, and for `headwater generate` the opening of the file states a count or a digest after the marker | `-merge` in `.gitattributes`, or `merge=headwater-regenerate` from the `info/attributes` of a configured clone |
+| A fold over those records, or a fold over everything | A producer writes it. For `headwater generate`, the opening of the file states a count or a digest after the marker. The file is also a fold where the line that carries the marker is its only line. A projection that writes its JSON on one line is this last case | `-merge` in `.gitattributes`, or `merge=headwater-regenerate` from the `info/attributes` of a configured clone |
 
-**A generated file whose opening states no fold is one record per entity.** It lists one row for each document, and it takes no merge attribute. [#1058](https://github.com/headwater-ai/headwater/issues/1058) measured each generated file of this repository. Every one of them merged as text to the bytes that `headwater generate` writes over the merged tree. The verb reads the opening of the file rather than a list. So a generated file that starts to state a count is a fold again, and the verb reports it until it is declared.
+**A generated file whose opening states no fold is one record per entity, unless the marker line is its only line.** One line cannot hold one record for each entity, because two edits of it always conflict and the cure is to generate it again. A file of more than one line lists one row for each document, and it takes no merge attribute. [#1058](https://github.com/headwater-ai/headwater/issues/1058) measured each generated file of this repository. Every one of them merged as text to the bytes that `headwater generate` writes over the merged tree. The verb reads the opening of the file rather than a list. So a generated file that starts to state a count is a fold again, and the verb reports it until it is declared.
 
 **A fold takes either of two attributes, because git gives a clone the one that it can honor.** The committed `-merge` keeps the current side and conflicts in every clone ([#1058](https://github.com/headwater-ai/headwater/issues/1058)). `headwater init --git --git-config` writes the driver into the `info/attributes` of the clone, which wins. Both answers agree, so this verb exits 0 in CI and in a configured clone.
 
@@ -92,7 +92,7 @@ Three rules give the shape, and they are read in this order:
 
 ## Preconditions
 
-Inside a git repository, the `git` executable must be on the `PATH`. The verb already needs it to read the ignore rules. A repository with no file that declares `-merge` or `merge=headwater-regenerate` reports every producer output as undeclared.
+Inside a git repository, the `git` executable must be on the `PATH`. The verb already needs it to read the ignore rules. Where git does not run inside a repository, the verb does not read the tree as a tree with no repository. It reports that git did not run, and it exits 1. A repository with no file that declares `-merge` or `merge=headwater-regenerate` reports every producer output as undeclared.
 
 Outside a git repository, the root must hold a readable `.gitattributes`. A root without one reports every producer output as undeclared.
 
@@ -112,7 +112,7 @@ The verb takes no option of its own. It computes one answer about one tree, and 
 
 **0** means that the computed set and the declared set agree, and that every reported path carries the merge attribute its shape takes.
 
-**1** means that at least one of those disagrees. Five things give this status. A producer output carries no attribute. A declared path has no producer. A shape carries an attribute that is not its treatment. Outside a git repository, a merge attribute is one this verb cannot read. Inside one, git refused to give the merge attributes. The report prints the whole answer, on standard output, under either status.
+**1** means that at least one of those disagrees. Five things give this status. A producer output carries no attribute. A declared path has no producer. A shape carries an attribute that is not its treatment. Outside a git repository, a merge attribute is one this verb cannot read. Inside one, git did not give the merge attributes, because it refused or because it did not run. The report prints the whole answer, on standard output, under either status.
 
 ## Environment
 
