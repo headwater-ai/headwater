@@ -46,7 +46,11 @@ fn serve(count: usize) -> String {
             let read = stream.read(&mut request).unwrap();
             let line = String::from_utf8_lossy(&request[..read]).to_string();
             let path = line.split_whitespace().nth(1).unwrap_or("").to_string();
-            let bomb = if path == "/bomb.zip" { bomb() } else { Vec::new() };
+            let bomb = if path == "/bomb.zip" {
+                bomb()
+            } else {
+                Vec::new()
+            };
             let (head, payload): (String, &[u8]) = match path.as_str() {
                 "/away" => (
                     "HTTP/1.1 302 Found\r\nLocation: http://example.invalid/x.zip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string(),

@@ -439,10 +439,16 @@ mod tests {
         let refused = result.unwrap_err();
         assert!(matches!(refused, Error::Transport(_)), "{refused}");
         assert!(
-            refused.to_string().contains("redirected more than 10 times"),
+            refused
+                .to_string()
+                .contains("redirected more than 10 times"),
             "{refused}"
         );
-        assert_eq!(asked.len(), 11, "the first request and ten redirects: {asked:?}");
+        assert_eq!(
+            asked.len(),
+            11,
+            "the first request and ten redirects: {asked:?}"
+        );
     }
 
     #[test]
@@ -452,7 +458,10 @@ mod tests {
         });
         let refused = result.unwrap_err();
         assert!(matches!(refused, Error::Scheme(_)), "{refused}");
-        assert!(refused.to_string().contains("http://127.0.0.1/x.zip"), "{refused}");
+        assert!(
+            refused.to_string().contains("http://127.0.0.1/x.zip"),
+            "{refused}"
+        );
         assert_eq!(asked, ["https://objects.example.org/x.zip"]);
     }
 
@@ -487,7 +496,9 @@ mod tests {
 
     fn unpacked(bytes: Vec<u8>, bound: u64) -> (Result<(), Error>, Fetched) {
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
-        let fetched = Fetched { dir: scratch().unwrap() };
+        let fetched = Fetched {
+            dir: scratch().unwrap(),
+        };
         let result = unpack(&mut archive, &fetched.dir, bound, "test.zip");
         (result, fetched)
     }
@@ -516,6 +527,9 @@ mod tests {
         assert!(matches!(refused, Error::Archive(_)), "{refused}");
         // Refused by the count of bytes written, not by a checksum or a size
         // mismatch the reader might raise first.
-        assert!(refused.to_string().contains("more than 1024 bytes"), "{refused}");
+        assert!(
+            refused.to_string().contains("more than 1024 bytes"),
+            "{refused}"
+        );
     }
 }
