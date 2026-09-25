@@ -519,6 +519,141 @@ fn the_git_step_writes_attributes_for_the_two_verb_producers_and_prints_the_conf
     );
 }
 
+/// The long description of `headwater init` states what `--git` writes as the
+/// contract states it (`docs/interfaces/headwater-init.md`, the `--git` row):
+/// a `-merge` line in `.gitattributes`, and the override that selects the
+/// driver in the clone's own `info/attributes`.
+///
+/// The flag help already says so, so the case reads the description alone,
+/// which is the text above `Usage:`. `help.rs` holds that text against the verb
+/// table and would pass whatever the table says; this case holds the table
+/// against the contract. Restore a description that has `--git` append
+/// `merge=headwater-regenerate` to `.gitattributes`, and it fails.
+#[test]
+fn the_description_of_init_says_git_commits_unset_merge_and_selects_the_driver_per_clone() {
+    let output = Command::new(binary())
+        .args(["init", "--help"])
+        .output()
+        .expect("the binary runs");
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "`headwater init --help` exits 0"
+    );
+    let help = String::from_utf8_lossy(&output.stdout).into_owned();
+    let description = help
+        .split("Usage:")
+        .next()
+        .expect("the help has a description")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    assert!(
+        !description.contains("merge=headwater-regenerate"),
+        "the description does not say `--git` commits a line that selects the driver, \
+         because a line naming a driver no config defines is a text merge:\n{description}"
+    );
+    for words in [
+        "`-merge`",
+        "`.gitattributes`",
+        "`info/attributes`",
+        "`git config`",
+    ] {
+        assert!(
+            description.contains(words),
+            "the description names {words}, as the `--git` row of the contract does:\n{description}"
+        );
+    }
+
+    // Which file gets which line. Each file is named in a sentence of its
+    // own, so a sentence that names both cannot hand one file's line to the
+    // other. The `.gitattributes` sentence carries `-merge` and no driver, and
+    // the `info/attributes` sentence selects the driver and carries no
+    // `-merge`. A description that swaps the two files fails here.
+    let sentences: Vec<&str> = description.split(". ").collect();
+    let committed: Vec<&str> = sentences
+        .iter()
+        .copied()
+        .filter(|sentence| sentence.contains("`.gitattributes`"))
+        .collect();
+    let per_clone: Vec<&str> = sentences
+        .iter()
+        .copied()
+        .filter(|sentence| sentence.contains("`info/attributes`"))
+        .collect();
+    assert!(
+        !committed.is_empty() && !per_clone.is_empty(),
+        "the description names each file in a sentence:\n{description}"
+    );
+    for sentence in &committed {
+        assert!(
+            sentence.contains("`-merge` line to `.gitattributes`")
+                && !sentence.contains("`info/attributes`")
+                && !sentence.contains("driver"),
+            "the sentence that names `.gitattributes` gives it the `-merge` line and \
+             nothing that selects the driver:\n{sentence}"
+        );
+    }
+    for sentence in &per_clone {
+        assert!(
+            sentence.contains("`info/attributes` lines that select the driver")
+                && !sentence.contains("`.gitattributes`")
+                && !sentence.contains("`-merge`"),
+            "the sentence that names `info/attributes` gives it the lines that select \
+             the driver and no `-merge` line:\n{sentence}"
+        );
+    }
+}
+
+/// Every `headwater taxonomy resolve` command the merge hooks of this
+/// repository print as a remedy is one the verb accepts (HW-OBL-0216).
+///
+/// A remedy that the verb refuses sends a merger from a stopped merge to an
+/// "unexpected argument" error. The case reads the command out of each hook
+/// and runs it on an adopted tree. Put `--write` back into either hook, and
+/// the verb refuses it and this case fails.
+#[test]
+fn every_resolve_remedy_the_merge_hooks_print_is_one_the_verb_accepts() {
+    const VERB: &str = "headwater taxonomy resolve";
+    let tree = Tree::adopted("remedy");
+    let mut ran = 0;
+    for hook in [".githooks/merge-regenerate", ".githooks/merged-fold-check"] {
+        let text = std::fs::read_to_string(repository().join(hook))
+            .unwrap_or_else(|error| panic!("{hook} reads: {error}"));
+        let mut found = 0;
+        for (at, _) in text.match_indices(VERB) {
+            let rest = &text[at..];
+            let end = [
+                rest.find('"'),
+                rest.find('`'),
+                rest.find(')'),
+                rest.find("  "),
+                rest.find('\n'),
+            ]
+            .into_iter()
+            .flatten()
+            .min()
+            .unwrap_or(rest.len());
+            let command = rest[..end].trim();
+            let args: Vec<&str> = command.split_whitespace().skip(1).collect();
+            let output = tree.headwater(&args);
+            assert_eq!(
+                output.status.code(),
+                Some(0),
+                "`{command}`, printed by {hook}, is a command the verb accepts:\n{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            found += 1;
+        }
+        assert!(found > 0, "{hook} prints a `{VERB}` remedy");
+        ran += found;
+    }
+    assert!(
+        ran >= 3,
+        "the two hooks print three resolve commands, and {ran} ran"
+    );
+}
+
 /// Inside a repository where git does not run, `headwater derived` says so and exits 1.
 ///
 /// Git answers for every attribute file of the tree. Without it the verb can

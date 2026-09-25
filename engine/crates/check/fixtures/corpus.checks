@@ -57,7 +57,7 @@ suppressions
       7 on the shelf interfaces
       1 on the shelf how_to
       1 on the shelf tutorials
-      2 matched no finding
+      3 matched no finding
 rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter

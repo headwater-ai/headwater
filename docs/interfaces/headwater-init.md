@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-init
 status: current
 status_since: 2026-09-06
 summary: "How to start a corpus by writing a consumer declaration and an overlay from tree evidence and interview prompts."
-last_verified: 2026-09-23
+last_verified: 2026-09-25
 title: "headwater init"
 relations:
   governs:
@@ -30,7 +30,7 @@ It writes questions that the tree cannot answer into the overlay. It does not re
 
 **The committed line needs no configuration, and that is why it is `-merge`.** Under `-merge`, git keeps the current side, writes no conflict marker and records a conflict. Every clone does this. Git reads a driver that no configuration defines as an ordinary text merge ([#1058](https://github.com/headwater-ai/headwater/issues/1058)). So a committed `merge=headwater-regenerate` line gave a clone without the configuration a silent text merge of each fold.
 
-**A forge does not read the attribute.** We measured this on GitHub on 2026-09-24. A pull request that moved a `-merge` path showed as mergeable, and its test merge held the edits of both branches. A check of the merged tree in CI is what covers the forge.
+**A forge does not read the attribute.** We measured this on GitHub on 2026-09-24. A pull request that moved a `-merge` path showed as mergeable, and its test merge held the edits of both branches. A check of the merged tree in CI is what covers the forge. [The adopter's CI guide](../how-to/wire-headwater-check-into-your-own-workflow.md#make-it-cover-a-merge) names the two branch settings that the cover needs.
 
 **A generated file that is one record per entity takes no line.** Each row names one document, so two branches that each add a document write two rows. A text merge of them is what the producer writes over the merged tree. [#1058](https://github.com/headwater-ai/headwater/issues/1058) measured this over every generated file of the repository that maintains this engine. A `-merge` on such a file would stop every pair of branches that each add a document.
 
