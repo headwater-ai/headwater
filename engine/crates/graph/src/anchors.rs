@@ -890,6 +890,7 @@ mod tests {
         let member = |matched: &[String]| crate::edges::PatternMember {
             pattern: ".claude/hooks/**".to_string(),
             matched: matched.to_vec(),
+            revision: None,
         };
         let anchor = |matched: &[String]| crate::edges::Target::Anchor {
             anchor_kind: "code_path".to_string(),

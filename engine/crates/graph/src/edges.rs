@@ -178,6 +178,10 @@ pub struct PatternMember {
     /// The tree entries this one pattern matched, sorted and with no
     /// duplicate, straight from [`crate::anchors::Binding::Resolved::matched`].
     pub matched: Vec<String>,
+    /// The revision the resolver gave this one pattern, straight from
+    /// [`crate::anchors::Binding::Resolved::revision`]. The graph states what
+    /// the resolver said, and a rule decides what a `None` means.
+    pub revision: Option<String>,
 }
 
 /// Why a target bound to nothing. The set is closed, and two of its members
@@ -866,6 +870,7 @@ fn bind(
             .map(|member| PatternMember {
                 pattern: member.normalized,
                 matched: member.matched,
+                revision: member.revision,
             })
             .collect();
 
@@ -983,12 +988,14 @@ mod tests {
             patterns: vec![PatternMember {
                 pattern: ".claude/hooks/lib.sh".to_string(),
                 matched: vec![".claude/hooks/lib.sh".to_string()],
+                revision: None,
             }],
         }
     }
 
-    /// The same anchor, at a revision. A snapshot resolver answers with one and
-    /// the source tree never does, so this is the second shape of one binding.
+    /// The same anchor, at a revision. A snapshot resolver answers with one,
+    /// and so does the source tree since #952, so this is the second shape of
+    /// one binding.
     fn pinned(revision: &str) -> Target {
         Target::Anchor {
             anchor_kind: "ado_work_item".to_string(),
@@ -999,6 +1006,7 @@ mod tests {
             patterns: vec![PatternMember {
                 pattern: "12345".to_string(),
                 matched: vec!["12345".to_string()],
+                revision: Some(revision.to_string()),
             }],
         }
     }
@@ -1052,6 +1060,7 @@ mod tests {
             patterns: vec![PatternMember {
                 pattern: ".claude/hooks/lib.sh".to_string(),
                 matched: vec![".claude/hooks/lib.sh".to_string()],
+                revision: None,
             }],
         };
         let others = [

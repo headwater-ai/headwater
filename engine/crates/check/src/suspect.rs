@@ -82,6 +82,9 @@
 //! The rule reports it at `Info` on every run, and names `<literal>/**` as
 //! the remedy. It offers no patch, because that remedy widens what the edge
 //! reaches ([HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)).
+//! A list member that names a directory is reported the same way, in one
+//! finding per entry that names each such member, because one directory
+//! member leaves the whole list without a digest (#1104).
 //!
 //! A target that is not an anchor passes, and a document target is skipped
 //! with its reason. A document holds no revision, and an unbound target is
@@ -186,8 +189,10 @@ impl EdgeCheck for Suspect<'_> {
     /// See [`crate::placement::Placement::VERSION`]. 2: the denominator
     /// widened to every relation onto an anchor kind, and the rule reads the
     /// clock (#952). 3: a literal that names a directory is reported rather
-    /// than passed, so a verdict cached at 2 over such an edge is stale.
-    const VERSION: u32 = 3;
+    /// than passed, so a verdict cached at 2 over such an edge is stale. 4: a
+    /// list with a directory member is reported rather than passed, so a
+    /// verdict cached at 3 over such an edge is stale (#1104).
+    const VERSION: u32 = 4;
     /// The fix is offered only on a document verified on or after the clock,
     /// so the clock is an input and has to be in the key.
     const NEEDS_CLOCK: bool = true;
@@ -255,9 +260,13 @@ impl EdgeCheck for Suspect<'_> {
             // suspect. That is reported rather than passed, with the wildcard
             // that does carry a digest as the remedy. No patch: the remedy
             // widens what the edge reaches, which is the author's to decide.
-            // Every other edge with no revision keeps its silence.
-            return match directory_literal(resolver, patterns) {
-                Some(literal) => Outcome::failed_with(finding(
+            // Every other edge with no revision keeps its silence. A list with
+            // one directory member has no digest either (#1104), and gets one
+            // finding that names every such member.
+            let members = directory_members(resolver, patterns);
+            return match (patterns.as_slice(), members.as_slice()) {
+                (_, []) => Outcome::Passed,
+                ([_], [literal]) => Outcome::failed_with(finding(
                     Severity::Info,
                     directory(&edge.source.id, &edge.name, literal),
                     format!(
@@ -266,7 +275,17 @@ impl EdgeCheck for Suspect<'_> {
                     ),
                     None,
                 )),
-                None => Outcome::Passed,
+                (_, members) => Outcome::failed_with(finding(
+                    Severity::Info,
+                    directories(&edge.source.id, &edge.name, &edge.raw_target, members),
+                    format!(
+                        "write {} in the list to govern the entries under each directory, which \
+                         carries a digest this rule compares, or name the files the document \
+                         governs",
+                        spoken(members.iter().map(|member| format!("`{member}/**`")))
+                    ),
+                    None,
+                )),
             };
         };
 
@@ -340,19 +359,27 @@ impl EdgeCheck for Suspect<'_> {
     }
 }
 
-/// The literal a `source-tree` anchor names, where it is one literal pattern
-/// that matched only itself and the resolver still gave no digest: a
-/// directory, which [`headwater_graph::anchors::tree_revision`] refuses to
-/// digest. `None` for every other shape, and for every other resolver.
-fn directory_literal<'e>(
+/// Each member of a `source-tree` anchor that is one literal pattern, matched
+/// only itself, and got no digest from the resolver: a directory, which
+/// [`headwater_graph::anchors::tree_revision`] refuses to digest. One such
+/// member leaves a list with no digest over its union too. Empty for every
+/// other resolver, and for an anchor with no such member.
+fn directory_members<'e>(
     resolver: &str,
     patterns: &'e [headwater_graph::edges::PatternMember],
-) -> Option<&'e str> {
-    let [only] = patterns else {
-        return None;
-    };
-    (resolver == SOURCE_TREE && only.matched.len() == 1 && only.matched[0] == only.pattern)
-        .then_some(only.pattern.as_str())
+) -> Vec<&'e str> {
+    if resolver != SOURCE_TREE {
+        return Vec::new();
+    }
+    patterns
+        .iter()
+        .filter(|member| {
+            member.revision.is_none()
+                && member.matched.len() == 1
+                && member.matched[0] == member.pattern
+        })
+        .map(|member| member.pattern.as_str())
+        .collect()
 }
 
 fn directory(id: &str, name: &str, literal: &str) -> String {
@@ -360,6 +387,30 @@ fn directory(id: &str, name: &str, literal: &str) -> String {
         "`{id}` declares `{name}: {literal}`, and `{literal}` names a directory, which the source \
          tree takes no digest of, so this edge never goes suspect when what it governs changes"
     )
+}
+
+/// [`directory`] for a list: the declaration as written, and each member that
+/// names a directory.
+fn directories(id: &str, name: &str, raw: &str, members: &[&str]) -> String {
+    let verb = match members {
+        [_] => "names",
+        _ => "each name",
+    };
+    format!(
+        "`{id}` declares `{name}: {raw}`, and {} {verb} a directory, which the source tree takes \
+         no digest of, so this edge never goes suspect when what it governs changes",
+        spoken(members.iter().map(|member| format!("`{member}`")))
+    )
+}
+
+/// `a`, `a and b`, or `a, b and c`.
+fn spoken(items: impl Iterator<Item = String>) -> String {
+    let items: Vec<String> = items.collect();
+    match items.split_last() {
+        None => String::new(),
+        Some((last, [])) => last.clone(),
+        Some((last, rest)) => format!("{} and {last}", rest.join(", ")),
+    }
 }
 
 /// The patch that records `current` on the entry that declared `edge`, and
