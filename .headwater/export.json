@@ -1458,7 +1458,7 @@
         "path": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
         "kind": "decision",
         "id": "HW-DR-0049",
-        "warrant": "asserted",
+        "warrant": "accepted",
         "facets": {
           "id": "HW-DR-0049",
           "status": "current",
@@ -1467,10 +1467,11 @@
           "last_verified": "2026-09-25",
           "title": "A corpus-wide fold is derived and never stored",
           "provenance": {
-            "warrant": "asserted",
+            "warrant": "accepted",
             "agency": "mixed",
             "drafted_by": "claude-opus-5",
             "activity": "measure+draft",
+            "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
           },
           "relations": {

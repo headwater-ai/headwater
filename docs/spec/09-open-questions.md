@@ -239,7 +239,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## A corpus-wide fold is derived and never stored
 
-[HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) — A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict. (asserted, and no human has accepted it)
+[HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) — A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict.
 
 ## Q51 — What licenses a term into the public glossary, and what licenses a sixteenth
 
