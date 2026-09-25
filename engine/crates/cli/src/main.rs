@@ -832,7 +832,13 @@ fn validate(root: &Path) -> ExitCode {
             let corpus = Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions);
             let resolvers = headwater_graph::anchors::Resolvers::over(&corpus);
             let scope = headwater_graph::scope::Scope::declared(&declarations);
-            if scope.tree_is_absent(&resolvers) {
+            let ignored = headwater_graph::scope::Ignored::read(&corpus.base);
+            let beside = headwater_graph::scope::tree_directories(
+                &corpus.base,
+                &repository.resolution.sources,
+                &ignored,
+            );
+            if scope.tree_is_absent(&resolvers, &beside) {
                 let count = scope.members.len();
                 let noun = if count == 1 { "pattern" } else { "patterns" };
                 (
@@ -843,7 +849,6 @@ fn validate(root: &Path) -> ExitCode {
                     )),
                 )
             } else {
-                let ignored = headwater_graph::scope::Ignored::read(&corpus.base);
                 (scope.ignoring(ignored).unmatched(&resolvers), None)
             }
         }

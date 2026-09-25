@@ -133,14 +133,16 @@ impl Scope {
 
     /// Whether no tree lies beside the taxonomy for this scope to count.
     ///
-    /// True when the scope declares at least one pattern and the root of
-    /// every pattern is missing: the literal directory a wildcard pattern
-    /// walks from, or the file a literal pattern names. One root that is there
-    /// makes the tree present, and then a pattern that matches nothing is a
-    /// claim about nothing and `taxonomy validate` refuses it. A pattern the
-    /// resolver cannot read at all is no evidence either way.
-    pub fn tree_is_absent(&self, resolvers: &Resolvers) -> bool {
+    /// `beside` is what [`tree_directories`] found at the root. The tree is
+    /// absent only when the scope declares at least one pattern, `beside` is
+    /// empty, and the root of every pattern is missing too: the literal
+    /// directory a wildcard pattern walks from, or the file a literal pattern
+    /// names. So a tree whose every pattern is misspelled is still a tree, and
+    /// `taxonomy validate` refuses each pattern. A pattern the resolver cannot
+    /// read at all is no evidence either way.
+    pub fn tree_is_absent(&self, resolvers: &Resolvers, beside: &[String]) -> bool {
         !self.members.is_empty()
+            && beside.is_empty()
             && !self.members.iter().any(|member| {
                 let (Ok(pattern), Some(resolver)) =
                     (member.pattern.as_ref(), resolvers.get(&member.resolver))
@@ -202,6 +204,44 @@ impl Scope {
             })
             .collect()
     }
+}
+
+/// The directories at the top of `base` that could hold a tree, sorted.
+///
+/// This asks the root and never the scope, so a misspelled pattern cannot
+/// hide a tree. A directory does not count when it is:
+///
+/// - the first segment of a taxonomy source in `sources`, the paths the
+///   resolution read, because the taxonomy is not the tree it describes;
+/// - a dot-directory, because `.git`, `.github` and an editor's settings sit
+///   beside a taxonomy published on its own as well as beside a tree;
+/// - a directory git ignores, because a build output is not a tree.
+///
+/// A file at the top of the root does not count either, because a README and
+/// a license sit beside a published taxonomy too. A pattern whose root is one
+/// of these directories still makes the tree present, which
+/// [`Scope::tree_is_absent`] decides.
+pub fn tree_directories(base: &Path, sources: &[String], ignored: &Ignored) -> Vec<String> {
+    let taxonomy: Vec<&str> = sources
+        .iter()
+        .filter_map(|source| {
+            let source = source.trim_start_matches("./");
+            source.split_once('/').map(|(first, _)| first)
+        })
+        .collect();
+    let Ok(entries) = std::fs::read_dir(base) else {
+        return Vec::new();
+    };
+    let mut found: Vec<String> = entries
+        .filter_map(Result::ok)
+        .filter(|entry| entry.path().is_dir())
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .filter(|name| !name.starts_with('.'))
+        .filter(|name| !taxonomy.contains(&name.as_str()))
+        .filter(|name| !ignored.covers(&format!("{name}/")))
+        .collect();
+    found.sort();
+    found
 }
 
 impl Reach {
@@ -417,12 +457,12 @@ mod tests {
 
         // A tree is there, and no pattern names a root that exists in it.
         let at = tree("absent");
-        let resolvers = resolvers(&at);
+        let over_tree = resolvers(&at);
         let beside = tree_directories(&at, &[], &none);
         assert_eq!(beside, ["tools", "tools-old"]);
         for patterns in [&["tool/**"][..], &["engine/**", "site/**", "README.md"]] {
             assert!(
-                !scope(patterns).tree_is_absent(&resolvers, &beside),
+                !scope(patterns).tree_is_absent(&over_tree, &beside),
                 "{patterns:?} beside a tree"
             );
         }
@@ -431,10 +471,8 @@ mod tests {
         // The root of a taxonomy published on its own: the taxonomy's own
         // sources, dot-directories, top-level files, and a directory git
         // ignores.
-        let bare = std::env::temp_dir().join(format!(
-            "headwater-graph-scope-{}-bare",
-            std::process::id()
-        ));
+        let bare =
+            std::env::temp_dir().join(format!("headwater-graph-scope-{}-bare", std::process::id()));
         let _ = std::fs::remove_dir_all(&bare);
         for file in [
             ".headwater/overlay.yml",
@@ -456,13 +494,13 @@ mod tests {
         };
         let beside = tree_directories(&bare, &sources, &ignored);
         assert!(beside.is_empty(), "{beside:?}");
-        let resolvers = resolvers(&bare);
-        assert!(scope(&["tool/**"]).tree_is_absent(&resolvers, &beside));
+        let over_bare = resolvers(&bare);
+        assert!(scope(&["tool/**"]).tree_is_absent(&over_bare, &beside));
         // A pattern whose root is there makes the tree present, even under a
         // dot-directory.
-        assert!(!scope(&[".github/**"]).tree_is_absent(&resolvers, &beside));
+        assert!(!scope(&[".github/**"]).tree_is_absent(&over_bare, &beside));
         assert!(
-            !scope(&[]).tree_is_absent(&resolvers, &beside),
+            !scope(&[]).tree_is_absent(&over_bare, &beside),
             "no scope claims no tree"
         );
         // One directory that is not the taxonomy's makes a tree.

@@ -48,7 +48,15 @@ struct Root {
 }
 
 impl Root {
+    /// The copy with one entry under each scope pattern, which is what every
+    /// case that is not about the scope wants: a tree the scope matches.
     fn new(label: &str) -> Root {
+        Root::copy_only(label).with_scope_tree()
+    }
+
+    /// The taxonomy and `docs/taxonomies`, and no entry under any scope
+    /// pattern.
+    fn copy_only(label: &str) -> Root {
         let at = std::env::temp_dir().join(format!(
             "headwater-cli-validate-{}-{label}",
             std::process::id()
@@ -72,10 +80,9 @@ impl Root {
             std::fs::copy(repository.join(".headwater").join(name), to)
                 .expect("the declaration copies");
         }
-        // The overlay declares a governed scope and the copy carries no tree
-        // for it: `taxonomy validate` skips the coverage count with a notice
-        // (#951, owner ruling 2026-09-25). A case that wants the tree calls
-        // `Root::with_scope_tree`.
+        // The overlay declares a governed scope, and `docs/` is a tree that
+        // none of its patterns matches, so `taxonomy validate` refuses each
+        // pattern here (#951). `Root::new` adds the entries.
         Root { at }
     }
 
@@ -558,7 +565,7 @@ fn shipped_bundles() -> Vec<String> {
 /// refusal here is the pattern this case adds, and the verb names it.
 #[test]
 fn validate_refuses_a_governed_scope_pattern_that_matches_no_entry() {
-    let root = Root::new("scope-nowhere").with_scope_tree();
+    let root = Root::new("scope-nowhere");
     let overlay = root.at.join(".headwater/overlay.yml");
     let text = std::fs::read_to_string(&overlay).expect("the overlay reads");
     let anchor = "    - site/**\n";
@@ -584,7 +591,7 @@ fn validate_refuses_a_governed_scope_pattern_that_matches_no_entry() {
 /// prints a one-line notice").
 #[test]
 fn validate_skips_the_governed_scope_with_a_notice_where_no_tree_is_beside_the_taxonomy() {
-    let root = Root::new("scope-no-tree");
+    let root = Root::copy_only("scope-no-tree");
     // The copy carries `docs/taxonomies`, and a directory that is not the
     // taxonomy's own is a tree. Without it the root holds the taxonomy alone.
     std::fs::remove_dir_all(root.at.join("docs")).expect("the copied docs go");
@@ -601,7 +608,7 @@ fn validate_skips_the_governed_scope_with_a_notice_where_no_tree_is_beside_the_t
     assert!(!ran.err.contains("matches no entry"), "{ran:?}");
 
     // With the tree beside it, no notice.
-    let root = Root::new("scope-with-tree").with_scope_tree();
+    let root = Root::new("scope-with-tree");
     let ran = root.run(&["taxonomy", "validate"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(!ran.out.contains("governed scope"), "{ran:?}");
@@ -613,15 +620,16 @@ fn validate_skips_the_governed_scope_with_a_notice_where_no_tree_is_beside_the_t
 /// is what a consumer who misspelled all seven sees.
 #[test]
 fn validate_refuses_every_scope_pattern_beside_a_tree_that_none_of_them_matches() {
-    let root = Root::new("scope-misspelled");
+    let root = Root::copy_only("scope-misspelled");
     assert!(root.at.join("docs").is_dir(), "the copy carries docs/");
     let ran = root.run(&["taxonomy", "validate"]);
     assert_eq!(ran.code, Some(1), "{ran:?}");
     assert!(!ran.out.contains("no tree beside"), "{ran:?}");
     for pattern in ["tools/**", "site/**", ".githooks/**"] {
         assert!(
-            ran.err
-                .contains(&format!("governed scope pattern `{pattern}` matches no entry")),
+            ran.err.contains(&format!(
+                "governed scope pattern `{pattern}` matches no entry"
+            )),
             "{pattern}: {ran:?}"
         );
     }
