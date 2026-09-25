@@ -760,7 +760,11 @@ fn a_repository_beyond_a_ceiling_directory_is_no_repository() {
         std::process::id()
     ));
     let ceiling = ceiling.to_string_lossy().into_owned();
-    no_repository_above(label, Outer::git_init, &[("GIT_CEILING_DIRECTORIES", &ceiling)]);
+    no_repository_above(
+        label,
+        Outer::git_init,
+        &[("GIT_CEILING_DIRECTORIES", &ceiling)],
+    );
 }
 
 /// In a subdirectory of a repository that git refuses for its owner, `headwater derived` says so.

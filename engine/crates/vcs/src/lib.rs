@@ -277,17 +277,14 @@ pub fn ignored(root: &Path) -> Vec<String> {
 /// The refusal is kept apart from `None`, because a caller that read it as
 /// "no repository" would fall back in silence inside one.
 ///
-/// `Some(Err(..))` also where git does not run at all and `root` or a directory
-/// above it holds a `.git` entry, a directory or the file a linked worktree
-/// holds. Git that is not on `PATH` cannot say whether a tree is a work tree,
-/// but a `.git` entry says there is a repository whose attribute files only git
-/// reads. With no `.git` entry and no git, the answer is still `None`.
-///
-/// The same holds where git runs and `git rev-parse` fails under a `.git`
-/// entry: git that distrusts the owner of the repository ("dubious
-/// ownership"), or a linked worktree whose git directory was pruned. The
-/// error carries what git printed. A failed question with no `.git` entry
-/// above `root` is a tree git does not see, and the answer is `None`.
+/// `Some(Err(..))` also where git cannot answer and `finds_a_repository`
+/// finds one where git's own search would: git that does not run at all, git
+/// that distrusts the owner of the repository ("dubious ownership"), and a
+/// linked worktree whose git directory was pruned. The error carries what git
+/// printed or why it did not run. Where git's search would find nothing, the
+/// tree is one git does not see, and the answer is `None`: a `.git` file that
+/// is not a gitfile, an empty `.git` directory, a repository beyond
+/// `GIT_CEILING_DIRECTORIES` or beyond a filesystem boundary (#809).
 pub fn merge_attributes(
     root: &Path,
     paths: &[String],
@@ -300,11 +297,11 @@ pub fn merge_attributes(
     {
         Ok(inside) => inside,
         Err(error) => {
-            return holds_a_git_entry(root).then(|| Err(format!("git did not run: {error}")));
+            return finds_a_repository(root).then(|| Err(format!("git did not run: {error}")));
         }
     };
     if !inside.status.success() {
-        return holds_a_git_entry(root).then(|| {
+        return finds_a_repository(root).then(|| {
             Err(format!(
                 "git did not answer whether this is a work tree: {}",
                 String::from_utf8_lossy(&inside.stderr).trim()
@@ -322,11 +319,86 @@ pub fn merge_attributes(
     Some(check_attr(root, input))
 }
 
-/// Whether `root` or a directory above it holds a `.git` entry of any type.
-fn holds_a_git_entry(root: &Path) -> bool {
+/// Whether git's own search upward from `root` would stop at a repository.
+///
+/// This is asked only after git failed to answer, so it cannot ask git. It
+/// walks up from `root` the way git does and stops where git stops:
+///
+/// - A `.git` directory that holds `HEAD`, `objects` and `refs` is a
+///   repository, even one git then refuses to open.
+/// - A `.git` file that opens with `gitdir:` is a linked worktree or a
+///   submodule, even where the directory it names was pruned.
+/// - A `.git` file that is not a gitfile ends the search with no repository,
+///   as git's "invalid gitfile format" does.
+/// - A `.git` directory that is not a repository is passed over.
+/// - The search does not go up into a directory that `GIT_CEILING_DIRECTORIES`
+///   names, or across a filesystem boundary unless
+///   `GIT_DISCOVERY_ACROSS_FILESYSTEM` is true.
+///
+/// A plain `.git` entry is not enough. Git says there is no repository in
+/// each of the last three shapes, and a verb that refused there would refuse
+/// a tree that git itself reads as no repository.
+fn finds_a_repository(root: &Path) -> bool {
+    let ceilings: Vec<PathBuf> = std::env::var_os("GIT_CEILING_DIRECTORIES")
+        .map(|value| {
+            std::env::split_paths(&value)
+                .filter(|dir| !dir.as_os_str().is_empty())
+                .map(|dir| dir.canonicalize().unwrap_or(dir))
+                .collect()
+        })
+        .unwrap_or_default();
+    let across = std::env::var("GIT_DISCOVERY_ACROSS_FILESYSTEM").is_ok_and(|value| {
+        matches!(
+            value.trim().to_ascii_lowercase().as_str(),
+            "1" | "true" | "yes" | "on"
+        )
+    });
+    search_upward(root, &ceilings, across)
+}
+
+/// [`finds_a_repository`] with the two environment settings passed in.
+fn search_upward(root: &Path, ceilings: &[PathBuf], across: bool) -> bool {
     let root = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
-    root.ancestors()
-        .any(|dir| dir.join(".git").symlink_metadata().is_ok())
+    let device = device_of(&root);
+    for dir in root.ancestors() {
+        if dir != root {
+            if ceilings.iter().any(|ceiling| ceiling == dir) {
+                return false;
+            }
+            if !across && device.is_some() && device_of(dir) != device {
+                return false;
+            }
+        }
+        let entry = dir.join(".git");
+        let Ok(meta) = entry.metadata() else {
+            continue;
+        };
+        if meta.is_dir() {
+            if entry.join("HEAD").is_file()
+                && entry.join("objects").is_dir()
+                && entry.join("refs").is_dir()
+            {
+                return true;
+            }
+        } else {
+            return fs::read_to_string(&entry)
+                .is_ok_and(|text| text.trim_start().starts_with("gitdir:"));
+        }
+    }
+    false
+}
+
+/// The device a path is on, where the platform says.
+#[cfg(unix)]
+fn device_of(path: &Path) -> Option<u64> {
+    use std::os::unix::fs::MetadataExt;
+    fs::metadata(path).ok().map(|meta| meta.dev())
+}
+
+/// The device a path is on, where the platform says.
+#[cfg(not(unix))]
+fn device_of(_path: &Path) -> Option<u64> {
+    None
 }
 
 /// One run of `git check-attr -z --stdin merge` over `input`, parsed.
@@ -686,22 +758,71 @@ mod tests {
         let _ = fs::remove_dir_all(&at);
     }
 
-    /// Where git does not run, a `.git` entry above the tree is what says a
-    /// repository is there, and a linked worktree's `.git` is a file.
+    /// Where git cannot answer, the search upward stops where git's own does.
+    ///
+    /// A gitfile and a `.git` directory shaped as a repository are found from
+    /// a directory below them. An empty `.git` directory is passed over, a
+    /// `.git` file that is not a gitfile ends the search with nothing, and a
+    /// ceiling directory is not entered.
     #[test]
-    fn a_git_entry_of_either_type_above_the_tree_is_found() {
+    fn the_search_upward_finds_a_repository_where_git_would() {
         let at = std::env::temp_dir().join(format!(
             "headwater-vcs-tests-git-entry-{}",
             std::process::id()
         ));
         let _ = fs::remove_dir_all(&at);
-        fs::create_dir_all(at.join("worktree/sub")).expect("the directories are there");
-        fs::create_dir_all(at.join("bare/sub")).expect("the directories are there");
-        assert!(!holds_a_git_entry(&at.join("worktree/sub")));
+        for dir in [
+            "worktree/sub",
+            "repo/sub",
+            "empty/sub",
+            "plain/sub",
+            "ceiling/sub",
+        ] {
+            fs::create_dir_all(at.join(dir)).expect("the directories are there");
+        }
+        let found = |dir: &str| search_upward(&at.join(dir), &[], false);
+
+        assert!(!found("worktree/sub"));
         fs::write(at.join("worktree/.git"), "gitdir: /elsewhere\n").expect("the file writes");
-        assert!(holds_a_git_entry(&at.join("worktree/sub")));
-        fs::create_dir_all(at.join("bare/.git")).expect("the directory is there");
-        assert!(holds_a_git_entry(&at.join("bare/sub")));
+        assert!(
+            found("worktree/sub"),
+            "a gitfile names a repository, even a pruned one"
+        );
+
+        for part in ["repo/.git/objects", "repo/.git/refs"] {
+            fs::create_dir_all(at.join(part)).expect("the directory is there");
+        }
+        fs::write(at.join("repo/.git/HEAD"), "ref: refs/heads/main\n").expect("the file writes");
+        assert!(
+            found("repo/sub"),
+            "a `.git` directory shaped as a repository is one"
+        );
+
+        fs::create_dir_all(at.join("empty/.git")).expect("the directory is there");
+        assert!(
+            !found("empty/sub"),
+            "an empty `.git` directory is not a repository"
+        );
+
+        fs::write(at.join("plain/.git"), "hello\n").expect("the file writes");
+        assert!(
+            !found("plain/sub"),
+            "a `.git` file that is not a gitfile ends the search"
+        );
+
+        fs::write(at.join("ceiling/.git"), "gitdir: /elsewhere\n").expect("the file writes");
+        let ceiling = at
+            .join("ceiling")
+            .canonicalize()
+            .expect("the directory is there");
+        assert!(
+            !search_upward(&at.join("ceiling/sub"), &[ceiling.clone()], false),
+            "the search does not go up into a ceiling directory"
+        );
+        assert!(
+            search_upward(&ceiling, &[ceiling.clone()], false),
+            "a ceiling directory that is the root itself is still read"
+        );
         let _ = fs::remove_dir_all(&at);
     }
 
