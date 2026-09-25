@@ -1482,7 +1482,7 @@
               "engine/crates/census/src/census.rs",
               "engine/crates/graph/src/lib.rs",
               ".githooks/merge-regenerate",
-              "docs/interfaces/headwater-init.md"
+              "HW-IFACE-headwater-init"
             ]
           }
         }
@@ -11301,11 +11301,6 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": "docs/interfaces/headwater-init.md",
-        "resolver": "source-tree"
-      },
-      {
-        "anchor_kind": "code_path",
         "id": "docs/taxonomies/decision-record/bundle.yml",
         "resolver": "source-tree",
         "excluded_by": "docs/taxonomies/*/bundle.yml"
@@ -13179,10 +13174,10 @@
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "docs/interfaces/headwater-init.md",
-          "resolver": "source-tree"
+          "bound": "document",
+          "id": "HW-IFACE-headwater-init",
+          "path": "docs/interfaces/headwater-init.md",
+          "kind": "interface_contract"
         }
       },
       {

@@ -19,7 +19,7 @@ relations:
     - engine/crates/census/src/census.rs
     - engine/crates/graph/src/lib.rs
     - .githooks/merge-regenerate
-    - docs/interfaces/headwater-init.md
+    - HW-IFACE-headwater-init
 ---
 
 # A corpus-wide fold is derived and never stored
