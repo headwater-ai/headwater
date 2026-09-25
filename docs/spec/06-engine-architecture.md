@@ -186,7 +186,7 @@ coverage_report the register
 
 **No generated file states when it was generated.** `generate --check` compares bytes. A timestamp inside an output makes every run differ from the last one, so the gate would report drift over a corpus that nobody touched. [Q17](09-decisions.md#q17--governed-access-and-the-solution-layer) asks a filtered export to state when it ran, and the two rules cannot both hold for an artifact this gate covers. [Spec 13](13-open-obligations.md) carries the conflict.
 
-**A date that a generated document carries is not that timestamp.** Such a document states a date in the `state_entered` role and one in the `freshness` role. Each date folds the dates the documents this projection read already carry. The value is a function of committed bytes rather than of the clock. Two runs over one corpus write one answer, and the rule above stands untouched. The fold takes the stalest date, because a file assembled from other documents is only as fresh as the oldest thing it carries.
+**A date that a generated document carries is not that timestamp.** Such a document states a date in the `state_entered` role and one in the `freshness` role. Each date folds the dates the documents this projection read already carry. The value is a function of committed bytes rather than of the clock. Two runs over one corpus write one answer, and the rule above stands untouched. The freshness date is the stalest date, because a file assembled from other documents is only as fresh as the oldest thing it carries. When no edge sets the state of the file, the date it entered that state is the newest date among the documents this projection read.
 
 ### A verb index reads the command surface of the engine
 
