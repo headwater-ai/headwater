@@ -643,7 +643,10 @@ fn validate_refuses_every_scope_pattern_beside_a_tree_that_none_of_them_matches(
 fn authored_source_root(label: &str) -> Root {
     let root = Root::copy_only(label);
     std::fs::remove_dir_all(root.at.join("docs")).expect("the copied docs go");
-    copy(&repository().join("taxonomy-source/headwater-standard"), &root.at);
+    copy(
+        &repository().join("taxonomy-source/headwater-standard"),
+        &root.at,
+    );
     for own in ["package.yml", "assemblies", "doctrine"] {
         assert!(root.at.join(own).exists(), "the source ships {own}");
     }
