@@ -1464,7 +1464,7 @@
           "status": "current",
           "status_since": "2026-09-23",
           "summary": "A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict.",
-          "last_verified": "2026-09-06",
+          "last_verified": "2026-09-25",
           "title": "A corpus-wide fold is derived and never stored",
           "provenance": {
             "warrant": "asserted",
@@ -1481,7 +1481,8 @@
               "HW-EVAL-what-a-check-can-know",
               "engine/crates/census/src/census.rs",
               "engine/crates/graph/src/lib.rs",
-              ".githooks/merge-regenerate"
+              ".githooks/merge-regenerate",
+              "docs/interfaces/headwater-init.md"
             ]
           }
         }
@@ -11300,6 +11301,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "docs/interfaces/headwater-init.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "docs/taxonomies/decision-record/bundle.yml",
         "resolver": "source-tree",
         "excluded_by": "docs/taxonomies/*/bundle.yml"
@@ -13165,6 +13171,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": ".githooks/merge-regenerate",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "docs/interfaces/headwater-init.md",
           "resolver": "source-tree"
         }
       },

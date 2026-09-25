@@ -3,7 +3,7 @@ id: HW-DR-0049
 status: current
 status_since: 2026-09-23
 summary: "A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict."
-last_verified: 2026-09-06
+last_verified: 2026-09-25
 title: "A corpus-wide fold is derived and never stored"
 provenance:
   warrant: asserted
@@ -19,6 +19,7 @@ relations:
     - engine/crates/census/src/census.rs
     - engine/crates/graph/src/lib.rs
     - .githooks/merge-regenerate
+    - docs/interfaces/headwater-init.md
 ---
 
 # A corpus-wide fold is derived and never stored
@@ -67,4 +68,6 @@ relations:
 
 **So the two cases have one remedy.** A count and an identifier both need a run over the merged state, and neither needs a new rule. The fold reaches the same conclusion from an unrelated defect. That agreement is the evidence that the conclusion is about merges rather than about counts.
 
-**An adopter inherits the rule and also the verbs that hold it.** Any corpus that two people edit in parallel meets the same anomaly in any artifact that stores a count over the whole corpus. The rule is the transferable part, and the two artifacts above are this repository's application of it.
+**An adopter inherits the rule, and `headwater init --git` gives the adopter the verbs and the configuration that hold it.** Any corpus that two people edit in parallel meets the same anomaly in any artifact that stores a count over the whole corpus. Since [#1058](https://github.com/headwater-ai/headwater/issues/1058), [`headwater init --git`](../interfaces/headwater-init.md) appends a `<path> -merge` line to `.gitattributes` for each fold that `headwater taxonomy resolve` and `headwater generate` write. It also prints the two `git config` lines that name `headwater merge-driver`, and the `info/attributes` lines that select that driver. The `--git-config` option runs those lines in the adopter's own clone. Git takes no driver from a repository, so that explicit command is the consent of the clone ([HW-DR-0077](0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)).
+
+**No attribute covers the quiet form in an adopter's repository either, so a check on the merged tree covers it there too.** That check is `headwater generate --check` and `headwater taxonomy resolve --check` in CI. The adopter receives no script of this repository, and no part of the gate that protects the published pages of this repository. The two artifacts above are this repository's application of the rule.
