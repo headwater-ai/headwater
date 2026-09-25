@@ -347,17 +347,29 @@ fn finds_a_repository(root: &Path) -> bool {
                 .collect()
         })
         .unwrap_or_default();
-    let across = std::env::var("GIT_DISCOVERY_ACROSS_FILESYSTEM").is_ok_and(|value| {
-        matches!(
-            value.trim().to_ascii_lowercase().as_str(),
-            "1" | "true" | "yes" | "on"
-        )
-    });
-    search_upward(root, &ceilings, across)
+    let across =
+        std::env::var("GIT_DISCOVERY_ACROSS_FILESYSTEM").is_ok_and(|value| git_bool(&value));
+    search_upward(root, &ceilings, across, &device_of)
+}
+
+/// Whether git reads `value` of a boolean environment variable as true.
+fn git_bool(value: &str) -> bool {
+    matches!(
+        value.trim().to_ascii_lowercase().as_str(),
+        "1" | "true" | "yes" | "on"
+    )
 }
 
 /// [`finds_a_repository`] with the two environment settings passed in.
-fn search_upward(root: &Path, ceilings: &[PathBuf], across: bool) -> bool {
+///
+/// `device_of` names the filesystem a directory is on. It is passed in so
+/// that a test can place a boundary where no test can mount one.
+fn search_upward(
+    root: &Path,
+    ceilings: &[PathBuf],
+    across: bool,
+    device_of: &dyn Fn(&Path) -> Option<u64>,
+) -> bool {
     let root = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
     let device = device_of(&root);
     for dir in root.ancestors() {
@@ -780,7 +792,7 @@ mod tests {
         ] {
             fs::create_dir_all(at.join(dir)).expect("the directories are there");
         }
-        let found = |dir: &str| search_upward(&at.join(dir), &[], false);
+        let found = |dir: &str| search_upward(&at.join(dir), &[], false, &device_of);
 
         assert!(!found("worktree/sub"));
         fs::write(at.join("worktree/.git"), "gitdir: /elsewhere\n").expect("the file writes");
@@ -819,15 +831,86 @@ mod tests {
             !search_upward(
                 &at.join("ceiling/sub"),
                 std::slice::from_ref(&ceiling),
-                false
+                false,
+                &device_of
             ),
             "the search does not go up into a ceiling directory"
         );
         assert!(
-            search_upward(&ceiling, std::slice::from_ref(&ceiling), false),
+            search_upward(&ceiling, std::slice::from_ref(&ceiling), false, &device_of),
             "a ceiling directory that is the root itself is still read"
         );
         let _ = fs::remove_dir_all(&at);
+    }
+
+    /// A `.git` directory with `objects`, `refs` and a `HEAD` that is not a
+    /// reference counts as a repository, on purpose.
+    ///
+    /// Git reads that directory as no repository. The verb refuses it anyway,
+    /// because a corrupt repository that is refused is safer than one that is
+    /// read in silence as a tree with no attributes but the root file (ruled
+    /// on #1115, 2026-09-25). Test the contents of `HEAD`, and this case fails.
+    #[test]
+    fn a_repository_shaped_git_directory_with_a_corrupt_head_is_refused_on_purpose() {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-vcs-tests-corrupt-head-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&at);
+        for part in ["sub", ".git/objects", ".git/refs"] {
+            fs::create_dir_all(at.join(part)).expect("the directory is there");
+        }
+        fs::write(at.join(".git/HEAD"), "not a reference\n").expect("the file writes");
+        assert!(search_upward(&at.join("sub"), &[], false, &device_of));
+        let _ = fs::remove_dir_all(&at);
+    }
+
+    /// The search stops at a filesystem boundary, and crosses it only where
+    /// `GIT_DISCOVERY_ACROSS_FILESYSTEM` is true.
+    ///
+    /// No test can mount a filesystem, so the device lookup is a stand-in that
+    /// puts `inner` on one device and everything above it on another. Drop the
+    /// boundary check, and the first assertion fails.
+    #[test]
+    fn the_search_upward_stops_at_a_filesystem_boundary() {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-vcs-tests-boundary-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&at);
+        fs::create_dir_all(at.join("inner/sub")).expect("the directories are there");
+        fs::write(at.join(".git"), "gitdir: /elsewhere\n").expect("the file writes");
+        let inner = at
+            .join("inner")
+            .canonicalize()
+            .expect("the directory is there");
+        let device = |dir: &Path| Some(if dir.starts_with(&inner) { 2 } else { 1 });
+        assert!(
+            !search_upward(&inner.join("sub"), &[], false, &device),
+            "the repository above the boundary is not reached"
+        );
+        assert!(
+            search_upward(&inner.join("sub"), &[], true, &device),
+            "across the boundary, the repository above it is found"
+        );
+        let _ = fs::remove_dir_all(&at);
+    }
+
+    /// `GIT_DISCOVERY_ACROSS_FILESYSTEM` is read as git reads a boolean.
+    ///
+    /// Git takes `true`, `yes` and `on` in any case, `false`, `no`, `off` and
+    /// the empty value as false, and otherwise an integer, with an optional
+    /// `k`, `m` or `g` unit, that is true where it is not zero.
+    #[test]
+    fn a_boolean_is_read_as_git_reads_one() {
+        for value in [
+            "1", "2", "-1", "true", "TRUE", "Yes", "on", "0x10", "010", "1k", " 3",
+        ] {
+            assert!(git_bool(value), "git reads {value:?} as true");
+        }
+        for value in ["0", "00", "0x0", "0k", "false", "No", "OFF", ""] {
+            assert!(!git_bool(value), "git reads {value:?} as false");
+        }
     }
 
     /// A tree with no `.git` at all — the shape this crate's own tests build
