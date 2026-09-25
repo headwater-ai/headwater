@@ -672,6 +672,7 @@ dependencies = [
  "headwater-doc",
  "headwater-meta",
  "headwater-resolve",
+ "headwater-vcs",
  "headwater-yaml",
 ]
 

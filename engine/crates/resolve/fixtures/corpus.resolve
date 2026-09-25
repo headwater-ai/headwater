@@ -89,6 +89,7 @@ operations
   add.kinds.acceptance_criterion (.headwater/overlay.yml)
   add.kinds.verification (.headwater/overlay.yml)
   add.anchors.check_rule (.headwater/overlay.yml)
+  add.anchors.code_path.scope (.headwater/overlay.yml)
   add.anchors.test_site (.headwater/overlay.yml)
   add.relations.verified_by (.headwater/overlay.yml)
   add.relations.proven_by (.headwater/overlay.yml)

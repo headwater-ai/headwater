@@ -35,5 +35,12 @@ headwater-resolve = { workspace = true }
 # workspace, only a new crate reaching for one that already exists.
 headwater-meta = { workspace = true }
 
+# A governed scope counts only files git does not ignore (#951, owner ruling
+# 2026-09-25), so a local audit and a CI audit agree. `scope::Ignored::read` is
+# the one call, and only `taxonomy validate` and `taxonomy audit` make it.
+# `Graph::build` never does: spec 12 keeps every version control command off
+# the check, gate and probe loop.
+headwater-vcs = { workspace = true }
+
 [lints]
 workspace = true
