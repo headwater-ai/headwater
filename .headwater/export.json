@@ -1819,7 +1819,7 @@
           "status": "current",
           "status_since": "2026-09-11",
           "summary": "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars.",
-          "last_verified": "2026-09-12",
+          "last_verified": "2026-09-25",
           "title": "Every required facet of a generated document is derived, and the emitter composes the summary",
           "provenance": {
             "warrant": "asserted",
@@ -1833,7 +1833,10 @@
               "HW-SPEC-engine-architecture"
             ],
             "governs": [
-              "engine/crates/generate/src/derived.rs"
+              {
+                "to": "engine/crates/generate/src/derived.rs",
+                "verified_revision": "sha256:383f4c2db974c9dbdc74eff1d68385d334a6c375dd23089d0621944cb251f928"
+              }
             ]
           }
         }
@@ -13437,6 +13440,9 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/generate/src/derived.rs",
           "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:383f4c2db974c9dbdc74eff1d68385d334a6c375dd23089d0621944cb251f928"
         }
       },
       {

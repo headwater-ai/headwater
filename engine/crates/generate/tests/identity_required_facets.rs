@@ -77,9 +77,9 @@
 //! `fixtures/selfread.taxonomy.yml` is about a value rather than a refusal. It
 //! is the one shape in this tree where a projection's output sits on the shelf
 //! that the projection reads, which makes the output one of its own sources. The
-//! committed `selfread/decisions/INDEX.md` carries a `status_since` older than
-//! either source document, so a fold that reads it answers a date no source
-//! supports. That file carries a `title` for a reason worth knowing: once the
+//! committed `selfread/decisions/INDEX.md` carries a `status_since` newer than
+//! either source document, and the fold takes the newest date (#820), so a fold
+//! that reads it answers a date no source supports. That file carries a `title` for a reason worth knowing: once the
 //! output is a document of the shelf, the sections emitter owes it a heading, and
 //! without a name the whole declaration is declined before the fold runs. An
 //! index that lists itself is a separate question about what an index is for,
@@ -113,7 +113,11 @@
 //! `status_since: 2020-01-01` into `selfread/decisions/INDEX.md`, which is the
 //! date the committed file already carried and a date neither source document
 //! supports. That failure is the one this file was missing, because the emitter
-//! and the gate agree on it. This case was written after a review of
+//! and the gate agree on it. The fold then took the stalest date. When #820 made
+//! it take the newest, the committed date moved to 2099-01-01, above both
+//! sources, so that the same regression still fails: with the filter removed
+//! again, the emitter wrote `status_since: 2099-01-01`. This case was written
+//! after a review of
 //! [#816](https://github.com/headwater-ai/headwater/pull/816) read the filter in
 //! `incoming` and asked why the fold had no equivalent.
 //!
@@ -616,16 +620,18 @@ fn the_derived_facets_are_written_into_the_block() {
 /// in that set, because a generated file that declares an identity is a node of
 /// the census ([`headwater_census::census::Outcome::node`]).
 ///
-/// The failure is a value that never moves. `stalest_of` takes a minimum, so
-/// once the file is committed with a date no source supports, that date is the
-/// minimum on every later run and `generate --check` holds it as the right
-/// answer. Nothing would report it: the emitter agrees with itself, which is the
+/// The failure is a value that never moves. `newest_of` takes a maximum, so
+/// once the file is committed with a date newer than every source, that date
+/// is the maximum on every later run and `generate --check` holds it as the
+/// right answer. Nothing would report it: the emitter agrees with itself, which is the
 /// whole of what the census exemption assumes a second reader for.
 ///
 /// Neither declaration in this repository reaches the shape, so this is a guard
 /// rather than a repair. `selfread.taxonomy.yml` is the smallest taxonomy that
-/// does reach it, and the committed `INDEX.md` carries 2020-01-01 against
-/// sources at 2026-05-01 and 2026-06-01.
+/// does reach it, and the committed `INDEX.md` carries 2099-01-01 against
+/// sources at 2026-05-01 and 2026-06-01. The committed date is above both
+/// sources on purpose: under a maximum, a committed date below them could never
+/// win, and the case would pass with the filter removed.
 #[test]
 fn a_generated_document_on_the_shelf_it_reads_does_not_fold_its_own_date() {
     const SELF_READ: &str = "selfread/decisions/INDEX.md";
@@ -688,10 +694,10 @@ fn a_generated_document_on_the_shelf_it_reads_does_not_fold_its_own_date() {
             )
         });
     assert!(
-        written.contains("2026-05-01"),
-        "`{SELF_READ}` folds its own committed date rather than the stalest of its sources. The \
-         sources carry 2026-05-01 and 2026-06-01, the committed file carries 2020-01-01, and the \
-         emitter wrote `{written}`. A minimum that includes the output's own last value never \
+        written.contains("2026-06-01"),
+        "`{SELF_READ}` folds its own committed date rather than the newest of its sources. The \
+         sources carry 2026-05-01 and 2026-06-01, the committed file carries 2099-01-01, and the \
+         emitter wrote `{written}`. A maximum that includes the output's own last value never \
          moves again."
     );
 }

@@ -10,11 +10,12 @@
 # generated file that declares an identity is a node of the census, so the output
 # is one of the documents its own emitter reads.
 #
-# That is the case a date fold must exclude. `INDEX.md` is committed here with a
-# `status_since` far older than either source document, so a fold that reads its
-# own last version answers 2020-01-01 forever and a fold that does not answers
-# the stalest source. The two answers differ, which is what makes the assertion
-# in `identity_required_facets.rs` decisive rather than decorative.
+# That is the case a date fold must exclude. The fold for `status_since` takes
+# the newest date (#820), and `INDEX.md` is committed here with a `status_since`
+# far newer than either source document, so a fold that reads its own last
+# version answers 2099-01-01 forever and a fold that does not answers the newest
+# source. The two answers differ, which is what makes the assertion in
+# `identity_required_facets.rs` decisive rather than decorative.
 
 purposes:
   rationale:

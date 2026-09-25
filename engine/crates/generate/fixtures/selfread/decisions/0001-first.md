@@ -1,13 +1,11 @@
 ---
 id: DR-FIX-0001
-title: The stalest source document
+title: The older source document
 status: current
 status_since: 2026-05-01
-summary: the older of the two sources, so its date is the one a fold of the shelf must answer
+summary: the older of the two sources, present so that the fold has a maximum to take rather than one value
 ---
 
-# The stalest source document
+# The older source document
 
-One of the two documents the index reads. Its `status_since` is the stalest of
-the sources, so it is the answer the fold owes once the output stops reading
-itself.
+One of the two documents the index reads. Two documents rather than one, so that the fold takes a maximum over a set instead of copying the only value there is.

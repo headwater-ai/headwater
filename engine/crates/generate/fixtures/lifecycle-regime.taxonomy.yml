@@ -14,7 +14,7 @@
 #
 # `edge_notice` and `bogus_notice` cover the other locus a computed state can
 # come from: an incoming edge whose relation declares `on_target.set_state`,
-# authored by the one document on the `decisions` shelf. `edge_notice` binds
+# authored by the first document on the `decisions` shelf. `edge_notice` binds
 # `strict` and the edge sets `current`, which is a state the vocabulary holds
 # and this kind's own regime does not name — the same defect class as
 # `narrow_notice`, reached by the other locus. `bogus_notice` binds `wide` and
@@ -125,7 +125,7 @@ identifier_schemes:
   written_id: {pattern: "WR-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
 
 relations:
-  # The edge locus. The one document on the `decisions` shelf declares this
+  # The edge locus. The first document on the `decisions` shelf declares this
   # into `edge_notice`, and `on_target.set_state: current` is a value the
   # vocabulary holds and `strict`, the regime `edge_notice` binds, does not.
   flags:
