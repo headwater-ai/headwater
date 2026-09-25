@@ -137,6 +137,16 @@ pub trait Resolver {
         let _ = matched;
         None
     }
+
+    /// Whether a normalized literal names a directory rather than a file. A
+    /// scope counts files, so [`crate::scope::Scope`] refuses a literal that
+    /// names a directory, and an empty directory has nothing under it for a
+    /// walk to find. A resolver whose store holds no directories keeps the
+    /// default.
+    fn names_directory(&self, normalized: &str) -> bool {
+        let _ = normalized;
+        false
+    }
 }
 
 /// Every resolver a run has, by name.
@@ -230,6 +240,10 @@ impl SourceTree {
 impl Resolver for SourceTree {
     fn name(&self) -> &str {
         "source-tree"
+    }
+
+    fn names_directory(&self, normalized: &str) -> bool {
+        self.base.join(normalized).is_dir()
     }
 
     fn resolve(&self, raw: &str) -> Binding {

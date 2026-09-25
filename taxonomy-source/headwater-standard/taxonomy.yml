@@ -160,6 +160,17 @@ taxonomy: headwater/standard
 # finding on an unrecorded `governs` entry of a document verified today, with
 # a fix that records the digest. It follows 4.5.0 (#853).
 #
+# 4.5.0 declares `lifecycle_sensitive: true` on `supersedes`. HW-DR-0065 lets a
+# relation state for itself that its ends have a lifecycle, and the core
+# satisfier now reads that member as well as `on_target: {set_state: ...}`, so
+# a requirement on a family whose relations write no state can be met (#853).
+# `supersedes` met the base's own `succession` requirement through `on_target`
+# already, and it still does: the member states in the word the requirement
+# uses what the effect implies. Nothing removed and nothing already declared
+# changes meaning, and a taxonomy pinned to 4.4.2 still satisfies the core with
+# a new engine, because the satisfier keeps the `on_target` reading. So this is
+# a minor.
+#
 # 4.4.2 changes no declaration in this file. `conformance.yml` beside it names
 # `headwater init --git --git-config` in the remediation text of
 # `hooks.installed`, where it named `.githooks`, a directory of the repository
@@ -327,6 +338,7 @@ relations:
     reciprocal: required
     nuclearity: multinuclear
     on_target: {set_state: superseded}
+    lifecycle_sensitive: true
     created_by: scaffold
   governs:
     family: governance

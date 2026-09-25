@@ -10,10 +10,13 @@ taxonomy audit of audit/fixture 1.0.0
   number a declaration states, so it is the only reading below that carries a
   finding. Everything else is a distribution, and nothing declares how narrow a
   distribution may get before it is a defect.
+  A governed scope is declared as well. It is an expectation rather than a bar,
+  and each of its patterns with an entry no edge reaches is one advisory finding.
 
 findings
   `catalogues` has 1 of 2 halves on a document past the declared window
   `supersedes` has 1 of 2 halves on a document past the declared window
+  `app/**` has 1 of 2 entries that no edge governs
 
 relations, by the creator each one declares
   Q4 keeps `created_by` on the relation type, so every row is a relation and never
@@ -39,6 +42,13 @@ relations, by the creator each one declares
   A comparison against any of them has one arm over this corpus, and the missing
   arm is a property of the taxonomy rather than of the authoring. No number below
   stands in for one.
+
+the governed scope, and what reaches it
+  The share of the entries each pattern admits that a `governance` edge reaches.
+  It is computed on every run and committed nowhere.
+  `app/**`                            2 in scope,    1 governed, 50.0% governed
+      ungoverned app/render.rs
+  in total 1 of 2 entries in scope are governed, 50.0%
 
 relation families
   association  1 relation, 0 halves

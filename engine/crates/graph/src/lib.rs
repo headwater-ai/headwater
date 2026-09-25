@@ -60,6 +60,7 @@ pub mod declarations;
 pub mod edges;
 pub mod index;
 pub mod links;
+pub mod scope;
 
 pub use declarations::{Declarations, Direction, Reciprocal};
 pub use edges::{Edge, Reach, Target, Unbound};
@@ -110,6 +111,10 @@ pub struct Graph {
     pub skipped: links::Skipped,
     /// What a `relations:` block declared that produced no edge.
     pub problems: Vec<edges::Reported>,
+    /// What each declared governed-scope pattern admits from the tree, walked
+    /// by the same resolvers the edges were bound with (#951). Empty where the
+    /// taxonomy declares no scope, and then the build walks nothing for it.
+    pub scope: Vec<scope::Reach>,
 }
 
 /// What phase A could not make of one document.
@@ -161,12 +166,14 @@ impl Graph {
         let index = Index::build(census, config);
         let (edges, problems) = edges::build(census, &index, declarations, resolvers, config);
         let (links, skipped) = links::bind(census, &index, &corpus.base);
+        let scope = scope::Scope::declared(declarations).reach(resolvers);
         Graph {
             index,
             edges,
             links,
             skipped,
             problems,
+            scope,
         }
     }
 

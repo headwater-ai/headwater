@@ -2,7 +2,7 @@
 id: HW-SPEC-harness-support
 status: current
 status_since: 2026-09-06
-summary: The ten capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.
+summary: The eleven capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.
 last_verified: 2026-09-09
 doc_type: design_spec
 sequence: 16
@@ -36,9 +36,9 @@ A **harness** is the program that runs an agent against a checkout. It brokers t
 
 A harness is not one program per vendor. "Copilot" names an IDE integration, a terminal program, a hosted coding agent, a code reviewer and a completion engine. Each of the five supports a different subset of the table. A support claim therefore names a surface, and a claim that names only a vendor compresses real variance. The table below carries one column per vendor and states, in the notes, where the surfaces of one vendor disagree.
 
-## The ten capabilities
+## The eleven capabilities
 
-Ten capabilities cover the integration this engine asks for. Three carry context to the model, three intercept the loop, three are invoked by name, and one is a protocol rather than a harness feature. Each entry states which moment of spec 5 it serves, and the terms the harness must meet. The terms are the hook contract's vocabulary: what the harness passes, and what it does with what comes back.
+Eleven capabilities cover the integration this engine asks for. Three carry context to the model, four intercept the loop, three are invoked by name, and one is a protocol rather than a harness feature. Each entry states which moment of spec 5 it serves, and the terms the harness must meet. The terms are the hook contract's vocabulary: what the harness passes, and what it does with what comes back.
 
 ### Context: standing, scoped, injected
 
@@ -48,11 +48,15 @@ Ten capabilities cover the integration this engine asks for. Three carry context
 
 **C3 — injected context.** A position that runs when a prompt is submitted, whose output joins the model's context before the model acts. It serves [intent-time routing](05-ai-integration.md#intent-time-routing). The terms: the harness passes the prompt as text, and it returns standard output to the model verbatim. Silence is a result that costs nothing, because a wrong pointer costs more than a missing one.
 
-### Interception: refusal, advisory, gate
+### Interception: refusal, advisory, gate, read advisory
 
 **C4 — write refusal.** A position before a tool call that can deny the call with a reason the agent reads. It serves backfill at the [write moment](05-ai-integration.md#write-time-hooks): a raw write of a new document is refused, and the refusal names `headwater new`. The terms: the harness passes the tool name and the one path, and a denial carries prose. The harness gives that prose to the agent rather than to a log.
 
-**C5 — write advisory.** A position after a tool call that adds context and blocks nothing. It serves impact detection. The posture is the substance: spec 5 keeps it advisory, because a blocking gate trains the reflex answer that destroys the signal.
+**C5 — write advisory.** A position before a tool call that edits a file, which adds context and blocks nothing. It serves impact detection. It comes before the edit, so the agent reads the governing set while the change is still a plan. The terms: the harness passes the tool name and the one path, and it gives the added context to the agent without a decision. The posture is the substance: spec 5 keeps it advisory, because a blocking gate trains the reflex answer that destroys the signal.
+
+**C11 — read advisory.** A position before a tool call that reads a file, which adds context and blocks nothing. It serves the [read moment](05-ai-integration.md#read-time-rule-loading) with the pointers that C5 names. A session then hears the governing set when it opens a file, and not only when it changes one. It is not C2: C2 attaches a generated rule file on a glob, and C11 is a hook position that calls `headwater route`. The terms are the terms of C5, and the tool is the read tool of the harness. It has the number 11 so that no earlier number moves.
+
+The cost of C11 is paid on every read. `.claude/hooks/fixtures-live.sh` times the whole hook with no harness. The measurement is from 2026-09-24, on this corpus, with the `dev-release` engine and a warm cache. One read cost 69 to 78 ms, over six runs on each of three paths.
 
 **C6 — turn gate.** A position at the end of a turn that can refuse the end and hand the agent a report. It serves the [review moment](05-ai-integration.md#review-time-checks). A binding calls the commit gate itself, so what stops a turn and what stops a commit stay one file. The terms: a blocking verdict that carries the report, and a flag that says the gate already blocked this turn. A gate with no such flag is a loop.
 
@@ -89,7 +93,8 @@ A live run against copilot-cli 1.0.83 confirmed every Copilot case in `fixtures-
 | C2 scoped context | a `CLAUDE.md` in the directory it covers | `.github/instructions/*.instructions.md`, with an `applyTo` glob | an `AGENTS.md` in the directory it covers |
 | C3 injected context | `UserPromptSubmit` hook | `userPromptSubmitted` hook | `UserPromptSubmit` hook |
 | C4 write refusal | `PreToolUse`, deny with a reason | `preToolUse`, deny with a reason, and an erroring hook denies | `PreToolUse`, exit 2 with the reason on standard error |
-| C5 write advisory | `PostToolUse`, added context | `postToolUse` | `PostToolUse` |
+| C5 write advisory | `PreToolUse`, added context and no decision | `preToolUse`, and whether it gives added context to the agent is not measured | `PreToolUse`, and whether it gives added context to the agent is not measured |
+| C11 read advisory | `PreToolUse` on `Read`, added context and no decision | not bound: the name of the read tool is not measured, and `.claude/hooks/fixtures-live.sh` records it | not bindable: Codex reads a file through its shell, and a shell call reaches no read matcher |
 | C6 turn gate | `Stop`, exit 2 blocks the turn | `agentStop`, `decision: block` on the CLI and the cloud agent, and the IDE's `Stop` cannot block | `Stop` is documented, and whether it blocks is not |
 | C7 commands | `.claude/commands/*.md` | `.github/prompts/*.prompt.md` | `~/.codex/prompts/*.md`, personal rather than repository configuration |
 | C8 skills | `.claude/skills/*/SKILL.md` | `.github/skills/`, and it reads `.claude/skills/` and `.agents/skills/` | `.agents/skills/`, selected by name in the composer |
@@ -97,7 +102,7 @@ A live run against copilot-cli 1.0.83 confirmed every Copilot case in `fixtures-
 | C10 tool registration | `.mcp.json` in the checkout | a workspace file in the IDE, repository settings for the cloud agent | `[mcp_servers]` in `config.toml`, operator configuration |
 | position registration | `.claude/settings.json` | `.github/hooks/*.json`, and the IDE also reads `.claude/settings.json` | `.codex/hooks.json`, or `~/.codex/hooks.json`, behind a feature flag that ships on |
 
-Every Claude Code cell except C2 is bound. The Codex and Copilot rows for C3 through C6 are bound the same way, each held by `.claude/hooks/fixtures.sh`. `.claude/hooks/fixtures-live.sh` is the live confirmation behind that, and it reruns against a real install rather than resting on one session. Every other cell of both columns is a file this repository ships or a claim vendor documentation makes, and no fixture holds either kind.
+Every Claude Code cell except C2 is bound. The Codex and Copilot rows for C3 through C6 are bound the same way, each held by `.claude/hooks/fixtures.sh`. C11 is bound for Claude Code alone, and its row states why for the other two. `.claude/hooks/fixtures-live.sh` is the live confirmation behind that, and it reruns against a real install rather than resting on one session. Every other cell of both columns is a file this repository ships or a claim vendor documentation makes, and no fixture holds either kind.
 
 **The shape converged, and it is the shape this repository already ships.** All three harnesses read a `SKILL.md` under a per-skill directory. All three name the same four positions, and all three read a standing file from the checkout. Two of them read this repository's own files: Copilot's IDE discovers hooks in `.claude/settings.json`, and its skill loader reads `.claude/skills/`. So part of the Claude Code binding is loaded by a second harness through that harness's own choice, which nothing here has measured. A binding for either other column is registration of the same verbs, not a port of any logic, because the scripts carry none.
 

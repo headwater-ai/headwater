@@ -177,7 +177,7 @@ pub const VERBS: &[Verb] = &[
         name: "derived",
         group: "Checking a corpus",
         summary: "which files a producer writes, computed rather than listed",
-        description: "Compute which files of this repository a producer writes, by asking each producer for its own output set, and report both directions of its disagreement with `.gitattributes`. A producer output that carries no `merge=headwater-regenerate` merges silently when two branches move it to one value; a path that declares the attribute and no producer writes refuses a merge of hand-written text. It holds no list of the population, so a producer output added to a tree changes its answer with no edit to the engine. It exits non-zero on a disagreement in either direction.",
+        description: "Compute which files of this repository a producer writes, by asking each producer for its own output set, and report both directions of its disagreement with `.gitattributes`. A fold that a producer writes and that carries neither `-merge` nor `merge=headwater-regenerate` merges silently when two branches move it to one value; a path that declares either and no producer writes refuses a merge of hand-written text. It holds no list of the population, so a producer output added to a tree changes its answer with no edit to the engine. It exits non-zero on a disagreement in either direction.",
         words: &[],
     },
     // The one verb git calls rather than a person. HW-DR-0077 rules that merge
@@ -189,7 +189,7 @@ pub const VERBS: &[Verb] = &[
         name: "merge-driver",
         group: "Checking a corpus",
         summary: "the merge driver git calls for a derived fold",
-        description: "The merge driver that git calls for a path `.gitattributes` gives `merge=headwater-regenerate`, as `headwater merge-driver %O %A %B %P`. It leaves the current side byte for byte, names on standard error the producer that rebuilds the path, and exits non-zero so that git records a conflict with no marker in the file. It never regenerates, because a driver runs one path at a time over a tree the merge has not finished. `headwater init --git` writes the attribute lines and prints the configuration that names it.",
+        description: "The merge driver that git calls for a path a clone's `info/attributes` gives `merge=headwater-regenerate`, as `headwater merge-driver %O %A %B %P`. It leaves the current side byte for byte, names on standard error the producer that rebuilds the path, and exits non-zero so that git records a conflict with no marker in the file. It never regenerates, because a driver runs one path at a time over a tree the merge has not finished. `headwater init --git` commits `-merge` for each fold and prints the configuration and the override lines that select it.",
         words: &[],
     },
     Verb {
@@ -367,6 +367,11 @@ pub const VERBS: &[Verb] = &[
                 summary: "apply the migration payload a published artifact ships",
                 description: "Apply the migration payload a published artifact ships, to this corpus. It takes the path of a directory somebody already fetched, because this verb fetches nothing. Without `--apply` it reports every file each step would write and writes nothing.",
             },
+            Word {
+                name: "graph",
+                summary: "print the resolved taxonomy as a Mermaid flowchart",
+                description: "Print the resolved taxonomy as a Mermaid flowchart on standard output: one lane for each purpose, holding its concrete kinds, one hexagon for each anchor, and one edge for each pair a relation declares, labeled with the relation. A pair with an abstract kind at one end is not drawn, because the abstract kind stands for every concrete kind declared under it, and the drawing lists each such pair in a caption instead. It reads `.headwater/taxonomy.lock` and never the sources, and it writes no file.",
+            },
         ],
     },
     // A verb that reads no corpus, and the only one.
@@ -397,8 +402,8 @@ pub const VERBS: &[Verb] = &[
         words: &[
             Word {
                 name: "field",
-                summary: "one member, addressed by a path of keys",
-                description: "Print one member of the object on standard input, addressed by a path of keys. `headwater json field tool_input file_path` reads the `file_path` member of the `tool_input` member. A string is printed with its escapes resolved, a number as it was written, and a boolean as `true` or `false`. It prints nothing and exits non-zero where the read reaches no scalar, which is one answer for six states: the document will not parse, a step of the path is not an object, the key is absent, the member is an array, the member is an object, or the member is null. A caller that told those apart would act on the shape of a message it did not write.",
+                summary: "one member, addressed by a path of keys and array indices",
+                description: "Print one member of the object on standard input, addressed by a path of steps. A step into an object is a key, and a step into an array is a decimal index counted from 0. `headwater json field tool_input file_path` reads the `file_path` member of the `tool_input` member, and `headwater json field related 0 target` reads the `target` member of the first element of `related`. A string is printed with its escapes resolved, a number as it was written, and a boolean as `true` or `false`. It prints nothing and exits non-zero where the read reaches no scalar, which is one answer for six states: the document will not parse, a step of the path is one the member cannot take, the key is absent, the member is an array, the member is an object, or the member is null. A caller that told those apart would act on the shape of a message it did not write.",
             },
             Word {
                 name: "count",

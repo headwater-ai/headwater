@@ -263,6 +263,10 @@ anchors
     cited by HW-DR-0045
   code_path `engine/crates/cli/src/paint.rs` via source-tree
     cited by HW-IFACE-headwater-help
+  code_path `engine/crates/cli/src/taxonomy_graph.rs` via source-tree
+    cited by HW-DR-0082
+  code_path `engine/crates/cli/src/taxonomy_graph.rs` via source-tree
+    cited by HW-IFACE-headwater-taxonomy
   code_path `engine/crates/cli/tests/help.rs` via source-tree
     cited by HW-DR-0042
   code_path `engine/crates/cli/tests/help.rs` via source-tree
