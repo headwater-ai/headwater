@@ -634,7 +634,7 @@ read set
   version identifier.pattern.not_met 1
   version shelf.placement_is_primary 2
   version relation.target.unresolved 1
-  version relation.target.suspect 2
+  version relation.target.suspect 3
   version relation.reciprocity.missing 1
   version relation.endpoint.not_permitted 1
   version lifecycle.dependency.on_terminal 1

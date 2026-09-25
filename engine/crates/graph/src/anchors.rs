@@ -382,9 +382,10 @@ impl Resolver for SourceTree {
 /// document governs is the pattern language's to state, and a literal with no
 /// wildcard names the directory and nothing under it
 /// ([HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)).
-/// A digest over a walk of it would state a reach the author did not write. An
-/// edge with no revision passes the suspect rule, so the cost is that such an
-/// edge never ages, and `**` after the directory is the remedy.
+/// A digest over a walk of it would state a reach the author did not write.
+/// The cost is that such an edge never ages, so the suspect rule reports a
+/// directory literal at `Info` and names `**` after the directory as the
+/// remedy, rather than passing it in silence.
 pub fn tree_revision(base: &Path, matched: &[String]) -> Option<String> {
     let mut sorted: Vec<&String> = matched.iter().collect();
     sorted.sort();

@@ -72,10 +72,16 @@
 //! `governs` entry this corpus held when the rule widened was such an entry.
 //!
 //! An edge whose resolver offered no revision passes. A snapshot and the
-//! source tree offer one. Every other resolver has no such notion, and neither
-//! has a literal that names a directory (see
-//! [`headwater_graph::anchors::tree_revision`]). A rule must not invent a
-//! comparison a resolver did not offer.
+//! source tree offer one. Every other resolver has no such notion. A rule must
+//! not invent a comparison a resolver did not offer.
+//!
+//! **A literal that names a directory is reported, not passed.** The source
+//! tree takes no digest of one (see
+//! [`headwater_graph::anchors::tree_revision`]), so the edge could never go
+//! suspect, and an author who wrote it would not learn that from a silence.
+//! The rule reports it at `Info` on every run, and names `<literal>/**` as
+//! the remedy. It offers no patch, because that remedy widens what the edge
+//! reaches ([HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)).
 //!
 //! A target that is not an anchor passes, and a document target is skipped
 //! with its reason. A document holds no revision, and an unbound target is
@@ -179,8 +185,9 @@ impl EdgeCheck for Suspect<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`]. 2: the denominator
     /// widened to every relation onto an anchor kind, and the rule reads the
-    /// clock (#952).
-    const VERSION: u32 = 2;
+    /// clock (#952). 3: a literal that names a directory is reported rather
+    /// than passed, so a verdict cached at 2 over such an edge is stale.
+    const VERSION: u32 = 3;
     /// The fix is offered only on a document verified on or after the clock,
     /// so the clock is an input and has to be in the key.
     const NEEDS_CLOCK: bool = true;
@@ -213,10 +220,6 @@ impl EdgeCheck for Suspect<'_> {
             _ => return Outcome::Passed,
         };
 
-        let Some(current) = revision.as_deref() else {
-            return Outcome::Passed;
-        };
-
         let verified = edge
             .attributes
             .iter()
@@ -244,6 +247,27 @@ impl EdgeCheck for Suspect<'_> {
             message,
             remediation,
             patch,
+        };
+
+        let Some(current) = revision.as_deref() else {
+            // The source tree binds a literal that names a directory and gives
+            // it no digest (see `tree_revision`), so this edge could never go
+            // suspect. That is reported rather than passed, with the wildcard
+            // that does carry a digest as the remedy. No patch: the remedy
+            // widens what the edge reaches, which is the author's to decide.
+            // Every other edge with no revision keeps its silence.
+            return match directory_literal(resolver, patterns) {
+                Some(literal) => Outcome::failed_with(finding(
+                    Severity::Info,
+                    directory(&edge.source.id, &edge.name, literal),
+                    format!(
+                        "write `{literal}/**` to govern the entries under it, which carries a \
+                         digest this rule compares, or name the one file the document governs"
+                    ),
+                    None,
+                )),
+                None => Outcome::Passed,
+            };
         };
 
         let Some(verified) = verified else {
@@ -314,6 +338,25 @@ impl EdgeCheck for Suspect<'_> {
         };
         Outcome::failed_with(finding(Severity::Warn, message, remediation, patch))
     }
+}
+
+/// The literal a `source-tree` anchor names, where it is one literal pattern
+/// that matched only itself and the resolver still gave no digest: a
+/// directory, which [`headwater_graph::anchors::tree_revision`] refuses to
+/// digest. `None` for every other shape, and for every other resolver.
+fn directory_literal<'e>(resolver: &str, patterns: &'e [headwater_graph::edges::PatternMember]) -> Option<&'e str> {
+    let [only] = patterns else {
+        return None;
+    };
+    (resolver == SOURCE_TREE && only.matched.len() == 1 && only.matched[0] == only.pattern)
+        .then_some(only.pattern.as_str())
+}
+
+fn directory(id: &str, name: &str, literal: &str) -> String {
+    format!(
+        "`{id}` declares `{name}: {literal}`, and `{literal}` names a directory, which the source \
+         tree takes no digest of, so this edge never goes suspect when what it governs changes"
+    )
 }
 
 /// The patch that records `current` on the entry that declared `edge`, and

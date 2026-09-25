@@ -527,7 +527,7 @@ else
     skip 'write.sh PreToolUse reverse advisory cases' 'no built engine'
 fi
 
-printf '\n# write.sh, on PostToolUse: silent until #952 gives it its one line\n'
+printf '\n# write.sh, on PostToolUse: silent, and write.sh says why #952 left it so\n'
 # The advisory moved to PreToolUse, so the post-edit position says nothing and
 # no edit prints the same pointers twice. These are the payloads that printed
 # the advisory before #953.

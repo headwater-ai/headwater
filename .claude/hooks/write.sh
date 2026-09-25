@@ -35,9 +35,17 @@
 #
 #   PostToolUse Write|Edit   silent. The advisory moved before the edit, and
 #                            printing it again here would say the same pointers
-#                            twice. #952 gives this position its one line: the
-#                            edges the edit made suspect, once a `governs` edge
-#                            can go suspect at all.
+#                            twice. The line this position was kept for is the
+#                            edges the edit made suspect. #952 made a `governs`
+#                            edge able to go suspect, and it did not write the
+#                            line, for two reasons. No verb answers "which
+#                            suspect findings reach this path" in one call, so
+#                            the hook would read every finding of a run one
+#                            `headwater json` call at a time, or pick them out
+#                            of rendered text, which HW-OBL-0149 records as the
+#                            defect. And no `governs` entry in this corpus
+#                            records a `verified_revision` yet, so the line
+#                            would print nothing on every edit here.
 #
 # What it passes to the engine: one path. What it gets back: for the refusal,
 # the classification `headwater explain` reports on standard error for a path
@@ -160,8 +168,8 @@ If the file is genuinely not a document of any kind this taxonomy declares, it d
     exit 0
     ;;
 PostToolUse)
-    # Silent on purpose: the advisory runs before the edit now, and #952 is
-    # the issue that gives this position its one line.
+    # Silent on purpose: the advisory runs before the edit now. The header
+    # says why #952 left the suspect-edge line unwritten.
     exit 0
     ;;
 *)
