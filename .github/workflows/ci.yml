@@ -282,6 +282,15 @@ jobs:
         # `--locked` before the `--`, or clippy passes it to rustc.
         run: cargo clippy --all-targets --locked -- -D warnings
         working-directory: engine
+      - name: The binary without the fetch still builds
+        # `headwater-cli` links `headwater-fetch` behind its default `fetch`
+        # feature, and a build without it answers a location with a refusal
+        # instead (`cfg(not(feature = "fetch"))` in `crates/cli/src/main.rs`).
+        # Every other step builds with default features, so without this one
+        # nothing compiles that path, and a change that names the fetch crate
+        # outside its `cfg` breaks the build a distributor makes without it.
+        run: cargo build -p headwater-cli --no-default-features --locked
+        working-directory: engine
       - name: The second implementation of SHA-256 the cross-check runs against
         # `crates/hash/tests/oracle.rs` holds this engine's SHA-256 against
         # `sha256sum`. The package digest of a fetched artifact is computed with
