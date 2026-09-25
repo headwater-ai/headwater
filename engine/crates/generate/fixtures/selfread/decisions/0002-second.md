@@ -1,12 +1,11 @@
 ---
 id: DR-FIX-0002
-title: The fresher source document
+title: The newest source document
 status: current
 status_since: 2026-06-01
-summary: the newer of the two sources, present so that the fold has a minimum to take rather than one value
+summary: the newer of the two sources, so its date is the one a fold of the shelf must answer
 ---
 
-# The fresher source document
+# The newest source document
 
-The second source. Two documents rather than one, so that the fold is taking a
-minimum over a set instead of copying the only value there is.
+The second source. Its `status_since` is the newest of the sources, so it is the answer the fold owes once the output stops reading itself.

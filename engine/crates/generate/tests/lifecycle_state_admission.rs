@@ -236,9 +236,9 @@ fn a_state_the_kinds_own_regime_admits_is_written() {
 /// `a_state_a_relation_sets_that_the_kinds_own_regime_admits_is_written_with_the_setters_date`
 /// holds over the same two documents.
 ///
-/// Watched failing: before the fallback fold changed, at the commit that added
-/// this case, `WIDE.md` carried `status_since: 2026-01-01` and this case
-/// failed on that value.
+/// Watched failing: at `e63f5383`, with this case and `0003-later-decision.md`
+/// in the tree and the fallback fold still taking the minimum, `WIDE.md`
+/// carried `status_since: 2026-01-01` and this case failed on that value.
 #[test]
 fn a_state_no_edge_sets_is_dated_by_the_newest_document_the_projection_read() {
     let plan = plan_over_lifecycle_regime();
@@ -517,8 +517,8 @@ fn a_state_a_relation_sets_that_the_kinds_own_regime_admits_is_written_with_the_
     assert_eq!(
         member(bytes, "last_verified"),
         Some("2026-02-01"),
-        "`{WRITTEN}` did not take its freshness from the documents the projection read \
-         (2026-02-01). `2026-05-01` is the setter's date, and the setter was not read. It \
-         reads:\n{bytes}"
+        "`{WRITTEN}` did not take its freshness as the stalest date over the documents the \
+         projection read (2026-02-01). `2026-03-15` is the newest of them, and `2026-05-01` is \
+         the setter's date, and the setter was not read. It reads:\n{bytes}"
     );
 }

@@ -49,25 +49,24 @@
 //!
 //! An edge that sets the state also dates it: the state was entered when the
 //! document that declares the edge says it was, so [`members`] folds the
-//! setters' dates. With no such edge the state is the `live` fallback of
-//! [`standing`], and the date is the stalest `state_entered` over the
-//! documents the projection read, which HW-DR-0063 rules.
+//! setters' dates, and takes the stalest of them. With no such edge the state
+//! is the `live` fallback of [`standing`], and the date is the **newest**
+//! `state_entered` over the documents the projection read, which HW-DR-0063
+//! rules as amended on 2026-09-25.
 //!
-//! **That reading has no argument yet, and the one offered for it does not
-//! hold** (#820). The argument was that a generated document stands at `live`
-//! because its inputs do, so it cannot have entered that state before its
-//! oldest input did. That bounds the date from below and does not pick the
-//! minimum. If the premise held, the file would stand at `live` only once its
-//! last input did, which is the maximum. And the premise does not hold: an
-//! index of superseded decisions is still a current index, because the
-//! fallback reads no input's state. The minimum is right for freshness, where
-//! a file is only as fresh as its oldest confirmation. For the date a state was
-//! entered, neither fold is a fact the inputs state. The fold is left as ruled,
-//! and the question is recorded for a ruling rather than answered here. The
-//! case that holds the two sources apart is
+//! The owner ruled on
+//! [#820](https://github.com/headwater-ai/headwater/issues/820) on 2026-09-25
+//! that a page is no fresher than its newest input. The page is a new page
+//! each time an input changes, so the date it entered its state is the date of
+//! the newest input it carries. The minimum stays right for freshness, where a
+//! file is only as fresh as its oldest confirmation. So the two folds over the
+//! read set go in opposite directions: [`newest_of`] for the date a state was
+//! entered, and [`stalest_of`] for freshness.
+//!
+//! `a_state_no_edge_sets_is_dated_by_the_newest_document_the_projection_read`
+//! in `tests/lifecycle_state_admission.rs` holds the fallback fold, and
 //! `a_state_a_relation_sets_that_the_kinds_own_regime_admits_is_written_with_the_setters_date`
-//! in `tests/lifecycle_state_admission.rs`, where the setter's date and the
-//! read set's date differ.
+//! holds the setter's date and freshness over the same two read documents.
 //!
 //! # The roles, and never the facet names
 //!
@@ -235,14 +234,18 @@ pub(crate) fn members(
                     unsourced(
                         &facet,
                         STATE_ENTERED,
+                        "stalest",
                         "the documents whose edges set this document's state",
                         &setters,
                     )
                 }),
-                None => stalest_of(&sources, entered.as_deref()).ok_or_else(|| {
+                // No edge sets the state, so the file stands at the `live`
+                // fallback and entered it with its newest input (#820).
+                None => newest_of(&sources, entered.as_deref()).ok_or_else(|| {
                     unsourced(
                         &facet,
                         STATE_ENTERED,
+                        "newest",
                         "the documents this projection read",
                         &read,
                     )
@@ -255,6 +258,7 @@ pub(crate) fn members(
                     unsourced(
                         &facet,
                         FRESHNESS,
+                        "stalest",
                         "the documents this projection read",
                         &read,
                     )
@@ -274,10 +278,11 @@ pub(crate) fn members(
 
 /// The cause of a date this module reads from documents and found in none.
 ///
-/// It names the role, the facet and every document the fold read, because the
-/// repair is a value on one of those documents. It does not name the
+/// It names the role, the facet, the direction of the fold (`fold`, which is
+/// `stalest` or `newest`) and every document the fold read, because the repair
+/// is a value on one of those documents. It does not name the
 /// taxonomy, where nothing is wrong.
-fn unsourced(facet: &str, in_role: &str, what: &str, paths: &[String]) -> String {
+fn unsourced(facet: &str, in_role: &str, fold: &str, what: &str, paths: &[String]) -> String {
     if paths.is_empty() {
         return format!(
             "the engine derives `{facet}`, the facet in the `{in_role}` role, from {what}, and there \
@@ -286,7 +291,7 @@ fn unsourced(facet: &str, in_role: &str, what: &str, paths: &[String]) -> String
         );
     }
     format!(
-        "the engine derives `{facet}`, the facet in the `{in_role}` role, as the stalest value over \
+        "the engine derives `{facet}`, the facet in the `{in_role}` role, as the {fold} value over \
          {what} ({}), and each of them carries no value for it. Add `{facet}` to one of those \
          documents",
         paths.join(", ")
@@ -395,10 +400,12 @@ fn admitted(
 /// a node of the census
 /// ([`headwater_census::census::Outcome::node`]), so a projection whose output
 /// sits on the shelf it reads finds its own last version in the set. A fold over
-/// that set is a function of its own previous answer: [`stalest_of`] takes a
-/// minimum, so a committed date no source supports stays the minimum on every
-/// later run, and `generate --check` holds it because the emitter agrees with
-/// itself. Neither declaration in this repository reaches that shape, and this
+/// that set is a function of its own previous answer. Both folds over the set
+/// keep such a date: [`stalest_of`] takes a minimum, so a committed date older
+/// than every source stays the minimum on every later run, and [`newest_of`]
+/// takes a maximum, so a committed date newer than every source stays the
+/// maximum. `generate --check` holds either one, because the emitter agrees
+/// with itself. Neither declaration in this repository reaches that shape, and this
 /// filter is what keeps the claim in the module comment true of the module
 /// rather than true only of its present callers.
 fn documents<'a>(
@@ -524,25 +531,53 @@ fn stalest(surface: &Surface<'_>, paths: &[String], facet: Option<&str>) -> Opti
 ///
 /// The minimum, and the reason is what a reader does with it. A file assembled
 /// from other documents is only as fresh as the oldest thing it carries, so the
-/// freshest date would state a confidence that no source supports. The values
-/// are ISO dates, which sort as text in the order they sort as dates.
+/// freshest date would state a confidence that no source supports. That is the
+/// fold for freshness, and for the date a state was entered when an edge set
+/// the state.
 ///
-/// `None` where no source carries the facet. An invented date is worse than an
-/// absent one, and the declaration is then refused by the caller rather than
-/// written with a value nothing supports.
+/// `None` where no source carries the facet, as [`values_of`] states.
 fn stalest_of(documents: &[Document<'_>], facet: Option<&str>) -> Option<String> {
+    values_of(documents, facet)?.min()
+}
+
+/// The newest value of one facet over a set of documents.
+///
+/// The maximum. It is the fold for the date a state was entered when no edge
+/// set the state, because the owner ruled on
+/// [#820](https://github.com/headwater-ai/headwater/issues/820) that a page is
+/// no fresher than its newest input.
+///
+/// `None` where no source carries the facet, as [`values_of`] states.
+fn newest_of(documents: &[Document<'_>], facet: Option<&str>) -> Option<String> {
+    values_of(documents, facet)?.max()
+}
+
+/// The non-empty values of one facet over a set of documents, for a fold.
+///
+/// The values are ISO dates, which sort as text in the order they sort as
+/// dates, so a fold takes the minimum or the maximum of the text.
+///
+/// `None` where the declaration names no facet in the role. A fold over the
+/// result is `None` where no source carries the facet. An invented date is
+/// worse than an absent one, and the declaration is then refused by the caller
+/// rather than written with a value nothing supports.
+fn values_of<'d>(
+    documents: &'d [Document<'_>],
+    facet: Option<&'d str>,
+) -> Option<impl Iterator<Item = String> + 'd> {
     let facet = facet?;
-    documents
-        .iter()
-        .filter_map(|document| {
-            document
-                .facets
-                .get(facet)
-                .and_then(|node| node.value.as_scalar())
-                .map(|scalar| scalar.text.trim().to_string())
-        })
-        .filter(|text| !text.is_empty())
-        .min()
+    Some(
+        documents
+            .iter()
+            .filter_map(move |document| {
+                document
+                    .facets
+                    .get(facet)
+                    .and_then(|node| node.value.as_scalar())
+                    .map(|scalar| scalar.text.trim().to_string())
+            })
+            .filter(|text| !text.is_empty()),
+    )
 }
 
 /// The value of a facet that the shelf's `layout` names, read out of the path.
