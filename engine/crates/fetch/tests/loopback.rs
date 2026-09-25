@@ -17,8 +17,24 @@ fn archive() -> Vec<u8> {
     writer.finish().unwrap().into_inner()
 }
 
+/// A zip whose one member is a mebibyte of zeros more than the 64 MiB a
+/// fetch writes. It deflates to about 64 KiB, well under the 64 MiB a fetch
+/// reads, so only the bound on what is unpacked can refuse it.
+fn bomb() -> Vec<u8> {
+    let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated)
+        .large_file(true);
+    writer.start_file("zeros.bin", options).unwrap();
+    let chunk = vec![0_u8; 1024 * 1024];
+    for _ in 0..65 {
+        writer.write_all(&chunk).unwrap();
+    }
+    writer.finish().unwrap().into_inner()
+}
+
 /// Serve `count` requests. `/moved` answers 302 to `/x.zip`, `/x.zip` answers
-/// with the archive, and anything else answers 404.
+/// with the archive, `/bomb.zip` with [`bomb`], and anything else answers 404.
 fn serve(count: usize) -> String {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let base = format!("http://{}", listener.local_addr().unwrap());
@@ -30,6 +46,7 @@ fn serve(count: usize) -> String {
             let read = stream.read(&mut request).unwrap();
             let line = String::from_utf8_lossy(&request[..read]).to_string();
             let path = line.split_whitespace().nth(1).unwrap_or("").to_string();
+            let bomb = if path == "/bomb.zip" { bomb() } else { Vec::new() };
             let (head, payload): (String, &[u8]) = match path.as_str() {
                 "/away" => (
                     "HTTP/1.1 302 Found\r\nLocation: http://example.invalid/x.zip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string(),
@@ -45,6 +62,13 @@ fn serve(count: usize) -> String {
                         body.len()
                     ),
                     &body,
+                ),
+                "/bomb.zip" => (
+                    format!(
+                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                        bomb.len()
+                    ),
+                    &bomb,
                 ),
                 _ => (
                     "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string(),
@@ -102,4 +126,17 @@ fn a_redirect_from_loopback_to_plain_http_elsewhere_is_refused_before_it_is_foll
         error.to_string().contains("http://example.invalid/x.zip"),
         "{error}"
     );
+}
+
+#[test]
+fn a_served_zip_that_unpacks_past_the_bound_is_refused() {
+    let base = serve(1);
+    let location = format!("{base}/bomb.zip");
+    let error = headwater_fetch::fetch(&location).unwrap_err();
+    assert!(
+        matches!(error, headwater_fetch::Error::Archive(_)),
+        "{error}"
+    );
+    assert!(error.to_string().contains(&location), "{error}");
+    assert!(error.to_string().contains("67108864 bytes"), "{error}");
 }

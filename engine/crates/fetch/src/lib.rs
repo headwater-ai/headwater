@@ -232,20 +232,74 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
 }
 
 /// Unpack `archive` into `dir`, refusing once more than `bound` bytes would
-/// be written.
+/// be written. The sizes an archive declares are read first, as a cheap
+/// refusal, and then the bound is held again on the bytes written, because a
+/// deflate member decompresses past its declared size and a header can lie.
+/// A member whose name leaves `dir`, and a symbolic link, are refused: a
+/// published artifact has neither. Whatever was written before a refusal is
+/// removed by the caller's [`Fetched`] when it drops.
 fn unpack<R: std::io::Read + std::io::Seek>(
     archive: &mut zip::ZipArchive<R>,
     dir: &Path,
     bound: u64,
     location: &str,
 ) -> Result<(), Error> {
-    let _ = bound;
-    // `extract` refuses a member whose name leaves the directory.
-    archive.extract(dir).map_err(|error| {
+    let too_large = || {
+        Error::Archive(format!(
+            "the archive at {location} unpacks to more than {bound} bytes, the most this verb \
+             writes"
+        ))
+    };
+    let broken = |error: &dyn fmt::Display| {
         Error::Archive(format!(
             "the archive at {location} does not unpack: {error}"
         ))
-    })
+    };
+    let io = |path: &Path, error: std::io::Error| {
+        Error::Io(format!("{} could not be written: {error}", path.display()))
+    };
+    if archive
+        .decompressed_size()
+        .is_some_and(|declared| declared > u128::from(bound))
+    {
+        return Err(too_large());
+    }
+    let mut written: u64 = 0;
+    for index in 0..archive.len() {
+        let mut member = archive.by_index(index).map_err(|error| broken(&error))?;
+        let Some(name) = member.enclosed_name() else {
+            return Err(broken(&format!(
+                "the member {} names a path outside the directory",
+                member.name()
+            )));
+        };
+        let path = dir.join(name);
+        if member.is_symlink() {
+            return Err(broken(&format!(
+                "the member {} is a symbolic link",
+                member.name()
+            )));
+        }
+        if member.is_dir() {
+            std::fs::create_dir_all(&path).map_err(|error| io(&path, error))?;
+            continue;
+        }
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).map_err(|error| io(parent, error))?;
+        }
+        let mut file = std::fs::File::create(&path).map_err(|error| io(&path, error))?;
+        let remaining = bound - written;
+        let copied = std::io::copy(
+            &mut std::io::Read::take(&mut member, remaining.saturating_add(1)),
+            &mut file,
+        )
+        .map_err(|error| broken(&error))?;
+        if copied > remaining {
+            return Err(too_large());
+        }
+        written += copied;
+    }
+    Ok(())
 }
 
 /// A new, empty directory under the system temporary directory. The name
@@ -378,5 +432,8 @@ mod tests {
         let (result, _fetched) = unpacked(lie_about_the_size(zeros(1025), 10), 1024);
         let refused = result.unwrap_err();
         assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        // Refused by the count of bytes written, not by a checksum or a size
+        // mismatch the reader might raise first.
+        assert!(refused.to_string().contains("more than 1024 bytes"), "{refused}");
     }
 }
