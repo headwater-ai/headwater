@@ -135,6 +135,16 @@
 
   <p class="note"><strong>An entry arrives when a tag is cut.</strong> A tag is the only condition that fills this page, and not a date and not a milestone. There is no cadence, and this page says so rather than promise one.</p>
 
+  <h2>v0.2.1</h2>
+
+  <p><a href="https://github.com/headwater-ai/headwater/releases/tag/v0.2.1">A patch release</a>, cut on 2026-09-26. It carries three changes that reached the default branch after v0.2.0 was tagged, and the first of them is the reason for the tag: the tutorial describes it, and v0.2.0 does not do it.</p>
+
+  <p><code>headwater taxonomy vendor --expect</code> now writes the pin it verified. When the artifact matches the digest you passed, and <code>.headwater/taxonomy.yml</code> declares no <code>taxonomy.digest</code>, the verb writes <code>digest: &lt;the digest&gt;</code> into the <code>taxonomy:</code> block, so the next clone installs the same artifact with no flag. It replaces the commented <code># digest:</code> line that <code>headwater init</code> writes, or adds the line after <code>version:</code>. It reads the file back, and if the pin does not read, it restores the original bytes and says to write the line by hand. It never replaces a declared pin: an <code>--expect</code> that differs from the declared value still installs, prints both values and leaves the file as it was. A refused run writes nothing. In v0.2.0 the install worked once, and the digest was not recorded.</p>
+
+  <p>A <code>governs</code> entry written as a list with a member that names a directory is now reported at Info. The source tree takes no digest of a directory, so that edge never went suspect when what it governs changed, and <code>headwater check</code> said nothing. The finding names each directory member and gives the remedy: write <code>&lt;directory&gt;/**</code> in the list instead.</p>
+
+  <p><code>headwater taxonomy validate</code> run at the root of an authored package source no longer refuses every governed-scope pattern. The directories that the root's <code>package.yml</code> names under <code>contents</code> are the taxonomy's own and do not count as a governed tree, in the same way as a dot-directory, a directory git ignores and a resolution source already did not. Where nothing else at the root counts as a tree, the run now prints the one notice line and refuses no pattern. An <code>examples/</code> directory still counts as a tree unless <code>contents</code> names it.</p>
+
   <h2>v0.2.0</h2>
 
   <p><a href="https://github.com/headwater-ai/headwater/releases/tag/v0.2.0">The second release</a>, cut on 2026-09-26, is the first version that an adopter can take into a repository of their own with nothing but the <code>headwater</code> binary. It covers everything since v0.1.0, and that includes the two patch tags v0.1.1 and v0.1.2 of 2026-09-09, which moved the crates onto crates.io so that <code>cargo install</code> works and which never had an entry here.</p>
