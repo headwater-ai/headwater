@@ -4,11 +4,11 @@ status: draft
 status_since: 2026-09-24
 summary: "Since #1047 and the link suite of #849, the two hw-cargo workarounds in hw-run-policy may be dead text that every build-order stage pays to read."
 last_verified: 2026-09-24
-title: "Two hand-remedy lines for hw-cargo in hw-run-policy may no longer earn their cost on every dispatch"
+title: "Two hand-remedy lines for hw-cargo in hw-run-policy may not earn their cost on every dispatch"
 waiting_on: build
 ---
 
-# Two hand-remedy lines for hw-cargo in hw-run-policy may no longer earn their cost on every dispatch
+# Two hand-remedy lines for hw-cargo in hw-run-policy may not earn their cost on every dispatch
 
 ## Context
 
@@ -22,4 +22,4 @@ The same build found a reusable test method. A suite finds its script through `$
 
 ## Discharge
 
-This record discharges when a measurement on main shows whether `tools/hw-cargo` still needs each remedy, and each line that is no longer needed leaves the skill.
+This record discharges when a measurement on main shows whether `tools/hw-cargo` still needs each remedy, and each line that `tools/hw-cargo` does not need leaves the skill.
