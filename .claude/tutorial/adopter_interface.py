@@ -21,9 +21,19 @@ another, and a reader who pastes the line runs every piece the line names.
 commands apiece, and the second one of each is the one that matters. A
 piece passes only if its leading word is `headwater`, or one of the
 handful of ordinary shell verbs this repository's own commands already use
-for scaffolding and installation (`git`, `mkdir`, `cd`, `printf`, `rm`).
-`cargo` passes only for the two subcommands this corpus actually runs,
-`install` and `build`: `cargo run --manifest-path
+for scaffolding (`git`, `mkdir`, `cd`, `printf`, `rm`). The release
+download passes narrowly: a `curl` passes only when every URL it names sits
+under this project's `releases/download/` path, with no `..` and no config
+file, and a `tar` passes only when no option of it runs another program.
+
+**`cargo` is never the lead route.**
+[HW-DR-0077](../../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)
+makes no Rust toolchain mandatory, so the check is per document and in
+order: `cargo` passes only in a block after one that already gave the
+release download, and only in the README, which offers it as the labeled
+alternative. The tutorial offers it in prose and never as a block, so there
+it never passes. Where it passes it is still held to the two subcommands
+this corpus runs, `install` and `build`: `cargo run --manifest-path
 tools/evil/Cargo.toml` is `cargo`, but it is not either of those two, and a
 subcommand allowlist is what a wholesale one misses. A line that contains
 `$(`, a backtick, `<(` or `>(` fails outright and is never split further:
@@ -79,6 +89,20 @@ ALLOWED_LEADING_WORDS = frozenset({'headwater', 'git', 'mkdir', 'cd', 'printf', 
 # arbitrary code from wherever that manifest points, which a wholesale
 # allowance for the verb `cargo` would let through.
 CARGO_ALLOWED_SUBCOMMANDS = frozenset({'install', 'build'})
+
+# The release download. `curl` passes only when every URL it names sits
+# under this prefix, so a blanket `curl` never widens what the bootstrap
+# exception below already excuses.
+RELEASE_DOWNLOAD_PREFIX = 'https://github.com/headwater-ai/headwater/releases/download/'
+
+# `tar` passes only to unpack. These options run another program: a member
+# piped to a command, a checkpoint action, a decompressor of the caller's
+# choice, a volume script, a remote shell. `-I` and `-F` are the short forms.
+TAR_REFUSED_LONG_OPTIONS = frozenset({
+    '--to-command', '--checkpoint-action', '--use-compress-program',
+    '--info-script', '--new-volume-script', '--rsh-command', '--rmt-command',
+})
+TAR_REFUSED_SHORT_OPTIONS = frozenset({'I', 'F'})
 
 # A curl/wget fetch naming the bootstrap script, and a bare shell taking its
 # output — the two pieces the one declared exception's pipe-split resolves
@@ -204,21 +228,63 @@ def is_declared_exception(segment):
             and not SUBSTITUTION.search(pieces[1]))
 
 
-def check_piece(piece):
-    """Whether one already-split piece is an allowed command."""
+def is_release_download(piece):
+    """Whether `piece` is a `curl` that fetches from this project's release
+    downloads and from nowhere else.
+
+    Every token that names a URL must sit under `RELEASE_DOWNLOAD_PREFIX`,
+    at least one must, and none may climb out of it with `..`, which curl
+    collapses before it sends the request. `-K`/`--config` is refused,
+    because a config file names URLs this check cannot see."""
+    tokens = piece.split()
+    if not tokens or tokens[0] != 'curl' or SUBSTITUTION.search(piece):
+        return False
+    urls = [t for t in tokens[1:] if '://' in t]
+    if not urls:
+        return False
+    for token in tokens[1:]:
+        if token == '-K' or token.startswith('--config') or (
+                token.startswith('-') and not token.startswith('--') and 'K' in token):
+            return False
+    return all(u.startswith(RELEASE_DOWNLOAD_PREFIX) and '..' not in u for u in urls)
+
+
+def check_tar(tokens):
+    """Whether a `tar` piece only unpacks: every option that hands work to
+    another program is refused."""
+    for token in tokens[1:]:
+        if token.startswith('--'):
+            if token.split('=', 1)[0] in TAR_REFUSED_LONG_OPTIONS:
+                return False
+        elif token.startswith('-') and set(token[1:]) & TAR_REFUSED_SHORT_OPTIONS:
+            return False
+    return True
+
+
+def check_piece(piece, cargo_allowed=False):
+    """Whether one already-split piece is an allowed command.
+
+    `cargo` passes only when `cargo_allowed` is set, which
+    `undeclared_in_document` does only after the document has already
+    given the release download."""
     if SUBSTITUTION.search(piece):
         return False
     tokens = piece.split()
     if not tokens:
         return True
     if tokens[0] == 'cargo':
-        return len(tokens) > 1 and tokens[1] in CARGO_ALLOWED_SUBCOMMANDS
+        return (cargo_allowed and len(tokens) > 1
+                and tokens[1] in CARGO_ALLOWED_SUBCOMMANDS)
+    if tokens[0] == 'curl':
+        return is_release_download(piece)
+    if tokens[0] == 'tar':
+        return check_tar(tokens)
     return tokens[0] in ALLOWED_LEADING_WORDS
 
 
-def undeclared_pieces(block):
-    """Every piece of every line of a command block that is not allowed."""
-    failures = []
+def _pieces(block):
+    """Every piece of every line of a command block that the declared
+    exception does not excuse."""
     for line in block.split('\n'):
         stripped = line.strip()
         if not stripped or stripped.startswith('#'):
@@ -226,9 +292,30 @@ def undeclared_pieces(block):
         for segment in split_chain(stripped):
             if is_declared_exception(segment):
                 continue
-            for piece in split_pipe(segment):
-                if not check_piece(piece):
-                    failures.append(piece)
+            yield from split_pipe(segment)
+
+
+def undeclared_pieces(block, cargo_allowed=False):
+    """Every piece of every line of a command block that is not allowed."""
+    return [p for p in _pieces(block) if not check_piece(p, cargo_allowed)]
+
+
+def undeclared_in_document(blocks, cargo_may_follow_download):
+    """Every piece that is not allowed across a document's command blocks,
+    in order.
+
+    HW-DR-0077 makes no Rust toolchain mandatory: the release download
+    leads, and `cargo install` is a labeled alternative after it. So
+    `cargo` passes only in a block that follows one which already gave the
+    download, and only where `cargo_may_follow_download` is set. The README
+    sets it. The tutorial does not, because its install section names the
+    alternative in prose and never as a block."""
+    failures, download_seen = [], False
+    for block in blocks:
+        failures += undeclared_pieces(
+            block, cargo_allowed=cargo_may_follow_download and download_seen)
+        if any(is_release_download(p) for p in _pieces(block)):
+            download_seen = True
     return failures
 
 
@@ -427,23 +514,22 @@ def run_fence_regression_cases():
 def main():
     root = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.getcwd()
 
-    regression_failures = run_regression_cases() + run_fence_regression_cases()
+    regression_failures = (run_regression_cases() + run_fence_regression_cases()
+                           + run_document_regression_cases())
 
     readme_blocks = fenced_blocks(os.path.join(root, README))
-    tutorial_blocks = fenced_blocks(os.path.join(root, TUTORIAL))
+    all_tutorial_blocks = fenced_blocks(os.path.join(root, TUTORIAL))
+    tutorial_blocks = [all_tutorial_blocks[i] for i in sorted(drive.COMMAND_BLOCK_INDICES)]
 
-    checked = 0
+    checked = len(readme_blocks) + len(tutorial_blocks)
     failures = []
-    for block in readme_blocks:
-        checked += 1
-        for piece in undeclared_pieces(block):
-            failures.append(f'{README}: undeclared command: {piece!r}')
-    for index in drive.COMMAND_BLOCK_INDICES:
-        checked += 1
-        for piece in undeclared_pieces(tutorial_blocks[index]):
-            failures.append(f'{TUTORIAL}: undeclared command: {piece!r}')
+    for piece in undeclared_in_document(readme_blocks, cargo_may_follow_download=True):
+        failures.append(f'{README}: undeclared command: {piece!r}')
+    for piece in undeclared_in_document(tutorial_blocks, cargo_may_follow_download=False):
+        failures.append(f'{TUTORIAL}: undeclared command: {piece!r}')
 
-    total_cases = len(REGRESSION_CASES) + len(FENCE_REGRESSION_CASES)
+    total_cases = (len(REGRESSION_CASES) + len(FENCE_REGRESSION_CASES)
+                   + len(DOCUMENT_REGRESSION_CASES))
     print(f'{total_cases} regression case(s), {len(regression_failures)} failed; '
           f'{checked} command block(s) checked across 2 documents, '
           f'{len(failures)} undeclared command(s)')
