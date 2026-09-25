@@ -515,6 +515,73 @@ fn the_git_step_writes_attributes_for_the_two_verb_producers_and_prints_the_conf
     );
 }
 
+/// Inside a repository where git does not run, `headwater derived` says so and exits 1.
+///
+/// Git answers for every attribute file of the tree. Without it the verb can
+/// read the root `.gitattributes` alone, and that file agrees here, so a verb
+/// that read a failed spawn as "no repository" exits 0 and says nothing about
+/// `info/attributes` or a nested file it could not read. Read the spawn failure
+/// as `None` again, and this case fails on the exit status.
+#[test]
+fn inside_a_repository_where_git_does_not_run_derived_says_so() {
+    let tree = Tree::adopted("no-git");
+    tree.headwater_ok(&["init", "--git"]);
+    tree.headwater_ok(&["derived"]);
+
+    let empty = tree.at.with_extension("empty-path");
+    std::fs::create_dir_all(&empty).expect("the empty directory is made");
+    let output = Command::new(binary())
+        .args(["derived", "--root"])
+        .arg(&tree.at)
+        .env("PATH", &empty)
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env_remove("GIT_DIR")
+        .env_remove("GIT_INDEX_FILE")
+        .env_remove("GIT_WORK_TREE")
+        .output()
+        .expect("the binary runs");
+    let _ = std::fs::remove_dir_all(&empty);
+    let said = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "a repository whose git does not run is not a tree with no repository:\n{said}"
+    );
+    assert!(
+        said.contains("git did not run"),
+        "the report names that git did not run:\n{said}"
+    );
+}
+
+/// `init --git` writes no root line for a fold that a nested file already declares.
+///
+/// The lock is declared in `.headwater/.gitattributes`, and git answers
+/// `unset` for it. The step asks git rather than reading the root file, so it
+/// finds every artifact declared and writes nothing, on each of two runs.
+#[test]
+fn the_git_step_writes_no_line_for_a_fold_a_nested_file_declares() {
+    let tree = Tree::adopted("nested");
+    tree.write(".headwater/.gitattributes", "taxonomy.lock -merge\n");
+    for run in ["first", "second"] {
+        let output = tree.headwater_ok(&["init", "--git"]);
+        let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+        assert!(
+            stdout.contains("already declares all"),
+            "the {run} run finds every derived artifact declared:\n{stdout}"
+        );
+        let root = std::fs::read_to_string(tree.at.join(".gitattributes")).unwrap_or_default();
+        assert!(
+            !root.contains("taxonomy.lock"),
+            "the {run} run wrote a root line for the lock, which the nested file declares:\n{root}"
+        );
+    }
+}
+
 /// A producer that only this repository holds is neither named by
 /// `headwater derived` nor written by `init --git` in an adopter's tree.
 ///
