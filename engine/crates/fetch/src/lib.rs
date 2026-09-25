@@ -467,12 +467,19 @@ mod tests {
 
     /// A deflate zip with one member, `zeros.bin`, of `len` zero bytes.
     fn zeros(len: usize) -> Vec<u8> {
+        members(&[("zeros.bin", len)])
+    }
+
+    /// A deflate zip with one member of zero bytes for each name and length.
+    fn members(files: &[(&str, usize)]) -> Vec<u8> {
         use std::io::Write;
         let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
         let options = zip::write::SimpleFileOptions::default()
             .compression_method(zip::CompressionMethod::Deflated);
-        writer.start_file("zeros.bin", options).unwrap();
-        writer.write_all(&vec![0_u8; len]).unwrap();
+        for (name, len) in files {
+            writer.start_file(*name, options).unwrap();
+            writer.write_all(&vec![0_u8; *len]).unwrap();
+        }
         writer.finish().unwrap().into_inner()
     }
 
@@ -480,17 +487,23 @@ mod tests {
     /// header (22 bytes after `PK\x03\x04`) and in the central directory (24
     /// bytes after `PK\x01\x02`), so the archive declares less than it holds.
     fn lie_about_the_size(mut bytes: Vec<u8>, size: u32) -> Vec<u8> {
-        let mut patched = 0;
+        let (mut local, mut central) = (0, 0);
         for at in 0..bytes.len().saturating_sub(4) {
             let offset = match &bytes[at..at + 4] {
-                b"PK\x03\x04" => 22,
-                b"PK\x01\x02" => 24,
+                b"PK\x03\x04" => {
+                    local += 1;
+                    22
+                }
+                b"PK\x01\x02" => {
+                    central += 1;
+                    24
+                }
                 _ => continue,
             };
             bytes[at + offset..at + offset + 4].copy_from_slice(&size.to_le_bytes());
-            patched += 1;
         }
-        assert_eq!(patched, 2, "one local header and one central record");
+        assert!(local > 0, "no local header was found");
+        assert_eq!(local, central, "a central record for each local header");
         bytes
     }
 
@@ -530,6 +543,33 @@ mod tests {
         assert!(
             refused.to_string().contains("more than 1024 bytes"),
             "{refused}"
+        );
+    }
+
+    #[test]
+    fn the_bound_holds_across_members_and_not_for_each_one() {
+        // Each member is under the bound and declares 10 bytes, so neither
+        // the declared total nor any one member meets it. The 1,200 bytes the
+        // two write together do.
+        let lying = lie_about_the_size(members(&[("a.bin", 600), ("b.bin", 600)]), 10);
+        let (result, _fetched) = unpacked(lying, 1024);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        assert!(
+            refused.to_string().contains("more than 1024 bytes"),
+            "{refused}"
+        );
+    }
+
+    #[test]
+    fn a_declared_size_past_the_bound_is_refused_before_a_byte_is_written() {
+        let (result, fetched) = unpacked(zeros(1025), 1024);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        let written: Vec<_> = std::fs::read_dir(fetched.path()).unwrap().collect();
+        assert!(
+            written.is_empty(),
+            "written before the refusal: {written:?}"
         );
     }
 }
