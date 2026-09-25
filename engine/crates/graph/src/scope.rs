@@ -29,7 +29,9 @@
 //! list and [`Scope::ignoring`] applies it. A taxonomy with no tree beside it,
 //! which is what a taxonomy published as its own repository is, has nothing to
 //! count: [`Scope::tree_is_absent`] says so, and `taxonomy validate` prints a
-//! notice rather than refusing each pattern.
+//! notice rather than refusing each pattern. A directory the root's own
+//! package manifest names under `contents` is the taxonomy's, not a tree
+//! (#1103), which [`tree_directories`] applies.
 
 use crate::anchors::{normalize, Binding, Resolvers};
 use crate::declarations::Declarations;
@@ -213,6 +215,9 @@ impl Scope {
 ///
 /// - the first segment of a taxonomy source in `sources`, the paths the
 ///   resolution read, because the taxonomy is not the tree it describes;
+/// - a name in `own`, the directories the root's own package manifest names
+///   under `contents`, because an authored package source at the root is the
+///   taxonomy too, and an `examples/` it ships as content is its own (#1103);
 /// - a dot-directory, because `.git`, `.github` and an editor's settings sit
 ///   beside a taxonomy published on its own as well as beside a tree;
 /// - a directory git ignores, because a build output is not a tree.
@@ -221,13 +226,19 @@ impl Scope {
 /// a license sit beside a published taxonomy too. A pattern whose root is one
 /// of these directories still makes the tree present, which
 /// [`Scope::tree_is_absent`] decides.
-pub fn tree_directories(base: &Path, sources: &[String], ignored: &Ignored) -> Vec<String> {
+pub fn tree_directories(
+    base: &Path,
+    sources: &[String],
+    own: &[String],
+    ignored: &Ignored,
+) -> Vec<String> {
     let taxonomy: Vec<&str> = sources
         .iter()
         .filter_map(|source| {
             let source = source.trim_start_matches("./");
             source.split_once('/').map(|(first, _)| first)
         })
+        .chain(own.iter().map(String::as_str))
         .collect();
     let Ok(entries) = std::fs::read_dir(base) else {
         return Vec::new();
@@ -458,7 +469,7 @@ mod tests {
         // A tree is there, and no pattern names a root that exists in it.
         let at = tree("absent");
         let over_tree = resolvers(&at);
-        let beside = tree_directories(&at, &[], &none);
+        let beside = tree_directories(&at, &[], &[], &none);
         assert_eq!(beside, ["tools", "tools-old"]);
         for patterns in [&["tool/**"][..], &["engine/**", "site/**", "README.md"]] {
             assert!(
@@ -469,7 +480,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&at);
 
         // The root of a taxonomy published on its own: the taxonomy's own
-        // sources, dot-directories, top-level files, and a directory git
+        // sources and content directories, dot-directories, top-level files, and a directory git
         // ignores.
         let bare =
             std::env::temp_dir().join(format!("headwater-graph-scope-{}-bare", std::process::id()));
@@ -485,14 +496,20 @@ mod tests {
             std::fs::create_dir_all(path.parent().expect("a parent")).expect("the root is made");
             std::fs::write(path, "").expect("the file writes");
         }
-        let sources = vec![
-            ".headwater/overlay.yml".to_string(),
-            "bundles/one/bundle.yml".to_string(),
-        ];
+        // The sources `validate` reads sit under `.headwater/`, and `bundles/`
+        // is a directory the root's own manifest names under `contents`
+        // (#1103).
+        let sources = vec![".headwater/overlay.yml".to_string()];
+        let own = vec!["bundles".to_string()];
         let ignored = Ignored {
             entries: vec!["build/".to_string()],
         };
-        let beside = tree_directories(&bare, &sources, &ignored);
+        assert_eq!(
+            tree_directories(&bare, &sources, &[], &ignored),
+            ["bundles"],
+            "a directory no manifest names is a tree"
+        );
+        let beside = tree_directories(&bare, &sources, &own, &ignored);
         assert!(beside.is_empty(), "{beside:?}");
         let over_bare = resolvers(&bare);
         assert!(scope(&["tool/**"]).tree_is_absent(&over_bare, &beside));
@@ -504,7 +521,7 @@ mod tests {
             "no scope claims no tree"
         );
         // One directory that is not the taxonomy's makes a tree.
-        assert_eq!(tree_directories(&bare, &sources, &none), ["build"]);
+        assert_eq!(tree_directories(&bare, &sources, &own, &none), ["build"]);
         let _ = std::fs::remove_dir_all(&bare);
     }
 }

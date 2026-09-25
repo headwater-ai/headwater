@@ -634,3 +634,102 @@ fn validate_refuses_every_scope_pattern_beside_a_tree_that_none_of_them_matches(
         );
     }
 }
+
+/// The root of an authored package source that sits beside its own vendored
+/// copy: every entry of this repository's `taxonomy-source/headwater-standard`,
+/// copied to the top of a root that holds the taxonomy and nothing else. Its
+/// `assemblies/` and `doctrine/` are what its `package.yml` names under
+/// `contents`, so they are the taxonomy's own and not a tree (#1103).
+fn authored_source_root(label: &str) -> Root {
+    let root = Root::copy_only(label);
+    std::fs::remove_dir_all(root.at.join("docs")).expect("the copied docs go");
+    copy(
+        &repository().join("taxonomy-source/headwater-standard"),
+        &root.at,
+    );
+    for own in ["package.yml", "assemblies", "doctrine"] {
+        assert!(root.at.join(own).exists(), "the source ships {own}");
+    }
+    root
+}
+
+/// The one `governed scope` line a run printed, held to be the notice.
+fn assert_no_tree_notice(ran: &Ran) {
+    let notices: Vec<&str> = ran
+        .out
+        .lines()
+        .filter(|line| line.contains("governed scope"))
+        .collect();
+    assert_eq!(notices.len(), 1, "{ran:?}");
+    assert!(notices[0].contains("no tree"), "{notices:?}");
+    assert!(notices[0].contains("skipped"), "{notices:?}");
+    assert!(!ran.err.contains("matches no entry"), "{ran:?}");
+}
+
+/// A directory the root's package manifest names under `contents` is the
+/// taxonomy's own, so an authored package source at the root is a root with no
+/// tree beside it (#1103). Before, `assemblies/` and `doctrine/` counted as a
+/// tree, and every one of the seven patterns was refused.
+#[test]
+fn validate_gives_the_no_tree_notice_at_an_authored_package_source_beside_its_vendored_copy() {
+    let root = authored_source_root("scope-authored-source");
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert_no_tree_notice(&ran);
+}
+
+/// `examples/` is a tree unless the manifest names it under `contents`
+/// (#1103, Done-when 2). No list of names decides it, only the manifest.
+#[test]
+fn validate_counts_an_examples_directory_as_a_tree_unless_the_manifest_names_it() {
+    let root = authored_source_root("scope-examples");
+    let example = root.at.join("examples/x/a.md");
+    std::fs::create_dir_all(example.parent().expect("it has a parent"))
+        .expect("the examples directory is there");
+    std::fs::write(&example, "").expect("the example writes");
+
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(!ran.out.contains("no tree beside"), "{ran:?}");
+    assert_eq!(ran.err.matches("matches no entry").count(), 7, "{ran:?}");
+
+    let manifest = root.at.join("package.yml");
+    let text = std::fs::read_to_string(&manifest).expect("the manifest reads");
+    let anchor = "  doctrine: doctrine/\n";
+    assert!(text.contains(anchor), "the manifest still ships doctrine/");
+    std::fs::write(
+        &manifest,
+        text.replacen(anchor, &format!("{anchor}  examples: examples/\n"), 1),
+    )
+    .expect("the manifest writes");
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert_no_tree_notice(&ran);
+}
+
+/// The manifest does not hide a real tree. A `tools/` directory the manifest
+/// does not name is a tree, so a misspelled pattern beside it is refused.
+#[test]
+fn validate_refuses_a_misspelled_pattern_beside_a_tree_the_manifest_does_not_name() {
+    let root = authored_source_root("scope-authored-tree");
+    std::fs::create_dir_all(root.at.join("tools")).expect("the tools directory is there");
+    std::fs::write(root.at.join("tools/stub"), "").expect("the tool writes");
+    let overlay = root.at.join(".headwater/overlay.yml");
+    let text = std::fs::read_to_string(&overlay).expect("the overlay reads");
+    let anchor = "    - site/**\n";
+    assert!(text.contains(anchor), "the overlay still declares site/**");
+    std::fs::write(
+        &overlay,
+        text.replacen(anchor, &format!("{anchor}    - nowhere/**\n"), 1),
+    )
+    .expect("the overlay writes");
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(!ran.out.contains("no tree beside"), "{ran:?}");
+    assert!(
+        ran.err
+            .contains("governed scope pattern `nowhere/**` matches no entry"),
+        "{ran:?}"
+    );
+    assert!(!ran.err.contains("`tools/**` matches no entry"), "{ran:?}");
+}
