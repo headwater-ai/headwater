@@ -995,7 +995,8 @@ struct Attributes {
 /// one**, the root-file reader answers, and [`Population::refused`] carries
 /// what git printed or why it did not run, so the report says which reader
 /// answered and the verb exits 1. A tree with a `.git` entry above it is a
-/// repository even when git is not on `PATH`.
+/// repository even when git is not on `PATH`, or when git runs and cannot
+/// find it (a distrusted owner, a pruned linked worktree).
 fn attributes_of(root: &Path, files: &[String]) -> Attributes {
     let declarations = declarations(root);
     let mut candidates: Vec<String> = files.to_vec();

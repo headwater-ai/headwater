@@ -39,7 +39,7 @@ The verb reads the tree. It also asks git two questions about the tree: which pa
 
 The verb asks about a literal path of the root file without its leading `/`, because git refuses a path that begins with one. It does not ask about a path that climbs out of the tree through `..`. Git refuses that path too, and a pattern that names it matches no file of the tree.
 
-**Where git does not answer the question inside a repository, the report says so.** Git does not answer when it refuses the question. It also does not answer when it does not run, for example because it is not on the `PATH`. Where git does not run, a `.git` entry in the root or in a directory above it shows that the tree is in a repository. A linked worktree holds a `.git` file, and the verb counts it as a `.git` entry. The verb then uses the root-file reader for the whole tree. The report prints what git printed, or why git did not run. It states that nested files, `info/attributes` and `core.attributesFile` were not read. It also names each nested `.gitattributes` that the walk finds, as it does outside a repository. The verb exits 1.
+**Where git does not answer the question inside a repository, the report says so.** Git does not answer when it refuses the question. It also does not answer when it does not run, for example because it is not on the `PATH`. The third case is git that runs but cannot tell whether the tree is a work tree. Git that distrusts the owner of the repository fails in this way, and so does a linked worktree whose git directory was removed. In the last two cases, a `.git` entry in the root or in a directory above it shows that the tree is in a repository. A linked worktree holds a `.git` file, and the verb counts it as a `.git` entry. With no `.git` entry, the tree is not in a repository, and no refusal occurs. The verb then uses the root-file reader for the whole tree. The report prints what git printed, or why git did not run. It states that nested files, `info/attributes` and `core.attributesFile` were not read. It also names each nested `.gitattributes` that the walk finds, as it does outside a repository. The verb exits 1.
 
 **Outside a git repository, the verb reads the root `.gitattributes` alone.** It reads that file as a list of literal paths. A leading `/` of a line anchors the pattern to the root and is not part of the path, so this reader also removes it. The reader does not expand a pattern, and the report names each pattern that carries a merge attribute. The reader does not read a nested `.gitattributes`. The report names each nested file that the walk finds, under its own heading, and the verb exits 1. A nested file can set or unset a merge attribute. A report that passed over it would state agreement for a layout that the verb did not read. No merge reads the attributes of such a tree, so this reader is for a tree that is not a repository yet.
 
@@ -92,7 +92,7 @@ Three rules give the shape, and they are read in this order:
 
 ## Preconditions
 
-Inside a git repository, the `git` executable must be on the `PATH`. The verb already needs it to read the ignore rules. Where git does not run inside a repository, the verb does not read the tree as a tree with no repository. It reports that git did not run, and it exits 1. A repository with no file that declares `-merge` or `merge=headwater-regenerate` reports every producer output as undeclared.
+Inside a git repository, the `git` executable must be on the `PATH`. The verb already needs it to read the ignore rules. Git can fail to run inside a repository, or it can run and not find the repository. In both cases the verb does not read the tree as a tree with no repository. It reports what went wrong, and it exits 1. A repository with no file that declares `-merge` or `merge=headwater-regenerate` reports every producer output as undeclared.
 
 Outside a git repository, the root must hold a readable `.gitattributes`. A root without one reports every producer output as undeclared.
 
@@ -112,7 +112,7 @@ The verb takes no option of its own. It computes one answer about one tree, and 
 
 **0** means that the computed set and the declared set agree, and that every reported path carries the merge attribute its shape takes.
 
-**1** means that at least one of those disagrees. Five things give this status. A producer output carries no attribute. A declared path has no producer. A shape carries an attribute that is not its treatment. Outside a git repository, a merge attribute is one this verb cannot read. Inside one, git did not give the merge attributes, because it refused or because it did not run. The report prints the whole answer, on standard output, under either status.
+**1** means that at least one of those disagrees. Five things give this status. A producer output carries no attribute. A declared path has no producer. A shape carries an attribute that is not its treatment. Outside a git repository, a merge attribute is one this verb cannot read. Inside one, git did not give the merge attributes, because it refused, did not run, or could not find the repository. The report prints the whole answer, on standard output, under either status.
 
 ## Environment
 

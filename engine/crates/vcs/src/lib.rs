@@ -282,6 +282,12 @@ pub fn ignored(root: &Path) -> Vec<String> {
 /// holds. Git that is not on `PATH` cannot say whether a tree is a work tree,
 /// but a `.git` entry says there is a repository whose attribute files only git
 /// reads. With no `.git` entry and no git, the answer is still `None`.
+///
+/// The same holds where git runs and `git rev-parse` fails under a `.git`
+/// entry: git that distrusts the owner of the repository ("dubious
+/// ownership"), or a linked worktree whose git directory was pruned. The
+/// error carries what git printed. A failed question with no `.git` entry
+/// above `root` is a tree git does not see, and the answer is `None`.
 pub fn merge_attributes(
     root: &Path,
     paths: &[String],
@@ -297,7 +303,15 @@ pub fn merge_attributes(
             return holds_a_git_entry(root).then(|| Err(format!("git did not run: {error}")));
         }
     };
-    if !inside.status.success() || String::from_utf8_lossy(&inside.stdout).trim() != "true" {
+    if !inside.status.success() {
+        return holds_a_git_entry(root).then(|| {
+            Err(format!(
+                "git did not answer whether this is a work tree: {}",
+                String::from_utf8_lossy(&inside.stderr).trim()
+            ))
+        });
+    }
+    if String::from_utf8_lossy(&inside.stdout).trim() != "true" {
         return None;
     }
     let mut input = Vec::new();
