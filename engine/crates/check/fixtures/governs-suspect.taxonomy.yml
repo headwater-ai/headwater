@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The smallest shape that exercises `relation.target.suspect` over a `governs`
+# edge whose target is a path in the source tree (#952). One kind, whose
+# `governs` reaches a `code_path` anchor that `source-tree` resolves, and whose
+# `last_verified` carries the freshness role the rule reads to decide whether a
+# fix may record a digest.
+#
+# `tests/governs_suspect.rs` builds its corpus in a scratch directory rather
+# than holding one here, because every case edits the bytes of a governed file
+# and a digest that the test did not compute from those bytes proves nothing.
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft,   role: initial}
+      - {value: current, role: live}
+      - {value: retired, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  last_verified:
+    role: freshness
+    type: date
+    required: true
+  summary:
+    role: scent
+    required: true
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [retired]}
+
+identifier_schemes:
+  fixture_id: {pattern: "GS-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+anchors:
+  code_path: {resolver: source-tree}
+
+kinds:
+  governing_fixture:
+    identifier: {scheme: fixture_id}
+    lifecycle: standard
+    facets: {require: [status, status_since, last_verified, summary]}
+
+relations:
+  governs:
+    family: governance
+    from: [governing_fixture]
+    to:   [code_path]
+    cardinality: many
+    created_by: hook
+    attributes:
+      verified_revision: {type: string, owner: edge}
+
+shelves:
+  governing_fixtures:
+    path: governs-suspect/**
+    homogeneous: true
+    kind: governing_fixture

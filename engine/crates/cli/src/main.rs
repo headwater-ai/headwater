@@ -817,12 +817,63 @@ fn validate(root: &Path) -> ExitCode {
     );
     print!("{}", headwater_resolve::rules::render(mode));
 
-    if findings.is_empty() {
+    // The first refusal of this verb that reads the tree (#951). A governed
+    // scope pattern that matches no entry is a claim about nothing, so it is
+    // refused here, through the anchor kind's own resolver: "matches an entry"
+    // means for a scope what it means for an anchor.
+    //
+    // Two owner rulings of 2026-09-25 bound it. A taxonomy with no tree beside
+    // it, as one published as its own repository has, skips the count with a
+    // one-line notice instead of refusing every pattern. And the count leaves
+    // out what git ignores, so a cache on one host is not an entry.
+    let (unmatched, notice) = match Declarations::read(&repository.resolution.taxonomy) {
+        Ok(declarations) => {
+            let consumer = &repository.consumer;
+            let corpus = Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions);
+            let resolvers = headwater_graph::anchors::Resolvers::over(&corpus);
+            let scope = headwater_graph::scope::Scope::declared(&declarations);
+            let ignored = headwater_graph::scope::Ignored::read(&corpus.base);
+            let beside = headwater_graph::scope::tree_directories(
+                &corpus.base,
+                &repository.resolution.sources,
+                &ignored,
+            );
+            if scope.tree_is_absent(&resolvers, &beside) {
+                let count = scope.members.len();
+                let noun = if count == 1 { "pattern" } else { "patterns" };
+                (
+                    Vec::new(),
+                    Some(format!(
+                        "governed scope: no tree beside this taxonomy, so the coverage count of \
+                         its {count} {noun} is skipped"
+                    )),
+                )
+            } else {
+                (scope.ignoring(ignored).unmatched(&resolvers), None)
+            }
+        }
+        Err(_) => (Vec::new(), None),
+    };
+    if let Some(notice) = notice {
+        println!("\n{notice}");
+    }
+
+    if findings.is_empty() && unmatched.is_empty() {
         println!("\n{} is valid", repository.consumer.package);
         return ExitCode::SUCCESS;
     }
     println!("\n{} is not valid", repository.consumer.package);
-    eprint!("{}", indent(&err(&render_errors(&findings))));
+    if !findings.is_empty() {
+        eprint!("{}", indent(&err(&render_errors(&findings))));
+    }
+    for (pattern, why) in &unmatched {
+        eprintln!(
+            "  {}",
+            err(&format!(
+                "governed scope pattern `{pattern}` matches no entry of the tree: {why}"
+            ))
+        );
+    }
     advise(root, &repository.consumer);
     ExitCode::FAILURE
 }
@@ -1229,6 +1280,17 @@ fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
         }
     };
 
+    // `Graph::build` counts the governed scope with nothing ignored, because
+    // spec 12 keeps git off the check loop that builds it. This verb is not on
+    // that loop, so it drops what git ignores here (#951, owner ruling
+    // 2026-09-25): a local audit and a CI audit count one tree.
+    let mut graph = loaded.graph;
+    if !graph.scope.is_empty() {
+        let ignored = headwater_graph::scope::Ignored::read(root);
+        for reach in &mut graph.scope {
+            reach.retain_unignored(&ignored);
+        }
+    }
     let audit = headwater_audit::take(
         headwater_audit::Subject {
             package: loaded.bound.package.clone(),
@@ -1237,7 +1299,7 @@ fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
             now: context.now(),
         },
         &loaded.census,
-        &loaded.graph,
+        &graph,
         &loaded.taxonomy,
         &loaded.shape,
         &loaded.relations,

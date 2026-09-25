@@ -8,9 +8,10 @@
 //! no relation declares and a rate over an empty population, and both are
 //! written out in words rather than printed as a zero.
 
-use crate::Audit;
+use crate::{Audit, Finding};
 use headwater_check::filled;
 use headwater_check::paint::{paint, ColorMode, Role};
+use std::collections::BTreeMap;
 use std::fmt::Write;
 
 /// A token painted into text that is already folded.
@@ -53,6 +54,7 @@ impl Audit {
         let mut out = String::new();
         self.header(&mut out, mode);
         self.creators_section(&mut out, mode);
+        self.scope_section(&mut out, mode);
         self.families_section(&mut out, mode);
         self.facets_section(&mut out, mode);
         self.shelves_section(&mut out, mode);
@@ -106,6 +108,13 @@ impl Audit {
             ),
         }
 
+        if !self.scope.is_empty() {
+            out.push_str(
+                "  A governed scope is declared as well. It is an expectation rather than a bar,\n  \
+                 and each of its patterns with an entry no edge reaches is one advisory finding.\n",
+            );
+        }
+
         let findings = self.findings();
         match findings.is_empty() {
             true => {
@@ -117,13 +126,84 @@ impl Audit {
             }
             false => {
                 let _ = writeln!(out, "\n{}", paint(Role::Heading, "findings", mode));
-                for reading in findings {
-                    let _ = writeln!(
-                        out,
-                        "  `{}` has {} of {} halves on a document past the declared window",
-                        reading.name, reading.expired, reading.halves
-                    );
+                for finding in findings {
+                    match finding {
+                        Finding::Stale(reading) => {
+                            let _ = writeln!(
+                                out,
+                                "  `{}` has {} of {} halves on a document past the declared window",
+                                reading.name, reading.expired, reading.halves
+                            );
+                        }
+                        Finding::Ungoverned(reading) => {
+                            let _ = writeln!(
+                                out,
+                                "  `{}` has {} of {} entries that no edge governs",
+                                reading.pattern,
+                                reading.entries.len() - reading.governed,
+                                reading.entries.len()
+                            );
+                        }
+                    }
                 }
+            }
+        }
+    }
+
+    fn scope_section(&self, out: &mut String, mode: ColorMode) {
+        let _ = writeln!(
+            out,
+            "\n{}",
+            paint(
+                Role::Heading,
+                "the governed scope, and what reaches it",
+                mode
+            )
+        );
+        if self.scope.is_empty() {
+            out.push_str(
+                "  no anchor kind declares a governed scope, so the tree side of `governs` has no\n  \
+                 denominator here. `anchors.<kind>.scope` declares one.\n",
+            );
+            return;
+        }
+        out.push_str(
+            "  The share of the entries each pattern admits that a `governance` edge reaches.\n  \
+             It is computed on every run and committed nowhere.\n",
+        );
+        for reading in &self.scope {
+            let governed = match reading.fraction() {
+                Some(rate) => format!("{rate:.1}% governed"),
+                None => "no entry, which `taxonomy validate` refuses".to_string(),
+            };
+            let _ = writeln!(
+                out,
+                "  {:<32} {:>4} in scope, {:>4} governed, {governed}",
+                format!("`{}`", reading.pattern),
+                reading.entries.len(),
+                reading.governed
+            );
+            for path in reading.ungoverned() {
+                let _ = writeln!(out, "      ungoverned {path}");
+            }
+        }
+        // An entry two patterns admit is one entry of the tree, so the total
+        // is over the union rather than a sum of the rows above.
+        let mut union: BTreeMap<&str, bool> = BTreeMap::new();
+        for reading in &self.scope {
+            for (path, governed) in &reading.entries {
+                union.insert(path.as_str(), *governed);
+            }
+        }
+        let governed = union.values().filter(|governed| **governed).count();
+        match union.len() {
+            0 => out.push_str("  in total, no entry is in scope\n"),
+            total => {
+                let _ = writeln!(
+                    out,
+                    "  in total {governed} of {total} entries in scope are governed, {:.1}%",
+                    100.0 * governed as f64 / total as f64
+                );
             }
         }
     }

@@ -21,6 +21,11 @@ headwater-doc = { workspace = true }
 # reports at the line that declared it.
 headwater-yaml = { workspace = true }
 
+# A `source-tree` anchor reports a digest of the bytes it matched, so that a
+# `governs` edge can go suspect when they change (#952). One digest function
+# serves every artifact of this engine, and this is it.
+headwater-hash = { workspace = true }
+
 # `core.requires` is where `lifecycle_sensitive` is declared, and this crate
 # reads the flag onto the relations of the family a requirement names. The
 # resolver owns the meaning of a core requirement, so the join is made by
@@ -34,6 +39,13 @@ headwater-resolve = { workspace = true }
 # shelf and exclusion patterns, so this is not a new construct in the
 # workspace, only a new crate reaching for one that already exists.
 headwater-meta = { workspace = true }
+
+# A governed scope counts only files git does not ignore (#951, owner ruling
+# 2026-09-25), so a local audit and a CI audit agree. `scope::Ignored::read` is
+# the one call, and only `taxonomy validate` and `taxonomy audit` make it.
+# `Graph::build` never does: spec 12 keeps every version control command off
+# the check, gate and probe loop.
+headwater-vcs = { workspace = true }
 
 [lints]
 workspace = true

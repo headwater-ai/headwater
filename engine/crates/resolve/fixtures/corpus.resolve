@@ -1,4 +1,4 @@
-headwater/standard 4.5.0
+headwater/standard 4.6.1
 
 sources, in application order
   .headwater/packages/headwater-standard/taxonomy.yml
@@ -89,6 +89,7 @@ operations
   add.kinds.acceptance_criterion (.headwater/overlay.yml)
   add.kinds.verification (.headwater/overlay.yml)
   add.anchors.check_rule (.headwater/overlay.yml)
+  add.anchors.code_path.scope (.headwater/overlay.yml)
   add.anchors.test_site (.headwater/overlay.yml)
   add.relations.verified_by (.headwater/overlay.yml)
   add.relations.proven_by (.headwater/overlay.yml)
@@ -98,21 +99,25 @@ operations
   add.identifier_schemes.process_decision_id (.headwater/overlay.yml)
   add.kinds.process_decision (.headwater/overlay.yml)
   add.shelves.process_decisions (.headwater/overlay.yml)
+  add.identifier_schemes.library_doctrine_id (.headwater/overlay.yml)
+  add.kinds.library_doctrine (.headwater/overlay.yml)
+  add.shelves.library_doctrine (.headwater/overlay.yml)
+  add.shelves.library_index (.headwater/overlay.yml)
   add.surface (.headwater/overlay.yml)
   add_to.projections (.headwater/overlay.yml)
 
 declarations, by member count
   taxonomy: headwater/standard
-  version: 4.5.0
+  version: 4.6.1
   purposes: 6 members
   vocabularies: 1 member
   facets: 14 members
   regimes: 3 members
   anchors: 3 members
-  kinds: 20 members
+  kinds: 21 members
   relations: 13 members
-  shelves: 16 members
-  identifier_schemes: 16 members
+  shelves: 18 members
+  identifier_schemes: 17 members
   core: 1 member
   projections: 8 items
   obligations: 36 members

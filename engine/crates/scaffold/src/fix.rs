@@ -363,7 +363,13 @@ fn one_file(root: &Path, path: &str, patches: &[&Patch]) -> Result<Option<Fixed>
 fn halves_of(path: &str, patches: &[&Patch]) -> Vec<Half> {
     let mut out: Vec<Half> = Vec::new();
     for patch in patches {
-        let Patch::Half { relation, id, .. } = patch else {
+        let Patch::Half {
+            relation,
+            id,
+            attributes,
+            ..
+        } = patch
+        else {
             continue;
         };
         if out
@@ -376,7 +382,7 @@ fn halves_of(path: &str, patches: &[&Patch]) -> Vec<Half> {
             path: path.to_string(),
             relation: relation.clone(),
             id: id.clone(),
-            attributes: Vec::new(),
+            attributes: attributes.clone(),
         });
     }
     out
@@ -739,10 +745,63 @@ mod tests {
                 path: "b.md".to_string(),
                 relation: "cited_by".to_string(),
                 id: "D-1".to_string(),
+                attributes: Vec::new(),
             }],
         );
         assert!(composed.refused.is_empty(), "{:?}", composed.refused);
         assert!(composed.files[0].text.contains("  cited_by:\n    - D-1\n"));
+    }
+
+    /// A half with an attribute over a bare entry that names the same target
+    /// replaces that entry with the mapping form, and reads it back. This is
+    /// the patch `headwater_check::suspect` offers to record a digest (#952).
+    #[test]
+    fn a_half_with_an_attribute_turns_a_bare_entry_into_the_mapping_form() {
+        let source = "---\nid: D-2\nrelations:\n  governs:\n    - .githooks/pre-commit\n    - engine/README.md\n---\n\n# Two\n\nWords.\n";
+        let dir = tree(&[("b.md", source)]);
+        let composed = compose(
+            dir.path(),
+            &[Patch::Half {
+                path: "b.md".to_string(),
+                relation: "governs".to_string(),
+                id: ".githooks/pre-commit".to_string(),
+                attributes: vec![("verified_revision".to_string(), "sha256:ab".to_string())],
+            }],
+        );
+        assert!(composed.refused.is_empty(), "{:?}", composed.refused);
+        assert_eq!(
+            composed.files[0].text,
+            "---\nid: D-2\nrelations:\n  governs:\n    - to: .githooks/pre-commit\n      verified_revision: sha256:ab\n    - engine/README.md\n---\n\n# Two\n\nWords.\n"
+        );
+    }
+
+    /// A recorded digest that moved is replaced in place, and the entry keeps
+    /// the attributes the patch carries beside it.
+    #[test]
+    fn a_half_with_an_attribute_replaces_the_value_an_entry_already_holds() {
+        let source = "---\nid: D-2\nrelations:\n  governs:\n    - to: .githooks/pre-commit\n      cue: the gate\n      verified_revision: sha256:old\n---\n\n# Two\n\nWords.\n";
+        let dir = tree(&[("b.md", source)]);
+        let composed = compose(
+            dir.path(),
+            &[Patch::Half {
+                path: "b.md".to_string(),
+                relation: "governs".to_string(),
+                id: ".githooks/pre-commit".to_string(),
+                attributes: vec![
+                    ("cue".to_string(), "the gate".to_string()),
+                    ("verified_revision".to_string(), "sha256:new".to_string()),
+                ],
+            }],
+        );
+        assert!(composed.refused.is_empty(), "{:?}", composed.refused);
+        let text = &composed.files[0].text;
+        assert!(
+            text.contains("      verified_revision: sha256:new\n"),
+            "{text}"
+        );
+        assert!(text.contains("      cue: the gate\n"), "{text}");
+        assert!(!text.contains("sha256:old"), "{text}");
+        assert_eq!(text.matches(".githooks/pre-commit").count(), 1, "{text}");
     }
 
     /// The same half asked for twice writes it once. Two documents can each
@@ -755,6 +814,7 @@ mod tests {
             path: "b.md".to_string(),
             relation: "cited_by".to_string(),
             id: "D-1".to_string(),
+            attributes: Vec::new(),
         };
         let composed = compose(dir.path(), &[half.clone(), half]);
         assert!(composed.refused.is_empty(), "{:?}", composed.refused);

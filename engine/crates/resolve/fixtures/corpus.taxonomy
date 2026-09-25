@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.5.0
+version: 4.6.1
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -270,6 +270,14 @@ regimes:
 anchors:
   code_path:
     resolver: source-tree
+    scope:
+      - "engine/crates/**/src/**/*.rs"
+      - ".githooks/**"
+      - ".claude/hooks/**"
+      - ".claude/agents/**"
+      - ".claude/skills/**"
+      - "tools/**"
+      - "site/**"
   check_rule:
     resolver: check-rule
   test_site:
@@ -410,6 +418,14 @@ kinds:
         - Environment
         - Files
         - "See also"
+    voice: declarative
+  library_doctrine:
+    identifier:
+      scheme: library_doctrine_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: rationale
     voice: declarative
   obligation_record:
     facets:
@@ -609,6 +625,10 @@ relations:
       - code_path
     cardinality: many
     created_by: hook
+    attributes:
+      verified_revision:
+        type: string
+        owner: edge
   constrains:
     family: governance
     from:
@@ -751,6 +771,16 @@ shelves:
     kind: interface_contract
     path: "docs/interfaces/**"
     title: "The command surface"
+  library_doctrine:
+    homogeneous: true
+    kind: library_doctrine
+    path: "docs/taxonomies/*/doctrine.md"
+    title: "The canonical taxonomy library"
+  library_index:
+    homogeneous: true
+    kind: library_doctrine
+    path: docs/taxonomies/README.md
+    title: "The library index"
   obligations:
     homogeneous: true
     kind: obligation_record
@@ -834,6 +864,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "{namespace}-IFACE-{slug}"
+  library_doctrine_id:
+    allocation: minted-once
+    namespace: HW
+    pattern: "{namespace}-LIB-{slug}"
   obligation_record_id:
     allocation: reconcile-first
     namespace: HW
@@ -996,7 +1030,7 @@ obligations:
     prevents: content.inconsistent
     severity: high
   OB-REL-6:
-    statement: "An edge an import wrote names its upstream item at the revision the edge was verified against"
+    statement: "An edge whose target a resolver states a revision for names that target at the revision the edge was verified against"
     rationale: "An upstream item moves under an edge that nobody touched, so the corpus keeps asserting a claim that was checked against a state the far end has left. The pin says the snapshot advanced and says nothing about which document now carries a stale claim, and the author who could re-verify the edge is the one person the advance never reaches"
     class: cohesion
     prevents: content.inconsistent

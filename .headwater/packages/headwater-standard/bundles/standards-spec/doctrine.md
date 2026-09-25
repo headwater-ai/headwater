@@ -1,3 +1,12 @@
+---
+id: HW-LIB-standards-spec
+status: current
+status_since: 2026-09-08
+summary: "Why the standards-spec entry types the internal-standard ladder: a standard that binds many components, and a functional and a technical specification for each one."
+last_verified: 2026-09-24
+title: "The standards-spec taxonomy"
+---
+
 # The standards-spec taxonomy
 
 The internal-standard ladder. A standard binds many components. A functional specification states what one component does, and a technical specification states how that component is realized.

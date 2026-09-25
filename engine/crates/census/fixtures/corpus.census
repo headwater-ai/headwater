@@ -847,331 +847,331 @@ docs/spec/README.md
 docs/spec/glossary.md
   typed: design_spec
 docs/taxonomies/README.md
-  excluded: docs/taxonomies/**
+  typed: library_doctrine
 docs/taxonomies/brd-prd/bundle.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/bundle.yml
 docs/taxonomies/brd-prd/doctrine.md
-  excluded: docs/taxonomies/**
+  typed: library_doctrine
 docs/taxonomies/brd-prd/fixtures/README.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/delivery-slo/brd.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/delivery-slo/prd.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/self-serve-onboarding/brd.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/self-serve-onboarding/prd.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/tenant-billing/brd.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/webhook-replay/brd.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/webhook-replay/prd.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/brd-prd/templates/brd.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/brd-prd/templates/prd.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/decision-record/bundle.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/bundle.yml
 docs/taxonomies/decision-record/doctrine.md
-  excluded: docs/taxonomies/**
+  typed: library_doctrine
 docs/taxonomies/decision-record/fixtures/README.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/corpus/docs/decisions/0001-deliver-at-least-once.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/corpus/docs/decisions/0002-store-attempts-in-postgres.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/corpus/docs/decisions/0003-refuse-a-dead-letter-queue.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/corpus/docs/decisions/0004-deliver-exactly-once-per-destination.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/corpus/docs/decisions/0005-partition-by-tenant.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/corpus/docs/decisions/0006-hold-attempt-state-in-redis.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/corpus/docs/evaluations/retry-ceiling-measurement.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/corpus/docs/obligations/0001-window-length-is-unmeasured.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/corpus/docs/obligations/0002-redis-durability-waits-on-an-operator.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/corpus/docs/obligations/0003-integration-guide-states-the-old-guarantee.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/sources/inspect-evals/LICENSE
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0001-eval-metadata-location.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0002-versioning-metadata.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0003-use-huggingface-hub-for-asset-hosting.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0004-no-floating-refs-for-external-assets.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0005-asset-manifest-in-per-eval-config.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0006-manual-upload-workflow-before-automation.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0007-dataset-hosting-escalation-policy.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0008-task-configurability-uses-standard-inspect-layers.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0009-dependency-isolation-for-conflict-heavy-evals.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/sources/inspect-evals/adr/0010-hardened-cross-repo-ci-for-fork-pr-tests.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/fixtures/sources/sysl/root.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/decision-record/templates/decision.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/decision-record/templates/obligation_record.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/design-spec/bundle.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/bundle.yml
 docs/taxonomies/design-spec/doctrine.md
-  excluded: docs/taxonomies/**
+  typed: library_doctrine
 docs/taxonomies/design-spec/fixtures/README.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/corpus/docs/evaluations/naming-survey.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/corpus/docs/evaluations/queue-durability.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/corpus/docs/reviews/first-pass-findings.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/corpus/docs/reviews/first-pass-prompt.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/corpus/docs/reviews/second-pass-prompt.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/corpus/docs/spec/00-motivation.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/corpus/docs/spec/01-model.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/corpus/docs/spec/02-transport.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/corpus/docs/spec/04-transport.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/corpus/docs/spec/09-decisions.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/corpus/docs/spec/13-obligations.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/n8n/.headwater/overlay.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/n8n/.headwater/taxonomy.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/n8n/LICENSE.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/n8n/README.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/n8n/corpus/packages/@n8n/expression-runtime/ARCHITECTURE.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/n8n/corpus/packages/@n8n/instance-ai/docs/architecture.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/n8n/corpus/packages/@n8n/instance-ai/evaluations/ARCHITECTURE.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/fixtures/n8n/corpus/packages/@n8n/local-gateway/docs/ARCHITECTURE_CONNECTION_VS_SETTINGS.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/design-spec/templates/decision_register.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/design-spec/templates/design_spec.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/design-spec/templates/obligation_register.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/design-spec/templates/review_prompt.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/design-spec/templates/review_record.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/diataxis-site/bundle.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/bundle.yml
 docs/taxonomies/diataxis-site/doctrine.md
-  excluded: docs/taxonomies/**
+  typed: library_doctrine
 docs/taxonomies/diataxis-site/fixtures/README.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/corpus/docs/explanations/why-keys-rotate.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/corpus/docs/how-to/rotate-key.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/corpus/docs/reference/api.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/corpus/docs/tutorials/get-started.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/.headwater/overlay.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/.headwater/taxonomy.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/LICENSE.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/README.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/AGENTS.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/community-pr-readiness-check/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/community-pr-readiness-check/reference/checks.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/community-pr-readiness-check/reference/label-flow.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/community-pr-readiness-check/reference/re-review.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/community-pr-readiness-check/reference/teams.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/content-design/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/conventions/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-community-node-lint-rule/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-community-node-lint-rule/reference.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-instance-ai-eval/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-instance-ai-eval/case-shapes.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-instance-ai-eval/running-evals.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-instance-ai-eval/sourcing-cases.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-issue/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-pr/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/create-skill/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/db-migrations/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/design-system/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/design-system/rules/web-animation-guidelines.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/design-system/rules/web-interface-guidelines.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/experiments/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/experiments/reference.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/gh-stack/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/human-like-code-review/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/linear-issue/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/loom-transcript/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/nathan/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/node-add-oauth/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/protect-endpoints/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/public-api/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/public-api/reference.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/reproduce-bug/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/spec-driven-development/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/n8n/corpus/.agents/skills/telemetry/SKILL.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/sources/cockroach/life_of_a_query.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/sources/sysl/best-practices-intro.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/sources/sysl/lang-spec.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/fixtures/sources/sysl/tutorial.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis-site/templates/explanation.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/diataxis-site/templates/how_to.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/diataxis-site/templates/reference.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/diataxis-site/templates/tutorial.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/diataxis/bundle.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/bundle.yml
 docs/taxonomies/diataxis/doctrine.md
-  excluded: docs/taxonomies/**
+  typed: library_doctrine
 docs/taxonomies/diataxis/fixtures/README.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis/fixtures/corpus/docs/decisions/0001-sign-every-payload.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis/fixtures/corpus/docs/specifications/beacon-overview.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis/fixtures/corpus/docs/specifications/getting-started-with-beacon.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis/fixtures/corpus/docs/specifications/publish-a-release.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis/fixtures/corpus/docs/specifications/rotate-a-signing-key.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis/fixtures/corpus/docs/specifications/the-delivery-api.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/diataxis/fixtures/corpus/docs/specifications/why-delivery-is-at-least-once.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/evidence-and-obligation/bundle.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/bundle.yml
 docs/taxonomies/evidence-and-obligation/doctrine.md
-  excluded: docs/taxonomies/**
+  typed: library_doctrine
 docs/taxonomies/evidence-and-obligation/fixtures/README.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/evidence-and-obligation/templates/evaluation.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/standards-spec/bundle.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/bundle.yml
 docs/taxonomies/standards-spec/doctrine.md
-  excluded: docs/taxonomies/**
+  typed: library_doctrine
 docs/taxonomies/standards-spec/fixtures/README.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/corpus/docs/component-specs/delivery/functional.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/corpus/docs/component-specs/delivery/technical.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/corpus/docs/component-specs/ingest/functional.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/corpus/docs/component-specs/signing/functional.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/corpus/docs/component-specs/signing/technical.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/corpus/docs/component-specs/webhooks/functional.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/corpus/docs/standards/api-design.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/corpus/docs/standards/logging-baseline.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/.headwater/overlay.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/.headwater/taxonomy.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/LICENSE.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/README.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/README.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/db-migrations/conventions-and-tests.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/db-migrations/data-safety.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/frontend/design-system.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/qa-dx/workflow-safety.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/security/credentials-and-secrets.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/testing/coverage.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/sweep/briefing.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/sweep/findings.yml
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/fixtures/n8n/sweep/report.txt
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/standards-spec/templates/functional_spec.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/standards-spec/templates/standard.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/standards-spec/templates/technical_spec.md
-  excluded: docs/taxonomies/**
+  excluded: docs/taxonomies/*/templates/**
 docs/tutorials/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/tutorials/your-first-governed-corpus.md

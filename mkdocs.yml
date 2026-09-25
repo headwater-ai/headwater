@@ -128,9 +128,13 @@ theme:
 # The site builds what the corpus types, and nothing else. This list mirrors
 # `.headwater/corpus.json` rather than deciding anything of its own.
 #
-#   taxonomies/  the corpus descriptor already excludes it, as package content.
-#                44 of the documents under it are deliberately defective, so a
+#   taxonomies/*/fixtures/, taxonomies/*/templates/, taxonomies/*/bundle.yml
+#                the corpus descriptor excludes all three, as package content.
+#                44 of the fixture documents are deliberately defective, so a
 #                site that published them would be teaching the wrong thing.
+#                A template is placeholders, and a bundle manifest is not
+#                prose. The doctrine of each entry and the library index are
+#                typed `library_doctrine` since #350, so the site serves them.
 #   doctrine/    `doctrine/maturity-model.md` is on no shelf. A file the corpus
 #   w3id/        does not type has no title the projection can label it with
 #                and no precedence it can order it by. `w3id/README.md` also
@@ -152,7 +156,9 @@ theme:
 # So a directory added here still has to earn its place on the four reasons
 # above, and a directory taken off this list has to reach the nav instead.
 exclude_docs: |
-  taxonomies/
+  taxonomies/*/fixtures/
+  taxonomies/*/templates/
+  taxonomies/*/bundle.yml
   doctrine/
   w3id/
   LICENSE

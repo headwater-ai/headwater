@@ -862,6 +862,13 @@ jobs:
         #   each of them current, so an eleventh shelf is covered by the push
         #   that adds it and nobody has to remember this step exists.
         #
+        #   A shelf's served root is the literal directory its path names
+        #   before the first glob segment or the file name: `docs/spec/**`
+        #   serves `/spec/`, and both library shelves of #350,
+        #   `docs/taxonomies/*/doctrine.md` and `docs/taxonomies/README.md`,
+        #   serve `/taxonomies/`. A shelf with no literal directory under the
+        #   corpus root maps to nothing, and the step refuses it by name.
+        #
         #   It asserts that `<shelf>/index.html` is a file, and never that a
         #   request answers 200. `python3 -m http.server` generates a
         #   directory listing where no `index.html` is, so a local `curl` of
@@ -895,12 +902,19 @@ jobs:
               prefix = corpus["root"] + "/"
               for entry in corpus["entry_points"]:
                   pattern = shelves[entry["shelf"]]["path"]
-                  if not pattern.startswith(prefix) or not pattern.endswith("/**"):
+                  literal = []
+                  if pattern.startswith(prefix):
+                      segments = pattern[len(prefix):].split("/")
+                      for segment in segments[:-1]:
+                          if any(glob in segment for glob in "*?["):
+                              break
+                          literal.append(segment)
+                  if not literal:
                       sys.exit(
                           "the shelf `%s` is declared at `%s`, which this step cannot map to a "
                           "served root. Read the comment above it." % (entry["shelf"], pattern)
                       )
-                  roots.add(pattern[len(prefix):-3])
+                  roots.add("/".join(literal))
 
           missing = [r for r in sorted(roots) if not os.path.isfile("%s/%s/index.html" % (deploy, r))]
           if missing:
@@ -1673,6 +1687,23 @@ jobs:
         # lock, same injected clock, so the two agree by the same determinism
         # that the cache step below tests.
         run: ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" --format markdown >> "$GITHUB_STEP_SUMMARY"
+      - name: The tree side of governs, into the job summary
+        # #951. The share of each governed-scope pattern's entries that a
+        # `governs` edge reaches, per pattern and in total. It is computed on
+        # every run and committed nowhere (HW-DR-0049), so the summary is where
+        # a reviewer reads it. `taxonomy audit` exits 0 whatever it finds, and
+        # the block is cut out of its report with sed rather than re-rendered.
+        run: |
+          ./engine/target/release/headwater taxonomy audit --now "$HEADWATER_NOW" > audit.txt
+          sed -n '/^the governed scope, and what reaches it$/,/^$/p' audit.txt > scope.txt
+          cat scope.txt
+          {
+            echo '## The governed scope, and what reaches it'
+            echo
+            echo '```'
+            cat scope.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: The SARIF this corpus emits is SARIF
         # The suite in the job above validates the emitter over a fixture tree.
         # This validates it over the corpus an adopter would point it at, which

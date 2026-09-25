@@ -1,4 +1,4 @@
-16 schemes
+17 schemes
 
 decision_id
   pattern    {namespace}-DR-{seq:04d}
@@ -46,6 +46,16 @@ interface_contract_id
   render     HW-IFACE-<slug>
   needs      slug
   mint       HW-IFACE-a-name
+  admits     true
+  sequence   -
+  refuses    false
+
+library_doctrine_id
+  pattern    {namespace}-LIB-{slug}
+  namespace  HW
+  render     HW-LIB-<slug>
+  needs      slug
+  mint       HW-LIB-a-name
   admits     true
   sequence   -
   refuses    false

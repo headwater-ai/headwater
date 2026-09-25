@@ -655,8 +655,9 @@ pub fn run(
         identifier::Identifier::over(declared.shape, &declared.config.identifier_facet);
     let placement = placement::Placement::over(declared.taxonomy);
     let targets = target::Targets::over(declared.relations);
-    // The drift rule, over the relations an importer may write. See [`suspect`].
-    let suspect = suspect::Suspect::over(declared.relations);
+    // The drift rule, over the relations that can carry a revision: the ones
+    // an importer may write, and the ones onto an anchor kind. See [`suspect`].
+    let suspect = suspect::Suspect::over(declared.relations, declared.shape);
     let reciprocity = reciprocity::Reciprocity::over(declared.relations);
     let endpoints = endpoint::Endpoints::over(declared.relations, declared.shape);
     // A live document resting on a terminal one, over the relations whose

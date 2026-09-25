@@ -13,7 +13,7 @@ relations:
   catalogues:
     - AUD-FIX-0004
   governs:
-    - src/audit/reading.rs
+    - app/reading.rs
 ---
 
 # The fresh decision
