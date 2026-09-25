@@ -158,27 +158,26 @@ fn loopback(host: &str) -> bool {
             .is_ok_and(|ip| ip.is_loopback())
 }
 
-/// Download the artifact zip at `location` and unpack it into a new temporary
-/// directory.
-///
-/// # Errors
-///
-/// [`Error::Scheme`] for a location that is neither `https://` nor `http://`
-/// to a loopback host, [`Error::Transport`] for a failed request or an error
-/// status, [`Error::Archive`] for a body that is not a readable zip, and
-/// [`Error::Io`] when the directory cannot be written.
-pub fn fetch(location: &str) -> Result<Fetched, Error> {
+/// What one request answered: a redirect to the target its `Location` header
+/// names, as written, or the response to read.
+enum Hop<T> {
+    Redirect(String),
+    Done(T),
+}
+
+/// Request `location` through `call`, following redirects. Every hop, the
+/// first included, goes through [`allowed`] with the scheme the fetch began
+/// on, so a redirect can neither turn an https fetch into plain http nor send
+/// plain http off this machine. More than [`MAX_REDIRECTS`] redirects is a
+/// refusal, and the target past the cap is never requested.
+fn follow<T>(
+    location: &str,
+    mut call: impl FnMut(&str) -> Result<Hop<T>, Error>,
+) -> Result<T, Error> {
     let started_https = scheme(location) == Some("https");
-    // The client follows no redirect itself. Each hop is read here and put
-    // through the same gate as the first request, so a redirect can neither
-    // turn an https fetch into plain http nor send plain http off this machine.
-    let agent: ureq::Agent = ureq::Agent::config_builder()
-        .max_redirects(0)
-        .build()
-        .into();
     let mut at = location.to_string();
     let mut hops = 0;
-    let mut response = loop {
+    loop {
         if !allowed(started_https, &at) {
             return Err(Error::Scheme(if at == location {
                 format!(
@@ -192,14 +191,45 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
                 )
             }));
         }
+        match call(&at)? {
+            Hop::Done(answer) => return Ok(answer),
+            Hop::Redirect(next) => {
+                hops += 1;
+                if hops > MAX_REDIRECTS {
+                    return Err(Error::Transport(format!(
+                        "{location} redirected more than {MAX_REDIRECTS} times"
+                    )));
+                }
+                at = resolve(&at, &next);
+            }
+        }
+    }
+}
+
+/// Download the artifact zip at `location` and unpack it into a new temporary
+/// directory.
+///
+/// # Errors
+///
+/// [`Error::Scheme`] for a location that is neither `https://` nor `http://`
+/// to a loopback host, [`Error::Transport`] for a failed request or an error
+/// status, [`Error::Archive`] for a body that is not a readable zip, and
+/// [`Error::Io`] when the directory cannot be written.
+pub fn fetch(location: &str) -> Result<Fetched, Error> {
+    // The client follows no redirect itself. `follow` reads each hop and puts
+    // it through the same gate as the first request.
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .max_redirects(0)
+        .build()
+        .into();
+    let mut response = follow(location, |at| {
         let response = agent
-            .get(&at)
+            .get(at)
             .call()
             .map_err(|error| Error::Transport(format!("fetching {at} failed: {error}")))?;
         if !response.status().is_redirection() {
-            break response;
+            return Ok(Hop::Done(response));
         }
-        hops += 1;
         let next = response
             .headers()
             .get("location")
@@ -207,13 +237,8 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
             .ok_or_else(|| {
                 Error::Transport(format!("{at} answered with a redirect and no location"))
             })?;
-        if hops > MAX_REDIRECTS {
-            return Err(Error::Transport(format!(
-                "{location} redirected more than {MAX_REDIRECTS} times"
-            )));
-        }
-        at = resolve(&at, next);
-    };
+        Ok(Hop::Redirect(next.to_string()))
+    })?;
     let body = response
         .body_mut()
         .with_config()
@@ -372,6 +397,63 @@ mod tests {
         let refused = fetch("ftp://127.0.0.1/x.zip").unwrap_err();
         assert!(matches!(refused, Error::Scheme(_)), "{refused}");
         assert!(loopback("127.0.0.1") && loopback("::1") && !loopback("10.0.0.1"));
+    }
+
+    /// Drive [`follow`] from `location` over a transport that answers each
+    /// URL with `answer`, and return the result with every URL requested.
+    fn followed(
+        location: &str,
+        mut answer: impl FnMut(usize, &str) -> Hop<()>,
+    ) -> (Result<(), Error>, Vec<String>) {
+        let mut asked = Vec::new();
+        let result = follow(location, |at| {
+            asked.push(at.to_string());
+            Ok(answer(asked.len(), at))
+        });
+        (result, asked)
+    }
+
+    /// A transport that redirects `count` times, `/0` to `/1` and on, and
+    /// then answers.
+    fn chain(count: usize) -> impl FnMut(usize, &str) -> Hop<()> {
+        move |request, _| {
+            if request <= count {
+                Hop::Redirect(format!("/{request}"))
+            } else {
+                Hop::Done(())
+            }
+        }
+    }
+
+    #[test]
+    fn exactly_max_redirects_are_followed() {
+        let (result, asked) = followed("http://127.0.0.1:9/0", chain(10));
+        result.unwrap();
+        assert_eq!(asked.len(), 11, "{asked:?}");
+        assert_eq!(asked.last().unwrap(), "http://127.0.0.1:9/10");
+    }
+
+    #[test]
+    fn one_redirect_past_max_redirects_is_refused_and_not_requested() {
+        let (result, asked) = followed("http://127.0.0.1:9/0", chain(11));
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Transport(_)), "{refused}");
+        assert!(
+            refused.to_string().contains("redirected more than 10 times"),
+            "{refused}"
+        );
+        assert_eq!(asked.len(), 11, "the eleventh target was requested: {asked:?}");
+    }
+
+    #[test]
+    fn a_fetch_that_began_on_https_is_not_redirected_to_loopback_http() {
+        let (result, asked) = followed("https://objects.example.org/x.zip", |_, _| {
+            Hop::Redirect("http://127.0.0.1/x.zip".to_string())
+        });
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Scheme(_)), "{refused}");
+        assert!(refused.to_string().contains("http://127.0.0.1/x.zip"), "{refused}");
+        assert_eq!(asked, ["https://objects.example.org/x.zip"]);
     }
 
     /// A deflate zip with one member, `zeros.bin`, of `len` zero bytes.
