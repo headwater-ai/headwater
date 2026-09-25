@@ -1,7 +1,8 @@
-593 seen, 412 classified, 412 checked, 8340 check instances
+593 seen, 412 classified, 412 checked, 8344 check instances
      22 generated, held to regeneration by `headwater generate --check`
      23 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
-    309 skipped: the target is a document, which holds no revision for an edge to be verified against
+    310 skipped: the target is a document, which holds no revision for an edge to be verified against
+      1 skipped: the document at the target end, `HW-IFACE-headwater-init`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       3 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-16`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
@@ -21,12 +22,12 @@ adoption
     412 instances of facet.value.blank
     412 instances of identifier.pattern.not_met
     412 instances of shelf.placement_is_primary
-    761 instances of relation.target.unresolved
-    544 instances of relation.target.suspect
+    762 instances of relation.target.unresolved
+    545 instances of relation.target.suspect
      91 instances of relation.reciprocity.missing
-    435 instances of relation.endpoint.not_permitted
+    436 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
-    422 instances of warrant.evidence.unsupported
+    423 instances of warrant.evidence.unsupported
       5 instances of relation.participation.overdue
     412 instances of relation.declaration.unusable
     412 instances of identifier.unusable

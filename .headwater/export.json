@@ -1464,7 +1464,7 @@
           "status": "current",
           "status_since": "2026-09-23",
           "summary": "A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict.",
-          "last_verified": "2026-09-06",
+          "last_verified": "2026-09-25",
           "title": "A corpus-wide fold is derived and never stored",
           "provenance": {
             "warrant": "asserted",
@@ -1475,13 +1475,17 @@
           },
           "relations": {
             "governs": [
-              ".gitattributes"
+              {
+                "to": ".gitattributes",
+                "verified_revision": "sha256:c57eec82fdffb6d8d245700d0f37aedfce83f233b65f81bf960db9de0b28fd71"
+              }
             ],
             "traces_to": [
               "HW-EVAL-what-a-check-can-know",
               "engine/crates/census/src/census.rs",
               "engine/crates/graph/src/lib.rs",
-              ".githooks/merge-regenerate"
+              ".githooks/merge-regenerate",
+              "HW-IFACE-headwater-init"
             ]
           }
         }
@@ -13122,6 +13126,9 @@
           "anchor_kind": "code_path",
           "id": ".gitattributes",
           "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:c57eec82fdffb6d8d245700d0f37aedfce83f233b65f81bf960db9de0b28fd71"
         }
       },
       {
@@ -13166,6 +13173,17 @@
           "anchor_kind": "code_path",
           "id": ".githooks/merge-regenerate",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-IFACE-headwater-init",
+          "path": "docs/interfaces/headwater-init.md",
+          "kind": "interface_contract"
         }
       },
       {
