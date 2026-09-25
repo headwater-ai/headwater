@@ -417,6 +417,51 @@ fn a_moved_wildcard_names_its_pattern_and_its_match_count() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// A file renamed under a governed wildcard, with its bytes unchanged, moves
+/// the digest, because the manifest the digest is taken over holds each
+/// entry's path as well as its bytes (#1104). The new name keeps the sort
+/// order (`lib.sh < main.sh < write.sh`), so a digest over bytes alone would
+/// not move, and this case fails under exactly that mutation.
+///
+/// The recorded digest is the one the rule itself offers, not [`expected`]'s.
+/// A resolver that dropped the paths would then still agree with itself
+/// before the rename, and the case fails at the rename, which is the claim
+/// it holds, rather than at a pinned constant.
+#[test]
+fn a_renamed_file_inside_a_governed_glob_goes_suspect_with_its_bytes_unchanged() {
+    let root = scratch("rename");
+    document(&root, TODAY, &["    - .claude/hooks/*.sh".to_string()]);
+    let first = cold(&root, TODAY);
+    let offered = suspect(&first);
+    assert_eq!(offered.len(), 1, "{offered:?}");
+    let Some(Patch::Half { attributes, .. }) = &offered[0].patch else {
+        panic!("no digest offered: {offered:?}");
+    };
+    let digest = attributes[0].1.clone();
+    document(
+        &root,
+        YESTERDAY,
+        &[format!(
+            "    - to: .claude/hooks/*.sh\n      verified_revision: \"{digest}\""
+        )],
+    );
+    assert!(suspect(&cold(&root, TODAY)).is_empty());
+
+    std::fs::rename(
+        root.join(".claude/hooks/lib.sh"),
+        root.join(".claude/hooks/main.sh"),
+    )
+    .expect("the file renames");
+    let ran = cold(&root, TODAY);
+    let reported = suspect(&ran);
+    assert_eq!(reported.len(), 1, "{reported:?}");
+    assert_eq!(
+        reported[0].severity,
+        headwater_check::finding::Severity::Warn
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
 /// A list entry carries one digest over the union of what its members match,
 /// so it goes suspect when any member's bytes move.
 #[test]
@@ -448,15 +493,50 @@ fn a_list_entry_goes_suspect_when_one_member_moves() {
 /// remedy, whether or not the entry records a revision and whenever its
 /// document was verified. It offers no patch, because the remedy widens what
 /// the edge reaches, and that is the author's decision.
+///
+/// A list member that names a directory is reported the same way (#1104). One
+/// directory member leaves the whole list without a digest, so the list could
+/// never go suspect either. The rule gives one finding per entry, and that
+/// finding names every directory member and no member that is a file.
 #[test]
 fn a_directory_literal_is_reported_with_the_wildcard_as_its_remedy() {
-    for (label, last_verified, entry) in [
+    let none: &[&str] = &[];
+    for (label, last_verified, entry, directories, files) in [
         (
             "directory-recorded",
             TODAY,
             "    - to: .githooks\n      verified_revision: \"sha256:0\"",
+            &[".githooks"][..],
+            none,
         ),
-        ("directory-bare-old", YESTERDAY, "    - .githooks"),
+        (
+            "directory-bare-old",
+            YESTERDAY,
+            "    - .githooks",
+            &[".githooks"][..],
+            none,
+        ),
+        (
+            "directory-list-bare-old",
+            YESTERDAY,
+            "    - [.githooks, .claude/hooks/lib.sh]",
+            &[".githooks"][..],
+            &[".claude/hooks/lib.sh"][..],
+        ),
+        (
+            "directory-list-recorded",
+            TODAY,
+            "    - to: [.githooks, .claude/hooks/lib.sh]\n      verified_revision: \"sha256:0\"",
+            &[".githooks"][..],
+            &[".claude/hooks/lib.sh"][..],
+        ),
+        (
+            "directory-list-two",
+            YESTERDAY,
+            "    - [.githooks, .claude/hooks]",
+            &[".githooks", ".claude/hooks"][..],
+            none,
+        ),
     ] {
         let root = scratch(label);
         document(&root, last_verified, &[entry.to_string()]);
@@ -470,13 +550,28 @@ fn a_directory_literal_is_reported_with_the_wildcard_as_its_remedy() {
         );
         assert_eq!(reported[0].path, DOCUMENT, "{label}");
         let message = &reported[0].message;
-        assert!(message.contains("`.githooks`"), "{label}: {message}");
         assert!(message.contains("directory"), "{label}: {message}");
-        assert!(
-            reported[0].remediation.contains("`.githooks/**`"),
-            "{label}: {}",
-            reported[0].remediation
-        );
+        let remediation = &reported[0].remediation;
+        for directory in directories {
+            assert!(
+                message.contains(&format!("`{directory}`")),
+                "{label}: {message}"
+            );
+            assert!(
+                remediation.contains(&format!("`{directory}/**`")),
+                "{label}: {remediation}"
+            );
+        }
+        for file in files {
+            assert!(
+                !message.contains(&format!("`{file}`")),
+                "{label}: {message}"
+            );
+            assert!(
+                !remediation.contains(&format!("`{file}/**`")),
+                "{label}: {remediation}"
+            );
+        }
         assert!(reported[0].patch.is_none(), "{label}");
         let _ = std::fs::remove_dir_all(&root);
     }

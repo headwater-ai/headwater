@@ -114,7 +114,7 @@
               "properties": {
                 "headwater": {
                   "scope": "edge",
-                  "version": 3,
+                  "version": 4,
                   "obligations": [
                     "OB-FIX-27"
                   ],
