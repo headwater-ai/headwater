@@ -778,9 +778,13 @@ fn shape_of(root: &Path, path: &str, producer: Option<Producer>, blessing: bool)
         // generated file of this repository states a count, and 1058-a
         // measured every one of them merging as text to what the producer
         // writes over the merged tree.
+        //
+        // A file whose marker line is its only line is a projection written
+        // compactly, and one line cannot be one record per entity: any two
+        // edits conflict on it, and the cure is to regenerate (#809).
         Some(Producer::Generate) => {
             let text = std::fs::read_to_string(root.join(path)).ok()?;
-            return Some(match states_a_fold(&text) {
+            return Some(match states_a_fold(&text) || is_one_marked_line(&text) {
                 true => Shape::Fold,
                 false => Shape::RecordPerEntity,
             });
@@ -868,6 +872,15 @@ fn states_a_fold(text: &str) -> bool {
         .filter(|line| !line.contains("headwater:generated") && !line.trim().is_empty())
         .take(2)
         .any(|line| line.starts_with(|c: char| c.is_ascii_digit()) || line.contains("sha256:"))
+}
+
+/// Whether the only line of a file that is not blank is the one that carries the marker.
+fn is_one_marked_line(text: &str) -> bool {
+    let mut lines = text.lines().filter(|line| !line.trim().is_empty());
+    matches!(
+        (lines.next(), lines.next()),
+        (Some(line), None) if line.contains("headwater:generated")
+    )
 }
 
 /// Whether a path lies inside a fixture tree, which is another corpus.

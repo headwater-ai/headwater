@@ -1117,9 +1117,8 @@ fn a_merge_attribute_behind_a_glob_is_reported_rather_than_skipped() {
 /// also matches it, and read first it would call the fold `union`-safe. Swap
 /// the fold and record-stream arms of `shape_of`, and this case fails.
 ///
-/// A generated JSON projection is not planted here. The marker rule reads the
-/// `headwater:generated` key only at the start of a line, and a line of a
-/// record stream starts with `{`, so no generated file can be both.
+/// A generated JSON projection on one line is the third such file, and
+/// `a_generated_json_projection_on_one_line_is_a_fold` holds it.
 #[test]
 fn a_producer_output_whose_every_line_is_a_record_is_a_fold() {
     use headwater_census::derived::{Producer, Shape};
