@@ -142,7 +142,7 @@ echo "  The merge is still in progress and the merged content is already in your
 echo "  working tree, so regenerate there and complete it. This gate runs again"
 echo "  on that commit and passes when the artifacts describe the tree:"
 echo "        headwater generate"
-echo "        headwater taxonomy resolve --write"
+echo "        headwater taxonomy resolve"
 echo "        sh tools/site/refresh-figures.sh"
 echo "        git add -A"
 echo "        git commit"

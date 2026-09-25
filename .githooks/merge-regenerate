@@ -133,7 +133,7 @@ case "$path" in
     fi
     ;;
   .headwater/taxonomy.lock)
-    remedy="headwater taxonomy resolve --write    (CI holds it with: headwater taxonomy resolve --check)"
+    remedy="headwater taxonomy resolve    (CI holds it with: headwater taxonomy resolve --check)"
     ;;
   engine/crates/*/fixtures/*)
     crate=$(printf '%s' "$path" | sed -n 's|engine/crates/\([^/]*\)/fixtures/.*|\1|p')
