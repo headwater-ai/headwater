@@ -352,32 +352,76 @@ fn finds_a_repository(root: &Path) -> bool {
     search_upward(root, &ceilings, across, &device_of)
 }
 
-/// Whether git reads `value` of a boolean environment variable as true.
+/// Whether the search crosses a filesystem boundary, for `value` of
+/// `GIT_DISCOVERY_ACROSS_FILESYSTEM`.
 ///
-/// Git's own rule (`git_config_bool`): `true`, `yes` and `on` in any case are
-/// true, and `false`, `no`, `off` and the empty value are false. Any other
-/// value is an integer as `strtoimax` reads it in base 0, so `0x10` and `010`
-/// are numbers, with an optional `k`, `m` or `g` unit. It is true where it is
-/// not zero. Git refuses a value that is none of these, and this reads it as
-/// false, so the search does not cross a boundary on it.
+/// Where git accepts the value, the answer is git's boolean ([`git_bool`]).
+/// Where git refuses it as a bad boolean, git does not run, and so it says
+/// nothing about a repository. The search then crosses: crossing can only
+/// find more, and a repository found is refused. This is the same choice as
+/// the refusal of a corrupt `HEAD` (ruled on #1115, 2026-09-25).
 fn crosses_filesystems(value: &str) -> bool {
-    let lower = value.to_ascii_lowercase();
-    match lower.as_str() {
-        "true" | "yes" | "on" => return true,
-        "false" | "no" | "off" | "" => return false,
-        _ => {}
+    git_bool(value).unwrap_or(true)
+}
+
+/// A boolean as git reads one (`git_parse_maybe_bool`), or `None` where git
+/// refuses the value.
+///
+/// `true`, `yes` and `on` in any case are true. `false`, `no`, `off` and the
+/// empty value are false. Any other value must be an integer that git's
+/// `int` holds, and it is true where it is not zero ([`git_int`]).
+fn git_bool(value: &str) -> Option<bool> {
+    match value.to_ascii_lowercase().as_str() {
+        "true" | "yes" | "on" => Some(true),
+        "false" | "no" | "off" | "" => Some(false),
+        _ => git_int(value).map(|number| number != 0),
     }
-    let number = lower.trim_start();
-    let number = number.strip_suffix(['k', 'm', 'g']).unwrap_or(number);
-    let digits = number.strip_prefix(['-', '+']).unwrap_or(number);
-    let parsed = if let Some(hex) = digits.strip_prefix("0x") {
-        u128::from_str_radix(hex, 16)
-    } else if let Some(octal) = digits.strip_prefix('0').filter(|rest| !rest.is_empty()) {
-        u128::from_str_radix(octal, 8)
-    } else {
-        digits.parse::<u128>()
+}
+
+/// An integer as git reads one (`git_parse_int`), or `None` where git refuses it.
+///
+/// `strtoimax` in base 0 reads the number: leading white space, one optional
+/// sign, then `0x` and hex digits, a `0` and octal digits, or decimal
+/// digits. What follows the digits must be empty or one unit, `k`, `m` or
+/// `g` in any case, for 1024, 1024² or 1024³. The value times its unit must
+/// fit a 32-bit signed `int`. Git refuses anything else, such as `08`, `1 `,
+/// `0x`, `+-1` and `2g`.
+fn git_int(value: &str) -> Option<i32> {
+    let rest = value.trim_start_matches([' ', '\t', '\n', '\u{b}', '\u{c}', '\r']);
+    let (negative, rest) = match rest.strip_prefix('-') {
+        Some(rest) => (true, rest),
+        None => (false, rest.strip_prefix('+').unwrap_or(rest)),
     };
-    parsed.is_ok_and(|number| number != 0)
+    let hex = rest
+        .strip_prefix("0x")
+        .or_else(|| rest.strip_prefix("0X"))
+        .filter(|digits| digits.starts_with(|c: char| c.is_ascii_hexdigit()));
+    let (radix, digits) = match hex {
+        Some(digits) => (16, digits),
+        None if rest.starts_with('0') => (8, rest),
+        None => (10, rest),
+    };
+    let length = digits
+        .find(|c: char| !c.is_digit(radix))
+        .unwrap_or(digits.len());
+    if length == 0 {
+        return None;
+    }
+    // `strtoimax` refuses a magnitude past `intmax_t`; this refuses one past
+    // `i64`, which is the same on every platform git builds for.
+    let magnitude = i128::from(u64::from_str_radix(&digits[..length], radix).ok()?);
+    if magnitude > i128::from(i64::MAX) + i128::from(negative) {
+        return None;
+    }
+    let unit: i128 = match digits[length..].to_ascii_lowercase().as_str() {
+        "" => 1,
+        "k" => 1 << 10,
+        "m" => 1 << 20,
+        "g" => 1 << 30,
+        _ => return None,
+    };
+    let signed = if negative { -magnitude } else { magnitude };
+    i32::try_from(signed * unit).ok()
 }
 
 /// [`finds_a_repository`] with the two environment settings passed in.
@@ -958,6 +1002,11 @@ mod tests {
                 crosses_filesystems(value),
                 "git refuses {value:?}, and the search crosses"
             );
+            assert_eq!(git_bool(value), None, "git refuses {value:?}");
+        }
+        // The edges of git's `int`, which git accepts.
+        for value in ["2147483647", "-2147483648", "1g", "2047m", "0x7fffffff"] {
+            assert_eq!(git_bool(value), Some(true), "git accepts {value:?}");
         }
     }
 
