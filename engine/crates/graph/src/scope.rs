@@ -22,10 +22,53 @@
 //! entry" means for a scope exactly what it means for an anchor: the same
 //! prefix walk, the same corpus exclusions, and the same refusal of a pattern
 //! that opens on a wildcard. No second matcher exists here.
+//!
+//! Two readings sit beside the resolver's, both ruled by the owner on
+//! 2026-09-25. A scope counts only files git does not ignore, so a cache that
+//! one host wrote and CI never sees moves no figure: [`Ignored`] carries the
+//! list and [`Scope::ignoring`] applies it. A taxonomy with no tree beside it,
+//! which is what a taxonomy published as its own repository is, has nothing to
+//! count: [`Scope::tree_is_absent`] says so, and `taxonomy validate` prints a
+//! notice rather than refusing each pattern.
 
 use crate::anchors::{normalize, Binding, Resolvers};
 use crate::declarations::Declarations;
 use headwater_meta::pattern::Pattern;
+use std::path::Path;
+
+/// The paths git's ignore rules exclude under a tree, relative to its root.
+///
+/// [`headwater_vcs::ignored`] is the reader, so git decides what it ignores
+/// and this crate matches no ignore pattern itself. A whole ignored directory
+/// arrives as one entry ending in `/`. Empty where the tree is not in a git
+/// repository, because no ignore rule binds a tree git does not see.
+///
+/// Only a verb that is not the check, the gate or the probe reads this: spec 12
+/// keeps every version control command off that loop, so `Graph::build`
+/// counts the scope with nothing ignored and `taxonomy audit` drops the
+/// ignored entries afterward with [`Reach::retain_unignored`].
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Ignored {
+    entries: Vec<String>,
+}
+
+impl Ignored {
+    /// What git ignores under `base`, which is the root the resolver's paths
+    /// are relative to.
+    pub fn read(base: &Path) -> Ignored {
+        Ignored {
+            entries: headwater_vcs::ignored(base),
+        }
+    }
+
+    /// Whether git ignores `path`, a path relative to the same root.
+    pub fn covers(&self, path: &str) -> bool {
+        self.entries.iter().any(|entry| match entry.strip_suffix('/') {
+            Some(directory) => path.starts_with(entry.as_str()) || path == directory,
+            None => path == entry,
+        })
+    }
+}
 
 /// One pattern of a declared scope, with the anchor kind that declared it.
 #[derive(Clone, Debug)]
@@ -45,6 +88,9 @@ pub struct Member {
 #[derive(Clone, Debug, Default)]
 pub struct Scope {
     pub members: Vec<Member>,
+    /// What the count leaves out. Empty unless a caller set it with
+    /// [`Scope::ignoring`].
+    pub ignored: Ignored,
 }
 
 /// What one scope pattern admits from the tree.
@@ -74,7 +120,38 @@ impl Scope {
                     })
                 })
                 .collect(),
+            ignored: Ignored::default(),
         }
+    }
+
+    /// The same scope, counting no entry that `ignored` covers.
+    pub fn ignoring(self, ignored: Ignored) -> Scope {
+        Scope { ignored, ..self }
+    }
+
+    /// Whether no tree lies beside the taxonomy for this scope to count.
+    ///
+    /// True when the scope declares at least one pattern and the root of
+    /// every pattern is missing: the literal directory a wildcard pattern
+    /// walks from, or the file a literal pattern names. One root that is there
+    /// makes the tree present, and then a pattern that matches nothing is a
+    /// claim about nothing and `taxonomy validate` refuses it. A pattern the
+    /// resolver cannot read at all is no evidence either way.
+    pub fn tree_is_absent(&self, resolvers: &Resolvers) -> bool {
+        !self.members.is_empty()
+            && !self.members.iter().any(|member| {
+                let (Ok(pattern), Some(resolver)) =
+                    (member.pattern.as_ref(), resolvers.get(&member.resolver))
+                else {
+                    return false;
+                };
+                if pattern.is_literal() {
+                    matches!(resolver.resolve(pattern.source()), Binding::Resolved { .. })
+                } else {
+                    let root = pattern.literal_prefix();
+                    !root.is_empty() && resolver.names_directory(&root)
+                }
+            })
     }
 
     pub fn is_empty(&self) -> bool {
@@ -108,7 +185,7 @@ impl Scope {
             .map(|member| Reach {
                 anchor_kind: member.anchor_kind.clone(),
                 pattern: member.written.clone(),
-                entries: bind(member, resolvers).unwrap_or_default(),
+                entries: bind(member, resolvers, &self.ignored).unwrap_or_default(),
             })
             .collect()
     }
@@ -117,7 +194,7 @@ impl Scope {
     pub fn unmatched(&self, resolvers: &Resolvers) -> Vec<(String, String)> {
         self.members
             .iter()
-            .filter_map(|member| match bind(member, resolvers) {
+            .filter_map(|member| match bind(member, resolvers, &self.ignored) {
                 Ok(_) => None,
                 Err(why) => Some((member.written.clone(), why)),
             })
@@ -125,7 +202,14 @@ impl Scope {
     }
 }
 
-fn bind(member: &Member, resolvers: &Resolvers) -> Result<Vec<String>, String> {
+impl Reach {
+    /// Drop every entry git ignores, for a reach taken with nothing ignored.
+    pub fn retain_unignored(&mut self, ignored: &Ignored) {
+        self.entries.retain(|path| !ignored.covers(path));
+    }
+}
+
+fn bind(member: &Member, resolvers: &Resolvers, ignored: &Ignored) -> Result<Vec<String>, String> {
     let pattern = member.pattern.as_ref().map_err(Clone::clone)?;
     let Some(resolver) = resolvers.get(&member.resolver) else {
         return Err(format!(
@@ -157,7 +241,16 @@ fn bind(member: &Member, resolvers: &Resolvers) -> Result<Vec<String>, String> {
             "`{source}` names a directory, and a scope pattern admits files: write `{source}/**`"
         ));
     }
-    Ok(matched)
+    let kept: Vec<String> = matched
+        .into_iter()
+        .filter(|path| !ignored.covers(path))
+        .collect();
+    if kept.is_empty() {
+        return Err(format!(
+            "every entry `{source}` matches is one git ignores, and the scope counts none of them"
+        ));
+    }
+    Ok(kept)
 }
 
 #[cfg(test)]
