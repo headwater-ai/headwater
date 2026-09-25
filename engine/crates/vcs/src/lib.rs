@@ -816,11 +816,15 @@ mod tests {
             .canonicalize()
             .expect("the directory is there");
         assert!(
-            !search_upward(&at.join("ceiling/sub"), &[ceiling.clone()], false),
+            !search_upward(
+                &at.join("ceiling/sub"),
+                std::slice::from_ref(&ceiling),
+                false
+            ),
             "the search does not go up into a ceiling directory"
         );
         assert!(
-            search_upward(&ceiling, &[ceiling.clone()], false),
+            search_upward(&ceiling, std::slice::from_ref(&ceiling), false),
             "a ceiling directory that is the root itself is still read"
         );
         let _ = fs::remove_dir_all(&at);
