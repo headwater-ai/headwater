@@ -13,7 +13,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   governs:
-    - .gitattributes
+    - to: .gitattributes
+      verified_revision: sha256:c57eec82fdffb6d8d245700d0f37aedfce83f233b65f81bf960db9de0b28fd71
   traces_to:
     - HW-EVAL-what-a-check-can-know
     - engine/crates/census/src/census.rs
@@ -68,6 +69,6 @@ relations:
 
 **So the two cases have one remedy.** A count and an identifier both need a run over the merged state, and neither needs a new rule. The fold reaches the same conclusion from an unrelated defect. That agreement is the evidence that the conclusion is about merges rather than about counts.
 
-**An adopter inherits the rule, and `headwater init --git` gives the adopter the verbs and the configuration that hold it.** Any corpus that two people edit in parallel meets the same anomaly in any artifact that stores a count over the whole corpus. Since [#1058](https://github.com/headwater-ai/headwater/issues/1058), [`headwater init --git`](../interfaces/headwater-init.md) appends a `<path> -merge` line to `.gitattributes` for each fold that `headwater taxonomy resolve` and `headwater generate` write. It also prints the two `git config` lines that name `headwater merge-driver`, and the `info/attributes` lines that select that driver. The `--git-config` option runs those lines in the adopter's own clone. Git takes no driver from a repository, so that explicit command is the consent of the clone ([HW-DR-0077](0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)).
+**An adopter inherits the rule, and `headwater init --git` gives the adopter the verbs and the configuration that hold it.** Any corpus that two people edit in parallel meets the same anomaly in any artifact that stores a count over the whole corpus. Since [#1058](https://github.com/headwater-ai/headwater/issues/1058), [`headwater init --git`](../interfaces/headwater-init.md) appends a `<path> -merge` line to `.gitattributes` for each fold that `headwater taxonomy resolve` and `headwater generate` write. It also prints the two `git config` lines that name `headwater merge-driver`, and the `info/attributes` lines that select that driver. The `--git-config` option runs the two `git config` lines in the adopter's own clone, and then appends the override lines to its `info/attributes`. Git takes no driver from a repository, so that explicit command is the consent of the clone ([HW-DR-0077](0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)).
 
 **No attribute covers the quiet form in an adopter's repository either, so a check on the merged tree covers it there too.** That check is `headwater generate --check` and `headwater taxonomy resolve --check` in CI. The adopter receives no script of this repository, and no part of the gate that protects the published pages of this repository. The two artifacts above are this repository's application of the rule.

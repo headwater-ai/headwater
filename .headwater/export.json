@@ -1475,7 +1475,10 @@
           },
           "relations": {
             "governs": [
-              ".gitattributes"
+              {
+                "to": ".gitattributes",
+                "verified_revision": "sha256:c57eec82fdffb6d8d245700d0f37aedfce83f233b65f81bf960db9de0b28fd71"
+              }
             ],
             "traces_to": [
               "HW-EVAL-what-a-check-can-know",
@@ -13123,6 +13126,9 @@
           "anchor_kind": "code_path",
           "id": ".gitattributes",
           "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:c57eec82fdffb6d8d245700d0f37aedfce83f233b65f81bf960db9de0b28fd71"
         }
       },
       {
