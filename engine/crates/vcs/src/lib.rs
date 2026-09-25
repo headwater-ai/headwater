@@ -276,16 +276,27 @@ pub fn ignored(root: &Path) -> Vec<String> {
 /// ask about a path it did not find on disk filters such a path out first.
 /// The refusal is kept apart from `None`, because a caller that read it as
 /// "no repository" would fall back in silence inside one.
+///
+/// `Some(Err(..))` also where git does not run at all and `root` or a directory
+/// above it holds a `.git` entry, a directory or the file a linked worktree
+/// holds. Git that is not on `PATH` cannot say whether a tree is a work tree,
+/// but a `.git` entry says there is a repository whose attribute files only git
+/// reads. With no `.git` entry and no git, the answer is still `None`.
 pub fn merge_attributes(
     root: &Path,
     paths: &[String],
 ) -> Option<Result<Vec<(String, String)>, String>> {
-    let inside = Command::new("git")
+    let inside = match Command::new("git")
         .arg("-C")
         .arg(root)
         .args(["rev-parse", "--is-inside-work-tree"])
         .output()
-        .ok()?;
+    {
+        Ok(inside) => inside,
+        Err(error) => {
+            return holds_a_git_entry(root).then(|| Err(format!("git did not run: {error}")));
+        }
+    };
     if !inside.status.success() || String::from_utf8_lossy(&inside.stdout).trim() != "true" {
         return None;
     }
@@ -295,6 +306,13 @@ pub fn merge_attributes(
         input.push(0);
     }
     Some(check_attr(root, input))
+}
+
+/// Whether `root` or a directory above it holds a `.git` entry of any type.
+fn holds_a_git_entry(root: &Path) -> bool {
+    let root = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
+    root.ancestors()
+        .any(|dir| dir.join(".git").symlink_metadata().is_ok())
 }
 
 /// One run of `git check-attr -z --stdin merge` over `input`, parsed.
@@ -651,6 +669,25 @@ mod tests {
         fs::create_dir_all(&at).expect("the directory is there");
         fs::write(at.join(".gitattributes"), "a.md merge=union\n").expect("the file writes");
         assert_eq!(merge_attributes(&at, &["a.md".to_string()]), None);
+        let _ = fs::remove_dir_all(&at);
+    }
+
+    /// Where git does not run, a `.git` entry above the tree is what says a
+    /// repository is there, and a linked worktree's `.git` is a file.
+    #[test]
+    fn a_git_entry_of_either_type_above_the_tree_is_found() {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-vcs-tests-git-entry-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&at);
+        fs::create_dir_all(at.join("worktree/sub")).expect("the directories are there");
+        fs::create_dir_all(at.join("bare/sub")).expect("the directories are there");
+        assert!(!holds_a_git_entry(&at.join("worktree/sub")));
+        fs::write(at.join("worktree/.git"), "gitdir: /elsewhere\n").expect("the file writes");
+        assert!(holds_a_git_entry(&at.join("worktree/sub")));
+        fs::create_dir_all(at.join("bare/.git")).expect("the directory is there");
+        assert!(holds_a_git_entry(&at.join("bare/sub")));
         let _ = fs::remove_dir_all(&at);
     }
 
