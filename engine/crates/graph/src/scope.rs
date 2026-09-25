@@ -264,4 +264,60 @@ mod tests {
         assert!(scope.contains("tools/a.sh"));
         let _ = std::fs::remove_dir_all(&at);
     }
+
+    /// A scope counts only what git does not ignore, so a cache written on one
+    /// host and absent on another moves no figure (#951, owner ruling
+    /// 2026-09-25).
+    #[test]
+    fn an_entry_git_ignores_is_outside_the_count_and_a_pattern_of_only_such_entries_is_refused() {
+        let at = tree("ignored");
+        let cache = at.join("tools/site/__pycache__/b.cpython-312.pyc");
+        std::fs::create_dir_all(cache.parent().expect("a parent")).expect("the cache is made");
+        std::fs::write(&cache, "").expect("the cache writes");
+        std::fs::write(at.join(".gitignore"), "__pycache__/\n").expect("the ignore file writes");
+        let init = std::process::Command::new("git")
+            .args(["init", "-q"])
+            .current_dir(&at)
+            .status()
+            .expect("git runs");
+        assert!(init.success());
+
+        // With nothing ignored, the walk admits the cache.
+        let everything = scope(&["tools/**"]).reach(&resolvers(&at));
+        assert_eq!(everything[0].entries.len(), 3, "{everything:?}");
+
+        let ignored = Ignored::read(&at);
+        let scope = scope(&["tools/**", "tools/site/__pycache__/**"]).ignoring(ignored.clone());
+        let reach = scope.reach(&resolvers(&at));
+        assert_eq!(reach[0].entries, ["tools/a.sh", "tools/site/b.py"]);
+        assert!(reach[1].entries.is_empty(), "{reach:?}");
+        let refused = scope.unmatched(&resolvers(&at));
+        assert_eq!(refused.len(), 1, "{refused:?}");
+        assert_eq!(refused[0].0, "tools/site/__pycache__/**");
+        assert!(refused[0].1.contains("ignore"), "{refused:?}");
+
+        // A reach taken with nothing ignored drops the same entry afterward.
+        let mut late = everything;
+        for reach in &mut late {
+            reach.retain_unignored(&ignored);
+        }
+        assert_eq!(late[0].entries, ["tools/a.sh", "tools/site/b.py"]);
+        let _ = std::fs::remove_dir_all(&at);
+    }
+
+    /// A taxonomy with no tree beside it has nothing to count, so the scope
+    /// says the tree is absent rather than calling every pattern unmatched
+    /// (#951, owner ruling 2026-09-25). One pattern whose root is there makes
+    /// the tree present, and then every unmatched pattern is refused.
+    #[test]
+    fn a_scope_whose_every_root_is_missing_has_no_tree_beside_it() {
+        let at = tree("absent");
+        let resolvers = resolvers(&at);
+        assert!(scope(&["engine/**", "site/**", "README.md"]).tree_is_absent(&resolvers));
+        assert!(!scope(&["engine/**", "tools/**"]).tree_is_absent(&resolvers));
+        assert!(!scope(&["engine/**", "tools/a.sh"]).tree_is_absent(&resolvers));
+        assert!(!scope(&["nowhere/**", "tools/site/*.py"]).tree_is_absent(&resolvers));
+        assert!(!scope(&[]).tree_is_absent(&resolvers), "no scope claims no tree");
+        let _ = std::fs::remove_dir_all(&at);
+    }
 }
