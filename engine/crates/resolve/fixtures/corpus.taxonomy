@@ -775,7 +775,7 @@ shelves:
     homogeneous: true
     kind: library_doctrine
     path: "docs/taxonomies/*/doctrine.md"
-    title: "Library doctrine"
+    title: "The canonical taxonomy library"
   library_index:
     homogeneous: true
     kind: library_doctrine

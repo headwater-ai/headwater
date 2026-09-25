@@ -862,6 +862,13 @@ jobs:
         #   each of them current, so an eleventh shelf is covered by the push
         #   that adds it and nobody has to remember this step exists.
         #
+        #   A shelf's served root is the literal directory its path names
+        #   before the first glob segment or the file name: `docs/spec/**`
+        #   serves `/spec/`, and both library shelves of #350,
+        #   `docs/taxonomies/*/doctrine.md` and `docs/taxonomies/README.md`,
+        #   serve `/taxonomies/`. A shelf with no literal directory under the
+        #   corpus root maps to nothing, and the step refuses it by name.
+        #
         #   It asserts that `<shelf>/index.html` is a file, and never that a
         #   request answers 200. `python3 -m http.server` generates a
         #   directory listing where no `index.html` is, so a local `curl` of
@@ -895,12 +902,19 @@ jobs:
               prefix = corpus["root"] + "/"
               for entry in corpus["entry_points"]:
                   pattern = shelves[entry["shelf"]]["path"]
-                  if not pattern.startswith(prefix) or not pattern.endswith("/**"):
+                  literal = []
+                  if pattern.startswith(prefix):
+                      segments = pattern[len(prefix):].split("/")
+                      for segment in segments[:-1]:
+                          if any(glob in segment for glob in "*?["):
+                              break
+                          literal.append(segment)
+                  if not literal:
                       sys.exit(
                           "the shelf `%s` is declared at `%s`, which this step cannot map to a "
                           "served root. Read the comment above it." % (entry["shelf"], pattern)
                       )
-                  roots.add(pattern[len(prefix):-3])
+                  roots.add("/".join(literal))
 
           missing = [r for r in sorted(roots) if not os.path.isfile("%s/%s/index.html" % (deploy, r))]
           if missing:

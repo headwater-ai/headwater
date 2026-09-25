@@ -152,7 +152,7 @@ nav:
       - "headwater route": "interfaces/headwater-route.md"
       - "headwater sweep": "interfaces/headwater-sweep.md"
       - "headwater taxonomy": "interfaces/headwater-taxonomy.md"
-  - "Library doctrine":
+  - "The canonical taxonomy library":
       - "The brd-prd taxonomy": "taxonomies/brd-prd/doctrine.md"
       - "The decision-record taxonomy": "taxonomies/decision-record/doctrine.md"
       - "The design-spec taxonomy": "taxonomies/design-spec/doctrine.md"

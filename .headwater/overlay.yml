@@ -1228,6 +1228,12 @@ add:
   # again. Neither pattern claims a path the exclusions in
   # `.headwater/taxonomy.yml` claim, and neither claims a path of another shelf.
   #
+  # **The entries' shelf carries the index's title.** A shelf's served index
+  # page is the directory its path names before the first glob, so the entries'
+  # shelf is served at `/taxonomies/`. That page is the library index, and
+  # `tools/site/check-site-fragments.py` requires a shelf's served page to
+  # carry the shelf's title. So the shelf takes the index's H1.
+  #
   # **`headwater new library_doctrine` refuses, and that is known.** The kind
   # sits on two shelves, and neither shelf names a directory that a new file
   # could go into: one is a fixed file name under a glob, and one is a single
@@ -1249,7 +1255,7 @@ add:
     identifier: {scheme: library_doctrine_id}
 
   shelves.library_doctrine:
-    title: Library doctrine
+    title: The canonical taxonomy library
     path: docs/taxonomies/*/doctrine.md
     homogeneous: true
     kind: library_doctrine

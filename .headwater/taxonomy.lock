@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:ea2af6a19c436c8bcc3404fc885cd2eb3e00d763ec9988aa7b4ea14481f1ec26
+  digest: sha256:eca4ce17efd4a9c932c0e4edcbef00b7630b7f02ac4521be0efb3cfdf30a3f1f
   rules: 2
   package: headwater/standard
   version: 4.6.1
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:a1d0295f3af618bb371291f264a5f3d85925aabdd171ccea64629ee42a0e1c24
     - path: .headwater/overlay.yml
-      digest: sha256:391f29388c2033b4f7a8a7f722ba71a3ff786c75ec2700c17f0e1fe7d3d979f2
+      digest: sha256:e1d9341bea5eb647ddaaac41dc801f0e6aadfc9041040e9979437e415441cf58
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -838,7 +838,7 @@ resolved:
       homogeneous: true
       kind: library_doctrine
       path: "docs/taxonomies/*/doctrine.md"
-      title: "Library doctrine"
+      title: "The canonical taxonomy library"
     library_index:
       homogeneous: true
       kind: library_doctrine
