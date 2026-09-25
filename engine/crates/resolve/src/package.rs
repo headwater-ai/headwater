@@ -299,6 +299,33 @@ pub(crate) fn contents_of(manifest: &Mapping) -> Mapping {
         .unwrap_or_default()
 }
 
+/// The top-level entries of a package directory that its manifest names under
+/// `contents`, sorted and each once.
+///
+/// This is the first segment of every `contents` scalar that lands inside the
+/// package, so `assemblies/` gives `assemblies` and `bundles/one` gives
+/// `bundles`. A value that climbs out of the package, such as the authored
+/// `bundles: ../../docs/taxonomies`, and an absolute path give nothing. A
+/// top-level file such as `taxonomy.yml` gives its own name, because a scalar
+/// alone does not say whether it names a file or a directory: a published
+/// artifact writes `bundles: bundles` for a directory. `taxonomy validate`
+/// reads this to tell the taxonomy's own directories from a tree (#1103). It
+/// goes through [`contents_of`] and [`member_path`], so it is no second reader
+/// of a `contents` block.
+pub fn content_roots(manifest: &Mapping) -> Vec<String> {
+    let mut roots: Vec<String> = contents_of(manifest)
+        .iter()
+        .filter_map(|entry| entry.value.value.as_scalar())
+        .map(|scalar| scalar.text.as_str())
+        .filter(|declared| !declared.starts_with('/') && !Path::new(declared).is_absolute())
+        .filter_map(member_path)
+        .filter_map(|member| member.split('/').next().map(str::to_owned))
+        .collect();
+    roots.sort();
+    roots.dedup();
+    roots
+}
+
 /// A package declares what it is twice — its name and its version — and this is
 /// the only thing that holds either pair together.
 ///
@@ -4631,5 +4658,21 @@ mod tests {
         assert!(!names_a_package("acme/fixture-"));
         assert!(names_a_package("a"));
         assert!(names_a_package("a/b/c"));
+    }
+
+    /// The top-level entries a manifest names under `contents` (#1103): the
+    /// first segment of each value inside the package, and nothing for a value
+    /// that climbs out of it or is absolute.
+    #[test]
+    fn content_roots_are_the_first_segment_of_each_value_inside_the_package() {
+        let source = "package: acme/x\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: ../../docs/taxonomies\n  assemblies: assemblies/\n  doctrine: ./doctrine/pages\n  examples: examples/one/../two\n  elsewhere: /abs/path\n  climbs: a/../../b\n";
+        let root = headwater_yaml::load(source).expect("the fixture loads");
+        let manifest = root.value.as_map().expect("a mapping");
+        assert_eq!(
+            super::content_roots(manifest),
+            ["assemblies", "doctrine", "examples", "taxonomy.yml"]
+        );
+        let bare = headwater_yaml::load("package: acme/x\n").expect("the fixture loads");
+        assert!(super::content_roots(bare.value.as_map().expect("a mapping")).is_empty());
     }
 }

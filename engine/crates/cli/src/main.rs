@@ -833,9 +833,17 @@ fn validate(root: &Path) -> ExitCode {
             let resolvers = headwater_graph::anchors::Resolvers::over(&corpus);
             let scope = headwater_graph::scope::Scope::declared(&declarations);
             let ignored = headwater_graph::scope::Ignored::read(&corpus.base);
+            // A root that is an authored package source holds its own content
+            // directories, `assemblies/` and `doctrine/` among them, and they
+            // are the taxonomy rather than a tree (#1103). A root with no
+            // manifest, or one that does not read, names none.
+            let own = headwater_resolve::package::manifest_at(&corpus.base)
+                .map(|manifest| headwater_resolve::package::content_roots(&manifest))
+                .unwrap_or_default();
             let beside = headwater_graph::scope::tree_directories(
                 &corpus.base,
                 &repository.resolution.sources,
+                &own,
                 &ignored,
             );
             if scope.tree_is_absent(&resolvers, &beside) {
