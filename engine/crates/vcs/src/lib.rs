@@ -347,8 +347,8 @@ fn finds_a_repository(root: &Path) -> bool {
                 .collect()
         })
         .unwrap_or_default();
-    let across =
-        std::env::var("GIT_DISCOVERY_ACROSS_FILESYSTEM").is_ok_and(|value| git_bool(&value));
+    let across = std::env::var("GIT_DISCOVERY_ACROSS_FILESYSTEM")
+        .is_ok_and(|value| crosses_filesystems(&value));
     search_upward(root, &ceilings, across, &device_of)
 }
 
@@ -360,7 +360,7 @@ fn finds_a_repository(root: &Path) -> bool {
 /// are numbers, with an optional `k`, `m` or `g` unit. It is true where it is
 /// not zero. Git refuses a value that is none of these, and this reads it as
 /// false, so the search does not cross a boundary on it.
-fn git_bool(value: &str) -> bool {
+fn crosses_filesystems(value: &str) -> bool {
     let lower = value.to_ascii_lowercase();
     match lower.as_str() {
         "true" | "yes" | "on" => return true,
@@ -926,10 +926,38 @@ mod tests {
         for value in [
             "1", "2", "-1", "true", "TRUE", "Yes", "on", "0x10", "010", "1k", " 3",
         ] {
-            assert!(git_bool(value), "git reads {value:?} as true");
+            assert!(crosses_filesystems(value), "git reads {value:?} as true");
         }
         for value in ["0", "00", "0x0", "0k", "false", "No", "OFF", ""] {
-            assert!(!git_bool(value), "git reads {value:?} as false");
+            assert!(!crosses_filesystems(value), "git reads {value:?} as false");
+        }
+    }
+
+    /// A value that git refuses as a bad boolean crosses the boundary.
+    ///
+    /// Git does not run with such a value, so it says nothing about a
+    /// repository. The search then crosses, which can only find more, and a
+    /// repository found is refused: the same choice as a corrupt `HEAD`
+    /// (ruled on #1115, 2026-09-25). The values are malformed or outside the
+    /// range of git's 32-bit `int`, after a `k`, `m` or `g` unit.
+    #[test]
+    fn a_value_git_refuses_crosses_the_boundary() {
+        for value in [
+            "08",
+            "garbage",
+            "1 ",
+            "+-1",
+            "0x",
+            "2147483648",
+            "2g",
+            "-2147483649",
+            "9223372036854775807",
+            "99999999999999999999999999999999999999999",
+        ] {
+            assert!(
+                crosses_filesystems(value),
+                "git refuses {value:?}, and the search crosses"
+            );
         }
     }
 
