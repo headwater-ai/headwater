@@ -564,6 +564,45 @@ fn the_description_of_init_says_git_commits_unset_merge_and_selects_the_driver_p
             "the description names {words}, as the `--git` row of the contract does:\n{description}"
         );
     }
+
+    // Which file gets which line. Each file is named in a sentence of its
+    // own, so a sentence that names both cannot hand one file's line to the
+    // other. The `.gitattributes` sentence carries `-merge` and no driver, and
+    // the `info/attributes` sentence selects the driver and carries no
+    // `-merge`. A description that swaps the two files fails here.
+    let sentences: Vec<&str> = description.split(". ").collect();
+    let committed: Vec<&str> = sentences
+        .iter()
+        .copied()
+        .filter(|sentence| sentence.contains("`.gitattributes`"))
+        .collect();
+    let per_clone: Vec<&str> = sentences
+        .iter()
+        .copied()
+        .filter(|sentence| sentence.contains("`info/attributes`"))
+        .collect();
+    assert!(
+        !committed.is_empty() && !per_clone.is_empty(),
+        "the description names each file in a sentence:\n{description}"
+    );
+    for sentence in &committed {
+        assert!(
+            sentence.contains("`-merge` line to `.gitattributes`")
+                && !sentence.contains("`info/attributes`")
+                && !sentence.contains("driver"),
+            "the sentence that names `.gitattributes` gives it the `-merge` line and \
+             nothing that selects the driver:\n{sentence}"
+        );
+    }
+    for sentence in &per_clone {
+        assert!(
+            sentence.contains("`info/attributes` lines that select the driver")
+                && !sentence.contains("`.gitattributes`")
+                && !sentence.contains("`-merge`"),
+            "the sentence that names `info/attributes` gives it the lines that select \
+             the driver and no `-merge` line:\n{sentence}"
+        );
+    }
 }
 
 /// Every `headwater taxonomy resolve` command the merge hooks of this
