@@ -421,14 +421,18 @@ fn a_moved_anchor_target_is_not_served_from_the_entry_before_it() {
         "the cached run reported a verdict over the tree as it was"
     );
 
-    // And exactly the instance about the anchor was evaluated again. The other
+    // And exactly the instances about the anchor were evaluated again. The other
     // shape this defect admits is to refuse the key of an anchor edge, which
     // would satisfy every assertion above and leave every such instance
     // unkeyed and re-evaluated on every run forever. Neither the byte-identity
     // differential nor the instance count can see that difference, so it is
     // asserted here: the resolution divides a key, and it withholds none.
+    //
+    // Two instances are about the anchor: `relation.target.unresolved`, and
+    // `relation.target.suspect`, which instantiates over every relation onto
+    // an anchor kind since #952. Both key on the one resolution, so both miss.
     assert!(gone.cache.hits > 0, "{:?}", gone.cache);
-    assert_eq!(gone.cache.misses, 1, "{:?}", gone.cache);
+    assert_eq!(gone.cache.misses, 2, "{:?}", gone.cache);
     assert_eq!(
         gone.cache.unkeyed, bound.cache.unkeyed,
         "an instance lost its key rather than changing it: {:?}",

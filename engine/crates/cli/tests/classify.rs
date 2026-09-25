@@ -314,20 +314,30 @@ fn the_library_doctrine_is_checked_and_a_fixture_corpus_under_it_is_not() {
         .expect("the fixture page writes");
 
     let explained = root.run(&["explain", doctrine]);
-    assert_eq!(explained.code, Some(0), "the doctrine is a document: {explained:?}");
+    assert_eq!(
+        explained.code,
+        Some(0),
+        "the doctrine is a document: {explained:?}"
+    );
     assert!(
         explained.out.contains("library_doctrine"),
         "the doctrine page is typed `library_doctrine`: {explained:?}"
     );
     let excluded = root.run(&["explain", fixture]);
     assert!(
-        excluded.out.contains("no kind, so nothing is required of it")
+        excluded
+            .out
+            .contains("no kind, so nothing is required of it")
             && excluded.out.contains("    docs/taxonomies/*/fixtures/**\n"),
         "a fixture corpus page is excluded by the fixture rule and no other: {excluded:?}"
     );
 
     let checked = root.run(&["check", "--strict"]);
-    assert_ne!(checked.code, Some(0), "the planted errors fail a strict run: {checked:?}");
+    assert_ne!(
+        checked.code,
+        Some(0),
+        "the planted errors fail a strict run: {checked:?}"
+    );
     let pairs = findings(&checked.out);
     for rule in [
         "language.source_form.not_met",
@@ -342,7 +352,9 @@ fn the_library_doctrine_is_checked_and_a_fixture_corpus_under_it_is_not() {
         );
     }
     assert!(
-        !pairs.iter().any(|(p, _)| p.starts_with("docs/taxonomies/design-spec/fixtures/")),
+        !pairs
+            .iter()
+            .any(|(p, _)| p.starts_with("docs/taxonomies/design-spec/fixtures/")),
         "no finding names a fixture corpus page: {pairs:?}"
     );
     // The census gives an excluded file a row, and that row is the only place

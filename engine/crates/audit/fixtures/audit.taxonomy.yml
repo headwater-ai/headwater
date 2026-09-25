@@ -63,7 +63,7 @@ facets:
     values: [inner, outer]
 
 anchors:
-  code_path: {resolver: source-tree}
+  code_path: {resolver: source-tree, scope: [app/**]}
 
 kinds:
   governed_document:

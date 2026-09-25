@@ -540,12 +540,39 @@ fn encode_patch(patch: Option<&Patch>) -> String {
             escape(expect),
             escape(replacement)
         ),
-        Some(Patch::Half { path, relation, id }) => format!(
+        Some(Patch::Half {
+            path,
+            relation,
+            id,
+            attributes,
+        }) if attributes.is_empty() => format!(
             "half\t{}\t{}\t{}",
             escape(path),
             escape(relation),
             escape(id)
         ),
+        // A half with attributes is its own shape word, so a record an earlier
+        // engine wrote as `half` reads exactly as it did. The count comes
+        // first because one record holds several findings in a row and a
+        // reader has to know where this patch ends.
+        Some(Patch::Half {
+            path,
+            relation,
+            id,
+            attributes,
+        }) => {
+            let mut record = format!(
+                "attributed\t{}\t{}\t{}\t{}",
+                escape(path),
+                escape(relation),
+                escape(id),
+                attributes.len()
+            );
+            for (name, value) in attributes {
+                record.push_str(&format!("\t{}\t{}", escape(name), escape(value)));
+            }
+            record
+        }
         Some(Patch::Create { path, contents }) => {
             format!("create\t{}\t{}", escape(path), escape(contents))
         }
@@ -572,7 +599,24 @@ fn decode_patch<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<Option
             path: unescape(fields.next()?),
             relation: unescape(fields.next()?),
             id: unescape(fields.next()?),
+            attributes: Vec::new(),
         })),
+        "attributed" => {
+            let path = unescape(fields.next()?);
+            let relation = unescape(fields.next()?);
+            let id = unescape(fields.next()?);
+            let count: usize = fields.next()?.parse().ok()?;
+            let mut attributes = Vec::with_capacity(count);
+            for _ in 0..count {
+                attributes.push((unescape(fields.next()?), unescape(fields.next()?)));
+            }
+            Some(Some(Patch::Half {
+                path,
+                relation,
+                id,
+                attributes,
+            }))
+        }
         "create" => Some(Some(Patch::Create {
             path: unescape(fields.next()?),
             contents: unescape(fields.next()?),
@@ -674,6 +718,38 @@ fn unescape(text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+
+    /// A half with attributes survives a round trip through a record, and a
+    /// half with none is written in the shape an earlier engine wrote, so a
+    /// record already on disk reads exactly as it did (#952).
+    #[test]
+    fn a_half_with_attributes_round_trips_and_a_bare_half_keeps_its_shape() {
+        let attributed = Patch::Half {
+            path: "docs/a.md".to_string(),
+            relation: "governs".to_string(),
+            id: ".githooks/pre-commit".to_string(),
+            attributes: vec![
+                ("cue".to_string(), "the gate".to_string()),
+                ("verified_revision".to_string(), "sha256:ab".to_string()),
+            ],
+        };
+        let bare = Patch::Half {
+            path: "docs/a.md".to_string(),
+            relation: "cited_by".to_string(),
+            id: "D-1".to_string(),
+            attributes: Vec::new(),
+        };
+        let record = format!(
+            "{}\t{}",
+            encode_patch(Some(&attributed)),
+            encode_patch(Some(&bare))
+        );
+        assert!(encode_patch(Some(&bare)).starts_with("half\t"));
+        let mut fields = record.split('\t');
+        assert_eq!(decode_patch(&mut fields), Some(Some(attributed)));
+        assert_eq!(decode_patch(&mut fields), Some(Some(bare)));
+        assert_eq!(fields.next(), None);
+    }
     use super::*;
     use crate::context::Date;
     use crate::scope::Scope;

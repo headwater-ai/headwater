@@ -2,7 +2,7 @@
 name: headwater-maintainer
 description: Documentation upkeep across one change. Reports which governed documents the change touched, which are now stale, what a decision still owes, and what the corpus would gain from the change that nobody has recorded. Use it after code or prose has changed and before the change is proposed. It reports and proposes; it never accepts.
 tools: Bash, Read, Grep, Glob, Skill
-model: opus
+model: claude-opus-5-5
 effort: medium
 ---
 
@@ -34,7 +34,7 @@ The binary that writes lands beside the `release` one rather than over it, and e
 
 For the `governs` half, run the write hook the way the harness does, once per changed path:
 
-    printf '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"<path>"}}' | sh .claude/hooks/write.sh
+    printf '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"<path>"}}' | sh .claude/hooks/write.sh
 
 It answers by string equality against the value on each edge. A path *under* a governed directory answers nothing, so a silent result is not evidence that no document governs the area — see HW-OBL-0104. Say so in part 4 rather than reporting silence as absence.
 

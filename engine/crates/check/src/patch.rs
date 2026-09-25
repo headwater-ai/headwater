@@ -69,14 +69,22 @@ pub enum Patch {
         expect: String,
         replacement: String,
     },
-    /// Declare `relation: id` under `relations:` in `path`.
+    /// Declare `relation: id` under `relations:` in `path`, with `attributes`
+    /// beside it.
     ///
     /// No offset, because the far document's shape decides where the half goes
     /// and [`headwater_scaffold::write::splice`] is the one thing that knows.
+    /// The splice replaces an entry that already names `id` rather than
+    /// appending a second one, and it reads the result back and refuses where
+    /// the entry does not hold every attribute it was given. So a patch that
+    /// records an attribute on an edge that exists, which is what
+    /// [`crate::suspect`] offers for `verified_revision`, is this shape and
+    /// needs no writer of its own. An empty list is the bare reference form.
     Half {
         path: String,
         relation: String,
         id: String,
+        attributes: Vec<(String, String)>,
     },
     /// Make `path`, holding `contents`, where no file stands.
     ///

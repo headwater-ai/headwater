@@ -84,6 +84,7 @@ nav:
       - "Criterion 5 admits naming or extending a core-serving kind, and a facet-only entry ships no templates directory under criterion 2": "decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md"
       - "Q66 — the corpus dashboard ships free and self-hosted, with tenant isolation stated as a data-model constraint from day one": "decisions/0080-q66-the-corpus-dashboard-ships-free-and-self-hosted-with-tenant-isolation-stated-as-a-data-model-constraint-from-day-one.md"
       - "The hand-authored decision register indexes a subset of the shelf, and stops asserting it supersedes the complete one": "decisions/0081-the-hand-authored-decision-register-indexes-a-subset-of-the-shelf-and-stops-asserting-it-supersedes-the-complete-one.md"
+      - "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file": "decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"

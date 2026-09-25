@@ -58,7 +58,7 @@ rules, and for each the scope that binds it
   relation.target.unresolved
     edge scope, one relation instance and both endpoints
   relation.target.suspect
-    edge scope, one relation instance and both endpoints
+    edge scope, one relation instance and both endpoints, and the injected clock
   relation.reciprocity.missing
     edge scope, one relation instance and both endpoints
   relation.endpoint.not_permitted

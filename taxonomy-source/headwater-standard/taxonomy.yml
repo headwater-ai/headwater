@@ -149,6 +149,23 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.6.1 changes no declaration in this file. The doctrine of each bundle and
+# the library index `bundles/README.md` now open with front matter, because
+# this repository types them as corpus prose and checks them (#350). A consumer
+# vendors those pages and reads them, and no rule of a consumer reads the new
+# front matter, so this is a patch. It follows 4.6.0 (#952).
+#
+# 4.6.0 declares `verified_revision` as an instance attribute of `governs`,
+# edge-owned, and widens `OB-REL-6` from an edge an import wrote to every edge
+# whose target a resolver states a revision for (#952). `source-tree` now
+# answers a digest of the bytes a `code_path` anchor matched, and
+# `relation.target.suspect` compares it against the digest recorded on the
+# edge, so a `governs` edge goes suspect when the code it governs changes.
+# Nothing is removed, and no edge a consumer holds is reported until its author
+# records a digest, so it is a minor. What a consumer meets is one `Info`
+# finding on an unrecorded `governs` entry of a document verified today, with
+# a fix that records the digest. It follows 4.5.0 (#853).
+#
 # 4.5.0 declares `lifecycle_sensitive: true` on `supersedes`. HW-DR-0065 lets a
 # relation state for itself that its ends have a lifecycle, and the core
 # satisfier now reads that member as well as `on_target: {set_state: ...}`, so
@@ -171,7 +188,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.5.0
+version: 4.6.1
 
 purposes:
   rationale:
@@ -335,6 +352,12 @@ relations:
     to:   [code_path]
     cardinality: many
     created_by: hook
+    # The digest of the bytes the target reached when the governing document
+    # was last verified against it. `relation.target.suspect` compares it
+    # against the digest `source-tree` states now, and `headwater check --fix`
+    # records it only on a document whose `last_verified` is today (#952).
+    attributes:
+      verified_revision: {type: string, owner: edge}
   constrains:
     family: governance
     from: [decision]
@@ -490,7 +513,7 @@ obligations:
     severity: high
 
   OB-REL-6:
-    statement: An edge an import wrote names its upstream item at the revision the edge was verified against
+    statement: An edge whose target a resolver states a revision for names that target at the revision the edge was verified against
     rationale: An upstream item moves under an edge that nobody touched, so the corpus keeps asserting a claim that was checked against a state the far end has left. The pin says the snapshot advanced and says nothing about which document now carries a stale claim, and the author who could re-verify the edge is the one person the advance never reaches
     class: cohesion
     prevents: content.inconsistent

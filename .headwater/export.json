@@ -2062,8 +2062,8 @@
           "id": "HW-DR-0072",
           "status": "current",
           "status_since": "2026-09-17",
-          "summary": "An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test; a network fetch left the list under HW-DR-0075; and the change manifest fails the test and is a defect.",
-          "last_verified": "2026-09-19",
+          "summary": "An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test, a network fetch left the list under HW-DR-0075, and a verb writes the change manifest.",
+          "last_verified": "2026-09-24",
           "title": "The binary is the only interface an adopter must run, and every integration point outside it is declared",
           "provenance": {
             "warrant": "accepted",
@@ -2323,6 +2323,32 @@
             "drafted_by": "claude-sonnet-5",
             "activity": "draft",
             "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md",
+        "kind": "decision",
+        "id": "HW-DR-0082",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0082",
+          "status": "current",
+          "status_since": "2026-09-24",
+          "summary": "`headwater taxonomy graph` prints the resolved taxonomy from the lock as a Mermaid flowchart, and no projection, explain format or export target draws it",
+          "last_verified": "2026-09-24",
+          "title": "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              "engine/crates/cli/src/taxonomy_graph.rs"
+            ]
           }
         }
       },
@@ -3623,7 +3649,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How one member of the JSON object on standard input reaches a caller, and the one answer that stands for every way a read reaches no scalar.",
-          "last_verified": "2026-09-06",
+          "last_verified": "2026-09-24",
           "title": "headwater json",
           "relations": {
             "governs": [
@@ -3833,7 +3859,7 @@
           "id": "HW-IFACE-headwater-taxonomy",
           "status": "current",
           "status_since": "2026-09-06",
-          "summary": "How to validate, resolve, audit, publish, vendor, compare and migrate taxonomy packages.",
+          "summary": "How to validate, resolve, audit, publish, vendor, compare, migrate and draw taxonomy packages.",
           "last_verified": "2026-09-07",
           "title": "headwater taxonomy",
           "relations": {
@@ -3842,6 +3868,7 @@
                 "engine/crates/cli/src/lib.rs",
                 "engine/crates/cli/src/main.rs"
               ],
+              "engine/crates/cli/src/taxonomy_graph.rs",
               "engine/crates/resolve/src/lib.rs",
               "engine/crates/audit/src/lib.rs",
               "engine/crates/audit/src/reading.rs",
@@ -10745,7 +10772,7 @@
           "id": "HW-SPEC-harness-support",
           "status": "current",
           "status_since": "2026-09-06",
-          "summary": "The ten capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.",
+          "summary": "The eleven capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.",
           "last_verified": "2026-09-09",
           "doc_type": "design_spec",
           "sequence": "16",
@@ -11395,6 +11422,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/cli/src/paint.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/cli/src/taxonomy_graph.rs",
         "resolver": "source-tree"
       },
       {
@@ -13753,6 +13785,17 @@
         }
       },
       {
+        "source": "docs/decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/taxonomy_graph.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md",
         "relation": "traces_to",
         "written_as": "traces_to",
@@ -15773,6 +15816,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-taxonomy.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/taxonomy_graph.rs",
           "resolver": "source-tree"
         }
       },

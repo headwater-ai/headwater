@@ -1,3 +1,12 @@
+---
+id: HW-LIB-index
+status: current
+status_since: 2026-09-21
+summary: "What a library entry is, the seven criteria that admit one, what each entry ships, what admits an assembly, and the rulings every draft works under."
+last_verified: 2026-09-24
+title: "The canonical taxonomy library"
+---
+
 # The canonical taxonomy library
 
 This directory holds the canonical taxonomy library: a curated set of taxonomies, each one modeling a named documentation tradition. Every adopter would otherwise rediscover and re-encode their own tradition from nothing. The library is the alternative to that, published on the terms that [spec 7](https://github.com/headwater-ai/headwater/blob/main/docs/spec/07-distribution-and-federation.md) already fixed.

@@ -47,7 +47,7 @@ All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy l
 | `record` | `<path>` | Read and report the transcript at the path. |
 | `grade` | `<path>` | Grade the transcript at the path against the current regression selection. |
 | `stale` | none | Report which committed transcript read sets changed. |
-| every | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. `plan` is the only subcommand whose own report carries color. `record`, `grade` and `stale` write plain text under either setting, and a refusal on standard error colors under a terminal for all four. |
+| every | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. `plan`, `record` and `grade` color their own report under a terminal. `stale` writes plain text under either setting, because its renderer takes no color mode. A refusal on standard error colors under a terminal for all four. |
 
 Global `--root` selects the repository. `--help`, `--version`, `--wide` and `--no-banner` are handled by the binary before or around the subcommand.
 

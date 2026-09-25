@@ -145,10 +145,10 @@ anchors
     cited by HW-DR-0072
   code_path `docs/taxonomies/decision-record/bundle.yml` via source-tree
     cited by HW-DR-0025
-    inside `docs/taxonomies/**`, which this corpus declares is not corpus content
+    inside `docs/taxonomies/*/bundle.yml`, which this corpus declares is not corpus content
   code_path `docs/taxonomies/decision-record/bundle.yml` via source-tree
     cited by HW-DR-0030
-    inside `docs/taxonomies/**`, which this corpus declares is not corpus content
+    inside `docs/taxonomies/*/bundle.yml`, which this corpus declares is not corpus content
   code_path `docs/tutorials/your-first-governed-corpus.md` via source-tree
     cited by HW-DR-0061
   code_path `engine/Cargo.lock` via source-tree
@@ -263,6 +263,10 @@ anchors
     cited by HW-DR-0045
   code_path `engine/crates/cli/src/paint.rs` via source-tree
     cited by HW-IFACE-headwater-help
+  code_path `engine/crates/cli/src/taxonomy_graph.rs` via source-tree
+    cited by HW-DR-0082
+  code_path `engine/crates/cli/src/taxonomy_graph.rs` via source-tree
+    cited by HW-IFACE-headwater-taxonomy
   code_path `engine/crates/cli/tests/help.rs` via source-tree
     cited by HW-DR-0042
   code_path `engine/crates/cli/tests/help.rs` via source-tree

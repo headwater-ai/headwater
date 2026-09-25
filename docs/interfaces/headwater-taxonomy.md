@@ -2,12 +2,13 @@
 id: HW-IFACE-headwater-taxonomy
 status: current
 status_since: 2026-09-06
-summary: "How to validate, resolve, audit, publish, vendor, compare and migrate taxonomy packages."
+summary: "How to validate, resolve, audit, publish, vendor, compare, migrate and draw taxonomy packages."
 last_verified: 2026-09-07
 title: "headwater taxonomy"
 relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
+    - engine/crates/cli/src/taxonomy_graph.rs
     - engine/crates/resolve/src/lib.rs
     - engine/crates/audit/src/lib.rs
     - engine/crates/audit/src/reading.rs
@@ -20,9 +21,9 @@ relations:
 
 ## Synopsis
 
-    headwater taxonomy <validate|resolve|audit|publish|vendor|diff|migrate> [options] [--root <path>]
+    headwater taxonomy <validate|resolve|audit|publish|vendor|diff|migrate|graph> [options] [--root <path>]
 
-The grouped command validates taxonomy sources, resolves the lock, measures schema use, publishes or vendors packages, compares versions and applies migration payloads.
+The grouped command validates taxonomy sources, resolves the lock, measures schema use, publishes or vendors packages, compares versions and applies migration payloads. It also draws the resolved taxonomy.
 
 ## Description
 
@@ -40,6 +41,8 @@ The grouped command validates taxonomy sources, resolves the lock, measures sche
 
 `diff` does not apply the test that `resolve --check` applies. That test refuses the publisher who edits a package source in place, which is the correct run this verb is written for. It also passes a lock that a person resolved after the candidate was installed, where `diff` reports the wrong answer.
 
+`graph` prints the resolved taxonomy as a Mermaid flowchart on standard output. It reads `.headwater/taxonomy.lock` and no source, and it writes no file. Each purpose is a lane that holds its concrete kinds. Each anchor is a hexagon, and the drawing shows an anchor that no relation reaches. Each pair of endpoints that a relation declares is one edge, with the name of the relation as its label. A pair with an abstract kind at one end is not an edge. An abstract kind stands for every concrete kind under it, so each of those kinds can take the relation. The drawing lists each such pair in a caption: one `%%` comment line for each pair, and one note node. The rule reads `abstract: true` in the lock and names no relation. Two runs over one lock write the same bytes, because the output is sorted and carries no clock and no digest. A lock that is absent or that does not read stops the run with a non-zero exit and one message on standard error.
+
 ## Preconditions
 
 The consumer declaration and package sources must be readable for source operations. Package and artifact paths must exist for `publish`, `vendor`, `diff` and `migrate`. A write operation must satisfy its directory, digest, version and migration preconditions.
@@ -55,6 +58,7 @@ The consumer declaration and package sources must be readable for source operati
 | `vendor <dir-or-location> [--expect <digest>]` | Installs an artifact after digest validation, from a directory somebody already fetched or from an `https://` location this verb fetches. It reports a second artifact installed under the version already there, with both digests and both member counts. |
 | `diff <dir> [--to <version>] [--now <date>]` | Compares a fetched artifact with the current taxonomy. |
 | `migrate <dir> [--to <version>] [--apply] [--now <date>]` | Reports or applies migration steps. It reads the version it migrates from out of the lock header against no pin, and it refuses a transition that is not forward. |
+| `graph` | Prints the resolved taxonomy as a Mermaid flowchart on standard output, and writes no file. |
 | `--root <path>` | Selects the repository to load. |
 | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
 | `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |

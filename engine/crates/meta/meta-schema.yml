@@ -69,12 +69,19 @@ meta_schema: headwater/taxonomy
 # source that validated under 0.5.0 validates under this one, because the
 # member is absent wherever a source did not write it, so it is a minor.
 #
+# 0.7.0 adds `anchor.scope`, an optional list of patterns that names the part
+# of the tree a corpus expects an edge onto this anchor kind to reach (#951).
+# It travels on the anchor kind for the reason `pattern` does: the scope is
+# written in the language the anchor kind's resolver reads, so it sits beside
+# the resolver rather than in a fourteenth root. It is a minor by the same
+# rule, because a source that wrote no scope declares none.
+#
 # No consumer compares this value against anything. `fixtures/schema.record`
 # carries it, so a bump shows up in a diff, and nothing refuses a source for
 # the version it was written against. So the position of a digit here is a
 # statement to a reader and never a gate: the removal above is refused at the
 # member and never at the version.
-version: 0.6.0
+version: 0.7.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
@@ -349,6 +356,14 @@ definitions:
       # turns the resolver on. A resolver that needs no such string, such as
       # `source-tree` or `check-rule`, leaves this absent.
       pattern: {scalar: string}
+      # The governed scope: the patterns over the tree that a corpus expects a
+      # `governance` edge onto this anchor kind to reach, in the pattern
+      # language of HW-DR-0074. `headwater_graph::scope::Scope` is the one
+      # reader and answers whether a path is inside it, `taxonomy validate`
+      # refuses a pattern that matches no entry, and `taxonomy audit` reports
+      # the share of in-scope entries that an edge reaches. A kind that
+      # declares no scope reads as a corpus that expects nothing (#951).
+      scope: {seq: {scalar: string}}
 
   # --- shelves --------------------------------------------------------------
 

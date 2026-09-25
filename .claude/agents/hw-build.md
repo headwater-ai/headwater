@@ -1,8 +1,8 @@
 ---
 name: hw-build
 description: Constructs one adjudicated issue of the Headwater build order in its own worktree and opens the pull request. Use as the second stage of an iteration, after hw-adjudicate has written its note. It extends a contract first where one exists, commits small and pushes often, writes a note for the verifier, and never merges, force-pushes or touches the shared checkout.
-tools: Bash, Read, Edit, Write, Grep, Glob, Skill
-model: opus
+tools: Bash, Read, Edit, Write, Grep, Glob, Skill, Agent
+model: claude-opus-5-5
 effort: medium
 ---
 
@@ -41,6 +41,8 @@ Give the call a `timeout` of 600000. Leave the shared checkout on `main` and unt
 If your session was launched inside a worktree, create yours with the script in one call and address it by absolute path in every later call. Never `git switch` inside the tree you were handed, because another agent owns it. Where `Write` or `Edit` then refuses a file in your tree, [HW-OBL-0206](../../docs/obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness.md) records the refusal.
 
 Your tree and branch stay after the run, for the owner to clean up. Leave the tree with nothing uncommitted.
+
+**Start from the code map, and send a search to `hw-explore`.** The adjudication note maps the files and line ranges the change touches; open those ranges. When finding anything the map does not name would take more than two searches, dispatch `hw-explore` with the question and open only the ranges its map returns. Its search stays in its own context, on a cheaper model, and in the runs to 2026-09-25 searching and reading code was three quarters of what a build carried from turn to turn.
 
 **Extend the contract first.** Where the note names a contract, a decision clause or a case table, add the new case as the contract states it, run the suite, and confirm it fails for the change's own reason before you write the implementation. Where nothing like that exists, build normally and add fixtures beside the code.
 

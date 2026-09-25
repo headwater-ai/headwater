@@ -1035,6 +1035,21 @@ add:
   # control and an edge that name one rule name one thing.
   anchors.check_rule: {resolver: check-rule}
 
+  # The governed scope of this repository (#951): the part of the tree this
+  # corpus expects a `governs` edge to reach. `taxonomy validate` refuses a
+  # pattern here that matches no entry, and `taxonomy audit` prints the share
+  # of in-scope entries an edge reaches, per pattern and in total. The seven
+  # patterns are the ones the governs-edges evaluation names under "Coverage:
+  # two numbers with two denominators".
+  anchors.code_path.scope:
+    - engine/crates/**/src/**/*.rs
+    - .githooks/**
+    - .claude/hooks/**
+    - .claude/agents/**
+    - .claude/skills/**
+    - tools/**
+    - site/**
+
   # [HW-DR-0073](../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
   # ruling 4: a `comment-scan` resolver ships in the binary, and the pattern it
   # looks for stays in configuration rather than in the engine. `pattern` here
