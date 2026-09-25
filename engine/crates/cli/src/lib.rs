@@ -1233,7 +1233,23 @@ pub enum TaxonomyWord {
         )]
         now: Option<Date>,
     },
-    Graph,
+    Graph {
+        #[arg(
+            long,
+            value_enum,
+            default_value_t,
+            help = "which drawing to print. `concrete` draws the concrete kinds, the anchors and \
+                    the relations between them. `abstract` draws each abstract kind, the kinds \
+                    declared under it and the relations that name it, which `concrete` leaves out"
+        )]
+        view: crate::taxonomy_graph::View,
+        #[arg(
+            long,
+            help = "add a key that draws each shape and each edge style the drawing uses, and \
+                    names the family each edge color stands for"
+        )]
+        legend: bool,
+    },
     #[command(external_subcommand)]
     Other(Vec<String>),
 }

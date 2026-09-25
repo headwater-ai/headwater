@@ -370,7 +370,7 @@ pub const VERBS: &[Verb] = &[
             Word {
                 name: "graph",
                 summary: "print the resolved taxonomy as a Mermaid flowchart",
-                description: "Print the resolved taxonomy as a Mermaid flowchart on standard output: one lane for each purpose, holding its concrete kinds, one hexagon for each anchor, and one edge for each pair a relation declares, labeled with the relation. A pair with an abstract kind at one end is not drawn, because the abstract kind stands for every concrete kind declared under it, and the drawing lists each such pair in a caption instead. It reads `.headwater/taxonomy.lock` and never the sources, and it writes no file.",
+                description: "Print the resolved taxonomy as a Mermaid flowchart on standard output. The default view, `--view concrete`, draws one lane for each purpose, holding its concrete kinds, one hexagon for each anchor, and one edge for each pair a relation declares, labeled with the relation. A pair whose two ends are one kind is a line on that kind and no edge. It leaves out a pair with an abstract kind at one end. `--view abstract` draws each abstract kind, the kinds declared under it, and the pairs that name an abstract kind. `--legend` adds a key to either view. It reads `.headwater/taxonomy.lock` and never the sources, and it writes no file.",
             },
         ],
     },
