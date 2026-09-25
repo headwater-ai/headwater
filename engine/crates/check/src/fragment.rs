@@ -836,8 +836,17 @@ sys.stdout.buffer.write("\0".join(fn(text, "-") for text in texts).encode("utf-8
     /// A pattern that ends in `/` names a directory and excludes everything
     /// under a directory of that name at any depth, which is the gitignore
     /// shape MkDocs matches these with. Anything else names a file.
+    ///
+    /// A pattern with a `/` before its end is anchored at `docs_dir`, as
+    /// gitignore anchors one, and `*` in it stands for one whole path
+    /// component. That is the shape `taxonomies/*/fixtures/` takes since
+    /// #350 served the library's doctrine and kept its fixtures out.
     fn is_excluded(relative: &str, patterns: &[String]) -> bool {
         patterns.iter().any(|pattern| {
+            let body = pattern.strip_suffix('/').unwrap_or(pattern);
+            if body.contains('/') {
+                return is_excluded_anchored(relative, body, pattern.ends_with('/'));
+            }
             match pattern.strip_suffix('/') {
                 Some(directory) => relative
                     .split('/')
@@ -852,6 +861,44 @@ sys.stdout.buffer.write("\0".join(fn(text, "-") for text in texts).encode("utf-8
                 }
             }
         })
+    }
+
+    /// Whether an anchored pattern names `relative`: each of its components
+    /// is a literal or `*`, and it matches the leading components of the
+    /// path. A directory pattern needs a component of the path beyond it, and
+    /// a file pattern needs the whole path.
+    fn is_excluded_anchored(relative: &str, pattern: &str, directory: bool) -> bool {
+        let wanted: Vec<&str> = pattern.split('/').collect();
+        let path: Vec<&str> = relative.split('/').collect();
+        let fits = if directory {
+            path.len() > wanted.len()
+        } else {
+            path.len() == wanted.len()
+        };
+        fits && wanted
+            .iter()
+            .zip(&path)
+            .all(|(want, got)| *want == "*" || want == got)
+    }
+
+    #[test]
+    fn an_anchored_exclude_docs_pattern_names_one_component_per_star() {
+        let patterns = vec![
+            "taxonomies/*/fixtures/".to_string(),
+            "taxonomies/*/bundle.yml".to_string(),
+        ];
+        assert!(is_excluded(
+            "taxonomies/design-spec/fixtures/corpus/a.md",
+            &patterns
+        ));
+        assert!(is_excluded("taxonomies/design-spec/bundle.yml", &patterns));
+        assert!(!is_excluded(
+            "taxonomies/design-spec/doctrine.md",
+            &patterns
+        ));
+        assert!(!is_excluded("taxonomies/README.md", &patterns));
+        assert!(!is_excluded("spec/fixtures/a.md", &patterns));
+        assert!(!is_excluded("taxonomies/a/b/fixtures/c.md", &patterns));
     }
 
     /// Every Markdown file under a directory, in path order.
