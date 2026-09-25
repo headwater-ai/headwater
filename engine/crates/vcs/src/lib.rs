@@ -353,11 +353,31 @@ fn finds_a_repository(root: &Path) -> bool {
 }
 
 /// Whether git reads `value` of a boolean environment variable as true.
+///
+/// Git's own rule (`git_config_bool`): `true`, `yes` and `on` in any case are
+/// true, and `false`, `no`, `off` and the empty value are false. Any other
+/// value is an integer as `strtoimax` reads it in base 0, so `0x10` and `010`
+/// are numbers, with an optional `k`, `m` or `g` unit. It is true where it is
+/// not zero. Git refuses a value that is none of these, and this reads it as
+/// false, so the search does not cross a boundary on it.
 fn git_bool(value: &str) -> bool {
-    matches!(
-        value.trim().to_ascii_lowercase().as_str(),
-        "1" | "true" | "yes" | "on"
-    )
+    let lower = value.to_ascii_lowercase();
+    match lower.as_str() {
+        "true" | "yes" | "on" => return true,
+        "false" | "no" | "off" | "" => return false,
+        _ => {}
+    }
+    let number = lower.trim_start();
+    let number = number.strip_suffix(['k', 'm', 'g']).unwrap_or(number);
+    let digits = number.strip_prefix(['-', '+']).unwrap_or(number);
+    let parsed = if let Some(hex) = digits.strip_prefix("0x") {
+        u128::from_str_radix(hex, 16)
+    } else if let Some(octal) = digits.strip_prefix('0').filter(|rest| !rest.is_empty()) {
+        u128::from_str_radix(octal, 8)
+    } else {
+        digits.parse::<u128>()
+    };
+    parsed.is_ok_and(|number| number != 0)
 }
 
 /// [`finds_a_repository`] with the two environment settings passed in.
