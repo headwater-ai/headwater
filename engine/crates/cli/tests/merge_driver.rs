@@ -558,6 +558,115 @@ fn inside_a_repository_where_git_does_not_run_derived_says_so() {
     );
 }
 
+/// `headwater derived` with `extra` set on the child alone, and `PATH` too
+/// where `path` names one. Standard output and standard error, joined.
+fn derived_with(tree: &Tree, path: Option<&Path>, extra: &[(&str, &str)]) -> (Option<i32>, String) {
+    let mut command = Command::new(binary());
+    command
+        .args(["derived", "--root"])
+        .arg(&tree.at)
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env_remove("GIT_DIR")
+        .env_remove("GIT_INDEX_FILE")
+        .env_remove("GIT_WORK_TREE");
+    if let Some(path) = path {
+        command.env("PATH", path);
+    }
+    for (key, value) in extra {
+        command.env(key, value);
+    }
+    let output = command.output().expect("the binary runs");
+    let said = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    (output.status.code(), said)
+}
+
+/// Inside a repository that git refuses for its owner, `headwater derived` says so and exits 1.
+///
+/// Git runs, and `git rev-parse` fails with "dubious ownership", which is
+/// common where a container runs as another user than the one that owns the
+/// checkout. `GIT_TEST_ASSUME_DIFFERENT_OWNER` is git's own knob for that
+/// state. A `.git` entry says a repository is there, so the failed question is
+/// a refusal and not "no repository". Read a failed `rev-parse` as `None`
+/// again, and this case fails on the exit status.
+#[test]
+fn inside_a_repository_that_git_refuses_for_its_owner_derived_says_so() {
+    let tree = Tree::adopted("dubious-owner");
+    tree.headwater_ok(&["init", "--git"]);
+    tree.headwater_ok(&["derived"]);
+
+    let (code, said) = derived_with(&tree, None, &[("GIT_TEST_ASSUME_DIFFERENT_OWNER", "1")]);
+    assert_eq!(
+        code,
+        Some(1),
+        "a repository that git refuses is not a tree with no repository:\n{said}"
+    );
+    assert!(
+        said.contains("git did not answer"),
+        "the report names that git did not answer:\n{said}"
+    );
+}
+
+/// Inside a linked worktree whose repository is gone, `headwater derived` says so and exits 1.
+///
+/// The `.git` file of a linked worktree names a directory, and once that
+/// directory is pruned `git rev-parse` fails. The `.git` file still says the
+/// tree is a work tree whose attributes only git reads.
+#[test]
+fn inside_a_worktree_whose_git_directory_is_gone_derived_says_so() {
+    let tree = Tree::adopted("pruned-worktree");
+    tree.headwater_ok(&["init", "--git"]);
+    std::fs::remove_dir_all(tree.at.join(".git")).expect("the git directory is removed");
+    let gone = tree.at.with_extension("pruned-gitdir");
+    let _ = std::fs::remove_dir_all(&gone);
+    tree.write(".git", &format!("gitdir: {}\n", gone.display()));
+
+    let (code, said) = derived_with(&tree, None, &[]);
+    assert_eq!(
+        code,
+        Some(1),
+        "a worktree whose git directory is gone is not a tree with no repository:\n{said}"
+    );
+    assert!(
+        said.contains("git did not answer"),
+        "the report names that git did not answer:\n{said}"
+    );
+}
+
+/// With no `.git` entry anywhere above the tree and no git on `PATH`, the root file answers with no refusal.
+///
+/// This is the other half of the two cases above. A tree that is not a
+/// repository yet is read by the root-file reader, whether git is installed or
+/// not. Read every failed spawn as a refusal, and this case fails.
+#[test]
+fn outside_a_repository_with_no_git_derived_reads_the_root_file_and_refuses_nothing() {
+    let tree = Tree::adopted("no-git-no-repository");
+    tree.headwater_ok(&["init", "--git"]);
+    std::fs::remove_dir_all(tree.at.join(".git")).expect("the git directory is removed");
+    assert!(
+        !tree.at.ancestors().any(|dir| dir.join(".git").exists()),
+        "no directory above the temporary tree holds a `.git` entry"
+    );
+
+    let empty = tree.at.with_extension("empty-path-no-repository");
+    std::fs::create_dir_all(&empty).expect("the empty directory is made");
+    let (code, said) = derived_with(&tree, Some(&empty), &[]);
+    let _ = std::fs::remove_dir_all(&empty);
+    assert!(
+        !said.contains("git did not"),
+        "a tree with no repository names no git failure:\n{said}"
+    );
+    assert_eq!(
+        code,
+        Some(0),
+        "the root `.gitattributes` that `init --git` wrote agrees:\n{said}"
+    );
+}
+
 /// `init --git` writes no root line for a fold that a nested file already declares.
 ///
 /// The lock is declared in `.headwater/.gitattributes`, and git answers
