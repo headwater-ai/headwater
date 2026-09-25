@@ -2137,6 +2137,71 @@ if [ -f "$release_wf" ]; then
         "no job runs an archive on a host that did not build it, so nothing stops a release whose archive cannot run" \
         "$(release_gate_judge "$scratch/release/no-smoke.yml")"
 
+    # A `needs:` holds publish only while the job's `if:` leaves the default
+    # `success()` in place. A status function overrides it, and the release is
+    # then created whatever the smoke jobs did.
+    sed '/^  publish:/,/^  [A-Za-z]/s/^    if: \(.*\)$/    if: always() \&\& (\1)/' \
+        "$release_wf" >"$scratch/release/always.yml"
+    if cmp -s "$release_wf" "$scratch/release/always.yml"; then
+        fail "  a release whose \`if:\` overrides the smoke gate is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a release whose \`if:\` overrides the smoke gate is refused" \
+            "the job that creates the release calls always() in its \`if:\`, so it runs whatever the smoke jobs did" \
+            "$(release_gate_judge "$scratch/release/always.yml")"
+    fi
+
+    # A smoke job that cannot fail is a smoke job that holds nothing, whether
+    # the job or one of its steps swallows the failure.
+    sed '/^  smoke-linux:/a\
+    continue-on-error: true' "$release_wf" >"$scratch/release/soft-job.yml"
+    if cmp -s "$release_wf" "$scratch/release/soft-job.yml"; then
+        fail "  a smoke job that does not fail on a broken archive is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a smoke job that does not fail on a broken archive is refused" \
+            "smoke-linux sets \`continue-on-error: true\`, so a broken archive does not stop the release" \
+            "$(release_gate_judge "$scratch/release/soft-job.yml")"
+    fi
+
+    sed '/^  smoke-macos:/,/^  [A-Za-z]/{/^      - name:/a\
+        continue-on-error: true
+}' "$release_wf" >"$scratch/release/soft-step.yml"
+    if cmp -s "$release_wf" "$scratch/release/soft-step.yml"; then
+        fail "  and so is one whose step does not fail" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  and so is one whose step does not fail" \
+            "smoke-macos sets \`continue-on-error: true\`, so a broken archive does not stop the release" \
+            "$(release_gate_judge "$scratch/release/soft-step.yml")"
+    fi
+
+    # A smoke job pointed at the archive the build host already ran proves
+    # nothing about the one a stranger downloads. The gnu row is the one build
+    # target no smoke job runs, by design, so moving the musl smoke onto it
+    # leaves the musl archive unrun.
+    sed '/^  smoke-linux:/,/^  [A-Za-z]/s/x86_64-unknown-linux-musl/x86_64-unknown-linux-gnu/g' \
+        "$release_wf" >"$scratch/release/smoke-gnu.yml"
+    if cmp -s "$release_wf" "$scratch/release/smoke-gnu.yml"; then
+        fail "  a build target that no smoke job runs is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a build target that no smoke job runs is refused" \
+            "no smoke job runs the x86_64-unknown-linux-musl archive" \
+            "$(release_gate_judge "$scratch/release/smoke-gnu.yml")"
+    fi
+
+    sed '/^  smoke-linux:/,/^  [A-Za-z]/s/name: x86_64-unknown-linux-musl/name: x86_64-unknown-linux-gnu/' \
+        "$release_wf" >"$scratch/release/smoke-split.yml"
+    if cmp -s "$release_wf" "$scratch/release/smoke-split.yml"; then
+        fail "  and a smoke job that downloads one archive and runs another" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  and a smoke job that downloads one archive and runs another" \
+            "smoke-linux downloads x86_64-unknown-linux-gnu and runs the x86_64-unknown-linux-musl archive" \
+            "$(release_gate_judge "$scratch/release/smoke-split.yml")"
+    fi
+
     # The guard on the guard. `bash -e` without `pipefail` takes the LAST
     # command's status, so a version check written as `$(binary | awk …)` passes
     # for every tag when the binary refuses to run. That is what this workflow
