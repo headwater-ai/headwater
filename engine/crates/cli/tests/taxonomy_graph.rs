@@ -19,7 +19,7 @@
 //! expectation and the output together. The names the second case writes are
 //! its own and nothing in the lock carries them.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -72,9 +72,14 @@ impl Ran {
 }
 
 fn graph(at: &Path) -> Ran {
+    graph_with(at, &[])
+}
+
+fn graph_with(at: &Path, options: &[&str]) -> Ran {
     let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
         .args(["taxonomy", "graph", "--root"])
         .arg(at)
+        .args(options)
         .output()
         .expect("the binary runs");
     Ran {
@@ -96,6 +101,10 @@ struct Expected {
     drawn: BTreeSet<(String, String, String)>,
     /// `(relation, from, to)` with an abstract kind at one end or both.
     captioned: BTreeSet<(String, String, String)>,
+    /// kind -> the kind it is declared `is_a`, for every kind that names one.
+    parents: BTreeMap<String, String>,
+    /// relation -> family.
+    families: BTreeMap<String, String>,
 }
 
 fn names(node: Option<&headwater_yaml::Spanned<Value>>) -> Vec<String> {
@@ -135,6 +144,9 @@ fn expected(lock: &str) -> Expected {
     let kinds = map(resolved, "kinds");
     for entry in kinds {
         let kind = entry.value.value.as_map().expect("a kind is a mapping");
+        if let Some(parent) = scalar(kind, "is_a") {
+            out.parents.insert(entry.key.value.clone(), parent);
+        }
         if scalar(kind, "abstract").as_deref() == Some("true") {
             out.abstracts.insert(entry.key.value.clone());
         } else {
@@ -144,6 +156,9 @@ fn expected(lock: &str) -> Expected {
     }
     for entry in map(resolved, "relations") {
         let relation = entry.value.value.as_map().expect("a relation is a mapping");
+        if let Some(family) = scalar(relation, "family") {
+            out.families.insert(entry.key.value.clone(), family);
+        }
         for from in names(relation.get("from")) {
             for to in names(relation.get("to")) {
                 let pair = (entry.key.value.clone(), from.clone(), to.clone());
@@ -189,8 +204,36 @@ fn edges(text: &str) -> Vec<String> {
         .collect()
 }
 
-fn caption(relation: &str, from: &str, to: &str) -> String {
-    format!("%%   {relation}: {from} -> {to}")
+/// Whether `line` declares the node of `kind`, with or without the lines that
+/// name a relation the kind has to itself.
+fn declares(line: &str, kind: &str) -> bool {
+    let line = line.trim();
+    line == format!("kind_{kind}[\"{kind}\"]")
+        || line.starts_with(&format!("kind_{kind}[\"{kind}<br/>"))
+}
+
+/// A relation from a node to itself is no edge, and it is a line on the node.
+fn loops_hold(text: &str, expected: &Expected, pairs: &BTreeSet<(String, String, String)>) {
+    for (relation, from, to) in pairs.iter().filter(|(_, from, to)| from == to) {
+        let edge = format!(
+            "{} -->|{relation}| {}",
+            node(expected, from),
+            node(expected, to)
+        );
+        assert!(
+            !text.lines().any(|l| l.trim() == edge),
+            "the self-pair `{edge}` is no edge:\n{text}"
+        );
+        let open = format!("{}[", node(expected, from));
+        let declaration = text
+            .lines()
+            .find(|l| l.trim().starts_with(&open))
+            .unwrap_or_else(|| panic!("the node `{from}` is declared:\n{text}"));
+        assert!(
+            declaration.contains(&format!("\u{21bb} {relation}")),
+            "the node `{from}` carries a line for `{relation}`:\n{text}"
+        );
+    }
 }
 
 /// Hold one drawing to what its lock says, every set in full.
@@ -206,9 +249,8 @@ fn holds(text: &str, expected: &Expected) {
     for purpose in &expected.purposes {
         let inside = lane(text, purpose);
         for (lane_of, kind) in &expected.lanes {
-            let line = format!("kind_{kind}[\"{kind}\"]");
             assert_eq!(
-                inside.contains(&line),
+                inside.iter().any(|l| declares(l, kind)),
                 lane_of == purpose,
                 "`{kind}` sits in the lane of `{lane_of}` and no other:\n{text}"
             );
@@ -228,7 +270,8 @@ fn holds(text: &str, expected: &Expected) {
         );
     }
     let drawn = edges(text);
-    for (relation, from, to) in &expected.drawn {
+    let between: Vec<_> = expected.drawn.iter().filter(|(_, f, t)| f != t).collect();
+    for (relation, from, to) in &between {
         let line = format!(
             "{} -->|{relation}| {}",
             node(expected, from),
@@ -238,22 +281,276 @@ fn holds(text: &str, expected: &Expected) {
     }
     assert_eq!(
         drawn.len(),
-        expected.drawn.len(),
-        "one edge for each drawable pair and no other:\n{text}"
+        between.len(),
+        "one edge for each drawable pair between two nodes and no other:\n{text}"
     );
-    for (relation, from, to) in &expected.captioned {
-        let line = caption(relation, from, to);
+    loops_hold(text, expected, &expected.drawn);
+    assert!(
+        !text.lines().any(|l| l.starts_with("%%   ")) && !text.contains("note_abstract"),
+        "no pair is listed and no note is drawn:\n{text}"
+    );
+    assert_eq!(
+        text.contains("--view abstract"),
+        !expected.captioned.is_empty(),
+        "the pointer to the abstract view is there when a pair is left out, and only then:\n{text}"
+    );
+}
+
+/// Whether `kind` is declared, at any depth, under an abstract kind.
+fn under_abstract(expected: &Expected, kind: &str) -> bool {
+    let mut seen = BTreeSet::new();
+    let mut at = kind.to_string();
+    while seen.insert(at.clone()) {
+        let Some(parent) = expected.parents.get(&at) else {
+            return false;
+        };
+        if expected.abstracts.contains(parent) {
+            return true;
+        }
+        at = parent.clone();
+    }
+    false
+}
+
+/// Hold the abstract view to what its lock says, every set in full.
+fn holds_abstract(text: &str, expected: &Expected) {
+    assert!(
+        text.lines().any(|l| l == "flowchart LR"),
+        "a flowchart:\n{text}"
+    );
+    for abstract_kind in &expected.abstracts {
+        let open = format!("kind_{abstract_kind}[\"{abstract_kind}<br/>abstract");
         assert!(
-            text.lines().any(|l| l == line),
-            "the pair `{line}` is in the caption:\n{text}"
+            text.lines().any(|l| l.trim().starts_with(&open)),
+            "the abstract kind `{abstract_kind}` is a node:\n{text}"
         );
     }
-    let listed = text.lines().filter(|l| l.starts_with("%%   ")).count();
+    let members: BTreeSet<&(String, String)> = expected
+        .lanes
+        .iter()
+        .filter(|(_, kind)| under_abstract(expected, kind))
+        .collect();
+    for (lane_of, kind) in &expected.lanes {
+        let member = members.contains(&(lane_of.clone(), kind.clone()));
+        assert_eq!(
+            text.lines().any(|l| declares(l, kind)),
+            member,
+            "`{kind}` is drawn when it sits under an abstract kind, and only then:\n{text}"
+        );
+    }
+    for purpose in &expected.purposes {
+        let wanted: Vec<&str> = members
+            .iter()
+            .filter(|(lane_of, _)| lane_of == purpose)
+            .map(|(_, kind)| kind.as_str())
+            .collect();
+        let open = format!("subgraph purpose_{purpose}[");
+        if wanted.is_empty() {
+            assert!(!text.contains(&open), "no empty lane `{purpose}`:\n{text}");
+        } else {
+            let inside = lane(text, purpose);
+            for kind in wanted {
+                assert!(
+                    inside.iter().any(|l| declares(l, kind)),
+                    "`{kind}` sits in the lane of `{purpose}`:\n{text}"
+                );
+            }
+        }
+    }
+    let mut arrows = 0;
+    for (kind, parent) in &expected.parents {
+        let named =
+            expected.abstracts.contains(kind) || members.iter().any(|(_, member)| member == kind);
+        if named {
+            arrows += 1;
+            let line = format!("{} -.-> {}", node(expected, kind), node(expected, parent));
+            assert!(
+                text.lines().any(|l| l.trim() == line),
+                "the arrow `{line}` is drawn:\n{text}"
+            );
+        }
+    }
+    let drawn_arrows = text
+        .lines()
+        .filter(|l| l.trim_start().starts_with("kind_") && l.contains(" -.-> "))
+        .count();
     assert_eq!(
-        listed,
-        expected.captioned.len(),
-        "the caption lists each pair once:\n{text}"
+        drawn_arrows, arrows,
+        "one is_a arrow for each kind that names a parent:\n{text}"
     );
+    let between: Vec<_> = expected
+        .captioned
+        .iter()
+        .filter(|(_, f, t)| f != t)
+        .collect();
+    for (relation, from, to) in &between {
+        let line = format!(
+            "{} -->|{relation}| {}",
+            node(expected, from),
+            node(expected, to)
+        );
+        assert!(
+            text.lines().any(|l| l.trim() == line),
+            "the edge `{line}` is drawn:\n{text}"
+        );
+    }
+    loops_hold(text, expected, &expected.captioned);
+    for (relation, from, to) in &expected.drawn {
+        let line = format!(
+            "{} -->|{relation}| {}",
+            node(expected, from),
+            node(expected, to)
+        );
+        assert!(
+            !text.lines().any(|l| l.trim() == line),
+            "the edge `{line}` belongs to the concrete view:\n{text}"
+        );
+    }
+    assert_eq!(
+        real_edges(text).len(),
+        between.len() + arrows,
+        "one edge for each pair with an abstract end and two nodes, and each arrow:\n{text}"
+    );
+    let reached: BTreeSet<&String> = expected
+        .captioned
+        .iter()
+        .flat_map(|(_, from, to)| [from, to])
+        .filter(|end| expected.anchors.contains(*end))
+        .collect();
+    for anchor in &expected.anchors {
+        let line = format!("anchor_{anchor}{{{{\"{anchor}\"}}}}");
+        assert_eq!(
+            text.lines().any(|l| l.trim() == line),
+            reached.contains(anchor),
+            "the anchor `{anchor}` is drawn where a pair reaches it, and only then:\n{text}"
+        );
+    }
+}
+
+/// Every edge line of the drawing itself, in order, with no edge of a key.
+fn real_edges(text: &str) -> Vec<String> {
+    text.lines()
+        .map(str::trim)
+        .filter(|l| (l.contains(" -->|") || l.contains(" -.->")) && !l.starts_with("key_"))
+        .map(str::to_string)
+        .collect()
+}
+
+/// The stroke each `linkStyle` line gives each edge index.
+fn strokes(text: &str) -> BTreeMap<usize, String> {
+    let mut out = BTreeMap::new();
+    for line in text.lines() {
+        let Some(rest) = line.trim().strip_prefix("linkStyle ") else {
+            continue;
+        };
+        let (indices, style) = rest
+            .split_once(" stroke:")
+            .expect("a linkStyle names a stroke");
+        for index in indices.split(',') {
+            out.insert(index.parse().expect("an index"), style.to_string());
+        }
+    }
+    out
+}
+
+/// Hold the key of one drawing to the edges it explains: a family is keyed
+/// exactly when an edge carries it, in the stroke that edge carries.
+fn key_agrees(text: &str, expected: &Expected) {
+    assert!(text.contains("subgraph key[\"key\"]"), "a key:\n{text}");
+    let strokes = strokes(text);
+    let all: Vec<&str> = text
+        .lines()
+        .map(str::trim)
+        .filter(|l| l.contains(" -->|") || l.contains(" -.->"))
+        .collect();
+    let label = |line: &str| -> String {
+        let after = line.split_once('|').expect("an edge label").1;
+        after.split_once('|').expect("a closed label").0.to_string()
+    };
+    // Each loop line of a node: the family of its relation and the color it has.
+    let loop_lines: Vec<(String, String)> = text
+        .split("<span style='color:")
+        .skip(1)
+        .map(|chunk| {
+            let color = chunk.split('\'').next().expect("a color").to_string();
+            let relation = chunk
+                .split_once("\u{21bb} ")
+                .expect("a loop line names its relation")
+                .1
+                .split("</span>")
+                .next()
+                .expect("a closed span")
+                .to_string();
+            let family = expected
+                .families
+                .get(&relation)
+                .unwrap_or_else(|| panic!("`{relation}` has a family"))
+                .clone();
+            (family, color)
+        })
+        .collect();
+    let mut keyed = BTreeSet::new();
+    for (index, line) in all.iter().enumerate() {
+        if !line.starts_with("key_a") {
+            continue;
+        }
+        let name = label(line);
+        keyed.insert(name.clone());
+        let stroke = strokes.get(&index).expect("a key edge is styled");
+        let mut seen = 0;
+        for (at, other) in all.iter().enumerate() {
+            if other.starts_with("key_a") {
+                continue;
+            }
+            let carries = if name == "is_a" {
+                other.contains(" -.->")
+            } else {
+                other.contains(" -->|") && expected.families.get(&label(other)) == Some(&name)
+            };
+            if carries {
+                seen += 1;
+                assert_eq!(
+                    strokes.get(&at),
+                    Some(stroke),
+                    "the key draws `{name}` in the stroke of its edges:\n{text}"
+                );
+            }
+        }
+        for (family, color) in &loop_lines {
+            if *family == name {
+                seen += 1;
+                assert_eq!(
+                    color, stroke,
+                    "the key draws `{name}` in the color of its loop lines:\n{text}"
+                );
+            }
+        }
+        assert!(
+            seen > 0,
+            "the key names `{name}` and no edge or loop line carries it:\n{text}"
+        );
+    }
+    for (family, _) in &loop_lines {
+        assert!(
+            keyed.contains(family),
+            "the key names `{family}`, which a loop line carries:\n{text}"
+        );
+    }
+    for other in all.iter().filter(|l| !l.starts_with("key_a")) {
+        let name = if other.contains(" -.->") {
+            "is_a".to_string()
+        } else {
+            expected
+                .families
+                .get(&label(other))
+                .expect("a relation has a family")
+                .clone()
+        };
+        assert!(
+            keyed.contains(&name),
+            "the key names `{name}`, which an edge carries:\n{text}"
+        );
+    }
 }
 
 #[test]
@@ -350,13 +647,24 @@ fn the_drawing_follows_an_edit_to_the_lock() {
     edited = insert_after(
         &edited,
         "  kinds:",
-        &format!("    zz_kind:\n      is_a: {abstract_kind}\n      purpose: zz_lane\n"),
+        &format!(
+            "    zz_kind:\n      is_a: {abstract_kind}\n      purpose: zz_lane\n    zz_deep:\n      is_a: zz_kind\n      purpose: zz_lane\n    zz_loose:\n      purpose: zz_lane\n"
+        ),
     );
     edited = insert_after(
         &edited,
         "  relations:",
         &format!(
             "    zz_link:\n      family: association\n      from:\n        - zz_kind\n      to:\n        - {abstract_kind}\n      created_by: author\n"
+        ),
+    );
+    // Two relations from a node to itself, in a family that no edge carries: one
+    // on the new kind and one on the abstract kind.
+    edited = insert_after(
+        &edited,
+        "  relations:",
+        &format!(
+            "    zz_self:\n      family: zz_family\n      from:\n        - zz_kind\n      to:\n        - zz_kind\n      created_by: author\n    zz_abstract_self:\n      family: zz_family\n      from:\n        - {abstract_kind}\n      to:\n        - {abstract_kind}\n      created_by: author\n"
         ),
     );
     edited = remove_relation(&edited, &gone);
@@ -379,18 +687,49 @@ fn the_drawing_follows_an_edit_to_the_lock() {
     holds(&text, &after);
 
     assert!(
-        lane(&text, "zz_lane").contains(&"kind_zz_kind[\"zz_kind\"]".to_string()),
+        lane(&text, "zz_lane")
+            .iter()
+            .any(|l| declares(l, "zz_kind")),
         "the new lane holds the new kind:\n{text}"
     );
     assert!(
-        text.lines()
-            .any(|l| l == caption("zz_link", "zz_kind", &abstract_kind)),
-        "the new pair is captioned:\n{text}"
+        !edges(&text).iter().any(|l| l.contains("|zz_link|")),
+        "the new pair is not in the concrete view:\n{text}"
+    );
+    let abstract_text = graph_with(&at, &["--view", "abstract"]).text();
+    holds_abstract(&abstract_text, &after);
+    for view in ["concrete", "abstract"] {
+        let keyed = graph_with(&at, &["--view", view, "--legend"]).text();
+        key_agrees(&keyed, &after);
+        assert!(
+            keyed.contains("\u{21bb} zz_self") || view == "abstract",
+            "the concrete view writes the self-pair on its node:\n{keyed}"
+        );
+        assert!(
+            keyed.contains("\u{21bb} zz_abstract_self") || view == "concrete",
+            "the abstract view writes the self-pair on the abstract node:\n{keyed}"
+        );
+    }
+    assert!(
+        lane(&abstract_text, "zz_lane")
+            .iter()
+            .any(|l| declares(l, "zz_kind")),
+        "the abstract view carries the new lane:\n{abstract_text}"
     );
     assert!(
-        !edges(&text).iter().any(|l| l.contains("|zz_link|")),
-        "the new pair is not drawn:\n{text}"
+        !abstract_text.contains("kind_zz_loose"),
+        "a kind under no abstract kind is not in the abstract view:\n{abstract_text}"
     );
+    for line in [
+        "kind_zz_deep -.-> kind_zz_kind".to_string(),
+        format!("kind_zz_kind -.-> kind_{abstract_kind}"),
+        format!("kind_zz_kind -->|zz_link| kind_{abstract_kind}"),
+    ] {
+        assert!(
+            abstract_text.lines().any(|l| l.trim() == line),
+            "the abstract view draws `{line}`:\n{abstract_text}"
+        );
+    }
     let line = format!(
         "{} -->|{gone}| {}",
         node(&before, &gone_from),
@@ -436,5 +775,64 @@ fn an_unreadable_lock_exits_non_zero() {
     let ran = graph(&at);
     assert_ne!(ran.code, Some(0), "{ran:?}");
     assert!(ran.out.is_empty(), "nothing is drawn: {ran:?}");
+    let _ = std::fs::remove_dir_all(&at);
+}
+
+#[test]
+fn the_abstract_view_holds_every_abstract_kind_and_pair_the_committed_lock_declares() {
+    let lock = committed();
+    let expected = expected(&lock);
+    let at = root("abstract", Some(&lock));
+    let ran = graph_with(&at, &["--view", "abstract"]);
+    assert_eq!(ran.code, Some(0), "the abstract view draws: {ran:?}");
+    holds_abstract(&ran.text(), &expected);
+    let _ = std::fs::remove_dir_all(&at);
+}
+
+#[test]
+fn the_default_view_is_the_concrete_one() {
+    let at = root("default", Some(&committed()));
+    let plain = graph(&at);
+    let named = graph_with(&at, &["--view", "concrete"]);
+    assert_eq!(plain.code, Some(0), "{plain:?}");
+    assert_eq!(
+        plain.out, named.out,
+        "no option and `--view concrete` agree"
+    );
+    let _ = std::fs::remove_dir_all(&at);
+}
+
+#[test]
+fn a_view_outside_the_two_is_refused() {
+    let at = root("view", Some(&committed()));
+    let ran = graph_with(&at, &["--view", "everything"]);
+    assert_ne!(ran.code, Some(0), "{ran:?}");
+    assert!(ran.out.is_empty(), "nothing is drawn: {ran:?}");
+    let _ = std::fs::remove_dir_all(&at);
+}
+
+#[test]
+fn the_key_is_optional_and_names_what_the_drawing_uses() {
+    let lock = committed();
+    let expected = expected(&lock);
+    let at = root("key", Some(&lock));
+    for view in ["concrete", "abstract"] {
+        let bare = graph_with(&at, &["--view", view]).text();
+        let keyed = graph_with(&at, &["--view", view, "--legend"]);
+        assert_eq!(keyed.code, Some(0), "{keyed:?}");
+        let text = keyed.text();
+        assert!(
+            !bare.contains("subgraph key["),
+            "no key without the option:\n{bare}"
+        );
+        key_agrees(&text, &expected);
+        let stripped: Vec<&str> = bare.lines().collect();
+        assert_eq!(
+            real_edges(&text),
+            real_edges(&bare),
+            "the key adds no edge of the drawing itself ({view})"
+        );
+        assert!(!stripped.is_empty());
+    }
     let _ = std::fs::remove_dir_all(&at);
 }
