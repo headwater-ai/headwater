@@ -535,7 +535,11 @@ fn the_description_of_init_says_git_commits_unset_merge_and_selects_the_driver_p
         .args(["init", "--help"])
         .output()
         .expect("the binary runs");
-    assert_eq!(output.status.code(), Some(0), "`headwater init --help` exits 0");
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "`headwater init --help` exits 0"
+    );
     let help = String::from_utf8_lossy(&output.stdout).into_owned();
     let description = help
         .split("Usage:")
@@ -549,7 +553,12 @@ fn the_description_of_init_says_git_commits_unset_merge_and_selects_the_driver_p
         "the description does not say `--git` commits a line that selects the driver, \
          because a line naming a driver no config defines is a text merge:\n{description}"
     );
-    for words in ["`-merge`", "`.gitattributes`", "`info/attributes`", "`git config`"] {
+    for words in [
+        "`-merge`",
+        "`.gitattributes`",
+        "`info/attributes`",
+        "`git config`",
+    ] {
         assert!(
             description.contains(words),
             "the description names {words}, as the `--git` row of the contract does:\n{description}"
@@ -582,10 +591,10 @@ fn every_resolve_remedy_the_merge_hooks_print_is_one_the_verb_accepts() {
                 rest.find("  "),
                 rest.find('\n'),
             ]
-                .into_iter()
-                .flatten()
-                .min()
-                .unwrap_or(rest.len());
+            .into_iter()
+            .flatten()
+            .min()
+            .unwrap_or(rest.len());
             let command = rest[..end].trim();
             let args: Vec<&str> = command.split_whitespace().skip(1).collect();
             let output = tree.headwater(&args);
@@ -600,7 +609,10 @@ fn every_resolve_remedy_the_merge_hooks_print_is_one_the_verb_accepts() {
         assert!(found > 0, "{hook} prints a `{VERB}` remedy");
         ran += found;
     }
-    assert!(ran >= 3, "the two hooks print three resolve commands, and {ran} ran");
+    assert!(
+        ran >= 3,
+        "the two hooks print three resolve commands, and {ran} ran"
+    );
 }
 
 /// Inside a repository where git does not run, `headwater derived` says so and exits 1.
