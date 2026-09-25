@@ -4665,7 +4665,16 @@ mod tests {
     /// that climbs out of it or is absolute.
     #[test]
     fn content_roots_are_the_first_segment_of_each_value_inside_the_package() {
-        let source = "package: acme/x\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: ../../docs/taxonomies\n  assemblies: assemblies/\n  doctrine: ./doctrine/pages\n  examples: examples/one/../two\n  elsewhere: /abs/path\n  climbs: a/../../b\n";
+        let source = "package: acme/x
+contents:
+  taxonomy: taxonomy.yml
+  bundles: ../../docs/taxonomies
+  assemblies: assemblies/
+  doctrine: ./doctrine/pages
+  examples: examples/one/../two
+  elsewhere: /abs/path
+  climbs: a/../../b
+";
         let root = headwater_yaml::load(source).expect("the fixture loads");
         let manifest = root.value.as_map().expect("a mapping");
         assert_eq!(

@@ -643,10 +643,7 @@ fn validate_refuses_every_scope_pattern_beside_a_tree_that_none_of_them_matches(
 fn authored_source_root(label: &str) -> Root {
     let root = Root::copy_only(label);
     std::fs::remove_dir_all(root.at.join("docs")).expect("the copied docs go");
-    copy(
-        &repository().join("taxonomy-source/headwater-standard"),
-        &root.at,
-    );
+    copy(&repository().join("taxonomy-source/headwater-standard"), &root.at);
     for own in ["package.yml", "assemblies", "doctrine"] {
         assert!(root.at.join(own).exists(), "the source ships {own}");
     }
@@ -671,8 +668,7 @@ fn assert_no_tree_notice(ran: &Ran) {
 /// tree beside it (#1103). Before, `assemblies/` and `doctrine/` counted as a
 /// tree, and every one of the seven patterns was refused.
 #[test]
-fn validate_gives_the_no_tree_notice_where_the_root_is_an_authored_package_source_beside_its_vendored_copy(
-) {
+fn validate_gives_the_no_tree_notice_at_an_authored_package_source_beside_its_vendored_copy() {
     let root = authored_source_root("scope-authored-source");
     let ran = root.run(&["taxonomy", "validate"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
