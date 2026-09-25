@@ -344,7 +344,10 @@ impl EdgeCheck for Suspect<'_> {
 /// that matched only itself and the resolver still gave no digest: a
 /// directory, which [`headwater_graph::anchors::tree_revision`] refuses to
 /// digest. `None` for every other shape, and for every other resolver.
-fn directory_literal<'e>(resolver: &str, patterns: &'e [headwater_graph::edges::PatternMember]) -> Option<&'e str> {
+fn directory_literal<'e>(
+    resolver: &str,
+    patterns: &'e [headwater_graph::edges::PatternMember],
+) -> Option<&'e str> {
     let [only] = patterns else {
         return None;
     };
