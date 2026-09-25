@@ -355,7 +355,7 @@ pub const VERBS: &[Verb] = &[
             Word {
                 name: "vendor",
                 summary: "check an artifact against the pinned digest and install it",
-                description: "Check an artifact against the digest this repository pinned, and install it under `.headwater/packages/`. The argument is a directory somebody already fetched, or the `https://` location of a published artifact zip, which this verb fetches and unpacks first. It refuses an artifact that is not the pinned one, and it names every file that moved. The fetch lives in `headwater-fetch`, which only the binary links, so no crate of the checking loop opens a socket.",
+                description: "Check an artifact against the digest this repository pinned, and install it under `.headwater/packages/`. The argument is a directory somebody already fetched, or the `https://` location of a published artifact zip, which this verb fetches and unpacks first. It refuses an artifact that is not the pinned one, and it names every file that moved. Where `--expect` supplied the digest and `.headwater/taxonomy.yml` declares none, it records that digest there as `taxonomy.digest` after the artifact matched it. The fetch lives in `headwater-fetch`, which only the binary links, so no crate of the checking loop opens a socket.",
             },
             Word {
                 name: "diff",

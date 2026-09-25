@@ -843,3 +843,313 @@ fn the_vendor_route_init_names_takes_the_location_a_release_publishes() {
         "`headwater taxonomy resolve` is past the version after a fetch:\n{stderr}"
     );
 }
+
+/// The digest the declaration under `root` pins, read through the parser every
+/// verb reads it with rather than grepped out of the text.
+fn pinned_digest(root: &Root) -> Option<String> {
+    headwater_resolve::package::consumer(&root.at)
+        .unwrap_or_else(|errors| panic!("the declaration reads: {errors:?}"))
+        .digest
+}
+
+/// `taxonomy vendor --expect` records the pin it verified, so the next clone
+/// does not refuse.
+///
+/// # Why this case exists
+///
+/// [#641] was an adopter who named the one command a guide gave them and met
+/// `nothing pins this artifact` on the next run. `--expect` verified the
+/// artifact, installed it and exited 0, and left the declaration without a
+/// `digest`, so the identical next run with no flag refused. The owner ruled
+/// in [#1063] that `vendor --expect` writes the value it verified into
+/// `.headwater/taxonomy.yml` when no pin is declared there.
+///
+/// # What it asserts, in the order an adopter meets it
+///
+/// `init`, then `vendor <artifact> --expect <digest>`, leaves a declaration
+/// that pins that digest. A second `vendor` with no flag accepts the artifact.
+/// `resolve`, once the version is set, gets past the pin and the version.
+///
+/// [#641]: https://github.com/headwater-ai/headwater/issues/641
+/// [#1063]: https://github.com/headwater-ai/headwater/issues/1063
+#[test]
+fn vendor_with_expect_writes_the_pin_the_next_run_reads() {
+    let root = Root::over("vendor-expect-pins");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+    root.init();
+    assert_eq!(pinned_digest(&root), None, "`init` pins nothing");
+
+    let (code, stderr) = root.run(
+        &["taxonomy", "vendor", "--expect", digest.as_str()],
+        Some(&artifact),
+    );
+    assert_eq!(
+        code,
+        Some(0),
+        "`vendor --expect` accepts the artifact:\n{stderr}"
+    );
+    assert_eq!(
+        pinned_digest(&root),
+        Some(digest.clone()),
+        "`vendor --expect` wrote the pin it verified into the declaration:\n{}",
+        root.read(".headwater/taxonomy.yml")
+    );
+    let declaration = root.read(".headwater/taxonomy.yml");
+    assert!(
+        !declaration.contains("# digest:"),
+        "the commented `digest` line is the one the pin replaced:\n{declaration}"
+    );
+
+    let (code, stderr) = root.run(&["taxonomy", "vendor"], Some(&artifact));
+    assert_eq!(
+        code,
+        Some(0),
+        "the next `vendor`, with no flag, reads the pin the first one wrote:\n{stderr}"
+    );
+    assert!(
+        !stderr.contains("nothing pins this artifact"),
+        "the next `vendor` finds a pin:\n{stderr}"
+    );
+
+    let version = maintained_version();
+    root.write(
+        ".headwater/taxonomy.yml",
+        &declaration.replace("  version: 0.0.0\n", &format!("  version: {version}\n")),
+    );
+    let (_, stderr) = root.run(&["taxonomy", "resolve"], None);
+    assert!(
+        !stderr.contains("digest") && !stderr.contains("this takes headwater/standard"),
+        "`taxonomy resolve` is past the pin and the version:\n{stderr}"
+    );
+}
+
+/// A digest the artifact does not match writes nothing into the declaration.
+#[test]
+fn vendor_with_a_wrong_expect_leaves_the_declaration_byte_identical() {
+    let root = Root::over("vendor-expect-wrong");
+    let artifact = root.beside("artifact");
+    publish_maintained_source_into(&artifact);
+    root.init();
+    let before = root.read(".headwater/taxonomy.yml");
+
+    let wrong = format!("sha256:{}", "0".repeat(64));
+    let (code, _) = root.run(
+        &["taxonomy", "vendor", "--expect", wrong.as_str()],
+        Some(&artifact),
+    );
+    assert_eq!(
+        code,
+        Some(1),
+        "an artifact the digest does not name is refused"
+    );
+    assert_eq!(
+        root.read(".headwater/taxonomy.yml"),
+        before,
+        "a refused `vendor` writes nothing into the declaration"
+    );
+}
+
+/// A declared pin is never overwritten, whether `--expect` agrees with it or
+/// not.
+///
+/// A different `--expect` still vendors the artifact that value names, as it
+/// did before #1063, and `pin.current` reports the stale declared pin. This
+/// case holds the declaration byte-identical under both values.
+#[test]
+fn vendor_with_expect_never_overwrites_a_declared_pin() {
+    let root = Root::over("vendor-expect-declared");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+    root.init();
+    let declaration = root.read(".headwater/taxonomy.yml");
+    let commented = declaration
+        .lines()
+        .find(|line| line.trim_start().starts_with("# digest:"))
+        .expect("the declaration names the field `taxonomy vendor` reads");
+
+    for (label, declared) in [
+        ("an equal", digest.clone()),
+        ("a different", format!("sha256:{}", "a".repeat(64))),
+    ] {
+        let pinned = declaration.replace(commented, &format!("  digest: {declared}"));
+        root.write(".headwater/taxonomy.yml", &pinned);
+        let (code, stderr) = root.run(
+            &["taxonomy", "vendor", "--expect", digest.as_str()],
+            Some(&artifact),
+        );
+        assert_eq!(
+            code,
+            Some(0),
+            "`vendor --expect` installs the artifact:\n{stderr}"
+        );
+        assert_eq!(
+            root.read(".headwater/taxonomy.yml"),
+            pinned,
+            "{label} `--expect` leaves a declared pin byte-identical"
+        );
+    }
+}
+
+/// The fetch path records the pin as the directory path does.
+#[cfg(feature = "fetch")]
+#[test]
+fn vendor_with_expect_from_a_location_writes_the_pin() {
+    let root = Root::over("vendor-expect-location");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+    root.init();
+
+    let location = serve(
+        &format!("headwater-standard-{}.zip", maintained_version()),
+        zipped(&artifact),
+    );
+    let (code, stderr) = root.run(
+        &[
+            "taxonomy",
+            "vendor",
+            location.as_str(),
+            "--expect",
+            digest.as_str(),
+        ],
+        None,
+    );
+    assert_eq!(
+        code,
+        Some(0),
+        "`vendor <location> --expect` accepts the artifact:\n{stderr}"
+    );
+    assert_eq!(
+        pinned_digest(&root),
+        Some(digest),
+        "`vendor <location> --expect` wrote the pin it verified:\n{}",
+        root.read(".headwater/taxonomy.yml")
+    );
+}
+
+/// On a declaration with no commented `digest` line, the pin is one line added
+/// after `version:` at the indentation of its siblings, and every other byte
+/// stays.
+#[test]
+fn vendor_with_expect_adds_one_line_to_a_declaration_with_no_commented_digest() {
+    let root = Root::over("vendor-expect-one-line");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+    root.init();
+    // An authored declaration: the commented line removed, the version set.
+    let written = root.read(".headwater/taxonomy.yml");
+    let commented = written
+        .lines()
+        .find(|line| line.trim_start().starts_with("# digest:"))
+        .expect("the declaration names the field `taxonomy vendor` reads");
+    let before = written.replace(&format!("{commented}\n"), "").replace(
+        "  version: 0.0.0\n",
+        &format!("  version: {}\n", maintained_version()),
+    );
+    root.write(".headwater/taxonomy.yml", &before);
+
+    let (code, stderr) = root.run(
+        &["taxonomy", "vendor", "--expect", digest.as_str()],
+        Some(&artifact),
+    );
+    assert_eq!(
+        code,
+        Some(0),
+        "`vendor --expect` accepts the artifact:\n{stderr}"
+    );
+    assert_eq!(pinned_digest(&root), Some(digest.clone()));
+
+    let version_line = before
+        .lines()
+        .find(|line| line.starts_with("  version:"))
+        .expect("the declaration pins a version");
+    assert_eq!(
+        root.read(".headwater/taxonomy.yml"),
+        before.replacen(
+            &format!("{version_line}\n"),
+            &format!("{version_line}\n  digest: {digest}\n"),
+            1
+        ),
+        "the pin is the one line that moved"
+    );
+}
+
+/// Every comment the adopter wrote keeps its bytes, whatever it says about a
+/// digest.
+///
+/// Only the placeholder line `init` writes is the verb's to replace. The three
+/// comments below each begin `# digest:`, and a verify run found a build that
+/// replaced the first of them it met: an audit note in the block, a note at
+/// column zero above the next key, and a note inside `bundles`, where the edit
+/// then did not parse and the verb refused a valid file.
+#[test]
+fn vendor_with_expect_keeps_every_comment_it_does_not_own() {
+    let root = Root::over("vendor-expect-comments");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+    root.init();
+    let before = format!(
+        "taxonomy:\n  package: headwater/standard\n  # digest: sha256:0000 was the old pin, \
+         keep for audit\n  version: {}\n  bundles:\n    # digest: see the release notes\n    \
+         []\n  overlay: .headwater/overlay.yml\n# digest: the upstream pin, see below\ncorpus:\n  \
+         root: docs\n",
+        maintained_version()
+    );
+    root.write(".headwater/taxonomy.yml", &before);
+
+    let (code, stderr) = root.run(
+        &["taxonomy", "vendor", "--expect", digest.as_str()],
+        Some(&artifact),
+    );
+    assert_eq!(
+        code,
+        Some(0),
+        "`vendor --expect` pins a valid file:\n{stderr}"
+    );
+    let version_line = format!("  version: {}\n", maintained_version());
+    assert_eq!(
+        root.read(".headwater/taxonomy.yml"),
+        before.replacen(
+            &version_line,
+            &format!("{version_line}  digest: {digest}\n"),
+            1
+        ),
+        "the pin is one line after `version:`, and every comment stays"
+    );
+}
+
+/// An edit that does not read back as this pin is undone, byte for byte.
+///
+/// `digest: []` declares no pin that `vendor` can read, so the run goes ahead
+/// on `--expect` and adds a second `digest` key. The read-back refuses that
+/// file, and the verb puts the original bytes back rather than leave it.
+#[test]
+fn a_pin_that_does_not_read_back_leaves_the_declaration_byte_identical() {
+    let root = Root::over("vendor-expect-restore");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+    root.init();
+    let before = root
+        .read(".headwater/taxonomy.yml")
+        .replace("  version: 0.0.0\n", "  version: 0.0.0\n  digest: []\n");
+    root.write(".headwater/taxonomy.yml", &before);
+
+    let (code, stderr) = root.run(
+        &["taxonomy", "vendor", "--expect", digest.as_str()],
+        Some(&artifact),
+    );
+    assert_eq!(
+        code,
+        Some(1),
+        "the verb refuses a pin it could not write:\n{stderr}"
+    );
+    assert!(
+        stderr.contains("restored"),
+        "the refusal says the file was put back:\n{stderr}"
+    );
+    assert_eq!(
+        root.read(".headwater/taxonomy.yml"),
+        before,
+        "the declaration is byte for byte what it was"
+    );
+}

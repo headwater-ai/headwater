@@ -2298,11 +2298,11 @@ fn pin_digest(consumer: &Path, digest: &str) {
 /// order. This case takes the order out of the document.
 ///
 /// [#516](https://github.com/headwater-ai/headwater/issues/516) is why it
-/// exists. `vendor --expect` verifies a caller-supplied digest and discards it,
-/// and the refusal to record it stands: on the order `publish → pin → vendor →
-/// resolve` the digest is typed once, and `--expect` is what creates the second
-/// typing. That ruling is only true if the shipped instructions state that
-/// order, and until this case ran nothing had ever executed them.
+/// exists. On the order `publish → pin → vendor → resolve` the digest is typed
+/// once. That is only true if the shipped instructions state that order, and
+/// until this case ran nothing had ever executed them. Since #1063,
+/// `vendor --expect` records a caller-supplied digest where no pin is declared,
+/// and it never replaces a declared one, so this order is unchanged by it.
 ///
 /// **The provocation is a source that actually changed**, because that is the
 /// only state in which the two orders differ. On an unchanged source the
