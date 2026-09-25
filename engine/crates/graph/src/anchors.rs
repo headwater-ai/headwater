@@ -78,17 +78,23 @@ pub enum Binding {
         /// What the resolver's source says the target is at now, and `None`
         /// where the resolver has no such notion.
         ///
-        /// A committed snapshot is the one resolver that has one: it pins an
-        /// identity and a revision for every item in it, so the answer carries
-        /// both. [`SourceTree`] answers `None`, because a path in a working
-        /// tree is at no revision that this engine can name, and inventing a
-        /// commit for it would put a value in a cache key that no source
-        /// stated.
+        /// Two resolvers have one. A committed snapshot pins an identity and a
+        /// revision for every item in it, so its answer carries both.
+        /// [`SourceTree`] answers with [`tree_revision`]: a digest of the
+        /// bytes of every entry the anchor matched, keyed by path. That is
+        /// not a commit, and it is not meant to be one. A working tree is at
+        /// no commit this engine can name without a version-control call,
+        /// which the check layer rules out, but its bytes are what a
+        /// governing document was written against, and a digest of them is a
+        /// value the tree itself states (#952). A literal that names a
+        /// directory answers `None`: see [`tree_revision`]. Every other
+        /// resolver answers `None`.
         ///
         /// Two components read it. `headwater_check::suspect` compares it
-        /// against the `verified_revision` an import wrote onto the edge, which
-        /// is the drift report [spec 7](../../../../docs/spec/07-distribution-and-federation.md#upstream-awareness)
-        /// asks for per edge. And `Target::resolution` renders it into the
+        /// against the `verified_revision` recorded on the edge, which is the
+        /// drift report [spec 7](../../../../docs/spec/07-distribution-and-federation.md#upstream-awareness)
+        /// asks for per edge, and which a `governs` edge now receives as
+        /// well. And `Target::resolution` renders it into the
         /// cache key of every edge instance, so a verdict about an edge cannot
         /// outlive the advance that falsifies it
         /// ([#160](https://github.com/headwater-ai/headwater/issues/160)).
@@ -108,6 +114,39 @@ pub trait Resolver {
 
     /// Normalize the string, then bind it.
     fn resolve(&self, raw: &str) -> Binding;
+
+    /// Bind the string for an edge that `asserter`, a document identifier,
+    /// declares. Every production binding goes through this method. A
+    /// resolver whose verdict does not depend on who asserts the edge keeps
+    /// the default, which is [`Resolver::resolve`]. [`CommentScan`] does not:
+    /// its verdict is whether the target cites the asserter (#967).
+    fn resolve_for(&self, raw: &str, asserter: &str) -> Binding {
+        let _ = asserter;
+        self.resolve(raw)
+    }
+
+    /// The revision of a set of entries this resolver matched, and `None`
+    /// where it has no such notion.
+    ///
+    /// A list anchor holds several patterns and one edge, so its revision is
+    /// one value over the union of what every member matched rather than any
+    /// one member's. `crate::edges` asks this for the union. The default is
+    /// `None`, because a snapshot names one item at one revision and a list is
+    /// admitted only where the resolver is `source-tree`.
+    fn revision_of(&self, matched: &[String]) -> Option<String> {
+        let _ = matched;
+        None
+    }
+
+    /// Whether a normalized literal names a directory rather than a file. A
+    /// scope counts files, so [`crate::scope::Scope`] refuses a literal that
+    /// names a directory, and an empty directory has nothing under it for a
+    /// walk to find. A resolver whose store holds no directories keeps the
+    /// default.
+    fn names_directory(&self, normalized: &str) -> bool {
+        let _ = normalized;
+        false
+    }
 }
 
 /// Every resolver a run has, by name.
@@ -203,6 +242,10 @@ impl Resolver for SourceTree {
         "source-tree"
     }
 
+    fn names_directory(&self, normalized: &str) -> bool {
+        self.base.join(normalized).is_dir()
+    }
+
     fn resolve(&self, raw: &str) -> Binding {
         let normalized = match normalize(raw) {
             Ok(normalized) => normalized,
@@ -243,13 +286,12 @@ impl Resolver for SourceTree {
                 .find(|exclusion| exclusion.pattern.matches(&normalized))
                 .map(|exclusion| exclusion.pattern.source().to_string());
 
+            let matched = vec![normalized.clone()];
             return Binding::Resolved {
-                matched: vec![normalized.clone()],
+                revision: tree_revision(&self.base, &matched),
+                matched,
                 normalized,
                 excluded_by,
-                // A path in a working tree is at no revision this resolver can
-                // name. See the field.
-                revision: None,
             };
         }
 
@@ -312,14 +354,60 @@ impl Resolver for SourceTree {
         Binding::Resolved {
             normalized,
             excluded_by: None,
-            revision: None,
+            revision: tree_revision(&self.base, &matched),
             matched,
         }
     }
+
+    fn revision_of(&self, matched: &[String]) -> Option<String> {
+        tree_revision(&self.base, matched)
+    }
+}
+
+/// The digest of what a set of tree entries holds, read from their bytes.
+///
+/// Each entry is one line of a manifest: its path relative to `base`, a NUL,
+/// and [`headwater_hash::digest`] of its bytes. The lines are sorted by path
+/// and the manifest is digested once. So the value is a function of paths and
+/// bytes and of nothing else. A modification time, an owner and a permission
+/// bit reach no line, and no version-control call is made, which is the rule
+/// `headwater_check::change` states for the check layer. A file added under a
+/// governed pattern, or removed from it, changes the manifest, and so does one
+/// changed byte of any entry.
+///
+/// `None` when any entry cannot be read as a file. That is a directory named
+/// by a literal, the one shape this corpus declares where it happens
+/// (`.headwater/packages`), and an entry that went away between the walk and
+/// the read. A directory gets no digest on purpose: which entries under it a
+/// document governs is the pattern language's to state, and a literal with no
+/// wildcard names the directory and nothing under it
+/// ([HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)).
+/// A digest over a walk of it would state a reach the author did not write.
+/// The cost is that such an edge never ages, so the suspect rule reports a
+/// directory literal at `Info` and names `**` after the directory as the
+/// remedy, rather than passing it in silence.
+pub fn tree_revision(base: &Path, matched: &[String]) -> Option<String> {
+    let mut sorted: Vec<&String> = matched.iter().collect();
+    sorted.sort();
+    sorted.dedup();
+    let mut manifest = String::new();
+    for path in sorted {
+        let at = base.join(path);
+        if at.is_dir() {
+            return None;
+        }
+        let bytes = std::fs::read(&at).ok()?;
+        manifest.push_str(path);
+        manifest.push('\0');
+        manifest.push_str(&headwater_hash::digest(&bytes));
+        manifest.push('\n');
+    }
+    Some(headwater_hash::digest(manifest.as_bytes()))
 }
 
 /// The `comment-scan` resolver: a path binds only where a comment inside it
-/// cites an identifier this corpus has minted.
+/// cites the identifier of the document that asserts the edge, and that
+/// identifier is minted.
 ///
 /// [HW-DR-0073](../../../../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
 /// ruling 4: "A `comment-scan` resolver ships in the binary. The default
@@ -349,6 +437,17 @@ impl Resolver for SourceTree {
 /// scheme, and a prefix is enough: this resolver does not have to parse the
 /// rest of an identifier scheme's `{namespace}-VER-{seq:04d}` template to
 /// tell a citation from ordinary prose.
+///
+/// # Whose identifier, and why order does not matter
+///
+/// A citation proves something about the document it names and about no
+/// other. So the only citation that binds an edge is the identifier of the
+/// document that asserts it, which [`Resolver::resolve_for`] passes in, and
+/// a file that cites some other minted identifier binds nothing (#967:
+/// before this, the first minted token in the file bound any edge onto it).
+/// Every candidate in the file is read, so the asserter's citation binds
+/// wherever it sits, and a file that serves two verifications can cite
+/// both. [`Resolver::resolve`], which names no asserter, binds nothing.
 ///
 /// # What "minted" means here, and why this reads no document
 ///
@@ -450,7 +549,16 @@ impl Resolver for CommentScan {
         "comment-scan"
     }
 
+    /// Refuses. A citation binds an edge only for the document that asserts
+    /// it, and this call names none. See [`CommentScan`].
     fn resolve(&self, raw: &str) -> Binding {
+        Binding::Unresolved(format!(
+            "`comment-scan` binds `{raw}` only for the document that asserts the edge, \
+             and none was named"
+        ))
+    }
+
+    fn resolve_for(&self, raw: &str, asserter: &str) -> Binding {
         let normalized = match normalize(raw) {
             Ok(normalized) => normalized,
             Err(why) => return Binding::Unresolved(why),
@@ -460,15 +568,34 @@ impl Resolver for CommentScan {
             return Binding::Unresolved(format!("no `{normalized}` in the source tree"));
         };
 
+        // An asserter outside the declared prefix can never be cited, because
+        // `candidates` returns only tokens that open with it. So the refusal
+        // names the identifier and the prefix, and never a citation to add.
+        if !asserter.starts_with(self.prefix.as_str()) {
+            return Binding::Unresolved(format!(
+                "`{asserter}`, the document that asserts this edge, does not start `{}`, so no \
+                 comment in `{normalized}` can cite it",
+                self.prefix
+            ));
+        }
+
         let text = crate::comments::rust_comment_text(&source);
-        let Some(candidate) = Self::candidates(&text, &self.prefix).into_iter().next() else {
+        let candidates = Self::candidates(&text, &self.prefix);
+        let Some(first) = candidates.first() else {
             return Binding::Unresolved(format!(
                 "no comment in `{normalized}` cites an identifier starting `{}`",
                 self.prefix
             ));
         };
 
-        if self.minted.contains(candidate) {
+        if !candidates.contains(&asserter) {
+            return Binding::Unresolved(format!(
+                "`{normalized}` cites `{first}`, not `{asserter}`, the document that asserts \
+                 this edge"
+            ));
+        }
+
+        if self.minted.contains(asserter) {
             Binding::Resolved {
                 matched: vec![normalized.clone()],
                 normalized,
@@ -479,7 +606,7 @@ impl Resolver for CommentScan {
             }
         } else {
             Binding::Unresolved(format!(
-                "`{candidate}`, cited in `{normalized}`, is shaped like an identifier this \
+                "`{asserter}`, cited in `{normalized}`, is shaped like an identifier this \
                  corpus mints, and no document mints it"
             ))
         }
@@ -902,7 +1029,7 @@ mod tests {
             "HW-VER-",
             std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
         );
-        let Binding::Unresolved(why) = resolver.resolve("sample.rs") else {
+        let Binding::Unresolved(why) = resolver.resolve_for("sample.rs", "HW-VER-9999") else {
             panic!("an unminted citation resolved");
         };
         std::fs::remove_dir_all(&dir).ok();
@@ -922,7 +1049,7 @@ mod tests {
             "HW-VER-",
             std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
         );
-        let outcome = resolver.resolve("sample.rs");
+        let outcome = resolver.resolve_for("sample.rs", "HW-VER-0001");
         std::fs::remove_dir_all(&dir).ok();
 
         assert!(matches!(outcome, Binding::Resolved { .. }), "{outcome:?}");
@@ -935,7 +1062,7 @@ mod tests {
             .expect("a fixture file");
 
         let resolver = CommentScan::new(&dir, "HW-VER-", std::collections::BTreeSet::new());
-        let Binding::Unresolved(why) = resolver.resolve("sample.rs") else {
+        let Binding::Unresolved(why) = resolver.resolve_for("sample.rs", "HW-VER-0001") else {
             panic!("a file with no citation resolved");
         };
         std::fs::remove_dir_all(&dir).ok();
@@ -961,11 +1088,133 @@ mod tests {
             "HW-VER-",
             std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
         );
-        let Binding::Unresolved(why) = resolver.resolve("sample.rs") else {
+        let Binding::Unresolved(why) = resolver.resolve_for("sample.rs", "HW-VER-0001") else {
             panic!("a citation inside a string literal resolved");
         };
         std::fs::remove_dir_all(&dir).ok();
 
         assert!(why.contains("no comment"), "{why}");
+    }
+
+    /// #967: a file that cites a minted identifier of a different document
+    /// proves nothing about the one that asserts the edge.
+    #[test]
+    fn a_citation_of_a_different_minted_identifier_is_refused_and_names_both() {
+        let dir = scratch("other-minted");
+        std::fs::write(dir.join("sample.rs"), "//! proves HW-VER-0002\nfn f() {}\n")
+            .expect("a fixture file");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            ["HW-VER-0001", "HW-VER-0002"]
+                .into_iter()
+                .map(String::from)
+                .collect(),
+        );
+        let Binding::Unresolved(why) = resolver.resolve_for("sample.rs", "HW-VER-0001") else {
+            panic!("a citation of another document's identifier resolved");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(why.contains("HW-VER-0002"), "{why}");
+        assert!(why.contains("HW-VER-0001"), "{why}");
+    }
+
+    /// The asserter's citation binds wherever it sits among the candidates.
+    #[test]
+    fn the_asserter_cited_second_still_binds() {
+        let dir = scratch("two-citations");
+        std::fs::write(
+            dir.join("sample.rs"),
+            "//! proves HW-VER-0002\n//! proves HW-VER-0001\nfn f() {}\n",
+        )
+        .expect("a fixture file");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            ["HW-VER-0001", "HW-VER-0002"]
+                .into_iter()
+                .map(String::from)
+                .collect(),
+        );
+        let outcome = resolver.resolve_for("sample.rs", "HW-VER-0001");
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(matches!(outcome, Binding::Resolved { .. }), "{outcome:?}");
+    }
+
+    /// The bare `resolve` names no asserter, so it binds nothing, even where
+    /// the file cites a minted identifier.
+    #[test]
+    fn the_bare_resolve_binds_no_citation() {
+        let dir = scratch("bare-resolve");
+        std::fs::write(dir.join("sample.rs"), "//! proves HW-VER-0001\nfn f() {}\n")
+            .expect("a fixture file");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
+        );
+        let Binding::Unresolved(why) = resolver.resolve("sample.rs") else {
+            panic!("the bare resolve bound a citation");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(why.contains("the document that asserts the edge"), "{why}");
+    }
+
+    /// The asserter's own citation binds only if the asserter is minted. A
+    /// different minted identifier beside it does not stand in for it, which
+    /// is #967 in a second shape.
+    #[test]
+    fn an_unminted_asserter_cited_beside_a_minted_identifier_is_refused() {
+        let dir = scratch("unminted-beside-minted");
+        std::fs::write(
+            dir.join("sample.rs"),
+            "//! proves HW-VER-0001\n//! proves HW-VER-9999\nfn f() {}\n",
+        )
+        .expect("a fixture file");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
+        );
+        let Binding::Unresolved(why) = resolver.resolve_for("sample.rs", "HW-VER-9999") else {
+            panic!("an unminted asserter bound because another citation is minted");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(why.contains("HW-VER-9999"), "{why}");
+        assert!(why.contains("no document mints it"), "{why}");
+    }
+
+    /// An asserter whose identifier lacks the declared prefix can never be
+    /// cited, so the refusal names the identifier and the prefix and asks
+    /// for no citation.
+    #[test]
+    fn an_asserter_outside_the_prefix_is_refused_and_names_the_prefix() {
+        let dir = scratch("asserter-outside-prefix");
+        std::fs::write(dir.join("sample.rs"), "//! proves HW-VER-0001\nfn f() {}\n")
+            .expect("a fixture file");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            ["HW-VER-0001", "HW-SPEC-x"]
+                .into_iter()
+                .map(String::from)
+                .collect(),
+        );
+        let Binding::Unresolved(why) = resolver.resolve_for("sample.rs", "HW-SPEC-x") else {
+            panic!("an asserter outside the prefix resolved");
+        };
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(why.contains("HW-SPEC-x"), "{why}");
+        assert!(why.contains("does not start `HW-VER-`"), "{why}");
     }
 }

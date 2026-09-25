@@ -143,11 +143,13 @@ pub enum Target {
         /// [`crate::anchors::Binding::Resolved`].
         excluded_by: Option<String>,
         /// What the resolver's source says the target is at now, carried
-        /// through from [`crate::anchors::Binding::Resolved`]. `None` for every
-        /// resolver but a committed snapshot's, and for every anchor that
-        /// holds more than one pattern: a snapshot resolver names one item at
-        /// one revision, and this ruling admits a list only where the
-        /// resolver is `source-tree`.
+        /// through from [`crate::anchors::Binding::Resolved`]: a snapshot's
+        /// pinned revision, or `source-tree`'s digest of the bytes the anchor
+        /// matched ([`crate::anchors::tree_revision`]). An anchor that holds
+        /// more than one pattern carries one value over the union of every
+        /// member's matched entries, from [`crate::anchors::Resolver::revision_of`].
+        /// `None` for every other resolver, and for a literal that names a
+        /// directory.
         revision: Option<String>,
         /// One entry per pattern the anchor holds, in the identity order
         /// above. A value with no wildcard is one anchor with one member here.
@@ -629,7 +631,7 @@ fn read_relation_entry(
         };
 
         let raw_target = raws.join(", ");
-        let target = bind(&raws, permitted, index, declarations, resolvers);
+        let target = bind(&raws, &source.id, permitted, index, declarations, resolvers);
         let edge = Edge {
             source: source.clone(),
             name: name.clone(),
@@ -705,9 +707,11 @@ fn encode_list_identity(patterns: &[&str]) -> String {
 /// `raws` is never empty. A single entry is bound in the order the module
 /// comment states, unchanged from before a list existed; a list is bound only
 /// against an anchor kind, and only where every pattern it holds binds under
-/// the same one.
+/// the same one. `asserter` is the identifier of the document that declares
+/// the edge, which a resolver such as `comment-scan` binds against (#967).
 fn bind(
     raws: &[String],
+    asserter: &str,
     permitted: &[String],
     index: &Index,
     declarations: &Declarations,
@@ -747,7 +751,7 @@ fn bind(
         let mut bindings = Vec::with_capacity(raws.len());
         let mut dead: Option<Unbound> = None;
         for raw in raws {
-            match resolver.resolve(raw) {
+            match resolver.resolve_for(raw, asserter) {
                 binding @ (Binding::Resolved { .. } | Binding::Withheld { .. }) => {
                     bindings.push(binding);
                 }
@@ -835,9 +839,27 @@ fn bind(
         // before a list existed. A list, or a wildcard pattern, drops an
         // excluded hit from the matched count instead of naming one exclusion
         // for the whole set — see `PatternMember` and `Binding::Resolved`.
+        //
+        // A list carries one revision over the union of what its members
+        // matched, sorted by path, and never `None` for want of a rule: one
+        // entry of a list is one edge, and an edge with no revision can never
+        // go suspect (#952). The resolver computes it, because the resolver is
+        // what reads the entries.
         let (excluded_by, revision) = match resolved.as_slice() {
             [member] => (member.excluded_by.clone(), member.revision.clone()),
-            _ => (None, None),
+            members => {
+                let mut union: Vec<String> = members
+                    .iter()
+                    .flat_map(|member| member.matched.iter().cloned())
+                    .collect();
+                union.sort();
+                union.dedup();
+                let revision = declarations
+                    .anchor(anchor_kind)
+                    .and_then(|anchor| resolvers.get(&anchor.resolver))
+                    .and_then(|resolver| resolver.revision_of(&union));
+                (None, revision)
+            }
         };
         let patterns = resolved
             .into_iter()

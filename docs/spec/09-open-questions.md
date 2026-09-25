@@ -239,7 +239,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## A corpus-wide fold is derived and never stored
 
-[HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) — A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict. (asserted, and no human has accepted it)
+[HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) — A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict.
 
 ## Q51 — What licenses a term into the public glossary, and what licenses a sixteenth
 
@@ -323,7 +323,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## The binary is the only interface an adopter must run, and every integration point outside it is declared
 
-[HW-DR-0072](../decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) — An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test; a network fetch left the list under HW-DR-0075; and the change manifest fails the test and is a defect.
+[HW-DR-0072](../decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) — An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test, a network fetch left the list under HW-DR-0075, and a verb writes the change manifest.
 
 ## A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither
 
@@ -340,3 +340,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## The hand-authored decision register indexes a subset of the shelf, and stops asserting it supersedes the complete one
 
 [HW-DR-0081](../decisions/0081-the-hand-authored-decision-register-indexes-a-subset-of-the-shelf-and-stops-asserting-it-supersedes-the-complete-one.md) — The hand register keeps a curated selection of headings and drops its `supersedes` edge over the generated register, which stays the complete list. (asserted, and no human has accepted it)
+
+## The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file
+
+[HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) — `headwater taxonomy graph` prints the resolved taxonomy from the lock as a Mermaid flowchart, and no projection, explain format or export target draws it (asserted, and no human has accepted it)

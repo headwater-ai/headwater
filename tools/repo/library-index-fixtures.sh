@@ -54,8 +54,11 @@
 #   with no `bundle.yml` is not a bundle.
 #
 #   THE ACCOUNTED-FOR ENTRIES come from the admission section of the same page:
-#   the first cell of each table row, plus every bare directory link written
-#   anywhere else in the section. A bundle the table admits is accounted for by
+#   the first cell of each table row, plus every entry link written anywhere
+#   else in the section. An entry link is a bare directory link, `alpha/`, or
+#   a link to the entry's doctrine page with no fragment, `alpha/doctrine.md`.
+#   The index links the second shape since #350 served it on the site, where
+#   no page answers a bare entry directory. A bundle the table admits is accounted for by
 #   its row. A bundle the table refuses is accounted for by the paragraph that
 #   names it and says why. Either one satisfies the section; neither one is
 #   assumed.
@@ -206,9 +209,9 @@ section_of() {
 
 # rows_of SECTION-FILE — one line per table row, as
 # `entry<TAB>bundle-cell<TAB>tradition-cell`. A row is a `|` line whose first
-# cell carries a bare directory link, which excludes the header row and the
+# cell carries an entry link (see the header), which excludes the header row and the
 # delimiter row without either one being named here. The entry is the link
-# target with its trailing slash removed; the other two cells are stripped of
+# target with its trailing slash, or its `/doctrine.md`, removed; the other two cells are stripped of
 # backticks and surrounding space.
 rows_of() {
     awk -F'|' '
@@ -220,8 +223,8 @@ rows_of() {
             j = index(t, ")")
             if (j == 0) return ""
             t = substr(t, 1, j - 1)
-            if (t !~ /^[A-Za-z0-9][A-Za-z0-9._-]*\/$/) return ""
-            sub(/\/$/, "", t)
+            if (t !~ /^[A-Za-z0-9][A-Za-z0-9._-]*\/(doctrine\.md)?$/) return ""
+            sub(/\/(doctrine\.md)?$/, "", t)
             return t
         }
         /^[ \t]*\|/ && NF >= 4 {
@@ -234,17 +237,17 @@ rows_of() {
     ' "$1"
 }
 
-# links_outside_rows SECTION-FILE — every bare directory link written on a line
-# that is not a table row, one name per line, sorted and deduplicated. This is
-# how a bundle the table refuses is accounted for: a paragraph names it and
-# links it. A link that carries a file name or a fragment, such as
-# `evidence-and-obligation/doctrine.md#findings`, is not a bare directory link
-# and does not account for anything.
+# links_outside_rows SECTION-FILE — every entry link written on a line that is
+# not a table row, one name per line, sorted and deduplicated. This is how a
+# bundle the table refuses is accounted for: a paragraph names it and links it.
+# A link that carries a fragment or any other file name, such as
+# `evidence-and-obligation/doctrine.md#findings`, is not an entry link and does
+# not account for anything.
 links_outside_rows() {
     awk '
         function bare(t) {
-            if (t !~ /^[A-Za-z0-9][A-Za-z0-9._-]*\/$/) return ""
-            sub(/\/$/, "", t)
+            if (t !~ /^[A-Za-z0-9][A-Za-z0-9._-]*\/(doctrine\.md)?$/) return ""
+            sub(/\/(doctrine\.md)?$/, "", t)
             return t
         }
         /^[ \t]*\|/ { next }
@@ -263,7 +266,7 @@ links_outside_rows() {
 }
 
 # accounted_of SECTION-FILE — the entries the section accounts for: a row's
-# first cell, or a bare directory link in its prose. Sorted under `LC_ALL=C`
+# first cell, or an entry link in its prose. Sorted under `LC_ALL=C`
 # to match `bundles_of`, because `accounted_judge` compares the two with
 # `comm`, which collates bytewise (#828).
 accounted_of() {
@@ -808,6 +811,30 @@ accounted_of "$scratch/arms.d" >"$scratch/arms.d.acc"
 same "  a link to a file inside a bundle does not account for the bundle" \
     "a bundle the admission section does not account for: beta|" \
     "$(accounted_judge "$scratch/arms.lib" "$scratch/arms.d.acc" | tr '\n' '|')"
+
+# 2d'. The entry's doctrine page with no fragment is the entry link the index
+#      writes since #350, in a row and in a paragraph alike. Any other file
+#      name inside the bundle still accounts for nothing.
+write_section "$scratch/arms.d2" \
+    '| Entry | Bundle | The tradition |' \
+    '|---|---|---|' \
+    '| [`alpha`](alpha/doctrine.md) | `alpha` | A tradition |' \
+    '' \
+    'The [`beta`](beta/doctrine.md) bundle is not an admitted entry.'
+accounted_of "$scratch/arms.d2" >"$scratch/arms.d2.acc"
+same "  a doctrine link with no fragment accounts for the bundle, in a row and in prose" \
+    "" \
+    "$(accounted_judge "$scratch/arms.lib" "$scratch/arms.d2.acc" | tr '\n' '|')"
+write_section "$scratch/arms.d3" \
+    '| Entry | Bundle | The tradition |' \
+    '|---|---|---|' \
+    '| [`alpha`](alpha/) | `alpha` | A tradition |' \
+    '' \
+    'The [`beta`](beta/bundle.yml) bundle is not an admitted entry.'
+accounted_of "$scratch/arms.d3" >"$scratch/arms.d3.acc"
+same "  and a link to another file in the bundle still does not" \
+    "a bundle the admission section does not account for: beta|" \
+    "$(accounted_judge "$scratch/arms.lib" "$scratch/arms.d3.acc" | tr '\n' '|')"
 
 # 2e. A row for a bundle that is gone.
 write_section "$scratch/arms.e" \

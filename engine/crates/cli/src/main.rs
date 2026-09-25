@@ -354,7 +354,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             )),
             Some(JsonWord::Field { path }) => match path.is_empty() {
                 true => fail(
-                    "`json field` takes the path of keys to a member. Try \
+                    "`json field` takes the path of steps to a member. Try \
                      `headwater json field tool_input file_path`",
                 ),
                 false => json_field(&path),
@@ -421,6 +421,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 ),
                 Some(path) => migrate(root, Path::new(&path), to.as_deref(), now, apply),
             },
+            Some(TaxonomyWord::Graph { view, legend }) => taxonomy_graph(root, view, legend),
             Some(TaxonomyWord::Other(words)) => fail(&format!(
                 "`taxonomy {}` is not a verb this binary carries yet. It carries {}",
                 words.first().map(String::as_str).unwrap_or_default(),
@@ -816,12 +817,63 @@ fn validate(root: &Path) -> ExitCode {
     );
     print!("{}", headwater_resolve::rules::render(mode));
 
-    if findings.is_empty() {
+    // The first refusal of this verb that reads the tree (#951). A governed
+    // scope pattern that matches no entry is a claim about nothing, so it is
+    // refused here, through the anchor kind's own resolver: "matches an entry"
+    // means for a scope what it means for an anchor.
+    //
+    // Two owner rulings of 2026-09-25 bound it. A taxonomy with no tree beside
+    // it, as one published as its own repository has, skips the count with a
+    // one-line notice instead of refusing every pattern. And the count leaves
+    // out what git ignores, so a cache on one host is not an entry.
+    let (unmatched, notice) = match Declarations::read(&repository.resolution.taxonomy) {
+        Ok(declarations) => {
+            let consumer = &repository.consumer;
+            let corpus = Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions);
+            let resolvers = headwater_graph::anchors::Resolvers::over(&corpus);
+            let scope = headwater_graph::scope::Scope::declared(&declarations);
+            let ignored = headwater_graph::scope::Ignored::read(&corpus.base);
+            let beside = headwater_graph::scope::tree_directories(
+                &corpus.base,
+                &repository.resolution.sources,
+                &ignored,
+            );
+            if scope.tree_is_absent(&resolvers, &beside) {
+                let count = scope.members.len();
+                let noun = if count == 1 { "pattern" } else { "patterns" };
+                (
+                    Vec::new(),
+                    Some(format!(
+                        "governed scope: no tree beside this taxonomy, so the coverage count of \
+                         its {count} {noun} is skipped"
+                    )),
+                )
+            } else {
+                (scope.ignoring(ignored).unmatched(&resolvers), None)
+            }
+        }
+        Err(_) => (Vec::new(), None),
+    };
+    if let Some(notice) = notice {
+        println!("\n{notice}");
+    }
+
+    if findings.is_empty() && unmatched.is_empty() {
         println!("\n{} is valid", repository.consumer.package);
         return ExitCode::SUCCESS;
     }
     println!("\n{} is not valid", repository.consumer.package);
-    eprint!("{}", indent(&err(&render_errors(&findings))));
+    if !findings.is_empty() {
+        eprint!("{}", indent(&err(&render_errors(&findings))));
+    }
+    for (pattern, why) in &unmatched {
+        eprintln!(
+            "  {}",
+            err(&format!(
+                "governed scope pattern `{pattern}` matches no entry of the tree: {why}"
+            ))
+        );
+    }
     advise(root, &repository.consumer);
     ExitCode::FAILURE
 }
@@ -1119,6 +1171,36 @@ fn carried(payload: &headwater_yaml::Mapping) -> String {
     )
 }
 
+/// `headwater taxonomy graph`.
+///
+/// The lock alone, as `diff` reads it: no source is re-resolved and no corpus
+/// is walked, so a repository whose documents do not yet check still draws.
+/// [`headwater_cli::taxonomy_graph`] carries the rules of the drawing.
+fn taxonomy_graph(
+    root: &Path,
+    view: headwater_cli::taxonomy_graph::View,
+    legend: bool,
+) -> ExitCode {
+    let lock = match headwater_lock::at(root) {
+        Ok(lock) => lock,
+        Err(error) => {
+            eprintln!("headwater: {}", err(&format!("{error}")));
+            return ExitCode::FAILURE;
+        }
+    };
+    print!(
+        "{}",
+        headwater_cli::taxonomy_graph::render(
+            &lock.package,
+            &lock.version,
+            &lock.taxonomy,
+            view,
+            legend
+        )
+    );
+    ExitCode::SUCCESS
+}
+
 /// `headwater taxonomy audit`.
 ///
 /// The ABox half of the pair `taxonomy validate` opens. It reads the same lock
@@ -1198,6 +1280,17 @@ fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
         }
     };
 
+    // `Graph::build` counts the governed scope with nothing ignored, because
+    // spec 12 keeps git off the check loop that builds it. This verb is not on
+    // that loop, so it drops what git ignores here (#951, owner ruling
+    // 2026-09-25): a local audit and a CI audit count one tree.
+    let mut graph = loaded.graph;
+    if !graph.scope.is_empty() {
+        let ignored = headwater_graph::scope::Ignored::read(root);
+        for reach in &mut graph.scope {
+            reach.retain_unignored(&ignored);
+        }
+    }
     let audit = headwater_audit::take(
         headwater_audit::Subject {
             package: loaded.bound.package.clone(),
@@ -1206,7 +1299,7 @@ fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
             now: context.now(),
         },
         &loaded.census,
-        &loaded.graph,
+        &graph,
         &loaded.taxonomy,
         &loaded.shape,
         &loaded.relations,
@@ -6445,6 +6538,8 @@ fn init(
 const DRIVER_NAME: &str = "regenerate a derived artifact";
 const DRIVER_LINE: &str = "headwater merge-driver %O %A %B %P";
 const DRIVER_ATTRIBUTE: &str = "merge=headwater-regenerate";
+/// What the committed `.gitattributes` says for a fold, which needs no driver.
+const COMMITTED_ATTRIBUTE: &str = "-merge";
 
 /// `headwater init --git`: the attribute lines, and the configuration git needs.
 ///
@@ -6457,32 +6552,90 @@ const DRIVER_ATTRIBUTE: &str = "merge=headwater-regenerate";
 /// `headwater taxonomy resolve` writes it and nothing else does, whether or
 /// not it has run yet.
 ///
-/// **It appends and never rewrites.** `.gitattributes` is the adopter's own
-/// file, so a line already declaring the attribute is left alone and every
-/// other line is kept byte for byte. A second run writes nothing.
+/// **Two files, because git takes a driver only from a clone.** The committed
+/// `.gitattributes` declares each fold `-merge`, which every clone and a forge
+/// honor with no configuration: the merge keeps the current side and records a
+/// conflict. The clone's own `info/attributes`, at the path
+/// `git rev-parse --git-path info/attributes` names, declares the same paths
+/// `merge=headwater-regenerate`, which wins over the committed file and makes
+/// the conflict name the producer. A committed driver line is what
+/// [#1058](https://github.com/headwater-ai/headwater/issues/1058) measured:
+/// git reads a driver that no config defines as a text merge.
 ///
-/// **It prints the `git config` lines, and runs them only under
-/// `--git-config`.** Git takes no driver from a repository without the consent
-/// of the clone, and [HW-DR-0077](../../../../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)
+/// **Only a fold takes a line.** A generated file whose opening states no
+/// count or digest is one record per entity, and #1058 measured each one
+/// merging as text to what the producer writes. So for an adopter the set is
+/// the lock, unless a generated file states a fold.
+///
+/// **The override and the config land together or not at all.** An override
+/// that names a driver no config defines is the text merge again. So the
+/// override is written under `--git-config`, after both `git config` lines
+/// succeed, or where the clone's config already names the driver, which is a
+/// clone an earlier release configured. Otherwise both are printed.
+///
+/// **It appends and never rewrites.** `.gitattributes` is the adopter's own
+/// file, so a line already declaring `-merge` is left alone and every other
+/// line is kept byte for byte. A committed `merge=headwater-regenerate` line
+/// that an earlier engine wrote gets a `-merge` line after it, which git reads
+/// as the later and so the winning line. A second run writes nothing.
+///
+/// Git takes no driver from a repository without the consent of the clone, and
+/// [HW-DR-0077](../../../../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)
 /// keeps that consent with the adopter.
 fn init_git(root: &Path, configure: bool) -> ExitCode {
-    use headwater_census::derived::LOCK;
+    use headwater_census::derived::{Shape, Treatment, LOCK};
     let population = headwater_census::derived::population(root);
+    // A fold alone owes a line. A generated file that is one record per entity
+    // merges as text to what the producer writes, as #1058 measured, and a
+    // `-merge` on it would stop every pair of branches that each add a document.
+    let folds: Vec<&str> = population
+        .members
+        .iter()
+        .filter(|member| member.shape == Shape::Fold)
+        .map(|member| member.path.as_str())
+        .collect();
     let mut paths: Vec<String> = population
         .outputs
         .iter()
-        // No filter here: `population` already drops the output of every
-        // producer the tree does not hold, by `Producer::held_by`.
+        // No producer filter here: `population` already drops the output of
+        // every producer the tree does not hold, by `Producer::held_by`.
+        .filter(|output| folds.contains(&output.path.as_str()))
         .map(|output| output.path.clone())
         .collect();
     paths.push(LOCK.to_string());
     paths.sort();
     paths.dedup();
 
-    let declared = headwater_census::derived::declared_paths(root);
+    let override_path = git_path(root, "info/attributes");
+    let override_text = override_path
+        .as_ref()
+        .and_then(|path| std::fs::read_to_string(path).ok())
+        .unwrap_or_default();
+    let overridden = |path: &str| {
+        override_text
+            .lines()
+            .any(|line| line.trim() == format!("{path} {DRIVER_ATTRIBUTE}"))
+    };
+
+    // The committed half. The root file is read by hand, because git's answer
+    // carries the override where there is one. Where the root file does not
+    // name a path, git's answer is the committed one unless the override
+    // supplies it, which covers a nested `.gitattributes`.
+    let root_file = headwater_census::derived::root_declarations(root);
+    let answers = headwater_census::derived::merge_attributes(root);
+    let committed = |path: &str| -> Option<Treatment> {
+        if let Some((_, treatment)) = root_file.iter().find(|(seen, _)| seen == path) {
+            return Some(*treatment);
+        }
+        answers
+            .iter()
+            .find(|(seen, _)| seen == path)
+            .map(|(_, treatment)| *treatment)
+            .filter(|treatment| !(*treatment == Treatment::Regenerate && overridden(path)))
+    };
     let missing: Vec<&String> = paths
         .iter()
-        .filter(|path| !declared.contains(path))
+        .filter(|path| committed(path) != Some(Treatment::Refuse))
         .collect();
 
     let attributes = root.join(".gitattributes");
@@ -6496,8 +6649,9 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
             text.push('\n');
         }
         let header = "# Written by `headwater init --git`. Each path is a derived artifact that holds a fold,\n\
-                      # so a merge keeps the current side, marks it conflicted, and names the verb that\n\
-                      # rebuilds it. `headwater derived` reports a producer output with no line here.\n";
+                      # so a merge keeps the current side and marks it conflicted in every clone. A forge\n\
+                      # ignores it. A clone that also ran `headwater init --git --git-config` names the verb\n\
+                      # that rebuilds it. `headwater derived` reports a fold with no line here.\n";
         if !text.contains(header) {
             if !text.is_empty() {
                 text.push('\n');
@@ -6505,14 +6659,14 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
             text.push_str(header);
         }
         for path in &missing {
-            text.push_str(&format!("{path} {DRIVER_ATTRIBUTE}\n"));
+            text.push_str(&format!("{path} {COMMITTED_ATTRIBUTE}\n"));
         }
         if let Err(error) = std::fs::write(&attributes, &text) {
             return refuse(&format!("cannot write .gitattributes: {error}"));
         }
         println!("wrote .gitattributes");
         for path in &missing {
-            println!("  {path} {DRIVER_ATTRIBUTE}");
+            println!("  {path} {COMMITTED_ATTRIBUTE}");
         }
     } else {
         println!(
@@ -6525,6 +6679,16 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
         ("merge.headwater-regenerate.name", DRIVER_NAME),
         ("merge.headwater-regenerate.driver", DRIVER_LINE),
     ];
+    let unwritten: Vec<&String> = paths.iter().filter(|path| !overridden(path)).collect();
+    // A clone whose configuration already names the driver consented to it at
+    // an earlier run. Without the override its committed `-merge` would
+    // deselect the driver in silence, so the override is written here too.
+    let configured = std::process::Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["config", "--get", "merge.headwater-regenerate.driver"])
+        .output()
+        .is_ok_and(|output| output.status.success() && !output.stdout.is_empty());
     match configure {
         false => {
             println!(
@@ -6533,7 +6697,27 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
             for (key, value) in lines {
                 println!("  git config {key} \"{value}\"");
             }
-            println!("\nor run `headwater init --git --git-config` to run them here");
+            println!(
+                "\nand add these lines to the file `git rev-parse --git-path info/attributes` names, \
+                 which wins over `.gitattributes` in that clone alone. Add them only with the two \
+                 lines above, because a driver no config defines is an ordinary text merge:"
+            );
+            for path in &paths {
+                println!("  {path} {DRIVER_ATTRIBUTE}");
+            }
+            println!("\nor run `headwater init --git --git-config` to do both here");
+            if configured && !unwritten.is_empty() {
+                let Some(override_path) = &override_path else {
+                    return refuse("git names no `info/attributes` path for this clone");
+                };
+                if let Err(reason) = append_override(override_path, &override_text, &unwritten) {
+                    return refuse(&reason);
+                }
+                println!(
+                    "\nthis clone already names the driver, so the step wrote the override to {}",
+                    override_path.display()
+                );
+            }
         }
         true => {
             for (key, value) in lines {
@@ -6552,6 +6736,18 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
                     Err(error) => return refuse(&format!("cannot run git: {error}")),
                 }
             }
+            let Some(override_path) = override_path else {
+                return refuse("git names no `info/attributes` path for this clone");
+            };
+            if !unwritten.is_empty() {
+                if let Err(reason) = append_override(&override_path, &override_text, &unwritten) {
+                    return refuse(&reason);
+                }
+                println!("wrote {}", override_path.display());
+                for path in &unwritten {
+                    println!("  {path} {DRIVER_ATTRIBUTE}");
+                }
+            }
         }
     }
     println!(
@@ -6559,6 +6755,45 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
          step again after a producer writes a new file, and `headwater derived` names any it missed"
     );
     ExitCode::SUCCESS
+}
+
+/// Append one driver line for each of `paths` to the clone's own attributes file.
+fn append_override(at: &Path, existing: &str, paths: &[&String]) -> Result<(), String> {
+    let mut text = existing.to_string();
+    if !text.is_empty() && !text.ends_with('\n') {
+        text.push('\n');
+    }
+    for path in paths {
+        text.push_str(&format!("{path} {DRIVER_ATTRIBUTE}\n"));
+    }
+    if let Some(parent) = at.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|error| format!("cannot make {}: {error}", parent.display()))?;
+    }
+    std::fs::write(at, &text).map_err(|error| format!("cannot write {}: {error}", at.display()))
+}
+
+/// The path git gives `relative` inside this clone's git directory.
+///
+/// Asked of `git rev-parse --git-path` rather than joined onto `.git`, because
+/// a linked worktree's `.git` is a file and `info/` lives in the common
+/// directory. `None` outside a repository.
+fn git_path(root: &Path, relative: &str) -> Option<PathBuf> {
+    let output = std::process::Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["rev-parse", "--git-path", relative])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let text = String::from_utf8(output.stdout).ok()?;
+    let path = PathBuf::from(text.trim_end());
+    Some(match path.is_absolute() {
+        true => path,
+        false => root.join(path),
+    })
 }
 
 /// `headwater merge-driver %O %A %B %P`: keep the current side, and refuse.

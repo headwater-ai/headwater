@@ -26,6 +26,14 @@ use std::sync::atomic::{AtomicU64, Ordering};
 /// megabyte; the cap is there so that a wrong URL cannot fill the disk.
 const LIMIT: u64 = 64 * 1024 * 1024;
 
+/// The most bytes one fetch writes to disk when it unpacks, counted on the
+/// bytes written and not on the sizes the archive declares, which can lie. It
+/// is the same number as `LIMIT` for the same reason: the most the fetch
+/// writes should be the most it is willing to read. The published
+/// `headwater-standard` artifact unpacks to 392,598 bytes, so an honest
+/// artifact never meets it.
+const UNPACKED_LIMIT: u64 = 64 * 1024 * 1024;
+
 /// The most redirects one fetch follows. A release asset takes one.
 const MAX_REDIRECTS: u32 = 10;
 
@@ -150,27 +158,26 @@ fn loopback(host: &str) -> bool {
             .is_ok_and(|ip| ip.is_loopback())
 }
 
-/// Download the artifact zip at `location` and unpack it into a new temporary
-/// directory.
-///
-/// # Errors
-///
-/// [`Error::Scheme`] for a location that is neither `https://` nor `http://`
-/// to a loopback host, [`Error::Transport`] for a failed request or an error
-/// status, [`Error::Archive`] for a body that is not a readable zip, and
-/// [`Error::Io`] when the directory cannot be written.
-pub fn fetch(location: &str) -> Result<Fetched, Error> {
+/// What one request answered: a redirect to the target its `Location` header
+/// names, as written, or the response to read.
+enum Hop<T> {
+    Redirect(String),
+    Done(T),
+}
+
+/// Request `location` through `call`, following redirects. Every hop, the
+/// first included, goes through [`allowed`] with the scheme the fetch began
+/// on, so a redirect can neither turn an https fetch into plain http nor send
+/// plain http off this machine. More than [`MAX_REDIRECTS`] redirects is a
+/// refusal, and the target past the cap is never requested.
+fn follow<T>(
+    location: &str,
+    mut call: impl FnMut(&str) -> Result<Hop<T>, Error>,
+) -> Result<T, Error> {
     let started_https = scheme(location) == Some("https");
-    // The client follows no redirect itself. Each hop is read here and put
-    // through the same gate as the first request, so a redirect can neither
-    // turn an https fetch into plain http nor send plain http off this machine.
-    let agent: ureq::Agent = ureq::Agent::config_builder()
-        .max_redirects(0)
-        .build()
-        .into();
     let mut at = location.to_string();
     let mut hops = 0;
-    let mut response = loop {
+    loop {
         if !allowed(started_https, &at) {
             return Err(Error::Scheme(if at == location {
                 format!(
@@ -184,14 +191,45 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
                 )
             }));
         }
+        match call(&at)? {
+            Hop::Done(answer) => return Ok(answer),
+            Hop::Redirect(next) => {
+                hops += 1;
+                if hops > MAX_REDIRECTS {
+                    return Err(Error::Transport(format!(
+                        "{location} redirected more than {MAX_REDIRECTS} times"
+                    )));
+                }
+                at = resolve(&at, &next);
+            }
+        }
+    }
+}
+
+/// Download the artifact zip at `location` and unpack it into a new temporary
+/// directory.
+///
+/// # Errors
+///
+/// [`Error::Scheme`] for a location that is neither `https://` nor `http://`
+/// to a loopback host, [`Error::Transport`] for a failed request or an error
+/// status, [`Error::Archive`] for a body that is not a readable zip, and
+/// [`Error::Io`] when the directory cannot be written.
+pub fn fetch(location: &str) -> Result<Fetched, Error> {
+    // The client follows no redirect itself. `follow` reads each hop and puts
+    // it through the same gate as the first request.
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .max_redirects(0)
+        .build()
+        .into();
+    let mut response = follow(location, |at| {
         let response = agent
-            .get(&at)
+            .get(at)
             .call()
             .map_err(|error| Error::Transport(format!("fetching {at} failed: {error}")))?;
         if !response.status().is_redirection() {
-            break response;
+            return Ok(Hop::Done(response));
         }
-        hops += 1;
         let next = response
             .headers()
             .get("location")
@@ -199,13 +237,8 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
             .ok_or_else(|| {
                 Error::Transport(format!("{at} answered with a redirect and no location"))
             })?;
-        if hops > MAX_REDIRECTS {
-            return Err(Error::Transport(format!(
-                "{location} redirected more than {MAX_REDIRECTS} times"
-            )));
-        }
-        at = resolve(&at, next);
-    };
+        Ok(Hop::Redirect(next.to_string()))
+    })?;
     let body = response
         .body_mut()
         .with_config()
@@ -219,13 +252,79 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
         ))
     })?;
     let fetched = Fetched { dir: scratch()? };
-    // `extract` refuses a member whose name leaves the directory.
-    archive.extract(&fetched.dir).map_err(|error| {
+    unpack(&mut archive, &fetched.dir, UNPACKED_LIMIT, location)?;
+    Ok(fetched)
+}
+
+/// Unpack `archive` into `dir`, refusing once more than `bound` bytes would
+/// be written. The sizes an archive declares are read first, as a cheap
+/// refusal, and then the bound is held again on the bytes written, because a
+/// deflate member decompresses past its declared size and a header can lie.
+/// A member whose name leaves `dir`, and a symbolic link, are refused: a
+/// published artifact has neither. Whatever was written before a refusal is
+/// removed by the caller's [`Fetched`] when it drops.
+fn unpack<R: std::io::Read + std::io::Seek>(
+    archive: &mut zip::ZipArchive<R>,
+    dir: &Path,
+    bound: u64,
+    location: &str,
+) -> Result<(), Error> {
+    let too_large = || {
+        Error::Archive(format!(
+            "the archive at {location} unpacks to more than {bound} bytes, the most this verb \
+             writes"
+        ))
+    };
+    let broken = |error: &dyn fmt::Display| {
         Error::Archive(format!(
             "the archive at {location} does not unpack: {error}"
         ))
-    })?;
-    Ok(fetched)
+    };
+    let io = |path: &Path, error: std::io::Error| {
+        Error::Io(format!("{} could not be written: {error}", path.display()))
+    };
+    if archive
+        .decompressed_size()
+        .is_some_and(|declared| declared > u128::from(bound))
+    {
+        return Err(too_large());
+    }
+    let mut written: u64 = 0;
+    for index in 0..archive.len() {
+        let mut member = archive.by_index(index).map_err(|error| broken(&error))?;
+        let Some(name) = member.enclosed_name() else {
+            return Err(broken(&format!(
+                "the member {} names a path outside the directory",
+                member.name()
+            )));
+        };
+        let path = dir.join(name);
+        if member.is_symlink() {
+            return Err(broken(&format!(
+                "the member {} is a symbolic link",
+                member.name()
+            )));
+        }
+        if member.is_dir() {
+            std::fs::create_dir_all(&path).map_err(|error| io(&path, error))?;
+            continue;
+        }
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).map_err(|error| io(parent, error))?;
+        }
+        let mut file = std::fs::File::create(&path).map_err(|error| io(&path, error))?;
+        let remaining = bound - written;
+        let copied = std::io::copy(
+            &mut std::io::Read::take(&mut member, remaining.saturating_add(1)),
+            &mut file,
+        )
+        .map_err(|error| broken(&error))?;
+        if copied > remaining {
+            return Err(too_large());
+        }
+        written += copied;
+    }
+    Ok(())
 }
 
 /// A new, empty directory under the system temporary directory. The name
@@ -298,5 +397,179 @@ mod tests {
         let refused = fetch("ftp://127.0.0.1/x.zip").unwrap_err();
         assert!(matches!(refused, Error::Scheme(_)), "{refused}");
         assert!(loopback("127.0.0.1") && loopback("::1") && !loopback("10.0.0.1"));
+    }
+
+    /// Drive [`follow`] from `location` over a transport that answers each
+    /// URL with `answer`, and return the result with every URL requested.
+    fn followed(
+        location: &str,
+        mut answer: impl FnMut(usize, &str) -> Hop<()>,
+    ) -> (Result<(), Error>, Vec<String>) {
+        let mut asked = Vec::new();
+        let result = follow(location, |at| {
+            asked.push(at.to_string());
+            Ok(answer(asked.len(), at))
+        });
+        (result, asked)
+    }
+
+    /// A transport that redirects `count` times, `/0` to `/1` and on, and
+    /// then answers.
+    fn chain(count: usize) -> impl FnMut(usize, &str) -> Hop<()> {
+        move |request, _| {
+            if request <= count {
+                Hop::Redirect(format!("/{request}"))
+            } else {
+                Hop::Done(())
+            }
+        }
+    }
+
+    #[test]
+    fn exactly_max_redirects_are_followed() {
+        let (result, asked) = followed("http://127.0.0.1:9/0", chain(10));
+        result.unwrap();
+        assert_eq!(asked.len(), 11, "{asked:?}");
+        assert_eq!(asked.last().unwrap(), "http://127.0.0.1:9/10");
+    }
+
+    #[test]
+    fn one_redirect_past_max_redirects_is_refused_and_not_requested() {
+        let (result, asked) = followed("http://127.0.0.1:9/0", chain(11));
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Transport(_)), "{refused}");
+        assert!(
+            refused
+                .to_string()
+                .contains("redirected more than 10 times"),
+            "{refused}"
+        );
+        assert_eq!(
+            asked.len(),
+            11,
+            "the first request and ten redirects: {asked:?}"
+        );
+    }
+
+    #[test]
+    fn a_fetch_that_began_on_https_is_not_redirected_to_loopback_http() {
+        let (result, asked) = followed("https://objects.example.org/x.zip", |_, _| {
+            Hop::Redirect("http://127.0.0.1/x.zip".to_string())
+        });
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Scheme(_)), "{refused}");
+        assert!(
+            refused.to_string().contains("http://127.0.0.1/x.zip"),
+            "{refused}"
+        );
+        assert_eq!(asked, ["https://objects.example.org/x.zip"]);
+    }
+
+    /// A deflate zip with one member, `zeros.bin`, of `len` zero bytes.
+    fn zeros(len: usize) -> Vec<u8> {
+        members(&[("zeros.bin", len)])
+    }
+
+    /// A deflate zip with one member of zero bytes for each name and length.
+    fn members(files: &[(&str, usize)]) -> Vec<u8> {
+        use std::io::Write;
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+        for (name, len) in files {
+            writer.start_file(*name, options).unwrap();
+            writer.write_all(&vec![0_u8; *len]).unwrap();
+        }
+        writer.finish().unwrap().into_inner()
+    }
+
+    /// Rewrite the `uncompressed_size` of every member to `size`, in the local
+    /// header (22 bytes after `PK\x03\x04`) and in the central directory (24
+    /// bytes after `PK\x01\x02`), so the archive declares less than it holds.
+    fn lie_about_the_size(mut bytes: Vec<u8>, size: u32) -> Vec<u8> {
+        let (mut local, mut central) = (0, 0);
+        for at in 0..bytes.len().saturating_sub(4) {
+            let offset = match &bytes[at..at + 4] {
+                b"PK\x03\x04" => {
+                    local += 1;
+                    22
+                }
+                b"PK\x01\x02" => {
+                    central += 1;
+                    24
+                }
+                _ => continue,
+            };
+            bytes[at + offset..at + offset + 4].copy_from_slice(&size.to_le_bytes());
+        }
+        assert!(local > 0, "no local header was found");
+        assert_eq!(local, central, "a central record for each local header");
+        bytes
+    }
+
+    fn unpacked(bytes: Vec<u8>, bound: u64) -> (Result<(), Error>, Fetched) {
+        let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+        let fetched = Fetched {
+            dir: scratch().unwrap(),
+        };
+        let result = unpack(&mut archive, &fetched.dir, bound, "test.zip");
+        (result, fetched)
+    }
+
+    #[test]
+    fn an_archive_that_unpacks_past_the_bound_is_refused() {
+        let (result, _fetched) = unpacked(zeros(1025), 1024);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        assert!(refused.to_string().contains("1024"), "{refused}");
+        assert!(refused.to_string().contains("test.zip"), "{refused}");
+    }
+
+    #[test]
+    fn an_archive_that_unpacks_to_the_bound_is_accepted() {
+        let (result, fetched) = unpacked(zeros(1024), 1024);
+        result.unwrap();
+        let written = std::fs::metadata(fetched.path().join("zeros.bin")).unwrap();
+        assert_eq!(written.len(), 1024);
+    }
+
+    #[test]
+    fn the_bound_holds_on_the_bytes_written_when_the_header_lies() {
+        let (result, _fetched) = unpacked(lie_about_the_size(zeros(1025), 10), 1024);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        // Refused by the count of bytes written, not by a checksum or a size
+        // mismatch the reader might raise first.
+        assert!(
+            refused.to_string().contains("more than 1024 bytes"),
+            "{refused}"
+        );
+    }
+
+    #[test]
+    fn the_bound_holds_across_members_and_not_for_each_one() {
+        // Each member is under the bound and declares 10 bytes, so neither
+        // the declared total nor any one member meets it. The 1,200 bytes the
+        // two write together do.
+        let lying = lie_about_the_size(members(&[("a.bin", 600), ("b.bin", 600)]), 10);
+        let (result, _fetched) = unpacked(lying, 1024);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        assert!(
+            refused.to_string().contains("more than 1024 bytes"),
+            "{refused}"
+        );
+    }
+
+    #[test]
+    fn a_declared_size_past_the_bound_is_refused_before_a_byte_is_written() {
+        let (result, fetched) = unpacked(zeros(1025), 1024);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        let written: Vec<_> = std::fs::read_dir(fetched.path()).unwrap().collect();
+        assert!(
+            written.is_empty(),
+            "written before the refusal: {written:?}"
+        );
     }
 }

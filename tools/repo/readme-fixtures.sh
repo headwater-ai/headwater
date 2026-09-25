@@ -959,6 +959,10 @@ release_publish_needs() {
 # Linux or on a Mac is not that host, and #975 is the issue that found the only
 # archive a release carried ran on neither. A smoke job that the release does
 # not wait on is a report after the fact rather than a gate.
+#
+# Waiting is not enough on its own. The judge also refuses a publish `if:`
+# that overrides the wait, a smoke job that cannot fail, and a smoke job that
+# runs some archive other than the one a stranger downloads for its platform.
 release_gate_judge() {
     rg_smoke=$(release_smoke_jobs "$1")
     if [ -z "$rg_smoke" ]; then
@@ -972,9 +976,148 @@ release_gate_judge() {
     ')
     if [ -n "$rg_missing" ]; then
         echo "the job that creates the release does not wait on $(oneline "$rg_missing")"
+        return
+    fi
+
+    # A `needs:` holds only while the job's `if:` keeps the default
+    # `success()`. Any other status function lets the job run after a need
+    # failed, so the release is created whatever the smoke jobs did.
+    rg_facts=$(release_job_facts "$1")
+    rg_override=$(printf '%s\n' "$rg_facts" | awk -F '\t' '
+        $2 == "creates" { creator[$1] = 1 }
+        $2 == "if" { cond[$1] = cond[$1] " " $3 }
+        END {
+            for (j in creator) {
+                c = cond[j]
+                if (match(c, /always\(\)|!?[ \t]*cancelled\(\)|failure\(\)/)) {
+                    print substr(c, RSTART, RLENGTH)
+                    exit
+                }
+            }
+        }
+    ')
+    if [ -n "$rg_override" ]; then
+        echo "the job that creates the release calls $rg_override in its \`if:\`, so it runs whatever the smoke jobs did"
+        return
+    fi
+
+    # A smoke job that cannot fail holds nothing. `continue-on-error` at job
+    # level or on any step, with any value other than `false`, swallows it.
+    rg_soft=$(printf '%s\n' "$rg_facts" | awk -F '\t' -v smoke="$(oneline "$rg_smoke")" '
+        BEGIN { n = split(smoke, a, " "); for (i = 1; i <= n; i++) s[a[i]] = 1 }
+        $2 == "coe" && ($1 in s) && $3 != "false" { print $1 "\t" $3; exit }
+    ')
+    if [ -n "$rg_soft" ]; then
+        echo "${rg_soft%%	*} sets \`continue-on-error: ${rg_soft#*	}\`, so a broken archive does not stop the release"
+        return
+    fi
+
+    # A smoke job runs a target when the artifact it downloads and the asset
+    # it unpacks both name that target. One that downloads one archive and
+    # unpacks another runs neither.
+    rg_split=$(printf '%s\n' "$rg_facts" | awk -F '\t' -v smoke="$(oneline "$rg_smoke")" '
+        BEGIN { n = split(smoke, a, " "); for (i = 1; i <= n; i++) s[a[i]] = 1 }
+        ($1 in s) && $2 == "download" { dl[$1] = $3 }
+        ($1 in s) && $2 == "asset" { as[$1] = $3 }
+        END {
+            for (i = 1; i <= n; i++) {
+                j = a[i]
+                if (dl[j] != as[j]) {
+                    d = (dl[j] == "") ? "no artifact" : dl[j]
+                    r = (as[j] == "") ? "no named archive" : "the " as[j] " archive"
+                    print j " downloads " d " and runs " r
+                    exit
+                }
+            }
+        }
+    ')
+    if [ -n "$rg_split" ]; then
+        echo "$rg_split"
+        return
+    fi
+
+    # Every build target has a smoke job, except the gnu row: the build host
+    # already runs that archive, the release has always carried it, and
+    # release.yml says in its matrix comment why no second host is asked to.
+    rg_run=$(printf '%s\n' "$rg_facts" | awk -F '\t' -v smoke="$(oneline "$rg_smoke")" '
+        BEGIN { n = split(smoke, a, " "); for (i = 1; i <= n; i++) s[a[i]] = 1 }
+        ($1 in s) && $2 == "asset" { print $3 }
+    ')
+    rg_unrun=$(release_build_targets "$1" | grep -vx 'x86_64-unknown-linux-gnu' | awk -v run="$(oneline "$rg_run")" '
+        BEGIN { n = split(run, a, " "); for (i = 1; i <= n; i++) have[a[i]] = 1 }
+        !($0 in have)
+    ')
+    if [ -n "$rg_unrun" ]; then
+        echo "no smoke job runs the $(oneline "$rg_unrun") archive"
     else
         echo ok
     fi
+}
+
+# release_build_targets WORKFLOW — the `target:` of every build-matrix row,
+# one per line.
+release_build_targets() {
+    release_yaml_text "$1" | sed -n 's/^ *- target:[ \t]*\([^ \t]*\)[ \t]*$/\1/p' | LC_ALL=C sort -u
+}
+
+# release_job_facts WORKFLOW — what the gate judge reads of each job, one
+# tab-separated line per fact: `JOB if TEXT` for the job-level `if:` (a block
+# scalar is joined onto one line), `JOB coe VALUE` for every
+# `continue-on-error:` in the job at any depth, `JOB download NAME` for the
+# `name:` a `download-artifact` step asks for, `JOB asset TARGET` for the
+# target an `asset=` names as `headwater-${TAG}-TARGET.tar.gz`, and
+# `JOB creates` for the job that runs `gh release create`.
+release_job_facts() {
+    release_yaml_text "$1" | awk -v q="'" '
+        function indent(s) { match(s, /^ */); return RLENGTH }
+        function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
+        function unquote(s) { s = trim(s); gsub("^[\"" q "]|[\"" q "]$", "", s); return s }
+        /^[a-zA-Z]/ { injobs = ($0 ~ /^jobs:/); job = ""; next }
+        !injobs { next }
+        /^  [A-Za-z_][A-Za-z0-9_-]*:[ \t]*$/ {
+            job = $0
+            sub(/^  /, "", job)
+            sub(/:[ \t]*$/, "", job)
+            inif = 0; download = 0
+            next
+        }
+        job == "" { next }
+        inif {
+            if ($0 ~ /^[ \t]*$/ || indent($0) > 4) { printf "%s\tif\t%s\n", job, trim($0); next }
+            inif = 0
+        }
+        /^    if:/ {
+            v = $0
+            sub(/^    if:[ \t]*/, "", v)
+            if (v ~ /^[|>]/) inif = 1
+            else printf "%s\tif\t%s\n", job, trim(v)
+            next
+        }
+        /^ +continue-on-error:/ {
+            v = $0
+            sub(/^ +continue-on-error:[ \t]*/, "", v)
+            printf "%s\tcoe\t%s\n", job, unquote(v)
+            next
+        }
+        /uses:[ \t]*actions\/download-artifact/ { download = 1; next }
+        download && /^ +- / { download = 0 }
+        download && /^ +name:/ {
+            v = $0
+            sub(/^ +name:[ \t]*/, "", v)
+            printf "%s\tdownload\t%s\n", job, unquote(v)
+            download = 0
+            next
+        }
+        /^ +asset=/ {
+            v = $0
+            sub(/^ +asset=[ \t]*/, "", v)
+            v = unquote(v)
+            if (sub(/^headwater-\$\{TAG\}-/, "", v) && sub(/\.tar\.gz$/, "", v))
+                printf "%s\tasset\t%s\n", job, v
+            next
+        }
+        index($0, "gh release create") { printf "%s\tcreates\n", job }
+    '
 }
 
 # workflow_step_run WORKFLOW NAME — the body of the `run: |` block of the step
@@ -2136,6 +2279,71 @@ if [ -f "$release_wf" ]; then
     same "  and a workflow with no smoke job at all is refused" \
         "no job runs an archive on a host that did not build it, so nothing stops a release whose archive cannot run" \
         "$(release_gate_judge "$scratch/release/no-smoke.yml")"
+
+    # A `needs:` holds publish only while the job's `if:` leaves the default
+    # `success()` in place. A status function overrides it, and the release is
+    # then created whatever the smoke jobs did.
+    sed '/^  publish:/,/^  [A-Za-z]/s/^    if: \(.*\)$/    if: always() \&\& (\1)/' \
+        "$release_wf" >"$scratch/release/always.yml"
+    if cmp -s "$release_wf" "$scratch/release/always.yml"; then
+        fail "  a release whose \`if:\` overrides the smoke gate is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a release whose \`if:\` overrides the smoke gate is refused" \
+            "the job that creates the release calls always() in its \`if:\`, so it runs whatever the smoke jobs did" \
+            "$(release_gate_judge "$scratch/release/always.yml")"
+    fi
+
+    # A smoke job that cannot fail is a smoke job that holds nothing, whether
+    # the job or one of its steps swallows the failure.
+    sed '/^  smoke-linux:/a\
+    continue-on-error: true' "$release_wf" >"$scratch/release/soft-job.yml"
+    if cmp -s "$release_wf" "$scratch/release/soft-job.yml"; then
+        fail "  a smoke job that does not fail on a broken archive is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a smoke job that does not fail on a broken archive is refused" \
+            "smoke-linux sets \`continue-on-error: true\`, so a broken archive does not stop the release" \
+            "$(release_gate_judge "$scratch/release/soft-job.yml")"
+    fi
+
+    sed '/^  smoke-macos:/,/^  [A-Za-z]/{/^      - name:/a\
+        continue-on-error: true
+}' "$release_wf" >"$scratch/release/soft-step.yml"
+    if cmp -s "$release_wf" "$scratch/release/soft-step.yml"; then
+        fail "  and so is one whose step does not fail" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  and so is one whose step does not fail" \
+            "smoke-macos sets \`continue-on-error: true\`, so a broken archive does not stop the release" \
+            "$(release_gate_judge "$scratch/release/soft-step.yml")"
+    fi
+
+    # A smoke job pointed at the archive the build host already ran proves
+    # nothing about the one a stranger downloads. The gnu row is the one build
+    # target no smoke job runs, by design, so moving the musl smoke onto it
+    # leaves the musl archive unrun.
+    sed '/^  smoke-linux:/,/^  [A-Za-z]/s/x86_64-unknown-linux-musl/x86_64-unknown-linux-gnu/g' \
+        "$release_wf" >"$scratch/release/smoke-gnu.yml"
+    if cmp -s "$release_wf" "$scratch/release/smoke-gnu.yml"; then
+        fail "  a build target that no smoke job runs is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a build target that no smoke job runs is refused" \
+            "no smoke job runs the x86_64-unknown-linux-musl archive" \
+            "$(release_gate_judge "$scratch/release/smoke-gnu.yml")"
+    fi
+
+    sed '/^  smoke-linux:/,/^  [A-Za-z]/s/name: x86_64-unknown-linux-musl/name: x86_64-unknown-linux-gnu/' \
+        "$release_wf" >"$scratch/release/smoke-split.yml"
+    if cmp -s "$release_wf" "$scratch/release/smoke-split.yml"; then
+        fail "  and a smoke job that downloads one archive and runs another" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  and a smoke job that downloads one archive and runs another" \
+            "smoke-linux downloads x86_64-unknown-linux-gnu and runs the x86_64-unknown-linux-musl archive" \
+            "$(release_gate_judge "$scratch/release/smoke-split.yml")"
+    fi
 
     # The guard on the guard. `bash -e` without `pipefail` takes the LAST
     # command's status, so a version check written as `$(binary | awk …)` passes

@@ -1458,30 +1458,35 @@
         "path": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
         "kind": "decision",
         "id": "HW-DR-0049",
-        "warrant": "asserted",
+        "warrant": "accepted",
         "facets": {
           "id": "HW-DR-0049",
           "status": "current",
           "status_since": "2026-09-23",
           "summary": "A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict.",
-          "last_verified": "2026-09-06",
+          "last_verified": "2026-09-25",
           "title": "A corpus-wide fold is derived and never stored",
           "provenance": {
-            "warrant": "asserted",
+            "warrant": "accepted",
             "agency": "mixed",
             "drafted_by": "claude-opus-5",
             "activity": "measure+draft",
+            "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
           },
           "relations": {
             "governs": [
-              ".gitattributes"
+              {
+                "to": ".gitattributes",
+                "verified_revision": "sha256:c57eec82fdffb6d8d245700d0f37aedfce83f233b65f81bf960db9de0b28fd71"
+              }
             ],
             "traces_to": [
               "HW-EVAL-what-a-check-can-know",
               "engine/crates/census/src/census.rs",
               "engine/crates/graph/src/lib.rs",
-              ".githooks/merge-regenerate"
+              ".githooks/merge-regenerate",
+              "HW-IFACE-headwater-init"
             ]
           }
         }
@@ -1815,7 +1820,7 @@
           "status": "current",
           "status_since": "2026-09-11",
           "summary": "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars.",
-          "last_verified": "2026-09-12",
+          "last_verified": "2026-09-25",
           "title": "Every required facet of a generated document is derived, and the emitter composes the summary",
           "provenance": {
             "warrant": "asserted",
@@ -1829,7 +1834,10 @@
               "HW-SPEC-engine-architecture"
             ],
             "governs": [
-              "engine/crates/generate/src/derived.rs"
+              {
+                "to": "engine/crates/generate/src/derived.rs",
+                "verified_revision": "sha256:383f4c2db974c9dbdc74eff1d68385d334a6c375dd23089d0621944cb251f928"
+              }
             ]
           }
         }
@@ -2062,8 +2070,8 @@
           "id": "HW-DR-0072",
           "status": "current",
           "status_since": "2026-09-17",
-          "summary": "An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test; a network fetch left the list under HW-DR-0075; and the change manifest fails the test and is a defect.",
-          "last_verified": "2026-09-19",
+          "summary": "An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test, a network fetch left the list under HW-DR-0075, and a verb writes the change manifest.",
+          "last_verified": "2026-09-24",
           "title": "The binary is the only interface an adopter must run, and every integration point outside it is declared",
           "provenance": {
             "warrant": "accepted",
@@ -2323,6 +2331,32 @@
             "drafted_by": "claude-sonnet-5",
             "activity": "draft",
             "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md",
+        "kind": "decision",
+        "id": "HW-DR-0082",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0082",
+          "status": "current",
+          "status_since": "2026-09-24",
+          "summary": "`headwater taxonomy graph` prints the resolved taxonomy from the lock as a Mermaid flowchart, and no projection, explain format or export target draws it",
+          "last_verified": "2026-09-25",
+          "title": "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              "engine/crates/cli/src/taxonomy_graph.rs"
+            ]
           }
         }
       },
@@ -3262,7 +3296,7 @@
           "status": "current",
           "status_since": "2026-09-23",
           "summary": "A composite action runs headwater check --strict against your own corpus, with the released binary alone: no clone, no Rust toolchain, no cargo.",
-          "last_verified": "2026-09-23",
+          "last_verified": "2026-09-25",
           "title": "Wire headwater check into your own workflow",
           "provenance": {
             "warrant": "asserted",
@@ -3602,7 +3636,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How to start a corpus by writing a consumer declaration and an overlay from tree evidence and interview prompts.",
-          "last_verified": "2026-09-23",
+          "last_verified": "2026-09-25",
           "title": "headwater init",
           "relations": {
             "governs": [
@@ -3623,7 +3657,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How one member of the JSON object on standard input reaches a caller, and the one answer that stands for every way a read reaches no scalar.",
-          "last_verified": "2026-09-06",
+          "last_verified": "2026-09-24",
           "title": "headwater json",
           "relations": {
             "governs": [
@@ -3833,8 +3867,8 @@
           "id": "HW-IFACE-headwater-taxonomy",
           "status": "current",
           "status_since": "2026-09-06",
-          "summary": "How to validate, resolve, audit, publish, vendor, compare and migrate taxonomy packages.",
-          "last_verified": "2026-09-07",
+          "summary": "How to validate, resolve, audit, publish, vendor, compare, migrate and draw taxonomy packages.",
+          "last_verified": "2026-09-25",
           "title": "headwater taxonomy",
           "relations": {
             "governs": [
@@ -3842,6 +3876,7 @@
                 "engine/crates/cli/src/lib.rs",
                 "engine/crates/cli/src/main.rs"
               ],
+              "engine/crates/cli/src/taxonomy_graph.rs",
               "engine/crates/resolve/src/lib.rs",
               "engine/crates/audit/src/lib.rs",
               "engine/crates/audit/src/reading.rs",
@@ -8011,7 +8046,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "title": "The glossary's Package entry omits conformance and still lists plugins, which #367 dropped",
-          "summary": "The glossary's Package entry is missing `conformance` and still names `plugins`, a key spec 7 no longer carries.",
+          "summary": "The glossary's Package entry is missing `conformance` and still names `plugins`, a key that spec 7 does not declare.",
           "provenance": {
             "warrant": "accepted",
             "agency": "agent",
@@ -9289,7 +9324,7 @@
           "status_since": "2026-09-24",
           "summary": "Since #1047 and the link suite of #849, the two hw-cargo workarounds in hw-run-policy may be dead text that every build-order stage pays to read.",
           "last_verified": "2026-09-24",
-          "title": "Two hand-remedy lines for hw-cargo in hw-run-policy may no longer earn their cost on every dispatch",
+          "title": "Two hand-remedy lines for hw-cargo in hw-run-policy may not earn their cost on every dispatch",
           "waiting_on": "build"
         }
       },
@@ -9355,10 +9390,10 @@
         "id": "HW-OBL-0216",
         "facets": {
           "id": "HW-OBL-0216",
-          "status": "draft",
-          "status_since": "2026-09-24",
+          "status": "discharged",
+          "status_since": "2026-09-25",
           "summary": "The merge-regenerate and merged-fold-check hooks tell the merger to run headwater taxonomy resolve --write, and the verb rejects --write because it writes by default.",
-          "last_verified": "2026-09-24",
+          "last_verified": "2026-09-25",
           "title": "Two merge hooks of this repository print a resolve flag that the verb refuses",
           "waiting_on": "build"
         }
@@ -10745,7 +10780,7 @@
           "id": "HW-SPEC-harness-support",
           "status": "current",
           "status_since": "2026-09-06",
-          "summary": "The ten capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.",
+          "summary": "The eleven capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.",
           "last_verified": "2026-09-09",
           "doc_type": "design_spec",
           "sequence": "16",
@@ -10852,6 +10887,110 @@
               "HW-EVAL-warrant-and-adjudication"
             ]
           }
+        }
+      },
+      {
+        "path": "docs/taxonomies/README.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-index",
+        "facets": {
+          "id": "HW-LIB-index",
+          "status": "current",
+          "status_since": "2026-09-21",
+          "summary": "What a library entry is, the seven criteria that admit one, what each entry ships, what admits an assembly, and the rulings every draft works under.",
+          "last_verified": "2026-09-24",
+          "title": "The canonical taxonomy library"
+        }
+      },
+      {
+        "path": "docs/taxonomies/brd-prd/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-brd-prd",
+        "facets": {
+          "id": "HW-LIB-brd-prd",
+          "status": "current",
+          "status_since": "2026-09-08",
+          "summary": "Why the brd-prd entry types the requirements handoff as a business requirements document and a product requirements document, and why each declaration is there.",
+          "last_verified": "2026-09-24",
+          "title": "The brd-prd taxonomy"
+        }
+      },
+      {
+        "path": "docs/taxonomies/decision-record/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-decision-record",
+        "facets": {
+          "id": "HW-LIB-decision-record",
+          "status": "current",
+          "status_since": "2026-09-21",
+          "summary": "Why the decision-record entry keeps one decision per document forever, replaces a changed choice with a new record, and types what the corpus owes.",
+          "last_verified": "2026-09-24",
+          "title": "The decision-record taxonomy"
+        }
+      },
+      {
+        "path": "docs/taxonomies/design-spec/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-design-spec",
+        "facets": {
+          "id": "HW-LIB-design-spec",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Why the design-spec entry types a numbered series of parts that state one design, from the IETF, research-paper and software-design traditions it draws on.",
+          "last_verified": "2026-09-24",
+          "title": "The design-spec taxonomy"
+        }
+      },
+      {
+        "path": "docs/taxonomies/diataxis-site/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-diataxis-site",
+        "facets": {
+          "id": "HW-LIB-diataxis-site",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Why the diataxis-site bundle makes tutorial, how-to, reference and explanation concrete kinds of a documentation site, one shelf for each.",
+          "last_verified": "2026-09-24",
+          "title": "Diátaxis as a documentation-site kind set"
+        }
+      },
+      {
+        "path": "docs/taxonomies/diataxis/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-diataxis",
+        "facets": {
+          "id": "HW-LIB-diataxis",
+          "status": "current",
+          "status_since": "2026-09-15",
+          "summary": "Why the Diátaxis entry ships the four reader modes as one facet over the kinds a corpus already has, and not as kinds of its own.",
+          "last_verified": "2026-09-24",
+          "title": "The Diátaxis taxonomy"
+        }
+      },
+      {
+        "path": "docs/taxonomies/evidence-and-obligation/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-evidence-and-obligation",
+        "facets": {
+          "id": "HW-LIB-evidence-and-obligation",
+          "status": "current",
+          "status_since": "2026-09-08",
+          "summary": "Why the evidence-and-obligation bundle ships the evaluation kind and two reader intents alone, so that decision-record does not require all of design-spec.",
+          "last_verified": "2026-09-24",
+          "title": "The evidence-and-obligation taxonomy"
+        }
+      },
+      {
+        "path": "docs/taxonomies/standards-spec/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-standards-spec",
+        "facets": {
+          "id": "HW-LIB-standards-spec",
+          "status": "current",
+          "status_since": "2026-09-08",
+          "summary": "Why the standards-spec entry types the internal-standard ladder: a standard that binds many components, and a functional and a technical specification for each one.",
+          "last_verified": "2026-09-24",
+          "title": "The standards-spec taxonomy"
         }
       },
       {
@@ -11171,7 +11310,7 @@
         "anchor_kind": "code_path",
         "id": "docs/taxonomies/decision-record/bundle.yml",
         "resolver": "source-tree",
-        "excluded_by": "docs/taxonomies/**"
+        "excluded_by": "docs/taxonomies/*/bundle.yml"
       },
       {
         "anchor_kind": "code_path",
@@ -11291,6 +11430,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/cli/src/paint.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/cli/src/taxonomy_graph.rs",
         "resolver": "source-tree"
       },
       {
@@ -12986,6 +13130,9 @@
           "anchor_kind": "code_path",
           "id": ".gitattributes",
           "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:c57eec82fdffb6d8d245700d0f37aedfce83f233b65f81bf960db9de0b28fd71"
         }
       },
       {
@@ -13030,6 +13177,17 @@
           "anchor_kind": "code_path",
           "id": ".githooks/merge-regenerate",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-IFACE-headwater-init",
+          "path": "docs/interfaces/headwater-init.md",
+          "kind": "interface_contract"
         }
       },
       {
@@ -13283,6 +13441,9 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/generate/src/derived.rs",
           "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:383f4c2db974c9dbdc74eff1d68385d334a6c375dd23089d0621944cb251f928"
         }
       },
       {
@@ -13646,6 +13807,17 @@
           "id": "HW-DR-0011",
           "path": "docs/decisions/0011-license-and-distribution-posture.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/taxonomy_graph.rs",
+          "resolver": "source-tree"
         }
       },
       {
@@ -15669,6 +15841,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-taxonomy.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/taxonomy_graph.rs",
           "resolver": "source-tree"
         }
       },

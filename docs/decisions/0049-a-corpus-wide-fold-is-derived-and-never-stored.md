@@ -3,22 +3,25 @@ id: HW-DR-0049
 status: current
 status_since: 2026-09-23
 summary: "A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict."
-last_verified: 2026-09-06
+last_verified: 2026-09-25
 title: "A corpus-wide fold is derived and never stored"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: mixed
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:
-    - .gitattributes
+    - to: .gitattributes
+      verified_revision: sha256:c57eec82fdffb6d8d245700d0f37aedfce83f233b65f81bf960db9de0b28fd71
   traces_to:
     - HW-EVAL-what-a-check-can-know
     - engine/crates/census/src/census.rs
     - engine/crates/graph/src/lib.rs
     - .githooks/merge-regenerate
+    - HW-IFACE-headwater-init
 ---
 
 # A corpus-wide fold is derived and never stored
@@ -41,7 +44,7 @@ relations:
 
 **The order is part of the artifact and not a presentation choice.** Two records that a walk emits in discovery order move under an edit somewhere else in the corpus. A test holds the order for each artifact that this rule covers.
 
-**Where decomposition costs more than it returns, the artifact keeps its fold and answers to a check on the merged state.** One record per check instance would be a file of five thousand lines that moves on every commit. Such an artifact declares `merge=headwater-regenerate`, which refuses a merge rather than reconciling one. The refusal is a fallback and never the rule, because the measurement above shows that it reaches only the form git already reports.
+**Where decomposition costs more than it returns, the artifact keeps its fold and answers to a check on the merged state.** One record per check instance would be a file of five thousand lines that moves on every commit. Such an artifact declares `-merge`, which refuses a merge rather than reconciling one. A configured clone selects `merge=headwater-regenerate` in its own `info/attributes`, and the conflict then names the producer. The refusal is a fallback and never the rule, because the measurement above shows that it reaches only the form git already reports.
 
 **No git attribute is ever treated as covering the quiet form.** A future artifact that stores a fold is not made safe by an attribute, and a reader who believes otherwise will store one.
 
@@ -51,9 +54,11 @@ relations:
 
 **Two artifacts changed shape.** The recorded census holds one record per file and no total. The recorded graph holds one line per citation rather than a count for each anchor. It drops the count of prose links that did not resolve, because the exceptions section already names each broken link.
 
-**The artifacts that keep their folds declare the driver, and `headwater derived` is what says which they are and of what shape.** Every count of them written by hand has been wrong, including the count this clause stated until [#676](https://github.com/headwater-ai/headwater/issues/676) removed it. The verb asks each producer for its own output set and takes the union, so the answer moves when the tree moves. `.gitattributes` names each path and says why it is on the list, and the verb holds that file against the computed set in both directions. The verb also computes the shape of each path, from the structure of the artifact and the rule of its producer. It reports a path whose merge attribute is not the treatment that shape takes.
+**The artifacts that keep their folds declare `-merge`, and `headwater derived` is what says which they are and of what shape.** Every count of them written by hand has been wrong, including the count this clause stated until [#676](https://github.com/headwater-ai/headwater/issues/676) removed it. The verb asks each producer for its own output set and takes the union, so the answer moves when the tree moves. `.gitattributes` names each path and says why it is on the list, and the verb holds that file against the computed set in both directions. The verb also computes the shape of each path, from the structure of the artifact and the rule of its producer. It reports a path whose merge attribute is not the treatment that shape takes.
 
-**The driver needs one command for each clone, and the commit gate reports a clone that has not run it.** Git takes no merge driver from a repository, because a driver is an executable. So the attribute alone leaves an ordinary merge in place, and that failure is silent by construction.
+**The driver needs one command for each clone, and the commit gate reports a clone that has not run it.** Git takes no merge driver from a repository, because a driver is an executable. The committed `-merge` needs no command, and it conflicts in every clone. The driver line goes in the `info/attributes` of a clone that set the driver config. Git reads a driver that no configuration defines as a text merge.
+
+**Amended on 2026-09-24 by [#1058](https://github.com/headwater-ai/headwater/issues/1058).** Until then `.gitattributes` committed `merge=headwater-regenerate`, and every clone without the driver config merged each fold as text in silence. The same change measured every generated file. None of them states a count after #1058, and each one merged as text to the bytes its producer writes over the merged tree. So a generated file is one record per entity and carries no attribute. The lock, the recorded folds and the pages that carry figures keep `-merge`. GitHub reads neither attribute, so a check of the merged tree in CI still covers the forge.
 
 **One exposure stays open and no mechanism here closes it.** An artifact that keeps its fold still merges quietly when the branch that carries it is behind the default branch. What covers that is a check on the merged state before landing, and a pull-request run already builds the merge rather than the branch tip. That run is conclusive exactly while the branch is current. A merge queue is the usual guarantee for currency, and a private repository under a free plan may not have one.
 
@@ -65,4 +70,6 @@ relations:
 
 **So the two cases have one remedy.** A count and an identifier both need a run over the merged state, and neither needs a new rule. The fold reaches the same conclusion from an unrelated defect. That agreement is the evidence that the conclusion is about merges rather than about counts.
 
-**An adopter inherits the rule and also the verbs that hold it.** Any corpus that two people edit in parallel meets the same anomaly in any artifact that stores a count over the whole corpus. The rule is the transferable part, and the two artifacts above are this repository's application of it.
+**An adopter inherits the rule, and `headwater init --git` gives the adopter the verbs and the configuration that hold it.** Any corpus that two people edit in parallel meets the same anomaly in any artifact that stores a count over the whole corpus. Since [#1058](https://github.com/headwater-ai/headwater/issues/1058), [`headwater init --git`](../interfaces/headwater-init.md) appends a `<path> -merge` line to `.gitattributes` for each fold that `headwater taxonomy resolve` and `headwater generate` write. It also prints the two `git config` lines that name `headwater merge-driver`, and the `info/attributes` lines that select that driver. The `--git-config` option runs the two `git config` lines in the adopter's own clone, and then appends the override lines to its `info/attributes`. Git takes no driver from a repository, so that explicit command is the consent of the clone ([HW-DR-0077](0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)).
+
+**No attribute covers the quiet form in an adopter's repository either, so a check on the merged tree covers it there too.** That check is `headwater generate --check` and `headwater taxonomy resolve --check` in CI. The adopter receives no script of this repository, and no part of the gate that protects the published pages of this repository. The two artifacts above are this repository's application of the rule.

@@ -70,6 +70,7 @@
 //! strings here are written as one long line each and reach a caller folded.
 
 pub mod paint;
+pub mod taxonomy_graph;
 
 /// What every output-target help says about a run that refuses.
 ///
@@ -825,19 +826,21 @@ pub enum Verb {
         package: Option<String>,
         #[arg(
             long,
-            help = "append a `merge=headwater-regenerate` line to `.gitattributes` for each file \
+            help = "append a `-merge` line to `.gitattributes` for each fold \
                     `headwater taxonomy resolve` and `headwater generate` write in this tree, and \
-                    print the two `git config` lines that name `headwater merge-driver` as the \
-                    driver. It runs after the first `headwater generate`, and on a repository that \
-                    is already bound it does this and nothing else"
+                    print the two `git config` lines that name `headwater merge-driver` and the \
+                    `info/attributes` lines that select it. A clone that already names the driver \
+                    gets those lines written. It runs after the first `headwater generate`, and on \
+                    a repository that is already bound it does this and nothing else"
         )]
         git: bool,
         #[arg(
             long = "git-config",
             requires = "git",
-            help = "also run the two `git config` lines `--git` prints, in this clone. Git takes \
-                    no driver from a repository, so without this flag the lines are printed and \
-                    the adopter runs them"
+            help = "also run the two `git config` lines `--git` prints, in this clone, and then \
+                    write the `info/attributes` lines that select the driver. Git takes no driver \
+                    from a repository, so without this flag the lines are printed and the adopter \
+                    runs them"
         )]
         git_config: bool,
     },
@@ -945,9 +948,11 @@ pub enum JsonWord {
     Field {
         #[arg(
             value_name = "key",
-            help = "the path of keys to the member, outermost first. \
+            help = "the path of steps to the member, outermost first. A step into an object \
+                    is a key, and a step into an array is a decimal index counted from 0. \
                     `headwater json field tool_input file_path` reads the `file_path` member of \
-                    the `tool_input` member. Without one, the object is read and no member of it \
+                    the `tool_input` member, and `headwater json field related 0 target` reads \
+                    the `target` member of the first element of `related`. Without one, the object is read and no member of it \
                     is named, which is refused"
         )]
         path: Vec<String>,
@@ -955,8 +960,8 @@ pub enum JsonWord {
     Count {
         #[arg(
             value_name = "key",
-            help = "the path of keys to the array or the object whose elements are counted, \
-                    outermost first. Without one, the object on standard input is the one counted"
+            help = "the path of steps to the array or the object whose elements are counted, \
+                    outermost first, where a step into an array is a decimal index. Without one, the object on standard input is the one counted"
         )]
         path: Vec<String>,
     },
@@ -1227,6 +1232,23 @@ pub enum TaxonomyWord {
             help = "the date to evaluate against, as `YYYY-MM-DD`. Defaults to today"
         )]
         now: Option<Date>,
+    },
+    Graph {
+        #[arg(
+            long,
+            value_enum,
+            default_value_t,
+            help = "which drawing to print. `concrete` draws the concrete kinds, the anchors and \
+                    the relations between them. `abstract` draws each abstract kind, the kinds \
+                    declared under it and the relations that name it, which `concrete` leaves out"
+        )]
+        view: crate::taxonomy_graph::View,
+        #[arg(
+            long,
+            help = "add a key that draws each shape and each edge style the drawing uses, and \
+                    names the family each edge color stands for"
+        )]
+        legend: bool,
     },
     #[command(external_subcommand)]
     Other(Vec<String>),

@@ -1,12 +1,14 @@
 ---
 id: HW-OBL-0216
-status: draft
-status_since: 2026-09-24
+status: discharged
+status_since: 2026-09-25
 summary: "The merge-regenerate and merged-fold-check hooks tell the merger to run headwater taxonomy resolve --write, and the verb rejects --write because it writes by default."
-last_verified: 2026-09-24
+last_verified: 2026-09-25
 title: "Two merge hooks of this repository print a resolve flag that the verb refuses"
 waiting_on: build
 ---
+
+<!-- headwater allow=lifecycle.transition.not_permitted scope=file until=2026-12-31 reason=accepted_deviation note=the obligation regime has no step from draft to discharged, and CI checks this change against the merge base, where the record stands at draft -->
 
 # Two merge hooks of this repository print a resolve flag that the verb refuses
 
@@ -21,3 +23,5 @@ The integrators of #809 and #1051 in run `20260924-0411` each found this remedy 
 ## Discharge
 
 This record discharges when both hooks print `headwater taxonomy resolve`, and a case runs the printed remedy and sees it succeed.
+
+[#1058](https://github.com/headwater-ai/headwater/issues/1058) discharged this record on 2026-09-25. Both hooks now print `headwater taxonomy resolve` with no flag. The case `every_resolve_remedy_the_merge_hooks_print_is_one_the_verb_accepts` in `engine/crates/cli/tests/merge_driver.rs` reads each `headwater taxonomy resolve` command that the two hooks print. It runs each command on an adopted tree and requires exit 0. If `--write` goes back into either hook, the verb refuses it and the case fails.

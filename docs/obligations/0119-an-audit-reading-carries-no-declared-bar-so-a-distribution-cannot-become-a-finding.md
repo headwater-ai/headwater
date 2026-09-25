@@ -59,3 +59,5 @@ The engine may not settle this on its own. A threshold that this engine invented
 A first adopter reads one audit and says which of its readings they wanted a verdict from. That is the evidence rather than a further argument here. The readings that need a bar over 176 documents are not the readings that need one over ten thousand.
 
 Until then the report states what it does today. The declared window is the one bar, and every other section prints its population and no verdict. `headwater taxonomy audit` is the instrument, and the row of the table above is the reading.
+
+The governed scope of #951 is a second reading with a declared input, and it is not a bar. A scope pattern with an entry that no `governs` edge reaches is one advisory finding, and no number that the scope reports carries a verdict.

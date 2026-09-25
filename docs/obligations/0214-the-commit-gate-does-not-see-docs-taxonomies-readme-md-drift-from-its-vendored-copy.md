@@ -18,6 +18,8 @@ Issue #994 reported this drift. The adjudication in run `20260924-0411` refused 
 
 `.githooks/pre-commit` runs `headwater check --strict`, and it exits 0 when `docs/taxonomies/README.md` differs from `.headwater/packages/headwater-standard/bundles/README.md`. A contributor learns of the drift only from the required "Engine tests" job. There, `the_vendored_bundles_agree_with_a_fresh_publish_of_the_maintained_source` in `engine/crates/cli/tests/publish.rs` compares the whole `bundles/` tree. The drift happened twice, in #407 and in the #7 build of run `20260920-2058`.
 
+Since #350, the README is typed `library_doctrine`, and every rule of the house language regime reads it. So a fix of a language finding in it is an edit of the source, and the vendored copy then differs until the next republish. This change adds no drift check, and the obligation stays open.
+
 The same comparison covers `bundles/` only. The adjudication did not confirm that any test compares `taxonomy.yml` or `conformance.yml` under `taxonomy-source/headwater-standard` with the vendored copy.
 
 ## Discharge

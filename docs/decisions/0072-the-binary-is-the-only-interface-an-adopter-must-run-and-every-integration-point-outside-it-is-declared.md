@@ -2,8 +2,8 @@
 id: HW-DR-0072
 status: current
 status_since: 2026-09-17
-summary: "An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test; a network fetch left the list under HW-DR-0075; and the change manifest fails the test and is a defect."
-last_verified: 2026-09-19
+summary: "An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test, a network fetch left the list under HW-DR-0075, and a verb writes the change manifest."
+last_verified: 2026-09-24
 title: "The binary is the only interface an adopter must run, and every integration point outside it is declared"
 provenance:
   warrant: accepted
@@ -40,21 +40,21 @@ No document states the boundary. The eleven principles in [spec 0](../spec/00-vi
 
 - **Git plumbing.** A merge driver, a merge attribute and a hook are things git runs. Git does not take an executable from a repository without the consent of the clone, so the engine cannot install one. [#892](https://github.com/headwater-ai/headwater/issues/892) rules on what ships inside this edge.
 
-**A network fetch left this list.** `headwater taxonomy vendor` took a path and never a location, on the ground that no crate of this engine opened a socket. [HW-DR-0075](0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) rules that the no-socket property serves the checking loop alone, that a bootstrap verb runs outside that loop, and that the digest in `--expect` already makes a fetch safe whoever performs it. `vendor` may accept a location once a distributor lands it, confined to a crate only the CLI links, so this is a correction of the entry rather than an exception granted to it.
+**A network fetch left this list.** `headwater taxonomy vendor` took a path and never a location, on the ground that no crate of this engine opened a socket. [HW-DR-0075](0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) rules that the no-socket property serves the checking loop alone, that a bootstrap verb runs outside that loop, and that the digest in `--expect` already makes a fetch safe whoever performs it. `vendor` now accepts a location, since [#1064](https://github.com/headwater-ai/headwater/pull/1064) landed the fetch for [#959](https://github.com/headwater-ai/headwater/issues/959). The fetch lives in a crate that only the CLI links. So this is a correction of the entry, and not an exception granted to it.
 
 **The test for the edge is necessity and never convenience.** An integration point is legal here only where the binary cannot do the work without the loss of a property the corpus depends on. Git plumbing meets the test, because consent of the clone is not a property this engine can grant itself. A point that fails this test is a defect, and a missing verb is a gap to file rather than an exception to grant.
 
-**The change manifest fails the test.** Nothing stops a verb from writing one, and spec 12 already fixes the two anchors it needs. [#929](https://github.com/headwater-ai/headwater/issues/929) carries it as a defect of the command surface.
+**The change manifest is inside the binary.** `headwater change` writes the manifest that `headwater check --change` reads, from the two anchors that spec 12 fixes. So the manifest is not an integration point outside the binary, and it has no entry in this list. [#929](https://github.com/headwater-ai/headwater/issues/929) is the issue that built the verb.
 
 **This list grows by a decision record and never by a script.** A contributor who reaches for a script in adopter-facing prose either finds the verb or files the gap.
 
 ## Consequences
 
-[#929](https://github.com/headwater-ai/headwater/issues/929) landed. `headwater change` now writes the manifest, and the change-manifest entry closes: it no longer stands as a defect against this ruling.
+An adopter who runs `headwater check --change` gets the manifest from `headwater change`. No script stands between the adopter and a change-scoped check. [.githooks/change-manifest](../../.githooks/change-manifest) only hands its two arguments to that verb, for the hooks of this repository.
 
 [#892](https://github.com/headwater-ai/headwater/issues/892) gains a frame it did not have. Its question was whether merge-safety tooling ships at all. The question now is narrower. The edge is legal, and consent of the clone is the constraint on it. What remains is what ships inside it.
 
-[#930](https://github.com/headwater-ai/headwater/issues/930) landed too. `README.md` and the tutorial now name the binary route first, and call the bootstrap script a convenience over it rather than the only route. Naming a location directly in `vendor`, once a distributor lands it under [HW-DR-0075](0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md), still leaves the path form worth documenting: an adopter on a mirror or an air-gapped host needs it either way.
+[#930](https://github.com/headwater-ai/headwater/issues/930) landed too. `README.md` and the tutorial now name the binary route first, and call the bootstrap script a convenience over it rather than the only route. `vendor` now takes a location directly, since [#1064](https://github.com/headwater-ai/headwater/pull/1064) landed it under [HW-DR-0075](0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md). The path form is still worth documenting, because an adopter on a mirror or an air-gapped host needs it either way.
 
 The list is closed against growth and not against a correction. HW-DR-0075 removed the second entry, and a list of one is the stronger form of this ruling rather than a retreat from it.
 

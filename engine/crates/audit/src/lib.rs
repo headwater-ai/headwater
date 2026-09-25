@@ -482,6 +482,64 @@ impl Waiting {
     }
 }
 
+/// The tree side of `governs` for one declared scope pattern (#951).
+///
+/// The denominator is the entries the pattern admits, walked by the anchor
+/// kind's own resolver, and the numerator is the entries of those that at
+/// least one `governance` edge onto the same anchor kind reaches. It is
+/// computed on every run and committed nowhere, because a committed
+/// corpus-wide scalar merges wrong under two branches
+/// ([HW-DR-0049](../../../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)).
+#[derive(Clone, Debug)]
+pub struct ScopeReading {
+    pub anchor_kind: String,
+    pub pattern: String,
+    /// Every entry the pattern admits, sorted, each with whether an edge
+    /// reaches it.
+    pub entries: Vec<(String, bool)>,
+    pub governed: usize,
+}
+
+impl ScopeReading {
+    /// The share of in-scope entries an edge reaches, and `None` for a
+    /// pattern that admits nothing, which `taxonomy validate` refuses.
+    pub fn fraction(&self) -> Option<f64> {
+        (!self.entries.is_empty()).then(|| 100.0 * self.governed as f64 / self.entries.len() as f64)
+    }
+
+    /// The in-scope entries no edge reaches, sorted.
+    pub fn ungoverned(&self) -> Vec<&str> {
+        self.entries
+            .iter()
+            .filter(|(_, governed)| !governed)
+            .map(|(path, _)| path.as_str())
+            .collect()
+    }
+}
+
+/// One finding of this verb. Each class carries a declared input, and a
+/// reading with none carries no finding.
+#[derive(Clone, Copy, Debug)]
+pub enum Finding<'a> {
+    /// A relation with a half on a document past the declared window.
+    Stale(&'a RelationReading),
+    /// A declared scope pattern with at least one entry no edge reaches: one
+    /// finding per pattern, carrying the count and the list, and never one per
+    /// file. The remedy is a judgment about which document governs, so it is
+    /// advisory under the fixability bar of spec 12.
+    Ungoverned(&'a ScopeReading),
+}
+
+impl<'a> Finding<'a> {
+    /// The subject: the relation name, or the scope pattern.
+    pub fn name(&self) -> &'a str {
+        match self {
+            Finding::Stale(reading) => &reading.name,
+            Finding::Ungoverned(reading) => &reading.pattern,
+        }
+    }
+}
+
 /// Everything one run of the audit measured.
 #[derive(Clone, Debug)]
 pub struct Audit {
@@ -517,17 +575,20 @@ pub struct Audit {
     /// The readings this verb names and does not take, as this run found their
     /// prerequisites. Never a constant: see [`Waiting`].
     pub waiting: Vec<Waiting>,
+    /// The tree side of `governs`, one reading per declared scope pattern in
+    /// declaration order. Empty where no anchor kind declares a scope.
+    pub scope: Vec<ScopeReading>,
 }
 
 impl Audit {
-    /// The one finding class this verb produces: a relation whose halves sit on
-    /// documents past the freshness window the taxonomy declares.
+    /// The findings this verb produces, in two classes, each with the input a
+    /// declaration states: a relation whose halves sit on documents past the
+    /// freshness window, and a scope pattern with an entry no edge reaches.
     ///
-    /// It is a finding rather than a distribution because the bar is declared.
-    /// The subject is the relation, so the message is about the schema, which
-    /// is what spec 6 requires of every finding here.
-    pub fn findings(&self) -> Vec<&RelationReading> {
-        let mut out: Vec<&RelationReading> = self
+    /// The first is about the schema, as spec 6 requires of a finding here.
+    /// The second is about the corpus's claim on itself, which the scope is.
+    pub fn findings(&self) -> Vec<Finding<'_>> {
+        let mut stale: Vec<&RelationReading> = self
             .creators
             .by_creator
             .iter()
@@ -535,8 +596,17 @@ impl Audit {
             .chain(self.creators.undeclared.iter())
             .filter(|reading| reading.expired > 0)
             .collect();
-        out.sort_by(|a, b| b.expired.cmp(&a.expired).then(a.name.cmp(&b.name)));
-        out
+        stale.sort_by(|a, b| b.expired.cmp(&a.expired).then(a.name.cmp(&b.name)));
+        stale
+            .into_iter()
+            .map(Finding::Stale)
+            .chain(
+                self.scope
+                    .iter()
+                    .filter(|reading| reading.governed < reading.entries.len())
+                    .map(Finding::Ungoverned),
+            )
+            .collect()
     }
 }
 
@@ -603,7 +673,54 @@ pub fn take(
         warrants,
         adoption,
         waiting,
+        scope: scope(graph, relations),
     }
+}
+
+/// The tree side of `governs`, per scope pattern.
+///
+/// An entry is governed when a `governance` edge onto the pattern's anchor
+/// kind matched it. The family is the test rather than a relation name,
+/// because spec 2 closes the family set and a taxonomy names its relations.
+fn scope(graph: &Graph, relations: &Declarations) -> Vec<ScopeReading> {
+    graph
+        .scope
+        .iter()
+        .map(|reach| {
+            let governing: BTreeSet<&str> = relations
+                .relations
+                .iter()
+                .filter(|relation| relation.family.as_deref() == Some("governance"))
+                .map(|relation| relation.name.as_str())
+                .collect();
+            let reached: BTreeSet<&str> = graph
+                .edges
+                .iter()
+                .filter(|edge| governing.contains(edge.declared.as_str()))
+                .filter_map(|edge| match &edge.target {
+                    headwater_graph::Target::Anchor {
+                        anchor_kind,
+                        patterns,
+                        ..
+                    } if *anchor_kind == reach.anchor_kind => Some(patterns),
+                    _ => None,
+                })
+                .flatten()
+                .flat_map(|member| member.matched.iter().map(String::as_str))
+                .collect();
+            let entries: Vec<(String, bool)> = reach
+                .entries
+                .iter()
+                .map(|path| (path.clone(), reached.contains(path.as_str())))
+                .collect();
+            ScopeReading {
+                anchor_kind: reach.anchor_kind.clone(),
+                pattern: reach.pattern.clone(),
+                governed: entries.iter().filter(|(_, governed)| *governed).count(),
+                entries,
+            }
+        })
+        .collect()
 }
 
 /// The warrant every classified document states, over the closed set in full.

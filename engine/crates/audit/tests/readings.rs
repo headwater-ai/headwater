@@ -19,7 +19,9 @@
 //! Read the diff before committing it. A blessed fixture is the change.
 
 use headwater_audit::reading::{Reading, TaskReading};
-use headwater_audit::{Audit, Series, Subject, Supply, Waiting, CREATORS, DERIVED, WARRANTS};
+use headwater_audit::{
+    Audit, Finding, Series, Subject, Supply, Waiting, CREATORS, DERIVED, WARRANTS,
+};
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
@@ -285,14 +287,10 @@ fn a_finding_arrives_from_the_declared_window_and_leaves_when_the_date_moves() {
     let built = fixture_tree();
 
     let audit = built.audit(AT);
-    let found: Vec<&str> = audit
-        .findings()
-        .iter()
-        .map(|reading| reading.name.as_str())
-        .collect();
+    let found: Vec<&str> = audit.findings().iter().map(Finding::name).collect();
     assert_eq!(
         found,
-        ["catalogues", "supersedes"],
+        ["catalogues", "supersedes", "app/**"],
         "{}",
         audit.render(ColorMode::Plain)
     );
@@ -300,10 +298,11 @@ fn a_finding_arrives_from_the_declared_window_and_leaves_when_the_date_moves() {
     // 2025-08-01 is the earliest freshness date the tree declares, so on the
     // day after it every document is inside a 90-day window.
     let inside = built.audit("2025-08-02");
-    assert!(
-        inside.findings().is_empty(),
-        "{}",
-        inside.findings()[0].name
+    let found: Vec<&str> = inside.findings().iter().map(Finding::name).collect();
+    assert_eq!(
+        found,
+        ["app/**"],
+        "the coverage finding does not move with the date"
     );
 
     // And the window is read rather than assumed: a date far past every
@@ -311,17 +310,173 @@ fn a_finding_arrives_from_the_declared_window_and_leaves_when_the_date_moves() {
     // has a dated half reaches the list, and `annotates` does not, because the
     // one half it has states no date at all.
     let outside = built.audit("2030-01-01");
-    let found: Vec<&str> = outside
-        .findings()
-        .iter()
-        .map(|reading| reading.name.as_str())
-        .collect();
+    let found: Vec<&str> = outside.findings().iter().map(Finding::name).collect();
     assert_eq!(
         found,
-        ["catalogues", "supersedes", "governs"],
+        ["catalogues", "supersedes", "governs", "app/**"],
         "{}",
         outside.render(ColorMode::Plain)
     );
+}
+
+/// The tree side of `governs`: one advisory finding per scope pattern, and
+/// never one per file (#951).
+///
+/// The fixture declares one scope pattern, `app/**`, on `code_path`. Under it
+/// sit `app/reading.rs`, which `decisions/first.md` governs, and
+/// `app/render.rs`, which no edge reaches. Beside it sits `app-old/stale.rs`,
+/// which no edge reaches either and which the scope does not admit. A reading
+/// that counted per file, or that matched `app/**` as the prefix `app`, fails
+/// here.
+#[test]
+fn a_scope_pattern_with_an_ungoverned_entry_is_one_finding_that_lists_it() {
+    let audit = fixture_tree().audit(AT);
+    let coverage: Vec<_> = audit
+        .findings()
+        .into_iter()
+        .filter_map(|finding| match finding {
+            Finding::Ungoverned(reading) => Some(reading),
+            Finding::Stale(_) => None,
+        })
+        .collect();
+    let report = audit.render(ColorMode::Plain);
+    assert_eq!(coverage.len(), 1, "one finding per pattern: {report}");
+    let reading = coverage[0];
+    assert_eq!(reading.pattern, "app/**");
+    assert_eq!(
+        (reading.entries.len(), reading.governed),
+        (2, 1),
+        "{report}"
+    );
+    assert_eq!(reading.ungoverned(), ["app/render.rs"], "{report}");
+    assert!(
+        !report.contains("app-old"),
+        "an entry outside the scope reached the report: {report}"
+    );
+    assert!(report.contains("governed scope"), "{report}");
+}
+
+/// A scope pattern that matches no entry is refused, which is the check
+/// `taxonomy validate` runs, and a corpus that declares no scope prints one
+/// line and never a zero fraction.
+#[test]
+fn a_scope_pattern_that_matches_no_entry_is_refused_and_no_scope_prints_no_fraction() {
+    let corpus = Corpus::new(fixtures_dir(), "audit");
+    let resolvers = Resolvers::over(&corpus);
+    let mut root = load_map(&fixtures_dir().join("audit.taxonomy.yml"));
+    let declared = Declarations::read(&root).expect("the declarations read");
+    let scope = headwater_graph::scope::Scope::declared(&declared);
+    assert!(scope.contains("app/render.rs"));
+    assert!(!scope.contains("app-old/stale.rs"));
+    assert!(scope.unmatched(&resolvers).is_empty());
+
+    let text = std::fs::read_to_string(fixtures_dir().join("audit.taxonomy.yml"))
+        .expect("the taxonomy reads");
+    let nowhere = text.replace("scope: [app/**]", "scope: [app/**, nowhere/**]");
+    root = headwater_yaml::load(&nowhere)
+        .expect("the edited taxonomy loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let declared = Declarations::read(&root).expect("the declarations read");
+    let refused = headwater_graph::scope::Scope::declared(&declared).unmatched(&resolvers);
+    assert_eq!(refused.len(), 1, "{refused:?}");
+    assert_eq!(refused[0].0, "nowhere/**");
+
+    let bare = text.replace(", scope: [app/**]", "");
+    let root = headwater_yaml::load(&bare)
+        .expect("the edited taxonomy loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let corpus = Corpus::new(fixtures_dir(), "audit");
+    let report = Built::over(&corpus, &root)
+        .audit(AT)
+        .render(ColorMode::Plain);
+    assert!(
+        report.contains("no anchor kind declares a governed scope"),
+        "{report}"
+    );
+    assert!(!report.contains("0.0% governed"), "{report}");
+}
+
+/// Copy a directory, for a case that edits the fixture tree without moving
+/// the recorded report.
+fn copy_tree(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("the copy is made");
+    for entry in std::fs::read_dir(from).expect("the tree reads") {
+        let entry = entry.expect("an entry");
+        let target = to.join(entry.file_name());
+        if entry.file_type().expect("a type").is_dir() {
+            copy_tree(&entry.path(), &target);
+        } else {
+            std::fs::copy(entry.path(), target).expect("the file copies");
+        }
+    }
+}
+
+/// An edge of a relation outside the `governance` family governs nothing.
+///
+/// A copy of the fixture tree lets `catalogues`, an `evidence` relation, reach
+/// `code_path` and name `app/render.rs`. The entry stays ungoverned. A reading
+/// that counted every edge onto the anchor kind, whatever its family, counts
+/// it as governed and fails here (#951).
+#[test]
+fn an_edge_outside_the_governance_family_does_not_govern_an_entry() {
+    let at = std::env::temp_dir().join(format!(
+        "headwater-audit-scope-family-{}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&at);
+    copy_tree(&fixtures_dir(), &at);
+
+    let taxonomy = at.join("audit.taxonomy.yml");
+    let text = std::fs::read_to_string(&taxonomy).expect("the taxonomy reads");
+    let from = "    family: evidence\n    from: [governed_document]\n    to:   [governed_document]";
+    assert!(
+        text.contains(from),
+        "the fixture still declares `catalogues`"
+    );
+    let text = text.replacen(
+        from,
+        "    family: evidence\n    from: [governed_document]\n    to:   [governed_document, code_path]",
+        1,
+    );
+    let first = at.join("audit/decisions/first.md");
+    let document = std::fs::read_to_string(&first).expect("the document reads");
+    let edge = "  catalogues:\n    - AUD-FIX-0004\n";
+    assert!(
+        document.contains(edge),
+        "first.md still declares `catalogues`"
+    );
+    std::fs::write(
+        &first,
+        document.replacen(edge, &format!("{edge}    - app/render.rs\n"), 1),
+    )
+    .expect("the document writes");
+
+    let root = headwater_yaml::load(&text)
+        .expect("the edited taxonomy loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let built = Built::over(&Corpus::new(at.clone(), "audit"), &root);
+    assert!(
+        built
+            .graph
+            .edges
+            .iter()
+            .any(|edge| edge.declared == "catalogues" && edge.raw_target == "app/render.rs"),
+        "the evidence edge onto app/render.rs was built"
+    );
+    let audit = built.audit(AT);
+    let _ = std::fs::remove_dir_all(&at);
+    let reading = &audit.scope[0];
+    assert_eq!(reading.governed, 1, "{}", audit.render(ColorMode::Plain));
+    assert_eq!(reading.ungoverned(), ["app/render.rs"]);
 }
 
 /// A half whose document states no freshness date is counted apart, and never
@@ -990,10 +1145,11 @@ const AUDIT_ROLES: [Role; 3] = [Role::Heading, Role::Path, Role::Obligation];
 ///
 /// `findings` is written from one of two arms and both write the same literal,
 /// so the count is one either way.
-const AUDIT_HEADINGS: [&str; 11] = [
+const AUDIT_HEADINGS: [&str; 12] = [
     "taxonomy audit of",
     "findings",
     "relations, by the creator each one declares",
+    "the governed scope, and what reaches it",
     "relation families",
     "facets, and what each one separates",
     "shelves that hold several kinds",

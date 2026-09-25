@@ -61,6 +61,11 @@
 //! the block writes it and no derivation computes it. There the repair is a
 //! change to the taxonomy rather than to the declaration.
 //!
+//! `fixtures/unsourced.taxonomy.yml` is the opposite of `unrolled`. Its facet
+//! is in the `freshness` role, which the engine derives, and no source document
+//! carries a value for it. The repair is a value on a source document, so the
+//! refusal names those documents and not the taxonomy (#820).
+//!
 //! `fixtures/unheld.taxonomy.yml` is the third refusal, and it is the only one
 //! about the body rather than the block. The `guide` kind requires the section
 //! `Consequences`, and the `shelf_sections` declaration that writes
@@ -72,9 +77,9 @@
 //! `fixtures/selfread.taxonomy.yml` is about a value rather than a refusal. It
 //! is the one shape in this tree where a projection's output sits on the shelf
 //! that the projection reads, which makes the output one of its own sources. The
-//! committed `selfread/decisions/INDEX.md` carries a `status_since` older than
-//! either source document, so a fold that reads it answers a date no source
-//! supports. That file carries a `title` for a reason worth knowing: once the
+//! committed `selfread/decisions/INDEX.md` carries a `status_since` newer than
+//! either source document, and the fold takes the newest date (#820), so a fold
+//! that reads it answers a date no source supports. That file carries a `title` for a reason worth knowing: once the
 //! output is a document of the shelf, the sections emitter owes it a heading, and
 //! without a name the whole declaration is declined before the fold runs. An
 //! index that lists itself is a separate question about what an index is for,
@@ -108,9 +113,19 @@
 //! `status_since: 2020-01-01` into `selfread/decisions/INDEX.md`, which is the
 //! date the committed file already carried and a date neither source document
 //! supports. That failure is the one this file was missing, because the emitter
-//! and the gate agree on it. This case was written after a review of
+//! and the gate agree on it. The fold then took the stalest date. When #820 made
+//! it take the newest, the committed date moved to 2099-01-01, above both
+//! sources, so that the same regression still fails: with the filter removed
+//! again, the emitter wrote `status_since: 2099-01-01`. This case was written
+//! after a review of
 //! [#816](https://github.com/headwater-ai/headwater/pull/816) read the filter in
 //! `incoming` and asked why the fold had no equivalent.
+//!
+//! At `41af2e84`, with `unsourced.taxonomy.yml` in the tree and one sentence
+//! for every missing facet,
+//! `a_required_facet_whose_role_finds_no_value_in_the_sources_names_the_sources`
+//! failed on the wording: the refusal said that `last_verified` carries no role
+//! this engine reads, and it is in the `freshness` role.
 
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
@@ -413,6 +428,85 @@ fn a_required_facet_in_no_role_is_refused_because_nothing_can_write_it() {
         "the refusal of `{OUTPUT}` does not name the facet nothing can write. It reads: {}",
         refusal.reason
     );
+    assert!(
+        refusal.reason.contains(NO_ROLE),
+        "the refusal of `{OUTPUT}` does not say that `tier` carries no role this engine reads, \
+         which is the cause here and the reason the repair is the taxonomy. It reads: {}",
+        refusal.reason
+    );
+    assert!(
+        !refusal.reason.contains(NO_VALUE),
+        "the refusal of `{OUTPUT}` blames the source documents for `tier`, a facet no role \
+         derives from them. It reads: {}",
+        refusal.reason
+    );
+}
+
+/// The sentence the refusal gives a facet in no role this engine reads.
+const NO_ROLE: &str = "carries no role this engine reads";
+
+/// The sentence the refusal gives a facet in a role whose sources carry nothing.
+const NO_VALUE: &str = "carries no value for it";
+
+/// The opposite of the case above: a facet in a role the engine derives, and
+/// no source document carries a value for it (#820).
+///
+/// The refusal used to say the same thing in both cases, that the facet
+/// carries no role this engine reads. Here that is false. `last_verified` is
+/// in the `freshness` role, which the engine derives as the stalest value over
+/// the documents the projection read, and the repair is a value on one of those
+/// documents rather than a change to the taxonomy. A reason that sends the
+/// reader to the taxonomy sends them to a file where nothing is wrong.
+#[test]
+fn a_required_facet_whose_role_finds_no_value_in_the_sources_names_the_sources() {
+    let plan = plan_over("unsourced.taxonomy.yml");
+
+    assert!(
+        !plan.outputs.iter().any(|output| output.path == OUTPUT),
+        "`{OUTPUT}` was written by a declaration whose kind requires `last_verified`, and no \
+         source document carries one. The outputs were: {:?}",
+        plan.outputs
+            .iter()
+            .map(|output| output.path.as_str())
+            .collect::<Vec<_>>()
+    );
+    let refusal = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == OUTPUT)
+        .unwrap_or_else(|| {
+            panic!(
+                "nothing reported the declaration that writes `{OUTPUT}`. The plan declined {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| unwritten.at.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    let reason = refusal.reason.as_str();
+    assert!(
+        !reason.contains(NO_ROLE),
+        "the refusal of `{OUTPUT}` says `last_verified` carries no role this engine reads, and \
+         it is in the `freshness` role. It reads: {reason}"
+    );
+    for wanted in [
+        "last_verified",
+        "freshness",
+        NO_VALUE,
+        "generate/decisions/0001-store-the-graph.md",
+        "generate/decisions/0002-rebuild-the-graph.md",
+    ] {
+        assert!(
+            reason.contains(wanted),
+            "the refusal of `{OUTPUT}` does not name `{wanted}`, which the reader needs to find \
+             the repair. It reads: {reason}"
+        );
+    }
+    assert!(
+        !reason.contains("taxonomy"),
+        "the refusal of `{OUTPUT}` sends the reader to the taxonomy, and the repair is a value \
+         on a source document. It reads: {reason}"
+    );
 }
 
 /// The body half: a section the kind requires and no emitter writes.
@@ -526,16 +620,18 @@ fn the_derived_facets_are_written_into_the_block() {
 /// in that set, because a generated file that declares an identity is a node of
 /// the census ([`headwater_census::census::Outcome::node`]).
 ///
-/// The failure is a value that never moves. `stalest_of` takes a minimum, so
-/// once the file is committed with a date no source supports, that date is the
-/// minimum on every later run and `generate --check` holds it as the right
-/// answer. Nothing would report it: the emitter agrees with itself, which is the
+/// The failure is a value that never moves. `newest_of` takes a maximum, so
+/// once the file is committed with a date newer than every source, that date
+/// is the maximum on every later run and `generate --check` holds it as the
+/// right answer. Nothing would report it: the emitter agrees with itself, which is the
 /// whole of what the census exemption assumes a second reader for.
 ///
 /// Neither declaration in this repository reaches the shape, so this is a guard
 /// rather than a repair. `selfread.taxonomy.yml` is the smallest taxonomy that
-/// does reach it, and the committed `INDEX.md` carries 2020-01-01 against
-/// sources at 2026-05-01 and 2026-06-01.
+/// does reach it, and the committed `INDEX.md` carries 2099-01-01 against
+/// sources at 2026-05-01 and 2026-06-01. The committed date is above both
+/// sources on purpose: under a maximum, a committed date below them could never
+/// win, and the case would pass with the filter removed.
 #[test]
 fn a_generated_document_on_the_shelf_it_reads_does_not_fold_its_own_date() {
     const SELF_READ: &str = "selfread/decisions/INDEX.md";
@@ -598,10 +694,10 @@ fn a_generated_document_on_the_shelf_it_reads_does_not_fold_its_own_date() {
             )
         });
     assert!(
-        written.contains("2026-05-01"),
-        "`{SELF_READ}` folds its own committed date rather than the stalest of its sources. The \
-         sources carry 2026-05-01 and 2026-06-01, the committed file carries 2020-01-01, and the \
-         emitter wrote `{written}`. A minimum that includes the output's own last value never \
+        written.contains("2026-06-01"),
+        "`{SELF_READ}` folds its own committed date rather than the newest of its sources. The \
+         sources carry 2026-05-01 and 2026-06-01, the committed file carries 2099-01-01, and the \
+         emitter wrote `{written}`. A maximum that includes the output's own last value never \
          moves again."
     );
 }

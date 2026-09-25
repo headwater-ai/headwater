@@ -84,6 +84,7 @@ nav:
       - "Criterion 5 admits naming or extending a core-serving kind, and a facet-only entry ships no templates directory under criterion 2": "decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md"
       - "Q66 — the corpus dashboard ships free and self-hosted, with tenant isolation stated as a data-model constraint from day one": "decisions/0080-q66-the-corpus-dashboard-ships-free-and-self-hosted-with-tenant-isolation-stated-as-a-data-model-constraint-from-day-one.md"
       - "The hand-authored decision register indexes a subset of the shelf, and stops asserting it supersedes the complete one": "decisions/0081-the-hand-authored-decision-register-indexes-a-subset-of-the-shelf-and-stops-asserting-it-supersedes-the-complete-one.md"
+      - "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file": "decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
@@ -151,6 +152,16 @@ nav:
       - "headwater route": "interfaces/headwater-route.md"
       - "headwater sweep": "interfaces/headwater-sweep.md"
       - "headwater taxonomy": "interfaces/headwater-taxonomy.md"
+  - "The canonical taxonomy library":
+      - "The brd-prd taxonomy": "taxonomies/brd-prd/doctrine.md"
+      - "The decision-record taxonomy": "taxonomies/decision-record/doctrine.md"
+      - "The design-spec taxonomy": "taxonomies/design-spec/doctrine.md"
+      - "Diátaxis as a documentation-site kind set": "taxonomies/diataxis-site/doctrine.md"
+      - "The Diátaxis taxonomy": "taxonomies/diataxis/doctrine.md"
+      - "The evidence-and-obligation taxonomy": "taxonomies/evidence-and-obligation/doctrine.md"
+      - "The standards-spec taxonomy": "taxonomies/standards-spec/doctrine.md"
+  - "The library index":
+      - "The canonical taxonomy library": "taxonomies/README.md"
   - "Obligation records":
       - "Obligation records": "obligations/README.md"
       - "The promotion fix has no reading of the assisted fraction": "obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md"
@@ -363,7 +374,7 @@ nav:
       - "Four small test and wording gaps from run 20260923-0733 filed together": "obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md"
       - "A build-order dispatch passes no isolation, so a stage can inherit the parent worktree as its working directory": "obligations/0209-a-build-order-dispatch-passes-no-isolation-so-a-stage-can-inherit-the-parent-worktree-as-its-working-directory.md"
       - "No fixture holds the symlink case of new-worktree.sh, and a bare name of two dots leaves a branch behind": "obligations/0210-no-fixture-holds-the-symlink-case-of-new-worktree-sh-and-a-bare-name-of-two-dots-leaves-a-branch-behind.md"
-      - "Two hand-remedy lines for hw-cargo in hw-run-policy may no longer earn their cost on every dispatch": "obligations/0211-two-hand-remedy-lines-for-hw-cargo-in-hw-run-policy-may-no-longer-earn-their-cost-on-every-dispatch.md"
+      - "Two hand-remedy lines for hw-cargo in hw-run-policy may not earn their cost on every dispatch": "obligations/0211-two-hand-remedy-lines-for-hw-cargo-in-hw-run-policy-may-no-longer-earn-their-cost-on-every-dispatch.md"
       - "ci-done.sh reads a cancelled run of another branch as a red result on a main merge commit": "obligations/0212-ci-done-sh-reads-a-cancelled-run-of-another-branch-as-a-red-result-on-a-main-merge-commit.md"
       - "CI builds no MkDocs site, so a generated page under docs/ is never checked against a strict build before merge": "obligations/0213-ci-builds-no-mkdocs-site-so-a-generated-page-under-docs-is-never-checked-against-a-strict-build-before-merge.md"
       - "The commit gate does not see docs/taxonomies/README.md drift from its vendored copy": "obligations/0214-the-commit-gate-does-not-see-docs-taxonomies-readme-md-drift-from-its-vendored-copy.md"

@@ -36,6 +36,8 @@ Every rule above is a check that `headwater check` runs, declared in this reposi
     git config merge.headwater-regenerate.name "regenerate a derived artifact"
     git config merge.headwater-regenerate.driver ".githooks/merge-regenerate %O %A %B %P"
 
+`.gitattributes` commits `-merge` for each derived fold, so a clone without these lines still conflicts on one. `.githooks/select-merge-driver` selects the driver in the clone's own `info/attributes` once the two `git config` lines are set, and the hooks run it on checkout, merge and commit. The driver line never goes in `.gitattributes`, because git reads a driver that no config defines as a text merge.
+
 `headwater check --fix` writes the corrections the engine can derive without judgment and prints what it wrote on standard error. It leaves every finding whose remedy is a rewrite, and it refuses a file rather than half-writing one. Read the diff before you commit it.
 
 The hook needs a built engine and fails open with one printed line when there is none. Build it with `cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked`, never `--release` for a checked commit. Run `headwater check` yourself to read the advisory findings, which the hook does not print.

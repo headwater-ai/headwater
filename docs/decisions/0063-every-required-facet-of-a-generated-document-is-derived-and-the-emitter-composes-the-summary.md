@@ -3,7 +3,7 @@ id: HW-DR-0063
 status: current
 status_since: 2026-09-11
 summary: "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars."
-last_verified: 2026-09-12
+last_verified: 2026-09-25
 title: "Every required facet of a generated document is derived, and the emitter composes the summary"
 provenance:
   warrant: asserted
@@ -15,7 +15,8 @@ relations:
   traces_to:
     - HW-SPEC-engine-architecture
   governs:
-    - engine/crates/generate/src/derived.rs
+    - to: engine/crates/generate/src/derived.rs
+      verified_revision: sha256:383f4c2db974c9dbdc74eff1d68385d334a6c375dd23089d0621944cb251f928
 ---
 
 # Every required facet of a generated document is derived, and the emitter composes the summary
@@ -39,7 +40,7 @@ Nothing reported those nine. The reason is a gap between two mechanisms rather t
 | role | the value, and where it comes from |
 |---|---|
 | `state` | the state that an incoming edge sets through `on_target.set_state`, and otherwise the state whose own role is `live` |
-| `state_entered` | the stalest date on the documents that set the state, or on the documents this projection read |
+| `state_entered` | the stalest date on the documents that set the state, or the newest date on the documents this projection read |
 | `freshness` | the stalest date on the documents this projection read |
 | `scent` | composed by the emitter, which is the one value here that nothing derives |
 | no role | a facet that the shelf's `layout` names, read back out of the output path |
@@ -48,7 +49,9 @@ Nothing reported those nine. The reason is a gap between two mechanisms rather t
 
 **No value comes from a clock.** Spec 6 rules that no generated file states when it was generated. A timestamp makes every run differ from the last over a corpus that nobody touched. A date folded from the dates the inputs already carry is not a statement about the run. So the rule stands untouched and the regeneration gate holds these bytes like every other byte of the file.
 
-**The stalest date answers rather than the freshest.** A file assembled from other documents is only as fresh as the oldest thing it carries. The freshest date would state a confidence that no source supports.
+**For freshness, and for a state that an edge sets, the stalest date answers rather than the freshest.** A file assembled from other documents is only as fresh as the oldest thing it carries. The freshest date would state a confidence that no source supports.
+
+**Amended 2026-09-25: when no edge sets the state, the date the state was entered is the newest date on the documents this projection read.** The first text took the stalest date for that case too. The owner ruled on [#820](https://github.com/headwater-ai/headwater/issues/820) that a page is no fresher than its newest input. The page changes each time one of its inputs changes, so it entered its state with its newest input. This record is not superseded. The `state`, `freshness`, `scent` and no-role rows do not change. The `state_entered` date of a state that an edge sets is still the stalest date on the documents that set it.
 
 **A facet outside all of that is refused rather than defaulted.** The refusal in `identity::front_matter` now reads the whole required set against everything written into the file. What it guards is a taxonomy that requires a facet in no role this engine reads and in no shelf layout. No author can add such a facet, because a generated document's only writer is this engine. No check reads one either, because of the exemption above. An invented value is worse than a refusal, because somebody will cite it.
 
@@ -74,6 +77,6 @@ Nothing reported those nine. The reason is a gap between two mechanisms rather t
 
 **Two documents of the specification series now state sequence 9.** They are `docs/spec/09-decisions.md` and the generated `docs/spec/09-open-questions.md`. Both file names carry that number, so the derived value is true of the path it was read from. The tombstone carried no sequence at all before this change, so the pair is newly visible rather than newly wrong. No rule reads a shelf layout after birth, which [HW-OBL-0106](../obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md) already records, so nothing reports the collision.
 
-**A derivation never folds the file it is writing, and two filters hold that.** A generated file that declares an identity is a node of the census. So a projection whose output sits on the shelf it reads finds its own last version among the documents it folds. A minimum over that set is a function of its own previous answer. A committed date that no source supports would then stay the answer on every later run. The regeneration gate would hold it, because the emitter agrees with itself. That is the same failure the census exemption assumes a second reader for. Neither declaration in this repository reaches the shape, so a fixture taxonomy builds it and one test watches the date fail to move. This was found by a review of the pull request rather than by the build.
+**A derivation never folds the file it is writing, and two filters hold that.** A generated file that declares an identity is a node of the census. So a projection whose output sits on the shelf it reads finds its own last version among the documents it folds. A fold over that set is a function of its own previous answer, whether the fold takes the minimum or the maximum. A committed date that no source supports would then stay the answer on every later run. The regeneration gate would hold it, because the emitter agrees with itself. That is the same failure the census exemption assumes a second reader for. Neither declaration in this repository reaches the shape, so a fixture taxonomy builds it and one test watches the date fail to move. This was found by a review of the pull request rather than by the build.
 
 **Two crate dependencies moved.** `headwater-generate` now names `headwater-resolve` and `headwater-scaffold` as dependencies rather than as dev-dependencies. The first carries the one hardened YAML scalar escaper in this workspace, which had four escape routes found by running the binary against it. The second carries the tokenizer that writes a file name from a shelf `layout`. Reading a path back for the facet it names is the same grammar. A second copy of either would let this engine disagree with itself about bytes it wrote.
