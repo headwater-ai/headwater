@@ -441,19 +441,66 @@ fn a_list_entry_goes_suspect_when_one_member_moves() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
-/// A literal that names a directory reports no revision: reach under a
-/// directory is the pattern language's to state, and a digest over one would
-/// be a walk that the author did not write. It passes, and says nothing.
+/// A literal that names a directory gets no digest: reach under a directory
+/// is the pattern language's to state, and a digest over one would be a walk
+/// that the author did not write (HW-OBL-0104). So such an edge could never
+/// go suspect, and the rule says so at `Info` and names `<literal>/**` as the
+/// remedy, whether or not the entry records a revision and whenever its
+/// document was verified. It offers no patch, because the remedy widens what
+/// the edge reaches, and that is the author's decision.
 #[test]
-fn a_directory_literal_reports_no_revision_and_passes() {
-    let root = scratch("directory");
+fn a_directory_literal_is_reported_with_the_wildcard_as_its_remedy() {
+    for (label, last_verified, entry) in [
+        (
+            "directory-recorded",
+            TODAY,
+            "    - to: .githooks\n      verified_revision: \"sha256:0\"",
+        ),
+        ("directory-bare-old", YESTERDAY, "    - .githooks"),
+    ] {
+        let root = scratch(label);
+        document(&root, last_verified, &[entry.to_string()]);
+        let ran = cold(&root, TODAY);
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{label}: {reported:?}");
+        assert_eq!(
+            reported[0].severity,
+            headwater_check::finding::Severity::Info,
+            "{label}"
+        );
+        assert_eq!(reported[0].path, DOCUMENT, "{label}");
+        let message = &reported[0].message;
+        assert!(message.contains("`.githooks`"), "{label}: {message}");
+        assert!(message.contains("directory"), "{label}: {message}");
+        assert!(
+            reported[0].remediation.contains("`.githooks/**`"),
+            "{label}: {}",
+            reported[0].remediation
+        );
+        assert!(reported[0].patch.is_none(), "{label}");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+}
+
+/// The wildcard the remedy names is one the rule reads: the same directory
+/// written as `<literal>/**` carries a digest, and goes quiet once recorded.
+#[test]
+fn the_wildcard_remedy_carries_a_digest() {
+    let root = scratch("directory-remedy");
+    let hooks: Vec<&str> = HOOKS
+        .iter()
+        .map(|(path, _)| *path)
+        .filter(|path| path.starts_with(".githooks/"))
+        .collect();
+    let digest = expected(&root, &hooks);
     document(
         &root,
-        TODAY,
-        &["    - to: .githooks\n      verified_revision: \"sha256:0\"".to_string()],
+        YESTERDAY,
+        &[format!(
+            "    - to: .githooks/**\n      verified_revision: \"{digest}\""
+        )],
     );
-    let ran = cold(&root, TODAY);
-    assert!(suspect(&ran).is_empty(), "{:?}", suspect(&ran));
+    assert!(suspect(&cold(&root, TODAY)).is_empty());
     let _ = std::fs::remove_dir_all(&root);
 }
 
