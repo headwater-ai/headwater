@@ -585,6 +585,9 @@ fn validate_refuses_a_governed_scope_pattern_that_matches_no_entry() {
 #[test]
 fn validate_skips_the_governed_scope_with_a_notice_where_no_tree_is_beside_the_taxonomy() {
     let root = Root::new("scope-no-tree");
+    // The copy carries `docs/taxonomies`, and a directory that is not the
+    // taxonomy's own is a tree. Without it the root holds the taxonomy alone.
+    std::fs::remove_dir_all(root.at.join("docs")).expect("the copied docs go");
     let ran = root.run(&["taxonomy", "validate"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
     let notices: Vec<&str> = ran
@@ -602,4 +605,24 @@ fn validate_skips_the_governed_scope_with_a_notice_where_no_tree_is_beside_the_t
     let ran = root.run(&["taxonomy", "validate"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(!ran.out.contains("governed scope"), "{ran:?}");
+}
+
+/// A tree whose every scope pattern is misspelled is still a tree, so each
+/// pattern is refused and no notice is printed (#951, verify finding F1). The
+/// copy carries `docs/` and not one of the seven roots the overlay names, which
+/// is what a consumer who misspelled all seven sees.
+#[test]
+fn validate_refuses_every_scope_pattern_beside_a_tree_that_none_of_them_matches() {
+    let root = Root::new("scope-misspelled");
+    assert!(root.at.join("docs").is_dir(), "the copy carries docs/");
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(!ran.out.contains("no tree beside"), "{ran:?}");
+    for pattern in ["tools/**", "site/**", ".githooks/**"] {
+        assert!(
+            ran.err
+                .contains(&format!("governed scope pattern `{pattern}` matches no entry")),
+            "{pattern}: {ran:?}"
+        );
+    }
 }

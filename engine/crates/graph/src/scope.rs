@@ -408,20 +408,65 @@ mod tests {
 
     /// A taxonomy with no tree beside it has nothing to count, so the scope
     /// says the tree is absent rather than calling every pattern unmatched
-    /// (#951, owner ruling 2026-09-25). One pattern whose root is there makes
-    /// the tree present, and then every unmatched pattern is refused.
+    /// (#951, owner ruling 2026-09-25). Whether a tree is there is asked of
+    /// the root, never of the patterns: a tree whose every pattern is
+    /// misspelled is still a tree, and each pattern is refused.
     #[test]
-    fn a_scope_whose_every_root_is_missing_has_no_tree_beside_it() {
+    fn a_scope_has_no_tree_beside_it_only_where_the_root_holds_none() {
+        let none = Ignored::default();
+
+        // A tree is there, and no pattern names a root that exists in it.
         let at = tree("absent");
         let resolvers = resolvers(&at);
-        assert!(scope(&["engine/**", "site/**", "README.md"]).tree_is_absent(&resolvers));
-        assert!(!scope(&["engine/**", "tools/**"]).tree_is_absent(&resolvers));
-        assert!(!scope(&["engine/**", "tools/a.sh"]).tree_is_absent(&resolvers));
-        assert!(!scope(&["nowhere/**", "tools/site/*.py"]).tree_is_absent(&resolvers));
+        let beside = tree_directories(&at, &[], &none);
+        assert_eq!(beside, ["tools", "tools-old"]);
+        for patterns in [&["tool/**"][..], &["engine/**", "site/**", "README.md"]] {
+            assert!(
+                !scope(patterns).tree_is_absent(&resolvers, &beside),
+                "{patterns:?} beside a tree"
+            );
+        }
+        let _ = std::fs::remove_dir_all(&at);
+
+        // The root of a taxonomy published on its own: the taxonomy's own
+        // sources, dot-directories, top-level files, and a directory git
+        // ignores.
+        let bare = std::env::temp_dir().join(format!(
+            "headwater-graph-scope-{}-bare",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&bare);
+        for file in [
+            ".headwater/overlay.yml",
+            ".github/workflows/ci.yml",
+            "README.md",
+            "bundles/one/bundle.yml",
+            "build/out.txt",
+        ] {
+            let path = bare.join(file);
+            std::fs::create_dir_all(path.parent().expect("a parent")).expect("the root is made");
+            std::fs::write(path, "").expect("the file writes");
+        }
+        let sources = vec![
+            ".headwater/overlay.yml".to_string(),
+            "bundles/one/bundle.yml".to_string(),
+        ];
+        let ignored = Ignored {
+            entries: vec!["build/".to_string()],
+        };
+        let beside = tree_directories(&bare, &sources, &ignored);
+        assert!(beside.is_empty(), "{beside:?}");
+        let resolvers = resolvers(&bare);
+        assert!(scope(&["tool/**"]).tree_is_absent(&resolvers, &beside));
+        // A pattern whose root is there makes the tree present, even under a
+        // dot-directory.
+        assert!(!scope(&[".github/**"]).tree_is_absent(&resolvers, &beside));
         assert!(
-            !scope(&[]).tree_is_absent(&resolvers),
+            !scope(&[]).tree_is_absent(&resolvers, &beside),
             "no scope claims no tree"
         );
-        let _ = std::fs::remove_dir_all(&at);
+        // One directory that is not the taxonomy's makes a tree.
+        assert_eq!(tree_directories(&bare, &sources, &none), ["build"]);
+        let _ = std::fs::remove_dir_all(&bare);
     }
 }
