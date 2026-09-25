@@ -174,6 +174,26 @@ strips_to_the_plain_bytes() {
     rm -f "$painted" "$plain"
 }
 
+# One line of a report, under a pty: at least one line that matches `pattern`
+# carries an escape byte. It is for a report that composes two renderers, where
+# the four arms above would pass on the first renderer's color alone while the
+# second rendered in `ColorMode::Plain`.
+paints_the_line() {
+    label=$1
+    command=$2
+    pattern=$3
+    got=$(script -qec "$command 2>/dev/null" /dev/null 2>/dev/null \
+        | grep -F "$pattern" | grep -c "$(printf '\033')")
+    if [ "$got" -ge 1 ]; then
+        printf 'ok   %s paints the line that reads "%s"\n' "$label" "$pattern"
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s paints the line that reads "%s"\n  expected at least one escape sequence on it under a terminal, got %s\n' \
+            "$label" "$pattern" "$got"
+        failed=$((failed + 1))
+    fi
+}
+
 # The set is measured rather than listed. Every surface below writes bytes of
 # its own report to standard output, its interface contract carries the sensing
 # row, and it is not a machine format. `headwater completions`, `--format json`
@@ -262,20 +282,147 @@ else
 fi
 rm -rf "$diff_artifact_dir"
 
-# `new`, `import`, `probe record`, `probe grade`, `taxonomy vendor`, `taxonomy
-# publish` and `taxonomy migrate` are also wired (each renderer now takes a
-# `ColorMode` and the call site in `main.rs` supplies one), and are not
-# exercised here. `new` writes a document into the tree this script runs
-# against, and this suite fabricates no scratch corpus to write one into
-# instead. `import`, `probe record` and `probe grade` need a declared import, a
-# recorded transcript or a graded selection this repository does not carry.
-# `vendor`, `publish` and `migrate` could run over the same published
-# artifact `taxonomy diff` uses above, and were not measured by #1018, which
-# wired only the diff. Each is held instead by the palette unit tests beside its
-# renderer, which exercise `ColorMode::Ansi` and `ColorMode::Plain` directly,
-# and none of the three `taxonomy` sub-verbs here writes a machine (`--json`)
-# output. Until #1018, this paragraph also listed `taxonomy diff` as wired,
-# and its report body took no mode at all.
+# The verbs #1017 wired and could only unit-test, #1019. Every one of them
+# writes, or reads an input this repository does not keep in a runnable state,
+# so each runs against a scratch directory built here and removed at the end.
+# Nothing below writes into `$root`: a verb that writes gets `--root` or `--out`
+# inside `$scratch`, and `git status` in `$root` is the same after the suite as
+# before it.
+#
+# An arm that has to write somewhere new on every run writes to a path that
+# carries `\$\$`. The command string is run by `script` or by `sh -c`, so that
+# `$$` is the pid of the inner shell, and it is a new one for each of the four
+# arms.
+scratch=$(mktemp -d "${TMPDIR:-/tmp}/headwater-color-scratch.XXXXXX")
+
+# `taxonomy publish` refuses an output directory that holds files already, so
+# each arm publishes into a directory of its own.
+senses_its_terminal 'taxonomy publish' \
+    "$engine taxonomy publish --from taxonomy-source/headwater-standard --out $scratch/publish.\$\$ --root ."
+
+# `taxonomy vendor` installs under `.headwater/packages/` of its `--root`, so its
+# root is a copy of this repository's `.headwater/` and nothing else. The
+# artifact is the same package at the version that copy pins, and a second
+# install of the pinned bytes reports them again rather than refusing, so one
+# copy serves all four arms.
+mkdir "$scratch/vendor-root"
+cp -R .headwater "$scratch/vendor-root/.headwater"
+if "$engine" taxonomy publish --from taxonomy-source/headwater-standard \
+    --out "$scratch/pinned" --root . >/dev/null 2>&1; then
+    senses_its_terminal 'taxonomy vendor' \
+        "$engine taxonomy vendor $scratch/pinned --root $scratch/vendor-root"
+else
+    echo "FAIL taxonomy vendor — \`taxonomy publish --from\` wrote no artifact to install"
+    failed=$((failed + 1))
+fi
+
+# `taxonomy migrate` and the payload branch of `taxonomy diff` need an artifact
+# at a later major version that ships a payload covering the lock's version.
+# The candidate is this repository's own source with both version fields moved
+# to 5.0.0, `contents.bundles` pointed back at the library inside this tree
+# (publishing refuses a bundle library outside the tree it reads), and one
+# payload of one step. The step names a kind no document carries, so it is a
+# no-op here and `migrate` without `--apply` reports it and writes nothing.
+# The payload has to have a step, because `publish` refuses an empty one.
+payload_source="$scratch/payload-source"
+cp -R taxonomy-source/headwater-standard "$payload_source"
+sed -i -e 's/^version: .*/version: 5.0.0/' \
+    -e "s|^  bundles: ../../docs/taxonomies\$|  bundles: $root/docs/taxonomies\\
+  migrations: migrations|" "$payload_source/package.yml"
+sed -i -e 's/^version: .*/version: 5.0.0/' "$payload_source/taxonomy.yml"
+mkdir "$payload_source/migrations"
+printf '%s\n' 'migration:' '  format: 1' '  from: ">=4 <5"' '  to: ">=5 <6"' '' 'steps:' \
+    '  - subject: kind' '    from: a_kind_no_document_carries' '    to: [decision]' \
+    '    because: >-' '      A color fixture needs a payload with one step in it.' \
+    >"$payload_source/migrations/4-to-5.yml"
+if "$engine" taxonomy publish --from "$payload_source" \
+    --out "$scratch/payload" --root . >/dev/null 2>&1; then
+    senses_its_terminal 'taxonomy migrate' "$engine taxonomy migrate $scratch/payload --root ."
+    # The diff over this artifact colors its header whatever the payload
+    # branch does, so the four arms alone would pass a payload account rendered
+    # in `ColorMode::Plain`. The line check below reads the account's own
+    # heading.
+    senses_its_terminal 'taxonomy diff, payload account' \
+        "$engine taxonomy diff $scratch/payload --root ."
+    paints_the_line 'taxonomy diff, payload account' \
+        "$engine taxonomy diff $scratch/payload --root ." 'migration payload'
+else
+    echo "FAIL taxonomy migrate — \`taxonomy publish --from\` wrote no artifact with a payload"
+    failed=$((failed + 2))
+fi
+
+# The branch of `taxonomy diff` where the candidate does not resolve under this
+# repository's overlays. The candidate declares `identifier_schemes.spec_id`,
+# which `.headwater/overlay.yml` also adds, and an `add` over a declared value is
+# a collision that stops resolution. The version is a minor one above the lock,
+# so the report is about the collision and not about the transition. Every
+# byte of standard output in this branch is `Report::render`'s, so the four arms
+# are about that call site alone.
+unresolved_source="$scratch/unresolved-source"
+cp -R taxonomy-source/headwater-standard "$unresolved_source"
+sed -i -e 's/^version: .*/version: 4.99.0/' \
+    -e "s|^  bundles: ../../docs/taxonomies\$|  bundles: $root/docs/taxonomies|" \
+    "$unresolved_source/package.yml"
+sed -i -e 's/^version: .*/version: 4.99.0/' \
+    -e 's|^identifier_schemes:$|&\
+  spec_id: {pattern: "{namespace}-SPEC-{slug}", allocation: minted-once}|' \
+    "$unresolved_source/taxonomy.yml"
+if "$engine" taxonomy publish --from "$unresolved_source" \
+    --out "$scratch/unresolved" --root . >/dev/null 2>&1; then
+    senses_its_terminal 'taxonomy diff, unresolved candidate' \
+        "$engine taxonomy diff $scratch/unresolved --root ."
+else
+    echo "FAIL taxonomy diff, unresolved candidate — \`taxonomy publish --from\` wrote no artifact"
+    failed=$((failed + 1))
+fi
+
+# `new` writes a document and claims an identifier, so it runs against a copy
+# of the committed tree. Each run mints the next identifier, so the four arms
+# write four documents into one copy and none of them collides with another.
+new_root="$scratch/new-root"
+mkdir "$new_root"
+if git archive HEAD | tar -x -C "$new_root"; then
+    senses_its_terminal 'new' \
+        "$engine new decision --title 'A color fixture writes this decision' --summary 'One sentence.' --root $new_root"
+else
+    echo "FAIL new — \`git archive HEAD\` wrote no copy of the tree to scaffold into"
+    failed=$((failed + 1))
+fi
+
+# `probe record` and `probe grade` read a transcript. The committed transcripts
+# under `docs/probe-runs/` are each pinned to a lock this tree no longer
+# carries, so both verbs refuse them in one plain sentence. The transcript here
+# is the latest committed one with the four digests of its run identity
+# replaced by the ones `probe plan` prints over this tree now. It is written
+# outside the tree, so the tree digest it states stays true.
+transcript="$scratch/transcript.md"
+identity=$("$engine" probe plan --root . 2>/dev/null)
+sed -e "s/^lock: sha256:.*/$(printf '%s\n' "$identity" | grep '^lock: sha256:')/" \
+    -e "s/^tree: sha256:.*/$(printf '%s\n' "$identity" | grep '^tree: sha256:')/" \
+    -e "s/^selection: sha256:.*/$(printf '%s\n' "$identity" | grep '^selection: sha256:')/" \
+    -e "s/^read_set: sha256:.*/$(printf '%s\n' "$identity" | grep '^read_set: sha256:')/" \
+    docs/probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md \
+    >"$transcript"
+senses_its_terminal 'probe record' "$engine probe record $transcript --root ."
+senses_its_terminal 'probe grade' "$engine probe grade $transcript --root ."
+
+rm -rf "$scratch"
+
+# Two report surfaces stay outside this page, each on a measured reason.
+#
+# `import` needs a snapshot directory with a release record over it and an
+# import block in `.headwater/taxonomy.yml` pinned to that record's digest. No
+# verb of this engine writes a release record over an arbitrary directory:
+# `headwater-import`'s own fixtures compute one with
+# `headwater_resolve::release::compute`, from Rust. A shell copy of that
+# computation here would be a second implementation of the digest, and a wrong
+# one would fail the case for a reason that has nothing to do with color. It is
+# held by the palette unit test beside its renderer in `headwater-import`.
+#
+# `probe stale` renders through `Staleness::render`, which takes no
+# `ColorMode` at all, so its report is plain under a terminal and there is no
+# wiring for a case here to hold. HW-OBL-0180 names it as the one report site
+# with no mode, and `docs/interfaces/headwater-probe.md` says it is plain.
 
 # The help family, which is four templates rather than one. The root screen is
 # written by `first_screen`, a verb page is `clap`'s own `{options}` renderer, a

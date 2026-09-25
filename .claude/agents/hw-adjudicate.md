@@ -2,7 +2,7 @@
 name: hw-adjudicate
 description: Checks one issue of the Headwater build order against the corpus before anything is built, declares what a sound change would regenerate, and is licensed to refuse. Use as the first stage of every iteration, on one issue at a time. It writes an adjudication note for the build agent, names the decisive fixture, and never builds or edits the board.
 tools: Bash, Read, Grep, Glob, Write, Skill
-model: opus
+model: claude-opus-5-5
 effort: medium
 ---
 
@@ -14,7 +14,7 @@ Invoke the `headwater-orient` skill before you search `docs/`, and the `hw-run-p
 
 One note, `adjudication.md`, in the issue's scratch directory, and a report that is one line of premise verdict and the block. The reasoning is in the note.
 
-The note is for the build agent, which starts near an empty context and reads nothing you saw unless you wrote it down. It holds: the premise verdict and what changed if it does not hold; what will be built, as a bar the verifier can check; the decisive fixture, which is the one test that would catch the thing the issue exists to prevent; the contract, decision clause or `tests/*.rs` case table the change extends first, if one exists; the open findings under [13 — Open obligations](../../docs/spec/13-open-obligations.md) this issue touches, saying which are the build agent's to close and which to record against; and the current numbers with their denominators.
+The note is for the build agent, which starts near an empty context and reads nothing you saw unless you wrote it down. It holds: the premise verdict and what changed if it does not hold; what will be built, as a bar the verifier can check; the decisive fixture, which is the one test that would catch the thing the issue exists to prevent; the contract, decision clause or `tests/*.rs` case table the change extends first, if one exists; the open findings under [13 — Open obligations](../../docs/spec/13-open-obligations.md) this issue touches, saying which are the build agent's to close and which to record against; the current numbers with their denominators; and a code map. The map lists each file the change will edit or extend, one line each, as `<path>:<first>-<last>  <symbol>  <why>`, and the test file the decisive fixture goes in. Take the line ranges from the files on disk. You searched the code to settle the premise, and without the map the build agent searches it again at a higher price per line.
 
 The report ends with this block, which the parent acts on:
 

@@ -61,6 +61,7 @@ A tool result costs its own size times the turns that follow it, so position is 
 - **Backgrounding a job is half a decision; the other half is how you wait for it.** Decide both in the same breath, and end every wait you started before you exit — the last bounded call in a chain included, once the condition it names is met.
 - **Redirect a build or a check to files and read the tail**, stdout and stderr to separate files. `sh tools/cap-run <command...>` does this in one call for a command that merges the two safely: it prints only the head, the tail, the omitted-line count, the exit status and the log's path, and keeps the whole run on disk. Do not reach for it on an invariant test that depends on reading stdout and stderr apart.
 - **Ask an API for the field, never the record.** `gh api ... --jq .body` carries the one field you asked for.
+- **Find the files before the lines, and read a range, never a source file.** `grep -rl` or `Glob` first, then `grep -n` in the few files that match. Read with `Read` and an offset and a limit, or `sed -n '<a>,<b>p'`, eighty lines at a time at most, and never `cat` a source file. Take a line range from the file on disk, never from memory or a symbol outline.
 - **Never read a whole specification part.** `headwater explain` first, then `Read` with an offset and a limit.
 - **Do not run the same command twice**, and count your repeats rather than trusting that you would notice.
 - **Prefer `Edit` to `Write` on a file that exists**, and compose a long prompt or note in a file rather than in a shell argument.

@@ -1,10 +1,10 @@
-592 seen, 403 classified, 403 checked, 7667 check instances
+593 seen, 404 classified, 404 checked, 7684 check instances
      22 generated, held to regeneration by `headwater generate --check`
      23 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       3 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-16`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
-    807 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+    809 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   a check read .headwater/ids, which the census never walked
   a check read .headwater/ids, which the census never walked
 adoption
@@ -14,35 +14,35 @@ adoption
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The
       baseline held two when the linter retired. The other named a semicolon
       inside a block quotation, which the engine does not report at all, because
-      the parser hands a quoted block to no lexical rule410 documents in the read set, and 6 barriers that no gate carries across a merge
-    403 instances of facet.required.missing
-    403 instances of facet.value.not_permitted
-    403 instances of facet.value.blank
-    403 instances of identifier.pattern.not_met
-    403 instances of shelf.placement_is_primary
-    759 instances of relation.target.unresolved
+      the parser hands a quoted block to no lexical rule411 documents in the read set, and 6 barriers that no gate carries across a merge
+    404 instances of facet.required.missing
+    404 instances of facet.value.not_permitted
+    404 instances of facet.value.blank
+    404 instances of identifier.pattern.not_met
+    404 instances of shelf.placement_is_primary
+    761 instances of relation.target.unresolved
      91 instances of relation.reciprocity.missing
     435 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
     422 instances of warrant.evidence.unsupported
       5 instances of relation.participation.overdue
-    403 instances of relation.declaration.unusable
-    403 instances of identifier.unusable
+    404 instances of relation.declaration.unusable
+    404 instances of identifier.unusable
       1 instances of identifier.claimed_twice
       1 instances of identifier.claim.missing
       1 instances of identifier.claim.stale
-    364 instances of voice.forbidden_construction
-    382 instances of language.controlled.not_met
-    382 instances of language.retired_term.used
+    365 instances of voice.forbidden_construction
+    383 instances of language.controlled.not_met
+    383 instances of language.retired_term.used
      27 instances of surface.local_path.instructed
      27 instances of surface.command.undeclared
-    382 instances of language.source_form.not_met
-    352 instances of section.required.missing
+    383 instances of language.source_form.not_met
+    353 instances of section.required.missing
       1 instances of link.fragment.unresolved
       1 instances of link.path.unresolved
-    403 instances of warrant.promoted
-    403 instances of lifecycle.transition.not_permitted
-    403 instances of lifecycle.state.not_admitted
+    404 instances of warrant.promoted
+    404 instances of lifecycle.transition.not_permitted
+    404 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
       1 instances of relation.target.verification.suspect
 suppressions

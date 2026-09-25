@@ -135,6 +135,35 @@ with open(path, "w") as f:
 EOF
 }
 
+# What the read position costs a session, per read, on this corpus (#953).
+# It needs no harness and spends no credits: it drives `read.sh` with the
+# payload Claude Code sends and times the whole hook, engine calls included.
+# The first run of each path is reported apart, because a cold cache and a warm
+# one differ by more than an order of magnitude, and a figure that does not say
+# which it is cannot be compared with anything. It records and gates nothing.
+#
+# `HEADWATER_HOOK_ROOT` is set on each child alone, for the reason the engine
+# block above gives.
+printf '# read.sh latency, per read, on this corpus\n'
+if date +%s%N | grep -q '^[0-9][0-9]*$'; then
+    for rel in engine/crates/check/src/lib.rs .claude/hooks/write.sh engine/crates/query/src/unrelated.rs; do
+        payload="{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$rel\"}}"
+        times=
+        for n in 1 2 3 4 5 6; do
+            t0=$(date +%s%N)
+            printf '%s' "$payload" | HEADWATER_HOOK_ROOT="$root" sh "$root/.claude/hooks/read.sh" >/dev/null 2>&1
+            t1=$(date +%s%N)
+            times="$times $(( (t1 - t0) / 1000000 ))"
+        done
+        first=${times# }
+        first=${first%% *}
+        warm=$(printf '%s\n' $times | tail -n +2 | sort -n | sed -n 3p)
+        printf 'info %s: first run %s ms, warm median %s ms of 5 (%s)\n' "$rel" "$first" "$warm" "$times"
+    done
+else
+    skip 'read.sh latency' 'this date(1) prints no nanoseconds'
+fi
+
 printf '# Codex\n'
 if command -v codex >/dev/null 2>&1; then
     if ! timeout 30 codex exec --skip-git-repo-check "say pong" >/dev/null 2>&1; then
@@ -278,6 +307,25 @@ print(count)
         else
             fail 'a real check finding blocks the turn, and a second turn completes it' "turn_starts=$n"
         fi
+
+        # C11: the name Copilot gives its read tool, which `.github/hooks/`
+        # cannot bind until it is known (#953). A catch-all recorder in the
+        # scratch clone keeps every `preToolUse` payload, and the case reads
+        # the one that names the file it asked for. It passes on any read it
+        # recorded and prints the name, which is the fact spec 16's C11 cell
+        # waits on. It fails when no recorded call names the file.
+        printf '%s\n' '{ "version": 1, "hooks": { "preToolUse": [ { "hooks": [ { "type": "command", "command": "cat >> .tool-calls.log; echo >> .tool-calls.log", "timeoutSec": 15 } ] } ] } }' \
+            > "$scratch/.github/hooks/zz-record-every-call.json"
+        out=$(run_copilot "Open the file engine/crates/check/src/lib.rs with your file viewing tool, not a shell command, and state its first line. Do not do anything else.")
+        read_call=$(grep 'engine/crates/check/src/lib.rs' "$scratch/.tool-calls.log" 2>/dev/null | head -n 1)
+        if [ -n "$read_call" ]; then
+            read_name=$(printf '%s' "$read_call" | "$engine" json field tool_name 2>/dev/null) \
+                || read_name=$(printf '%s' "$read_call" | "$engine" json field toolName 2>/dev/null)
+            pass "C11: Copilot names its read tool \`${read_name:-unreadable}\` in the payload it hands a hook"
+        else
+            fail 'C11: Copilot hands a hook the read of a named file' "$out"
+        fi
+        rm -f "$scratch/.github/hooks/zz-record-every-call.json" "$scratch/.tool-calls.log"
 
         # C9: `--agent <name>` resolves a persona from `.claude/agents/<name>.md`
         # directly, with no `.github/agents/*.agent.md` mirror required. Proof

@@ -2,7 +2,7 @@
 name: hw-verify
 description: Attacks one branch of the Headwater build order adversarially and returns a verdict the parent rules on. Use as the third stage of an iteration, after hw-build has opened the pull request. It resets a scratch worktree to the branch, runs the suite and the attacks the parent chose from the verification bar, waits on the pull request itself, and edits nothing.
 tools: Bash, Read, Grep, Glob, Skill
-model: opus
+model: claude-opus-5-5
 effort: medium
 ---
 
