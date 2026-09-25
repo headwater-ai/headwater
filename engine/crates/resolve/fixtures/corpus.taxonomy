@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.6.0
+version: 4.6.1
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -419,6 +419,14 @@ kinds:
         - Files
         - "See also"
     voice: declarative
+  library_doctrine:
+    identifier:
+      scheme: library_doctrine_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: rationale
+    voice: declarative
   obligation_record:
     facets:
       require:
@@ -763,6 +771,16 @@ shelves:
     kind: interface_contract
     path: "docs/interfaces/**"
     title: "The command surface"
+  library_doctrine:
+    homogeneous: true
+    kind: library_doctrine
+    path: "docs/taxonomies/*/doctrine.md"
+    title: "The canonical taxonomy library"
+  library_index:
+    homogeneous: true
+    kind: library_doctrine
+    path: docs/taxonomies/README.md
+    title: "The library index"
   obligations:
     homogeneous: true
     kind: obligation_record
@@ -846,6 +864,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "{namespace}-IFACE-{slug}"
+  library_doctrine_id:
+    allocation: minted-once
+    namespace: HW
+    pattern: "{namespace}-LIB-{slug}"
   obligation_record_id:
     allocation: reconcile-first
     namespace: HW

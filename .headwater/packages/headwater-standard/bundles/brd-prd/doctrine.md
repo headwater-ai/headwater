@@ -1,3 +1,12 @@
+---
+id: HW-LIB-brd-prd
+status: current
+status_since: 2026-09-08
+summary: "Why the brd-prd entry types the requirements handoff as a business requirements document and a product requirements document, and why each declaration is there."
+last_verified: 2026-09-24
+title: "The brd-prd taxonomy"
+---
+
 # The brd-prd taxonomy
 
 The requirements handoff. A business requirements document states the need, the requirements that follow from it and the measures of success. A product requirements document states the problem for one product, what a solution must do and what done means.

@@ -1196,6 +1196,76 @@ add:
     kind: process_decision
     layout: "{seq:04d}-{slug}.md"
 
+  # --- the library's doctrine -----------------------------------------------
+  # The doctrine of each library entry, and the index that admits an entry, are
+  # the prose an adopter reads before choosing one. Until #350 the corpus
+  # excluded `docs/taxonomies/**` whole, so no rule read a word of them, while
+  # every rule of the house regime read the decisions that cite them.
+  #
+  # **A kind, and not only a narrower exclusion.** A file with no front matter
+  # on a shelf is untyped and draws no check instance, so a narrower exclusion
+  # alone would have reached nothing. A regime reaches prose only through a
+  # kind ([HW-DR-0056](../docs/decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md)),
+  # and this kind is how `ste_house` and the declarative voice reach the
+  # doctrine. It requires nothing past the four facets `governed_document`
+  # requires, and it declares no section contract, because the seven entries
+  # follow no common outline and a contract written now would describe one of
+  # them.
+  #
+  # **An identifier, because a relation may name one.** `supersedes` and its
+  # family reach every `governed_document`, so a kind with no scheme is
+  # `identifier.unusable` on every page of it. The local part is the entry's
+  # directory name, and the index is `HW-LIB-index`.
+  #
+  # **In this overlay, and not in the package.** The doctrine is package
+  # content for every adopter, who vendors it and never checks it. It is
+  # corpus content here alone, because only this repository writes it. Spec 13
+  # records that answer as this repository's local one, and the base question
+  # of whether package content is corpus content stays open there.
+  #
+  # **Two shelves, because a shelf has one path.** The index is one file, and
+  # a pattern that claimed it with the entries would be `docs/taxonomies/**`
+  # again. Neither pattern claims a path the exclusions in
+  # `.headwater/taxonomy.yml` claim, and neither claims a path of another shelf.
+  #
+  # **The entries' shelf carries the index's title.** A shelf's served index
+  # page is the directory its path names before the first glob, so the entries'
+  # shelf is served at `/taxonomies/`. That page is the library index, and
+  # `tools/site/check-site-fragments.py` requires a shelf's served page to
+  # carry the shelf's title. So the shelf takes the index's H1.
+  #
+  # **`headwater new library_doctrine` refuses, and that is known.** The kind
+  # sits on two shelves, and neither shelf names a directory that a new file
+  # could go into: one is a fixed file name under a glob, and one is a single
+  # file. A doctrine page is written with its library entry, by hand, and the
+  # front matter of a sibling is the shape. A split into two kinds does not
+  # help, because the scaffolder places neither pattern.
+
+  identifier_schemes.library_doctrine_id:
+    pattern: "{namespace}-LIB-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  kinds.library_doctrine:
+    is_a: governed_document
+    purpose: rationale
+    voice: declarative
+    lifecycle: standard
+    language: ste_house
+    identifier: {scheme: library_doctrine_id}
+
+  shelves.library_doctrine:
+    title: The canonical taxonomy library
+    path: docs/taxonomies/*/doctrine.md
+    homogeneous: true
+    kind: library_doctrine
+
+  shelves.library_index:
+    title: The library index
+    path: docs/taxonomies/README.md
+    homogeneous: true
+    kind: library_doctrine
+
   # --- the consumer surface ------------------------------------------------
   # HW-DR-0077 rules that the consumer surface is a closed list and that a
   # declaration holds it. This is that declaration. `surface.local_path.instructed`

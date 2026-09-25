@@ -149,6 +149,14 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.6.1 changes no declaration in this file. The doctrine of each bundle and
+# the library index `bundles/README.md` now open with front matter, because
+# this repository types them as corpus prose and checks them (#350). A consumer
+# vendors those pages and reads them, and no rule of a consumer reads the new
+# front matter, so this is a patch. The index also links each entry at its
+# `doctrine.md` rather than at its bare directory, which no site serves a page
+# for. It follows 4.6.0 (#952).
+#
 # 4.6.0 declares `verified_revision` as an instance attribute of `governs`,
 # edge-owned, and widens `OB-REL-6` from an edge an import wrote to every edge
 # whose target a resolver states a revision for (#952). `source-tree` now
@@ -182,7 +190,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.6.0
+version: 4.6.1
 
 purposes:
   rationale:

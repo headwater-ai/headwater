@@ -10882,6 +10882,110 @@
         }
       },
       {
+        "path": "docs/taxonomies/README.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-index",
+        "facets": {
+          "id": "HW-LIB-index",
+          "status": "current",
+          "status_since": "2026-09-21",
+          "summary": "What a library entry is, the seven criteria that admit one, what each entry ships, what admits an assembly, and the rulings every draft works under.",
+          "last_verified": "2026-09-24",
+          "title": "The canonical taxonomy library"
+        }
+      },
+      {
+        "path": "docs/taxonomies/brd-prd/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-brd-prd",
+        "facets": {
+          "id": "HW-LIB-brd-prd",
+          "status": "current",
+          "status_since": "2026-09-08",
+          "summary": "Why the brd-prd entry types the requirements handoff as a business requirements document and a product requirements document, and why each declaration is there.",
+          "last_verified": "2026-09-24",
+          "title": "The brd-prd taxonomy"
+        }
+      },
+      {
+        "path": "docs/taxonomies/decision-record/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-decision-record",
+        "facets": {
+          "id": "HW-LIB-decision-record",
+          "status": "current",
+          "status_since": "2026-09-21",
+          "summary": "Why the decision-record entry keeps one decision per document forever, replaces a changed choice with a new record, and types what the corpus owes.",
+          "last_verified": "2026-09-24",
+          "title": "The decision-record taxonomy"
+        }
+      },
+      {
+        "path": "docs/taxonomies/design-spec/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-design-spec",
+        "facets": {
+          "id": "HW-LIB-design-spec",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Why the design-spec entry types a numbered series of parts that state one design, from the IETF, research-paper and software-design traditions it draws on.",
+          "last_verified": "2026-09-24",
+          "title": "The design-spec taxonomy"
+        }
+      },
+      {
+        "path": "docs/taxonomies/diataxis-site/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-diataxis-site",
+        "facets": {
+          "id": "HW-LIB-diataxis-site",
+          "status": "current",
+          "status_since": "2026-09-11",
+          "summary": "Why the diataxis-site bundle makes tutorial, how-to, reference and explanation concrete kinds of a documentation site, one shelf for each.",
+          "last_verified": "2026-09-24",
+          "title": "Diátaxis as a documentation-site kind set"
+        }
+      },
+      {
+        "path": "docs/taxonomies/diataxis/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-diataxis",
+        "facets": {
+          "id": "HW-LIB-diataxis",
+          "status": "current",
+          "status_since": "2026-09-15",
+          "summary": "Why the Diátaxis entry ships the four reader modes as one facet over the kinds a corpus already has, and not as kinds of its own.",
+          "last_verified": "2026-09-24",
+          "title": "The Diátaxis taxonomy"
+        }
+      },
+      {
+        "path": "docs/taxonomies/evidence-and-obligation/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-evidence-and-obligation",
+        "facets": {
+          "id": "HW-LIB-evidence-and-obligation",
+          "status": "current",
+          "status_since": "2026-09-08",
+          "summary": "Why the evidence-and-obligation bundle ships the evaluation kind and two reader intents alone, so that decision-record does not require all of design-spec.",
+          "last_verified": "2026-09-24",
+          "title": "The evidence-and-obligation taxonomy"
+        }
+      },
+      {
+        "path": "docs/taxonomies/standards-spec/doctrine.md",
+        "kind": "library_doctrine",
+        "id": "HW-LIB-standards-spec",
+        "facets": {
+          "id": "HW-LIB-standards-spec",
+          "status": "current",
+          "status_since": "2026-09-08",
+          "summary": "Why the standards-spec entry types the internal-standard ladder: a standard that binds many components, and a functional and a technical specification for each one.",
+          "last_verified": "2026-09-24",
+          "title": "The standards-spec taxonomy"
+        }
+      },
+      {
         "path": "docs/tutorials/your-first-governed-corpus.md",
         "kind": "tutorial",
         "id": "HW-TUT-your-first-governed-corpus",
@@ -11198,7 +11302,7 @@
         "anchor_kind": "code_path",
         "id": "docs/taxonomies/decision-record/bundle.yml",
         "resolver": "source-tree",
-        "excluded_by": "docs/taxonomies/**"
+        "excluded_by": "docs/taxonomies/*/bundle.yml"
       },
       {
         "anchor_kind": "code_path",

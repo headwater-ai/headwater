@@ -296,6 +296,7 @@ impl Root {
             &repository.join("docs/taxonomies"),
             &at.join("docs/taxonomies"),
         );
+        without_doctrine(&at.join("docs/taxonomies"));
         // The scratch package ships no template, and the reason is what every
         // case below does to it. `taxonomy publish` holds each template a
         // package ships against the taxonomy that package resolves to
@@ -600,6 +601,27 @@ fn without_templates(at: &Path) {
         let templates = entry.path().join("templates");
         if templates.is_dir() {
             std::fs::remove_dir_all(&templates).expect("the templates directory is removed");
+        }
+    }
+}
+
+/// Drop the library's doctrine prose from a scratch copy of `docs/taxonomies`.
+///
+/// Since [#350](https://github.com/headwater-ai/headwater/issues/350) this
+/// repository's overlay types each `doctrine.md` and the library index as
+/// `library_doctrine`, so a scratch root that copies the library and the
+/// overlay would add eight documents to every count its cases read. The cases
+/// here measure the fixture corpus and not the doctrine, and nothing a case
+/// runs reads a doctrine page, so the copy leaves them out.
+fn without_doctrine(library: &Path) {
+    let index = library.join("README.md");
+    if index.is_file() {
+        std::fs::remove_file(&index).expect("the library index is removed");
+    }
+    for entry in std::fs::read_dir(library).expect("the copied library reads") {
+        let doctrine = entry.expect("the entry reads").path().join("doctrine.md");
+        if doctrine.is_file() {
+            std::fs::remove_file(&doctrine).expect("the doctrine page is removed");
         }
     }
 }

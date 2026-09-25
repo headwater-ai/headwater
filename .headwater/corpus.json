@@ -7,14 +7,22 @@
       "root": "docs",
       "excluded": [
         {
-          "path": "docs/taxonomies/**",
-          "reason": "package content. This directory is the canonical taxonomy library, and a taxonomy package that lives inside the corpus it types has no home in the shelf model. Nothing in the base package or in either entry says whether package content is corpus content, and spec 13 records the gap; this repository answers it locally, here, with a reason. A fixture corpus under an entry is package content twice over, because it is a corpus that another root is meant to walk."
+          "path": "docs/taxonomies/*/fixtures/**",
+          "reason": "package content, and a corpus another root walks. A fixture holds planted defects on purpose, so a rule of this corpus that read one would report the defect the fixture exists to plant."
+        },
+        {
+          "path": "docs/taxonomies/*/templates/**",
+          "reason": "package content, and a skeleton rather than prose. Publish reads a template's front matter (#378), and a template stays outside every language regime, because its body is placeholders an author replaces."
+        },
+        {
+          "path": "docs/taxonomies/*/bundle.yml",
+          "reason": "package content, and a declaration rather than a document. The resolver reads it, and `headwater taxonomy validate` holds it."
         }
       ],
       "taxonomy": {
         "package": "headwater/standard",
-        "version": "4.6.0",
-        "lock": "sha256:5e20fe979f7852fd0d405024b696a77502cfd78ab8281c72d5f034cf5d14e4cc"
+        "version": "4.6.1",
+        "lock": "sha256:eca4ce17efd4a9c932c0e4edcbef00b7630b7f02ac4521be0efb3cfdf30a3f1f"
       },
       "entry_points": [
         {
@@ -41,6 +49,16 @@
           "shelf": "interfaces",
           "path": "docs/interfaces/headwater-capture.md",
           "id": "HW-IFACE-headwater-capture"
+        },
+        {
+          "shelf": "library_doctrine",
+          "path": "docs/taxonomies/brd-prd/doctrine.md",
+          "id": "HW-LIB-brd-prd"
+        },
+        {
+          "shelf": "library_index",
+          "path": "docs/taxonomies/README.md",
+          "id": "HW-LIB-index"
         },
         {
           "shelf": "obligations",
