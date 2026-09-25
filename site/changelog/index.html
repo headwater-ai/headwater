@@ -135,6 +135,22 @@
 
   <p class="note"><strong>An entry arrives when a tag is cut.</strong> A tag is the only condition that fills this page, and not a date and not a milestone. There is no cadence, and this page says so rather than promise one.</p>
 
+  <h2>v0.2.0</h2>
+
+  <p><a href="https://github.com/headwater-ai/headwater/releases/tag/v0.2.0">The second release</a>, cut on 2026-09-25, is the first version that an adopter can take into a repository of their own with nothing but the <code>headwater</code> binary. It covers everything since v0.1.0, and that includes the two patch tags v0.1.1 and v0.1.2 of 2026-09-09, which moved the crates onto crates.io so that <code>cargo install</code> works and which never had an entry here.</p>
+
+  <p>A package now arrives without a clone. <code>headwater taxonomy vendor</code> takes the <code>https://</code> location of a published artifact as well as a directory, fetches it, and installs it under <code>.headwater/packages/</code> only when it matches the digest the lock pinned. It refuses a plain <code>http://</code> location, it follows a bounded number of redirects, and it bounds what an archive may unpack to. The fetch lives in a crate that only the binary links, so no part of the checking loop opens a socket. The vendored root moved from <code>packages/</code> to <code>.headwater/packages/</code>, and the old root is named in the refusal that meets it.</p>
+
+  <p>The checks go into CI with one file. A composite GitHub Action under <code>integrations/headwater-check/</code> downloads a released binary, checks its checksum, and runs <code>headwater check</code> against your corpus, with no Rust toolchain on the runner. <a href="https://github.com/headwater-ai/headwater/blob/main/docs/how-to/wire-headwater-check-into-your-own-workflow.md">The guide</a> gives the workflow. The pages written for an adopter are now a declared list, generated as one page, and <code>headwater check</code> holds each of them to it: none of them sends an adopter to a script that only this repository has.</p>
+
+  <p>The generated files survive a concurrent merge. <code>headwater derived</code> reports which files each producer writes and which of them state a count or a digest over the whole corpus. The graph export and the generated pages no longer store such a count. <code>headwater init --git</code> commits a <code>-merge</code> line in <code>.gitattributes</code> for each file that still does, and in an adopter's tree that is the taxonomy lock. On that file git stops the merge, keeps your side and records a conflict, in every clone and with no configuration. The same step prints the two <code>git config</code> lines that make <code>headwater merge-driver</code> run in a clone, and <code>--git-config</code> writes them. The driver then names the verb that writes the file again.</p>
+
+  <p>A forge does not read that attribute. GitHub showed a pull request that moved a <code>-merge</code> file as mergeable, and its test merge held the edits of both branches. The cover for a merge made on the forge is the CI check of the merged tree, and it covers only when the check is required and the branch must be up to date before it merges. <a href="https://github.com/headwater-ai/headwater/blob/main/docs/how-to/wire-headwater-check-into-your-own-workflow.md#make-it-cover-a-merge">The guide</a> names both settings.</p>
+
+  <p>Four smaller things an adopter meets. <code>headwater change</code> writes the change manifest that <code>headwater check --change</code> reads, with no git plumbing in the caller. An identifier that resolves to nothing is refused in the words of an identifier rather than of a path. <code>headwater taxonomy graph</code> prints the resolved taxonomy as a Mermaid flowchart. And <code>headwater check</code> reports a <code>governs</code> edge as suspect when the bytes it reaches change.</p>
+
+  <p>Two pieces of this work are still open, and this release does not claim them: an install with no toolchain on more hosts, and the retirement of the bootstrap script that fetched a package before <code>vendor</code> could.</p>
+
   <h2>v0.1.0</h2>
 
   <p><a href="https://github.com/headwater-ai/headwater/releases/tag/v0.1.0">The first release</a> is the first version of Headwater that a reader can name, obtain and build. Everything before it was a branch, and a reader who wanted a version had only the tip of the default branch and no name for what they had taken.</p>
