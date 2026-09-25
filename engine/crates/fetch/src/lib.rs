@@ -442,7 +442,7 @@ mod tests {
             refused.to_string().contains("redirected more than 10 times"),
             "{refused}"
         );
-        assert_eq!(asked.len(), 11, "the eleventh target was requested: {asked:?}");
+        assert_eq!(asked.len(), 11, "the first request and ten redirects: {asked:?}");
     }
 
     #[test]
