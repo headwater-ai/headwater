@@ -2340,7 +2340,7 @@
           "status": "current",
           "status_since": "2026-09-24",
           "summary": "`headwater taxonomy graph` prints the resolved taxonomy from the lock as a Mermaid flowchart, and no projection, explain format or export target draws it",
-          "last_verified": "2026-09-24",
+          "last_verified": "2026-09-25",
           "title": "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file",
           "provenance": {
             "warrant": "asserted",
@@ -3864,7 +3864,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How to validate, resolve, audit, publish, vendor, compare, migrate and draw taxonomy packages.",
-          "last_verified": "2026-09-07",
+          "last_verified": "2026-09-25",
           "title": "headwater taxonomy",
           "relations": {
             "governs": [
