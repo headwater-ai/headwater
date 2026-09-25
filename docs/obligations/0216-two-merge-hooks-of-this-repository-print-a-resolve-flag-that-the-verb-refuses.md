@@ -8,7 +8,7 @@ title: "Two merge hooks of this repository print a resolve flag that the verb re
 waiting_on: build
 ---
 
-<!-- headwater allow=lifecycle.transition.not_permitted scope=file until=2026-12-31 reason=accepted_deviation note=the record merged at draft against HW-DR-0052, and a check against the merge base cannot see it pass through current inside one pull request -->
+<!-- headwater allow=lifecycle.transition.not_permitted scope=file until=2026-12-31 reason=accepted_deviation note=the obligation regime has no step from draft to discharged, and CI checks this change against the merge base, where the record stands at draft -->
 
 # Two merge hooks of this repository print a resolve flag that the verb refuses
 
