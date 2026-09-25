@@ -6,10 +6,11 @@ summary: "A recorded artifact holds one record per entity and derives every tota
 last_verified: 2026-09-25
 title: "A corpus-wide fold is derived and never stored"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: mixed
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:
