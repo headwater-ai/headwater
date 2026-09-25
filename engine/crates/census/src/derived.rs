@@ -390,7 +390,8 @@ pub struct Population {
     /// Every path that carries a merge driver this verb does not know, and
     /// the driver's name, as git reports it.
     pub drivers: Vec<(String, String)>,
-    /// What git printed where it refused `git check-attr` inside a repository.
+    /// Why git did not answer `git check-attr` inside a repository: what git
+    /// printed where it refused, or why it did not run.
     ///
     /// The root-file reader answered in its place, which reads less than a
     /// merge does. So a refusal is a disagreement in its own right: the report
@@ -404,7 +405,7 @@ impl Population {
     /// Five things can disagree, and each one is a reason to exit 1: a producer
     /// output with no attribute, a declared path with no producer, a shape whose
     /// attribute is not its treatment, a declaration this reader cannot
-    /// expand, and a repository where git refused to give the attributes.
+    /// expand, and a repository where git did not give the attributes.
     pub fn agrees(&self) -> bool {
         self.undeclared.is_empty()
             && self.unproduced.is_empty()
@@ -569,7 +570,7 @@ impl Population {
         }
         if let Some(refusal) = &self.refused {
             out.push_str(
-                "git refused `git check-attr` in this repository, so the merge \
+                "git did not answer `git check-attr` in this repository, so the merge \
                  attributes above are the root `.gitattributes` alone, and a nested \
                  file, `info/attributes` and `core.attributesFile` were not read:\n",
             );
@@ -778,9 +779,13 @@ fn shape_of(root: &Path, path: &str, producer: Option<Producer>, blessing: bool)
         // generated file of this repository states a count, and 1058-a
         // measured every one of them merging as text to what the producer
         // writes over the merged tree.
+        //
+        // A file whose marker line is its only line is a projection written
+        // compactly, and one line cannot be one record per entity: any two
+        // edits conflict on it, and the cure is to regenerate (#809).
         Some(Producer::Generate) => {
             let text = std::fs::read_to_string(root.join(path)).ok()?;
-            return Some(match states_a_fold(&text) {
+            return Some(match states_a_fold(&text) || is_one_marked_line(&text) {
                 true => Shape::Fold,
                 false => Shape::RecordPerEntity,
             });
@@ -870,6 +875,15 @@ fn states_a_fold(text: &str) -> bool {
         .any(|line| line.starts_with(|c: char| c.is_ascii_digit()) || line.contains("sha256:"))
 }
 
+/// Whether the only line of a file that is not blank is the one that carries the marker.
+fn is_one_marked_line(text: &str) -> bool {
+    let mut lines = text.lines().filter(|line| !line.trim().is_empty());
+    matches!(
+        (lines.next(), lines.next()),
+        (Some(line), None) if line.contains("headwater:generated")
+    )
+}
+
 /// Whether a path lies inside a fixture tree, which is another corpus.
 fn in_a_fixture_tree(path: &str) -> bool {
     path.split('/').any(|component| component == "fixtures")
@@ -953,7 +967,7 @@ struct Attributes {
     unreadable: Vec<String>,
     /// Every path with a driver this verb does not know, and the driver.
     drivers: Vec<(String, String)>,
-    /// What git printed when it refused the question inside a repository.
+    /// Why git did not answer the question inside a repository.
     refused: Option<String>,
 }
 
@@ -977,9 +991,12 @@ struct Attributes {
 /// list of literal paths. A pattern with a glob is named as unreadable, and so
 /// is each `.gitattributes` file of the walk below the root, by its path.
 ///
-/// **Where git refuses the question inside a repository**, the root-file
-/// reader answers, and [`Population::refused`] carries what git printed, so
-/// the report says which reader answered and the verb exits 1.
+/// **Where git refuses the question inside a repository, or does not run in
+/// one**, the root-file reader answers, and [`Population::refused`] carries
+/// what git printed or why it did not run, so the report says which reader
+/// answered and the verb exits 1. Where git cannot answer (not on `PATH`, a
+/// distrusted owner, a pruned linked worktree), `headwater_vcs` searches up
+/// for a repository as git would, and only a repository it finds is refused.
 fn attributes_of(root: &Path, files: &[String]) -> Attributes {
     let declarations = declarations(root);
     let mut candidates: Vec<String> = files.to_vec();
@@ -1380,7 +1397,7 @@ mod tests {
         assert!(!population.agrees());
         let rendered = population.render(ColorMode::Plain);
         assert!(
-            rendered.contains("git refused `git check-attr`"),
+            rendered.contains("git did not answer `git check-attr`"),
             "{rendered}"
         );
         assert!(

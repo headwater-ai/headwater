@@ -276,17 +276,39 @@ pub fn ignored(root: &Path) -> Vec<String> {
 /// ask about a path it did not find on disk filters such a path out first.
 /// The refusal is kept apart from `None`, because a caller that read it as
 /// "no repository" would fall back in silence inside one.
+///
+/// `Some(Err(..))` also where git cannot answer and `finds_a_repository`
+/// finds one where git's own search would: git that does not run at all, git
+/// that distrusts the owner of the repository ("dubious ownership"), and a
+/// linked worktree whose git directory was pruned. The error carries what git
+/// printed or why it did not run. Where git's search would find nothing, the
+/// tree is one git does not see, and the answer is `None`: a `.git` file that
+/// is not a gitfile, an empty `.git` directory, a repository beyond
+/// `GIT_CEILING_DIRECTORIES` or beyond a filesystem boundary (#809).
 pub fn merge_attributes(
     root: &Path,
     paths: &[String],
 ) -> Option<Result<Vec<(String, String)>, String>> {
-    let inside = Command::new("git")
+    let inside = match Command::new("git")
         .arg("-C")
         .arg(root)
         .args(["rev-parse", "--is-inside-work-tree"])
         .output()
-        .ok()?;
-    if !inside.status.success() || String::from_utf8_lossy(&inside.stdout).trim() != "true" {
+    {
+        Ok(inside) => inside,
+        Err(error) => {
+            return finds_a_repository(root).then(|| Err(format!("git did not run: {error}")));
+        }
+    };
+    if !inside.status.success() {
+        return finds_a_repository(root).then(|| {
+            Err(format!(
+                "git did not answer whether this is a work tree: {}",
+                String::from_utf8_lossy(&inside.stderr).trim()
+            ))
+        });
+    }
+    if String::from_utf8_lossy(&inside.stdout).trim() != "true" {
         return None;
     }
     let mut input = Vec::new();
@@ -295,6 +317,164 @@ pub fn merge_attributes(
         input.push(0);
     }
     Some(check_attr(root, input))
+}
+
+/// Whether git's own search upward from `root` would stop at a repository.
+///
+/// This is asked only after git failed to answer, so it cannot ask git. It
+/// walks up from `root` the way git does and stops where git stops:
+///
+/// - A `.git` directory that holds `HEAD`, `objects` and `refs` is a
+///   repository, even one git then refuses to open.
+/// - A `.git` file that opens with `gitdir:` is a linked worktree or a
+///   submodule, even where the directory it names was pruned.
+/// - A `.git` file that is not a gitfile ends the search with no repository,
+///   as git's "invalid gitfile format" does.
+/// - A `.git` directory that is not a repository is passed over.
+/// - The search does not go up into a directory that `GIT_CEILING_DIRECTORIES`
+///   names, or across a filesystem boundary unless
+///   `GIT_DISCOVERY_ACROSS_FILESYSTEM` is true.
+///
+/// A plain `.git` entry is not enough. Git says there is no repository in
+/// each of the last three shapes, and a verb that refused there would refuse
+/// a tree that git itself reads as no repository.
+fn finds_a_repository(root: &Path) -> bool {
+    let ceilings: Vec<PathBuf> = std::env::var_os("GIT_CEILING_DIRECTORIES")
+        .map(|value| {
+            std::env::split_paths(&value)
+                .filter(|dir| !dir.as_os_str().is_empty())
+                .map(|dir| dir.canonicalize().unwrap_or(dir))
+                .collect()
+        })
+        .unwrap_or_default();
+    let across = std::env::var("GIT_DISCOVERY_ACROSS_FILESYSTEM")
+        .is_ok_and(|value| crosses_filesystems(&value));
+    search_upward(root, &ceilings, across, &device_of)
+}
+
+/// Whether the search crosses a filesystem boundary, for `value` of
+/// `GIT_DISCOVERY_ACROSS_FILESYSTEM`.
+///
+/// Where git accepts the value, the answer is git's boolean ([`git_bool`]).
+/// Where git refuses it as a bad boolean, git does not run, and so it says
+/// nothing about a repository. The search then crosses: crossing can only
+/// find more, and a repository found is refused. This is the same choice as
+/// the refusal of a corrupt `HEAD` (ruled on #1115, 2026-09-25).
+fn crosses_filesystems(value: &str) -> bool {
+    git_bool(value).unwrap_or(true)
+}
+
+/// A boolean as git reads one (`git_parse_maybe_bool`), or `None` where git
+/// refuses the value.
+///
+/// `true`, `yes` and `on` in any case are true. `false`, `no`, `off` and the
+/// empty value are false. Any other value must be an integer that git's
+/// `int` holds, and it is true where it is not zero ([`git_int`]).
+fn git_bool(value: &str) -> Option<bool> {
+    match value.to_ascii_lowercase().as_str() {
+        "true" | "yes" | "on" => Some(true),
+        "false" | "no" | "off" | "" => Some(false),
+        _ => git_int(value).map(|number| number != 0),
+    }
+}
+
+/// An integer as git reads one (`git_parse_int`), or `None` where git refuses it.
+///
+/// `strtoimax` in base 0 reads the number: leading white space, one optional
+/// sign, then `0x` and hex digits, a `0` and octal digits, or decimal
+/// digits. What follows the digits must be empty or one unit, `k`, `m` or
+/// `g` in any case, for 1024, 1024² or 1024³. The value times its unit must
+/// fit a 32-bit signed `int`. Git refuses anything else, such as `08`, `1 `,
+/// `0x`, `+-1` and `2g`.
+fn git_int(value: &str) -> Option<i32> {
+    let rest = value.trim_start_matches([' ', '\t', '\n', '\u{b}', '\u{c}', '\r']);
+    let (negative, rest) = match rest.strip_prefix('-') {
+        Some(rest) => (true, rest),
+        None => (false, rest.strip_prefix('+').unwrap_or(rest)),
+    };
+    let hex = rest
+        .strip_prefix("0x")
+        .or_else(|| rest.strip_prefix("0X"))
+        .filter(|digits| digits.starts_with(|c: char| c.is_ascii_hexdigit()));
+    let (radix, digits) = match hex {
+        Some(digits) => (16, digits),
+        None if rest.starts_with('0') => (8, rest),
+        None => (10, rest),
+    };
+    let length = digits
+        .find(|c: char| !c.is_digit(radix))
+        .unwrap_or(digits.len());
+    if length == 0 {
+        return None;
+    }
+    // `strtoimax` refuses a magnitude past `intmax_t`; this refuses one past
+    // `i64`, which is the same on every platform git builds for.
+    let magnitude = i128::from(u64::from_str_radix(&digits[..length], radix).ok()?);
+    if magnitude > i128::from(i64::MAX) + i128::from(negative) {
+        return None;
+    }
+    let unit: i128 = match digits[length..].to_ascii_lowercase().as_str() {
+        "" => 1,
+        "k" => 1 << 10,
+        "m" => 1 << 20,
+        "g" => 1 << 30,
+        _ => return None,
+    };
+    let signed = if negative { -magnitude } else { magnitude };
+    i32::try_from(signed * unit).ok()
+}
+
+/// [`finds_a_repository`] with the two environment settings passed in.
+///
+/// `device_of` names the filesystem a directory is on. It is passed in so
+/// that a test can place a boundary where no test can mount one.
+fn search_upward(
+    root: &Path,
+    ceilings: &[PathBuf],
+    across: bool,
+    device_of: &dyn Fn(&Path) -> Option<u64>,
+) -> bool {
+    let root = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
+    let device = device_of(&root);
+    for dir in root.ancestors() {
+        if dir != root {
+            if ceilings.iter().any(|ceiling| ceiling == dir) {
+                return false;
+            }
+            if !across && device.is_some() && device_of(dir) != device {
+                return false;
+            }
+        }
+        let entry = dir.join(".git");
+        let Ok(meta) = entry.metadata() else {
+            continue;
+        };
+        if meta.is_dir() {
+            if entry.join("HEAD").is_file()
+                && entry.join("objects").is_dir()
+                && entry.join("refs").is_dir()
+            {
+                return true;
+            }
+        } else {
+            return fs::read_to_string(&entry)
+                .is_ok_and(|text| text.trim_start().starts_with("gitdir:"));
+        }
+    }
+    false
+}
+
+/// The device a path is on, where the platform says.
+#[cfg(unix)]
+fn device_of(path: &Path) -> Option<u64> {
+    use std::os::unix::fs::MetadataExt;
+    fs::metadata(path).ok().map(|meta| meta.dev())
+}
+
+/// The device a path is on, where the platform says.
+#[cfg(not(unix))]
+fn device_of(_path: &Path) -> Option<u64> {
+    None
 }
 
 /// One run of `git check-attr -z --stdin merge` over `input`, parsed.
@@ -652,6 +832,182 @@ mod tests {
         fs::write(at.join(".gitattributes"), "a.md merge=union\n").expect("the file writes");
         assert_eq!(merge_attributes(&at, &["a.md".to_string()]), None);
         let _ = fs::remove_dir_all(&at);
+    }
+
+    /// Where git cannot answer, the search upward stops where git's own does.
+    ///
+    /// A gitfile and a `.git` directory shaped as a repository are found from
+    /// a directory below them. An empty `.git` directory is passed over, a
+    /// `.git` file that is not a gitfile ends the search with nothing, and a
+    /// ceiling directory is not entered.
+    #[test]
+    fn the_search_upward_finds_a_repository_where_git_would() {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-vcs-tests-git-entry-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&at);
+        for dir in [
+            "worktree/sub",
+            "repo/sub",
+            "empty/sub",
+            "plain/sub",
+            "ceiling/sub",
+        ] {
+            fs::create_dir_all(at.join(dir)).expect("the directories are there");
+        }
+        let found = |dir: &str| search_upward(&at.join(dir), &[], false, &device_of);
+
+        assert!(!found("worktree/sub"));
+        fs::write(at.join("worktree/.git"), "gitdir: /elsewhere\n").expect("the file writes");
+        assert!(
+            found("worktree/sub"),
+            "a gitfile names a repository, even a pruned one"
+        );
+
+        for part in ["repo/.git/objects", "repo/.git/refs"] {
+            fs::create_dir_all(at.join(part)).expect("the directory is there");
+        }
+        fs::write(at.join("repo/.git/HEAD"), "ref: refs/heads/main\n").expect("the file writes");
+        assert!(
+            found("repo/sub"),
+            "a `.git` directory shaped as a repository is one"
+        );
+
+        fs::create_dir_all(at.join("empty/.git")).expect("the directory is there");
+        assert!(
+            !found("empty/sub"),
+            "an empty `.git` directory is not a repository"
+        );
+
+        fs::write(at.join("plain/.git"), "hello\n").expect("the file writes");
+        assert!(
+            !found("plain/sub"),
+            "a `.git` file that is not a gitfile ends the search"
+        );
+
+        fs::write(at.join("ceiling/.git"), "gitdir: /elsewhere\n").expect("the file writes");
+        let ceiling = at
+            .join("ceiling")
+            .canonicalize()
+            .expect("the directory is there");
+        assert!(
+            !search_upward(
+                &at.join("ceiling/sub"),
+                std::slice::from_ref(&ceiling),
+                false,
+                &device_of
+            ),
+            "the search does not go up into a ceiling directory"
+        );
+        assert!(
+            search_upward(&ceiling, std::slice::from_ref(&ceiling), false, &device_of),
+            "a ceiling directory that is the root itself is still read"
+        );
+        let _ = fs::remove_dir_all(&at);
+    }
+
+    /// A `.git` directory with `objects`, `refs` and a `HEAD` that is not a
+    /// reference counts as a repository, on purpose.
+    ///
+    /// Git reads that directory as no repository. The verb refuses it anyway,
+    /// because a corrupt repository that is refused is safer than one that is
+    /// read in silence as a tree with no attributes but the root file (ruled
+    /// on #1115, 2026-09-25). Test the contents of `HEAD`, and this case fails.
+    #[test]
+    fn a_repository_shaped_git_directory_with_a_corrupt_head_is_refused_on_purpose() {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-vcs-tests-corrupt-head-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&at);
+        for part in ["sub", ".git/objects", ".git/refs"] {
+            fs::create_dir_all(at.join(part)).expect("the directory is there");
+        }
+        fs::write(at.join(".git/HEAD"), "not a reference\n").expect("the file writes");
+        assert!(search_upward(&at.join("sub"), &[], false, &device_of));
+        let _ = fs::remove_dir_all(&at);
+    }
+
+    /// The search stops at a filesystem boundary, and crosses it only where
+    /// `GIT_DISCOVERY_ACROSS_FILESYSTEM` is true.
+    ///
+    /// No test can mount a filesystem, so the device lookup is a stand-in that
+    /// puts `inner` on one device and everything above it on another. Drop the
+    /// boundary check, and the first assertion fails.
+    #[test]
+    fn the_search_upward_stops_at_a_filesystem_boundary() {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-vcs-tests-boundary-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&at);
+        fs::create_dir_all(at.join("inner/sub")).expect("the directories are there");
+        fs::write(at.join(".git"), "gitdir: /elsewhere\n").expect("the file writes");
+        let inner = at
+            .join("inner")
+            .canonicalize()
+            .expect("the directory is there");
+        let device = |dir: &Path| Some(if dir.starts_with(&inner) { 2 } else { 1 });
+        assert!(
+            !search_upward(&inner.join("sub"), &[], false, &device),
+            "the repository above the boundary is not reached"
+        );
+        assert!(
+            search_upward(&inner.join("sub"), &[], true, &device),
+            "across the boundary, the repository above it is found"
+        );
+        let _ = fs::remove_dir_all(&at);
+    }
+
+    /// `GIT_DISCOVERY_ACROSS_FILESYSTEM` is read as git reads a boolean.
+    ///
+    /// Git takes `true`, `yes` and `on` in any case, `false`, `no`, `off` and
+    /// the empty value as false, and otherwise an integer, with an optional
+    /// `k`, `m` or `g` unit, that is true where it is not zero.
+    #[test]
+    fn a_boolean_is_read_as_git_reads_one() {
+        for value in [
+            "1", "2", "-1", "true", "TRUE", "Yes", "on", "0x10", "010", "1k", " 3",
+        ] {
+            assert!(crosses_filesystems(value), "git reads {value:?} as true");
+        }
+        for value in ["0", "00", "0x0", "0k", "false", "No", "OFF", ""] {
+            assert!(!crosses_filesystems(value), "git reads {value:?} as false");
+        }
+    }
+
+    /// A value that git refuses as a bad boolean crosses the boundary.
+    ///
+    /// Git does not run with such a value, so it says nothing about a
+    /// repository. The search then crosses, which can only find more, and a
+    /// repository found is refused: the same choice as a corrupt `HEAD`
+    /// (ruled on #1115, 2026-09-25). The values are malformed or outside the
+    /// range of git's 32-bit `int`, after a `k`, `m` or `g` unit.
+    #[test]
+    fn a_value_git_refuses_crosses_the_boundary() {
+        for value in [
+            "08",
+            "garbage",
+            "1 ",
+            "+-1",
+            "0x",
+            "2147483648",
+            "2g",
+            "-2147483649",
+            "9223372036854775807",
+            "99999999999999999999999999999999999999999",
+        ] {
+            assert!(
+                crosses_filesystems(value),
+                "git refuses {value:?}, and the search crosses"
+            );
+            assert_eq!(git_bool(value), None, "git refuses {value:?}");
+        }
+        // The edges of git's `int`, which git accepts.
+        for value in ["2147483647", "-2147483648", "1g", "2047m", "0x7fffffff"] {
+            assert_eq!(git_bool(value), Some(true), "git accepts {value:?}");
+        }
     }
 
     /// A tree with no `.git` at all — the shape this crate's own tests build

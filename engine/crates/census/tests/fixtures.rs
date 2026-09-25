@@ -1117,9 +1117,8 @@ fn a_merge_attribute_behind_a_glob_is_reported_rather_than_skipped() {
 /// also matches it, and read first it would call the fold `union`-safe. Swap
 /// the fold and record-stream arms of `shape_of`, and this case fails.
 ///
-/// A generated JSON projection is not planted here. The marker rule reads the
-/// `headwater:generated` key only at the start of a line, and a line of a
-/// record stream starts with `{`, so no generated file can be both.
+/// A generated JSON projection on one line is the third such file, and
+/// `a_generated_json_projection_on_one_line_is_a_fold` holds it.
 #[test]
 fn a_producer_output_whose_every_line_is_a_record_is_a_fold() {
     use headwater_census::derived::{Producer, Shape};
@@ -1670,6 +1669,55 @@ fn a_root_declaration_outside_the_tree_does_not_discard_git_s_answer() {
         headwater_census::derived::declared_paths(root.path())
             .contains(&headwater_census::derived::LOCK.to_string()),
         "the nested declaration of the lock was lost:\n{report}"
+    );
+}
+
+/// A generated JSON projection written on one line is a fold, never a record stream.
+///
+/// The marker is the first member of an object that `{` opens on the same
+/// line, so the file is one line and that line is one record. Before #809 the
+/// marker rule read the key only at the start of a line, nobody claimed the
+/// file, and the record-stream rule reported it as a line that depends on
+/// nothing and told the reader to put `merge=union` on it. `union` on a fold
+/// keeps both sides of the one line, which is true of neither branch. Read the
+/// marker only at the start of a line again, or read the record-stream rule
+/// before the producer rule, and this case fails.
+#[test]
+fn a_generated_json_projection_on_one_line_is_a_fold() {
+    use headwater_census::derived::{Producer, Shape};
+
+    let root = TempTree::adopter("compact");
+    root.git_init();
+    let path = "out/compact.json";
+    root.write(
+        path,
+        "{\"headwater:generated\": \"projection. Do not edit.\", \"count\": 3, \"items\": [\"a\",\"b\",\"c\"]}\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    assert!(
+        population
+            .outputs
+            .iter()
+            .any(|output| output.path == path && output.producer == Producer::Generate),
+        "{path} is not claimed by `headwater generate`:\n{report}"
+    );
+    let member = population
+        .members
+        .iter()
+        .find(|member| member.path == path)
+        .unwrap_or_else(|| panic!("{path} is not in the report:\n{report}"));
+    assert_eq!(
+        member.shape,
+        Shape::Fold,
+        "{path} is a projection on one line, and a projection is a fold:\n{report}"
+    );
+    assert!(
+        !report
+            .lines()
+            .any(|line| line.contains(path) && line.contains("depends on nothing")),
+        "{path} is reported as a line that depends on nothing:\n{report}"
     );
 }
 

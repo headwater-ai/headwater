@@ -138,7 +138,10 @@ pub fn marker(kind: &str, path: &str) -> Option<String> {
 /// brace that opens the object rather than for the file. The member is the
 /// marker, and it is matched as a quoted key at the start of a line so that a
 /// string somewhere in the document which happens to hold the word does not
-/// count as one.
+/// count as one. A writer that prints JSON compactly puts the whole object on
+/// one line, so the first line that opens the object is also read, for the
+/// member in key position: after `{` or `,`, and followed by `:`. A string that
+/// holds the quoted word escapes its quotes, so it is not in key position.
 ///
 /// **Markdown, additionally: a member of the front-matter block.** The same
 /// rule as JSON, bounded to the block, because a Markdown body is prose and a
@@ -202,9 +205,20 @@ pub fn kind_named(path: &str, text: &str) -> Option<String> {
 /// predicate and the reader cannot come to different answers about one file.
 fn marker_line<'a>(path: &str, text: &'a str) -> Option<&'a str> {
     match comment_for(path) {
+        // A member at the start of a line, or a member in key position on the
+        // first line when that line opens the object, which is how a writer
+        // that prints JSON compactly writes the whole file.
         Comment::None => text
             .lines()
-            .find(|line| line.trim_start().starts_with(&quoted())),
+            .find(|line| line.trim_start().starts_with(&quoted()))
+            .map(str::trim_start)
+            .or_else(|| {
+                let first = text.lines().find(|line| !line.trim().is_empty())?;
+                first
+                    .trim_start()
+                    .starts_with('{')
+                    .then(|| member_in_key_position(first))?
+            }),
         // The first line, and then the block. The two are disjoint: a first
         // line that carries the marker is a first line that is not `---`, so
         // such a file has no block for the second rule to read.
@@ -230,6 +244,23 @@ fn front_matter(text: &str) -> impl Iterator<Item = &str> {
         true => usize::MAX,
         false => 0,
     })
+}
+
+/// The rest of a line from the quoted marker key onward, where the marker is a key.
+///
+/// A key follows the `{` that opens an object or the `,` that ends a member,
+/// with only whitespace between, and a `:` follows it. The same word inside a
+/// string value is preceded by the `\` that escapes its quote, so it is never in
+/// key position. This is a line rule and not a parse, for the reason
+/// `Cargo.toml` gives: this crate has no dependencies.
+fn member_in_key_position(line: &str) -> Option<&str> {
+    let key = quoted();
+    line.match_indices(&key)
+        .find(|(at, _)| {
+            line[..*at].trim_end().ends_with(['{', ','])
+                && line[at + key.len()..].trim_start().starts_with(':')
+        })
+        .map(|(at, _)| &line[at..])
 }
 
 fn quoted() -> String {
@@ -264,6 +295,37 @@ mod tests {
         // A string that holds the word is not a member that is the marker.
         let mentions = format!("{{\n  \"note\": \"we write {MARKER} here\"\n}}\n");
         assert!(!carries_marker(".headwater/corpus.json", &mentions));
+    }
+
+    #[test]
+    fn json_on_one_line_carries_the_marker_as_a_member_in_key_position() {
+        let compact = format!(
+            "{{\"{MARKER}\": \"projection. Do not edit.\", \"count\": 3, \"items\": [\"a\"]}}\n"
+        );
+        assert!(carries_marker("out/compact.json", &compact));
+        assert_eq!(
+            kind_named("out/compact.json", &compact).as_deref(),
+            Some("projection")
+        );
+
+        // After a `,`, as the second member.
+        let second = format!("{{\"count\": 3, \"{MARKER}\": \"graph_export. \"}}\n");
+        assert_eq!(
+            kind_named("out/compact.json", &second).as_deref(),
+            Some("graph_export")
+        );
+    }
+
+    #[test]
+    fn json_on_one_line_does_not_carry_the_marker_inside_a_string_value() {
+        // The quoted word is inside a string, so its quotes are escaped and it
+        // is not in key position, even with a `:` after it.
+        let mentions = format!("{{\"note\": \"\\\"{MARKER}\\\": x\"}}\n");
+        assert!(!carries_marker("out/compact.json", &mentions));
+
+        // After a `,` with no `:` after it, the quoted word is not a key.
+        let value = format!("{{\"a\": 1, \"{MARKER}\"}}\n");
+        assert!(!carries_marker("out/compact.json", &value));
     }
 
     #[test]
