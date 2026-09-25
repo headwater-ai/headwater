@@ -52,7 +52,7 @@ The headings and the second column are the groups and the summaries that `headwa
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
 | `init` | scaffold the consumer declaration and the overlay | `headwater init` | [headwater init](headwater-init.md) |
-| `taxonomy` | read, write, publish and compare a taxonomy package | `headwater taxonomy validate`, `headwater taxonomy resolve`, `headwater taxonomy audit`, `headwater taxonomy publish`, `headwater taxonomy vendor`, `headwater taxonomy diff`, `headwater taxonomy migrate` | [headwater taxonomy](headwater-taxonomy.md) |
+| `taxonomy` | read, write, publish and compare a taxonomy package | `headwater taxonomy validate`, `headwater taxonomy resolve`, `headwater taxonomy audit`, `headwater taxonomy publish`, `headwater taxonomy vendor`, `headwater taxonomy diff`, `headwater taxonomy migrate`, `headwater taxonomy graph` | [headwater taxonomy](headwater-taxonomy.md) |
 
 ## Reading a wire format, and no corpus
 

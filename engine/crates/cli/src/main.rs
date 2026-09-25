@@ -421,6 +421,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 ),
                 Some(path) => migrate(root, Path::new(&path), to.as_deref(), now, apply),
             },
+            Some(TaxonomyWord::Graph) => taxonomy_graph(root),
             Some(TaxonomyWord::Other(words)) => fail(&format!(
                 "`taxonomy {}` is not a verb this binary carries yet. It carries {}",
                 words.first().map(String::as_str).unwrap_or_default(),
@@ -1117,6 +1118,26 @@ fn carried(payload: &headwater_yaml::Mapping) -> String {
         "carried the adoption block through, {tasks} task{}",
         if tasks == 1 { "" } else { "s" }
     )
+}
+
+/// `headwater taxonomy graph`.
+///
+/// The lock alone, as `diff` reads it: no source is re-resolved and no corpus
+/// is walked, so a repository whose documents do not yet check still draws.
+/// [`headwater_cli::taxonomy_graph`] carries the rules of the drawing.
+fn taxonomy_graph(root: &Path) -> ExitCode {
+    let lock = match headwater_lock::at(root) {
+        Ok(lock) => lock,
+        Err(error) => {
+            eprintln!("headwater: {}", err(&format!("{error}")));
+            return ExitCode::FAILURE;
+        }
+    };
+    print!(
+        "{}",
+        headwater_cli::taxonomy_graph::render(&lock.package, &lock.version, &lock.taxonomy)
+    );
+    ExitCode::SUCCESS
 }
 
 /// `headwater taxonomy audit`.
