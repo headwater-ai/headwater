@@ -3,7 +3,7 @@ id: HW-HOW-wire-headwater-check-into-your-own-workflow
 status: current
 status_since: 2026-09-23
 summary: "A composite action runs headwater check --strict against your own corpus, with the released binary alone: no clone, no Rust toolchain, no cargo."
-last_verified: 2026-09-23
+last_verified: 2026-09-25
 title: "Wire headwater check into your own workflow"
 provenance:
   warrant: asserted
@@ -53,6 +53,17 @@ jobs:
 ```
 
 Two different refs are in play, and they answer two different questions. `@main` names the commit of *this action's own YAML and scripts* your workflow runs. No tagged release of this repository yet carries `integrations/`. Pin it at a release tag once one does. `version: v0.1.2` names the *engine binary* the action downloads and runs against your corpus. That choice is entirely independent of the first ref. `root` is the corpus this action checks, relative to your checkout. `latest` also works for `version`. It resolves to the newest tag that carries the binary this action needs. It skips a tag of the `taxonomy/…` release stream, and it skips a tag whose release carries no asset. `strict` is `true` by default. The job fails on an error-severity finding from `headwater check`. It also fails when a committed projection, such as a shelf index or the graph export, disagrees with your corpus and your lock.
+
+## Make it cover a merge
+
+`headwater init --git` commits a `-merge` line in `.gitattributes` for each generated file that states a count or a digest. On your machine, git stops a merge that moves such a file. GitHub does not read that attribute. We measured this on the throwaway pull request [#1073](https://github.com/headwater-ai/headwater/pull/1073). GitHub showed it as mergeable, and its test merge held the edits of both branches in one `-merge` file.
+
+So when you merge with the button on GitHub, this workflow is the only cover. Its `pull_request` run checks the merged tree, and with `strict` it fails on a generated file that is true of neither branch.
+
+The run covers the merge only when you set two things in the branch protection or the ruleset of your default branch:
+
+1. Make the `check` job a **required status check**. Without this, GitHub lets you merge while the check is red or has not run.
+2. Turn on **require branches to be up to date before merging**. Without this, the result can come from a test merge onto an older base. A change that landed on the base after that merge is not in the tree that the check read.
 
 ## How to know it worked
 

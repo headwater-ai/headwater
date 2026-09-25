@@ -3296,7 +3296,7 @@
           "status": "current",
           "status_since": "2026-09-23",
           "summary": "A composite action runs headwater check --strict against your own corpus, with the released binary alone: no clone, no Rust toolchain, no cargo.",
-          "last_verified": "2026-09-23",
+          "last_verified": "2026-09-25",
           "title": "Wire headwater check into your own workflow",
           "provenance": {
             "warrant": "asserted",
@@ -3636,7 +3636,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "How to start a corpus by writing a consumer declaration and an overlay from tree evidence and interview prompts.",
-          "last_verified": "2026-09-23",
+          "last_verified": "2026-09-25",
           "title": "headwater init",
           "relations": {
             "governs": [
@@ -9390,10 +9390,10 @@
         "id": "HW-OBL-0216",
         "facets": {
           "id": "HW-OBL-0216",
-          "status": "draft",
-          "status_since": "2026-09-24",
+          "status": "discharged",
+          "status_since": "2026-09-25",
           "summary": "The merge-regenerate and merged-fold-check hooks tell the merger to run headwater taxonomy resolve --write, and the verb rejects --write because it writes by default.",
-          "last_verified": "2026-09-24",
+          "last_verified": "2026-09-25",
           "title": "Two merge hooks of this repository print a resolve flag that the verb refuses",
           "waiting_on": "build"
         }
