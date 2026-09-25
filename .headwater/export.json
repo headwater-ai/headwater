@@ -8038,7 +8038,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "title": "The glossary's Package entry omits conformance and still lists plugins, which #367 dropped",
-          "summary": "The glossary's Package entry is missing `conformance` and still names `plugins`, a key spec 7 no longer carries.",
+          "summary": "The glossary's Package entry is missing `conformance` and still names `plugins`, a key that spec 7 does not declare.",
           "provenance": {
             "warrant": "accepted",
             "agency": "agent",
@@ -9316,7 +9316,7 @@
           "status_since": "2026-09-24",
           "summary": "Since #1047 and the link suite of #849, the two hw-cargo workarounds in hw-run-policy may be dead text that every build-order stage pays to read.",
           "last_verified": "2026-09-24",
-          "title": "Two hand-remedy lines for hw-cargo in hw-run-policy may no longer earn their cost on every dispatch",
+          "title": "Two hand-remedy lines for hw-cargo in hw-run-policy may not earn their cost on every dispatch",
           "waiting_on": "build"
         }
       },
