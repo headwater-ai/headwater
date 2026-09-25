@@ -63,10 +63,12 @@ impl Ignored {
 
     /// Whether git ignores `path`, a path relative to the same root.
     pub fn covers(&self, path: &str) -> bool {
-        self.entries.iter().any(|entry| match entry.strip_suffix('/') {
-            Some(directory) => path.starts_with(entry.as_str()) || path == directory,
-            None => path == entry,
-        })
+        self.entries
+            .iter()
+            .any(|entry| match entry.strip_suffix('/') {
+                Some(directory) => path.starts_with(entry.as_str()) || path == directory,
+                None => path == entry,
+            })
     }
 }
 
@@ -316,7 +318,10 @@ mod tests {
             // The path is normalized as well as the pattern, so a caller that
             // holds a path as a hook or a document writes it gets one answer.
             for path in ["./tools/a.sh", "tools\\site\\b.py", "tools//a.sh"] {
-                assert!(scope.contains(path), "`{spelling}` does not contain `{path}`");
+                assert!(
+                    scope.contains(path),
+                    "`{spelling}` does not contain `{path}`"
+                );
             }
             assert!(!scope.contains("./tools-old/c.sh"), "`{spelling}`");
         }
@@ -346,7 +351,10 @@ mod tests {
         for spelling in ["tools/zz-empty", "./tools/zz-empty/"] {
             let scope = scope(&[spelling]);
             let resolvers = resolvers(&at);
-            assert!(scope.reach(&resolvers)[0].entries.is_empty(), "`{spelling}`");
+            assert!(
+                scope.reach(&resolvers)[0].entries.is_empty(),
+                "`{spelling}`"
+            );
             let refused = scope.unmatched(&resolvers);
             assert_eq!(refused.len(), 1, "`{spelling}`: {refused:?}");
             assert!(refused[0].1.contains("directory"), "{refused:?}");
@@ -410,7 +418,10 @@ mod tests {
         assert!(!scope(&["engine/**", "tools/**"]).tree_is_absent(&resolvers));
         assert!(!scope(&["engine/**", "tools/a.sh"]).tree_is_absent(&resolvers));
         assert!(!scope(&["nowhere/**", "tools/site/*.py"]).tree_is_absent(&resolvers));
-        assert!(!scope(&[]).tree_is_absent(&resolvers), "no scope claims no tree");
+        assert!(
+            !scope(&[]).tree_is_absent(&resolvers),
+            "no scope claims no tree"
+        );
         let _ = std::fs::remove_dir_all(&at);
     }
 }
