@@ -1044,19 +1044,28 @@ fn raw(value: &Value) -> String {
 /// The session outlives no loop: a server that wrote keeps answering the
 /// refusal until the client closes the pipe, rather than exiting under a client
 /// that is still talking to it.
-pub fn serve(server: &Server<'_>, input: impl std::io::BufRead, mut output: impl std::io::Write) {
+///
+/// A response that cannot be written ends the loop with the error, and the
+/// caller decides the status. It used to end the loop silently, and `mcp` then
+/// exited 0 under a client that never received an answer
+/// ([#1157](https://github.com/headwater-ai/headwater/issues/1157)). Input that
+/// cannot be read ends it as a closed input does.
+pub fn serve(
+    server: &Server<'_>,
+    input: impl std::io::BufRead,
+    mut output: impl std::io::Write,
+) -> std::io::Result<()> {
     let mut session = Session::default();
     for line in input.lines() {
-        let Ok(line) = line else { return };
+        let Ok(line) = line else { return Ok(()) };
         if line.trim().is_empty() {
             continue;
         }
         let Some(response) = respond(server, &mut session, &line) else {
             continue;
         };
-        if writeln!(output, "{response}").is_err() {
-            return;
-        }
-        let _ = output.flush();
+        writeln!(output, "{response}")?;
+        output.flush()?;
     }
+    Ok(())
 }

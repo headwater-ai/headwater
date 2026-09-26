@@ -71,7 +71,11 @@ const ROWS: &[Row] = &[
     row("conformance", At::Scratch, &["conformance"]),
     row("derived", At::Scratch, &["derived"]),
     row("merge-driver", At::Repository, &["merge-driver"]),
-    row("route", At::Repository, &["route", "write", "a", "decision"]),
+    row(
+        "route",
+        At::Repository,
+        &["route", "write", "a", "decision"],
+    ),
     row(
         "route",
         At::Repository,
