@@ -22,9 +22,12 @@ commands apiece, and the second one of each is the one that matters. A
 piece passes only if its leading word is `headwater`, or one of the
 handful of ordinary shell verbs this repository's own commands already use
 for scaffolding (`git`, `mkdir`, `cd`, `printf`, `rm`). The release
-download passes narrowly: a `curl` passes only when every URL it names sits
-under this project's `releases/download/` path, with no `..` and no config
-file, and a `tar` passes only when no option of it runs another program.
+download passes through an allowlist of what the tutorial's block runs: a
+`curl` passes only when every token is `-fsSLO` or a subset of it, or a URL
+under this project's `releases/download/` path, and a `tar` passes only
+when every option is `-xzf` or a subset of it, or `-C`. Anything else in
+either piece refuses it, because curl and GNU tar both accept spellings a
+denylist does not name.
 
 **`cargo` is never the lead route.**
 [HW-DR-0077](../../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)
@@ -90,19 +93,23 @@ ALLOWED_LEADING_WORDS = frozenset({'headwater', 'git', 'mkdir', 'cd', 'printf', 
 # allowance for the verb `cargo` would let through.
 CARGO_ALLOWED_SUBCOMMANDS = frozenset({'install', 'build'})
 
-# The release download. `curl` passes only when every URL it names sits
-# under this prefix, so a blanket `curl` never widens what the bootstrap
-# exception below already excuses.
-RELEASE_DOWNLOAD_PREFIX = 'https://github.com/headwater-ai/headwater/releases/download/'
+# The release download, as an allowlist of what the tutorial's own block
+# runs and nothing more. A denylist cannot hold either verb: curl fetches an
+# operand with no scheme and takes `--next`, `--expand-url` and a URL glob,
+# and GNU tar accepts any unambiguous prefix of a long option and reads its
+# first operand as old-style options (the verifier's attack on PR #1128).
+#
+# `curl`: every token is either a short-option cluster drawn from
+# `CURL_ALLOWED_SHORT` or a URL that `RELEASE_DOWNLOAD_URL` matches in full.
+# No long option, no bare operand, no percent-encoding, no glob and no `..`.
+RELEASE_DOWNLOAD_URL = re.compile(
+    r'^https://github\.com/headwater-ai/headwater/releases/download/[A-Za-z0-9._/-]+$')
+CURL_ALLOWED_SHORT = frozenset('fsSLO')
 
-# `tar` passes only to unpack. These options run another program: a member
-# piped to a command, a checkpoint action, a decompressor of the caller's
-# choice, a volume script, a remote shell. `-I` and `-F` are the short forms.
-TAR_REFUSED_LONG_OPTIONS = frozenset({
-    '--to-command', '--checkpoint-action', '--use-compress-program',
-    '--info-script', '--new-volume-script', '--rsh-command', '--rmt-command',
-})
-TAR_REFUSED_SHORT_OPTIONS = frozenset({'I', 'F'})
+# `tar`: the first operand is a dash cluster drawn from `TAR_ALLOWED_SHORT`,
+# every later dash token is such a cluster or `-C`, and no long option is
+# admitted. A bare token is a file or member operand.
+TAR_ALLOWED_SHORT = frozenset('xzf')
 
 # A curl/wget fetch naming the bootstrap script, and a bare shell taking its
 # output — the two pieces the one declared exception's pipe-split resolves
@@ -232,31 +239,38 @@ def is_release_download(piece):
     """Whether `piece` is a `curl` that fetches from this project's release
     downloads and from nowhere else.
 
-    Every token that names a URL must sit under `RELEASE_DOWNLOAD_PREFIX`,
-    at least one must, and none may climb out of it with `..`, which curl
-    collapses before it sends the request. `-K`/`--config` is refused,
-    because a config file names URLs this check cannot see."""
+    An allowlist: every token after `curl` is a short-option cluster drawn
+    from `CURL_ALLOWED_SHORT`, or a URL that `RELEASE_DOWNLOAD_URL` matches
+    in full with no `..` in it, and at least one token is such a URL. Any
+    other token, a scheme-less operand or a long option among them, refuses
+    the piece."""
     tokens = piece.split()
     if not tokens or tokens[0] != 'curl' or SUBSTITUTION.search(piece):
         return False
-    urls = [t for t in tokens[1:] if '://' in t]
-    if not urls:
-        return False
+    urls = 0
     for token in tokens[1:]:
-        if token == '-K' or token.startswith('--config') or (
-                token.startswith('-') and not token.startswith('--') and 'K' in token):
+        if token.startswith('-') and not token.startswith('--'):
+            if len(token) < 2 or not set(token[1:]) <= CURL_ALLOWED_SHORT:
+                return False
+        elif RELEASE_DOWNLOAD_URL.match(token) and '..' not in token:
+            urls += 1
+        else:
             return False
-    return all(u.startswith(RELEASE_DOWNLOAD_PREFIX) and '..' not in u for u in urls)
+    return urls > 0
 
 
 def check_tar(tokens):
-    """Whether a `tar` piece only unpacks: every option that hands work to
-    another program is refused."""
-    for token in tokens[1:]:
-        if token.startswith('--'):
-            if token.split('=', 1)[0] in TAR_REFUSED_LONG_OPTIONS:
-                return False
-        elif token.startswith('-') and set(token[1:]) & TAR_REFUSED_SHORT_OPTIONS:
+    """Whether a `tar` piece only unpacks, as an allowlist: the first
+    operand is a dash cluster drawn from `TAR_ALLOWED_SHORT`, so it is never
+    read as old-style options. Every later dash token is such a cluster or
+    `-C`. No long option passes, whatever prefix of one it spells."""
+    def cluster(token):
+        return (token.startswith('-') and not token.startswith('--')
+                and len(token) > 1 and set(token[1:]) <= TAR_ALLOWED_SHORT)
+    if len(tokens) < 2 or not cluster(tokens[1]):
+        return False
+    for token in tokens[2:]:
+        if token.startswith('-') and token != '-C' and not cluster(token):
             return False
     return True
 
