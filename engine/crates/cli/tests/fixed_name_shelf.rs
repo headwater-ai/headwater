@@ -325,7 +325,8 @@ fn a_directory_that_climbs_out_is_refused_and_nothing_is_written() {
     ]);
     assert_eq!(ran.code, Some(1), "{ran:?}");
     assert!(
-        ran.err.contains("a `.`, `..` or empty segment names no directory"),
+        ran.err
+            .contains("a `.`, `..` or empty segment names no directory"),
         "the refusal names the `..` segment as its cause\n{ran:?}"
     );
     assert!(!root.has("docs/README.md"), "nothing was written: {ran:?}");
