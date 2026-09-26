@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0199
-status: current
-status_since: 2026-09-19
-summary: "A control's commit is still stored and never compared. Issue 937 gave a verification the freshness check a control still lacks, and a plausible-commit syntax check. Whether a commit is a real ancestor of the tree stays unread for both, and that needs an owner's ruling on widening the manifest boundary."
-last_verified: 2026-09-20
+status: discharged
+status_since: 2026-09-26
+summary: "Discharged by the owner's ruling on issue 937. An observation's commit is provenance, and the engine never reads its ancestry. The standard taxonomy states that the adopter's process keeps it honest."
+last_verified: 2026-09-26
 title: "An observation snapshot records a commit and nothing reads it back"
 waiting_on: ruling
 ---
@@ -30,4 +30,8 @@ A snapshot recorded once still discharges forever, for a control and for a verif
 
 ## Discharge
 
-Waiting on a ruling. First: whether the manifest boundary widens to carry an ancestry fact. Second, if it does: whether a control's commit then gets the same syntax check `crate::observation::plausible_commit` now gives a verification's. Two remedies for a control's own half stand as first written. One compares the recorded commit against something the engine can reach without a version-control command. The other states in the taxonomy why an adopter's own process is trusted to keep the field honest. `headwater-vcs`'s existing boundary is the constraint either remedy has to work inside.
+The owner ruled on 2026-09-25, in a [comment on #937](https://github.com/headwater-ai/headwater/issues/937): "No, keep boundary: state in the taxonomy that the adopter's own process keeps the commit field honest, and close box 4 on that. The content digest already catches a changed criterion, and a widening adds a new input to every check run."
+
+So the manifest boundary does not widen, and no ancestry fact reaches the check-evaluation path. This record named two remedies, and the ruling takes the second. The comment above `controls` in [the standard taxonomy](../../taxonomy-source/headwater-standard/taxonomy.yml) now states four facts. The `commit` of an observation entry is provenance. The engine checks the `commit` of a verification entry for form only, and never for ancestry. The process of the adopter, which is the job that writes the snapshot, keeps the field honest. The `criterion_digest` finds a changed criterion without history. Version 4.6.2 of `headwater/standard` publishes that comment.
+
+The ruling closes both halves of this record. The engine reads no ancestry for a control or for a verification. The commit of a control stays stored and not compared, by the same ruling, and a control gets no syntax check. An adopter who wants more than provenance from the field adds that check to the job that writes the snapshot.

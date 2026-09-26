@@ -33,7 +33,9 @@
 //! `commit` field of a control entry is stored and never inspected, so a
 //! snapshot naming a commit that never existed discharges exactly as well as
 //! one naming the commit that ran. [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
-//! is the record of that gap for a control, including the empty-string case.
+//! records the owner's ruling that keeps it so, the empty-string case
+//! included: the commit is provenance, and the process of the adopter that
+//! writes the snapshot keeps it honest.
 //! A verification entry is narrower than that, on purpose: a control is a
 //! line in a taxonomy, and comparing its commit against anything would need a
 //! history to walk that this crate never opens. A verification names a
@@ -257,10 +259,12 @@ const READ_AS_CONTROL: &str = "it names no `kind: verification`, so it read as a
 /// boundary, restated in [`crate::change`]'s own module comment). Answering
 /// that question for real needs a fact carried in from outside this crate —
 /// a manifest, the way a change's prior version already is — and that is a
-/// widening of the boundary this module stays inside of today. This function
-/// is the narrower, honest thing this module can check without it, and
+/// widening of the boundary this module stays inside of. The owner ruled on
+/// #937 that the boundary does not widen, because the criterion digest
+/// already catches a changed criterion. This function is the narrower, honest
+/// thing this module checks, and
 /// [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
-/// says so rather than leaving the gap unnamed.
+/// records the discharge.
 fn plausible_commit(commit: &str) -> bool {
     !commit.is_empty()
         && commit.len() <= 40
