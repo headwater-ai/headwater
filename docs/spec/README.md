@@ -13,7 +13,7 @@ The documents on this shelf, in the reading order this corpus derives.
 - [Engine architecture](06-engine-architecture.md) — One parse, one typed graph, and many consumers, with the pipeline, the library boundary, and the performance targets.
 - [Distribution and federation](07-distribution-and-federation.md) — How a publisher ships a taxonomy, how a consumer overlays it, and what the invariant core requires of the result.
 - [Design departures](08-design-departures.md) — The ideas that this design adopts, and the eight recurrent failure modes of documentation tooling that it designs against.
-- [The decision register](09-decisions.md) — An index of the twenty-one design decisions and the ones that the build raised, where the record of each one lives, and the evidence that closed it.
+- [The decision register](09-decisions.md) — An index of the twenty-one design decisions and the ones that the build raised. For each one, it names where the record lives and the evidence that closed it.
 - [Open obligations](13-open-obligations.md) — The work that the closed decisions left behind, which is unmeasured claims, items that wait on an adopter, and unblocked design work.
 - [Open questions, closed and redirected](09-open-questions.md) — One heading for each document on the `decisions` shelf, so that a citation naming one of them resolves in this file.
 - [The check layer](12-check-layer.md) — What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.

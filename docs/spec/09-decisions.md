@@ -3,7 +3,7 @@ id: HW-REG-decisions
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-13
-summary: An index of the twenty-one design decisions and the ones that the build raised, where the record of each one lives, and the evidence that closed it.
+summary: An index of the twenty-one design decisions and the ones that the build raised. For each one, it names where the record lives and the evidence that closed it.
 doc_type: decision_register
 sequence: 9
 title: "The decision register"
@@ -210,7 +210,7 @@ The `self-audit` label states the reader test. Its description reads *No reader 
 
 All four keys of the family are a label rather than a mechanism today. `extends` sits at a taxonomy source's root, and `taxonomy`, `bundle`, `extends` and `requires` sit at an overlay's root. The specification and the meta-schema now say so beside each declaration. The record is [HW-DR-0040](../decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md).
 
-**This question came from [#295](https://github.com/headwater-ai/headwater/issues/295), and one bar applied once settled all five sites at once.** A key earns a reader only where giving it one is a comparison against a value the resolver already holds, with no new fetch and no new lock content. Three of the five sites have a plausible cheap mechanism in principle, and each fails the bar for a distinct, evidenced reason. A taxonomy source's `extends` needs a resolver capability this repository has not built. It also collides with the still-open lock-seam ruling [HW-OBL-0082](../obligations/0082-the-lock-is-half-generated-and-half-authored-and-nothing.md). An overlay's `extends` needs a design decision this piece does not make, because every bundle this repository ships already carries a value that has moved apart from its actual base. An overlay's `requires` documents an invariant that referential integrity already enforces on an unrelated path. The other two sites, `bundle` and an overlay's `taxonomy`, fail on evidence: nothing in this repository exercises either one.
+**This question came from [#295](https://github.com/headwater-ai/headwater/issues/295), and one bar applied once settled all five sites at once.** A key earns a reader only where giving it one is a comparison against a value the resolver already holds. That comparison needs no new fetch and no new lock content. Three of the five sites have a plausible cheap mechanism in principle, and each fails the bar for a distinct, evidenced reason. A taxonomy source's `extends` needs a resolver capability this repository has not built. It also collides with the still-open lock-seam ruling [HW-OBL-0082](../obligations/0082-the-lock-is-half-generated-and-half-authored-and-nothing.md). An overlay's `extends` needs a design decision this piece does not make. That is because every bundle this repository ships already carries a value that has moved apart from its actual base. An overlay's `requires` documents an invariant that referential integrity already enforces on an unrelated path. The other two sites, `bundle` and an overlay's `taxonomy`, fail on evidence: nothing in this repository exercises either one.
 
 ## Q41 — Whether Vale becomes a declared regime backend
 
