@@ -59,11 +59,23 @@
 //! document holding its identifier. Choosing whether the store or the document
 //! moved is a rewrite, so no patch rides with it.
 //!
-//! **A claim naming a document the corpus no longer holds is correct, and no
+//! **A claim naming an identifier the corpus no longer holds is correct, and no
 //! rule reports it.** Spec 3: "**Never reused.** … A deleted document does not
 //! free its number." The store is the first artifact of this repository that
 //! can hold that fact at all, and a rule reporting it would report every
 //! legitimate deletion as a defect.
+//!
+//! **A claim naming a path no document stands at, whose identifier one
+//! document holds at another path, is stale.** The holder is a typed document
+//! whose kind mints under the claim's scheme. An untyped file or a document of
+//! another scheme that carries the same string counts as no holder. A rename
+//! produces this state, and so does a claim edited by hand, and the rule
+//! cannot tell the two apart, so its message names neither as the cause.
+//! Never-reuse does not cover either, because neither reuses anything. The
+//! finding names the current path. It carries no patch: both writers of the
+//! store create and never overwrite, and [`Patch::Create`] refuses an occupied
+//! path. Where two documents hold the identifier, `identifier.claimed_twice`
+//! reports the pair and this rule reports nothing.
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
@@ -429,21 +441,49 @@ pub struct Stale<'a> {
     /// [`crate::duplicate`] takes it, so that a remedy names the key this
     /// engine actually read.
     facet: String,
+    /// Each kind that declares an identifier scheme, and the name of that
+    /// scheme. A document holds a claim's identifier only where its kind mints
+    /// under the claim's scheme, so an untyped file or a document of another
+    /// scheme that carries the same string is no holder.
+    schemes: Vec<(String, String)>,
 }
 
 impl<'a> Stale<'a> {
-    pub fn over(facet: &str, index: &'a Index) -> Self {
+    pub fn over(facet: &str, shape: &Shape, index: &'a Index) -> Self {
+        let schemes = shape
+            .kinds
+            .iter()
+            .filter_map(|kind| {
+                let scheme = shape.identifier_scheme_of(&kind.name)?;
+                Some((kind.name.clone(), scheme.name.clone()))
+            })
+            .collect();
+        Stale::with_schemes(facet, schemes, index)
+    }
+
+    fn with_schemes(facet: &str, mut schemes: Vec<(String, String)>, index: &'a Index) -> Self {
+        schemes.sort();
         Stale {
             index,
             facet: facet.to_string(),
+            schemes,
         }
+    }
+
+    /// Whether a typed document of `kind` mints under `scheme`.
+    fn mints_under(&self, kind: &str, scheme: &str) -> bool {
+        self.schemes
+            .iter()
+            .any(|(named, minted)| named == kind && minted == scheme)
     }
 }
 
 impl CorpusCheck for Stale<'_> {
     const RULE: &'static str = self::STALE;
-    /// The first edition of this rule.
-    const VERSION: u32 = 1;
+    /// The second edition: a claim naming a path no document stands at, whose
+    /// identifier one document holds at another path, is now reported and
+    /// names that path. The first reported nothing for it.
+    const VERSION: u32 = 2;
     const NEEDS_CLAIMS: bool = true;
 
     fn evaluate(&self, view: &CorpusView<'_>) -> Outcome {
@@ -479,11 +519,53 @@ impl CorpusCheck for Stale<'_> {
                 });
                 continue;
             }
-            // A claimant the corpus does not hold is correct: spec 3 never
-            // reuses an identifier, so a deleted document leaves its claim
-            // standing. This is the direction the rule deliberately does not
-            // report.
             let Some(entry) = self.index.by_path(&claim.claimant) else {
+                // A claimant the corpus does not hold. Where no document holds
+                // the identifier either, the document was deleted and the
+                // claim is correct: spec 3 never reuses an identifier. Where
+                // two or more hold it, `identifier.claimed_twice` reports the
+                // pair, and a finding here would pick a winner in silence, as
+                // `contended` says. Where exactly one holds it, the claim is
+                // stale: the document was renamed, or the claim was edited by
+                // hand, and the rule cannot see which. The finding is reported
+                // against the current document rather than the claim file, as
+                // the mismatch below is, so that SARIF and an `allow` directive
+                // land on a Markdown file.
+                //
+                // A holder is a typed document whose kind mints under the
+                // claim's scheme. An untyped file, or a document of another
+                // scheme, that carries the same string is no holder: naming it
+                // would tell the author to write a path into the store that no
+                // rule of the scheme reads.
+                let mut holders = self.index.paths.iter().filter(|entry| {
+                    entry.id.as_deref() == Some(claim.id.as_str())
+                        && entry
+                            .kind
+                            .as_deref()
+                            .is_some_and(|kind| self.mints_under(kind, &claim.scheme))
+                });
+                let (Some(current), None) = (holders.next(), holders.next()) else {
+                    continue;
+                };
+                findings.push(Finding {
+                    rule: self::STALE,
+                    severity: Severity::Warn,
+                    obligation: None,
+                    path: current.path.clone(),
+                    line: 0,
+                    column: 0,
+                    message: format!(
+                        "`{at_path}` names {}, and no document stands at that path. The one \
+                         document holding `{}` is {}, so the claim names a path that is not its \
+                         holder's, which follows a rename or a claim edited by hand",
+                        claim.claimant, claim.id, current.path
+                    ),
+                    remediation: format!(
+                        "write {} into `{at_path}` in place of {}",
+                        current.path, claim.claimant
+                    ),
+                    patch: None,
+                });
                 continue;
             };
             let held = entry.id.as_deref().unwrap_or_default();
@@ -518,5 +600,162 @@ impl CorpusCheck for Stale<'_> {
             });
         }
         Outcome::failed(findings)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use headwater_graph::index::PathEntry;
+
+    fn entry(path: &str, id: &str) -> PathEntry {
+        of_kind(path, id, Some("decision"))
+    }
+
+    fn of_kind(path: &str, id: &str, kind: Option<&str>) -> PathEntry {
+        PathEntry {
+            path: path.to_string(),
+            class: match kind {
+                Some(_) => "typed",
+                None => "untyped",
+            },
+            id: Some(id.to_string()),
+            kind: kind.map(str::to_string),
+        }
+    }
+
+    fn claim(id: &str, claimant: &str) -> Claim {
+        Claim {
+            scheme: "decision_id".to_string(),
+            id: id.to_string(),
+            claimant: claimant.to_string(),
+        }
+    }
+
+    fn findings(index: &Index, claims: &Claims) -> Vec<Finding> {
+        let view = CorpusView::only_claims(Some(claims));
+        let schemes = vec![
+            ("decision".to_string(), "decision_id".to_string()),
+            ("requirement".to_string(), "requirement_id".to_string()),
+        ];
+        match Stale::with_schemes("id", schemes, index).evaluate(&view) {
+            Outcome::Passed => Vec::new(),
+            Outcome::Failed(found) => found,
+            other => panic!("the rule did not run: {other:?}"),
+        }
+    }
+
+    /// The case table of `identifier.claim.stale` for a claimant the corpus
+    /// does not hold. A rename is stale and names the current path. A deletion
+    /// is correct, because an identifier is never reused. An identifier two
+    /// documents hold is `identifier.claimed_twice`'s, and this rule picks no
+    /// winner.
+    ///
+    /// A holder is a typed document whose kind mints under the claim's
+    /// scheme. An untyped file that carries the string (DR-0004) and a
+    /// document of another scheme that carries it (DR-0005) are no holder, so
+    /// the claim reads as the deleted case. Neither counts toward two holders
+    /// either (DR-0006), so a rename beside a stray copy is still a rename.
+    #[test]
+    fn a_renamed_claimant_is_stale_and_a_deleted_one_is_not() {
+        let index = Index {
+            paths: vec![
+                entry("docs/decisions/0002-new-name.md", "DR-0002"),
+                entry("docs/decisions/0003-one.md", "DR-0003"),
+                entry("docs/decisions/0003-two.md", "DR-0003"),
+                of_kind("docs/w3id/stray.md", "DR-0004", None),
+                of_kind(
+                    "docs/requirements/0005-other.md",
+                    "DR-0005",
+                    Some("requirement"),
+                ),
+                entry("docs/decisions/0006-new-name.md", "DR-0006"),
+                of_kind("docs/w3id/stray-0006.md", "DR-0006", None),
+            ],
+            ..Index::default()
+        };
+        let claims = Claims::of(vec![
+            claim("DR-0001", "docs/decisions/0001-deleted.md"),
+            claim("DR-0002", "docs/decisions/0002-old-name.md"),
+            claim("DR-0003", "docs/decisions/0003-gone.md"),
+            claim("DR-0004", "docs/decisions/0004-gone.md"),
+            claim("DR-0005", "docs/decisions/0005-gone.md"),
+            claim("DR-0006", "docs/decisions/0006-old-name.md"),
+        ]);
+
+        let found = findings(&index, &claims);
+        let paths: Vec<&str> = found.iter().map(|f| f.path.as_str()).collect();
+        assert_eq!(
+            paths,
+            vec![
+                "docs/decisions/0002-new-name.md",
+                "docs/decisions/0006-new-name.md"
+            ],
+            "{found:#?}"
+        );
+        let finding = &found[0];
+        assert_eq!(finding.rule, STALE);
+        assert_eq!(finding.severity, Severity::Warn);
+        assert!(finding.patch.is_none(), "{finding:#?}");
+        assert_eq!(finding.path, "docs/decisions/0002-new-name.md");
+        assert!(
+            finding
+                .message
+                .contains(".headwater/ids/decision_id/DR-0002"),
+            "{finding:#?}"
+        );
+        assert!(
+            finding.message.contains("docs/decisions/0002-old-name.md"),
+            "{finding:#?}"
+        );
+        assert!(
+            finding.message.contains("docs/decisions/0002-new-name.md"),
+            "{finding:#?}"
+        );
+        assert!(
+            finding
+                .remediation
+                .contains("docs/decisions/0002-new-name.md"),
+            "{finding:#?}"
+        );
+        assert!(!finding.message.contains("DR-0001"), "{finding:#?}");
+        // The rule sees a claim whose path is not its holder's path, and not
+        // how that came about, so the message claims no rename.
+        assert!(
+            finding
+                .message
+                .contains("which follows a rename or a claim edited by hand"),
+            "{finding:#?}"
+        );
+        assert!(!finding.message.contains("renamed"), "{finding:#?}");
+    }
+
+    /// A claim edited by hand to a path that no document ever stood at, while
+    /// the document stayed put, is the same finding as a rename, and its
+    /// message says nothing that is true of a rename alone.
+    #[test]
+    fn a_claim_edited_by_hand_to_a_wrong_path_is_stale_and_not_called_a_rename() {
+        let index = Index {
+            paths: vec![entry("docs/decisions/0007-the-title.md", "DR-0007")],
+            ..Index::default()
+        };
+        let claims = Claims::of(vec![claim("DR-0007", "docs/decisions/0007-the-titel.md")]);
+
+        let found = findings(&index, &claims);
+        assert_eq!(found.len(), 1, "{found:#?}");
+        let finding = &found[0];
+        assert_eq!(finding.path, "docs/decisions/0007-the-title.md");
+        assert!(
+            finding.message.contains("docs/decisions/0007-the-titel.md"),
+            "{finding:#?}"
+        );
+        assert!(!finding.message.contains("renamed"), "{finding:#?}");
+        assert!(!finding.message.contains("no longer"), "{finding:#?}");
+        assert!(
+            finding
+                .message
+                .contains("which follows a rename or a claim edited by hand"),
+            "{finding:#?}"
+        );
     }
 }

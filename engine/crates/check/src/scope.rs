@@ -1334,6 +1334,22 @@ impl<'a> CorpusView<'a> {
         }
     }
 
+    /// A view carrying nothing but the claim store, for the tests of the rule
+    /// that reads it alone. `cfg(test)` on [`CorpusView::only_links`]'s terms.
+    #[cfg(test)]
+    pub(crate) fn only_claims(claims: Option<&'a crate::claim::Claims>) -> Self {
+        CorpusView {
+            identity: None,
+            departed: &[],
+            claims,
+            links: None,
+            anchors: None,
+            edges: None,
+            generated: None,
+            reads: Vec::new(),
+        }
+    }
+
     /// A view carrying the links and the anchors, for the tests of the rule
     /// that reads both. `cfg(test)` on [`CorpusView::only_links`]'s terms.
     #[cfg(test)]

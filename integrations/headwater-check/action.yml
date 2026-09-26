@@ -8,7 +8,7 @@
 # who-pays ruling (#525). This recipe needs neither: it downloads a release
 # archive, verifies its checksum, and runs the binary it contains.
 #
-# WHY TWO ENGINE VERBS AND NOT ONE. `headwater check` reads the corpus and its
+# WHY THREE ENGINE VERBS AND NOT ONE. `headwater check` reads the corpus and its
 # own taxonomy rules — front matter, prose, relations — and `--format sarif`
 # is how it hands those findings to GitHub code scanning. It does not,
 # by design, compare a committed derived file (a shelf index, the graph
@@ -23,12 +23,24 @@
 # report and appends one SARIF result per stale projection, under a rule this
 # action declares rather than the engine, because the engine states no SARIF
 # shape for a verb that never learned one.
+#
+# Both of those verbs read `.headwater/taxonomy.lock` and never the overlay or
+# the packages under `.headwater/packages/`, so a lock that no longer matches
+# its own sources passes both. That is the tree a merge leaves when somebody
+# resolves a conflict on the lock by taking one side (#1118). The third verb,
+# `headwater taxonomy resolve --check`, is the only one that compares the lock
+# with what its sources resolve to today, so this action runs it too. Its
+# result goes to the job log and to an `::error::` annotation rather than into
+# the SARIF report: a stale lock is a fact about the corpus's configuration,
+# and no document holds a line to point it at.
 name: headwater check
 description: >-
-  Run `headwater check --strict` (and hold every committed projection to
-  regeneration) against this repository's own corpus, using the released
-  headwater binary. No Rust toolchain, no cargo, no clone of the engine
-  repository.
+  Run `headwater check --strict` against this repository's own corpus, hold
+  every committed projection to regeneration (`headwater generate --check`),
+  and hold `.headwater/taxonomy.lock` to what the overlay and the vendored
+  packages resolve to (`headwater taxonomy resolve --check`), using the
+  released headwater binary. No Rust toolchain, no cargo, no clone of the
+  engine repository.
 author: headwater-ai
 
 inputs:
@@ -50,8 +62,9 @@ inputs:
   strict:
     description: >-
       Fail the job when `headwater check` reports an error-severity finding,
-      or when a committed projection is not what this corpus and this lock
-      produce. Without it both runs are advisory: SARIF is still written, and
+      when a committed projection is not what this corpus and this lock
+      produce, or when the lock is not what its own sources resolve to.
+      Without it all three runs are advisory: SARIF is still written, and
       the job still exits 0.
     required: false
     default: "true"
@@ -162,6 +175,32 @@ runs:
         echo "exit-code=$code" >>"$GITHUB_OUTPUT"
         cat "$RUNNER_TEMP/generate-check.err" >&2 || true
 
+    - name: Run headwater taxonomy resolve --check
+      id: lock
+      # Same reason as the two steps above for `set +e`. The verb's own
+      # message names the moved source and the remedy, so it goes to the log
+      # as it is and to one `::error::` annotation per line, where a reader of
+      # the job summary meets it without opening the log.
+      shell: bash
+      env:
+        ROOT: ${{ inputs.root }}
+      run: |
+        set -uo pipefail
+        set +e
+        headwater taxonomy resolve --root "$ROOT" --check >"$RUNNER_TEMP/resolve-check.txt" 2>"$RUNNER_TEMP/resolve-check.err"
+        code=$?
+        set -e
+        echo "exit-code=$code" >>"$GITHUB_OUTPUT"
+        cat "$RUNNER_TEMP/resolve-check.txt" || true
+        cat "$RUNNER_TEMP/resolve-check.err" >&2 || true
+        if [ "$code" != "0" ]; then
+          while IFS= read -r line; do
+            if [ -n "$line" ]; then
+              echo "::error::$line"
+            fi
+          done <"$RUNNER_TEMP/resolve-check.err"
+        fi
+
     - name: Fold the projection-freshness result into the SARIF report
       id: merge
       shell: bash
@@ -181,10 +220,11 @@ runs:
       env:
         CHECK_EXIT: ${{ steps.check.outputs.exit-code }}
         GENERATE_EXIT: ${{ steps.generate.outputs.exit-code }}
+        LOCK_EXIT: ${{ steps.lock.outputs.exit-code }}
         STRICT: ${{ inputs.strict }}
       run: |
         set -euo pipefail
-        if [ "$CHECK_EXIT" = "0" ] && [ "$GENERATE_EXIT" = "0" ]; then
+        if [ "$CHECK_EXIT" = "0" ] && [ "$GENERATE_EXIT" = "0" ] && [ "$LOCK_EXIT" = "0" ]; then
           echo "conclusion=pass" >>"$GITHUB_OUTPUT"
         else
           echo "conclusion=fail" >>"$GITHUB_OUTPUT"
@@ -231,6 +271,6 @@ runs:
       run: |
         set -euo pipefail
         if [ "$STRICT" = "true" ] && [ "$CONCLUSION" = "fail" ]; then
-          echo "::error::headwater check found an error-severity finding, or a committed projection was not what this corpus and this lock produce. Read $SARIF_PATH, or run 'headwater check --strict' and 'headwater generate --check' locally." >&2
+          echo "::error::headwater check found an error-severity finding, a committed projection was not what this corpus and this lock produce, or .headwater/taxonomy.lock was not what its own sources resolve to. Read $SARIF_PATH and this job's log, or run 'headwater check --strict', 'headwater generate --check' and 'headwater taxonomy resolve --check' locally." >&2
           exit 1
         fi

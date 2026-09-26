@@ -3,7 +3,7 @@ id: HW-OBL-0168
 status: current
 status_since: 2026-09-06
 summary: "The voice rule reports zero because not one of its forty patterns occurs here, and that reads the same as a clean corpus."
-last_verified: 2026-09-11
+last_verified: 2026-09-27
 title: "A saturated pattern set and a clean corpus are the same zero, and no report separates them"
 waiting_on: build
 provenance:
@@ -31,6 +31,8 @@ A zero from a lexical rule carries two readings, and the report states neither. 
 Edition two of the `change_narration` set reported 60 findings over the same documents on the day it landed. The reading on commit `58f46a8d`, made on 2026-09-11, is 36. Two merged rewrites of the corpus removed the sentences that the set was curated against. So the widened set carried the bar of HW-OBL-0002 from out of reach to within reach. The corpus then carried it back out, at 36 findings against a required 50. The bar answers to the pattern set and to the corpus together, and a reading of either one alone dates within days.
 
 **The same reading shows that edition two leaves the other two categories saturated.** On that commit `future_intent` matches on 0 of its 14 patterns over the 291 documents that bind the declarative regime. `phased_rollout` matches on 0 of its 13 over the 293 that bind the declarative or the prospective regime. The three corpus occurrences of either set sit under `docs/reviews/` and `docs/evaluations/`, which bind `narrative` and forbid nothing. So the shape this record describes is live for two categories of the three. A hand count is still the only instrument that separates the two readings.
+
+**The reading of 2026-09-27, on commit `0ee88a2d`, replaces the figures of 2026-09-11 above.** [HW-OBL-0002](0002-declarative-voice-is-called-detectable-at-useful-precision.md) holds it, and this record does not restate it. `change_narration` reports 22 findings, not 36. `future_intent` reports one finding, and that finding is false. So a zero became a one, and the one does not show that the set detects the fault. A count of findings alone cannot show that difference, which is the gap that this record names.
 
 **Curation against a corpus rejects candidates that intuition admits.** Three entries measured badly enough to stay out, and each failed for a reason a reader of the phrase alone would miss. `the retired` matches four sentences of this corpus and none is a narration, because "retired term" is the vocabulary of a rule here. `at one point` matches the positional sense in "worth making at one point in a text". `was replaced` matches three sentences that state a measurement procedure rather than a change to the system.
 
