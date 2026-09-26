@@ -151,8 +151,8 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
               echo "::error::$TAG already has a release, and GitHub will not let this step add assets to it. Delete the release (not the tag) and run this workflow again." && exit 1
           fi
-          notes=$(printf 'release.digest: %s\n\nPass this value to `headwater taxonomy vendor <dir> --expect %s`, or to `tools/headwater-bootstrap.sh --tag %s --expect %s`. It is the value `headwater taxonomy publish` printed for this tag, not a checksum of %s.' \
-              "$DIGEST" "$DIGEST" "$TAG" "$DIGEST" "$asset")
+          notes=$(printf 'release.digest: %s\n\nPass this value to `headwater taxonomy vendor https://github.com/%s/releases/download/%s/%s --expect %s`, with headwater v0.2.1 or later, or to `headwater taxonomy vendor <dir> --expect %s` on an unpacked copy of the zip. It is the value `headwater taxonomy publish` printed for this tag, not a checksum of %s.' \
+              "$DIGEST" "$GITHUB_REPOSITORY" "$TAG" "$asset" "$DIGEST" "$DIGEST" "$asset")
           gh release create "$TAG" "$asset" --title "$TAG" --notes "$notes"
       - name: What the release now carries
         env:
