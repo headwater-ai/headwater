@@ -59,11 +59,19 @@
 //! document holding its identifier. Choosing whether the store or the document
 //! moved is a rewrite, so no patch rides with it.
 //!
-//! **A claim naming a document the corpus no longer holds is correct, and no
+//! **A claim naming an identifier the corpus no longer holds is correct, and no
 //! rule reports it.** Spec 3: "**Never reused.** … A deleted document does not
 //! free its number." The store is the first artifact of this repository that
 //! can hold that fact at all, and a rule reporting it would report every
 //! legitimate deletion as a defect.
+//!
+//! **A claim naming a path the corpus no longer holds, whose identifier one
+//! document holds at another path, is stale.** The document was renamed, and
+//! never-reuse does not cover a rename, because a rename reuses nothing. The
+//! finding names the current path. It carries no patch: both writers of the
+//! store create and never overwrite, and [`Patch::Create`] refuses an occupied
+//! path. Where two documents hold the identifier, `identifier.claimed_twice`
+//! reports the pair and this rule reports nothing.
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
@@ -440,8 +448,10 @@ impl<'a> Stale<'a> {
 
 impl CorpusCheck for Stale<'_> {
     const RULE: &'static str = self::STALE;
-    /// The first edition of this rule.
-    const VERSION: u32 = 1;
+    /// The second edition: a claim naming a path the corpus no longer holds,
+    /// whose identifier one document holds at another path, is now reported
+    /// as the claim of a renamed document. The first reported nothing for it.
+    const VERSION: u32 = 2;
     const NEEDS_CLAIMS: bool = true;
 
     fn evaluate(&self, view: &CorpusView<'_>) -> Outcome {
@@ -477,11 +487,43 @@ impl CorpusCheck for Stale<'_> {
                 });
                 continue;
             }
-            // A claimant the corpus does not hold is correct: spec 3 never
-            // reuses an identifier, so a deleted document leaves its claim
-            // standing. This is the direction the rule deliberately does not
-            // report.
             let Some(entry) = self.index.by_path(&claim.claimant) else {
+                // A claimant the corpus does not hold. Where no document holds
+                // the identifier either, the document was deleted and the
+                // claim is correct: spec 3 never reuses an identifier. Where
+                // two or more hold it, `identifier.claimed_twice` reports the
+                // pair, and a finding here would pick a winner in silence, as
+                // `contended` says. Where exactly one holds it, the document
+                // was renamed and the claim is stale. The finding is reported
+                // against the current document rather than the claim file, as
+                // the mismatch below is, so that SARIF and an `allow` directive
+                // land on a Markdown file.
+                let mut holders = self
+                    .index
+                    .paths
+                    .iter()
+                    .filter(|entry| entry.id.as_deref() == Some(claim.id.as_str()));
+                let (Some(current), None) = (holders.next(), holders.next()) else {
+                    continue;
+                };
+                findings.push(Finding {
+                    rule: self::STALE,
+                    severity: Severity::Warn,
+                    obligation: None,
+                    path: current.path.clone(),
+                    line: 0,
+                    column: 0,
+                    message: format!(
+                        "`{at_path}` names {}, which the corpus no longer holds, and `{}` is now \
+                         held by {}, so the claim names the path of a renamed document",
+                        claim.claimant, claim.id, current.path
+                    ),
+                    remediation: format!(
+                        "write {} into `{at_path}` in place of {}",
+                        current.path, claim.claimant
+                    ),
+                    patch: None,
+                });
                 continue;
             };
             let held = entry.id.as_deref().unwrap_or_default();
