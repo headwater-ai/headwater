@@ -435,14 +435,40 @@ pub struct Stale<'a> {
     /// [`crate::duplicate`] takes it, so that a remedy names the key this
     /// engine actually read.
     facet: String,
+    /// Each kind that declares an identifier scheme, and the name of that
+    /// scheme. A document holds a claim's identifier only where its kind mints
+    /// under the claim's scheme, so an untyped file or a document of another
+    /// scheme that carries the same string is no holder.
+    schemes: Vec<(String, String)>,
 }
 
 impl<'a> Stale<'a> {
-    pub fn over(facet: &str, index: &'a Index) -> Self {
+    pub fn over(facet: &str, shape: &Shape, index: &'a Index) -> Self {
+        let schemes = shape
+            .kinds
+            .iter()
+            .filter_map(|kind| {
+                let scheme = shape.identifier_scheme_of(&kind.name)?;
+                Some((kind.name.clone(), scheme.name.clone()))
+            })
+            .collect();
+        Stale::with_schemes(facet, schemes, index)
+    }
+
+    fn with_schemes(facet: &str, mut schemes: Vec<(String, String)>, index: &'a Index) -> Self {
+        schemes.sort();
         Stale {
             index,
             facet: facet.to_string(),
+            schemes,
         }
+    }
+
+    /// Whether a typed document of `kind` mints under `scheme`.
+    fn mints_under(&self, kind: &str, scheme: &str) -> bool {
+        self.schemes
+            .iter()
+            .any(|(named, minted)| named == kind && minted == scheme)
     }
 }
 
@@ -567,11 +593,18 @@ mod tests {
     use headwater_graph::index::PathEntry;
 
     fn entry(path: &str, id: &str) -> PathEntry {
+        of_kind(path, id, Some("decision"))
+    }
+
+    fn of_kind(path: &str, id: &str, kind: Option<&str>) -> PathEntry {
         PathEntry {
             path: path.to_string(),
-            class: "typed",
+            class: match kind {
+                Some(_) => "typed",
+                None => "untyped",
+            },
             id: Some(id.to_string()),
-            kind: Some("decision".to_string()),
+            kind: kind.map(str::to_string),
         }
     }
 
@@ -585,7 +618,11 @@ mod tests {
 
     fn findings(index: &Index, claims: &Claims) -> Vec<Finding> {
         let view = CorpusView::only_claims(Some(claims));
-        match Stale::over("id", index).evaluate(&view) {
+        let schemes = vec![
+            ("decision".to_string(), "decision_id".to_string()),
+            ("requirement".to_string(), "requirement_id".to_string()),
+        ];
+        match Stale::with_schemes("id", schemes, index).evaluate(&view) {
             Outcome::Passed => Vec::new(),
             Outcome::Failed(found) => found,
             other => panic!("the rule did not run: {other:?}"),
@@ -597,6 +634,12 @@ mod tests {
     /// is correct, because an identifier is never reused. An identifier two
     /// documents hold is `identifier.claimed_twice`'s, and this rule picks no
     /// winner.
+    ///
+    /// A holder is a typed document whose kind mints under the claim's
+    /// scheme. An untyped file that carries the string (DR-0004) and a
+    /// document of another scheme that carries it (DR-0005) are no holder, so
+    /// the claim reads as the deleted case. Neither counts toward two holders
+    /// either (DR-0006), so a rename beside a stray copy is still a rename.
     #[test]
     fn a_renamed_claimant_is_stale_and_a_deleted_one_is_not() {
         let index = Index {
@@ -604,6 +647,10 @@ mod tests {
                 entry("docs/decisions/0002-new-name.md", "DR-0002"),
                 entry("docs/decisions/0003-one.md", "DR-0003"),
                 entry("docs/decisions/0003-two.md", "DR-0003"),
+                of_kind("docs/w3id/stray.md", "DR-0004", None),
+                of_kind("docs/requirements/0005-other.md", "DR-0005", Some("requirement")),
+                entry("docs/decisions/0006-new-name.md", "DR-0006"),
+                of_kind("docs/w3id/stray-0006.md", "DR-0006", None),
             ],
             ..Index::default()
         };
@@ -611,10 +658,21 @@ mod tests {
             claim("DR-0001", "docs/decisions/0001-deleted.md"),
             claim("DR-0002", "docs/decisions/0002-old-name.md"),
             claim("DR-0003", "docs/decisions/0003-gone.md"),
+            claim("DR-0004", "docs/decisions/0004-gone.md"),
+            claim("DR-0005", "docs/decisions/0005-gone.md"),
+            claim("DR-0006", "docs/decisions/0006-old-name.md"),
         ]);
 
         let found = findings(&index, &claims);
-        assert_eq!(found.len(), 1, "{found:#?}");
+        let paths: Vec<&str> = found.iter().map(|f| f.path.as_str()).collect();
+        assert_eq!(
+            paths,
+            vec![
+                "docs/decisions/0002-new-name.md",
+                "docs/decisions/0006-new-name.md"
+            ],
+            "{found:#?}"
+        );
         let finding = &found[0];
         assert_eq!(finding.rule, STALE);
         assert_eq!(finding.severity, Severity::Warn);
