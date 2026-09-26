@@ -21,7 +21,7 @@ The section "What the engine found about itself" in [13 — Open obligations](..
 On 2026-09-26, the list under the sentence held 66 lines. Two differences cause the gap:
 
 - Five identifiers in the ranges have no line in the list, because each one is discharged: HW-OBL-0135, HW-OBL-0142, HW-OBL-0146, HW-OBL-0149 and HW-OBL-0174.
-- The list holds 21 lines that no range names: HW-OBL-0170, HW-OBL-0171, HW-OBL-0182, HW-OBL-0185, and HW-OBL-0197 through HW-OBL-0215 without HW-OBL-0199.
+- The list holds 22 lines that no range names: HW-OBL-0170, HW-OBL-0171, HW-OBL-0182, HW-OBL-0185, and HW-OBL-0197 through HW-OBL-0215 without HW-OBL-0199.
 
 The same paragraph also states that three items name a decision and "the other forty-six name none". That count derives from the wrong total. No check compares the sentence to the list. `tools/repo/obligation-register-fixtures.sh` holds the membership of the list and not the prose above it.
 
