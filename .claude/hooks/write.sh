@@ -41,19 +41,17 @@
 #                            from the code it rules. Every fact of this part
 #                            is read from `headwater explain --json`.
 #
-#   PostToolUse Write|Edit   silent. The advisory moved before the edit, and
-#                            printing it again here would say the same pointers
-#                            twice. The line this position was kept for is the
-#                            edges the edit made suspect. #952 made a `governs`
-#                            edge able to go suspect, and it did not write the
-#                            line, for two reasons. No verb answers "which
-#                            suspect findings reach this path" in one call, so
-#                            the hook would read every finding of a run one
-#                            `headwater json` call at a time, or pick them out
-#                            of rendered text, which HW-OBL-0149 records as the
-#                            defect. And no `governs` entry in this corpus
-#                            records a `verified_revision` yet, so the line
-#                            would print nothing on every edit here.
+#   PostToolUse Write|Edit   one line, or nothing. The line names each
+#                            governing edge of the edited path that the edit
+#                            left suspect: the edge records a
+#                            `verified_revision`, and the revision its target
+#                            has now differs (#953). It says that `headwater
+#                            check` reports the edge. The engine decides which
+#                            edges are suspect, with the comparison the check
+#                            makes, and `headwater route --json` carries them
+#                            on each anchored pointer. The pointers themselves
+#                            are not printed again: the advisory said them
+#                            before the edit.
 #
 # What it passes to the engine: one path. What it gets back: for the refusal,
 # the classification `headwater explain` reports on standard error for a path
@@ -199,8 +197,11 @@ If the file is genuinely not a document of any kind this taxonomy declares, it d
     exit 0
     ;;
 PostToolUse)
-    # Silent on purpose: the advisory runs before the edit now. The header
-    # says why #952 left the suspect-edge line unwritten.
+    # One line where the edit left a governing edge suspect, and nothing
+    # otherwise. The header says why the pointers are not printed again.
+    line=$(hw_suspect_edges "$rel") || exit 0
+    quoted=$(hw_quote "$line") || exit 0
+    printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":%s}}\n' "$quoted"
     exit 0
     ;;
 *)
