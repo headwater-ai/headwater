@@ -56,7 +56,7 @@ pub mod mcp;
 pub mod route;
 
 pub use explain::Explanation;
-pub use route::{Budget, Entry, Evidence, Route, Silence};
+pub use route::{Budget, Entry, Evidence, Route, Silence, Suspect};
 
 use headwater_census::census::{Census, Row};
 use headwater_census::resolve::Resolution;
@@ -350,18 +350,7 @@ impl<'a> Surface<'a> {
     /// who declares a governance relation of their own gets it for nothing.
     pub fn governing_docs_for_path(&self, path: &str) -> Vec<Pointer> {
         let mut pointers: Vec<Pointer> = Vec::new();
-        for edge in &self.graph.edges {
-            if self.governs_of(edge) != Governs::Source {
-                continue;
-            }
-            let reaches = match &edge.target {
-                anchor @ Target::Anchor { .. } => anchor.reaches(path),
-                Target::Document { path: target, .. } => target == path,
-                _ => false,
-            };
-            if !reaches {
-                continue;
-            }
+        for edge in self.governing_edges(path) {
             let Some(document) = self.find(&edge.source.path) else {
                 continue;
             };
@@ -372,6 +361,22 @@ impl<'a> Surface<'a> {
         }
         pointers.sort_by(|a, b| a.path.cmp(&b.path));
         pointers
+    }
+
+    /// The edges whose source governs `path`: the edges
+    /// [`Self::governing_docs_for_path`] reads its documents from.
+    ///
+    /// `headwater route` reads the edges themselves where a pointer has to say
+    /// which of them went suspect (#953), so the reach is stated here once.
+    pub fn governing_edges<'s>(&'s self, path: &'s str) -> impl Iterator<Item = &'s Edge> + 's {
+        self.graph.edges.iter().filter(move |edge| {
+            self.governs_of(edge) == Governs::Source
+                && match &edge.target {
+                    anchor @ Target::Anchor { .. } => anchor.reaches(path),
+                    Target::Document { path: target, .. } => target == path,
+                    _ => false,
+                }
+        })
     }
 
     /// Every edge that reaches this document or leaves it: spec 5's `related`.

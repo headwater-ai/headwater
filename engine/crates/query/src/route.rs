@@ -206,6 +206,10 @@ pub enum Evidence {
     Named {
         /// The anchors of the task that this document governs, in task order.
         anchors: Vec<String>,
+        /// The edges from this document onto those anchors whose recorded
+        /// revision differs from the one their target has now, in task order.
+        /// Empty where no such edge is suspect (#953).
+        suspect: Vec<Suspect>,
     },
     /// A distinctive term of the task reached the document under a matched
     /// purpose.
@@ -221,11 +225,46 @@ pub enum Evidence {
     },
 }
 
+/// A governing edge whose recorded revision differs from the revision its
+/// target has now, as [`headwater_graph::Edge::suspect_revisions`] answers it.
+///
+/// `headwater check` reports the same edge under `relation.target.suspect`.
+/// The route names it on the pointer so that a session editing the path meets
+/// it at the edit, and not only at the next check.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Suspect {
+    /// The target of the edge as its author wrote it.
+    pub target: String,
+    /// The revision the edge records as verified.
+    pub verified: String,
+    /// The revision the resolver states for the target now.
+    pub current: String,
+}
+
+impl Suspect {
+    /// The line under the pointer. It carries no em dash, for the reason the
+    /// withheld line gives: in this report the dash marks a pointer.
+    pub fn render(&self) -> String {
+        format!(
+            "suspect: {} was verified at {} and is now at {}, and headwater check reports it",
+            self.target, self.verified, self.current
+        )
+    }
+}
+
 impl Evidence {
-    /// The evidence as the line under its pointer in the report.
+    /// The evidence as the lines under its pointer in the report: one for what
+    /// reached the pointer, and one for each suspect edge.
     pub fn render(&self) -> String {
         match self {
-            Evidence::Named { anchors } => format!("governs {}", anchors.join(" ")),
+            Evidence::Named { anchors, suspect } => {
+                let mut text = format!("governs {}", anchors.join(" "));
+                for edge in suspect {
+                    text.push('\n');
+                    text.push_str(&edge.render());
+                }
+                text
+            }
             Evidence::Ranked { terms, rank, of } => {
                 format!("matched {}, rank {rank} of {of}", terms.join(" "))
             }
@@ -424,12 +463,21 @@ impl Surface<'_> {
         let mut evidence: Vec<(String, Evidence)> = Vec::new();
         for anchor in &route.anchors {
             for pointer in self.governing_docs_for_path(anchor) {
+                let stale = self.suspect_edges(&pointer.path, anchor);
                 match evidence.iter_mut().find(|(path, _)| path == &pointer.path) {
-                    Some((_, Evidence::Named { anchors })) => anchors.push(anchor.clone()),
+                    Some((_, Evidence::Named { anchors, suspect })) => {
+                        anchors.push(anchor.clone());
+                        for edge in stale {
+                            if !suspect.contains(&edge) {
+                                suspect.push(edge);
+                            }
+                        }
+                    }
                     _ => evidence.push((
                         pointer.path.clone(),
                         Evidence::Named {
                             anchors: vec![anchor.clone()],
+                            suspect: stale,
                         },
                     )),
                 }
@@ -608,6 +656,21 @@ impl Surface<'_> {
     /// anchor is written as, so what has to hold is whether some anchor's
     /// pattern set *reaches* the word, not whether the word spells an
     /// anchor's own identity.
+    /// The suspect edges from the document at `document` onto `anchor`.
+    fn suspect_edges(&self, document: &str, anchor: &str) -> Vec<Suspect> {
+        self.governing_edges(anchor)
+            .filter(|edge| edge.source.path == document)
+            .filter_map(|edge| {
+                let (verified, current) = edge.suspect_revisions()?;
+                Some(Suspect {
+                    target: edge.raw_target.clone(),
+                    verified: verified.to_string(),
+                    current: current.to_string(),
+                })
+            })
+            .collect()
+    }
+
     fn named_anchors(&self, task: &str, tree: &dyn Fn(&str) -> Entry) -> Vec<String> {
         let mut found: Vec<String> = Vec::new();
         for word in task.split_whitespace() {
@@ -631,12 +694,13 @@ impl Surface<'_> {
 
     /// The path one word of a task names, or `None` where it names none.
     ///
-    /// The word as written comes first, and a shorter reading is taken only
-    /// where the longer one is not on the tree and no edge reaches it. So a
-    /// file that exists as `tools/a:b.sh` or `tools/zz.` is read as written,
-    /// and never as `tools/a` or `tools/zz`. Where the word as written names
-    /// nothing, the first shorter reading that is on the tree or that an edge
-    /// reaches is the path: `tools/hw-cargo's` names `tools/hw-cargo`.
+    /// Every reading is held against the tree first, longest first, and only
+    /// then against the edges. So a file that exists as `tools/a:b.sh` or
+    /// `tools/zz.` is read as written, and never as `tools/a` or `tools/zz`,
+    /// and `tools/hw-cargo's` names `tools/hw-cargo`. A glob edge admits the
+    /// longer string too, and it used to win over the file on the tree
+    /// (#953). Where no reading is on the tree, the first that an edge reaches
+    /// is the path. The MCP tool holds no tree, so it reads the edges alone.
     ///
     /// A word that no reading resolves names the path as written when nothing
     /// was taken off it, which is how a write of a new file is named. Where
@@ -645,15 +709,17 @@ impl Surface<'_> {
     /// than a missing one, because the route would propose an edge onto it.
     fn read_path(&self, word: &str, tree: &dyn Fn(&str) -> Entry) -> Option<String> {
         let readings = readings(word);
-        let known = |path: &str| {
-            tree(path) != Entry::Absent
-                || self
-                    .graph
-                    .edges
-                    .iter()
-                    .any(|edge| edge.target.reaches(path))
+        let reached = |path: &str| {
+            self.graph
+                .edges
+                .iter()
+                .any(|edge| edge.target.reaches(path))
         };
-        if let Some(found) = readings.iter().find(|reading| known(reading)) {
+        if let Some(found) = readings
+            .iter()
+            .find(|reading| tree(reading) != Entry::Absent)
+            .or_else(|| readings.iter().find(|reading| reached(reading)))
+        {
             return Some(found.clone());
         }
         match readings.as_slice() {
@@ -1067,7 +1133,7 @@ impl Route {
             let _ = writeln!(out, "  names the anchor {anchor}");
         }
         // No em dash on any of these lines, for the reason the withheld line
-        // below gives: the write-time hook selects pointer lines by one.
+        // below gives: in this report the dash marks a pointer.
         for entry in &self.ungoverned {
             let _ = writeln!(
                 out,
@@ -1118,20 +1184,23 @@ impl Route {
                 1,
             ));
             if let Some(evidence) = evidence {
-                let folded = headwater_check::fill::filled(
-                    &format!("    {}\n", evidence.render()),
-                    headwater_check::fill::WIDTH,
-                );
-                for line in folded.lines() {
-                    let _ = writeln!(out, "{}", dim(line, mode));
+                for said in evidence.render().lines() {
+                    let folded = headwater_check::fill::filled(
+                        &format!("    {said}\n"),
+                        headwater_check::fill::WIDTH,
+                    );
+                    for line in folded.lines() {
+                        let _ = writeln!(out, "{}", dim(line, mode));
+                    }
                 }
             }
         }
         // Printed only where the budget removed something, so a route that cut
         // nothing renders exactly as it did before. The line carries no em dash,
-        // because `.claude/hooks/write.sh` selects pointer lines with a grep for
-        // one and would show this count to an author as though it were a
-        // document.
+        // because in this report the dash separates a document from its
+        // summary, and a reader would take the count for a document. No hook
+        // reads the dash any more: `.claude/hooks/lib.sh` reads the pointers
+        // from `route --json` (HW-OBL-0149, #953).
         if self.withheld > 0 {
             let more = match self.withheld {
                 1 => "pointer",

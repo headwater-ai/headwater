@@ -410,16 +410,12 @@ fn the_departed_version_is_an_input_of_the_instance() {
     );
 
     // And the coverage block says the denominator does not hold it, which is
-    // the one place a reader learns that this run read outside the census. The
-    // two entries in front of it are the claim store, which the two rules of
-    // `headwater_check::claim` name in every run: it sits beside the corpus
-    // root, so no walk reaches it either.
+    // the one place a reader learns that this run read outside the census. It
+    // is the only entry: the claim store, which the two rules of
+    // `headwater_check::claim` read in every run, is exempt from the list
+    // (`coverage::BESIDE_THE_ROOT`, #1146), and a departed path is not.
     assert_eq!(
         run.coverage.unaccounted,
-        [
-            headwater_check::claim::STORE,
-            headwater_check::claim::STORE,
-            "retention/kept/gone-superseded.md"
-        ]
+        ["retention/kept/gone-superseded.md"]
     );
 }

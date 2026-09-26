@@ -121,6 +121,20 @@ pub struct Document {
     pub skipped: Vec<(&'static str, String)>,
 }
 
+/// Engine state beside the corpus root that a check reads on purpose, and
+/// that [`Coverage::unaccounted`] therefore never lists.
+///
+/// The census walks the corpus root and nothing beside it, so no census
+/// exclusion can reach these paths, and listing them would report a
+/// deliberate read as a hole in the denominator. Each one is read as one
+/// input with one digest, and the run's read set names it with that digest,
+/// so the read is stated there rather than lost. `crate::claim::STORE` is the
+/// claim store both claim rules read (#1146). The observation snapshot is
+/// engine state of the same sort, but it is added to the read set outside
+/// every instance, so it never reaches this list and needs no entry. Add a
+/// later store here, with its reason in this comment.
+pub const BESIDE_THE_ROOT: &[&str] = &[crate::claim::STORE];
+
 /// What this run looked at.
 #[derive(Clone, Debug)]
 pub struct Coverage {
@@ -131,17 +145,16 @@ pub struct Coverage {
     /// subset: a reader asking how much work a run did is asking about all of
     /// it.
     pub instances: usize,
-    /// One entry per reading of a path the census never walked, in instance
-    /// order. Never empty without meaning it: an instance that read outside
+    /// One entry per path the census never walked, in the order of its first
+    /// reading. Never empty without meaning it: an instance that read outside
     /// the census read outside the denominator every number here is computed
     /// over.
     ///
-    /// It is a reading rather than an instance and rather than a path. One
-    /// instance that read two such paths writes two entries, and so would two
-    /// instances that read one path each. A count of instances is what the
-    /// member was named for and never what it held, and until
-    /// `lifecycle.deletion.not_permitted` nothing in this engine could reach
-    /// it to tell the difference.
+    /// It is a path rather than a reading and rather than an instance. One
+    /// path writes one entry whatever the number of instances that read it,
+    /// because the fact stated is about the denominator, and the denominator
+    /// is missing the path once (#1146). The paths in [`BESIDE_THE_ROOT`] are
+    /// never listed.
     pub unaccounted: Vec<String>,
     /// Each reason an instance reached no verdict, with the number of
     /// **instances** it covers, in the order the reasons first appear.
@@ -191,18 +204,20 @@ impl Coverage {
                     // instance of any grain that read outside the census read
                     // outside the set every guarantee here is computed over.
                     // A check that read a file the census never walked.
-                    // Three rules do it deliberately. A corpus-scoped instance
+                    // One rule does it deliberately: a corpus-scoped instance
                     // of `lifecycle.deletion.not_permitted` reads the version
                     // of every path a change named that no row holds, which is
                     // outside this denominator by definition. The two rules of
-                    // `crate::claim` each read `.headwater/ids`, which sits
-                    // beside the corpus root rather than inside it, and which
-                    // a census walk therefore never reaches. Every other way
-                    // of arriving here is a defect, and one line reports all
-                    // of them, because the fact stated is the same one —
-                    // coverage was computed over a set that does not hold this
-                    // path.
-                    unaccounted.push(path.to_string());
+                    // `crate::claim` read `.headwater/ids` too, and that path
+                    // is exempt: see [`BESIDE_THE_ROOT`]. Every other way of
+                    // arriving here is a defect, and one line reports all of
+                    // them, because the fact stated is the same one — coverage
+                    // was computed over a set that does not hold this path.
+                    if !BESIDE_THE_ROOT.contains(&path)
+                        && !unaccounted.iter().any(|known| known == path)
+                    {
+                        unaccounted.push(path.to_string());
+                    }
                     continue;
                 };
                 // Read, and routed to the corpus rather than to this document.
@@ -438,6 +453,29 @@ mod tests {
             .map(|document| document.skipped.len())
             .sum();
         assert_eq!(routed, 0, "and the routing sees none of it");
+    }
+
+    /// A path outside the census is listed once, however many instances read
+    /// it, and the claim store is not listed at all.
+    ///
+    /// Both halves of #1146 are here. Two rules read the claim store and two
+    /// read a stray path, so a list kept per reading holds four entries, and a
+    /// list kept per path that does not exempt the store holds two.
+    #[test]
+    fn an_unaccounted_path_is_listed_once_and_the_claim_store_not_at_all() {
+        let reading = |rule, grain, path| {
+            Instance::of(rule, grain, vec![input(path)], InstanceOutcome::Passed)
+        };
+        let coverage = over(
+            vec![row("source.md")],
+            vec![
+                reading("claim.unclaimed", Grain::Corpus, crate::claim::STORE),
+                reading("claim.empty", Grain::Corpus, crate::claim::STORE),
+                reading("facet.required.missing", Grain::Document, "stray.md"),
+                reading("link.target.missing", Grain::Document, "stray.md"),
+            ],
+        );
+        assert_eq!(coverage.unaccounted, vec!["stray.md".to_string()]);
     }
 
     /// A run that skipped nothing reports zero rather than reporting nothing.

@@ -225,13 +225,6 @@ impl EdgeCheck for Suspect<'_> {
             _ => return Outcome::Passed,
         };
 
-        let verified = edge
-            .attributes
-            .iter()
-            .find(|entry| entry.key.value == VERIFIED_REVISION)
-            .and_then(|entry| entry.value.value.as_scalar())
-            .map(|scalar| scalar.text.as_str());
-
         // A fix writes `verified_revision`, so it is offered only where the
         // relation declares that attribute: spec 2 makes an undeclared one a
         // finding, and a fix must not write what a later rule refuses.
@@ -289,7 +282,7 @@ impl EdgeCheck for Suspect<'_> {
             };
         };
 
-        let Some(verified) = verified else {
+        if edge.verified_revision().is_none() {
             // The one report an unrecorded edge gets. See the module comment.
             if !today || resolver != SOURCE_TREE {
                 return Outcome::Passed;
@@ -306,11 +299,13 @@ impl EdgeCheck for Suspect<'_> {
                 ),
                 Some(patch),
             ));
-        };
-
-        if verified == current {
-            return Outcome::Passed;
         }
+
+        // The comparison is `Edge::suspect_revisions`, which `headwater route`
+        // reads too (#953), so the two surfaces name the same edges.
+        let Some((verified, current)) = edge.suspect_revisions() else {
+            return Outcome::Passed;
+        };
 
         let reached: usize = {
             let mut union: Vec<&String> = patterns.iter().flat_map(|p| p.matched.iter()).collect();
