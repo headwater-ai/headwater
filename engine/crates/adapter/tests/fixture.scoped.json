@@ -422,7 +422,7 @@
     {
       "rule": "lifecycle.state.set_twice",
       "scope": "corpus",
-      "version": 1,
+      "version": 2,
       "obligations": []
     },
     {

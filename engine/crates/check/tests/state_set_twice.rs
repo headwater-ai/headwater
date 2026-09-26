@@ -50,7 +50,19 @@ fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
 
+fn pinned() -> Context {
+    Context::at(Date::parse(PINNED).expect("the pinned date"))
+}
+
 fn run_with(taxonomy_file: &str) -> Run {
+    run_in(taxonomy_file, &pinned())
+}
+
+fn run_in(taxonomy_file: &str, ctx: &Context) -> Run {
+    run_cached(taxonomy_file, ctx, &mut Cache::disabled())
+}
+
+fn run_cached(taxonomy_file: &str, ctx: &Context, cache: &mut Cache) -> Run {
     let corpus = Corpus::new(fixtures_dir(), "state-set-twice");
     let source =
         std::fs::read_to_string(fixtures_dir().join(taxonomy_file)).expect("the fixture taxonomy");
@@ -89,8 +101,8 @@ fn run_with(taxonomy_file: &str) -> Run {
             source: "engine/crates/check/fixtures/state-set-twice.taxonomy.yml",
         },
         &headwater_check::claim::Claims::empty(),
-        &Context::at(Date::parse(PINNED).expect("the pinned date")),
-        &mut Cache::disabled(),
+        ctx,
+        cache,
     )
 }
 
@@ -150,6 +162,92 @@ fn a_generated_page_told_two_states_by_two_relations_is_reported_once() {
         .find(|finding| finding.rule == RULE)
         .expect("the finding");
     assert_eq!((finding.line, finding.column), (4, 1), "{finding:?}");
+}
+
+/// A marked file that no output of the projection plan claims is one
+/// `headwater generate` lists as orphaned and never writes. Its state was
+/// written by a person, so the rule has no write to warn about (#1137).
+#[test]
+fn a_marked_page_that_no_projection_writes_is_not_read() {
+    let orphaned = ["state-set-twice/pages/gen-clash.md".to_string()].into();
+    let run = run_in(
+        "state-set-twice.taxonomy.yml",
+        &pinned().with_orphaned(orphaned),
+    );
+    assert!(
+        at(&run, "pages/gen-clash.md").is_empty(),
+        "{:?}",
+        reported(&run)
+    );
+    let instance = run
+        .instances
+        .iter()
+        .find(|instance| instance.rule == RULE)
+        .expect("the one corpus instance still runs");
+    assert!(
+        matches!(instance.outcome, Outcome::Passed),
+        "{:?}",
+        instance.outcome
+    );
+}
+
+/// The guard for the case above: an orphan elsewhere does not silence the
+/// rule over a page the plan does write.
+#[test]
+fn an_orphan_elsewhere_leaves_a_written_page_reported() {
+    let orphaned = ["state-set-twice/pages/gen-agree.md".to_string()].into();
+    let run = run_in(
+        "state-set-twice.taxonomy.yml",
+        &pinned().with_orphaned(orphaned),
+    );
+    assert_eq!(
+        at(&run, "pages/gen-clash.md").len(),
+        1,
+        "{:?}",
+        reported(&run)
+    );
+}
+
+/// The orphan set is in the cache key. Without it, a cached "fired" verdict
+/// survives the change that turns the page into an orphan, because the read
+/// set does not move: the same files are read, and generate's answer about
+/// them is what changed.
+#[test]
+fn a_cached_verdict_does_not_survive_the_page_turning_orphan() {
+    let dir = std::env::temp_dir().join(format!(
+        "headwater-state-set-twice-cache-{}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("the cache directory is made");
+    let taxonomy = "state-set-twice.taxonomy.yml";
+    let orphan: std::collections::BTreeSet<String> =
+        ["state-set-twice/pages/gen-clash.md".to_string()].into();
+    let elsewhere: std::collections::BTreeSet<String> =
+        ["state-set-twice/pages/gen-agree.md".to_string()].into();
+    let fired = |ctx: &Context| {
+        let mut cache = Cache::at(&dir, "sha256:state-set-twice-fixture", "rules");
+        let run = run_cached(taxonomy, ctx, &mut cache);
+        cache.write(&dir).expect("the cache writes");
+        (at(&run, "pages/gen-clash.md").len(), cache.report().misses)
+    };
+
+    let (first, _) = fired(&pinned());
+    let (unchanged, misses) = fired(&pinned());
+    let (orphaned, _) = fired(&pinned().with_orphaned(orphan.clone()));
+    let (again, _) = fired(&pinned().with_orphaned(orphan));
+    let (other, _) = fired(&pinned().with_orphaned(elsewhere));
+    let _ = std::fs::remove_dir_all(&dir);
+
+    assert_eq!(first, 1, "the page fires with no orphan set");
+    assert_eq!(unchanged, 1, "a warm run serves the same verdict");
+    assert_eq!(misses, 0, "and serves every instance from the cache");
+    assert_eq!(
+        orphaned, 0,
+        "a cached fired verdict survived the orphan set"
+    );
+    assert_eq!(again, 0, "the orphaned verdict is served warm");
+    assert_eq!(other, 1, "an orphan elsewhere keys apart and fires");
 }
 
 /// Two relations that write the same state agree, and there is nothing to

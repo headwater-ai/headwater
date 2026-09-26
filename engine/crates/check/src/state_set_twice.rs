@@ -27,6 +27,17 @@
 //!   role. Generate answers a required facet and no other. An authored document
 //!   is not one of them: its author writes its state, and
 //!   [`crate::lifecycle_state`] and [`crate::dependency`] read that value.
+//! - **An orphan is not one of them.** The census classifies a file as
+//!   generated from its marker alone, so a person can place a marked file that
+//!   no projection writes. `headwater generate` lists that file as orphaned
+//!   and writes nothing onto it
+//!   ([#1137](https://github.com/headwater-ai/headwater/issues/1137)). This
+//!   crate cannot compute the projection plan, because the generate crate
+//!   depends on it. So the CLI builds the plan and injects the orphaned paths
+//!   through [`crate::Context::with_orphaned`], and the rule declares
+//!   [`crate::scope::CorpusCheck::NEEDS_ORPHANED`] to read them. A run that
+//!   injects no set reads every marked file, which is what every test that
+//!   does not name the set expects.
 //! - **The edges** are the edges whose written target is that document's
 //!   identifier, that were written under the declared name of their relation,
 //!   and that the document did not write itself. That is `derived::incoming`
@@ -136,11 +147,17 @@ impl<'a> StateSetTwice<'a> {
 impl CorpusCheck for StateSetTwice<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
-    const VERSION: u32 = 1;
+    ///
+    /// 2 from #1137: a marked file that no output of the projection plan
+    /// claims is no longer read.
+    const VERSION: u32 = 2;
     const NEEDS_GRAPH: bool = true;
+    const NEEDS_ORPHANED: bool = true;
 
     fn evaluate(&self, view: &CorpusView<'_>) -> Outcome {
-        let (Some(edges), Some(generated)) = (view.edges(), view.generated()) else {
+        let (Some(edges), Some(generated), Some(orphaned)) =
+            (view.edges(), view.generated(), view.orphaned())
+        else {
             return Outcome::Skipped(NO_GRAPH.to_string());
         };
         let Some(state_facet) = self.state_facet.as_deref() else {
@@ -149,6 +166,12 @@ impl CorpusCheck for StateSetTwice<'_> {
 
         let mut findings = Vec::new();
         for page in generated {
+            // A marked file that no output of the plan claims. Generate lists
+            // it as orphaned and writes nothing onto it, so a person wrote its
+            // state and there is no write here to warn about.
+            if orphaned.contains(page.path) {
+                continue;
+            }
             if !self
                 .shape
                 .required_facets(page.kind)

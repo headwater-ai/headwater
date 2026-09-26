@@ -669,6 +669,21 @@ pub trait CorpusCheck {
     /// [`crate::state_set_twice`].
     const NEEDS_GRAPH: bool = false;
 
+    /// Whether the view carries the marked files the projection plan claims no
+    /// output for, as [`Context::orphaned`] holds them.
+    ///
+    /// It joins the cache key, and it is the one corpus input here that does
+    /// so outside the read set. `headwater generate` computes the set from the
+    /// lock and the tree, and this crate cannot repeat that computation, so
+    /// the caller injects it. A key without it would keep a cached "fired"
+    /// verdict through the change that turned the page into an orphan. It is
+    /// not an [`Input`], because a read set lists paths a later
+    /// `headwater gate` reads back from disk, and this set is not a file. So
+    /// it goes into the key on the terms of an anchor target: as the
+    /// `resolution` line that [`crate::cache`] writes for something outside
+    /// the corpus told this run. See [`crate::state_set_twice`].
+    const NEEDS_ORPHANED: bool = false;
+
     fn evaluate(&self, view: &CorpusView<'_>) -> Outcome;
 }
 
@@ -1221,6 +1236,7 @@ pub struct CorpusView<'a> {
     anchors: Option<&'a crate::fragment::Anchors>,
     edges: Option<&'a [Edge]>,
     generated: Option<Vec<Generated<'a>>>,
+    orphaned: Option<&'a std::collections::BTreeSet<String>>,
     reads: Vec<Input>,
 }
 
@@ -1248,6 +1264,12 @@ impl<'a> CorpusView<'a> {
     /// check that declared `NEEDS_GRAPH`.
     pub fn generated(&self) -> Option<&[Generated<'a>]> {
         self.generated.as_deref()
+    }
+
+    /// The marked files no output of the projection plan claims, and only for
+    /// a check that declared `NEEDS_ORPHANED`.
+    pub fn orphaned(&self) -> Option<&'a std::collections::BTreeSet<String>> {
+        self.orphaned
     }
 
     /// What the identifier index could not make of any document, and only for
@@ -1330,6 +1352,7 @@ impl<'a> CorpusView<'a> {
             anchors: None,
             edges: None,
             generated: None,
+            orphaned: None,
             reads: Vec::new(),
         }
     }
@@ -1349,6 +1372,7 @@ impl<'a> CorpusView<'a> {
             anchors,
             edges: None,
             generated: None,
+            orphaned: None,
             reads: Vec::new(),
         }
     }
@@ -1849,8 +1873,24 @@ pub fn over_corpus<C: CorpusCheck>(
             ),
             false => None,
         },
+        orphaned: match C::NEEDS_ORPHANED {
+            true => Some(ctx.orphaned()),
+            false => None,
+        },
         reads: reads.clone(),
     };
+    // The orphan set, in the key and not in the read set. See
+    // `NEEDS_ORPHANED`. The digest is over the sorted paths, one to a line,
+    // so an empty set writes a line of its own and a rule that declared the
+    // input never keys on its absence.
+    let orphaned = C::NEEDS_ORPHANED.then(|| {
+        let listing: String = ctx
+            .orphaned()
+            .iter()
+            .map(|path| format!("{path}\n"))
+            .collect();
+        format!("orphaned {}", headwater_hash::digest(listing.as_bytes()))
+    });
     // No clock. `CorpusCheck` declares none, so `clock_for` would have nothing
     // to bind and the key would carry nothing about a day. The first
     // corpus-scoped rule that reads a date brings the declaration with it, on
@@ -1869,7 +1909,7 @@ pub fn over_corpus<C: CorpusCheck>(
         &reads,
         None,
         None,
-        None,
+        orphaned.as_deref(),
         || check.evaluate(&view),
     );
     vec![Instance::of(C::RULE, Grain::Corpus, reads, outcome)]
