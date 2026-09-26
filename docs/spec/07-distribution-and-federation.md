@@ -504,6 +504,8 @@ A repository can both publish a package and consume it. This repository does, fo
 
 **The maintenance loop is four steps, and the pin is the second of them.** A source change publishes an artifact under a new digest. `vendor` reads the pin it finds, and it refuses an artifact the pin does not name. So the author writes the digest that `publish` printed into `.headwater/taxonomy.yml` before the vendor step. The order is `publish`, then the pin, then `vendor`, then `resolve`. The header of `taxonomy-source/headwater-standard/package.yml` states the same four steps, and a case in `engine/crates/cli/tests/publish.rs` runs them out of that header.
 
+**`taxonomy publish --from <dir> --check` is what holds the loop** ([#1139](https://github.com/headwater-ai/headwater/issues/1139)). A person runs the four steps by hand, so a source can change and nobody republishes it. No check reads the source, because every check reads the lock and the vendored copy. The check publishes the source into a private directory outside the tree, and it compares that artifact with the vendored copy member by member. It exits 1 and names each file that moved when the two do not agree. This repository runs it in continuous integration, and an adopter who maintains and consumes a package can run it the same way.
+
 ## Arriving at a corpus cold
 
 Everything above describes a repository that already knows its publisher. A machine that holds only a location knows none of it. It needs to learn which corpora live there, what taxonomy governs each one, and where to start ([Q14](09-decisions.md#q14--discovery-surface)).

@@ -1169,6 +1169,17 @@ pub enum TaxonomyWord {
                     without this flag"
         )]
         clear_killed: bool,
+        #[arg(
+            long,
+            help = "write nothing, and exit 1 when the vendored copy under `.headwater/packages/` \
+                    is not what a fresh publish of the source at `--from` produces. It publishes \
+                    into a private directory outside the tree, removes it, and names each member \
+                    that moved. For a repository that maintains a package and also consumes it, \
+                    so that a source changed without a republish fails a gate. Needs `--from`, \
+                    and is refused with `--out`, `--package`, `--assembly`, `--clear-killed` and \
+                    `--json`"
+        )]
+        check: bool,
         #[arg(long, help = JSON_ALONE)]
         json: bool,
     },
