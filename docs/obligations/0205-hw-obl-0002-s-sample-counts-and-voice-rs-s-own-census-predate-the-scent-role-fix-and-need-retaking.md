@@ -16,7 +16,7 @@ waiting_on: build
 
 ## Obligation
 
-HW-OBL-0002's dated reading needs the same disclaimer voice.rs already carries, at minimum, and ideally a fresh count taken over the widened population before anyone treats its sample size or its two zero categories as current. Until a session re-runs the count, the record understates its own denominators and cannot say whether the two zero categories are still saturation-not-a-clean-corpus, or whether the wider population changes either reading.
+HW-OBL-0002's dated reading needs the same disclaimer voice.rs already carries, at minimum. Ideally, it also needs a fresh count taken over the widened population before anyone treats its sample size or its two zero categories as current. Until a session re-runs the count, the record understates its own denominators. Until then, it also cannot say whether the two zero categories are still saturation-not-a-clean-corpus, or whether the wider population changes either reading.
 
 ## Discharge
 
