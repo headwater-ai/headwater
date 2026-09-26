@@ -54,6 +54,7 @@ pub struct Date {
 pub struct Context {
     now: Date,
     change: Option<Change>,
+    orphaned: std::collections::BTreeSet<String>,
 }
 
 impl Context {
@@ -61,7 +62,11 @@ impl Context {
     /// report uses this one, because a recorded report is a function of its
     /// inputs and the clock is one of them.
     pub const fn at(now: Date) -> Self {
-        Context { now, change: None }
+        Context {
+            now,
+            change: None,
+            orphaned: std::collections::BTreeSet::new(),
+        }
     }
 
     /// A run at a stated date, scoped to one change.
@@ -73,6 +78,7 @@ impl Context {
         Context {
             now,
             change: Some(change),
+            orphaned: std::collections::BTreeSet::new(),
         }
     }
 
@@ -97,6 +103,7 @@ impl Context {
         Some(Context {
             now: Date::from_days(i64::try_from(elapsed.as_secs() / 86_400).ok()?),
             change: None,
+            orphaned: std::collections::BTreeSet::new(),
         })
     }
 
@@ -108,6 +115,29 @@ impl Context {
             change: Some(change),
             ..self
         }
+    }
+
+    /// The same run, told which marked files the projection plan claims no
+    /// output for.
+    ///
+    /// The set is `headwater generate`'s answer, and it is the same set that
+    /// verb lists as orphaned: a file that carries the generated marker and
+    /// that no output of the plan writes. This crate cannot compute it,
+    /// because the generate crate depends on this one and the emitters compute
+    /// the output paths. So the caller that builds the plan injects it, and
+    /// the CLI is that caller.
+    ///
+    /// Empty unless a caller sets it, which is every test that does not name
+    /// it and every run whose taxonomy gives no rule a use for it. A rule
+    /// reads it only through [`crate::scope::CorpusCheck::NEEDS_ORPHANED`],
+    /// which also puts it in that rule's cache key.
+    pub fn with_orphaned(self, orphaned: std::collections::BTreeSet<String>) -> Self {
+        Context { orphaned, ..self }
+    }
+
+    /// The marked files no output of the projection plan claims, by path.
+    pub fn orphaned(&self) -> &std::collections::BTreeSet<String> {
+        &self.orphaned
     }
 
     pub fn now(&self) -> Date {

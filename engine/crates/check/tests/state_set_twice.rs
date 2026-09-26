@@ -50,7 +50,15 @@ fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
 
+fn pinned() -> Context {
+    Context::at(Date::parse(PINNED).expect("the pinned date"))
+}
+
 fn run_with(taxonomy_file: &str) -> Run {
+    run_in(taxonomy_file, &pinned())
+}
+
+fn run_in(taxonomy_file: &str, ctx: &Context) -> Run {
     let corpus = Corpus::new(fixtures_dir(), "state-set-twice");
     let source =
         std::fs::read_to_string(fixtures_dir().join(taxonomy_file)).expect("the fixture taxonomy");
@@ -89,7 +97,7 @@ fn run_with(taxonomy_file: &str) -> Run {
             source: "engine/crates/check/fixtures/state-set-twice.taxonomy.yml",
         },
         &headwater_check::claim::Claims::empty(),
-        &Context::at(Date::parse(PINNED).expect("the pinned date")),
+        ctx,
         &mut Cache::disabled(),
     )
 }
@@ -150,6 +158,50 @@ fn a_generated_page_told_two_states_by_two_relations_is_reported_once() {
         .find(|finding| finding.rule == RULE)
         .expect("the finding");
     assert_eq!((finding.line, finding.column), (4, 1), "{finding:?}");
+}
+
+/// A marked file that no output of the projection plan claims is one
+/// `headwater generate` lists as orphaned and never writes. Its state was
+/// written by a person, so the rule has no write to warn about (#1137).
+#[test]
+fn a_marked_page_that_no_projection_writes_is_not_read() {
+    let orphaned = ["state-set-twice/pages/gen-clash.md".to_string()].into();
+    let run = run_in(
+        "state-set-twice.taxonomy.yml",
+        &pinned().with_orphaned(orphaned),
+    );
+    assert!(
+        at(&run, "pages/gen-clash.md").is_empty(),
+        "{:?}",
+        reported(&run)
+    );
+    let instance = run
+        .instances
+        .iter()
+        .find(|instance| instance.rule == RULE)
+        .expect("the one corpus instance still runs");
+    assert!(
+        matches!(instance.outcome, Outcome::Passed),
+        "{:?}",
+        instance.outcome
+    );
+}
+
+/// The guard for the case above: an orphan elsewhere does not silence the
+/// rule over a page the plan does write.
+#[test]
+fn an_orphan_elsewhere_leaves_a_written_page_reported() {
+    let orphaned = ["state-set-twice/pages/gen-agree.md".to_string()].into();
+    let run = run_in(
+        "state-set-twice.taxonomy.yml",
+        &pinned().with_orphaned(orphaned),
+    );
+    assert_eq!(
+        at(&run, "pages/gen-clash.md").len(),
+        1,
+        "{:?}",
+        reported(&run)
+    );
 }
 
 /// Two relations that write the same state agree, and there is nothing to
