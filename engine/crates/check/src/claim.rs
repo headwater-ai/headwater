@@ -65,11 +65,13 @@
 //! can hold that fact at all, and a rule reporting it would report every
 //! legitimate deletion as a defect.
 //!
-//! **A claim naming a path the corpus no longer holds, whose identifier one
+//! **A claim naming a path no document stands at, whose identifier one
 //! document holds at another path, is stale.** The holder is a typed document
-//! whose kind mints under the claim's scheme; an untyped file or a document of
-//! another scheme that carries the same string counts as no holder. The document was renamed, and
-//! never-reuse does not cover a rename, because a rename reuses nothing. The
+//! whose kind mints under the claim's scheme. An untyped file or a document of
+//! another scheme that carries the same string counts as no holder. A rename
+//! produces this state, and so does a claim edited by hand, and the rule
+//! cannot tell the two apart, so its message names neither as the cause.
+//! Never-reuse does not cover either, because neither reuses anything. The
 //! finding names the current path. It carries no patch: both writers of the
 //! store create and never overwrite, and [`Patch::Create`] refuses an occupied
 //! path. Where two documents hold the identifier, `identifier.claimed_twice`
@@ -478,9 +480,9 @@ impl<'a> Stale<'a> {
 
 impl CorpusCheck for Stale<'_> {
     const RULE: &'static str = self::STALE;
-    /// The second edition: a claim naming a path the corpus no longer holds,
-    /// whose identifier one document holds at another path, is now reported
-    /// as the claim of a renamed document. The first reported nothing for it.
+    /// The second edition: a claim naming a path no document stands at, whose
+    /// identifier one document holds at another path, is now reported and
+    /// names that path. The first reported nothing for it.
     const VERSION: u32 = 2;
     const NEEDS_CLAIMS: bool = true;
 
@@ -523,8 +525,9 @@ impl CorpusCheck for Stale<'_> {
                 // claim is correct: spec 3 never reuses an identifier. Where
                 // two or more hold it, `identifier.claimed_twice` reports the
                 // pair, and a finding here would pick a winner in silence, as
-                // `contended` says. Where exactly one holds it, the document
-                // was renamed and the claim is stale. The finding is reported
+                // `contended` says. Where exactly one holds it, the claim is
+                // stale: the document was renamed, or the claim was edited by
+                // hand, and the rule cannot see which. The finding is reported
                 // against the current document rather than the claim file, as
                 // the mismatch below is, so that SARIF and an `allow` directive
                 // land on a Markdown file.
@@ -552,8 +555,9 @@ impl CorpusCheck for Stale<'_> {
                     line: 0,
                     column: 0,
                     message: format!(
-                        "`{at_path}` names {}, which the corpus no longer holds, and `{}` is now \
-                         held by {}, so the claim names the path of a renamed document",
+                        "`{at_path}` names {}, and no document stands at that path. The one \
+                         document holding `{}` is {}, so the claim names a path that is not its \
+                         holder's, which follows a rename or a claim edited by hand",
                         claim.claimant, claim.id, current.path
                     ),
                     remediation: format!(
