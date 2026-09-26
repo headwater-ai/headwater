@@ -247,3 +247,81 @@ fn a_single_file_shelf_is_written_once_and_never_overwritten() {
         "the second run left the file alone"
     );
 }
+
+/// A `--directory` segment that holds a glob character is refused, because
+/// the verb reads the directory as a literal path. Before #1136 the directory
+/// `docs/modules/*` made `docs/modules/*/README.md`, which the shelf's own
+/// glob matches, and the verb wrote a directory literally named `*`.
+#[test]
+fn a_directory_with_a_glob_character_is_refused_and_nothing_is_written() {
+    for (label, directory, segment) in [
+        ("glob-star", "docs/modules/*", "`*`"),
+        ("glob-question", "docs/modules/a?b", "`a?b`"),
+        ("glob-bracket", "docs/modules/[ab]", "`[ab]`"),
+    ] {
+        let root = Root::new(label);
+        let ran = root.run(&[
+            "new",
+            "module_page",
+            "--title",
+            "Alpha",
+            "--directory",
+            directory,
+        ]);
+        assert_eq!(ran.code, Some(1), "{directory}: {ran:?}");
+        assert!(
+            ran.err.contains(&format!("the segment {segment}")),
+            "{directory}: the refusal names the segment\n{ran:?}"
+        );
+        assert!(ran.err.contains("docs/modules/*/README.md"), "{ran:?}");
+        assert!(
+            !ran.err.contains("defect"),
+            "not blamed on the scaffolder: {ran:?}"
+        );
+        assert!(!root.has("docs/modules"), "nothing was written: {ran:?}");
+    }
+}
+
+/// A shelf that is one file decides its own directory, so a `--directory` on
+/// it is refused rather than silently ignored.
+#[test]
+fn a_directory_for_a_shelf_that_decides_it_is_refused_and_nothing_is_written() {
+    let root = Root::new("not-asked");
+    let ran = root.run(&[
+        "new",
+        "corpus_index",
+        "--title",
+        "The index",
+        "--directory",
+        "docs",
+    ]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(ran.err.contains("--directory"), "{ran:?}");
+    assert!(ran.err.contains("docs/INDEX.md"), "{ran:?}");
+    assert!(ran.err.contains("decides the directory"), "{ran:?}");
+    assert!(!root.has("docs/INDEX.md"), "nothing was written: {ran:?}");
+}
+
+/// A `..` segment is refused for what it is. The one-segment form matters: a
+/// `*` in the shelf's pattern may match `..`, so the pattern check alone would
+/// not stop `docs/modules/..`, and only the segment check names the cause.
+#[test]
+fn a_directory_that_climbs_out_is_refused_and_nothing_is_written() {
+    let root = Root::new("climbs-out");
+    let ran = root.run(&[
+        "new",
+        "module_page",
+        "--title",
+        "Alpha",
+        "--directory",
+        "docs/modules/..",
+    ]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err
+            .contains("a `.`, `..` or empty segment names no directory"),
+        "the refusal names the `..` segment as its cause\n{ran:?}"
+    );
+    assert!(!root.has("docs/README.md"), "nothing was written: {ran:?}");
+    assert!(!root.has("docs/modules"), "nothing was written: {ran:?}");
+}
