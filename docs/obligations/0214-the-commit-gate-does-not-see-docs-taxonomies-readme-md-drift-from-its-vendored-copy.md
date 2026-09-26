@@ -2,7 +2,7 @@
 id: HW-OBL-0214
 status: draft
 status_since: 2026-09-24
-summary: "Only the required Engine tests job catches a drift between the taxonomy bundles and their vendored copy, so a contributor learns of it at CI and not at commit."
+summary: "Only the required Engine tests job catches a drift between the taxonomy bundles and their vendored copy. So a contributor learns of it at CI and not at commit."
 last_verified: 2026-09-24
 title: "The commit gate does not see docs/taxonomies/README.md drift from its vendored copy"
 waiting_on: build
@@ -24,6 +24,6 @@ The same comparison covers `bundles/` only. The adjudication did not confirm tha
 
 ## Discharge
 
-This record discharges when a local gate fails on the drift before a commit, for example a `taxonomy vendor --check --from` verb that the hook runs only when a staged path is under `docs/taxonomies/` or `taxonomy-source/`. A comparison written into the hook is not a discharge, because a rule has no second copy in a script.
+This record discharges when a local gate fails on the drift before a commit. An example is a `taxonomy vendor --check --from` verb that the hook runs only when a staged path is under `docs/taxonomies/` or `taxonomy-source/`. A comparison written into the hook is not a discharge, because a rule has no second copy in a script.
 
 The question reopens as an issue when one of these holds: "Engine tests" leaves the `Protect main` ruleset, an artifact an adopter receives comes from the vendored copy, a rule of `check` reads a file under `bundles/` other than `bundle.yml`, or a third late drift costs a run an iteration.
