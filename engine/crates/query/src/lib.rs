@@ -56,7 +56,7 @@ pub mod mcp;
 pub mod route;
 
 pub use explain::Explanation;
-pub use route::{Budget, Evidence, Route, Silence};
+pub use route::{Budget, Entry, Evidence, Route, Silence};
 
 use headwater_census::census::{Census, Row};
 use headwater_census::resolve::Resolution;

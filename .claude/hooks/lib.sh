@@ -212,6 +212,27 @@ hw_governing_pointers() {
     printf '%s\n' "$_pointers"
 }
 
+# The engine's account of one path that the governed scope admits and that no
+# document governs, or nothing and a non-zero status for any other path (#953).
+# It is the block `headwater route` writes under the line naming the path, and
+# the pointer lines the same route reached by terms, where there are any. The
+# engine composes every line, the front-matter lines included, so the hook
+# holds no scope pattern and no relation name. The line it selects on is the
+# engine's own sentence with the path in it, never an em dash.
+hw_ungoverned_in_scope() {
+    _engine=$(hw_engine) || return 1
+    _route=$("$_engine" route --root "$hw_root" "$1" 2>/dev/null) || return 1
+    _block=$(printf '%s\n' "$_route" | awk -v head="  $1 is in the governed scope, and nothing governs it" '
+        $0 == head { on = 1; print; next }
+        on && /^    / { print; next }
+        { on = 0 }')
+    [ -n "$_block" ] || return 1
+    printf '%s\n' "$_block"
+    _reached=$(printf '%s\n' "$_route" | grep ' — ')
+    [ -n "$_reached" ] || return 0
+    printf '\nThe route reached these documents by the terms of the path, and none of them declares the edge:\n%s\n' "$_reached"
+}
+
 # The reverse of the set above: what one document governs, and which documents
 # declare an edge onto it. It prints two lists, each under a heading line that
 # carries its count, or nothing and a non-zero status when both lists are

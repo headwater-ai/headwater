@@ -31,7 +31,7 @@
 //! claim. A field is a thing the compiler can count and a set member is not.
 
 use crate::explain::Permitted;
-use crate::route::{Evidence, Matched, Route, Silence};
+use crate::route::{Evidence, Matched, Route, Silence, Ungoverned};
 use crate::{Explanation, Neighbour, Pointer};
 use headwater_graph::declarations::Governs;
 use headwater_yaml::json::Json;
@@ -93,6 +93,7 @@ fn of_route(route: &Route) -> Json {
         evidence: _,
         withheld,
         silence,
+        ungoverned,
     } = route;
     let mut members: Vec<(&'static str, Json)> = vec![
         ("version", Json::string(VERSION)),
@@ -115,6 +116,12 @@ fn of_route(route: &Route) -> Json {
             ),
         ),
         ("withheld", number(*withheld)),
+        // Written on every run, empty or not, so a reader can tell "the task
+        // named no such path" from an engine that predates the member (#953).
+        (
+            "ungoverned",
+            Json::Array(ungoverned.iter().map(of_ungoverned).collect()),
+        ),
     ];
     if let Some(silence) = silence {
         members.push(("silence", of_silence(silence)));
@@ -127,6 +134,14 @@ fn of_route(route: &Route) -> Json {
         Json::string(route.render(headwater_check::paint::ColorMode::Plain)),
     ));
     Json::object(members)
+}
+
+fn of_ungoverned(entry: &Ungoverned) -> Json {
+    let Ungoverned { path, relations } = entry;
+    Json::object([
+        ("path", Json::string(path.clone())),
+        ("relations", strings(relations)),
+    ])
 }
 
 fn of_matched(matched: &Matched) -> Json {
@@ -404,6 +419,7 @@ mod tests {
             evidence: Vec::new(),
             withheld: 0,
             silence: Some(silence),
+            ungoverned: Vec::new(),
         }
     }
 
