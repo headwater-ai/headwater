@@ -60,7 +60,7 @@ rules, and for each the scope that binds it
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
   lifecycle.state.set_twice
-    neighbourhood scope, one document and the documents one relation away from it
+    corpus scope, every row of the census, and it is a barrier
   relation.declaration.unusable
     document scope, one document and its front matter, and what phase A could not make of it
   identifier.unusable

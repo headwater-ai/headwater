@@ -577,7 +577,7 @@
     },
     {
       "rule": "lifecycle.state.set_twice",
-      "scope": "neighbourhood",
+      "scope": "corpus",
       "version": 1,
       "obligations": []
     },

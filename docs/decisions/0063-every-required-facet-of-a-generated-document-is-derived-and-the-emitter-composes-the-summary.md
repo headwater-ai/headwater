@@ -16,7 +16,7 @@ relations:
     - HW-SPEC-engine-architecture
   governs:
     - to: engine/crates/generate/src/derived.rs
-      verified_revision: sha256:ee1c89bfb4e02c4c5fa8c90ac39821b16f5a57d3238523649e605a5b1cf2e194
+      verified_revision: sha256:402da8aa3219803a14f060977e36f950326d43dce66233996fc22cbd0cf3bf6e
 ---
 
 # Every required facet of a generated document is derived, and the emitter composes the summary

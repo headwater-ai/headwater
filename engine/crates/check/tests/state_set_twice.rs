@@ -157,7 +157,11 @@ fn a_generated_page_told_two_states_by_two_relations_is_reported_once() {
 #[test]
 fn two_relations_that_write_one_state_are_silent() {
     let run = run();
-    assert!(at(&run, "pages/gen-agree.md").is_empty(), "{:?}", reported(&run));
+    assert!(
+        at(&run, "pages/gen-agree.md").is_empty(),
+        "{:?}",
+        reported(&run)
+    );
 }
 
 /// A page named by another file's inverse half is the source of that relation,
@@ -165,7 +169,11 @@ fn two_relations_that_write_one_state_are_silent() {
 #[test]
 fn an_inverse_half_written_elsewhere_sets_no_state_on_the_page() {
     let run = run();
-    assert!(at(&run, "pages/gen-inverse.md").is_empty(), "{:?}", reported(&run));
+    assert!(
+        at(&run, "pages/gen-inverse.md").is_empty(),
+        "{:?}",
+        reported(&run)
+    );
 }
 
 /// An edge the page wrote at itself is one generate never reads, because the
@@ -185,7 +193,11 @@ fn edges_the_page_wrote_itself_are_not_read() {
 #[test]
 fn a_generated_kind_that_requires_no_state_is_silent() {
     let run = run();
-    assert!(at(&run, "plain/gen-unstated.md").is_empty(), "{:?}", reported(&run));
+    assert!(
+        at(&run, "plain/gen-unstated.md").is_empty(),
+        "{:?}",
+        reported(&run)
+    );
 }
 
 /// An authored document's state is what its author wrote, and generate

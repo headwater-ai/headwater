@@ -202,11 +202,11 @@
             {
               "id": "lifecycle.state.set_twice",
               "shortDescription": {
-                "text": "neighbourhood scope, one document and the documents one relation away from it"
+                "text": "corpus scope, every row of the census, and it is a barrier"
               },
               "properties": {
                 "headwater": {
-                  "scope": "neighbourhood",
+                  "scope": "corpus",
                   "version": 1,
                   "obligations": [],
                   "exportable_as": []

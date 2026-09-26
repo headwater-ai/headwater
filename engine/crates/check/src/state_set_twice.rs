@@ -109,9 +109,7 @@ impl<'a> StateSetTwice<'a> {
                 })
                 .collect(),
             shape,
-            state_facet: shape
-                .facet_in_role("state")
-                .map(|facet| facet.name.clone()),
+            state_facet: shape.facet_in_role("state").map(|facet| facet.name.clone()),
         }
     }
 
@@ -120,10 +118,11 @@ impl<'a> StateSetTwice<'a> {
     /// the taxonomy has a facet in the `state` role for generate to write.
     pub fn can_clash(&self) -> bool {
         self.state_facet.is_some()
-            && self
-                .setters
-                .iter()
-                .any(|(_, state)| self.setters.first().is_some_and(|(_, first)| first != state))
+            && self.setters.iter().any(|(_, state)| {
+                self.setters
+                    .first()
+                    .is_some_and(|(_, first)| first != state)
+            })
     }
 
     fn state_of(&self, relation: &str) -> Option<&'a str> {
