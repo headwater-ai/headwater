@@ -715,5 +715,43 @@ mod tests {
             "{finding:#?}"
         );
         assert!(!finding.message.contains("DR-0001"), "{finding:#?}");
+        // The rule sees a claim whose path is not its holder's path, and not
+        // how that came about, so the message claims no rename.
+        assert!(
+            finding
+                .message
+                .contains("which follows a rename or a claim edited by hand"),
+            "{finding:#?}"
+        );
+        assert!(!finding.message.contains("renamed"), "{finding:#?}");
+    }
+
+    /// A claim edited by hand to a path that no document ever stood at, while
+    /// the document stayed put, is the same finding as a rename, and its
+    /// message says nothing that is true of a rename alone.
+    #[test]
+    fn a_claim_edited_by_hand_to_a_wrong_path_is_stale_and_not_called_a_rename() {
+        let index = Index {
+            paths: vec![entry("docs/decisions/0007-the-title.md", "DR-0007")],
+            ..Index::default()
+        };
+        let claims = Claims::of(vec![claim("DR-0007", "docs/decisions/0007-the-titel.md")]);
+
+        let found = findings(&index, &claims);
+        assert_eq!(found.len(), 1, "{found:#?}");
+        let finding = &found[0];
+        assert_eq!(finding.path, "docs/decisions/0007-the-title.md");
+        assert!(
+            finding.message.contains("docs/decisions/0007-the-titel.md"),
+            "{finding:#?}"
+        );
+        assert!(!finding.message.contains("renamed"), "{finding:#?}");
+        assert!(!finding.message.contains("no longer"), "{finding:#?}");
+        assert!(
+            finding
+                .message
+                .contains("which follows a rename or a claim edited by hand"),
+            "{finding:#?}"
+        );
     }
 }
