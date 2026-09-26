@@ -24,6 +24,14 @@ The command proposes and writes one document whose kind, shelf, facets, sections
 
 The command decides the complete artifact before it writes any file. It derives engine-owned fields, accepts a title and declared facet values, and can add scaffold-created relation edges.
 
+A relation that declares `reciprocal: required` needs one half on each of its two documents. When the new document opens at a state whose role is `initial`, such as `draft`, the command writes nothing into the target document. The target document owes its half only when the new document leaves that state ([HW-DR-0086](../decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md)). For each owed half, the report prints one line in this form:
+
+    the far half `<relation>` is owed by <target path> once this document leaves `<state>`, and `headwater check --fix` writes it then
+
+While the new document stays at its initial state, `headwater check` reports no finding for the owed half. When you move the new document to a state whose role is not `initial`, the check reports `relation.reciprocity.missing` on it. Then `headwater check --fix` writes the far half into the target document.
+
+When the new document does not open at an initial state, the command writes the far half into the target document at once. The report then names the path that it wrote. The command also writes the far half of a `reciprocal: symmetric` relation at once.
+
 Where the kind binds a language regime that holds prose to something, the report states the regime. It also states whether `headwater check` has a mechanical rule for its controlled-language and profile pair. It states the count of retired terms that regime names, and any construction a voice regime forbids for the kind. It never names a skill or a file outside the corpus. The engine reads no harness layout.
 
 It never overwrites a document, and it never overwrites a claim. A kind whose scheme allocates `reconcile-first` gets one file of the identifier claim store, written before the document and holding the path of the document. That file records what the run minted, so an allocator on another branch reads a value this tree does not yet hold. The command writes the document and appends one capture-cost reading. If the document lands but the reading does not, the command reports the line to append and exits non-zero.
@@ -70,6 +78,7 @@ The command reads the system date when `--now` is absent. It reads no other envi
 | `.headwater/taxonomy.lock` and corpus configuration | Read to derive the artifact. |
 | Documents and graph indexes | Read to validate identifiers and relations. |
 | The selected document path | Written when it does not already exist. |
+| The target document of a scaffold-created relation | Written with the far half of a symmetric relation, or of a required relation when the new document does not open at an initial state. Not written while the far half is owed. |
 | `.headwater/ids/<scheme>/<identifier>` | Written before the document, for a scheme that allocates `reconcile-first`. It holds the path of the document, it is never written twice, and it is never modified. |
 | `.headwater/capture-cost.jsonl` | Appended with one reading after the document write. |
 
