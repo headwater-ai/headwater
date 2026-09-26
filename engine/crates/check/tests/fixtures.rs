@@ -1620,8 +1620,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 30);
-    assert_eq!(run.coverage.classified(), 28);
+    assert_eq!(run.coverage.seen(), 31);
+    assert_eq!(run.coverage.classified(), 29);
 
     // A file this engine wrote is the third state, and it is accounted for
     // without being judged. `check/spec/12-generated.md` sits on a heterogeneous
@@ -1984,7 +1984,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
         &mut Cache::disabled(),
     );
 
-    assert_eq!(declared.len(), 28, "one instance per typed document");
+    assert_eq!(declared.len(), 29, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()

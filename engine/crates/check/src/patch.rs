@@ -361,6 +361,7 @@ mod tests {
             kind: BlockKind::Paragraph,
             span: run.span,
             quote_depth: 0,
+            list_depth: 0,
             runs: vec![run],
             soft_breaks: Vec::new(),
             info: None,
