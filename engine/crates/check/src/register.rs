@@ -83,8 +83,9 @@
 //! commit that actually ran, on the same terms
 //! [`crate::observation`]'s module comment states in full, and
 //! [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
-//! is the record of that gap. [`OBSERVATION`] is the narrower thing this
-//! module does check: whether the file itself could be read, whether each
+//! records the owner's ruling that keeps it so: the commit is provenance,
+//! and the process of the adopter keeps it honest. [`OBSERVATION`] is the
+//! narrower thing this module does check: whether the file itself could be read, whether each
 //! entry in it names a control this taxonomy actually declares, and whether
 //! any control is named more than once. A file or an entry that fails one of
 //! those tests reads as absent rather than as verified, the same fail-safe
@@ -883,7 +884,7 @@ impl Projection {
                      same way rather than silently"
                         .to_string(),
                 ),
-                crate::observation::Problem::Entry { id, reason } => (
+                crate::observation::Problem::Entry { id, reason, .. } => (
                     format!("`.headwater/observations.yml` names `{id}`, and {reason}"),
                     "remove the entry, or correct its shape".to_string(),
                 ),

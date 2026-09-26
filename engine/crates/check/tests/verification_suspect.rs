@@ -32,7 +32,7 @@ use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{
-    Cache, Context, Date, Declared, Observation, Observations, Register, Run, Shape,
+    Cache, Context, Date, Declared, Observation, Observations, Outcome, Register, Run, Shape,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -658,6 +658,164 @@ fn an_entry_naming_no_verification_is_named() {
     assert_eq!(
         report_line(&run, VERIFICATION_ID).as_deref(),
         Some(format!("  {VERIFICATION_ID} declared").as_str())
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// Every instance of the suspect rule in a run, with its outcome.
+fn suspect_outcomes(run: &Run) -> Vec<&Outcome> {
+    run.instances
+        .iter()
+        .filter(|instance| instance.rule == RULE)
+        .map(|instance| &instance.outcome)
+        .collect()
+}
+
+/// Verify 2 of #1056: the block read `unknown` from the snapshot directly,
+/// so a comparison that mapped an unread snapshot to `declared` passed the
+/// rule and moved no other test. The rule has to withhold its finding and say
+/// so: each instance is skipped, with the reason, and never passes.
+#[test]
+fn an_unparsable_snapshot_skips_the_rule_and_does_not_pass_it() {
+    let root = scratch_corpus("unparsable-skips");
+    let observations = snapshot_on_disk(&root, "ACP-FIX-verification-one: [unclosed\n");
+    let run = run_over(&root, &observations);
+    let outcomes = suspect_outcomes(&run);
+    assert!(!outcomes.is_empty(), "the rule has an instance to decide");
+    for outcome in outcomes {
+        match outcome {
+            Outcome::Skipped(reason) => assert!(
+                reason.contains("the observation snapshot did not read"),
+                "{reason}"
+            ),
+            other => panic!("an unread snapshot must skip the rule, not {other:?}"),
+        }
+    }
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// An entry keyed by a verification that names no `kind` reads as a control,
+/// the reader's default. It is still an entry about this verification, so the
+/// verification is `unknown` and not `declared`, and the rule is skipped.
+#[test]
+fn a_kindless_entry_keyed_by_a_verification_is_unknown_and_not_declared() {
+    let root = scratch_corpus("kindless");
+    let observations = snapshot_on_disk(
+        &root,
+        &format!("{VERIFICATION_ID}:\n  commit: {SNAPSHOT_COMMIT}\n"),
+    );
+    let run = run_over(&root, &observations);
+    let line = report_line(&run, VERIFICATION_ID).expect("the block names the verification");
+    assert_eq!(
+        line,
+        format!(
+            "  {VERIFICATION_ID} unknown, its snapshot entry did not read: it names no \
+             `kind: verification`, so it read as a control"
+        ),
+        "{}",
+        rendered(&run)
+    );
+    let outcomes = suspect_outcomes(&run);
+    assert!(!outcomes.is_empty(), "the rule has an instance to decide");
+    for outcome in outcomes {
+        assert!(
+            matches!(outcome, Outcome::Skipped(_)),
+            "the rule decides nothing on an entry that did not read: {outcome:?}"
+        );
+    }
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A `kind: verification` entry that fails its own shape and names no
+/// verification of the corpus is still a typo in the snapshot, and the block
+/// names it with the reason, beside the register's warning.
+#[test]
+fn a_shape_failed_verification_entry_naming_no_verification_is_named() {
+    let root = scratch_corpus("orphan-unread");
+    let observations = snapshot_on_disk(
+        &root,
+        "ACP-FIX-verification-nowhere:\n  kind: verification\n  criterion_digest: \"sha256:00\"\n",
+    );
+    let run = run_over(&root, &observations);
+    let text = rendered(&run);
+    assert!(
+        text.contains(
+            "  ACP-FIX-verification-nowhere is named in the snapshot and is no verification \
+             of this corpus, and its entry did not read: it names no `commit`"
+        ),
+        "{text}"
+    );
+    assert!(
+        run.findings.iter().any(
+            |finding| finding.rule == headwater_check::register::OBSERVATION
+                && finding.message.contains("ACP-FIX-verification-nowhere")
+        ),
+        "{text}"
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// As above, for each shape test that only a verification entry meets. Each
+/// reader marks the problem as a verification entry's, so each one reaches
+/// the block.
+fn assert_unread_orphan_line(label: &str, entry: &str, reason: &str) {
+    let root = scratch_corpus(label);
+    let observations = snapshot_on_disk(
+        &root,
+        &format!("ACP-FIX-verification-nowhere:\n  kind: verification\n{entry}"),
+    );
+    let run = run_over(&root, &observations);
+    let text = rendered(&run);
+    assert!(
+        text.contains(&format!(
+            "  ACP-FIX-verification-nowhere is named in the snapshot and is no verification \
+             of this corpus, and its entry did not read: {reason}"
+        )),
+        "{text}"
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn a_verification_orphan_with_an_empty_digest_is_named_with_the_reason() {
+    assert_unread_orphan_line(
+        "orphan-empty-digest",
+        &format!("  commit: {SNAPSHOT_COMMIT}\n  criterion_digest: \"\"\n"),
+        "its `criterion_digest` is empty",
+    );
+}
+
+#[test]
+fn a_verification_orphan_with_an_implausible_commit_is_named_with_the_reason() {
+    assert_unread_orphan_line(
+        "orphan-bad-commit",
+        "  commit: \"not a commit\"\n  criterion_digest: \"sha256:00\"\n",
+        "its `commit` (`not a commit`) does not read as a plausible commit reference",
+    );
+}
+
+/// `kind` is matched exactly. `Verification` is neither kind, so the entry is
+/// the register's to report, and the block does not claim it as a
+/// verification entry.
+#[test]
+fn a_capitalized_kind_is_not_a_verification_entry_and_stays_out_of_the_block() {
+    let root = scratch_corpus("capital-kind");
+    let observations = snapshot_on_disk(
+        &root,
+        "ACP-FIX-verification-nowhere:\n  kind: Verification\n",
+    );
+    let run = run_over(&root, &observations);
+    let text = rendered(&run);
+    assert!(
+        !text.contains("ACP-FIX-verification-nowhere is named"),
+        "{text}"
+    );
+    assert!(
+        run.findings.iter().any(
+            |finding| finding.rule == headwater_check::register::OBSERVATION
+                && finding.message.contains("kind: Verification")
+        ),
+        "{text}"
     );
     let _ = std::fs::remove_dir_all(&root);
 }
