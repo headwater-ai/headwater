@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the state-set-twice tree is checked against. Three relations
+# write a state onto their target, and two of them agree: `supersedes` and
+# `replaces` write `superseded`, and `retires` writes `retired`. `cites` writes
+# nothing, and an edge of it is never part of a clash.
+#
+# `page` requires the facet in the `state` role, so `headwater generate` writes
+# a state onto a generated `page`. `plain` requires none, so generate writes no
+# state onto a generated `plain`, and there is nothing to choose between.
+# `note` is the authored kind whose documents declare the edges.
+#
+# `state-set-twice-agree.taxonomy.yml` and `state-set-twice-single.taxonomy.yml`
+# read the same tree where no two setters disagree.
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+      - {value: retired,    role: terminal-retained}
+  summary:
+    role: scent
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  supersedes:
+    family: succession
+    from: [note, page, plain]
+    to:   [note, page, plain]
+    inverse: superseded_by
+    on_target: {set_state: superseded}
+    created_by: author
+  replaces:
+    family: succession
+    from: [note, page, plain]
+    to:   [note, page, plain]
+    inverse: replaced_by
+    on_target: {set_state: superseded}
+    created_by: author
+  retires:
+    family: succession
+    from: [note, page, plain]
+    to:   [note, page, plain]
+    inverse: retired_by
+    on_target: {set_state: retired}
+    created_by: author
+  cites:
+    family: evidence
+    from: [note, page, plain]
+    to:   [note, page, plain]
+    created_by: author
+
+kinds:
+  note:
+    identifier: {scheme: note_id}
+  page:
+    identifier: {scheme: note_id}
+    facets: {require: [status]}
+  plain:
+    identifier: {scheme: note_id}
+
+shelves:
+  notes:
+    path: state-set-twice/notes/**
+    homogeneous: true
+    kind: note
+  pages:
+    path: state-set-twice/pages/**
+    homogeneous: true
+    kind: page
+  plain:
+    path: state-set-twice/plain/**
+    homogeneous: true
+    kind: plain
