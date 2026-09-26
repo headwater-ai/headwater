@@ -59,10 +59,23 @@
 //! # What this crate does not do, and what nothing measures
 //!
 //! **It writes no facet of another document.** `supersedes` declares
-//! `on_target: {set_state: superseded}`, and this crate writes the reciprocal
-//! edge half and stops there. A state transition is a lifecycle event, no rule
-//! in this engine reads a transition, and a scaffolder that moved a state
-//! nothing validates would be manufacturing the fact spec 12 warns about.
+//! `on_target: {set_state: superseded}`, and this crate writes no state onto
+//! the target. A state transition is a lifecycle event, no rule in this engine
+//! reads a transition, and a scaffolder that moved a state nothing validates
+//! would be manufacturing the fact spec 12 warns about.
+//!
+//! **It writes no required far half while the new document is a draft.** A
+//! document opens at the initial state of its regime, and a reciprocal half is
+//! owed by the far document only once its writer has left that state
+//! ([HW-DR-0086](../../../../docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md)).
+//! So for a `reciprocal: required` relation this crate leaves the target's
+//! bytes alone and records the half as [`Owed`], which the report names.
+//! `relation.reciprocity.missing` reports the half once the new document is
+//! promoted, and `headwater check --fix` writes it through the same splice.
+//! Whether the opening state is initial is read through
+//! [`headwater_check::lifecycle_state::StateFacet::standing`], the predicate the
+//! check reads, so the two never disagree. A symmetric relation still gets its
+//! far half, because no check reads a symmetric pair.
 //!
 //! **Allocation sees the corpus and never the history.** Spec 3 says a deleted
 //! document does not free its number. This engine reads a tree, so the highest
@@ -90,6 +103,7 @@ pub mod write;
 use headwater_census::census::Census;
 use headwater_census::resolve::{shelf_for, ShelfMatch};
 use headwater_census::shelves::{Shelf, ShelfBody, Taxonomy};
+use headwater_check::lifecycle_state::{Standing, StateFacet};
 use headwater_check::shape::Shape;
 use headwater_check::Date;
 use headwater_graph::declarations::{Declarations, Direction, Reciprocal};
@@ -214,12 +228,26 @@ pub struct Proposed {
     pub relation: String,
     pub target: String,
     pub target_path: String,
-    /// The half written into the target document, for a relation whose
-    /// reciprocity is required. `None` where the relation asks for none.
+    /// The half written into the target document by this run. `None` where the
+    /// relation asks for none, and where the half is [`Proposed::owed`].
     pub reciprocal: Option<Half>,
+    /// The required half this run does not write, because the new document
+    /// opens at an initial state. The far document owes it once the new one is
+    /// promoted.
+    pub owed: Option<Owed>,
     /// The creator the taxonomy assigns, which is `scaffold` on every edge that
     /// reaches this far.
     pub created_by: String,
+}
+
+/// A far half that is owed at promotion and not written now.
+#[derive(Clone, Debug)]
+pub struct Owed {
+    /// The half as `headwater check --fix` writes it once it is owed.
+    pub half: Half,
+    /// The initial state the new document opens at, which it must leave
+    /// before the far document owes the half.
+    pub until: String,
 }
 
 /// The half of an edge that goes into a document somebody else wrote.
@@ -355,13 +383,15 @@ impl Plan {
                 true => (1, 1),
                 false => (0, 0),
             },
-            // Two halves per edge. The author named the target, so the near
-            // half is hand entry; the far half follows from it, which is the
-            // one edge fact a scaffolder derives rather than receives.
-            edge_halves: (
-                self.edges.iter().filter(|e| e.reciprocal.is_some()).count(),
-                self.edges.len() * 2,
-            ),
+            // The halves this run writes. The author named the target, so the
+            // near half is hand entry; a far half follows from it, which is the
+            // one edge fact a scaffolder derives rather than receives. A half
+            // owed at promotion is not a half of this run, so it is counted in
+            // neither term.
+            edge_halves: {
+                let far = self.edges.iter().filter(|e| e.reciprocal.is_some()).count();
+                (far, self.edges.len() + far)
+            },
         }
     }
 }
@@ -934,7 +964,15 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
         .map(|heading| Section { heading })
         .collect();
 
-    let edges = propose_edges(sources, request, kind, minting.as_ref())?;
+    // The state the new document opens at, read from the field this run built
+    // for the facet in the `state` role. It decides whether a required far half
+    // is written now or owed at promotion.
+    let opening = sources
+        .shape
+        .facet_in_role("state")
+        .and_then(|facet| fields.iter().find(|field| field.key == facet.name))
+        .map(|field| field.value.as_str());
+    let edges = propose_edges(sources, request, kind, minting.as_ref(), opening)?;
     let expected = expected_relations(sources, kind, &edges);
     let language = language_hint(sources, kind);
 
@@ -1557,7 +1595,14 @@ fn propose_edges(
     request: &Request<'_>,
     kind: &str,
     minting: Option<&Minting>,
+    opening: Option<&str>,
 ) -> Result<Vec<Proposed>, Refusal> {
+    // The initial state the new document opens at, and nothing when it opens
+    // anywhere else or at no state this run can read. Read through the check's
+    // own predicate, so `new` defers exactly where the check passes. An absence
+    // defers nothing. See the module comment.
+    let facet = StateFacet::of(sources.shape);
+    let deferred_at = opening.filter(|state| facet.standing(state) == Standing::Initial);
     let mut proposed = Vec::new();
     for (written, target) in request.relates {
         let named = sources.relations.named(written).ok_or_else(|| {
@@ -1644,11 +1689,25 @@ fn propose_edges(
             _ => None,
         };
 
+        // A required half is owed at promotion while the new document is at an
+        // initial state, and the target's bytes are left alone.
+        let (reciprocal, owed) = match (&relation.reciprocal, deferred_at, reciprocal) {
+            (Reciprocal::Required, Some(state), Some(half)) => (
+                None,
+                Some(Owed {
+                    half,
+                    until: state.to_string(),
+                }),
+            ),
+            (_, _, reciprocal) => (reciprocal, None),
+        };
+
         proposed.push(Proposed {
             relation: written.clone(),
             target: target.clone(),
             target_path: node.path.clone(),
             reciprocal,
+            owed,
             created_by: created_by.to_string(),
         });
     }
