@@ -283,27 +283,35 @@ impl Cache {
         self.report
     }
 
-    /// Write what this run used, and say nothing about a failure to.
+    /// Write what this run used, and hand back the path that refused.
     ///
     /// A cache that cannot be written is a run with no cache next time, which
-    /// is slower and never wrong. Reporting it would put a message about a
-    /// disk in the middle of a report about a corpus.
+    /// is slower and never wrong. So a failure here moves no verdict, and the
+    /// caller says it in one line on standard error, the stream for facts
+    /// about the disk. It never goes in the report, which is a fact about the
+    /// corpus, and a cached run and `--no-cache` still write the same bytes
+    /// to standard output. Before #1095 this said nothing at all, and a read
+    /// only checkout then ran without a cache and never learned why.
     ///
     /// Every write leaves the directory carrying its own `.gitignore`, so a
     /// fresh corpus never shows the cache as untracked and never needs a line
     /// for it in a `.gitignore` of its own. The pattern excludes everything
     /// the directory holds except that one file, which is the file a
     /// reviewer would otherwise have to write by hand.
-    pub fn write(&self, root: &Path) {
+    ///
+    /// # Errors
+    ///
+    /// The first path that could not be written, and the error of the host.
+    /// Nothing after it is tried.
+    pub fn write(&self, root: &Path) -> Result<(), (PathBuf, std::io::Error)> {
         let Some(_) = &self.lock else {
-            return;
+            return Ok(());
         };
         let path = Self::path(root);
         if let Some(parent) = path.parent() {
-            if std::fs::create_dir_all(parent).is_err() {
-                return;
-            }
-            let _ = std::fs::write(parent.join(".gitignore"), "*\n!.gitignore\n");
+            std::fs::create_dir_all(parent).map_err(|error| (parent.to_path_buf(), error))?;
+            let ignore = parent.join(".gitignore");
+            std::fs::write(&ignore, "*\n!.gitignore\n").map_err(|error| (ignore, error))?;
         }
         let mut text = String::from(FORMAT);
         text.push('\n');
@@ -313,7 +321,7 @@ impl Cache {
             text.push_str(record);
             text.push('\n');
         }
-        let _ = std::fs::write(path, text);
+        std::fs::write(&path, text).map_err(|error| (path, error))
     }
 
     /// An instance the runner decided without asking a check.
@@ -865,7 +873,9 @@ mod tests {
             std::process::id()
         ));
         let _ = std::fs::remove_dir_all(&root);
-        Cache::at(&root, "sha256:lock", "sha256:rules").write(&root);
+        Cache::at(&root, "sha256:lock", "sha256:rules")
+            .write(&root)
+            .expect("the cache writes");
         let ignore = std::fs::read_to_string(root.join(".headwater/cache/.gitignore"))
             .expect("write created the ignore file");
         assert_eq!(ignore, "*\n!.gitignore\n");

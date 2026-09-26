@@ -1928,7 +1928,7 @@
           "id": "HW-DR-0067",
           "status": "current",
           "status_since": "2026-09-11",
-          "summary": "The vendored package root moves to `.headwater/packages/`, on the ground that the visibility it bought is one explainer, and a tree at the old root now meets a named refusal.",
+          "summary": "The vendored package root is `.headwater/packages/`, because the old root bought only the visibility of one explainer, and a tree there meets a named refusal.",
           "last_verified": "2026-09-11",
           "title": "The vendored package root moves under .headwater and the old root is named in a refusal",
           "relations": {
@@ -2163,7 +2163,7 @@
           "id": "HW-DR-0075",
           "status": "current",
           "status_since": "2026-09-24",
-          "summary": "`headwater taxonomy vendor` may accept a location, ruled yes with a boundary: the fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it.",
+          "summary": "`headwater taxonomy vendor` may accept a location, ruled yes with a boundary. The fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it.",
           "last_verified": "2026-09-24",
           "title": "The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links",
           "relations": {
@@ -2383,7 +2383,7 @@
             "governs": [
               {
                 "to": "taxonomy-source/headwater-standard/taxonomy.yml",
-                "verified_revision": "sha256:e14a63433c104e3e0e3038027048b594f98bfa7ad1893e1026f221fcee18e5d5"
+                "verified_revision": "sha256:c189a575d97e4ab6630a09b916c0e3d8492b0020e8ff55f2b059266c2d7672cf"
               }
             ],
             "traces_to": [
@@ -2391,6 +2391,33 @@
               "HW-SPEC-taxonomy-model",
               "HW-EVAL-default-taxonomy-first-run"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md",
+        "kind": "decision",
+        "id": "HW-DR-0084",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0084",
+          "status": "current",
+          "status_since": "2026-09-26",
+          "summary": "A language regime lists the paths outside the corpus root that it binds, and only the three language rules read them. Such a path is not a document, so no facet, voice, link or relation rule reaches a README.",
+          "last_verified": "2026-09-26",
+          "title": "A language rule reaches front-door prose outside the corpus root, and no other rule does",
+          "relations": {
+            "constrains": [
+              "HW-DR-0029",
+              "HW-DR-0056"
+            ]
+          },
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
           }
         }
       },
@@ -2732,7 +2759,7 @@
           "status": "current",
           "status_since": "2026-09-01",
           "last_verified": "2026-09-01",
-          "summary": "Forty-six real governing documents from n8n, typed against three entries of the library, and what three runs and one coherence sweep found in a corpus that keeps its prose beside the code.",
+          "summary": "Forty-six real governing documents from n8n, typed against three entries of the library. This document also records what three runs and one coherence sweep found in a corpus that keeps its prose beside the code.",
           "title": "n8n as a worked instance — a corpus with no docs root",
           "provenance": {
             "warrant": "asserted",
@@ -2938,7 +2965,7 @@
           "id": "HW-EVAL-the-build-order-as-a-multi-agent-system",
           "status": "current",
           "status_since": "2026-09-07",
-          "summary": "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, the architecture that follows, what was rejected, and the numbers the next run is held against.",
+          "summary": "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, and the architecture that follows. What was rejected, and the numbers the next run is held against.",
           "last_verified": "2026-09-24",
           "title": "The build order as a multi-agent system",
           "provenance": {
@@ -3411,7 +3438,7 @@
           "id": "HW-IFACE-headwater-check",
           "status": "current",
           "status_since": "2026-09-06",
-          "summary": "What headwater check reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit.",
+          "summary": "What headwater check reads, what goes to each of its two streams, and the twelve causes behind its one non-zero exit.",
           "last_verified": "2026-08-24",
           "title": "headwater check",
           "provenance": {
@@ -6880,11 +6907,11 @@
         "facets": {
           "id": "HW-OBL-0105",
           "title": "Nothing plays the hook role that two relations name as their author",
-          "status": "current",
-          "status_since": "2026-08-13",
+          "status": "discharged",
+          "status_since": "2026-09-26",
           "waiting_on": "ruling",
           "last_verified": "2026-09-26",
-          "summary": "`governs` and `traces_to` declare `created_by: hook`, no verb of this engine writes either one, and every such edge in this corpus is hand entry.",
+          "summary": "Four relations declared `created_by: hook` and no verb of this engine wrote any of them. From headwater-standard 4.8.0 no relation names `hook`.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -8432,10 +8459,10 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0169",
-          "status": "current",
-          "status_since": "2026-09-06",
-          "summary": "coverage.unaccounted reads ['.headwater/ids', '.headwater/ids'], so the self-assessment page publishes 2 under a label that names files nobody accounted for.",
-          "last_verified": "2026-09-06",
+          "status": "discharged",
+          "status_since": "2026-09-26",
+          "summary": "Coverage::of now lists each unaccounted path once and exempts the claim store by name, so coverage.unaccounted reads [] and the self-assessment page publishes 0.",
+          "last_verified": "2026-09-26",
           "title": "The coverage report lists one path twice, so the self-assessment page publishes two unaccounted files where one exists",
           "waiting_on": "adopter",
           "provenance": {
@@ -9244,7 +9271,7 @@
           "id": "HW-OBL-0203",
           "status": "draft",
           "status_since": "2026-09-23",
-          "summary": "A missing project-board item for two issues, an interactive-shell grep shadowed to basic-regex semantics, and a stale hook-exit-code comment, none with a reader outside this repository, recorded together under the intake cap.",
+          "summary": "A missing project-board item for two issues, an interactive-shell grep shadowed to basic-regex semantics, and a stale hook-exit-code comment have no reader outside this repository. This record files the three together under the intake cap.",
           "last_verified": "2026-09-23",
           "title": "Three small run-tooling gaps from run 20260922-1121, filed together",
           "waiting_on": "build"
@@ -9805,7 +9832,7 @@
           "id": "HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on",
           "status": "current",
           "status_since": "2026-09-11",
-          "summary": "Every traceability edge in this corpus is hand entry under a creator value that names a hook, and this asks whether an agent supplies the identifier with nobody asking for one.",
+          "summary": "No verb writes a traceability edge in this corpus, so a person types every one, and this asks whether an agent supplies the identifier with nobody asking for one.",
           "last_verified": "2026-09-11",
           "probe_category": "navigability",
           "expectation": "cited",
@@ -9884,7 +9911,7 @@
           "id": "HW-PD-0003",
           "status": "current",
           "status_since": "2026-09-07",
-          "summary": "The unit of orchestration cost is one parent turn at full context, so a dispatch is worth making only when it retires more parent turns than the one it spends, which the integrator passes and a fresh agent per poll fails.",
+          "summary": "The unit of orchestration cost is one parent turn at full context. So a dispatch is worth making only when it retires more parent turns than the one it spends. The integrator passes that test, and a fresh agent per poll fails it.",
           "last_verified": "2026-09-07",
           "title": "A dispatch pays when it retires more parent turns than it costs",
           "provenance": {
@@ -9974,7 +10001,7 @@
           "id": "HW-PD-0007",
           "status": "current",
           "status_since": "2026-09-20",
-          "summary": "A wait that might outlive the five-minute prompt-cache lifetime is wrapped in a timeout under it and re-issued on return, so a background wait still ends the turn without paying to rewrite a context the cache would otherwise have kept warm.",
+          "summary": "A wait that might outlive the five-minute prompt-cache lifetime is wrapped in a timeout under it and re-issued on return. So a background wait still ends the turn without paying to rewrite a context the cache would otherwise have kept warm.",
           "last_verified": "2026-09-21",
           "title": "A background wait caps below the cache lifetime and re-issues itself",
           "provenance": {
@@ -13870,7 +13897,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e14a63433c104e3e0e3038027048b594f98bfa7ad1893e1026f221fcee18e5d5"
+          "verified_revision": "sha256:c189a575d97e4ab6630a09b916c0e3d8492b0020e8ff55f2b059266c2d7672cf"
         }
       },
       {
@@ -13904,6 +13931,28 @@
           "id": "HW-EVAL-default-taxonomy-first-run",
           "path": "docs/evaluations/default-taxonomy-first-run.md",
           "kind": "evaluation"
+        }
+      },
+      {
+        "source": "docs/decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0029",
+          "path": "docs/decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0056",
+          "path": "docs/decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md",
+          "kind": "decision"
         }
       },
       {

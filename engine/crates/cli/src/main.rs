@@ -74,7 +74,7 @@ use std::process::ExitCode;
 
 fn main() -> ExitCode {
     // `clap` exits **2** on a parse error, and this binary has one failing
-    // status and it is 1: `docs/interfaces/headwater-check.md` lists eleven
+    // status and it is 1: `docs/interfaces/headwater-check.md` lists twelve
     // reasons for it under "There is no third status", and a 2 anywhere makes
     // that sentence false. `Command` exposes no setting for the error exit
     // code, so the only route is `try_parse` and never letting `clap` call
@@ -836,6 +836,7 @@ fn validate(root: &Path) -> ExitCode {
     // it, as one published as its own repository has, skips the count with a
     // one-line notice instead of refusing every pattern. And the count leaves
     // out what git ignores, so a cache on one host is not an entry.
+    let mut unread: Option<String> = None;
     let (unmatched, notice) = match Declarations::read(&repository.resolution.taxonomy) {
         Ok(declarations) => {
             let consumer = &repository.consumer;
@@ -846,10 +847,21 @@ fn validate(root: &Path) -> ExitCode {
             // A root that is an authored package source holds its own content
             // directories, `assemblies/` and `doctrine/` among them, and they
             // are the taxonomy rather than a tree (#1103). A root with no
-            // manifest, or one that does not read, names none.
-            let own = headwater_resolve::package::manifest_at(&corpus.base)
-                .map(|manifest| headwater_resolve::package::content_roots(&manifest))
-                .unwrap_or_default();
+            // manifest names none, and says nothing. A manifest that is there
+            // and does not read names none too, and the run names it and is
+            // not valid, because `publish` would refuse the same file (#1123).
+            let own = match headwater_resolve::package::manifest_at(&corpus.base) {
+                Ok(manifest) => headwater_resolve::package::content_roots(&manifest),
+                Err(errors) => {
+                    // Anything at the path is a manifest that did not read: a
+                    // directory or a dangling link as much as bad YAML.
+                    let at = corpus.base.join(headwater_resolve::package::MANIFEST);
+                    if std::fs::symlink_metadata(&at).is_ok() {
+                        unread = Some(unread_manifest(&errors, &at));
+                    }
+                    Vec::new()
+                }
+            };
             let beside = headwater_graph::scope::tree_directories(
                 &corpus.base,
                 &repository.resolution.sources,
@@ -876,13 +888,23 @@ fn validate(root: &Path) -> ExitCode {
         println!("\n{notice}");
     }
 
-    if findings.is_empty() && unmatched.is_empty() {
+    if findings.is_empty() && unmatched.is_empty() && unread.is_none() {
         println!("\n{} is valid", repository.consumer.package);
         return ExitCode::SUCCESS;
     }
     println!("\n{} is not valid", repository.consumer.package);
     if !findings.is_empty() {
         eprint!("{}", indent(&err(&render_errors(&findings))));
+    }
+    if let Some(reason) = &unread {
+        eprintln!(
+            "  {}",
+            err(&format!(
+                "root {} was not read, so no content directory is left out of the governed-scope \
+                 tree: {reason}",
+                headwater_resolve::package::MANIFEST
+            ))
+        );
     }
     for (pattern, why) in &unmatched {
         eprintln!(
@@ -894,6 +916,27 @@ fn validate(root: &Path) -> ExitCode {
     }
     advise(root, &repository.consumer);
     ExitCode::FAILURE
+}
+
+/// Why a root package manifest that is there did not read, on one line: the
+/// finding names the file once, so each reason is its own text, and where the
+/// loader wrote the manifest's path into it, the reason says `it` (#1123).
+fn unread_manifest(errors: &[headwater_resolve::ResolveError], at: &Path) -> String {
+    let path = at.display().to_string();
+    errors
+        .iter()
+        .flat_map(|error| {
+            error
+                .to_string()
+                .replace(&path, "it")
+                .lines()
+                .map(str::trim)
+                .filter(|line| !line.is_empty())
+                .map(str::to_owned)
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>()
+        .join("; ")
 }
 
 /// Which bundle would have completed an incomplete selection, under the refusal
@@ -5512,7 +5555,10 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
         ctx,
         &mut cache,
     );
-    cache.write(root);
+    // Held for the account rather than said here. A standard error that
+    // cannot take this line must not stop the patches below, and the account
+    // is where the caller reads what this run did to the disk.
+    let unwritten = cache.write(root).err();
 
     // A suppressed finding is not in this list, which is the author asking for
     // the text to stand. The runner filters, and a fix reads what a reader
@@ -5524,7 +5570,7 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
         .collect();
     let composed = headwater_scaffold::fix::compose(root, &patches);
     if let Err(refusal) = headwater_scaffold::fix::apply(root, &composed.files) {
-        eprintln!("headwater: {}", err(&format!("{refusal}")));
+        say(&format!("headwater: {}\n", err(&format!("{refusal}"))))?;
         return Err(ExitCode::FAILURE);
     }
     // After the edits, and never before them. A create that cannot happen
@@ -5532,10 +5578,13 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
     // scaffolder argues for: the reservation refuses with an unchanged tree,
     // and the create is the step that can meet a path somebody else took.
     if let Err(refusal) = headwater_scaffold::fix::make(root, &composed.created) {
-        eprintln!("headwater: {}", err(&format!("{refusal}")));
+        say(&format!("headwater: {}\n", err(&format!("{refusal}"))))?;
         return Err(ExitCode::FAILURE);
     }
-    let mut account = String::new();
+    let mut account = match unwritten {
+        Some((path, error)) => unwritten_cache(&path, &error),
+        None => String::new(),
+    };
     for file in &composed.files {
         use std::fmt::Write;
         let _ = writeln!(
@@ -5685,6 +5734,21 @@ struct Asked {
 }
 
 fn check(root: &Path, asked: Asked) -> ExitCode {
+    match checked(root, asked) {
+        Ok(code) | Err(code) => code,
+    }
+}
+
+/// The body of `check`, where `Err` is a stream that could not be written.
+///
+/// Every byte this verb writes goes through [`report`] or [`say`], and each of
+/// them hands back the exit status of a failed write rather than panicking.
+/// `print!` and `eprint!` panic on a full disk, and the panic message goes to
+/// standard error, so a stream that failed there read as exit 101 with nothing
+/// said ([#1095](https://github.com/headwater-ai/headwater/issues/1095)).
+/// `docs/interfaces/headwater-check.md` states the exit as 1, the twelfth
+/// reason under *Exit status*.
+fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     let Asked {
         strict,
         cached,
@@ -5704,12 +5768,12 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
         Some(Some(format)) => format,
         Some(None) => {
             let names: Vec<&str> = Format::ALL.iter().map(|format| format.name()).collect();
-            return fail(&format!(
+            return Ok(fail(&format!(
                 "`check --format` takes one of {}. An emitter target of `export` is not one of \
                  them: that flag names a vocabulary for the graph and this one names a \
                  vocabulary for the findings",
                 names.join(", ")
-            ));
+            )));
         }
     };
     // The one clock read of the whole engine, and it is here rather than in a
@@ -5717,11 +5781,11 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // whose host cannot say what day it is refuses rather than guesses, because
     // a windowed expectation evaluated against a guess is a wrong verdict.
     let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
-        eprintln!(
-            "headwater: {}",
+        say(&format!(
+            "headwater: {}\n",
             err("this host has no readable clock. Pass `--now <YYYY-MM-DD>`")
-        );
-        return ExitCode::FAILURE;
+        ))?;
+        return Ok(ExitCode::FAILURE);
     };
     // The second injected value, read here and bound after the walk below. A
     // manifest this engine cannot read is a refusal rather than a shorter
@@ -5732,29 +5796,38 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
         Some(path) => match headwater_check::change::Unbound::at(path) {
             Ok(unbound) => Some(unbound),
             Err(why) => {
-                eprintln!("headwater: {}", err("the change manifest did not read"));
-                eprintln!("{}", indent(&err(&why)));
-                return ExitCode::FAILURE;
+                say(&format!(
+                    "headwater: {}\n{}\n",
+                    err("the change manifest did not read"),
+                    indent(&err(&why))
+                ))?;
+                return Ok(ExitCode::FAILURE);
             }
         },
     };
     // The write, and then the read. See `fix` above: the report below is the
     // state after the patches landed, so a fix that produced a document these
     // checks reject reports it on the same run rather than on the next one.
+    //
+    // An account that did not reach standard error does not stop the report.
+    // The patches already landed, and the contract keeps standard output
+    // complete where standard error fails. The failure is the exit status,
+    // decided after the report.
+    let mut unsaid = false;
     let refused = match fixing {
         false => Vec::new(),
         true => match fix(root, &ctx, cached) {
             Ok(fixed) => {
-                eprint!("{}", fixed.account);
+                unsaid = say(&fixed.account).is_err();
                 fixed.refused
             }
-            Err(code) => return code,
+            Err(code) => return Ok(code),
         },
     };
 
     let loaded = match load(root) {
         Ok(loaded) => loaded,
-        Err(code) => return code,
+        Err(code) => return Ok(code),
     };
     let Loaded {
         bound,
@@ -5790,7 +5863,9 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
         &ctx,
         &mut cache,
     );
-    cache.write(root);
+    // Held until the report is out, and then said on standard error. See
+    // `Cache::write` for why a failure here moves no verdict.
+    let unwritten = cache.write(root).err();
 
     // The run, in the vocabulary the caller asked for. Spec 6 lists four
     // formats and `headwater_adapter::render` writes every one of them, so this
@@ -5822,24 +5897,24 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
         _ => headwater_cli::paint::ColorMode::Plain,
     };
     let artifact = headwater_adapter::render_at(&run, taken, graph, &subject, format, width, mode);
-    print!("{artifact}");
+    report(&artifact)?;
     // The census over what was written, in the shape spec 6 fixes for the
     // graph emitters. A finding that reached no output and that no loss
     // reason covers is a defect in the adapter, and it fails the run the
     // way a defective projection census does.
     let audited = headwater_adapter::census(&run, format, &artifact);
     if audited.is_defective() {
-        eprint!("headwater: {}", err(&audited.complaint(format)));
-        return ExitCode::FAILURE;
+        say(&format!("headwater: {}", err(&audited.complaint(format))))?;
+        return Ok(ExitCode::FAILURE);
     }
 
     if let Some(path) = read_set {
         if let Err(error) = std::fs::write(&path, run.read_set.render()) {
-            eprintln!(
-                "headwater: {}",
+            say(&format!(
+                "headwater: {}\n",
                 err(&format!("cannot write {}: {error}", path.display()))
-            );
-            return ExitCode::FAILURE;
+            ))?;
+            return Ok(ExitCode::FAILURE);
         }
     }
 
@@ -5857,11 +5932,11 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // anything, which is the difference from the read set above.
     if let Some(path) = register_out {
         if let Err(error) = std::fs::write(&path, run.register.render()) {
-            eprintln!(
-                "headwater: {}",
+            say(&format!(
+                "headwater: {}\n",
                 err(&format!("cannot write {}: {error}", path.display()))
-            );
-            return ExitCode::FAILURE;
+            ))?;
+            return Ok(ExitCode::FAILURE);
         }
     }
 
@@ -5869,17 +5944,67 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // this machine's disk and the report above is a fact about the corpus.
     // `--no-cache` and a cached run write the same bytes to standard output,
     // and a line here would be the one thing that made them differ.
-    eprint!("{}", run.cache.render());
+    say(&run.cache.render())?;
+    if let Some((path, error)) = unwritten {
+        say(&unwritten_cache(&path, &error))?;
+    }
+    if unsaid {
+        return Ok(ExitCode::FAILURE);
+    }
 
     if !refused.is_empty() {
-        eprint!("{}", refusal_account(&refused));
-        return ExitCode::FAILURE;
+        say(&refusal_account(&refused))?;
+        return Ok(ExitCode::FAILURE);
     }
 
     if strict && run.has_errors() {
-        return ExitCode::FAILURE;
+        return Ok(ExitCode::FAILURE);
     }
-    ExitCode::SUCCESS
+    Ok(ExitCode::SUCCESS)
+}
+
+/// Write the report to standard output and flush it, and never panic.
+///
+/// The flush is here and not left to the exit of the process, because the
+/// flush Rust makes at exit ignores a failure. A report that did not land is
+/// one sentence on standard error, where that stream still takes one.
+fn report(text: &str) -> Result<(), ExitCode> {
+    use std::io::Write;
+    let mut out = std::io::stdout().lock();
+    if let Err(error) = out.write_all(text.as_bytes()).and_then(|()| out.flush()) {
+        // The status is 1 whether or not this sentence lands, so its own
+        // failure has nothing left to change.
+        let _ = say(&format!(
+            "headwater: {}\n",
+            err(&format!(
+                "cannot write the report to standard output: {error}"
+            ))
+        ));
+        return Err(ExitCode::FAILURE);
+    }
+    Ok(())
+}
+
+/// Write to standard error, and never panic.
+///
+/// A standard error that cannot be written leaves nothing to say anything
+/// on, so the failure is the exit status alone.
+fn say(text: &str) -> Result<(), ExitCode> {
+    use std::io::Write;
+    let mut stream = std::io::stderr().lock();
+    stream
+        .write_all(text.as_bytes())
+        .and_then(|()| stream.flush())
+        .map_err(|_| ExitCode::FAILURE)
+}
+
+/// The line for a cache this run could not write. It is not an error, so it
+/// carries no error color.
+fn unwritten_cache(path: &Path, error: &std::io::Error) -> String {
+    format!(
+        "headwater: cache not written: {}: {error}\n",
+        path.display()
+    )
 }
 
 /// How long a task holds when nobody says.
