@@ -2,7 +2,7 @@
 id: HW-PD-0006
 status: current
 status_since: 2026-09-07
-summary: "The build order keeps the name next-run and gains a run directory it writes as it goes, so that a compaction, a crash or a second invocation resumes from a doctrine block of ten lines and a log read by the line, with each stage's model declared in its own frontmatter."
+summary: "The build order keeps the name next-run and gains a run directory it writes as it goes. That way, a compaction, a crash or a second invocation resumes from a doctrine block of ten lines and a log read by the line. Each stage's model is declared in its own frontmatter."
 last_verified: 2026-09-07
 title: "The entrypoint keeps its name and becomes a resumable run"
 provenance:
