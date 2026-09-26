@@ -772,3 +772,43 @@ fn validate_names_a_root_package_manifest_that_is_not_a_mapping() {
     let ran = root.run(&["taxonomy", "validate"]);
     assert_names_the_unread_manifest(&ran, "not a mapping");
 }
+
+/// An unread manifest alone makes the run not valid (#1123, verify finding).
+/// Beside the stub tree every scope pattern matches, so no refusal is there to
+/// carry the exit code, and the manifest line is what does.
+#[test]
+fn validate_is_not_valid_for_an_unread_manifest_where_every_scope_pattern_matches() {
+    let root = Root::new("scope-manifest-alone");
+    std::fs::write(root.at.join("package.yml"), "- package: acme/x\n")
+        .expect("the manifest writes");
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(ran.out.contains("is not valid"), "{ran:?}");
+    assert_eq!(ran.err.matches("matches no entry").count(), 0, "{ran:?}");
+    let named: Vec<&str> = ran
+        .err
+        .lines()
+        .filter(|line| line.contains("package.yml"))
+        .collect();
+    assert_eq!(named.len(), 1, "{ran:?}");
+    assert!(named[0].contains("not a mapping"), "{named:?}");
+}
+
+/// A `package.yml` that is there and is not a file is named too, and the path
+/// the loader puts in its reason is not printed a second time (#1123, verify
+/// findings).
+#[test]
+fn validate_names_a_root_package_manifest_that_is_a_directory() {
+    let root = Root::new("scope-manifest-directory");
+    std::fs::create_dir(root.at.join("package.yml")).expect("the directory is there");
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(ran.out.contains("is not valid"), "{ran:?}");
+    let named: Vec<&str> = ran
+        .err
+        .lines()
+        .filter(|line| line.contains("package.yml"))
+        .collect();
+    assert_eq!(named.len(), 1, "{ran:?}");
+    assert_eq!(named[0].matches("package.yml").count(), 1, "{named:?}");
+}
