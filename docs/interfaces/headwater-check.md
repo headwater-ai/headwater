@@ -2,7 +2,7 @@
 id: HW-IFACE-headwater-check
 status: current
 status_since: 2026-09-06
-summary: "What headwater check reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit."
+summary: "What headwater check reads, what goes to each of its two streams, and the twelve causes behind its one non-zero exit."
 last_verified: 2026-08-24
 title: "headwater check"
 provenance:
@@ -83,7 +83,7 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 
 **0** where the run completed and no reason below applied. A finding of any severity, including an error, leaves the status at 0 unless `--strict` was passed.
 
-**1** for each of the eleven reasons below. There is no third status, so a caller reads the message to tell them apart.
+**1** for each of the twelve reasons below. There is no third status, so a caller reads the message to tell them apart.
 
 | The reason | Where it is decided |
 |---|---|
@@ -93,6 +93,7 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 | `--change` names a manifest that did not read | `check`, before the corpus is walked |
 | `--fix` composed a patch and the write did not land | `fix`, before the report |
 | The lock is absent, or a declaration under it did not read | `load`, called by `check` |
+| Standard output or standard error could not be written | wherever the write is |
 | The report lost a finding that no declared loss reason covers | the adapter census, after the report is written |
 | `--read-set` names a file that could not be written | after the report is written |
 | `--register` names a file that could not be written | after the report is written |
@@ -101,7 +102,9 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 
 Two of those are worth separating. **A refused patch is not a finding**, so no absence of `--strict` softens it. The verb was asked to write and did not, and a caller who read a 0 would believe a corpus was fixed. And **the report is written before the last five rows are decided**. A run that exits 1 for one of those five still put a complete report on standard output. That holds in `text`, `json`, `sarif` and `markdown` alike.
 
-**The other six rows are refusals, and a refusal writes nothing to standard output.** The account of a refusal is one English sentence on standard error, under `--json` and `--format json` alike. So the property is that a refusal writes no document, and not that a non-zero exit writes none. [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules it, and `a_refusal_writes_no_document_and_accounts_for_itself_on_the_other_stream` in `engine/crates/cli/tests/json.rs` holds both halves.
+**The first six rows are refusals, and a refusal writes nothing to standard output.** The account of a refusal is one English sentence on standard error, under `--json` and `--format json` alike. So the property is that a refusal writes no document, and not that a non-zero exit writes none. [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules it, and `a_refusal_writes_no_document_and_accounts_for_itself_on_the_other_stream` in `engine/crates/cli/tests/json.rs` holds both halves.
+
+**A stream that cannot be written is the seventh row, and the verb does not panic on it.** A full disk and a closed pipe are the usual causes. Where standard output fails, the report is not complete. The verb then writes one sentence on standard error that names standard output and the error of the host. Where standard error fails, the report on standard output stays complete, and the verb says nothing more. In both cases the status is 1 and never 101, so a caller can tell a full disk from a defect in the engine. `the_report_survives_a_standard_error_that_cannot_be_written` and `a_report_that_cannot_reach_standard_output_exits_1_and_says_so` in `engine/crates/cli/tests/json.rs` hold the two halves.
 
 ## Environment
 
@@ -118,7 +121,7 @@ A reader who met `HEADWATER_NOW` in a continuous-integration job is reading a sh
 | `.headwater/taxonomy.lock` | read. The taxonomy every check is generated from, and the digest that keys the cache. |
 | `.headwater/taxonomy.yml` | read. The corpus root, the exclusions and the package the repository consumes. |
 | the corpus | read. Every file under the declared root that no exclusion removes. |
-| `.headwater/cache/checks` | read and written, unless `--no-cache`. A file that is absent, unreadable or written by another engine reads as an empty cache. That costs one full run and is not an error. |
+| `.headwater/cache/checks` | read and written, unless `--no-cache`. A file that is absent, unreadable or written by another engine reads as an empty cache. That costs one full run and is not an error. A cache that cannot be written is one line on standard error, `headwater: cache not written: <path>: <error>`. That is not an error either, and it changes no exit status and no byte of standard output. |
 | `.headwater/cache/.gitignore` | written, unless `--no-cache`. The pattern excludes `.headwater/cache/checks` and keeps itself, so a repository that adds this directory never needs a line of its own for the cache. |
 | `.headwater/imports/` | read where `.headwater/taxonomy.yml` declares an import, for the anchors an imported snapshot supplies. |
 | `.headwater/ids/` | read, and written under `--fix` alone. The identifier claim store, which two corpus-scoped rules take as one input with a digest over its whole listing. A write here creates a file and never modifies one, so a claim this verb met is a claim it left. |
