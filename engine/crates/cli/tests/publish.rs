@@ -1623,20 +1623,28 @@ fn replace_line(path: &Path, prefix: &str, line: &str) {
 fn a_member_the_source_adds_or_drops_is_named_on_its_own_line() {
     let root = publisher_and_consumer("check-added");
     let source = root.path().join("taxonomy-source/headwater-standard");
-    std::fs::write(source.join("doctrine/extra.md"), "# Extra\n\nA page nobody published.\n")
-        .expect("the added member is written");
+    std::fs::write(
+        source.join("doctrine/extra.md"),
+        "# Extra\n\nA page nobody published.\n",
+    )
+    .expect("the added member is written");
     let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
     assert_eq!(code, Some(1), "stdout: {stdout}\nstderr: {stderr}");
     assert!(
-        stderr.contains("doctrine/extra.md: a fresh publish writes it, and the vendored copy lacks it"),
+        stderr.contains(
+            "doctrine/extra.md: a fresh publish writes it, and the vendored copy lacks it"
+        ),
         "{stderr}"
     );
     assert!(stderr.contains("the vendored digest is"), "{stderr}");
 
     let root = publisher_and_consumer("check-dropped");
     let source = root.path().join("taxonomy-source/headwater-standard");
-    std::fs::remove_file(root.path().join("docs/taxonomies/diataxis-site/templates/tutorial.md"))
-        .expect("the dropped member is removed");
+    std::fs::remove_file(
+        root.path()
+            .join("docs/taxonomies/diataxis-site/templates/tutorial.md"),
+    )
+    .expect("the dropped member is removed");
     let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
     assert_eq!(code, Some(1), "stdout: {stdout}\nstderr: {stderr}");
     assert!(
@@ -1674,8 +1682,11 @@ fn the_vendored_record_is_compared_by_what_it_states_and_not_by_its_bytes() {
         .path()
         .join(".headwater/packages/headwater-standard/release.yml");
     let text = std::fs::read_to_string(&record).expect("the record reads");
-    std::fs::write(&record, format!("# a header an engine release reworded\n{text}"))
-        .expect("the header is edited");
+    std::fs::write(
+        &record,
+        format!("# a header an engine release reworded\n{text}"),
+    )
+    .expect("the header is edited");
     let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
     assert_eq!(
         code,
@@ -1698,7 +1709,10 @@ fn a_hand_edited_vendored_copy_fails_and_the_message_does_not_blame_the_source()
     std::fs::write(&vendored, text).expect("the vendored taxonomy is edited");
     let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
     assert_eq!(code, Some(1), "stdout: {stdout}\nstderr: {stderr}");
-    assert!(stderr.contains("taxonomy.yml: the vendored bytes are"), "{stderr}");
+    assert!(
+        stderr.contains("taxonomy.yml: the vendored bytes are"),
+        "{stderr}"
+    );
     assert!(
         stderr.contains("or somebody edited the vendored copy"),
         "the message must not say the source changed when it may not have: {stderr}"
@@ -1724,7 +1738,10 @@ fn publish_check_refuses_the_vendored_copy_as_its_source_and_a_copy_with_no_reco
     .expect("the record is removed");
     let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
     assert_eq!(code, Some(1), "stdout: {stdout}\nstderr: {stderr}");
-    assert!(stderr.contains("carries no readable release record"), "{stderr}");
+    assert!(
+        stderr.contains("carries no readable release record"),
+        "{stderr}"
+    );
 }
 
 /// What CI runs: this repository's own source against its own vendored copy.
