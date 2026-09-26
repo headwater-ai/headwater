@@ -1,4 +1,4 @@
-594 seen, 413 classified, 413 checked, 8373 check instances
+595 seen, 414 classified, 414 checked, 8392 check instances
      22 generated, held to regeneration by `headwater generate --check`
      23 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
     313 skipped: the target is a document, which holds no revision for an edge to be verified against
@@ -6,7 +6,7 @@
       3 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-16`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
-    827 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+    829 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 adoption
   0 pairs open, 1 closed, holding 0 findings, in 1 task
   AD-1 0 open, 1 closed, holding 0 findings, owner the specification authors,
@@ -14,36 +14,36 @@ adoption
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The
       baseline held two when the linter retired. The other named a semicolon
       inside a block quotation, which the engine does not report at all, because
-      the parser hands a quoted block to no lexical rule420 documents in the read set, and 6 barriers that no gate carries across a merge
-    413 instances of facet.required.missing
-    413 instances of facet.value.not_permitted
-    413 instances of facet.value.blank
-    413 instances of identifier.pattern.not_met
-    413 instances of shelf.placement_is_primary
-    766 instances of relation.target.unresolved
+      the parser hands a quoted block to no lexical rule421 documents in the read set, and 6 barriers that no gate carries across a merge
+    414 instances of facet.required.missing
+    414 instances of facet.value.not_permitted
+    414 instances of facet.value.blank
+    414 instances of identifier.pattern.not_met
+    414 instances of shelf.placement_is_primary
+    768 instances of relation.target.unresolved
     549 instances of relation.target.suspect
      91 instances of relation.reciprocity.missing
-    439 instances of relation.endpoint.not_permitted
+    441 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
     426 instances of warrant.evidence.unsupported
       5 instances of relation.participation.overdue
-    413 instances of relation.declaration.unusable
-    413 instances of identifier.unusable
+    414 instances of relation.declaration.unusable
+    414 instances of identifier.unusable
       1 instances of identifier.claimed_twice
       1 instances of identifier.claim.missing
       1 instances of identifier.claim.stale
-    374 instances of voice.forbidden_construction
-    392 instances of language.controlled.not_met
-    392 instances of language.retired_term.used
+    375 instances of voice.forbidden_construction
+    393 instances of language.controlled.not_met
+    393 instances of language.retired_term.used
      27 instances of surface.local_path.instructed
      27 instances of surface.command.undeclared
-    392 instances of language.source_form.not_met
-    354 instances of section.required.missing
+    393 instances of language.source_form.not_met
+    355 instances of section.required.missing
       1 instances of link.fragment.unresolved
       1 instances of link.path.unresolved
-    413 instances of warrant.promoted
-    413 instances of lifecycle.transition.not_permitted
-    413 instances of lifecycle.state.not_admitted
+    414 instances of warrant.promoted
+    414 instances of lifecycle.transition.not_permitted
+    414 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
       1 instances of relation.target.verification.suspect
 suppressions
