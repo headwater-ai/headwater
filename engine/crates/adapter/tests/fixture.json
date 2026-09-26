@@ -636,7 +636,7 @@
     {
       "rule": "surface.local_path.instructed",
       "scope": "document",
-      "version": 4,
+      "version": 5,
       "obligations": []
     },
     {

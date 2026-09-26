@@ -55,6 +55,7 @@
 //! `commands` member of `surface`, the second half of #976, is read by
 //! [`crate::command`], which holds the shell blocks of the same pages.
 
+use crate::command::SHELLS;
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
 use crate::scope::{DocumentCheck, DocumentView};
@@ -95,13 +96,18 @@ impl LocalPath {
 
     /// The local root a token opens with, if it opens with one, or the root a
     /// token is when it names the root with no trailing `/` and is not the
-    /// name of a program the surface declares.
-    fn root_of(&self, token: &str) -> Option<&str> {
+    /// name of a program the surface declares. `bare_counts` says whether the
+    /// place the token stands in reads a bare root at all: a shell block and a
+    /// code span do, and a value in any other block or in front matter does
+    /// not (#1085).
+    fn root_of(&self, token: &str, bare_counts: bool) -> Option<&str> {
         let token = strip_variable(token);
         let token = token.strip_prefix("./").unwrap_or(token);
         self.local_roots
             .iter()
-            .find(|root| token.starts_with(root.as_str()) || self.bare(token, root))
+            .find(|root| {
+                token.starts_with(root.as_str()) || (bare_counts && self.bare(token, root))
+            })
             .map(String::as_str)
     }
 
@@ -129,7 +135,14 @@ impl DocumentCheck for LocalPath {
     /// core.hooksPath` line is reported. A bare token that the surface
     /// declares as a program, as `mkdocs` is, names that program and does not
     /// count.
-    const VERSION: u32 = 4;
+    ///
+    /// Edition five (#1085): a bare token counts only in a shell block and in
+    /// a code span. In a fenced block with a different info string, and in a
+    /// front-matter value, a bare word is a value of the adopter's own
+    /// configuration, as `site` is in `site_dir: site`. The verdict on such a
+    /// page moves from failed to passed, so a warm cache would otherwise
+    /// serve edition four's failure.
+    const VERSION: u32 = 5;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, _kind: &str) -> bool {
@@ -176,7 +189,7 @@ impl DocumentCheck for LocalPath {
                 if text.contains(char::is_whitespace) {
                     continue;
                 }
-                if let Some(root) = self.root_of(text) {
+                if let Some(root) = self.root_of(text, false) {
                     report(
                         item.span.start.line,
                         item.span.start.col,
@@ -200,6 +213,15 @@ impl DocumentCheck for LocalPath {
                 BlockKind::Code => "a code block",
                 _ => "a code span",
             };
+            // A bare root is an argument a shell command gives. In a fence
+            // that is not a shell, the same word is the adopter's own value.
+            let bare_counts = match block.kind {
+                BlockKind::Code => block
+                    .info
+                    .as_deref()
+                    .is_some_and(|info| SHELLS.contains(&info)),
+                _ => true,
+            };
             for run in &block.runs {
                 if run.ownership != Ownership::Code || run.text.trim_start().starts_with('<') {
                     continue;
@@ -209,7 +231,7 @@ impl DocumentCheck for LocalPath {
                         c.is_whitespace()
                             || matches!(c, '`' | '"' | '\'' | '(' | ')' | '=' | ',' | ';')
                     }) {
-                        if let Some(root) = self.root_of(token) {
+                        if let Some(root) = self.root_of(token, bare_counts) {
                             let line_number = run.span.start.line + offset;
                             let column = match offset {
                                 0 => run.span.start.col,
