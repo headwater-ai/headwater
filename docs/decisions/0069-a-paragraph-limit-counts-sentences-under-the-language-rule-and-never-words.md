@@ -55,7 +55,7 @@ The rendered page of [spec 13](../spec/13-open-obligations.md) carries paragraph
 
 **What reopens this: an adjudicated sample of the findings, on the method of HW-DR-0005.** The question the sample answers is rule 6.5's: of the paragraphs past six sentences, how many hold one topic. Where most hold one, the count measures the wrong thing, and the defect is retired rather than tuned. A limit tuned in numbers until it fires less often is the word count this record refused, in a different unit.
 
-**The sample met this clause, and the defect never landed.** A build reported 830 findings over 7,093 paragraphs, and a seeded sample of 60 of them held one topic in 50. [HW-DR-0087](0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md) records the measurement and retires the defect.
+**The sample met this clause, and the defect never landed.** On the nine shelves of this record's census, a build reported 758 findings over 6,592 paragraphs. A seeded sample of 60 of all its findings held one topic in 50. [HW-DR-0087](0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md) records the measurement and retires the defect.
 
 ## Consequences
 
