@@ -171,6 +171,11 @@ fn ends_a_sentence(chars: &[char], index: usize, block: &Block, links: &[Link]) 
         // The parser removed the brackets, so `[spec 1](…) explicitly forswears
         // that` reaches this rule as a lower-case `s`.
         Some(_) if opens_a_link(block, opening, links) => true,
+        // A name can open in lower case, and its shape says it is a name and
+        // not the tail of an abbreviation the list misses: `n8n`, `macOS`, or
+        // an issue reference such as `#791`. The case test alone merged each
+        // of these into the sentence before it (#1151).
+        Some(_) if opens_as_a_name(chars, opening) => true,
         Some(next) => opens_a_sentence(*next),
     }
 }
@@ -178,13 +183,46 @@ fn ends_a_sentence(chars: &[char], index: usize, block: &Block, links: &[Link]) 
 /// Whether a character can open the next sentence.
 ///
 /// A sentence of this corpus opens with a capital, a digit, a quotation, a
-/// bracket, a code span or an emphasis marker. It never opens in lower case,
-/// and that is the guard that keeps an abbreviation the list below misses from
-/// splitting a sentence in two.
+/// bracket, a code span or an emphasis marker. A plain word in lower case does
+/// not open one, and that is the guard that keeps an abbreviation the list
+/// below misses from splitting a sentence in two. The two exceptions are a name
+/// whose shape says it is a name and an issue reference, and
+/// [`opens_as_a_name`] holds both.
 fn opens_a_sentence(c: char) -> bool {
     c.is_uppercase()
         || c.is_ascii_digit()
         || matches!(c, '"' | '“' | '(' | '[' | '`' | '*' | '_' | '§')
+}
+
+/// Whether the text at `opening` is a name or an issue reference that opens a
+/// sentence in lower case.
+///
+/// Two shapes qualify. The first is `#` followed by a digit, because an issue
+/// reference cannot be the tail of an abbreviation. The second is a token that
+/// holds a lower-case letter and also holds a digit or a capital after its
+/// first character: `n8n`, `macOS`, `artifactContext`. The token is the run of
+/// letters and digits that starts at `opening`, so `n8n's` reads as `n8n`. A
+/// plain lower-case word such as `and` or `npm` does not qualify, and that
+/// keeps the guard in [`opens_a_sentence`] whole.
+///
+/// This is a shape rule and not a declared list of names (#1151). Add a list
+/// beside `retired_terms` in the overlay if a corpus shows more than a handful
+/// of plain lower-case names that open a sentence and join past the length
+/// limit.
+fn opens_as_a_name(chars: &[char], opening: usize) -> bool {
+    if chars.get(opening) == Some(&'#') {
+        return matches!(chars.get(opening + 1), Some(c) if c.is_ascii_digit());
+    }
+    let token: Vec<char> = chars[opening..]
+        .iter()
+        .copied()
+        .take_while(|c| c.is_alphanumeric())
+        .collect();
+    token.iter().any(|c| c.is_lowercase())
+        && token
+            .iter()
+            .skip(1)
+            .any(|c| c.is_ascii_digit() || c.is_uppercase())
 }
 
 /// Whether the character at `index` is inside a prose link.

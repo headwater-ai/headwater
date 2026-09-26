@@ -340,7 +340,16 @@ impl DocumentCheck for Voice {
     /// and a pass with zero findings differ in the report, not in the
     /// findings a subsequent read would compare) but is bundled into the same
     /// edition because it is the same fix, made at the source #774 names.
-    const VERSION: u32 = 4;
+    ///
+    /// **Edition five, on 2026-09-26 ([#1151](https://github.com/headwater-ai/headwater/issues/1151)).**
+    /// The splitter in `headwater-doc` now opens a sentence at a name whose
+    /// shape says it is a name, such as `n8n` or `macOS`, and at an issue
+    /// reference such as `#791`. Before, each of these merged into the sentence
+    /// before it. This rule reports per sentence, so the span and the count of its findings move with the split. No pattern here moved, and the document, the lock and
+    /// the rule are all unchanged, so a warm cache from the previous engine
+    /// would serve the merged verdict and the fix would read as working while
+    /// it did nothing.
+    const VERSION: u32 = 5;
     /// The body, because the regime is about prose. This declaration is the
     /// access: without it [`DocumentView::body`] returns nothing.
     const NEEDS_BODY: bool = true;
