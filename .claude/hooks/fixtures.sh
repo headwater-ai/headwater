@@ -488,6 +488,12 @@ if [ -x "$engine" ]; then
     # Independence: the forward advisory on a governed code path is unchanged,
     # and a code path is no document, so the reverse part is absent.
     wait_edit='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/wait.sh"}}'
+    # A pointer whose short title the report folds so that the line ends in
+    # the dash, with the summary on the next line. A grep for ` — ` missed it
+    # (HW-OBL-0149), and the pointers are read from route --json now (#953).
+    expect 'a pointer the report folds after its dash is still named' \
+        write.sh 0 'docs/how-to/diagnose-an-isolation-failure.md (Diagnose an isolation failure) — Five questions' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"tools/hw-cargo"}}'
     expect 'a governed code path still hears the decision that governs it' \
         write.sh 0 'docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md' "$wait_edit"
     refute 'a code path carries no reverse advisory' \
