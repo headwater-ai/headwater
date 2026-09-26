@@ -6686,10 +6686,50 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
             .map(|(_, treatment)| *treatment)
             .filter(|treatment| !(*treatment == Treatment::Regenerate && overridden(path)))
     };
-    let missing: Vec<&String> = paths
+    // Where git did not answer, the census read the root file alone, which
+    // reads less than a merge does. Say so, and exit 1 at the end, as
+    // `headwater derived` does on the same refusal (#1119).
+    if let Some(reason) = &population.refused {
+        eprintln!(
+            "headwater: {}",
+            err(&format!(
+                "git did not give the merge attributes, so the step read the root \
+                 .gitattributes alone: {reason}"
+            ))
+        );
+    }
+    // A nested `.gitattributes` that nothing read may already declare a path.
+    // A root line for it would be a duplicate, so the step writes none and
+    // names the file that could declare it.
+    let unread_nested: Vec<&str> = population
+        .unreadable
+        .iter()
+        .filter(|entry| headwater_census::derived::is_a_nested_attributes_file(entry))
+        .map(String::as_str)
+        .collect();
+    let covering = |path: &str| -> Option<&str> {
+        unread_nested.iter().copied().find(|file| {
+            file.strip_suffix(".gitattributes")
+                .is_some_and(|directory| path.starts_with(directory))
+        })
+    };
+    let mut missing: Vec<&String> = Vec::new();
+    let mut withheld = 0usize;
+    for path in paths
         .iter()
         .filter(|path| committed(path) != Some(Treatment::Refuse))
-        .collect();
+    {
+        match covering(path) {
+            Some(file) => {
+                withheld += 1;
+                eprintln!(
+                    "headwater: wrote no root line for {path}, because {file} could declare it \
+                     and the step did not read that file"
+                );
+            }
+            None => missing.push(path),
+        }
+    }
 
     let attributes = root.join(".gitattributes");
     if !missing.is_empty() {
@@ -6721,9 +6761,15 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
         for path in &missing {
             println!("  {path} {COMMITTED_ATTRIBUTE}");
         }
-    } else {
+    } else if withheld == 0 {
         println!(
             ".gitattributes already declares all {} derived artifacts",
+            paths.len()
+        );
+    } else {
+        println!(
+            "wrote no line to .gitattributes: {withheld} of {} derived artifacts may be declared \
+             by a nested file the step did not read",
             paths.len()
         );
     }
@@ -6807,6 +6853,9 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
         "\nthe driver runs `headwater`, so the binary must be on the PATH git runs with. Run the \
          step again after a producer writes a new file, and `headwater derived` names any it missed"
     );
+    if population.refused.is_some() {
+        return ExitCode::FAILURE;
+    }
     ExitCode::SUCCESS
 }
 
