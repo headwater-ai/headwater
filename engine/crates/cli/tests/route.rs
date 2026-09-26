@@ -308,3 +308,32 @@ fn a_governing_edge_whose_recorded_revision_moved_is_named_on_its_pointer() {
     let quiet = root.run(&["route", "edit", "tools/governed.sh"]);
     assert!(!quiet.out.contains("suspect"), "{}", quiet.out);
 }
+
+/// A word that a glob edge reaches as written, and whose shorter reading is on
+/// the tree, names the file on the tree. A `**` edge admits
+/// `tools/governed.sh's` as a string, and the route used to name that string
+/// as the anchor (#953).
+#[test]
+fn a_reading_on_the_tree_wins_over_a_longer_one_only_a_glob_edge_reaches() {
+    let root = Root::shaped("route-glob-reading", |at| {
+        std::fs::write(at.join("tools/governed.sh"), "").expect("the governed file writes");
+        std::fs::write(
+            at.join("docs/decisions/0002-the-decision-that-governs-the-tools.md"),
+            "---\nid: HW-DR-0002\ntitle: The decision that governs the tools\nstatus: \
+             current\nstatus_since: 2026-08-01\nlast_verified: 2026-08-01\nsummary: One \
+             decision that governs every file under the tools directory.\nprovenance:\n  \
+             warrant: asserted\n  agency: human\n  evidence_basis: unevidenced\nrelations:\n  \
+             governs:\n    - tools/**\n---\n\n# The decision that governs the tools\n\n## \
+             Context\n\nA fixture.\n\n## Decision\n\nIt governs a directory.\n\n## \
+             Consequences\n\nThe route names it.\n",
+        )
+        .expect("the decision writes");
+    });
+    let ran = root.run(&["route", "edit", "tools/governed.sh's", "header", "--json"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    let start = ran.out.find("\"anchors\"").expect("the member is there");
+    let member = &ran.out[start..];
+    let member = &member[..=member.find(']').expect("the array closes")];
+    assert!(member.contains("\"tools/governed.sh\""), "{member}");
+    assert!(!member.contains("governed.sh's"), "{member}");
+}
