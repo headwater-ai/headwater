@@ -66,7 +66,9 @@
 //! legitimate deletion as a defect.
 //!
 //! **A claim naming a path the corpus no longer holds, whose identifier one
-//! document holds at another path, is stale.** The document was renamed, and
+//! document holds at another path, is stale.** The holder is a typed document
+//! whose kind mints under the claim's scheme; an untyped file or a document of
+//! another scheme that carries the same string counts as no holder. The document was renamed, and
 //! never-reuse does not cover a rename, because a rename reuses nothing. The
 //! finding names the current path. It carries no patch: both writers of the
 //! store create and never overwrite, and [`Patch::Create`] refuses an occupied
@@ -524,11 +526,19 @@ impl CorpusCheck for Stale<'_> {
                 // against the current document rather than the claim file, as
                 // the mismatch below is, so that SARIF and an `allow` directive
                 // land on a Markdown file.
-                let mut holders = self
-                    .index
-                    .paths
-                    .iter()
-                    .filter(|entry| entry.id.as_deref() == Some(claim.id.as_str()));
+                //
+                // A holder is a typed document whose kind mints under the
+                // claim's scheme. An untyped file, or a document of another
+                // scheme, that carries the same string is no holder: naming it
+                // would tell the author to write a path into the store that no
+                // rule of the scheme reads.
+                let mut holders = self.index.paths.iter().filter(|entry| {
+                    entry.id.as_deref() == Some(claim.id.as_str())
+                        && entry
+                            .kind
+                            .as_deref()
+                            .is_some_and(|kind| self.mints_under(kind, &claim.scheme))
+                });
                 let (Some(current), None) = (holders.next(), holders.next()) else {
                     continue;
                 };
@@ -648,7 +658,11 @@ mod tests {
                 entry("docs/decisions/0003-one.md", "DR-0003"),
                 entry("docs/decisions/0003-two.md", "DR-0003"),
                 of_kind("docs/w3id/stray.md", "DR-0004", None),
-                of_kind("docs/requirements/0005-other.md", "DR-0005", Some("requirement")),
+                of_kind(
+                    "docs/requirements/0005-other.md",
+                    "DR-0005",
+                    Some("requirement"),
+                ),
                 entry("docs/decisions/0006-new-name.md", "DR-0006"),
                 of_kind("docs/w3id/stray-0006.md", "DR-0006", None),
             ],

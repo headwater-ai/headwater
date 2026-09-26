@@ -713,7 +713,11 @@ pub fn run(
     // store reaches them through the view, which is what puts it in the key.
     // See [`claim`].
     let claim_missing = claim::Missing::over(declared.shape, declared.taxonomy, &graph.index);
-    let claim_stale = claim::Stale::over(&declared.config.identifier_facet, declared.shape, &graph.index);
+    let claim_stale = claim::Stale::over(
+        &declared.config.identifier_facet,
+        declared.shape,
+        &graph.index,
+    );
     let voice = voice::Voice::over(declared.shape);
     let language = language::Language::over(declared.shape);
     let retired = retired::Retired::over(declared.shape);
