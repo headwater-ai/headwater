@@ -1227,11 +1227,14 @@ release_pipe_steps() {
 # `release-taxonomy.yml` builds, or the page's own claim about it, with the
 # version placeholder normalized to `<version>` the same way `release_names_raw`
 # normalizes `$TAG` to `<tag>`: a real version on one side and a bare shell
-# variable on the other are the same string once both are read this way.
+# variable on the other are the same string once both are read this way. So a
+# page that names `headwater-standard-4.2.0.zip` in a location (#1063) names
+# the artifact the workflow builds, and a page that names another file does not.
 taxonomy_asset_name_of() {
     [ -f "$1" ] || return 0
     grep -o 'headwater-standard-[A-Za-z0-9._${}<>-]*\.zip' "$1" |
-        sed -e 's/\${VERSION}/<version>/g' -e 's/\$VERSION/<version>/g' |
+        sed -e 's/\${VERSION}/<version>/g' -e 's/\$VERSION/<version>/g' \
+            -e 's/headwater-standard-[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.zip/headwater-standard-<version>.zip/g' |
         LC_ALL=C sort -u
 }
 
@@ -1938,7 +1941,16 @@ else
         "neither \`engine/target/release/headwater\` nor \`engine/target/dev-release/headwater\` is executable, so the arms below are undecided rather than passing. Build one with \`cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked\`"
 fi
 
-vendor_cmd=$(printf '%s\n' "$vendor_cmds" | head -1)
+# The arms below run the invocation offline, over a scratch copy of this
+# checkout, so they judge the first one that names a directory. An invocation
+# whose operand is an `https://` location (#1063) fetches over the network, and
+# 6i holds it to the one property this suite can read without running it.
+vendor_cmd=$(printf '%s\n' "$vendor_cmds" | while IFS= read -r cmd; do
+    case $(vendor_operand_of "$cmd") in
+        https://*) ;;
+        *) printf '%s\n' "$cmd"; break ;;
+    esac
+done)
 operand=$(vendor_operand_of "$vendor_cmd")
 good_digest=$(release_digest_of "$root/.headwater/packages/headwater-standard/release.yml")
 bad_digest="${good_digest%%:*}:$(printf '%064d' 0)"
@@ -1988,6 +2000,29 @@ if [ -n "$engine" ] && [ -n "$operand" ] && [ -d "$root/$operand" ] && [ -n "$go
 else
     fail "  the stated digest is accepted, a wrong one is refused, and the two reports differ" \
         "the arms did not run: engine \`${engine:-none}\`, operand \`${operand:-none}\`, digest \`${good_digest:-none}\`"
+fi
+
+# 6i. An invocation that names a location carries the digest too. `vendor`
+#     fetches it and checks it only against `--expect`, so a location with no
+#     digest installs whatever the far end served. This suite does not run it:
+#     that would reach the network, and the tutorial's step 3 already does.
+location_cmds=$(printf '%s\n' "$vendor_cmds" | while IFS= read -r cmd; do
+    case $(vendor_operand_of "$cmd") in
+        https://*) printf '%s\n' "$cmd" ;;
+    esac
+done)
+unpinned=$(printf '%s\n' "$location_cmds" | while IFS= read -r cmd; do
+    [ -n "$cmd" ] || continue
+    case " $cmd " in
+        *" --expect "*) ;;
+        *) printf '%s\n' "$cmd" ;;
+    esac
+done)
+if [ -z "$unpinned" ]; then
+    pass "  and every invocation that names a location passes \`--expect\` too"
+else
+    fail "  and every invocation that names a location passes \`--expect\` too" \
+        "\`$(printf '%s' "$unpinned" | head -1)\` fetches over the network and checks no digest"
 fi
 
 # 6g-6h. The judge, provoked, in the two shapes it refuses. A gate that refuses

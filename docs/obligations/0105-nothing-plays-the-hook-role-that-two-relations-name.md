@@ -42,6 +42,8 @@ Which document governs which code is a judgment. The [stop rules](../spec/05-ai-
 
 `traces_to` is the easier half and it is not free either. A commit that cites an identifier supplies a candidate edge, and nothing reads a commit message today.
 
+Since #953, the write-time hook covers one part of this. An edit to a path that the governed scope admits and that no document governs gets the front-matter lines that declare a `governs` edge. The engine composes them, and the hook writes nothing. This does not discharge the record. The hook names no document that should declare the edge, and nothing brings the proposal to a human.
+
 ## Discharge
 
 A verb that proposes these edges from a change, with the fixtures that hold what it refuses to propose. The proposal reaches a human, because [spec 3](../spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) makes acceptance a human act.

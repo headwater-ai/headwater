@@ -172,6 +172,7 @@ pub mod scope;
 pub mod sections;
 pub mod shape;
 pub mod source_form;
+pub mod state_set_twice;
 pub mod suppression;
 pub mod surface;
 pub mod suspect;
@@ -214,7 +215,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 36] = [
+pub const RULES: [&str; 37] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -227,6 +228,7 @@ pub const RULES: [&str; 36] = [
     dependency::RULE,
     basis::RULE,
     participation::RULE,
+    state_set_twice::RULE,
     declaration::RULE,
     identity::RULE,
     duplicate::RULE,
@@ -450,6 +452,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::neighbourhood_scope::<participation::Participation<'_>>(),
             scope::neighbourhood_version::<participation::Participation<'_>>(),
             scope::neighbourhood_exports::<participation::Participation<'_>>(),
+        ),
+        (
+            state_set_twice::RULE,
+            scope::corpus_scope::<state_set_twice::StateSetTwice<'_>>(),
+            scope::corpus_version::<state_set_twice::StateSetTwice<'_>>(),
+            scope::corpus_exports::<state_set_twice::StateSetTwice<'_>>(),
         ),
         (
             declaration::RULE,
@@ -677,6 +685,9 @@ pub fn run(
     // other. See [`verification`].
     let verified = verification::Verified::over(declared.relations, declared.observations);
     let participation = participation::Participation::over(declared.shape, declared.relations);
+    // Two relations telling one generated document two states, over the
+    // relations that declare `on_target.set_state`. See [`state_set_twice`].
+    let set_twice = state_set_twice::StateSetTwice::over(declared.relations, declared.shape);
     let declarations = declaration::Unusable::over(declared.relations, declared.shape);
     let identities = identity::Identity::over(
         declared.relations,
@@ -810,6 +821,14 @@ pub fn run(
         ctx,
         cache,
     ));
+    // The one corpus-scoped rule with a generation step. A taxonomy whose
+    // setter relations all name one state can tell no document two, so the
+    // instance is not built. See [`state_set_twice`].
+    if set_twice.can_clash() {
+        instances.extend(scope::over_corpus(
+            &set_twice, census, graph, claims, ctx, cache,
+        ));
+    }
     instances.extend(scope::over_documents(
         &declarations,
         census,

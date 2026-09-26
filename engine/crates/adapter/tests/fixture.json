@@ -576,6 +576,12 @@
       ]
     },
     {
+      "rule": "lifecycle.state.set_twice",
+      "scope": "corpus",
+      "version": 1,
+      "obligations": []
+    },
+    {
       "rule": "relation.declaration.unusable",
       "scope": "document",
       "version": 1,
