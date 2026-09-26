@@ -1590,6 +1590,17 @@ jobs:
         # fixes a date for the three runs after it, which share one value for a
         # different reason.
         run: ./engine/target/release/headwater conformance --level L0
+      - name: The vendored package is a fresh publish of its source
+        # #1139. `check`, `generate --check` and `conformance` read the lock
+        # and the vendored copy under `.headwater/packages/headwater-standard/`,
+        # and never `taxonomy-source/headwater-standard/`, so a source edited
+        # without the four republish steps its `package.yml` header names
+        # passed every step above. This one publishes the source into a
+        # private directory outside the tree and fails, naming each member,
+        # when the vendored copy is not what that publish produces. It covers
+        # every member, where the bundles case in `cli/tests/publish.rs`
+        # covers `bundles/` alone.
+        run: ./engine/target/release/headwater taxonomy publish --from taxonomy-source/headwater-standard --check
       - name: The date this job evaluates at
         # A windowed participation expectation compares a declared origin date
         # against `ctx.now`, so the clock is an input to the verdict and the
