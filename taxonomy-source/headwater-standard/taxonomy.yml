@@ -149,6 +149,16 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.7.0 changes the value of two declarations and removes nothing. `governs`
+# and `traces_to` declare `created_by: agent` where they declared `hook`,
+# because no verb writes either edge: a session proposes the line and a person
+# types it (HW-DR-0083, #955). No check reads `hook` or `agent`, so no finding
+# changes. `headwater taxonomy audit` moves both relations from the `hook` row
+# to the `agent` row, so a consumer's audit report changes, and that makes it a
+# minor rather than a patch. The brd-prd doctrine and bundle comment that
+# described the base `traces_to` as hook-created say `agent`. It follows 4.6.2
+# (#937).
+#
 # 4.6.2 changes no declaration in this file. The comment above `controls`
 # states that the `commit` of an observation entry is provenance, that the
 # engine checks it for form and never for ancestry, and that the process of the
@@ -195,7 +205,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.6.2
+version: 4.7.0
 
 purposes:
   rationale:
@@ -358,7 +368,7 @@ relations:
     from: [governed_document]
     to:   [code_path]
     cardinality: many
-    created_by: hook
+    created_by: agent
     # The digest of the bytes the target reached when the governing document
     # was last verified against it. `relation.target.suspect` compares it
     # against the digest `source-tree` states now, and `headwater check --fix`
@@ -382,7 +392,7 @@ relations:
     family: evidence
     from: [governed_document]
     to:   [governed_document, code_path]
-    created_by: hook
+    created_by: agent
     # Q20 puts a cue on the referring end of a relation instance. `traces_to`
     # is the one relation of this package whose `to` set already reaches
     # plain prose (`governed_document`) rather than only an anchor, so it is

@@ -48,7 +48,7 @@ Four judgments are yours, because no validator makes them.
 - **Is this a kind or a facet?** A kind is a species of document and a facet is a property of one. If two documents differ only in a value, they are one kind with a facet.
 - **Does the shelf pattern overlap another?** Placement is primary, so a path that two shelves claim resolves to a kind by accident.
 - **Is the purpose right?** Routing matches a declared purpose against the intent of a task before it matches any text, so a wrong purpose is a wrong answer at the highest-value moment.
-- **Who pays for an edge?** `created_by` names an actor from a closed set, and it is a claim about the world. [HW-OBL-0105](../../../docs/obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) records two relations that name `hook` where nothing mechanical writes them. Do not write a value that no code and no procedure honors.
+- **Who pays for an edge?** `created_by` names an actor from a closed set, and it is a claim about the world. [HW-OBL-0105](../../../docs/obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) recorded two base relations that named `hook` where nothing mechanical wrote them, and [HW-DR-0083](../../../docs/decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) moved both to `agent`. Do not write a value that no code and no procedure honors.
 
 ## Three declarations that are easy to forget
 

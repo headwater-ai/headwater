@@ -557,6 +557,41 @@ fn the_creator_reading_accounts_for_every_half_of_this_corpus() {
     assert_eq!(audit.halves, built.graph.edges.len());
 }
 
+/// The two base relations a session proposes are read under `agent`.
+///
+/// Nothing writes a `governs` or a `traces_to` edge from a change: a session
+/// proposes the line and a person types it, so the base package declares them
+/// `created_by: agent` and the creator reading must put them in that row and in
+/// no other. The participation reading keys on the relation and not on its
+/// actor, so moving the row leaves each relation's capture where it was.
+#[test]
+fn the_base_relations_a_session_proposes_are_read_under_agent_and_keep_their_capture() {
+    let built = this_repository();
+    let audit = repository_audit(&built, "2026-01-01");
+    for relation in ["governs", "traces_to"] {
+        let rows: Vec<&str> = audit
+            .creators
+            .by_creator
+            .iter()
+            .filter(|(_, readings)| readings.iter().any(|reading| reading.name == relation))
+            .map(|(creator, _)| creator.as_str())
+            .collect();
+        assert_eq!(rows, ["agent"], "{relation} is read under {rows:?}");
+        let (_, agent) = audit
+            .creators
+            .by_creator
+            .iter()
+            .find(|(creator, _)| creator == "agent")
+            .expect("spec 2's closed set has an agent row");
+        let reading = agent
+            .iter()
+            .find(|reading| reading.name == relation)
+            .expect("the relation is in the agent row");
+        assert!(reading.eligible > 0, "{relation} has no eligible document");
+        assert!(reading.capture().is_some(), "{relation} has no capture");
+    }
+}
+
 /// Two audits of one corpus at one date write one set of bytes.
 ///
 /// [Spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
