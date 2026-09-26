@@ -73,7 +73,7 @@ The family is `derivation` and the nucleus is the functional specification. This
 
 `composition` was refused. It would say the technical specification is part of the functional one, and it is not. It is a second document about one subject at a second level.
 
-`created_by: scaffold`, on the argument the design-spec entry used for `applied_in`. The run that opens a technical specification from a functional one writes both halves of the edge.
+`created_by: scaffold`, on the argument the design-spec entry used for `applied_in`. The run that opens a technical specification from a functional one writes the technical specification's half of the edge. The technical specification opens at an initial state, so the run writes no half into the functional one and reports that half as owed. The functional specification owes it once the technical one is promoted, and `headwater check --fix` writes it then ([HW-DR-0086](https://github.com/headwater-ai/headwater/blob/main/docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md)).
 
 ### The third relation this entry does not declare
 

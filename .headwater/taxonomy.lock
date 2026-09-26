@@ -28,7 +28,7 @@ lock:
   version: 4.9.1
   sources:
     - path: .headwater/packages/headwater-standard/taxonomy.yml
-      digest: sha256:6d47ec96cc2ab8712a16408c77fb29a3d5413611395836ce9baab346341ae9b7
+      digest: sha256:83129704f7a9cc81cb529eedff4e0bd9ccebe3ae98469f780c239aa44dab7868
     - path: .headwater/packages/headwater-standard/bundles/design-spec/bundle.yml
       digest: sha256:6b82d47783829d0cee5809190340c2c28f680458ab70b99adab952a2d24048d1
     - path: .headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml

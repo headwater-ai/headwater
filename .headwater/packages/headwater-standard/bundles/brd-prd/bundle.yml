@@ -202,7 +202,10 @@ add:
   # reciprocity and no nuclearity, and its `created_by` is `agent`.
   #
   # `created_by: scaffold`, on the argument design-spec used for `applied_in`:
-  # the run that opens a PRD from a BRD writes both ends.
+  # the run that opens a PRD from a BRD writes the PRD's half. The PRD opens at
+  # an initial state, so the run writes no half into the BRD and reports it as
+  # owed. The BRD owes it once the PRD is promoted, and `headwater check --fix`
+  # writes it then (HW-DR-0086).
   relations.elaborates:
     family: derivation
     from: [prd]

@@ -154,8 +154,13 @@ taxonomy: headwater/standard
 # the corpus no longer holds, and that stopped being true when the rule began to
 # report a claim whose one holding document is at another path (#1106). The
 # threshold now states the three cases the rule tells apart by what it sees, and
-# the one case in which it can still give a false positive. No rule reads a
-# threshold, so this is a patch. It follows 4.9.0 (#569).
+# the one case in which it can still give a false positive. It also corrects
+# the brd-prd, standards-spec and design-spec bundles, whose comments and
+# doctrine said that the run which opens a document from another writes both
+# halves of a required relation. Since HW-DR-0086 (#1168) that run writes the
+# new document's half and defers the far half until the new document leaves
+# its initial state. No rule reads a threshold or a comment, so this is a
+# patch. It follows 4.9.0 (#569).
 #
 # 4.9.0 adds `OB-LIFE-5` and `CT-LIFE-5`, which are the obligation and the
 # control behind `lifecycle.dependency.on_initial`. Nothing is removed and
