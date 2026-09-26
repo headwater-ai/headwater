@@ -746,9 +746,10 @@ fn a_shape_failed_verification_entry_naming_no_verification_is_named() {
         "{text}"
     );
     assert!(
-        run.findings.iter().any(|finding| finding.rule
-            == headwater_check::register::OBSERVATION
-            && finding.message.contains("ACP-FIX-verification-nowhere")),
+        run.findings.iter().any(
+            |finding| finding.rule == headwater_check::register::OBSERVATION
+                && finding.message.contains("ACP-FIX-verification-nowhere")
+        ),
         "{text}"
     );
     let _ = std::fs::remove_dir_all(&root);
@@ -760,8 +761,10 @@ fn a_shape_failed_verification_entry_naming_no_verification_is_named() {
 #[test]
 fn a_capitalized_kind_is_not_a_verification_entry_and_stays_out_of_the_block() {
     let root = scratch_corpus("capital-kind");
-    let observations =
-        snapshot_on_disk(&root, "ACP-FIX-verification-nowhere:\n  kind: Verification\n");
+    let observations = snapshot_on_disk(
+        &root,
+        "ACP-FIX-verification-nowhere:\n  kind: Verification\n",
+    );
     let run = run_over(&root, &observations);
     let text = rendered(&run);
     assert!(
@@ -769,9 +772,10 @@ fn a_capitalized_kind_is_not_a_verification_entry_and_stays_out_of_the_block() {
         "{text}"
     );
     assert!(
-        run.findings.iter().any(|finding| finding.rule
-            == headwater_check::register::OBSERVATION
-            && finding.message.contains("kind: Verification")),
+        run.findings.iter().any(
+            |finding| finding.rule == headwater_check::register::OBSERVATION
+                && finding.message.contains("kind: Verification")
+        ),
         "{text}"
     );
     let _ = std::fs::remove_dir_all(&root);
