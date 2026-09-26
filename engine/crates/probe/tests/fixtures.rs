@@ -1328,6 +1328,76 @@ fn the_colored_staleness_report_strips_to_the_plain_one() {
     assert_eq!(stripped(&ansi), plain);
 }
 
+/// `Role::Info` on the opening sentence of a verdict that stands.
+///
+/// This case and the three below it are one per paint site that the doc
+/// comment of `Staleness::render` declares. Each asserts the painted bytes of
+/// its own site, so a site set to `Plain` fails its own case. An assertion
+/// that some escape byte appears passes on any sibling site.
+#[test]
+fn a_verdict_that_stands_paints_its_opening_sentence_as_info() {
+    let staleness = staleness_at(&fixtures_dir());
+    assert_eq!(staleness.verdict(), Stale::Stands);
+    let wanted = paint(
+        Role::Info,
+        "Nothing this run read has moved.",
+        ColorMode::Ansi,
+    );
+    let ansi = staleness.render(ColorMode::Ansi);
+    assert!(ansi.contains(&wanted), "{ansi}");
+}
+
+/// `Role::Warn` on the opening words of a verdict that voids the result.
+#[test]
+fn a_stale_verdict_paints_its_opening_words_as_warn() {
+    let at = copied("read-set-stale-warn");
+    edit(
+        &at,
+        "corpus/probes/0002-answered.md",
+        "# The session answers",
+        "# The session answers the question",
+    );
+    let staleness = staleness_at(&at);
+    assert_eq!(staleness.verdict(), Stale::SetMoved);
+    let wanted = paint(Role::Warn, "**This result is stale.**", ColorMode::Ansi);
+    let ansi = staleness.render(ColorMode::Ansi);
+    assert!(ansi.contains(&wanted), "{ansi}");
+}
+
+/// `Role::Warn` on the opening words of a verdict that decides nothing.
+#[test]
+fn an_unusable_verdict_paints_its_opening_words_as_warn() {
+    let mut staleness = staleness_at(&fixtures_dir());
+    staleness.unusable = Some("it carries no run identity".to_string());
+    assert_eq!(staleness.verdict(), Stale::Unusable);
+    let wanted = paint(
+        Role::Warn,
+        "Nothing here decides whether this result is stale:",
+        ColorMode::Ansi,
+    );
+    let ansi = staleness.render(ColorMode::Ansi);
+    assert!(ansi.contains(&wanted), "{ansi}");
+}
+
+/// `Role::Path` on the path of every member of the read set.
+#[test]
+fn every_member_path_of_the_staleness_report_is_painted() {
+    let staleness = staleness_at(&fixtures_dir());
+    assert!(
+        !staleness.members.is_empty(),
+        "the read set has to hold a member, or this case asserts nothing"
+    );
+    let ansi = staleness.render(ColorMode::Ansi);
+    for member in &staleness.members {
+        let wanted = format!("- {} (", paint(Role::Path, &member.path, ColorMode::Ansi));
+        assert!(
+            ansi.contains(&wanted),
+            "the member {} is not painted:\n{ansi}",
+            member.path
+        );
+    }
+}
+
 /// The roles `Plan::render` declares, enumerated from the renderer.
 ///
 /// Two `paint(Role::` families reach this briefing: `Heading` on the `##`
