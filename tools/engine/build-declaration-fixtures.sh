@@ -88,12 +88,6 @@
 #   maintainer convenience, and answers to the maintainer's-loop half of the
 #   boundary above.
 #
-#   `site/index.html` advertises `cargo install headwater-cli` in the landing
-#   page's animated terminal. That is not a lock question at all: the route
-#   does not exist, because `publish = false` and nothing is on crates.io. The
-#   page carries its own comment naming what gates it, and #526 tracks the
-#   install path. Nothing here judges it.
-#
 # `cargo fmt` and `cargo --version` are exempt everywhere, for two different
 # reasons that are worth keeping apart. `cargo fmt --locked` REJECTS the flag —
 # `error: unexpected argument '--locked' found` — because fmt reads no manifest
