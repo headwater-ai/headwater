@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0208
-status: draft
-status_since: 2026-09-23
+status: current
+status_since: 2026-09-26
 summary: "A collation opener class, a cache key's CLI wiring, a cache doc word and a recurring board-card gap, each with no reader outside this repository."
 last_verified: 2026-09-23
 title: "Four small test and wording gaps from run 20260923-0733 filed together"

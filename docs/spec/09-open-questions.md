@@ -352,3 +352,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## Governs and traces_to are created by an agent, because a session proposes the line and a person types it
 
 [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) — The base package declares `created_by: agent` on `governs` and `traces_to`, because no verb writes either edge and a person types the line a session proposes (asserted, and no human has accepted it)
+
+## A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite
+
+[HW-DR-0085](../decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md) — A live document with any relation to a draft is a warning, unless the relation writes a state onto its target (asserted, and no human has accepted it)
