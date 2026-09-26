@@ -16,7 +16,7 @@ relations:
 
 ## Synopsis
 
-    headwater new <kind> --title <text> [--relates <relation=identifier>] [--facet <facet=value>] [--now <date>] [--root <path>]
+    headwater new <kind> --title <text> [--summary <text>] [--relates <relation=identifier>] [--facet <facet=value>] [--directory <path>] [--now <date>] [--root <path>]
 
 The command proposes and writes one document whose kind, shelf, facets, sections and identifier come from the resolved taxonomy.
 
@@ -34,6 +34,8 @@ The repository must have a readable consumer declaration, resolved taxonomy lock
 
 The title is required. A supplied relation must be declared as scaffold-created, connect permitted kinds and resolve at its target. A supplied facet must be required by the kind, must not be one that a declaration decides, and must use a permitted value. The identifier the run mints must be claimed by no document and by no file of the claim store.
 
+A shelf whose path puts a glob before a fixed file name, such as `docs/modules/*/README.md`, does not decide the directory. For a kind on such a shelf, `--directory` is required. The directory must be relative, must contain no `.`, `..` or empty segment, and must make a path that the shelf claims. On every other shelf, `--directory` is refused. A shelf whose path is one file, such as `docs/INDEX.md`, takes that path, and the command refuses when the file is already there.
+
 ## Options
 
 | Option | What it does |
@@ -41,7 +43,9 @@ The title is required. A supplied relation must be declared as scaffold-created,
 | `<kind>` | Selects the document kind. |
 | `--title <text>` | Supplies the document title and name facet. |
 | `--relates <relation=identifier>` | Adds a repeatable scaffold-created relation. |
+| `--summary <text>` | Supplies the value of the facet in the `scent` role. |
 | `--facet <facet=value>` | Supplies a repeatable hand-entered facet value. |
+| `--directory <path>` | Names the directory for a shelf that fixes the file name after a glob. |
 | `--now <date>` | Sets the document date in `YYYY-MM-DD` form. |
 | `--root <path>` | Selects the repository to load. |
 | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |

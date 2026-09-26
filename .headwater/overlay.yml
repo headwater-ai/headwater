@@ -1235,11 +1235,12 @@ add:
   # carry the shelf's title. So the shelf takes the index's H1.
   #
   # **`headwater new library_doctrine` refuses, and that is known.** The kind
-  # sits on two shelves, and neither shelf names a directory that a new file
-  # could go into: one is a fixed file name under a glob, and one is a single
-  # file. A doctrine page is written with its library entry, by hand, and the
-  # front matter of a sibling is the shape. A split into two kinds does not
-  # help, because the scaffolder places neither pattern.
+  # sits on two shelves, and nothing states which one a new document joins.
+  # The scaffolder places each pattern on its own: `--directory` names the
+  # directory the glob of the first stands for, and the second is one file.
+  # So the refusal that stands is two shelves for one kind. A doctrine page is
+  # written with its library entry, by hand, and the front matter of a sibling
+  # is the shape.
 
   identifier_schemes.library_doctrine_id:
     pattern: "{namespace}-LIB-{slug}"
