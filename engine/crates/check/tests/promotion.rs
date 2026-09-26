@@ -262,7 +262,7 @@ fn a_warm_run_does_not_serve_a_verdict_across_a_change_to_the_prior_version() {
         &headwater_check::rules_digest(),
     );
     let first = run_with(&at(Some("promoted.md")), &mut cold);
-    cold.write(&directory);
+    cold.write(&directory).expect("the cache writes");
     assert_eq!(first.change.expect("a change").promotions, 1);
 
     let mut warm = Cache::at(
@@ -271,7 +271,7 @@ fn a_warm_run_does_not_serve_a_verdict_across_a_change_to_the_prior_version() {
         &headwater_check::rules_digest(),
     );
     let second = run_with(&at(Some("accepted-already.md")), &mut warm);
-    warm.write(&directory);
+    warm.write(&directory).expect("the cache writes");
     assert_eq!(
         second.change.expect("a change").promotions,
         0,

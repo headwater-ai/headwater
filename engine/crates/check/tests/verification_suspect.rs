@@ -453,7 +453,7 @@ fn warm_cache_sees_an_edited_snapshot_without_no_cache() {
         "run 1 is the first run over this cache file, so nothing in it is a \
          hit yet: {cold:?}"
     );
-    cache.write(&root);
+    cache.write(&root).expect("the cache writes");
 
     // Run 2: a new `Cache` reads what run 1 wrote. The snapshot now names the
     // verification with a digest that does not match the criterion's bytes —
@@ -498,7 +498,7 @@ fn warm_cache_sees_an_edited_snapshot_without_no_cache() {
          than the cold run 1 did, and the verification rule's own instance is \
          still one of them: cold {cold:?}, warm {warm:?}"
     );
-    cache.write(&root);
+    cache.write(&root).expect("the cache writes");
 
     // Run 3: a third new `Cache` reads what run 2 wrote. The snapshot is
     // corrected to the criterion's real digest today — the finding's own

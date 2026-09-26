@@ -592,6 +592,50 @@ fn the_base_relations_a_session_proposes_are_read_under_agent_and_keep_their_cap
     }
 }
 
+/// No relation of this repository names a `hook`, and the two bundle relations
+/// a person types are read under `author`.
+///
+/// Nothing in this repository writes a `discharges` or a `cites_evidence`
+/// edge: a person types the front-matter line and no agent proposes it. A
+/// taxonomy that declared either `created_by: hook` would name an actor that
+/// nothing plays, which is the defect HW-OBL-0105 recorded. So the `hook` row
+/// is empty, each relation sits in the `author` row and in no other, and
+/// `cites_evidence` keeps the capture its declaring documents give it.
+#[test]
+fn no_relation_of_this_repository_names_a_hook_and_the_bundle_relations_are_read_under_author() {
+    let built = this_repository();
+    let audit = repository_audit(&built, "2026-01-01");
+    assert!(
+        audit.creators.absent().contains(&"hook"),
+        "a relation still declares created_by: hook; absent = {:?}",
+        audit.creators.absent()
+    );
+    for relation in ["discharges", "cites_evidence"] {
+        let rows: Vec<&str> = audit
+            .creators
+            .by_creator
+            .iter()
+            .filter(|(_, readings)| readings.iter().any(|reading| reading.name == relation))
+            .map(|(creator, _)| creator.as_str())
+            .collect();
+        assert_eq!(rows, ["author"], "{relation} is read under {rows:?}");
+    }
+    let (_, author) = audit
+        .creators
+        .by_creator
+        .iter()
+        .find(|(creator, _)| creator == "author")
+        .expect("spec 2's closed set has an author row");
+    let evidence = author
+        .iter()
+        .find(|reading| reading.name == "cites_evidence")
+        .expect("cites_evidence is in the author row");
+    assert!(
+        evidence.capture().is_some(),
+        "cites_evidence has no capture"
+    );
+}
+
 /// Two audits of one corpus at one date write one set of bytes.
 ///
 /// [Spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)

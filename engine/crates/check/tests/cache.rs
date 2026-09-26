@@ -144,7 +144,7 @@ fn a_cached_run_and_a_run_with_no_cache_write_the_same_report() {
 
     let mut cold = Cache::at(&root, LOCK, RULES);
     let first = run_over(&root, &mut cold);
-    cold.write(&root);
+    cold.write(&root).expect("the cache writes");
 
     let mut warm = Cache::at(&root, LOCK, RULES);
     let second = run_over(&root, &mut warm);
@@ -198,7 +198,7 @@ fn an_edited_document_is_evaluated_again() {
 
     let mut cold = Cache::at(&root, LOCK, RULES);
     let before = run_over(&root, &mut cold);
-    cold.write(&root);
+    cold.write(&root).expect("the cache writes");
 
     // `gamma.md` restates the discriminator on a homogeneous shelf, which is
     // the one placement finding in the tree. Removing that line removes the
@@ -279,7 +279,7 @@ fn a_duplicate_settled_in_the_other_file_is_not_served_stale() {
 
     let mut cold = Cache::at(&root, LOCK, RULES);
     let planted = run_over(&root, &mut cold);
-    cold.write(&root);
+    cold.write(&root).expect("the cache writes");
 
     let claimed = |run: &Run| {
         run.findings
@@ -395,7 +395,7 @@ fn a_moved_anchor_target_is_not_served_from_the_entry_before_it() {
 
     let mut cold = Cache::at(&root, LOCK, RULES);
     let bound = run_over(&root, &mut cold);
-    cold.write(&root);
+    cold.write(&root).expect("the cache writes");
     assert_eq!(
         unresolved(&bound).len(),
         0,
@@ -465,7 +465,7 @@ fn a_clock_that_moved_is_not_served_from_the_entry_before_it() {
 
     let mut cold = Cache::at(&root, LOCK, RULES);
     let inside = run_at(&root, &at("2026-08-12"), &mut cold);
-    cold.write(&root);
+    cold.write(&root).expect("the cache writes");
 
     let mut warm = Cache::at(&root, LOCK, RULES);
     let outside = run_at(&root, &at("2026-09-30"), &mut warm);
@@ -509,7 +509,7 @@ fn a_lock_that_moved_serves_nothing() {
 
     let mut cold = Cache::at(&root, LOCK, RULES);
     run_over(&root, &mut cold);
-    cold.write(&root);
+    cold.write(&root).expect("the cache writes");
 
     let mut relocked = Cache::at(&root, "sha256:something-else", RULES);
     let after = run_over(&root, &mut relocked);
@@ -518,7 +518,7 @@ fn a_lock_that_moved_serves_nothing() {
 
     // And the file that run writes holds only what that run used, so the
     // entries of the old lock are gone rather than accumulating.
-    relocked.write(&root);
+    relocked.write(&root).expect("the cache writes");
     let text = std::fs::read_to_string(Cache::path(&root)).expect("the cache reads");
     assert_eq!(text.lines().count(), after.cache.misses + 1, "{text}");
 }
@@ -537,7 +537,7 @@ fn an_engine_upgrade_that_drops_a_rule_serves_nothing() {
 
     let mut cold = Cache::at(&root, LOCK, RULES);
     run_over(&root, &mut cold);
-    cold.write(&root);
+    cold.write(&root).expect("the cache writes");
 
     let mut upgraded = Cache::at(&root, LOCK, RULES_AFTER_A_DROPPED_RULE);
     let after = run_over(&root, &mut upgraded);
@@ -556,7 +556,7 @@ fn a_damaged_cache_file_costs_one_run_and_nothing_else() {
 
     let mut cold = Cache::at(&root, LOCK, RULES);
     let expected = run_over(&root, &mut cold);
-    cold.write(&root);
+    cold.write(&root).expect("the cache writes");
 
     for damage in ["", "headwater check cache 99\n", "not a cache at all\n"] {
         std::fs::write(Cache::path(&root), damage).expect("the cache writes");

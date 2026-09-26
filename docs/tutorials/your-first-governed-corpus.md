@@ -565,6 +565,6 @@ headwater infer
 
 It reports the files that classify as nothing, and the documents that state no summary. Those two lists are the distance between your repository and a corpus. `headwater infer --owner <name> --write` records that distance as declared debt with an expiry, so a strict run passes while the work is outstanding.
 
-**Read `headwater check` next.** [The verb contract](../interfaces/headwater-check.md) states what it reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit.
+**Read `headwater check` next.** [The verb contract](../interfaces/headwater-check.md) states what it reads, what goes to each of its two streams, and the twelve causes behind its one non-zero exit.
 
 **This corpus reached `L2`.** Step 16 climbed the whole ladder, from an untyped file to every rule this base package states about itself. A level names what a repository wired up, never what its documents say. Step 16 said the same, and it is the last thing this page has for you.

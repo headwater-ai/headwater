@@ -3275,8 +3275,6 @@
               }
             ],
             "unaccounted": [
-              ".headwater/ids",
-              ".headwater/ids",
               "./check/evaluations/delta.md",
               "check/spec/00-both-halves.markdown"
             ]

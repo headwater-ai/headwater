@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0169
-status: current
-status_since: 2026-09-06
-summary: "coverage.unaccounted reads ['.headwater/ids', '.headwater/ids'], so the self-assessment page publishes 2 under a label that names files nobody accounted for."
-last_verified: 2026-09-06
+status: discharged
+status_since: 2026-09-26
+summary: "Coverage::of now lists each unaccounted path once and exempts the claim store by name, so coverage.unaccounted reads [] and the self-assessment page publishes 0."
+last_verified: 2026-09-26
 title: "The coverage report lists one path twice, so the self-assessment page publishes two unaccounted files where one exists"
 waiting_on: adopter
 provenance:
@@ -52,3 +52,15 @@ A reading of `census.rs` that says why one path arrives twice, and one of three 
 **Both are the defect.** The discharge is both of the above, and the page then states a count of files that a reader can enumerate.
 
 Nothing here proposes one. This record is the measurement, and the reading of `census.rs` that chooses between the three is the work.
+
+## Discharge, 2026-09-26
+
+The answer is "both are the defect", and #1146 builds it. Two facts in this record were wrong, and each one moved where the fix goes.
+
+**The list is written in `Coverage::of`, and not in `census.rs`.** The census walks the corpus root and nothing beside it. `Coverage::of` in `engine/crates/check/src/coverage.rs` compares the paths that each instance read with the census rows, and it wrote one entry for each reading. The two claim rules read `.headwater/ids`, so every run wrote that path twice.
+
+**No census rule covers `.headwater/`.** That directory is outside the corpus root, so the census never walks it, and no exclusion pattern can reach it. The exclusion form of the discharge above is therefore not available.
+
+The fix has two halves. First, `Coverage::of` now writes each path once, in the order of its first reading. Second, the constant `BESIDE_THE_ROOT` names the claim store, and `Coverage::of` does not list a path that the constant names. The doc comment on the constant gives the reason. The two claim rules read the store as one input with one digest, and the read set of the run names it with that digest. So the read stays visible, and it is not a hole in the denominator. A departed path that `lifecycle.deletion.not_permitted` reads is still listed, once.
+
+After the change, `headwater check --root . --json` reads `coverage.unaccounted` as `[]` on this repository. The `census.unaccounted` figure on the site reads `0`. The glossary sentence "nothing is silently unaccounted for" is true of that figure again. The unit test `an_unaccounted_path_is_listed_once_and_the_claim_store_not_at_all` in `coverage.rs` holds both halves.

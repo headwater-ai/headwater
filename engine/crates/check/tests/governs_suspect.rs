@@ -249,7 +249,7 @@ fn a_warm_cache_reports_the_changed_byte_too() {
     let mut cache = Cache::at(&root, LOCK, &headwater_check::rules_digest());
     let first = run(&root, TODAY, &mut cache);
     assert!(suspect(&first).is_empty(), "{:?}", suspect(&first));
-    cache.write(&root);
+    cache.write(&root).expect("the cache writes");
 
     write(
         &root,
