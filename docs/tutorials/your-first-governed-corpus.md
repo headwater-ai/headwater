@@ -28,8 +28,8 @@ This tutorial takes an empty directory to a repository that passes `headwater ch
 You need four things.
 
 - `git`, and a name and an email address configured in it.
-- A Rust toolchain, version 1.91 or later, for `cargo install`. The floor is the highest `rust-version` in the resolved dependency graph, and `engine/Cargo.toml` declares it.
-- `curl`, for step 3.
+- Linux on x86_64, or macOS on Apple silicon. You do not need a Rust toolchain.
+- `curl` and `tar`, to install the engine and for step 3.
 - About twenty minutes.
 
 Three facts about the blocks below.
@@ -38,19 +38,23 @@ Three facts about the blocks below.
 - **Your dates differ.** The engine reads a clock, and it puts the date of your run into what it writes. Where a block below shows `2026-09-09`, yours shows the day you read this.
 - **Long output is trimmed.** A block that is shorter than the real output says so on the line above it.
 
-Install the engine once.
-
-<!-- headwater allow=surface.command.undeclared scope=block until=2026-12-31 reason=accepted_deviation note=HW-DR-0077 makes no Rust toolchain mandatory and #975 carries the archive that replaces this step -->
+Install the engine once. The block below downloads the release archive for Linux on x86_64 and puts the `headwater` binary in `~/.local/bin`. The archive holds a static build, so it needs no particular C library.
 
 ```sh
-cargo install headwater-cli
+mkdir -p ~/.local/bin
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.2.1/headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
 ```
+
+On macOS on Apple silicon, the archive is `headwater-v0.2.1-aarch64-apple-darwin.tar.gz`. Use that name in the `curl` line and in the `tar` line.
+
+Each archive has a checksum file beside it on [the release page](https://github.com/headwater-ai/headwater/releases/tag/v0.2.1). The name of the checksum file is the name of the archive with `.sha256` added. To verify the archive, download that file too and give it to `sha256sum -c`, or to `shasum -a 256 -c` on macOS.
 
 **Check.** `headwater --version` prints a number.
 
-`cargo install` puts the binary in `cargo`'s own bin directory. `cargo` already put that directory on your `PATH` when it set itself up. Nothing here needs exporting, and nothing has to survive into a new shell.
+Many Linux distributions put `~/.local/bin` on your `PATH` when the directory exists at login. macOS does not. If your shell cannot find `headwater`, add `~/.local/bin` to your `PATH` in the startup file of your shell. Then open a new shell. You can also run the binary as `~/.local/bin/headwater`.
 
-This installs whatever the newest version published on crates.io. It does not get you `taxonomy-source`; step 3 fetches that. The README's *Obtaining a named version* section covers a fixed-version route instead.
+This installs version 0.2.1 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli` is an alternative route, and the README's *Obtaining a named version* section describes it.
 
 ## Steps
 

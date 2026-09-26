@@ -637,8 +637,12 @@ milestone_judge() {
 # Only the three spellings of the tag that a workflow can put into an asset name
 # are normalized. Every other `${{ … }}` is left alone, so a name built from the
 # wrong expression reads as the wrong name here rather than as the right one.
+# On a page, the one literal tag its `git checkout` fence pins also reads as
+# `<tag>`, and no other version does.
 release_names_raw() {
     [ -f "$1" ] || return 0
+    rn_pin=
+    [ "$2" = page ] && rn_pin=$(pinned_tag_of "$1")
     case "$2" in
         page)
             awk '
@@ -672,9 +676,18 @@ release_names_raw() {
             -e 's/\${{ *inputs\.tag *}}/<tag>/g' \
             -e 's/\${{ *steps\.tag\.outputs\.tag *}}/<tag>/g' \
             -e 's/\${TAG}/<tag>/g' -e 's/\$TAG/<tag>/g' |
-        awk '
+        awk -v pin="$rn_pin" '
             {
                 s = $0
+                # #975. A page that tells a reader to download one release
+                # spells its tag out. Only the tag its own `git checkout`
+                # fence pins reads as `<tag>`, so a download of any other
+                # version names an asset the comparison does not have.
+                if (pin != "") {
+                    lit = "headwater-" pin "-"
+                    while ((i = index(s, lit)) > 0)
+                        s = substr(s, 1, i - 1) "headwater-<tag>-" substr(s, i + length(lit))
+                }
                 while (match(s, /headwater-[A-Za-z0-9._<>-]+\.tar\.gz(\.sha256)?/)) {
                     print substr(s, RSTART, RLENGTH)
                     s = substr(s, RSTART + RLENGTH)
@@ -982,6 +995,14 @@ release_gate_judge() {
     # A `needs:` holds only while the job's `if:` keeps the default
     # `success()`. Any other status function lets the job run after a need
     # failed, so the release is created whatever the smoke jobs did.
+    #
+    # The match ignores case, because an expression does: the runner's parser
+    # looks a function name up in a dictionary built with
+    # `StringComparer.OrdinalIgnoreCase` (actions/runner,
+    # src/Sdk/DTExpressions2/Expressions2/ExpressionParser.cs,
+    # `ExtensionFunctions`), so `Always()` is `always()`. A job-level `if:` is
+    # evaluated by the service rather than by the runner, and nothing
+    # published says the service differs, so this reads the two alike.
     rg_facts=$(release_job_facts "$1")
     rg_override=$(printf '%s\n' "$rg_facts" | awk -F '\t' '
         $2 == "creates" { creator[$1] = 1 }
@@ -989,7 +1010,7 @@ release_gate_judge() {
         END {
             for (j in creator) {
                 c = cond[j]
-                if (match(c, /always\(\)|!?[ \t]*cancelled\(\)|failure\(\)/)) {
+                if (match(tolower(c), /always\(\)|!?[ \t]*cancelled\(\)|failure\(\)/)) {
                     print substr(c, RSTART, RLENGTH)
                     exit
                 }
@@ -2292,6 +2313,36 @@ if [ -f "$release_wf" ]; then
         same "  a release whose \`if:\` overrides the smoke gate is refused" \
             "the job that creates the release calls always() in its \`if:\`, so it runs whatever the smoke jobs did" \
             "$(release_gate_judge "$scratch/release/always.yml")"
+    fi
+
+    # #975. An expression ignores the case of a function name, so the same
+    # override spelled `Always()` holds nothing either.
+    sed '/^  publish:/,/^  [A-Za-z]/s/^    if: \(.*\)$/    if: Always() \&\& (\1)/' \
+        "$release_wf" >"$scratch/release/always-cased.yml"
+    if cmp -s "$release_wf" "$scratch/release/always-cased.yml"; then
+        fail "  and so is one that spells it \`Always()\`" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  and so is one that spells it \`Always()\`" \
+            "the job that creates the release calls Always() in its \`if:\`, so it runs whatever the smoke jobs did" \
+            "$(release_gate_judge "$scratch/release/always-cased.yml")"
+    fi
+
+    # #975. A page that pins one tag in its checkout and downloads another
+    # sends a reader to an archive the pinned source did not build. Only the
+    # pinned tag reads as `<tag>`, so the other version is named.
+    sed '/^curl .*releases\/download\//s/v0\.[0-9]*\.[0-9]*/v0.0.9/g' "$readme" >"$scratch/release/other-version.md"
+    if cmp -s "$readme" "$scratch/release/other-version.md"; then
+        fail "  a download of a version the fence does not pin is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        ov_names=$(release_archives_of "$scratch/release/other-version.md" page)
+        if printf '%s\n' "$ov_names" | grep -q 'headwater-v0\.0\.9-'; then
+            pass "  a download of a version the fence does not pin is refused"
+        else
+            fail "  a download of a version the fence does not pin is refused" \
+                "the page names $(oneline "$ov_names"), so the other version read as the pinned tag"
+        fi
     fi
 
     # A smoke job that cannot fail is a smoke job that holds nothing, whether
