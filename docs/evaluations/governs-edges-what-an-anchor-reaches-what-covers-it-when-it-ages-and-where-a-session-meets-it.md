@@ -90,17 +90,17 @@ Three alternatives were measured against this repository's own history and refus
 
 Spec 5 states that a hook calls a verb that ships and introduces none, and every position below keeps that term. `headwater route <path>` is the verb at each one.
 
-**Read.** A `PreToolUse` position on `Read` routes the path and prints the governing documents before the agent has the bytes. It is silent when nothing governs the path. So it costs one route per file open, which is 35 milliseconds on this corpus. It adds context only where a document has something to say.
+**Read.** A `PreToolUse` position on `Read` routes the path and prints the governing documents before the agent has the bytes. It is silent when nothing governs the path. So it costs one route per file open. That was 35 milliseconds on this corpus when this evaluation measured it, and 180 milliseconds on 2026-09-26. [Spec 16](../spec/16-harness-support.md) keeps the current figure. It adds context only where a document has something to say.
 
 **Write, before.** The `write.sh` advisory moves from `PostToolUse` to `PreToolUse`, so an agent reads the governing documents before it edits and not after. The `PostToolUse` position keeps one line: the edit made an edge suspect, and `headwater check` reports it.
 
-**Write, when nothing governs a path in scope.** This is the position HW-OBL-0105 asks for. Where the path falls under a declared scope and no document governs it, the hook prints the documents a route over the path's terms reaches. It prints the one line of front matter that declares the edge beside them. It proposes and writes nothing, because which document governs which file is a judgment. The [stop rules](../spec/05-ai-integration.md#the-stop-rules) forbid an agent that invents structure. A person or an agent that has read the file types the line.
+**Write, when nothing governs a path in scope.** This is the position HW-OBL-0105 asked for. Where the path falls under a declared scope and no document governs it, the hook prints the documents a route over the path's terms reaches. It prints the one line of front matter that declares the edge beside them. It proposes and writes nothing, because which document governs which file is a judgment. The [stop rules](../spec/05-ai-integration.md#the-stop-rules) forbid an agent that invents structure. A person or an agent that has read the file types the line.
 
 **Review.** The commit gate already prints every finding, and the suspect finding above reaches it for free. The build order owes one more position. `hw-build.md` dispatches `headwater-maintainer` before it opens a pull request. The agent that reads a change for the documents it falsifies is dispatched by nothing today.
 
 ### The actor: `created_by: agent`, and the proposal reaches a person
 
-HW-OBL-0105 records that `governs` declares `created_by: hook` and no hook writes one. The design above makes the write-time position propose and never write, so the honest actor is `agent`, which the closed set holds. The base package owes that value. The first-run walkthrough owes the corrected count of relations with no mechanical creator. This is a change to a published package, and it takes a record of its own when it is built.
+HW-OBL-0105 recorded that `governs` declared `created_by: hook` and that no hook wrote one. The design above makes the write-time position propose and never write, so the honest actor is `agent`, which the closed set holds. [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) moved `governs` and `traces_to` to that value in headwater-standard 4.7.0, and the first-run walkthrough now gives the corrected count. From 4.8.0 no relation of the package declares `hook`, and HW-OBL-0105 is discharged.
 
 ## What this change declares
 

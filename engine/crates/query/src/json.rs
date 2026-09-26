@@ -168,7 +168,8 @@ fn of_silence(silence: &Silence) -> Json {
 /// One pointer a route offers, with the evidence for it.
 ///
 /// `evidence` is an object with a `by` token. `anchor` means the task named a
-/// path the document governs, and `anchors` lists them. `terms` means a term of
+/// path the document governs, `anchors` lists them, and `suspect` lists the
+/// edges onto them whose recorded revision moved (#953). `terms` means a term of
 /// the task reached the document, and `terms`, `rank` and `of` state which
 /// terms and where the document stood in the order by score before the matched
 /// purposes took turns. No member is a score, and none is named for a
@@ -186,9 +187,24 @@ fn of_offer(pointer: &Pointer, evidence: Option<&Evidence>) -> Json {
 
 fn of_evidence(evidence: &Evidence) -> Json {
     match evidence {
-        Evidence::Named { anchors } => Json::object([
+        Evidence::Named { anchors, suspect } => Json::object([
             ("by", Json::string("anchor")),
             ("anchors", strings(anchors)),
+            (
+                "suspect",
+                Json::Array(
+                    suspect
+                        .iter()
+                        .map(|edge| {
+                            Json::object([
+                                ("target", Json::string(&edge.target)),
+                                ("verified", Json::string(&edge.verified)),
+                                ("current", Json::string(&edge.current)),
+                            ])
+                        })
+                        .collect(),
+                ),
+            ),
         ]),
         Evidence::Ranked { terms, rank, of } => Json::object([
             ("by", Json::string("terms")),

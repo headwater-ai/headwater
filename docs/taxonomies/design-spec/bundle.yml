@@ -115,8 +115,9 @@ add:
       require: [doc_type, title]
 
   # --- relations ------------------------------------------------------------
-  # No relation here is created_by author. Each one has a mechanical proposer,
-  # and doctrine.md names it.
+  # cites_evidence is created_by author: a person types the line and no agent
+  # or verb proposes it. The other two have a mechanical proposer, the review
+  # scaffold, and doctrine.md names it.
 
   relations.cites_evidence:
     family: evidence
@@ -125,7 +126,7 @@ add:
     inverse: cited_by
     reciprocal: required
     cardinality: many
-    created_by: hook
+    created_by: author
 
   relations.applied_in:
     family: evidence

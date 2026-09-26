@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0149
-status: current
-status_since: 2026-09-06
+status: discharged
+status_since: 2026-09-26
 last_verified: 2026-08-26
 title: "The write-time hook still picks pointer lines out of prose by their em dash"
 summary: "The write-time hook still finds pointer lines by grepping for an em dash, so a document with no summary drops out in silence."
@@ -29,5 +29,7 @@ relations:
 `write.sh` and `read.sh` both call `hw_governing_pointers` in `.claude/hooks/lib.sh`. It decides what to show an author by grepping the rendered text of `headwater route`, rather than by reading a structured answer. One grep, `' — '`, selects pointer lines by their em dash, a character `Pointer::render` writes only when the document declares a summary. A governed document with no `scent` facet renders no em dash and drops out of the advisory in silence. A second grep, `'names the anchor'`, decides the route was anchored rather than ranked by matching one sentence of one renderer. This couples the hook to prose written for a person rather than for a machine. `engine/crates/query/src/route.rs` carries a comment written for exactly this reader. It describes a withheld pointer line that carries no em dash, because the hook selects pointers by grepping for one. `headwater route --json` now answers both questions as data. `anchors` and `pointers` are written on every run, empty where there is nothing. `text` carries the same rendering byte for byte, already read by `intent.sh`. Neither position reads it.
 
 ## Discharge
+
+**This record is discharged by [#953](https://github.com/headwater-ai/headwater/issues/953).** `hw_governing_pointers` in `.claude/hooks/lib.sh` reads `headwater route --json`. It keeps the pointers whose `evidence.by` is `anchor`, and it reads each pointer's `path`, `name` and `summary` through `headwater json`. The file holds no `grep ' — '` and no `grep 'names the anchor'`, and `hw_ungoverned_in_scope` reads the same members. A case in `.claude/hooks/fixtures.sh` on `stub_route` shows a governing document with no summary in the pre-edit advisory. A second case holds a pointer whose short title the report folds after the dash. The comment in `engine/crates/query/src/route.rs` now gives the reason a reader has, and no hook. The four fail-open counts did not change. The text below is the obligation as it stood.
 
 What closes this is `hw_governing_pointers` in `.claude/hooks/lib.sh` reading `headwater route --json`, and deciding from `anchors` and `pointers` instead. Since #953 that function is the one reader, and the read position and the pre-edit position of `write.sh` both call it. The file then holds no `grep ' — '` and no `grep 'names the anchor'`. A fixture case, built on the stand-in engine `stub_route` already provides, shows a document with no summary reaching the advisory. The position keeps failing open on the same four counts it fails open on today. Those are no engine, an engine that will not execute, a payload that will not parse, and a document that will not parse. [HW-DR-0055](../decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) moved the third of the four off an interpreter and onto the engine, and the count is the same. The comment in `engine/crates/query/src/route.rs`, describing the withheld line's missing em dash, goes or is rewritten, because the constraint it records is gone. Nothing else pays this debt, and `waiting_on: adopter` records that the corpus waits on an adopter to write it.
