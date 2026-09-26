@@ -675,7 +675,7 @@ fn this_repository_reports_the_same_run_from_a_cache_as_from_none() {
 
     let mut cold = Cache::at(&store, &lock.digest, &headwater_check::rules_digest());
     let first = cached_corpus_run(&mut cold);
-    cold.write(&store);
+    cold.write(&store).expect("the cache writes");
 
     let mut warm = Cache::at(&store, &lock.digest, &headwater_check::rules_digest());
     let second = cached_corpus_run(&mut warm);

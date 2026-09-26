@@ -84,7 +84,7 @@ pub mod taxonomy_graph;
 /// other stream.
 ///
 /// **It says "refuses" and not "exits non-zero", because those are different
-/// sets.** Five of the eleven reasons `check` exits 1 are decided after the
+/// sets.** Five of the twelve reasons `check` exits 1 are decided after the
 /// report is already on standard output, which
 /// `docs/interfaces/headwater-check.md` states under *Exit status*. A refusal
 /// is decided before anything is written.
