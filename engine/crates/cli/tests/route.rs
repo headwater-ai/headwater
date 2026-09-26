@@ -290,7 +290,10 @@ fn a_governing_edge_whose_recorded_revision_moved_is_named_on_its_pointer() {
         .unwrap_or_else(|| panic!("no suspect member in {}", ran.out));
     let member = &ran.out[start..];
     let member = &member[..=member.find(']').expect("the array closes")];
-    assert!(member.contains("\"target\": \"tools/stale.sh\""), "{member}");
+    assert!(
+        member.contains("\"target\": \"tools/stale.sh\""),
+        "{member}"
+    );
     assert!(member.contains("\"verified\": \"sha256:0000\""), "{member}");
     assert!(member.contains("\"current\": \"sha256:"), "{member}");
 
