@@ -309,7 +309,7 @@ Language is the third regime family. The corpus declares one default, and a kind
 
 ### The language regime carries the terms that the corpus retired
 
-A judgment that a corpus no longer uses a term is a promise about the text, on the same terms as a spelling lexicon. A judgment that lives in prose and a diff is inherited by nobody, and `retired_terms` is where it becomes data ([evaluation](../evaluations/what-a-check-can-know.md)). Each entry carries the term, a required reason, and an optional replacement. `language.retired_term.used` reads them, and this repository declares eighteen entries: the stock phrasing that its own contributing guide used to state in prose.
+A judgment that a term is retired from a corpus is a promise about the text, on the same terms as a spelling lexicon. A judgment that lives in prose and a diff is inherited by nobody, and `retired_terms` is where it becomes data ([evaluation](../evaluations/what-a-check-can-know.md)). Each entry carries the term, a required reason, and an optional replacement. `language.retired_term.used` reads them, and this repository declares eighteen entries: the stock phrasing that its own contributing guide names in prose.
 
 **The reason is required, because a retirement with no recorded reason is an authority rank with extra steps.** [Q18](09-decisions.md#q18--recording-adjudicated-disagreements) refused that shape for adjudication, and it does not improve here.
 
@@ -741,7 +741,7 @@ remove:
 
 **An overlay's own `taxonomy` and `extends` keys are unread as well, and for a different reason each.** `taxonomy` restates the composed taxonomy's own name. Nothing in this repository, or in any package it ships, uses the key outside this worked example and one meta-schema fixture. Nothing exists to hold a restatement against. `extends` here names the base an overlay was written against. The base's resolved version is loaded by the time an overlay is read. But every bundle this repository ships already carries a value here that has moved apart from the base underneath it. No rule reports the gap. [Q40](09-decisions.md#q40--whether-extends-bundle-requires-and-an-overlays-taxonomy-key-are-a-mechanism-or-a-label) rules both keys a label rather than a mechanism. It rules a bundle's own `bundle` and `requires` keys the same way, and it states the reason for each one.
 
-Note what the lifecycle override does *not* break. The names change completely, the roles survive, and the core is satisfied. If the overlay dropped the `terminal-retained` role entirely, resolution would fail. The failure would not be because a key went missing, but because succession could no longer retain lineage, which the core requires.
+Note what the lifecycle override does *not* break. The names change completely, the roles survive, and the core is satisfied. If the overlay dropped the `terminal-retained` role entirely, resolution would fail. The failure would not be because a key went missing, but because succession could not retain lineage, which the core requires.
 
 Merge semantics are strict and total:
 
