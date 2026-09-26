@@ -39,6 +39,8 @@ The verb has no verb-specific options. Global `--root`, `--wide`, `--no-color`, 
 
 **0** for `--help`, `--version` and the global help paths that the binary answers before it enters this verb.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 No environment variable reaches this verb. The refusal depends only on the command line.

@@ -79,6 +79,8 @@ The consumer declaration and package sources must be readable for source operati
 
 `validate`, `resolve`, `publish`, `vendor`, `diff` and `migrate` return **0** when their operation succeeds and **1** on refusal or write failure. `publish --json` moves no exit status. A refusal under it writes no document on standard output, and its account is one English sentence on standard error. That is the rule [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) states for every `--json` this binary takes. `resolve --check` returns **1** for a stale lock. `audit` returns **0** after it reports its measurements, and **1** where `--record` cannot write or read the store.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 The command reads the system date when a subcommand has `--now` and no date is supplied. It reads no other environment variable.

@@ -56,6 +56,8 @@ The global `--help` and `--version` flags are answered before this command runs.
 
 Help output goes to standard output. A successful run writes nothing to standard error. A refusal writes its message to standard error and writes no help screen.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 `NO_COLOR`, set to any value, has the same effect as `--no-color`. `HEADWATER_NO_BANNER`, set to any value, has the same effect as `--no-banner`. `COLUMNS` affects the global width helper only when a caller uses the width option on a command that reads it. This command uses the parser's command tree and does not read the corpus.

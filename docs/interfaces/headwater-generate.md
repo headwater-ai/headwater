@@ -59,6 +59,8 @@ The repository must have a readable consumer declaration, taxonomy lock, corpus 
 
 **1** means that loading, planning or writing failed, that `--check` found drift, or that `--check` found a producer difference. The two `--check` failures print different sentences, because only one of them has a remedy this command can name.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 The command reads no environment variable.

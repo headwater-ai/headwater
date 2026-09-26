@@ -68,6 +68,8 @@ Without `--git`, the repository must not already contain `.headwater/taxonomy.ym
 
 **1** means one of five failures. The repository is already bound and `--git` is absent. No corpus root could be proposed. A file could not be written. A `git config` line failed, and then no override is written. Or `--git` ran inside a git repository and git did not give the merge attributes. The step then does its other work, prints the reason on standard error, and exits 1, as [`headwater derived`](headwater-derived.md) does.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 The command reads no environment variable. Under `--git`, it runs `git` from the `PATH` for `git check-attr`, `git rev-parse` and `git config --get`. Under `--git-config`, it also runs `git config` to write the two lines.
