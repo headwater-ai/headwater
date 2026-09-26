@@ -21,6 +21,7 @@
 //!
 //! [manifest]: https://github.com/headwater-ai/headwater/blob/main/docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version
 
+use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -333,13 +334,29 @@ pub fn merge_attributes(
 /// - A `.git` directory that is not a repository is passed over.
 /// - The search does not go up into a directory that `GIT_CEILING_DIRECTORIES`
 ///   names, or across a filesystem boundary unless
-///   `GIT_DISCOVERY_ACROSS_FILESYSTEM` is true.
+///   `GIT_DISCOVERY_ACROSS_FILESYSTEM` is true or a value git refuses.
 ///
 /// A plain `.git` entry is not enough. Git says there is no repository in
 /// each of the last three shapes, and a verb that refused there would refuse
 /// a tree that git itself reads as no repository.
 fn finds_a_repository(root: &Path) -> bool {
-    let ceilings: Vec<PathBuf> = std::env::var_os("GIT_CEILING_DIRECTORIES")
+    finds_a_repository_in(root, &|name| std::env::var_os(name), &device_of)
+}
+
+/// [`finds_a_repository`] with the environment and the device lookup passed
+/// in, so that a test can set a variable without changing the environment
+/// of the process, which cargo shares between the cases of one target.
+///
+/// `var_os` reads one environment variable as the process holds it, bytes
+/// that are not UTF-8 included. Both settings are read through it and
+/// nothing else, so a test that passes a value here tests the path that
+/// ships (#1120).
+fn finds_a_repository_in(
+    root: &Path,
+    var_os: &dyn Fn(&str) -> Option<OsString>,
+    device_of: &dyn Fn(&Path) -> Option<u64>,
+) -> bool {
+    let ceilings: Vec<PathBuf> = var_os("GIT_CEILING_DIRECTORIES")
         .map(|value| {
             std::env::split_paths(&value)
                 .filter(|dir| !dir.as_os_str().is_empty())
@@ -347,9 +364,8 @@ fn finds_a_repository(root: &Path) -> bool {
                 .collect()
         })
         .unwrap_or_default();
-    let across = std::env::var("GIT_DISCOVERY_ACROSS_FILESYSTEM")
-        .is_ok_and(|value| crosses_filesystems(&value));
-    search_upward(root, &ceilings, across, &device_of)
+    let across = crosses_filesystems_os(var_os("GIT_DISCOVERY_ACROSS_FILESYSTEM").as_deref());
+    search_upward(root, &ceilings, across, device_of)
 }
 
 /// Whether the search crosses a filesystem boundary, for `value` of
@@ -362,6 +378,19 @@ fn finds_a_repository(root: &Path) -> bool {
 /// the refusal of a corrupt `HEAD` (ruled on #1115, 2026-09-25).
 fn crosses_filesystems(value: &str) -> bool {
     git_bool(value).unwrap_or(true)
+}
+
+/// Whether the search crosses a filesystem boundary, for the raw value of
+/// `GIT_DISCOVERY_ACROSS_FILESYSTEM` as the environment holds it.
+///
+/// - Unset: the search does not cross, which is git's default.
+/// - Set to UTF-8: the answer is [`crosses_filesystems`].
+/// - Set to bytes that are not UTF-8: the search crosses. Every value git
+///   accepts as a boolean is ASCII, so git refuses such a value, and the
+///   contract in `docs/interfaces/headwater-derived.md` says the search
+///   crosses for a value git refuses (#1120).
+fn crosses_filesystems_os(value: Option<&OsStr>) -> bool {
+    value.is_some_and(|value| value.to_str().is_none_or(crosses_filesystems))
 }
 
 /// A boolean as git reads one (`git_parse_maybe_bool`), or `None` where git
@@ -1008,6 +1037,75 @@ mod tests {
         for value in ["2147483647", "-2147483648", "1g", "2047m", "0x7fffffff"] {
             assert_eq!(git_bool(value), Some(true), "git accepts {value:?}");
         }
+    }
+
+    /// A value that is not UTF-8 crosses the boundary (#1120).
+    ///
+    /// Every value git accepts as a boolean is ASCII, so git refuses a value
+    /// that is not UTF-8, and the search crosses as it does for every other
+    /// value git refuses. An unset variable and `0` still do not cross, so
+    /// the answer is not "always cross".
+    #[cfg(unix)]
+    #[test]
+    fn a_value_that_is_not_utf8_crosses_the_boundary() {
+        use std::os::unix::ffi::OsStrExt;
+        for bytes in [&b"\xff"[..], &b"1\xff"[..]] {
+            assert!(
+                crosses_filesystems_os(Some(OsStr::from_bytes(bytes))),
+                "git refuses {bytes:?}, and the search crosses"
+            );
+        }
+        assert!(!crosses_filesystems_os(None), "unset does not cross");
+        assert!(
+            !crosses_filesystems_os(Some(OsStr::new("0"))),
+            "git reads \"0\" as false"
+        );
+        assert!(
+            crosses_filesystems_os(Some(OsStr::new("1"))),
+            "git reads \"1\" as true"
+        );
+    }
+
+    /// The search that ships reads `GIT_DISCOVERY_ACROSS_FILESYSTEM` as the
+    /// process holds it, and a value that is not UTF-8 crosses (#1120).
+    ///
+    /// This drives [`finds_a_repository_in`], the body of the verb's search,
+    /// with the environment passed in and a stand-in boundary, as
+    /// `the_search_upward_stops_at_a_filesystem_boundary` places one. Read
+    /// the variable with `std::env::var`, or drop the value that is not
+    /// UTF-8 anywhere on the way to the search, and the first assertion
+    /// fails. Unset, the repository above the boundary is not reached.
+    #[cfg(unix)]
+    #[test]
+    fn the_search_crosses_for_a_value_that_is_not_utf8() {
+        use std::os::unix::ffi::OsStrExt;
+        let at = std::env::temp_dir().join(format!(
+            "headwater-vcs-tests-boundary-not-utf8-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&at);
+        fs::create_dir_all(at.join("inner/sub")).expect("the directories are there");
+        fs::write(at.join(".git"), "gitdir: /elsewhere\n").expect("the file writes");
+        let inner = at
+            .join("inner")
+            .canonicalize()
+            .expect("the directory is there");
+        let device = |dir: &Path| Some(if dir.starts_with(&inner) { 2 } else { 1 });
+        for bytes in [&b"\xff"[..], &b"1\xff"[..]] {
+            let env = |name: &str| {
+                (name == "GIT_DISCOVERY_ACROSS_FILESYSTEM")
+                    .then(|| OsStr::from_bytes(bytes).to_os_string())
+            };
+            assert!(
+                finds_a_repository_in(&inner.join("sub"), &env, &device),
+                "git refuses {bytes:?}, and the search crosses to the repository"
+            );
+        }
+        assert!(
+            !finds_a_repository_in(&inner.join("sub"), &|_| None, &device),
+            "unset, the repository above the boundary is not reached"
+        );
+        let _ = fs::remove_dir_all(&at);
     }
 
     /// A tree with no `.git` at all — the shape this crate's own tests build
