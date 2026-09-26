@@ -1,9 +1,12 @@
 ---
 id: NOTE-FIX-self-superseder
 status: current
-summary: named by a generated page's own `superseded_by`
+relations:
+  supersedes:
+    - NOTE-FIX-gen-self-written
+summary: the one setter of a generated page that also names itself
 ---
 
 # self-superseder
 
-Writes nothing. `pages/gen-self-written.md` wrote the edge.
+Declares `supersedes` at `NOTE-FIX-gen-self-written`.

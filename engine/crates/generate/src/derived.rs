@@ -455,8 +455,9 @@ fn standing(surface: &Surface<'_>, id: &str, output: &str) -> Option<(String, Lo
 /// Two relations declaring one state agree. Two declaring different states
 /// get the first in sorted order, so the answer is the same on every run. The
 /// check rule `lifecycle.state.set_twice` (`headwater_check::state_set_twice`,
-/// #1086) reports the disagreement at the target and names the state this
-/// picks.
+/// #1086) reads the edges [`incoming`] reads, onto the documents this module
+/// writes a state onto, and reports the disagreement with the state this
+/// picks. A change to either reading changes both.
 fn set_state(surface: &Surface<'_>, id: &str, output: &str) -> Option<String> {
     let mut found: Vec<String> = incoming(surface, id, output)
         .into_iter()

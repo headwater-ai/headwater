@@ -18,9 +18,9 @@
 //! **A rule that read the writing file as the source** reports
 //! `pages/gen-inverse.md`, which another file named through an inverse half.
 //!
-//! **A rule that read every edge at the page** reports
-//! `pages/gen-self-written.md`, whose clash is in edges the page wrote itself,
-//! and generate reads none of those.
+//! **A rule that read every edge into the page** reports
+//! `pages/gen-self-written.md`, which names itself under `retires`. Generate
+//! reads no edge the page wrote, so only `superseded` reaches it.
 //!
 //! **A rule that ignored the kind** reports `plain/gen-unstated.md`, whose kind
 //! requires no state, so generate writes none.
@@ -168,8 +168,8 @@ fn an_inverse_half_written_elsewhere_sets_no_state_on_the_page() {
     assert!(at(&run, "pages/gen-inverse.md").is_empty(), "{:?}", reported(&run));
 }
 
-/// A page's own inverse halves are edges generate never reads, because the
-/// page wrote them.
+/// An edge the page wrote at itself is one generate never reads, because the
+/// page would then be a function of its own last version.
 #[test]
 fn edges_the_page_wrote_itself_are_not_read() {
     let run = run();

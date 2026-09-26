@@ -1667,9 +1667,10 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Edge,
             Grain::Edge,
             Grain::Neighbourhood { depth: 1 },
-            // Two relations telling one document two states. The defect is
-            // two edges that meet at the target, so no edge sees it (#1086).
-            Grain::Neighbourhood { depth: 1 },
+            // Two relations telling one generated document two states. A
+            // neighbourhood centers on a typed document and a generated one is
+            // not typed, so the corpus is the grain that reaches it (#1086).
+            Grain::Corpus,
             // The two Graph-origin rules whose grain is the document. Each one
             // routes a phase-A defect that stops an edge from existing, so
             // there is no edge to instantiate over and the document that wrote

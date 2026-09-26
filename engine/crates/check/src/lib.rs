@@ -455,9 +455,9 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
         ),
         (
             state_set_twice::RULE,
-            scope::neighbourhood_scope::<state_set_twice::StateSetTwice<'_>>(),
-            scope::neighbourhood_version::<state_set_twice::StateSetTwice<'_>>(),
-            scope::neighbourhood_exports::<state_set_twice::StateSetTwice<'_>>(),
+            scope::corpus_scope::<state_set_twice::StateSetTwice<'_>>(),
+            scope::corpus_version::<state_set_twice::StateSetTwice<'_>>(),
+            scope::corpus_exports::<state_set_twice::StateSetTwice<'_>>(),
         ),
         (
             declaration::RULE,
@@ -685,8 +685,8 @@ pub fn run(
     // other. See [`verification`].
     let verified = verification::Verified::over(declared.relations, declared.observations);
     let participation = participation::Participation::over(declared.shape, declared.relations);
-    // Two relations telling one document two states, over the relations that
-    // declare `on_target.set_state`. See [`state_set_twice`].
+    // Two relations telling one generated document two states, over the
+    // relations that declare `on_target.set_state`. See [`state_set_twice`].
     let set_twice = state_set_twice::StateSetTwice::over(declared.relations, declared.shape);
     let declarations = declaration::Unusable::over(declared.relations, declared.shape);
     let identities = identity::Identity::over(
@@ -821,9 +821,14 @@ pub fn run(
         ctx,
         cache,
     ));
-    instances.extend(scope::over_neighbourhoods(
-        &set_twice, census, graph, &digests, ctx, cache,
-    ));
+    // The one corpus-scoped rule with a generation step. A taxonomy whose
+    // setter relations all name one state can tell no document two, so the
+    // instance is not built. See [`state_set_twice`].
+    if set_twice.can_clash() {
+        instances.extend(scope::over_corpus(
+            &set_twice, census, graph, claims, ctx, cache,
+        ));
+    }
     instances.extend(scope::over_documents(
         &declarations,
         census,
