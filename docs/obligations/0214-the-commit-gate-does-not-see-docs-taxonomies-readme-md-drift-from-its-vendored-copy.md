@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0214
-status: draft
-status_since: 2026-09-24
+status: current
+status_since: 2026-09-26
 summary: "Only the required Engine tests job catches a drift between the taxonomy bundles and their vendored copy, so a contributor learns of it at CI and not at commit."
 last_verified: 2026-09-24
 title: "The commit gate does not see docs/taxonomies/README.md drift from its vendored copy"

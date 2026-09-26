@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0202
-status: draft
-status_since: 2026-09-23
+status: current
+status_since: 2026-09-26
 summary: "tools/run/run-dir.sh claim treats the literal string none as an artifact path with no special case. As a result, two issues that both report footprint none produce a spurious WAITS-ON even when they touch disjoint files."
 last_verified: 2026-09-23
 title: "A bare none footprint is claimed as a literal path, so two disjoint issues collide"

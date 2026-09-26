@@ -44,7 +44,7 @@ use headwater_probe::budget::{self, Budgets};
 use headwater_probe::grade::{Miss, Refusal as NoVerdict, Verdict, Witness};
 use headwater_probe::intake::Tree;
 use headwater_probe::plan::{Examined, Narrowing, Refusal, Selected};
-use headwater_probe::read_set::{Provenance, Staleness, Verdict as Stale};
+use headwater_probe::read_set::{Provenance, Staleness, Tally, Verdict as Stale};
 use headwater_probe::{Arm, Category, Expectation, Plan, Record, Results, Tier};
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
@@ -1377,6 +1377,87 @@ fn an_unusable_verdict_paints_its_opening_words_as_warn() {
     );
     let ansi = staleness.render(ColorMode::Ansi);
     assert!(ansi.contains(&wanted), "{ansi}");
+}
+
+/// The closing tally of `probe stale` counts a result it cannot judge apart
+/// from one whose read set this tree moved (#1140).
+#[test]
+fn a_tally_counts_an_unusable_result_apart_from_a_stale_one() {
+    let at = copied("tally-stale-and-unusable");
+    edit(
+        &at,
+        "corpus/probes/0002-answered.md",
+        "# The session answers",
+        "# The session answers the question",
+    );
+    let moved = staleness_at(&at);
+    assert_eq!(moved.verdict(), Stale::SetMoved);
+    let mut undecided = staleness_at(&fixtures_dir());
+    undecided.unusable = Some("it carries no run identity".to_string());
+    assert_eq!(undecided.verdict(), Stale::Unusable);
+
+    let mut tally = Tally::default();
+    tally.count(Some(moved.verdict()));
+    tally.count(Some(undecided.verdict()));
+    assert_eq!(
+        tally,
+        Tally {
+            seen: 2,
+            moved: 1,
+            unusable: 1
+        }
+    );
+    assert_eq!(
+        tally.closing(),
+        "Of 2 committed transcripts, this tree moved the read set of 1, and nothing here \
+         decides whether 1 is stale."
+    );
+}
+
+/// A transcript that did not read is one nothing here decides about, so it
+/// is counted as undecided and never as standing or moved (#1140).
+#[test]
+fn a_tally_counts_a_transcript_that_did_not_read_as_undecided() {
+    let standing = staleness_at(&fixtures_dir());
+    assert_eq!(standing.verdict(), Stale::Stands);
+
+    let mut tally = Tally::default();
+    tally.count(None);
+    tally.count(Some(standing.verdict()));
+    assert_eq!(
+        tally,
+        Tally {
+            seen: 2,
+            moved: 0,
+            unusable: 1
+        }
+    );
+    assert_eq!(
+        tally.closing(),
+        "Of 2 committed transcripts, this tree moved the read set of 0, and nothing here \
+         decides whether 1 is stale."
+    );
+}
+
+/// With every transcript judged, the closing line keeps its old shape.
+#[test]
+fn a_tally_with_nothing_undecided_omits_the_second_clause() {
+    let mut tally = Tally::default();
+    tally.count(Some(Stale::Stands));
+    tally.count(Some(Stale::Both));
+    tally.count(Some(Stale::OpenedFileMoved));
+    assert_eq!(
+        tally.closing(),
+        "Of 3 committed transcripts, this tree moved the read set of 2."
+    );
+    let mut many = Tally::default();
+    many.count(None);
+    many.count(Some(Stale::Unusable));
+    assert_eq!(
+        many.closing(),
+        "Of 2 committed transcripts, this tree moved the read set of 0, and nothing here \
+         decides whether 2 are stale."
+    );
 }
 
 /// `Role::Path` on the path of every member of the read set.

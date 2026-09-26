@@ -193,23 +193,75 @@ hw_patch_path() {
     printf '%s' "$_first"
 }
 
+# The pointers of one `headwater route --json` document whose evidence is `by`
+# (`anchor` or `terms`), one line each, as `path (name) — summary`, or nothing
+# and a non-zero status when none is. Every value is a member of the JSON the
+# engine wrote, read through `headwater json`, so no line of rendered text is
+# picked apart. The em dash here is the hook's own separator. The rendered
+# report folds a pointer across lines, and a grep for the dash in it missed a
+# pointer whose fold put the summary on the next line (HW-OBL-0149, #953).
+hw_route_pointers() {
+    _json=$1 _by=$2
+    _total=$(hw_count "$_json" pointers) || return 1
+    _lines= _at=0
+    while [ "$_at" -lt "$_total" ]; do
+        _evidence=$(hw_field "$_json" pointers "$_at" evidence by) || _evidence=
+        if [ "$_evidence" = "$_by" ]; then
+            _path=$(hw_field "$_json" pointers "$_at" path) || _path=
+            _name=$(hw_field "$_json" pointers "$_at" name) || _name=
+            _summary=$(hw_field "$_json" pointers "$_at" summary) || _summary=
+            _lines="$_lines
+  $_path ($_name) — $_summary"
+        fi
+        _at=$((_at + 1))
+    done
+    [ -n "$_lines" ] || return 1
+    printf '%s\n' "${_lines#?}"
+}
+
 # The pointer lines of every document that declares it governs one path, or
 # nothing and a non-zero status when none does. The read position and the
 # pre-edit position both say the same set, and this is the one place that asks
 # for it, so the two cannot drift into two answers (#953).
 #
-# It asks `headwater route` for the path, the verb that ships, and keeps the
-# rendered ` — ` lines as the engine wrote them. It composes no line of its own.
-# `route` names the anchor when a `governs` edge admits the path, and a route
-# that names no anchor has reached documents by their terms rather than by a
-# declaration, which is not the set this answers for.
+# It asks `headwater route --json` for the path, the verb that ships, and keeps
+# the pointers whose evidence is `anchor`: a `governs` edge admits the path. A
+# pointer the route reached by terms is not the set this answers for.
 hw_governing_pointers() {
     _engine=$(hw_engine) || return 1
-    _route=$("$_engine" route --root "$hw_root" "$1" 2>/dev/null) || return 1
-    printf '%s\n' "$_route" | grep -q 'names the anchor' || return 1
-    _pointers=$(printf '%s\n' "$_route" | grep ' — ')
-    [ -n "$_pointers" ] || return 1
-    printf '%s\n' "$_pointers"
+    _route=$("$_engine" route --json --root "$hw_root" "$1" 2>/dev/null) || return 1
+    hw_route_pointers "$_route" anchor
+}
+
+# One line naming every governing edge of one path that went suspect, or
+# nothing and a non-zero status when none did. An edge is suspect when it
+# records a `verified_revision` and the revision its target has now differs
+# (#953). The engine decides that with the comparison `headwater check` makes,
+# and writes it as the `suspect` member of an anchored pointer's evidence, so
+# this reads that member and compares nothing itself.
+hw_suspect_edges() {
+    _engine=$(hw_engine) || return 1
+    _route=$("$_engine" route --json --root "$hw_root" "$1" 2>/dev/null) || return 1
+    _total=$(hw_count "$_route" pointers) || return 1
+    _edges= _n=0 _at=0
+    while [ "$_at" -lt "$_total" ]; do
+        _count=$(hw_count "$_route" pointers "$_at" evidence suspect) || _count=0
+        _path=$(hw_field "$_route" pointers "$_at" path) || _path=
+        _e=0
+        while [ "$_e" -lt "$_count" ]; do
+            _target=$(hw_field "$_route" pointers "$_at" evidence suspect "$_e" target) || _target=
+            _verified=$(hw_field "$_route" pointers "$_at" evidence suspect "$_e" verified) || _verified=
+            _current=$(hw_field "$_route" pointers "$_at" evidence suspect "$_e" current) || _current=
+            _edges="$_edges, the edge of $_path onto $_target (verified at $_verified, now at $_current)"
+            _n=$((_n + 1))
+            _e=$((_e + 1))
+        done
+        _at=$((_at + 1))
+    done
+    [ "$_n" -gt 0 ] || return 1
+    case $_n in 1) _noun='edge' _it='it' ;; *) _noun='edges' _it='each one' ;; esac
+    printf 'Headwater: this edit left %s governing %s suspect: %s. `headwater check` reports %s under relation.target.suspect.\n' \
+        "$_n" "$_noun" "${_edges#, }" "$_it"
 }
 
 # The engine's account of one path that the governed scope admits and that no
@@ -217,19 +269,20 @@ hw_governing_pointers() {
 # It is the block `headwater route` writes under the line naming the path, and
 # the pointer lines the same route reached by terms, where there are any. The
 # engine composes every line, the front-matter lines included, so the hook
-# holds no scope pattern and no relation name. The line it selects on is the
-# engine's own sentence with the path in it, never an em dash.
+# holds no scope pattern and no relation name. The block is read from the
+# report the JSON carries as `text`, by the engine's own sentence with the path
+# in it. The pointers are read from the JSON members, never by an em dash.
 hw_ungoverned_in_scope() {
     _engine=$(hw_engine) || return 1
-    _route=$("$_engine" route --root "$hw_root" "$1" 2>/dev/null) || return 1
-    _block=$(printf '%s\n' "$_route" | awk -v head="  $1 is in the governed scope, and nothing governs it" '
+    _route=$("$_engine" route --json --root "$hw_root" "$1" 2>/dev/null) || return 1
+    _text=$(hw_field "$_route" text) || return 1
+    _block=$(printf '%s\n' "$_text" | awk -v head="  $1 is in the governed scope, and nothing governs it" '
         $0 == head { on = 1; print; next }
         on && /^    / { print; next }
         { on = 0 }')
     [ -n "$_block" ] || return 1
     printf '%s\n' "$_block"
-    _reached=$(printf '%s\n' "$_route" | grep ' — ')
-    [ -n "$_reached" ] || return 0
+    _reached=$(hw_route_pointers "$_route" terms) || return 0
     printf '\nThe route reached these documents by the terms of the path, and none of them declares the edge:\n%s\n' "$_reached"
 }
 
@@ -252,19 +305,26 @@ hw_governed_by_document() {
     while [ "$_at" -lt "$_total" ]; do
         _relation=$(hw_field "$_explain" related "$_at" relation) || _relation=
         _inbound=$(hw_field "$_explain" related "$_at" inbound) || _inbound=
-        _target=$(hw_field "$_explain" related "$_at" target) || _target=
-        _at=$((_at + 1))
-        [ -n "$_target" ] || continue
-        case $_inbound:$_relation in
-            false:governs)
-                _governs="$_governs
+        # `targets` holds one member per target as written. `target` joins
+        # them with `, `, and a member may hold a comma itself (#1092).
+        _count=$(hw_count "$_explain" related "$_at" targets) || _count=0
+        _t=0
+        while [ "$_t" -lt "$_count" ]; do
+            _target=$(hw_field "$_explain" related "$_at" targets "$_t") || _target=
+            _t=$((_t + 1))
+            [ -n "$_target" ] || continue
+            case $_inbound:$_relation in
+                false:governs)
+                    _governs="$_governs
   $_target"
-                _governs_n=$((_governs_n + 1)) ;;
-            true:*)
-                _cites="$_cites
+                    _governs_n=$((_governs_n + 1)) ;;
+                true:*)
+                    _cites="$_cites
   $_target ($_relation)"
-                _cites_n=$((_cites_n + 1)) ;;
-        esac
+                    _cites_n=$((_cites_n + 1)) ;;
+            esac
+        done
+        _at=$((_at + 1))
     done
     [ "$_governs_n" -gt 0 ] || [ "$_cites_n" -gt 0 ] || return 1
     if [ "$_governs_n" -gt 0 ]; then

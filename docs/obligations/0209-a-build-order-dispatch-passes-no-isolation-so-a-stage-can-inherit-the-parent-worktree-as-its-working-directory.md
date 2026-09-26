@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0209
-status: draft
-status_since: 2026-09-24
+status: current
+status_since: 2026-09-26
 summary: "No dispatch in next-run.md asks for an isolated worktree, so a stage can start inside the parent's worktree. new-worktree.sh refuses the nested path but the inheritance remains."
 last_verified: 2026-09-24
 title: "A build-order dispatch passes no isolation, so a stage can inherit the parent worktree as its working directory"

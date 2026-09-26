@@ -52,7 +52,7 @@ A run files no issue. Every stage appends a finding that is not its own issue to
 Four rulings, tried in this order, and the first that fits is the answer:
 
 1. **Fold.** An open issue already covers the file, the root cause or the ruling. Add the finding to that issue's Done-when under a dated heading, and file nothing.
-2. **Record.** The line names no reader outside this repository. It goes to [13 — Open obligations](../../docs/spec/13-open-obligations.md) as an obligation record, under the cap the run policy states, and never to the tracker.
+2. **Record.** The line names no reader outside this repository. It goes to [13 — Open obligations](../../docs/spec/13-open-obligations.md) as an obligation record, under the cap the run policy states, and never to the tracker. `headwater new` writes the record at `draft`. Move its `status` to `current` before you commit it, because the merge activates the state the record will hold ([HW-DR-0052](../../docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md)), and 13 records filed at `draft` had to move by hand (#569).
 3. **Admit.** The finding blocks the statement of the lowest open version milestone: an adopter cannot do what the statement says until it is fixed. File it into that milestone. Where the milestone is at its cap, name the issue it displaces and move that one to the backlog, because a cap that only grows is not a cap.
 4. **Backlog.** It has a reader and blocks no statement. File it with no milestone.
 

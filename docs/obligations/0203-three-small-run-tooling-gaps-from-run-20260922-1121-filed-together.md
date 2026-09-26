@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0203
-status: draft
-status_since: 2026-09-23
+status: current
+status_since: 2026-09-26
 summary: "A missing project-board item for two issues, an interactive-shell grep shadowed to basic-regex semantics, and a stale hook-exit-code comment have no reader outside this repository. This record files the three together under the intake cap."
 last_verified: 2026-09-23
 title: "Three small run-tooling gaps from run 20260922-1121, filed together"

@@ -1,11 +1,11 @@
 ---
 id: HW-OBL-0105
 title: "Nothing plays the hook role that two relations name as their author"
-status: current
-status_since: 2026-08-13
+status: discharged
+status_since: 2026-09-26
 waiting_on: ruling
 last_verified: 2026-09-26
-summary: "`governs` and `traces_to` declare `created_by: hook`, no verb of this engine writes either one, and every such edge in this corpus is hand entry."
+summary: "Four relations declared `created_by: hook` and no verb of this engine wrote any of them. From headwater-standard 4.8.0 no relation names `hook`."
 provenance:
   warrant: accepted
   agency: mixed
@@ -52,4 +52,6 @@ Where no such verb is written, the base package owes a `created_by` value that i
 
 [HW-OBL-0104](0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) raises what either answer costs. A `governs` edge reaches one path, so an actor that proposes them proposes one for every governed file.
 
-**The correction half has landed (2026-09-26).** [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) rules that both relations are `created_by: agent`, and the base package declares that value from 4.7.0. Spec 2 and the walkthrough now count four of the five base relations with no mechanical creator. No verb writes either edge, so the correction discharges this record rather than the proposing verb. The move of this record to its end state is the owner's.
+**The correction half has landed (2026-09-26).** [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) rules that both relations are `created_by: agent`, and the base package declares that value from 4.7.0. Spec 2 and the walkthrough now count four of the five base relations with no mechanical creator. No verb writes either edge, so the correction discharges this record rather than the proposing verb.
+
+**The bundle half has landed, and this record is discharged (2026-09-26).** The bundle relations `discharges` and `cites_evidence` also declared `hook`, and nothing wrote them. From headwater-standard 4.8.0 both declare `created_by: author`, because a person types the line and no agent proposes it. The owner ruled the value and the move of this record to `discharged` in a [comment on #955](https://github.com/headwater-ai/headwater/issues/955#issuecomment-5844324178), and HW-DR-0083 records it. No relation of this repository now declares `hook`. A test in `engine/crates/audit/tests/readings.rs` holds that the audit finds no relation in the `hook` row.
