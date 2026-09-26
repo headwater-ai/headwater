@@ -2,7 +2,7 @@
 id: HW-PD-0005
 status: current
 status_since: 2026-09-07
-summary: "The run ledger is one directory of small files rather than one markdown file, its per-iteration log and its findings are JSONL read by the line, every total is derived and never stored, and a database is deferred until a cross-run question asks for one."
+summary: "The run ledger is one directory of small files rather than one markdown file. Its per-iteration log and its findings are JSONL read by the line, and every total is derived and never stored. A database is deferred until a cross-run question asks for one."
 last_verified: 2026-09-07
 title: "The ledger is split, its tabular parts are JSONL, and its totals are derived"
 provenance:
