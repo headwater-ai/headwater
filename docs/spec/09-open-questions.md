@@ -211,7 +211,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## Q42 — What "one screen" means for the first help screen
 
-[HW-DR-0042](../decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md) — "One screen" is retired as a claim about a terminal and replaced by a claim about content: the first screen carries one line per entry, and the ceiling that follows from it is 64 lines.
+[HW-DR-0042](../decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md) — "One screen" is retired as a claim about a terminal and replaced by a claim about content. The first screen carries one line per entry, and the ceiling that follows from it is 64 lines.
 
 ## Q43 — Whether a refusal under `--json` is a JSON document
 
