@@ -297,6 +297,44 @@ fn a_bare_local_root_in_code_is_reported_and_a_word_of_prose_is_not() {
     );
 }
 
+/// A program with a path under its own root, a bare root in a shell block,
+/// and the same bare root as a value in a `yaml` block (#1085).
+const BARE_BY_PLACE: &str = "\nBuild the site.\n\n```sh\nmkdocs build\nsh mkdocs/build.sh\nrm -rf site\n```\n\nSet the output directory.\n\n```yaml\nsite_dir: site\ndocs_dir: site/docs\n```\n";
+
+/// A bare root counts only where a shell runs it, and a prefixed token counts
+/// everywhere (#1085).
+///
+/// Edition four read a bare token in every code block, so `site_dir: site` in
+/// an adopter's own `mkdocs.yml` excerpt was reported as a path of this
+/// repository. `mkdocs/build.sh` opens with the root `mkdocs/` and its slash,
+/// so the program exclusion, which applies to a whole bare token, does not
+/// reach it.
+#[test]
+fn a_bare_root_counts_only_in_a_shell_block_and_a_prefixed_one_counts_everywhere() {
+    let root = Root::new("byplace", &["docs/interfaces/p.md"]);
+    root.contract("p", BARE_BY_PLACE);
+    let (_, out, err) = root.run(&["check"]);
+    let p = root.findings("p");
+    assert!(
+        !p.iter().any(|f| f.contains("names `mkdocs`,")),
+        "a bare name that the surface declares as a program is that program\n{p:#?}\n{out}{err}"
+    );
+    assert!(
+        p.iter().any(|f| f.contains("names `mkdocs/build.sh`,")),
+        "a token under the root of a program's name is still a path of this repository\n{p:#?}"
+    );
+    assert_eq!(
+        p.iter().filter(|f| f.contains("names `site`,")).count(),
+        1,
+        "the bare `site` of `rm -rf site` in the shell block is reported, and the `site` of \
+         `site_dir: site` in the `yaml` block is not\n{p:#?}"
+    );
+    assert!(
+        p.iter().any(|f| f.contains("names `site/docs`,")),
+        "a token that opens with a root and its slash counts in a `yaml` block\n{p:#?}"
+    );
+}
+
 /// The page `headwater generate` writes from the `surface` block (#1051).
 const PAGE: &str = "docs/interfaces/consumer-surface.md";
 
