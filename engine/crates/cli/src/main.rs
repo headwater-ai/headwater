@@ -3408,15 +3408,7 @@ fn unreachable_by_a_step(broken: &std::collections::BTreeSet<String>) -> bool {
 /// that verb gates nothing and exits 0 whatever it reads, so a report of it
 /// should not leave cache entries behind as a side effect of being run.
 fn run_of(root: &Path, loaded: &Loaded, ctx: &Context) -> headwater_check::Run {
-    let mut cache = Cache::disabled();
-    headwater_check::run(
-        &loaded.census,
-        &loaded.graph,
-        &loaded.declared(),
-        &loaded.claims,
-        &loaded.check_context(ctx.clone(), root),
-        &mut cache,
-    )
+    loaded.check(root, &loaded.declared(), ctx, &mut Cache::disabled())
 }
 
 /// The projection plan of one side, under an identity the caller supplies.
@@ -3801,6 +3793,31 @@ impl Loaded {
     /// states. A taxonomy whose projections do not read hands the context back
     /// unchanged, because `headwater generate` reports that failure itself and
     /// a check that refused over it would report it a second time.
+    /// One run of the check layer over this corpus, and the only call of
+    /// `headwater_check::run` in this binary.
+    ///
+    /// Every verb that checks goes through here, so every one of them takes
+    /// the orphans [`Loaded::check_context`] adds, and one test of any verb
+    /// holds the wiring of all of them (#1137). `declared` is a parameter
+    /// because `infer` names the lock file as its source where the others
+    /// name the declaration.
+    fn check(
+        &self,
+        root: &Path,
+        declared: &Declared<'_>,
+        ctx: &Context,
+        cache: &mut Cache,
+    ) -> headwater_check::Run {
+        headwater_check::run(
+            &self.census,
+            &self.graph,
+            declared,
+            &self.claims,
+            &self.check_context(ctx.clone(), root),
+            cache,
+        )
+    }
+
     fn check_context(&self, ctx: Context, root: &Path) -> Context {
         if !headwater_check::state_set_twice::StateSetTwice::over(&self.relations, &self.shape)
             .can_clash()
@@ -5545,7 +5562,9 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
         claims: &loaded.claims,
         package: &loaded.bound.package,
         version: &loaded.bound.version,
-        now: ctx,
+        // The `check` tool runs the check layer over this context, so it takes
+        // the orphans the plan names on the terms every verb does (#1137).
+        now: loaded.check_context(ctx, root),
         writing: match writing {
             false => None,
             true => Some(headwater_query::mcp::Writing {
@@ -5704,14 +5723,7 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
         true => Cache::at(root, &loaded.bound.digest, &rules_digest()),
         false => Cache::disabled(),
     };
-    let run = headwater_check::run(
-        &loaded.census,
-        &loaded.graph,
-        &loaded.declared(),
-        &loaded.claims,
-        &loaded.check_context(ctx.clone(), root),
-        &mut cache,
-    );
+    let run = loaded.check(root, &loaded.declared(), ctx, &mut cache);
     // Held for the account rather than said here. A standard error that
     // cannot take this line must not stop the patches below, and the account
     // is where the caller reads what this run did to the disk.
@@ -5837,15 +5849,7 @@ fn fix_over(root: &Path, ctx: &Context, format: Format) -> Result<Written, Strin
             .to_string()
     })?;
     let loaded = load(root).map_err(|_| "the corpus did not load".to_string())?;
-    let mut cache = Cache::disabled();
-    let run = headwater_check::run(
-        &loaded.census,
-        &loaded.graph,
-        &loaded.declared(),
-        &loaded.claims,
-        &loaded.check_context(ctx.clone(), root),
-        &mut cache,
-    );
+    let run = loaded.check(root, &loaded.declared(), ctx, &mut Cache::disabled());
     let subject = Subject {
         package: &loaded.bound.package,
         version: &loaded.bound.version,
@@ -6004,7 +6008,6 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
             ctx.scoped_to(unbound.bind(|path| taken.rows.iter().any(|row| row.path == path)))
         }
     };
-    let ctx = loaded.check_context(ctx, root);
 
     // Phase B. The cache is keyed on the lock digest among other things, so a
     // taxonomy that moved invalidates every entry without anyone clearing a
@@ -6013,14 +6016,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         true => Cache::at(root, &bound.digest, &rules_digest()),
         false => Cache::disabled(),
     };
-    let run = headwater_check::run(
-        taken,
-        graph,
-        &loaded.declared(),
-        &loaded.claims,
-        &ctx,
-        &mut cache,
-    );
+    let run = loaded.check(root, &loaded.declared(), &ctx, &mut cache);
     // Held until the report is out, and then said on standard error. See
     // `Cache::write` for why a failure here moves no verdict.
     let unwritten = cache.write(root).err();
@@ -6240,9 +6236,8 @@ fn infer(
     // which identifiers are taken, and what the write adds to.
     let declared = loaded.bound.adoption.clone();
 
-    let run = headwater_check::run(
-        &loaded.census,
-        &loaded.graph,
+    let run = loaded.check(
+        root,
         &Declared {
             lock: &loaded.bound.digest,
             taxonomy: &loaded.taxonomy,
@@ -6254,8 +6249,7 @@ fn infer(
             adoption: declared.as_ref(),
             source: headwater_lock::LOCK,
         },
-        &loaded.claims,
-        &loaded.check_context(ctx.clone(), root),
+        &ctx,
         &mut Cache::disabled(),
     );
 

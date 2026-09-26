@@ -48,9 +48,11 @@ struct Root {
 }
 
 impl Root {
-    fn new() -> Root {
+    /// The label keeps two cases apart: cargo runs them as threads of one
+    /// process, so the pid alone names one directory for both.
+    fn new(label: &str) -> Root {
         let at = std::env::temp_dir().join(format!(
-            "headwater-cli-stray-generated-{}",
+            "headwater-cli-stray-generated-{}-{label}",
             std::process::id()
         ));
         let _ = std::fs::remove_dir_all(&at);
@@ -120,12 +122,28 @@ impl Root {
     }
 
     fn run(&self, arguments: &[&str]) -> Ran {
-        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        self.run_with(arguments, "")
+    }
+
+    /// Run the binary with `input` on its standard input.
+    fn run_with(&self, arguments: &[&str], input: &str) -> Ran {
+        use std::io::Write;
+        let mut child = Command::new(env!("CARGO_BIN_EXE_headwater"))
             .args(arguments)
             .arg("--root")
             .arg(&self.at)
-            .output()
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
             .expect("the binary runs");
+        child
+            .stdin
+            .take()
+            .expect("the standard input is piped")
+            .write_all(input.as_bytes())
+            .expect("the input writes");
+        let output = child.wait_with_output().expect("the binary finishes");
         Ran {
             code: output.status.code(),
             out: String::from_utf8_lossy(&output.stdout).into_owned(),
@@ -171,11 +189,13 @@ fn into_front_matter(path: &Path, lines: &str) {
     std::fs::write(path, format!("---\n{block}\n{lines}---\n{rest}")).expect("the document writes");
 }
 
-/// The page is marked and no projection writes it, so generate lists it as
-/// orphaned and the rule says nothing about a write to it.
-#[test]
-fn a_marked_page_no_projection_writes_draws_no_set_twice_finding() {
-    let root = Root::new();
+/// The pinned date every run here takes, so two verbs report one day.
+const NOW: &str = "2026-09-27";
+
+/// A scratch corpus with one hand-placed marked decision that `supersedes`
+/// and `retires` tell two states, and the path the check layer names it by.
+fn orphan_corpus(label: &str) -> (Root, String) {
+    let root = Root::new(label);
     let (page, page_id) = root.decision("A page nobody generates");
     let (superseder, _) = root.decision("A ruling that supersedes the page");
     let (retirer, _) = root.decision("A ruling that retires the page");
@@ -204,6 +224,24 @@ fn a_marked_page_no_projection_writes_draws_no_set_twice_finding() {
             .expect("the page has a name")
             .to_string_lossy()
     );
+    (root, named)
+}
+
+/// The findings of this rule in a text report. A finding prints its location
+/// on one line and `<rule>: <message>` on the next. The page is the only
+/// document two setters reach, so any finding of this rule is a finding at it.
+fn fired(report: &str) -> Vec<&str> {
+    report
+        .lines()
+        .filter(|line| line.trim_start().starts_with(&format!("{RULE}: ")))
+        .collect()
+}
+
+/// The page is marked and no projection writes it, so generate lists it as
+/// orphaned and the rule says nothing about a write to it.
+#[test]
+fn a_marked_page_no_projection_writes_draws_no_set_twice_finding() {
+    let (root, named) = orphan_corpus("check");
 
     let generated = root.run(&["generate", "--check"]);
     let orphans = generated
@@ -216,7 +254,7 @@ fn a_marked_page_no_projection_writes_draws_no_set_twice_finding() {
         "generate lists {named} as orphaned\n{generated:?}"
     );
 
-    let checked = root.run(&["check", "--no-cache"]);
+    let checked = root.run(&["check", "--no-cache", "--now", NOW]);
     // The rule ran: the taxonomy has two setters that name two states, so the
     // gate admits its one corpus instance, and a pass is a verdict rather than
     // a rule that never looked.
@@ -226,13 +264,64 @@ fn a_marked_page_no_projection_writes_draws_no_set_twice_finding() {
         checked.out,
         checked.err
     );
-    // A finding prints its location on one line and `<rule>: <message>` on the
-    // next. The page is the only document two setters reach, so any finding
-    // of this rule is a finding at it.
-    let fired: Vec<&str> = checked
-        .out
-        .lines()
-        .filter(|line| line.trim_start().starts_with(&format!("{RULE}: ")))
-        .collect();
+    let fired = fired(&checked.out);
     assert!(fired.is_empty(), "no {RULE} finding at {named}: {fired:?}");
+}
+
+/// `check --fix` runs the check layer twice, before and after the write, and
+/// the report a caller reads is the second. Neither run names the orphan.
+#[test]
+fn the_fixer_reports_no_set_twice_finding_at_the_orphan() {
+    let (root, named) = orphan_corpus("fix");
+    let fixed = root.run(&["check", "--fix", "--no-cache", "--now", NOW]);
+    assert!(
+        fixed.out.contains(&format!("1 instances of {RULE}\n")),
+        "the rule runs one instance\n{}{}",
+        fixed.out,
+        fixed.err
+    );
+    let fired = fired(&fixed.out);
+    assert!(fired.is_empty(), "no {RULE} finding at {named}: {fired:?}");
+}
+
+/// The MCP `check` tool promises the bytes of `headwater check --format
+/// <format>` over the same corpus at the same date. On an orphan corpus the
+/// two must agree, and neither names the orphan.
+#[test]
+fn the_mcp_check_tool_and_the_check_verb_agree_on_an_orphan() {
+    let (root, named) = orphan_corpus("mcp");
+    let checked = root.run(&["check", "--no-cache", "--format", "json", "--now", NOW]);
+    assert!(
+        checked.out.contains(&format!("\"rule\": \"{RULE}\"")),
+        "the JSON report names the rule it ran\n{}{}",
+        checked.out,
+        checked.err
+    );
+    assert!(
+        !checked.out.contains("onto this page"),
+        "no {RULE} finding at {named} from the verb"
+    );
+
+    let served = root.run_with(
+        &["mcp", "--now", NOW],
+        concat!(
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}\n",
+            "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":",
+            "{\"name\":\"check\",\"arguments\":{\"format\":\"json\"}}}\n",
+        ),
+    );
+    assert!(
+        !served.out.contains("onto this page"),
+        "no {RULE} finding at {named} from the MCP tool"
+    );
+    // The artifact rides in the response as one JSON string, escaped the way
+    // the server escapes every string.
+    let artifact = headwater_yaml::json::Json::string(checked.out.as_str()).render();
+    assert!(
+        served.out.contains(&artifact),
+        "the MCP tool answers the bytes of the verb ({} bytes from the verb, {} from the server)\n{}",
+        checked.out.len(),
+        served.out.len(),
+        served.err
+    );
 }
