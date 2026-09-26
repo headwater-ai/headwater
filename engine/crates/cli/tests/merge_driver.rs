@@ -947,6 +947,57 @@ fn the_git_step_writes_no_line_for_a_fold_a_nested_file_declares() {
     }
 }
 
+/// `init --git` inside a repository whose git does not run names the refusal,
+/// writes no root line that the unread nested file could already declare, and
+/// exits 1.
+///
+/// This is the case above with git gone from `PATH`. The census falls back to
+/// the root `.gitattributes` alone, which does not read
+/// `.headwater/.gitattributes`, so a step that trusted the fallback appended a
+/// duplicate lock line and exited 0 in silence (#1119). Drop the refusal print
+/// or the nested-file filter, and this case fails.
+#[test]
+fn the_git_step_without_git_names_the_refusal_and_writes_no_line_a_nested_file_could_declare() {
+    let tree = Tree::adopted("nested-no-git");
+    tree.write(".headwater/.gitattributes", "taxonomy.lock -merge\n");
+    let empty = tree.at.with_extension("nested-no-git-empty-path");
+    std::fs::create_dir_all(&empty).expect("the empty directory is made");
+    for run in ["first", "second"] {
+        let output = Command::new(binary())
+            .args(["init", "--git", "--root"])
+            .arg(&tree.at)
+            .env("PATH", &empty)
+            .env("GIT_CONFIG_GLOBAL", "/dev/null")
+            .env("GIT_CONFIG_NOSYSTEM", "1")
+            .env_remove("GIT_DIR")
+            .env_remove("GIT_INDEX_FILE")
+            .env_remove("GIT_WORK_TREE")
+            .output()
+            .expect("the binary runs");
+        let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+        let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+        assert!(
+            stderr.contains("git did not run"),
+            "the {run} run names that git did not run, on standard error:\n{stderr}\n--- stdout\n{stdout}"
+        );
+        assert!(
+            stderr.contains(".headwater/.gitattributes"),
+            "the {run} run names the nested file it could not read:\n{stderr}"
+        );
+        let root = std::fs::read_to_string(tree.at.join(".gitattributes")).unwrap_or_default();
+        assert!(
+            !root.contains("taxonomy.lock"),
+            "the {run} run wrote a root line for the lock, which the unread nested file declares:\n{root}"
+        );
+        assert_eq!(
+            output.status.code(),
+            Some(1),
+            "the {run} run exits 1, because git did not give the merge attributes:\n{stderr}"
+        );
+    }
+    let _ = std::fs::remove_dir_all(&empty);
+}
+
 /// A producer that only this repository holds is neither named by
 /// `headwater derived` nor written by `init --git` in an adopter's tree.
 ///
