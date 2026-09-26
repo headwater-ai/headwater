@@ -1,7 +1,7 @@
 ---
 id: HW-DR-0069
-status: current
-status_since: 2026-09-17
+status: superseded
+status_since: 2026-09-26
 summary: "No word-length rule joins the check layer. The six-sentence limit of the standard the house regime declares lands as a fifth defect of the language rule, advisory permanently. The paragraph that raised the question is a hand-kept index, and a derived list repairs it where no lexical rule reads it."
 last_verified: 2026-09-17
 title: "A paragraph limit counts sentences under the language rule and never words"
@@ -10,6 +10,8 @@ relations:
     - engine/crates/check/src/language.rs
   traces_to:
     - HW-DR-0005
+  superseded_by:
+    - HW-DR-0087
 provenance:
   warrant: accepted
   agency: agent
@@ -52,6 +54,8 @@ The rendered page of [spec 13](../spec/13-open-obligations.md) carries paragraph
 **Identifier density is refused as a proxy for a list-shaped paragraph.** It separates exactly one paragraph of 5,890, and that paragraph leaves the tree with #835. A rule that reports zero from the day it lands is a saturated rule, and nothing distinguishes it from a rule that works.
 
 **What reopens this: an adjudicated sample of the findings, on the method of HW-DR-0005.** The question the sample answers is rule 6.5's: of the paragraphs past six sentences, how many hold one topic. Where most hold one, the count measures the wrong thing, and the defect is retired rather than tuned. A limit tuned in numbers until it fires less often is the word count this record refused, in a different unit.
+
+**The sample met this clause, and the defect never landed.** A build reported 830 findings over 7,093 paragraphs, and a seeded sample of 60 of them held one topic in 50. [HW-DR-0087](0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md) records the measurement and retires the defect.
 
 ## Consequences
 
