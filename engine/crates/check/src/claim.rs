@@ -518,3 +518,70 @@ impl CorpusCheck for Stale<'_> {
         Outcome::failed(findings)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use headwater_graph::index::PathEntry;
+
+    fn entry(path: &str, id: &str) -> PathEntry {
+        PathEntry {
+            path: path.to_string(),
+            class: "typed",
+            id: Some(id.to_string()),
+            kind: Some("decision".to_string()),
+        }
+    }
+
+    fn claim(id: &str, claimant: &str) -> Claim {
+        Claim {
+            scheme: "decision_id".to_string(),
+            id: id.to_string(),
+            claimant: claimant.to_string(),
+        }
+    }
+
+    fn findings(index: &Index, claims: &Claims) -> Vec<Finding> {
+        let view = CorpusView::only_claims(Some(claims));
+        match Stale::over("id", index).evaluate(&view) {
+            Outcome::Passed => Vec::new(),
+            Outcome::Failed(found) => found,
+            other => panic!("the rule did not run: {other:?}"),
+        }
+    }
+
+    /// The case table of `identifier.claim.stale` for a claimant the corpus
+    /// does not hold. A rename is stale and names the current path. A deletion
+    /// is correct, because an identifier is never reused. An identifier two
+    /// documents hold is `identifier.claimed_twice`'s, and this rule picks no
+    /// winner.
+    #[test]
+    fn a_renamed_claimant_is_stale_and_a_deleted_one_is_not() {
+        let index = Index {
+            paths: vec![
+                entry("docs/decisions/0002-new-name.md", "DR-0002"),
+                entry("docs/decisions/0003-one.md", "DR-0003"),
+                entry("docs/decisions/0003-two.md", "DR-0003"),
+            ],
+            ..Index::default()
+        };
+        let claims = Claims::of(vec![
+            claim("DR-0001", "docs/decisions/0001-deleted.md"),
+            claim("DR-0002", "docs/decisions/0002-old-name.md"),
+            claim("DR-0003", "docs/decisions/0003-gone.md"),
+        ]);
+
+        let found = findings(&index, &claims);
+        assert_eq!(found.len(), 1, "{found:#?}");
+        let finding = &found[0];
+        assert_eq!(finding.rule, STALE);
+        assert_eq!(finding.severity, Severity::Warn);
+        assert!(finding.patch.is_none(), "{finding:#?}");
+        assert_eq!(finding.path, "docs/decisions/0002-new-name.md");
+        assert!(finding.message.contains(".headwater/ids/decision_id/DR-0002"), "{finding:#?}");
+        assert!(finding.message.contains("docs/decisions/0002-old-name.md"), "{finding:#?}");
+        assert!(finding.message.contains("docs/decisions/0002-new-name.md"), "{finding:#?}");
+        assert!(finding.remediation.contains("docs/decisions/0002-new-name.md"), "{finding:#?}");
+        assert!(!finding.message.contains("DR-0001"), "{finding:#?}");
+    }
+}
