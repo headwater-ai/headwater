@@ -1,12 +1,12 @@
-594 seen, 413 classified, 413 checked, 8812 check instances
+595 seen, 414 classified, 414 checked, 8842 check instances
      22 generated, held to regeneration by `headwater generate --check`
      23 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
-    313 skipped: the target is a document, which holds no revision for an edge to be verified against
+    316 skipped: the target is a document, which holds no revision for an edge to be verified against
       1 skipped: the document at the target end, `HW-IFACE-headwater-init`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       3 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-16`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
-    827 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+    829 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   a check read .headwater/ids, which the census never walked
   a check read .headwater/ids, which the census never walked
 adoption
@@ -16,37 +16,37 @@ adoption
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The
       baseline held two when the linter retired. The other named a semicolon
       inside a block quotation, which the engine does not report at all, because
-      the parser hands a quoted block to no lexical rule420 documents in the read set, and 6 barriers that no gate carries across a merge
-    413 instances of facet.required.missing
-    413 instances of facet.value.not_permitted
-    413 instances of facet.value.blank
-    413 instances of identifier.pattern.not_met
-    413 instances of shelf.placement_is_primary
-    766 instances of relation.target.unresolved
-    549 instances of relation.target.suspect
+      the parser hands a quoted block to no lexical rule421 documents in the read set, and 6 barriers that no gate carries across a merge
+    414 instances of facet.required.missing
+    414 instances of facet.value.not_permitted
+    414 instances of facet.value.blank
+    414 instances of identifier.pattern.not_met
+    414 instances of shelf.placement_is_primary
+    769 instances of relation.target.unresolved
+    552 instances of relation.target.suspect
      91 instances of relation.reciprocity.missing
-    439 instances of relation.endpoint.not_permitted
+    442 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
-    439 instances of lifecycle.dependency.on_initial
-    426 instances of warrant.evidence.unsupported
+    442 instances of lifecycle.dependency.on_initial
+    429 instances of warrant.evidence.unsupported
       5 instances of relation.participation.overdue
-    413 instances of relation.declaration.unusable
-    413 instances of identifier.unusable
+    414 instances of relation.declaration.unusable
+    414 instances of identifier.unusable
       1 instances of identifier.claimed_twice
       1 instances of identifier.claim.missing
       1 instances of identifier.claim.stale
-    374 instances of voice.forbidden_construction
-    392 instances of language.controlled.not_met
-    392 instances of language.retired_term.used
+    375 instances of voice.forbidden_construction
+    393 instances of language.controlled.not_met
+    393 instances of language.retired_term.used
      27 instances of surface.local_path.instructed
      27 instances of surface.command.undeclared
-    392 instances of language.source_form.not_met
-    354 instances of section.required.missing
+    393 instances of language.source_form.not_met
+    355 instances of section.required.missing
       1 instances of link.fragment.unresolved
       1 instances of link.path.unresolved
-    413 instances of warrant.promoted
-    413 instances of lifecycle.transition.not_permitted
-    413 instances of lifecycle.state.not_admitted
+    414 instances of warrant.promoted
+    414 instances of lifecycle.transition.not_permitted
+    414 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
       1 instances of relation.target.verification.suspect
 suppressions
@@ -135,27 +135,26 @@ rules, and for each the scope that binds it
   relation.target.verification.suspect
     edge scope, one relation instance and both endpoints, and the committed observation snapshot
 register
-  36 obligations: 33 verified, 2 gap, 1 unverifiable, 0 with no disposition
+  37 obligations: 34 verified, 2 gap, 1 unverifiable, 0 with no disposition
      14 high, 13 verified
-     17 medium, 15 verified
+     18 medium, 16 verified
       5 low, 5 verified
   OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
   OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
   OB-DR-3 unverifiable, To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
-  33 controls
-     30 posture advisory
+  34 controls
+     31 posture advisory
       3 posture blocking
-     33 acts detective
-     31 name a rule this engine carries
+     34 acts detective
+     32 name a rule this engine carries
       2 name a phase this engine runs
      13 with no promotion record, so nothing states what would promote them
      10 with criteria
       3 at a final posture
-      5 permanently advisory
+      6 permanently advisory
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 0 suppressed
   facet.value.blank reaches no obligation, so it names none
-  lifecycle.dependency.on_initial reaches no obligation, so it names none
   lifecycle.state.set_twice reaches no obligation, so it names none
   surface.local_path.instructed reaches no obligation, so it names none
   surface.command.undeclared reaches no obligation, so it names none

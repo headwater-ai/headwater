@@ -172,7 +172,10 @@ fn the_same_edge_from_a_draft_onto_a_live_document_passes() {
         "{:?}",
         refusals(&run)
     );
-    let outcomes = outcomes_reading(&run, "terminal-dependency/records/draft-mentions-standing.md");
+    let outcomes = outcomes_reading(
+        &run,
+        "terminal-dependency/records/draft-mentions-standing.md",
+    );
     assert_eq!(outcomes.len(), 1, "{outcomes:?}");
     assert!(matches!(outcomes[0], Outcome::Passed), "{outcomes:?}");
 }
@@ -228,7 +231,10 @@ fn a_live_or_terminal_target_passes() {
     ] {
         let outcomes = outcomes_reading(&run, path);
         assert_eq!(outcomes.len(), 1, "{path}: {outcomes:?}");
-        assert!(matches!(outcomes[0], Outcome::Passed), "{path}: {outcomes:?}");
+        assert!(
+            matches!(outcomes[0], Outcome::Passed),
+            "{path}: {outcomes:?}"
+        );
     }
 }
 

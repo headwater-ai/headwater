@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.7.0
+version: 4.9.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1149,6 +1149,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-LIFE-5:
+    statement: "A live document does not depend on a document standing at the initial state, through any relation that does not write a state onto its target"
+    rationale: "A document at the initial state has not been promoted, and its declared guidance is that nothing may rely on it. A live document that points at one states a claim that rests on text an author is still arguing over, and the reader who follows the link cannot tell a settled source from a draft. Unlike a retired document, a draft leaves no record that a citation could be a citation of, so the obligation reads every relation and not the lifecycle-sensitive ones. The relation whose declaration writes a state onto its target is exempt, because that edge is a statement about the target and not a reliance on it"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-REG-1:
     statement: "Every obligation this taxonomy declares carries exactly one disposition"
     rationale: "An obligation that no control discharges and that states neither a gap nor an acceptance reads from outside like one that is met, and that silence is how an assurance model decays into a list of good intentions"
@@ -1441,6 +1447,16 @@ controls:
     promotion:
       final_posture:
         reasoning: "The reading CT-LIFE-1 takes, and the remedy is narrower still. The rule reads one declared member, one declared state and one declared machine, all of which the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero. What it refuses is repaired by putting the file back, which is mechanical and total, so there is no judgment for an author to make and nothing for a posture to soften. A corpus that means to delete the record declares that member false on that regime, which is the escape this rule reads rather than one it overrides"
+  CT-LIFE-5:
+    mechanism: "check:lifecycle.dependency.on_initial"
+    discharges:
+      - OB-LIFE-5
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: "The reading CT-LIFE-3 takes, at the other end of the lifecycle. A live document resting on a draft is repaired by promoting the target once it is settled, by pointing the source at a document that stands, or by moving the source back to draft until the target is settled. There is no fourth answer and the engine cannot pick among the three, so a posture that stopped a merge would stop it on a question only an author can settle"
   CT-LANG-1:
     mechanism: "check:language.controlled.not_met"
     discharges:

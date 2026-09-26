@@ -13,7 +13,7 @@
 - `check/spec/00-both-halves.markdown`
 - `engine/crates/check/src/change.rs`
 
-**Coverage.** This run saw 30 files and classified 28 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 338 check instances, and 32 of them reached no verdict.
+**Coverage.** This run saw 30 files and classified 28 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 345 check instances, and 32 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
