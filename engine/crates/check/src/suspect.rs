@@ -225,7 +225,6 @@ impl EdgeCheck for Suspect<'_> {
             _ => return Outcome::Passed,
         };
 
-        let verified = edge.verified_revision();
 
         // A fix writes `verified_revision`, so it is offered only where the
         // relation declares that attribute: spec 2 makes an undeclared one a
@@ -284,7 +283,7 @@ impl EdgeCheck for Suspect<'_> {
             };
         };
 
-        let Some(verified) = verified else {
+        if edge.verified_revision().is_none() {
             // The one report an unrecorded edge gets. See the module comment.
             if !today || resolver != SOURCE_TREE {
                 return Outcome::Passed;
@@ -301,7 +300,7 @@ impl EdgeCheck for Suspect<'_> {
                 ),
                 Some(patch),
             ));
-        };
+        }
 
         // The comparison is `Edge::suspect_revisions`, which `headwater route`
         // reads too (#953), so the two surfaces name the same edges.
