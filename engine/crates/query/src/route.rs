@@ -206,6 +206,10 @@ pub enum Evidence {
     Named {
         /// The anchors of the task that this document governs, in task order.
         anchors: Vec<String>,
+        /// The edges from this document onto those anchors whose recorded
+        /// revision differs from the one their target has now, in task order.
+        /// Empty where no such edge is suspect (#953).
+        suspect: Vec<Suspect>,
     },
     /// A distinctive term of the task reached the document under a matched
     /// purpose.
@@ -221,11 +225,46 @@ pub enum Evidence {
     },
 }
 
+/// A governing edge whose recorded revision differs from the revision its
+/// target has now, as [`headwater_graph::Edge::suspect_revisions`] answers it.
+///
+/// `headwater check` reports the same edge under `relation.target.suspect`.
+/// The route names it on the pointer so that a session editing the path meets
+/// it at the edit, and not only at the next check.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Suspect {
+    /// The target of the edge as its author wrote it.
+    pub target: String,
+    /// The revision the edge records as verified.
+    pub verified: String,
+    /// The revision the resolver states for the target now.
+    pub current: String,
+}
+
+impl Suspect {
+    /// The line under the pointer. It carries no em dash, for the reason the
+    /// withheld line gives.
+    pub fn render(&self) -> String {
+        format!(
+            "suspect: {} was verified at {} and is now at {}, and headwater check reports it",
+            self.target, self.verified, self.current
+        )
+    }
+}
+
 impl Evidence {
-    /// The evidence as the line under its pointer in the report.
+    /// The evidence as the lines under its pointer in the report: one for what
+    /// reached the pointer, and one for each suspect edge.
     pub fn render(&self) -> String {
         match self {
-            Evidence::Named { anchors } => format!("governs {}", anchors.join(" ")),
+            Evidence::Named { anchors, suspect } => {
+                let mut text = format!("governs {}", anchors.join(" "));
+                for edge in suspect {
+                    text.push('\n');
+                    text.push_str(&edge.render());
+                }
+                text
+            }
             Evidence::Ranked { terms, rank, of } => {
                 format!("matched {}, rank {rank} of {of}", terms.join(" "))
             }
@@ -424,12 +463,21 @@ impl Surface<'_> {
         let mut evidence: Vec<(String, Evidence)> = Vec::new();
         for anchor in &route.anchors {
             for pointer in self.governing_docs_for_path(anchor) {
+                let stale = self.suspect_edges(&pointer.path, anchor);
                 match evidence.iter_mut().find(|(path, _)| path == &pointer.path) {
-                    Some((_, Evidence::Named { anchors })) => anchors.push(anchor.clone()),
+                    Some((_, Evidence::Named { anchors, suspect })) => {
+                        anchors.push(anchor.clone());
+                        for edge in stale {
+                            if !suspect.contains(&edge) {
+                                suspect.push(edge);
+                            }
+                        }
+                    }
                     _ => evidence.push((
                         pointer.path.clone(),
                         Evidence::Named {
                             anchors: vec![anchor.clone()],
+                            suspect: stale,
                         },
                     )),
                 }
@@ -608,6 +656,21 @@ impl Surface<'_> {
     /// anchor is written as, so what has to hold is whether some anchor's
     /// pattern set *reaches* the word, not whether the word spells an
     /// anchor's own identity.
+    /// The suspect edges from the document at `document` onto `anchor`.
+    fn suspect_edges(&self, document: &str, anchor: &str) -> Vec<Suspect> {
+        self.governing_edges(anchor)
+            .filter(|edge| edge.source.path == document)
+            .filter_map(|edge| {
+                let (verified, current) = edge.suspect_revisions()?;
+                Some(Suspect {
+                    target: edge.raw_target.clone(),
+                    verified: verified.to_string(),
+                    current: current.to_string(),
+                })
+            })
+            .collect()
+    }
+
     fn named_anchors(&self, task: &str, tree: &dyn Fn(&str) -> Entry) -> Vec<String> {
         let mut found: Vec<String> = Vec::new();
         for word in task.split_whitespace() {
@@ -1118,12 +1181,14 @@ impl Route {
                 1,
             ));
             if let Some(evidence) = evidence {
-                let folded = headwater_check::fill::filled(
-                    &format!("    {}\n", evidence.render()),
-                    headwater_check::fill::WIDTH,
-                );
-                for line in folded.lines() {
-                    let _ = writeln!(out, "{}", dim(line, mode));
+                for said in evidence.render().lines() {
+                    let folded = headwater_check::fill::filled(
+                        &format!("    {said}\n"),
+                        headwater_check::fill::WIDTH,
+                    );
+                    for line in folded.lines() {
+                        let _ = writeln!(out, "{}", dim(line, mode));
+                    }
                 }
             }
         }

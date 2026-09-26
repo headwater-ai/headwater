@@ -347,6 +347,36 @@ impl Edge {
     pub fn is_bound(&self) -> bool {
         !matches!(self.target, Target::Unbound(_))
     }
+
+    /// The revision this edge records as the one a person verified it
+    /// against: the scalar value of its [`VERIFIED_REVISION`] attribute.
+    pub fn verified_revision(&self) -> Option<&str> {
+        self.attributes
+            .iter()
+            .find(|entry| entry.key.value == VERIFIED_REVISION)
+            .and_then(|entry| entry.value.value.as_scalar())
+            .map(|scalar| scalar.text.as_str())
+    }
+
+    /// The recorded and the current revision, when the edge is suspect.
+    ///
+    /// Suspect means both values are present and they differ. An edge that
+    /// recorded no revision is not suspect, and neither is an anchor whose
+    /// resolver states none, such as a literal that names a directory. This is
+    /// the one comparison: `headwater_check::suspect` reports what it answers,
+    /// and `headwater route` names it on the pointer of a governing document
+    /// (#953), so the two can never disagree about which edge went stale.
+    pub fn suspect_revisions(&self) -> Option<(&str, &str)> {
+        let Target::Anchor {
+            revision: Some(current),
+            ..
+        } = &self.target
+        else {
+            return None;
+        };
+        let verified = self.verified_revision()?;
+        (verified != current).then_some((verified, current.as_str()))
+    }
 }
 
 impl Target {
