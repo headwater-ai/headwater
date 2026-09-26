@@ -157,6 +157,9 @@ checks
     relation.participation.overdue
       neighbourhood scope, one document and the documents one relation away from
         it, and the injected clock
+    lifecycle.state.set_twice
+      neighbourhood scope, one document and the documents one relation away from
+        it
     relation.declaration.unusable
       document scope, one document and its front matter, and what phase A could
         not make of it
@@ -255,6 +258,7 @@ checks
       names one obligation, so it names none
     lifecycle.dependency.on_terminal reaches no obligation, so it names none
     warrant.evidence.unsupported reaches no obligation, so it names none
+    lifecycle.state.set_twice reaches no obligation, so it names none
     identifier.claimed_twice reaches no obligation, so it names none
     identifier.claim.missing reaches no obligation, so it names none
     identifier.claim.stale reaches no obligation, so it names none
@@ -640,6 +644,7 @@ read set
   version lifecycle.dependency.on_terminal 1
   version warrant.evidence.unsupported 2
   version relation.participation.overdue 1
+  version lifecycle.state.set_twice 1
   version relation.declaration.unusable 1
   version identifier.unusable 1
   version identifier.claimed_twice 1
