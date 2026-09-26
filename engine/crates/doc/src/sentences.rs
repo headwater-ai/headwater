@@ -383,6 +383,51 @@ mod tests {
         assert_eq!(texts("It reads spec 12. and stops there.\n").len(), 1);
     }
 
+    /// #1151. A name whose own shape is lower case opens a sentence, and the
+    /// guard above merged it into the sentence before it.
+    #[test]
+    fn a_name_that_opens_in_lower_case_opens_a_sentence() {
+        assert_eq!(
+            texts("It was done. n8n accepts it.\n"),
+            ["It was done.", "n8n accepts it."]
+        );
+    }
+
+    /// #1151. An issue reference cannot be the tail of an abbreviation.
+    #[test]
+    fn an_issue_reference_opens_a_sentence() {
+        assert_eq!(
+            texts("It was done. #791 took the rest.\n"),
+            ["It was done.", "#791 took the rest."]
+        );
+    }
+
+    /// #1151. A capital after the first letter marks a name, not a word.
+    #[test]
+    fn an_internal_capital_opens_a_sentence() {
+        assert_eq!(
+            texts("It builds. macOS runs it.\n"),
+            ["It builds.", "macOS runs it."]
+        );
+    }
+
+    /// #1151. The token ends at the first character that is not a letter or a
+    /// digit, so the possessive does not hide the name.
+    #[test]
+    fn a_possessive_name_opens_a_sentence() {
+        assert_eq!(
+            texts("It was decided. n8n's guide gates it.\n"),
+            ["It was decided.", "n8n's guide gates it."]
+        );
+    }
+
+    /// #1151. The shape rule did not widen into plain lower-case words, which
+    /// are what an abbreviation the list misses leaves behind.
+    #[test]
+    fn a_plain_lower_case_word_after_a_period_still_joins() {
+        assert_eq!(texts("It reads spec 12. npm and stops there.\n").len(), 1);
+    }
+
     /// A question may be followed by another in lower case, and that is the one
     /// place the rule above is relaxed.
     #[test]
