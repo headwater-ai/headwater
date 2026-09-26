@@ -254,9 +254,13 @@ fn coverage_of(coverage: &Coverage) -> String {
         out.push('\n');
     }
     if !coverage.unaccounted.is_empty() {
+        let (noun, verb) = match coverage.unaccounted.len() {
+            1 => ("path", "was"),
+            _ => ("paths", "were"),
+        };
         let _ = writeln!(
             out,
-            "{} readings of a path the census never walked, so the coverage above is computed \
+            "{} {noun} the census never walked {verb} read, so the coverage above is computed \
              over a set that does not hold them:\n",
             coverage.unaccounted.len()
         );

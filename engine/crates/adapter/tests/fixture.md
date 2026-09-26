@@ -13,11 +13,6 @@
 - 29 — change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 - 1 — the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there
 
-2 readings of a path the census never walked, so the coverage above is computed over a set that does not hold them:
-
-- `.headwater/ids`
-- `.headwater/ids`
-
 | Severity | Where | Rule | Finding |
 |---|---|---|---|
 | warn | `check/evaluations/epsilon.md:4` | `relation.participation.overdue` | `evidence-cited`: 219 days since `status_since`, and this `evaluation` reaches no `cites_evidence` to a `design_spec` inside the 30 days the taxonomy allows |

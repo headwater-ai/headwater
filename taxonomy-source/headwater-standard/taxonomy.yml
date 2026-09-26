@@ -156,7 +156,17 @@ taxonomy: headwater/standard
 # to a document at an initial state is reported, unless the relation writes a
 # state onto its target. The rule does not read `lifecycle_sensitive`, because
 # this package marks nothing beyond `succession` and a draft has no record to
-# cite (#569). It takes 4.9.0 because 4.8.0 is #955's.
+# cite (#569). It follows 4.8.0 (#955).
+#
+# 4.8.0 changes the value of two bundle declarations and removes nothing.
+# `discharges` in the decision-record bundle and `cites_evidence` in the
+# design-spec bundle declare `created_by: author` where they declared `hook`,
+# because a person types either line and no verb, hook or agent proposes it
+# (HW-DR-0083, HW-OBL-0105, #955). No relation this package ships now declares
+# `hook`. No check reads the actor, so no finding changes. `headwater taxonomy
+# audit` moves both relations from the `hook` row to the `author` row, so a
+# consumer's audit report changes, and that makes it a minor rather than a
+# patch. It follows 4.7.0 (#1129).
 #
 # 4.7.0 changes the value of two declarations and removes nothing. `governs`
 # and `traces_to` declare `created_by: agent` where they declared `hook`,

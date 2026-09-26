@@ -24,10 +24,8 @@
 - 3 — the prior version at `a prior version that no tree holds` did not open: no prior version stands at this name
 - 1 — the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there
 
-4 readings of a path the census never walked, so the coverage above is computed over a set that does not hold them:
+2 paths the census never walked were read, so the coverage above is computed over a set that does not hold them:
 
-- `.headwater/ids`
-- `.headwater/ids`
 - `./check/evaluations/delta.md`
 - `check/spec/00-both-halves.markdown`
 

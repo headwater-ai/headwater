@@ -679,7 +679,7 @@ relations:
       - governed_document
   cites_evidence:
     cardinality: many
-    created_by: hook
+    created_by: author
     family: evidence
     from:
       - design_spec
@@ -691,7 +691,7 @@ relations:
       - evaluation
   discharges:
     cardinality: many
-    created_by: hook
+    created_by: author
     family: evidence
     from:
       - evaluation

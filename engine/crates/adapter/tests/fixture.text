@@ -86,8 +86,6 @@ checks
         1 skipped: the document at the target end, `FIX-REG-open-questions`,
           declares no value for the state facet, so there is no state to read
           there
-    a check read .headwater/ids, which the census never walked
-    a check read .headwater/ids, which the census never walked
   adoption
     1 pairs open, 0 closed, holding 1 finding, in 1 task
     AD-1 1 open, 0 closed, holding 1 finding, owner the fixture tree, until

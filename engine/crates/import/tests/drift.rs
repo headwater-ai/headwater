@@ -116,7 +116,7 @@ fn a_revision_that_moved_under_a_cached_run_is_not_served_from_the_entry_before_
 
     let mut cold = Cache::at(scratch.path(), LOCK, &headwater_check::rules_digest());
     let before = run_over(&scratch, &pinned, &mut cold);
-    cold.write(scratch.path());
+    cold.write(scratch.path()).expect("the cache writes");
     assert_eq!(
         suspect(&before).len(),
         0,
