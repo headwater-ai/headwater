@@ -588,6 +588,35 @@ pub(crate) fn duplicate_ids(entries: &[Observation]) -> Vec<String> {
 mod tests {
     use super::*;
 
+    /// A directory under the temporary directory that is removed when this value
+    /// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+    struct Scratch(std::path::PathBuf);
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    impl std::ops::Deref for Scratch {
+        type Target = std::path::Path;
+        fn deref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::path::Path> for Scratch {
+        fn as_ref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::ffi::OsStr> for Scratch {
+        fn as_ref(&self) -> &std::ffi::OsStr {
+            self.0.as_os_str()
+        }
+    }
+
     #[test]
     fn a_control_the_snapshot_names_is_observed() {
         let observations = Observations::of(vec![Observation::Control {
@@ -607,8 +636,10 @@ mod tests {
 
     #[test]
     fn no_file_is_no_observation() {
-        let dir =
-            std::env::temp_dir().join(format!("hw-observation-test-{}-empty", std::process::id()));
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-empty",
+            std::process::id()
+        )));
         let _ = std::fs::create_dir_all(&dir);
         let observations = Observations::at(&dir);
         assert!(observations.entries().is_empty());
@@ -621,10 +652,10 @@ mod tests {
 
     #[test]
     fn a_committed_file_reads_the_control_and_the_commit_it_ran_against() {
-        let dir = std::env::temp_dir().join(format!(
-            "hw-observation-test-{}-present",
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-present",
             std::process::id()
-        ));
+        )));
         let _ = std::fs::create_dir_all(dir.join(".headwater"));
         std::fs::write(
             dir.join(".headwater").join(FILE),
@@ -645,10 +676,10 @@ mod tests {
 
     #[test]
     fn a_file_that_does_not_parse_as_yaml_is_a_whole_file_problem_with_a_readable_message() {
-        let dir = std::env::temp_dir().join(format!(
-            "hw-observation-test-{}-badyaml",
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-badyaml",
             std::process::id()
-        ));
+        )));
         let _ = std::fs::create_dir_all(dir.join(".headwater"));
         std::fs::write(
             dir.join(".headwater").join(FILE),
@@ -687,10 +718,10 @@ mod tests {
 
     #[test]
     fn an_unreadable_file_carries_no_digest_and_never_carries_under_a_gate() {
-        let dir = std::env::temp_dir().join(format!(
-            "hw-observation-test-{}-unreadable",
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-unreadable",
             std::process::id()
-        ));
+        )));
         let _ = std::fs::create_dir_all(dir.join(".headwater"));
         // A directory where a file is expected is the portable way to provoke
         // a read error that is not `NotFound`, without touching permission
@@ -704,8 +735,10 @@ mod tests {
 
     #[test]
     fn a_file_whose_top_level_is_not_a_mapping_is_a_whole_file_problem() {
-        let dir =
-            std::env::temp_dir().join(format!("hw-observation-test-{}-notmap", std::process::id()));
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-notmap",
+            std::process::id()
+        )));
         let _ = std::fs::create_dir_all(dir.join(".headwater"));
         std::fs::write(
             dir.join(".headwater").join(FILE),
@@ -726,10 +759,10 @@ mod tests {
 
     #[test]
     fn an_entry_with_no_commit_is_an_entry_problem_and_the_others_still_read() {
-        let dir = std::env::temp_dir().join(format!(
-            "hw-observation-test-{}-nocommit",
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-nocommit",
             std::process::id()
-        ));
+        )));
         let _ = std::fs::create_dir_all(dir.join(".headwater"));
         std::fs::write(
             dir.join(".headwater").join(FILE),
@@ -768,8 +801,10 @@ mod tests {
     /// directly instead of trusting this reader to have ruled it out.
     #[test]
     fn a_literal_duplicate_key_is_a_whole_file_problem_via_the_loader() {
-        let dir =
-            std::env::temp_dir().join(format!("hw-observation-test-{}-dup", std::process::id()));
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-dup",
+            std::process::id()
+        )));
         let _ = std::fs::create_dir_all(dir.join(".headwater"));
         std::fs::write(
             dir.join(".headwater").join(FILE),
@@ -797,10 +832,10 @@ mod tests {
     /// `crate::verification`.
     #[test]
     fn a_verification_entry_reads_its_commit_and_criterion_digest_back() {
-        let dir = std::env::temp_dir().join(format!(
-            "hw-observation-test-{}-verification",
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-verification",
             std::process::id()
-        ));
+        )));
         let _ = std::fs::create_dir_all(dir.join(".headwater"));
         std::fs::write(
             dir.join(".headwater").join(FILE),
@@ -826,10 +861,10 @@ mod tests {
 
     #[test]
     fn a_verification_entry_with_no_criterion_digest_is_an_entry_problem() {
-        let dir = std::env::temp_dir().join(format!(
-            "hw-observation-test-{}-verification-nodigest",
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-verification-nodigest",
             std::process::id()
-        ));
+        )));
         let _ = std::fs::create_dir_all(dir.join(".headwater"));
         std::fs::write(
             dir.join(".headwater").join(FILE),
@@ -856,10 +891,10 @@ mod tests {
     /// control's own accepted gap does not repeat for a verification.
     #[test]
     fn a_verification_entry_with_an_implausible_commit_is_an_entry_problem() {
-        let dir = std::env::temp_dir().join(format!(
-            "hw-observation-test-{}-verification-badcommit",
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-verification-badcommit",
             std::process::id()
-        ));
+        )));
         let _ = std::fs::create_dir_all(dir.join(".headwater"));
         std::fs::write(
             dir.join(".headwater").join(FILE),
@@ -883,10 +918,10 @@ mod tests {
 
     #[test]
     fn an_unrecognized_kind_is_an_entry_problem() {
-        let dir = std::env::temp_dir().join(format!(
-            "hw-observation-test-{}-badkind",
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-badkind",
             std::process::id()
-        ));
+        )));
         let _ = std::fs::create_dir_all(dir.join(".headwater"));
         std::fs::write(
             dir.join(".headwater").join(FILE),

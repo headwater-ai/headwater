@@ -21,11 +21,40 @@ use headwater_conformance::{
 use headwater_resolve::package::Consumer;
 use std::path::{Path, PathBuf};
 
-fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!(
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(std::path::PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = std::path::Path;
+    fn deref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::path::Path> for Scratch {
+    fn as_ref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
+}
+
+fn scratch(name: &str) -> Scratch {
+    let dir = Scratch(std::env::temp_dir().join(format!(
         "headwater-conformance-{name}-{}",
         std::process::id()
-    ));
+    )));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).expect("a scratch directory");
     dir

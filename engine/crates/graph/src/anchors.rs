@@ -713,19 +713,48 @@ mod tests {
         assert!(why.contains("src/invented.rs"), "{why}");
     }
 
+    /// A directory under the temporary directory that is removed when this value
+    /// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+    struct Scratch(std::path::PathBuf);
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    impl std::ops::Deref for Scratch {
+        type Target = std::path::Path;
+        fn deref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::path::Path> for Scratch {
+        fn as_ref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::ffi::OsStr> for Scratch {
+        fn as_ref(&self) -> &std::ffi::OsStr {
+            self.0.as_os_str()
+        }
+    }
+
     /// A directory this test builds and tears down, so the pattern fixtures
     /// below do not depend on the shape of this crate's own `src/` staying
     /// still. Mirrors `scratch` below, which the `CommentScan` tests already
     /// use for the same reason.
-    fn pattern_fixture(name: &str) -> PathBuf {
+    fn pattern_fixture(name: &str) -> Scratch {
         let nanos = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("a clock later than the epoch")
             .as_nanos();
-        let dir = std::env::temp_dir().join(format!(
+        let dir = Scratch(std::env::temp_dir().join(format!(
             "headwater-source-tree-pattern-{name}-{}-{nanos}",
             std::process::id()
-        ));
+        )));
         std::fs::create_dir_all(dir.join(".claude/hooks")).expect("a fixture tree");
         std::fs::create_dir_all(dir.join(".claude/hooks-disabled")).expect("a fixture tree");
         std::fs::write(dir.join(".claude/hooks/write.sh"), "#!/bin/sh\n").expect("a fixture file");
@@ -742,7 +771,7 @@ mod tests {
     fn a_wildcard_anchor_reaches_its_own_subtree_and_never_a_sibling_that_shares_a_prefix() {
         let dir = pattern_fixture("boundary");
         let resolver = SourceTree {
-            base: dir.clone(),
+            base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
         };
@@ -766,7 +795,7 @@ mod tests {
     fn a_bare_directory_matches_the_directory_and_nothing_under_it() {
         let dir = pattern_fixture("bare-directory");
         let resolver = SourceTree {
-            base: dir.clone(),
+            base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
         };
@@ -785,7 +814,7 @@ mod tests {
     fn a_pattern_that_matches_no_entry_is_unresolved_and_names_the_pattern() {
         let dir = pattern_fixture("no-match");
         let resolver = SourceTree {
-            base: dir.clone(),
+            base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
         };
@@ -808,7 +837,7 @@ mod tests {
     fn a_pattern_with_no_literal_prefix_is_refused_rather_than_walked_from_the_root() {
         let dir = pattern_fixture("no-prefix");
         let resolver = SourceTree {
-            base: dir.clone(),
+            base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
         };
@@ -829,7 +858,7 @@ mod tests {
     fn an_excluded_entry_is_not_a_match() {
         let dir = pattern_fixture("excluded");
         let resolver = SourceTree {
-            base: dir.clone(),
+            base: dir.to_path_buf(),
             exclusions: vec![Exclusion::new(".claude/hooks/**", "a fixture exclusion")],
             walked: RefCell::new(HashMap::new()),
         };
@@ -851,7 +880,7 @@ mod tests {
     fn a_file_added_under_a_wildcard_anchor_changes_the_matched_set_and_so_the_cache_key() {
         let dir = pattern_fixture("cache-key");
         let build = || SourceTree {
-            base: dir.clone(),
+            base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
         };
@@ -917,7 +946,7 @@ mod tests {
     fn two_patterns_that_share_a_prefix_walk_the_tree_once() {
         let dir = pattern_fixture("shared-prefix");
         let resolver = SourceTree {
-            base: dir.clone(),
+            base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
         };
@@ -1003,15 +1032,15 @@ mod tests {
     /// terms `engine/crates/check/src/fragment.rs`'s `comment_links` tests
     /// take: cargo runs a target's cases as threads of one process, so the
     /// pid alone is not a key.
-    fn scratch(name: &str) -> PathBuf {
+    fn scratch(name: &str) -> Scratch {
         let nanos = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("a clock later than the epoch")
             .as_nanos();
-        let dir = std::env::temp_dir().join(format!(
+        let dir = Scratch(std::env::temp_dir().join(format!(
             "headwater-comment-scan-{name}-{}-{nanos}",
             std::process::id()
-        ));
+        )));
         std::fs::create_dir_all(&dir).expect("a scratch directory");
         dir
     }
