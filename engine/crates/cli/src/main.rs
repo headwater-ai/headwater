@@ -853,12 +853,11 @@ fn validate(root: &Path) -> ExitCode {
             let own = match headwater_resolve::package::manifest_at(&corpus.base) {
                 Ok(manifest) => headwater_resolve::package::content_roots(&manifest),
                 Err(errors) => {
-                    if corpus
-                        .base
-                        .join(headwater_resolve::package::MANIFEST)
-                        .is_file()
-                    {
-                        unread = Some(unread_manifest(&errors));
+                    // Anything at the path is a manifest that did not read: a
+                    // directory or a dangling link as much as bad YAML.
+                    let at = corpus.base.join(headwater_resolve::package::MANIFEST);
+                    if std::fs::symlink_metadata(&at).is_ok() {
+                        unread = Some(unread_manifest(&errors, &at));
                     }
                     Vec::new()
                 }
@@ -920,14 +919,16 @@ fn validate(root: &Path) -> ExitCode {
 }
 
 /// Why a root package manifest that is there did not read, on one line: the
-/// finding names the file once, so each reason is its own text without the
-/// path the loader put in front of it (#1123).
-fn unread_manifest(errors: &[headwater_resolve::ResolveError]) -> String {
+/// finding names the file once, so each reason is its own text, and where the
+/// loader wrote the manifest's path into it, the reason says `it` (#1123).
+fn unread_manifest(errors: &[headwater_resolve::ResolveError], at: &Path) -> String {
+    let path = at.display().to_string();
     errors
         .iter()
         .flat_map(|error| {
             error
                 .to_string()
+                .replace(&path, "it")
                 .lines()
                 .map(str::trim)
                 .filter(|line| !line.is_empty())
