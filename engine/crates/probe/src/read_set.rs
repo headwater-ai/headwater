@@ -175,6 +175,52 @@ impl Verdict {
     }
 }
 
+/// The closing count of `probe stale` over every committed transcript.
+///
+/// It keeps two answers apart that [`Verdict::stands`] folds together: a
+/// result whose read set this tree moved, and a result that nothing here can
+/// judge. The results that stand are the remainder, so `moved + unusable` is
+/// never more than `seen`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Tally {
+    /// Every committed transcript the run met.
+    pub seen: usize,
+    /// The transcripts whose read set this tree moved.
+    pub moved: usize,
+    /// The transcripts nothing here decides about: an unusable verdict, or a
+    /// transcript that did not read.
+    pub unusable: usize,
+}
+
+impl Tally {
+    /// Count one transcript. `None` is a transcript that did not read.
+    pub fn count(&mut self, verdict: Option<Verdict>) {
+        self.seen += 1;
+        match verdict {
+            None | Some(Verdict::Unusable) => self.unusable += 1,
+            Some(Verdict::SetMoved | Verdict::OpenedFileMoved | Verdict::Both) => self.moved += 1,
+            Some(Verdict::Stands) => {}
+        }
+    }
+
+    /// The closing sentence, with no paint.
+    ///
+    /// The second clause is omitted when every transcript was judged, so the
+    /// line over a corpus with no unusable result reads as it did before.
+    pub fn closing(&self) -> String {
+        let moved = format!(
+            "Of {}, this tree moved the read set of {}",
+            crate::plural(self.seen, "committed transcript"),
+            self.moved
+        );
+        match self.unusable {
+            0 => format!("{moved}."),
+            1 => format!("{moved}, and nothing here decides whether 1 is stale."),
+            other => format!("{moved}, and nothing here decides whether {other} are stale."),
+        }
+    }
+}
+
 /// The read set of one recorded result, held against the tree in front of it.
 #[derive(Clone, Debug)]
 pub struct Staleness {
