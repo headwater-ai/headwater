@@ -370,9 +370,20 @@ if [ -x "$engine" ]; then
     expect 'the advisory says it blocks nothing' \
         write.sh 0 'Nothing here blocks the edit' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/intent.sh"}}'
-    expect 'an edit to a path nothing governs is silent' \
-        write.sh 0 '' \
+    # #953: a path the governed scope admits and nothing governs is not a
+    # silence. The engine states the fact and the front-matter lines that
+    # would declare the edge, and the hook writes neither. Both paths below
+    # are names with no file, so a later `governs` edge on a real file cannot
+    # move either case.
+    expect 'an edit to a path in the governed scope that nothing governs says so' \
+        write.sh 0 'engine/crates/query/src/unrelated.rs is in the governed scope, and nothing governs it' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+    expect 'the same advisory prints the front-matter lines that declare the edge' \
+        write.sh 0 '      governs:\n        - engine/crates/query/src/unrelated.rs' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+    expect 'an edit to a path outside the governed scope that nothing governs is silent' \
+        write.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/tests/unrelated.rs"}}'
     # HW-DR-0074 discharged HW-OBL-0104: a `code_path` anchor is a pattern, and
     # spec 5 now governs `.claude/hooks/**` rather than five files by name, so
     # a new file under that directory is named too.
