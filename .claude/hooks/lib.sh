@@ -305,19 +305,26 @@ hw_governed_by_document() {
     while [ "$_at" -lt "$_total" ]; do
         _relation=$(hw_field "$_explain" related "$_at" relation) || _relation=
         _inbound=$(hw_field "$_explain" related "$_at" inbound) || _inbound=
-        _target=$(hw_field "$_explain" related "$_at" target) || _target=
-        _at=$((_at + 1))
-        [ -n "$_target" ] || continue
-        case $_inbound:$_relation in
-            false:governs)
-                _governs="$_governs
+        # `targets` holds one member per target as written. `target` joins
+        # them with `, `, and a member may hold a comma itself (#1092).
+        _count=$(hw_count "$_explain" related "$_at" targets) || _count=0
+        _t=0
+        while [ "$_t" -lt "$_count" ]; do
+            _target=$(hw_field "$_explain" related "$_at" targets "$_t") || _target=
+            _t=$((_t + 1))
+            [ -n "$_target" ] || continue
+            case $_inbound:$_relation in
+                false:governs)
+                    _governs="$_governs
   $_target"
-                _governs_n=$((_governs_n + 1)) ;;
-            true:*)
-                _cites="$_cites
+                    _governs_n=$((_governs_n + 1)) ;;
+                true:*)
+                    _cites="$_cites
   $_target ($_relation)"
-                _cites_n=$((_cites_n + 1)) ;;
-        esac
+                    _cites_n=$((_cites_n + 1)) ;;
+            esac
+        done
+        _at=$((_at + 1))
     done
     [ "$_governs_n" -gt 0 ] || [ "$_cites_n" -gt 0 ] || return 1
     if [ "$_governs_n" -gt 0 ]; then

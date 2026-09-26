@@ -518,6 +518,13 @@ if [ -x "$engine" ]; then
     # so its edge is suspect from the start: the state an edit leaves behind
     # when it changes a path a document verified (#953).
     printf 'echo beta\n' > "$reverse_root/tools/beta.sh"
+    # Eta constrains Alpha: an inbound edge that is not `traces_to`, so a
+    # reverse part narrowed to one relation loses it (#953).
+    reverse_doc 0007-eta.md HW-PD-0007 'Eta constrains alpha' 'relations:\n  constrains:\n    - HW-PD-0001\n'
+    # Theta governs one list anchor whose first member holds a comma, so the
+    # reverse part has to read each target apart and never split a joined one.
+    : > "$reverse_root/tools/a,b.sh"
+    reverse_doc 0008-theta.md HW-PD-0008 'Theta governs a list' 'relations:\n  governs:\n    - ["tools/a,b.sh", tools/alpha.sh]\n'
     reverse_doc 0006-zeta.md HW-PD-0006 'Zeta verified beta once' 'relations:\n  governs:\n    - to: tools/beta.sh\n      verified_revision: sha256:0000\n'
 
     if resolved=$("$reverse_root/engine/target/release/headwater" taxonomy resolve --root "$reverse_root" 2>&1); then
@@ -541,6 +548,11 @@ if [ -x "$engine" ]; then
             printf 'FAIL %s\n  expected one parseable object, got:\n%s\n' 'both parts arrive in one JSON object' "$out"
             failed=$((failed + 1))
         fi
+        expect 'an inbound edge of any relation, not only traces_to, is named' \
+            write.sh 0 'docs/process/decisions/0007-eta.md (constrains' "$alpha"
+        theta='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0008-theta.md"}}'
+        expect 'a list anchor is named one target to a line, a comma inside a member kept' \
+            write.sh 0 'It governs these code paths (2):\n  tools/a,b.sh\n  tools/alpha.sh' "$theta"
         expect 'a document with no edge in either direction is silent' \
             write.sh 0 '' \
             '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0004-delta.md"}}'
