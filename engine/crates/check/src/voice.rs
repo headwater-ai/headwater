@@ -54,33 +54,29 @@
 //! discharges it: an adjudicated sample of at least 50 findings per category,
 //! under the two labels spec 4 declares.
 //!
-//! # Two of the three categories report zero, and the zero is saturation
+//! # Two of the three categories stand at saturation, and one reports a false positive
 //!
-//! Read on `58f46a8d` on 2026-09-11, by a word-boundary count of every pattern:
-//! **`future_intent` matches on 0 of its 14 patterns over the 291 documents
-//! whose kind binds `declarative`, and `phased_rollout` on 0 of its 13 over the
-//! 293 that bind `declarative` or `prospective`.** The two denominators are the
-//! kind-to-regime binding of `.headwater/taxonomy.lock` applied to the 320
-//! documents of `.headwater/export.json`, of which 27 bind `narrative`.
+//! Read on `0ee88a2d` on 2026-09-27, over the body and the `summary` facet of
+//! each document, which is the population edition four reads. The count is a
+//! word-boundary search for every pattern, with front matter, code blocks and
+//! code spans taken out. **`future_intent` occurs on 2 of its 14 patterns over
+//! the 378 documents whose kind binds `declarative`, and `phased_rollout` on 0
+//! of its 13 over the 382 that bind `declarative` or `prospective`.** The two
+//! denominators are the kind-to-regime binding of `.headwater/taxonomy.lock`
+//! applied to the 421 documents of `.headwater/export.json`, of which 39 bind
+//! `narrative`. `change_narration` occurs on 5 of its 23 patterns over the
+//! same 382.
 //!
-//! The count itself ran over a wider file list, and that is how it found the
-//! three occurrences there are: one `will become` and two of
-//! `in the first release`, all under `docs/reviews/` or `docs/evaluations/`,
-//! whose kinds bind `narrative` and forbid nothing.
-//!
-//! So neither zero reports a clean corpus. Both sets stand where edition one of
-//! `change_narration` stood, and no run separates the two readings:
+//! Of the two `future_intent` patterns, `will be` occurs twice, and both
+//! occurrences sit inside a quotation in one doctrine page, so
+//! `Sentence::authored` never gives them to the rule. The other is
+//! `will eventually`, the one finding the category reports, and it is false:
+//! `the_rulings_of_2026_09_27_still_match` holds the sentence and names its
+//! mode. So neither category reports a fault that the corpus holds. Both sets
+//! still stand where edition one of `change_narration` stood, and no run
+//! separates the two readings:
 //! [HW-OBL-0168](../../../../docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md)
 //! holds the coverage line that would, and it is open.
-//!
-//! **This census predates edition four ([#774](https://github.com/headwater-ai/headwater/issues/774)),
-//! which widens the population it counts over.** The two denominators above are
-//! body-only: they exclude every `scent`-role facet (`summary` in this
-//! corpus), which edition four adds to what every category reads. A summary
-//! enters the population for the first time, so the true denominators are now
-//! at least as large as stated and the two zero numerators are unconfirmed
-//! over the wider set. Re-run the count rather than trust this comment for
-//! either number.
 
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
@@ -173,6 +169,30 @@ const CATEGORIES: [Category; 3] = [
         // residual in place, so a later reading that finds the genuine count
         // at zero with the false count unmoved is the reading that retires the
         // pattern.
+        //
+        // **Re-read on `0ee88a2d` on 2026-09-27, and the trend is moving.**
+        // The category reports 22 findings, and 10 of them are `no longer`.
+        // Of those 10, 1 is genuine and 9 are false. The rewrites since
+        // 2026-09-11 took the genuine count from 9 to 1, and they could not
+        // touch the false ones. So the reading that retires the pattern is one
+        // rewrite away, and the pattern stays until a reading finds it.
+        //
+        // **No regime can name the sections it reads, and a `## Context`
+        // narration takes no directive.** A decision record's `## Context` is
+        // where it carries history, and the rule reads it as it reads any other
+        // section. On `0ee88a2d`, 4 of the 23 findings of this rule stand in a
+        // `## Context` section: 3 are narration that a reader wants there, and
+        // 1 is a false positive of the definition mode. A section scope clears
+        // those 4 and misses the fifth legitimate narration, which stands in a
+        // `## Consequences` section, so it prices a schema change at 4 findings.
+        // The convention an author may use instead is a block directive on the
+        // sentence, `headwater allow=voice.forbidden_construction scope=block
+        // reason=accepted_deviation`, with an `until` and a note. It costs 4
+        // directives today, and none is spent: an `until` buys a
+        // re-adjudication of a sentence that never becomes wrong, which is the
+        // argument against a directive on the false positives below as well.
+        // `the_rulings_of_2026_09_27_still_match` holds a `## Context` sentence
+        // that still matches.
         //
         // The 18 false positives are five ways that English states something
         // other than a change, and `the_measured_false_positives_still_match`
