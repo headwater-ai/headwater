@@ -334,7 +334,7 @@ pub fn merge_attributes(
 /// - A `.git` directory that is not a repository is passed over.
 /// - The search does not go up into a directory that `GIT_CEILING_DIRECTORIES`
 ///   names, or across a filesystem boundary unless
-///   `GIT_DISCOVERY_ACROSS_FILESYSTEM` is true.
+///   `GIT_DISCOVERY_ACROSS_FILESYSTEM` is true or a value git refuses.
 ///
 /// A plain `.git` entry is not enough. Git says there is no repository in
 /// each of the last three shapes, and a verb that refused there would refuse
@@ -348,9 +348,8 @@ fn finds_a_repository(root: &Path) -> bool {
                 .collect()
         })
         .unwrap_or_default();
-    let across = crosses_filesystems_os(
-        std::env::var_os("GIT_DISCOVERY_ACROSS_FILESYSTEM").as_deref(),
-    );
+    let across =
+        crosses_filesystems_os(std::env::var_os("GIT_DISCOVERY_ACROSS_FILESYSTEM").as_deref());
     search_upward(root, &ceilings, across, &device_of)
 }
 
@@ -376,7 +375,7 @@ fn crosses_filesystems(value: &str) -> bool {
 ///   contract in `docs/interfaces/headwater-derived.md` says the search
 ///   crosses for a value git refuses (#1120).
 fn crosses_filesystems_os(value: Option<&OsStr>) -> bool {
-    value.is_some_and(|value| value.to_str().is_some_and(crosses_filesystems))
+    value.is_some_and(|value| value.to_str().is_none_or(crosses_filesystems))
 }
 
 /// A boolean as git reads one (`git_parse_maybe_bool`), or `None` where git
@@ -1046,7 +1045,10 @@ mod tests {
             !crosses_filesystems_os(Some(OsStr::new("0"))),
             "git reads \"0\" as false"
         );
-        assert!(crosses_filesystems_os(Some(OsStr::new("1"))), "git reads \"1\" as true");
+        assert!(
+            crosses_filesystems_os(Some(OsStr::new("1"))),
+            "git reads \"1\" as true"
+        );
     }
 
     /// A tree with no `.git` at all — the shape this crate's own tests build
