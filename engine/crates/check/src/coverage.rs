@@ -440,6 +440,29 @@ mod tests {
         assert_eq!(routed, 0, "and the routing sees none of it");
     }
 
+    /// A path outside the census is listed once, however many instances read
+    /// it, and the claim store is not listed at all.
+    ///
+    /// Both halves of #1146 are here. Two rules read the claim store and two
+    /// read a stray path, so a list kept per reading holds four entries, and a
+    /// list kept per path that does not exempt the store holds two.
+    #[test]
+    fn an_unaccounted_path_is_listed_once_and_the_claim_store_not_at_all() {
+        let reading = |rule, grain, path| {
+            Instance::of(rule, grain, vec![input(path)], InstanceOutcome::Passed)
+        };
+        let coverage = over(
+            vec![row("source.md")],
+            vec![
+                reading("claim.unclaimed", Grain::Corpus, crate::claim::STORE),
+                reading("claim.empty", Grain::Corpus, crate::claim::STORE),
+                reading("facet.required.missing", Grain::Document, "stray.md"),
+                reading("link.target.missing", Grain::Document, "stray.md"),
+            ],
+        );
+        assert_eq!(coverage.unaccounted, vec!["stray.md".to_string()]);
+    }
+
     /// A run that skipped nothing reports zero rather than reporting nothing.
     #[test]
     fn a_run_that_skipped_nothing_has_a_number_for_it() {
