@@ -248,12 +248,22 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             summary,
             relates,
             facet,
+            directory,
             now,
         } => match kind {
             None => fail(
                 "`new` takes a kind. Try `headwater new decision --title \"Adopt an overlay\"`",
             ),
-            Some(kind) => new(root, &kind, title, summary, &relates, &facet, now),
+            Some(kind) => new(
+                root,
+                &kind,
+                title,
+                summary,
+                &relates,
+                &facet,
+                directory.as_deref(),
+                now,
+            ),
         },
         Verb::Capture { format, json } => capture(root, chosen(json, format)),
         Verb::Sweep { word } => match word {
@@ -3874,6 +3884,7 @@ fn classification_text(
 /// scaffolded edge from a hand-typed one.
 /// [HW-OBL-0001](../../../../docs/obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md)
 /// holds the debt that nothing trends this number yet.
+#[allow(clippy::too_many_arguments)]
 fn new(
     root: &Path,
     kind: &str,
@@ -3881,6 +3892,7 @@ fn new(
     summary: Option<String>,
     relates: &[(String, String)],
     given: &[(String, String)],
+    directory: Option<&str>,
     now: Option<Date>,
 ) -> ExitCode {
     let Some(title) = title else {
@@ -3896,6 +3908,7 @@ fn new(
         summary.as_deref(),
         relates,
         given,
+        directory,
         now,
         EntryPoint::Terminal,
     ) {
@@ -3930,6 +3943,7 @@ fn scaffold(
     summary: Option<&str>,
     relates: &[(String, String)],
     given: &[(String, String)],
+    directory: Option<&str>,
     now: Option<Date>,
     surface: EntryPoint,
 ) -> Result<Written, String> {
@@ -3974,6 +3988,7 @@ fn scaffold(
         now,
         relates,
         given,
+        directory,
     };
 
     // Nothing below this line has written anything yet, which is why every
@@ -5278,15 +5293,17 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
             root,
             kind,
             title,
-            // No summary and no facet values. The write tool declares a kind,
-            // a title and relations, and nothing else, so a kind that
-            // requires a facet no declaration determines is refused over the
+            // No summary, no facet values and no directory. The write tool
+            // declares a kind, a title and relations, and nothing else, so a
+            // kind that requires a facet no declaration determines, or whose
+            // shelf fixes the file name under a glob, is refused over the
             // protocol and written from a terminal. Widening the tool is a
             // change to the write class that [Q7](../../../../docs/spec/09-decisions.md#q7--scope-of-the-mcp-surface)
             // fixed, and not a change to this call.
             None,
             relates,
             &[],
+            None,
             Some(now),
             EntryPoint::Protocol,
         )

@@ -150,6 +150,9 @@ struct Case {
     relates: Vec<(String, String)>,
     /// What the caller stated with `--facet`, in the order they named it.
     given: Vec<(String, String)>,
+    /// What the caller stated with `--directory`, absent when the case does
+    /// not pass the flag.
+    directory: Option<&'static str>,
 }
 
 fn case(kind: &'static str, title: &'static str) -> Case {
@@ -159,6 +162,7 @@ fn case(kind: &'static str, title: &'static str) -> Case {
         summary: None,
         relates: Vec::new(),
         given: Vec::new(),
+        directory: None,
     }
 }
 
@@ -180,6 +184,12 @@ impl Case {
         self.summary = Some(text);
         self
     }
+
+    /// A `--directory <path>` the caller states on the command line.
+    fn within(mut self, directory: &'static str) -> Self {
+        self.directory = Some(directory);
+        self
+    }
 }
 
 /// The command line a case stands for, which is the header of its transcript
@@ -196,6 +206,9 @@ fn invocation(case: &Case) -> String {
     for (facet, value) in &case.given {
         line.push_str(&format!(" --facet {facet}={value}"));
     }
+    if let Some(directory) = case.directory {
+        line.push_str(&format!(" --directory {directory}"));
+    }
     line
 }
 
@@ -207,6 +220,7 @@ fn request<'a>(case: &'a Case) -> Request<'a> {
         now: pinned(),
         relates: &case.relates,
         given: &case.given,
+        directory: case.directory,
     }
 }
 
@@ -275,6 +289,21 @@ fn cases() -> Vec<Case> {
             .stating("doc_type", "note"),
         case("design_spec", "A discriminator the caller agrees with")
             .stating("doc_type", "design_spec"),
+        // What `--directory` does. A shelf that fixes the file name under a
+        // glob does not decide the directory, so the caller names it; a shelf
+        // that is one file needs no directory at all; and every other shelf
+        // refuses the flag rather than dropping it.
+        case("module_readme", "A fixed name with no directory"),
+        case("module_readme", "A fixed name in a named directory").within("corpus/modules/alpha"),
+        case("module_readme", "A fixed name with a trailing slash").within("corpus/modules/beta/"),
+        case("module_readme", "A fixed name off the shelf").within("corpus/elsewhere/alpha"),
+        case("module_readme", "A fixed name one level too deep")
+            .within("corpus/modules/alpha/deeper"),
+        case("module_readme", "A fixed name that climbs out").within("corpus/modules/../spec"),
+        case("module_readme", "A fixed name from the root").within("/corpus/modules/alpha"),
+        case("index_page", "A shelf that is one file"),
+        case("index_page", "A single file with a directory").within("corpus"),
+        case("decision_record", "A directory shelf with a directory").within("corpus/decisions"),
     ]
 }
 
@@ -338,6 +367,9 @@ branches![
     KindUnshelved,
     KindOnManyShelves,
     ShelfPathNotLiteral,
+    DirectoryNeeded,
+    DirectoryOffShelf,
+    DirectoryNotAsked,
     LayoutUnresolved,
     TitleEmpty,
     FacetUndeterminable,
@@ -557,6 +589,7 @@ fn a_value_the_store_holds_is_taken_and_the_allocator_mints_past_it() {
             now: pinned(),
             relates: &[],
             given: &[],
+            directory: None,
         }
     }
 
