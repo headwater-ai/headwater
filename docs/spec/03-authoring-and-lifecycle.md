@@ -160,7 +160,7 @@ The resolved taxonomy declares the pattern, the namespace, and the allocation po
 
 2. **Resolvable without its document.** Given `ACME-DR-0042` and nothing else, the engine resolves it to a path. The graph contains an identifier index, so identifiers work in commit messages, code comments, tickets, and agent prompts.
 
-3. **Never reused.** Allocation is reconcile-first. The allocator scans the corpus (terminal-state documents included) and the claim store for the highest allocated value before it mints a new one. A deleted document does not free its number, and its claim stands after it. A claim that names a deleted document is therefore correct, and no rule reports one.
+3. **Never reused.** Allocation is reconcile-first. The allocator scans the corpus (terminal-state documents included) and the claim store for the highest allocated value before it mints a new one. A deleted document does not free its number, and its claim stands after it. A claim that names a deleted document is therefore correct, and no rule reports one. A rename is different, because a rename reuses nothing. When no document holds the path that a claim names, and one document holds the identifier at a different path, the claim is stale. `identifier.claim.stale` reports it and names the current path.
 
 ## Evidence has three honest states, not two
 
