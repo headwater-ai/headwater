@@ -364,8 +364,7 @@ fn finds_a_repository_in(
                 .collect()
         })
         .unwrap_or_default();
-    let across = std::env::var("GIT_DISCOVERY_ACROSS_FILESYSTEM")
-        .is_ok_and(|value| crosses_filesystems_os(Some(OsStr::new(&value))));
+    let across = crosses_filesystems_os(var_os("GIT_DISCOVERY_ACROSS_FILESYSTEM").as_deref());
     search_upward(root, &ceilings, across, device_of)
 }
 
