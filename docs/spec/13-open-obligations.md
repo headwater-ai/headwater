@@ -341,6 +341,9 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0214](../obligations/0214-the-commit-gate-does-not-see-docs-taxonomies-readme-md-drift-from-its-vendored-copy.md) — The commit gate does not see docs/taxonomies/README.md drift from its vendored copy
 - [HW-OBL-0215](../obligations/0215-a-bless-run-of-the-conformance-render-tests-races-two-tests-over-one-fixture-file.md) — A bless run of the conformance render tests races two tests over one fixture file
 - [HW-OBL-0217](../obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md) — The site-review marker lives in the common directory of a clone, so one worktree's unreviewed merge blocks the push of every worktree
+- [HW-OBL-0220](../obligations/0220-no-disk-floor-is-stated-for-a-build-order-run-and-nothing-prunes-the-cargo-pool.md) — No disk floor is stated for a build-order run, and nothing prunes the cargo pool
+- [HW-OBL-0221](../obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md) — Subagents read skills from the shared checkout, and a worktree-isolated integrator cannot fast-forward it after a merge
+- [HW-OBL-0222](../obligations/0222-ten-rules-of-the-editions-ledger-have-one-recorded-corpus-so-a-rule-change-blessed-with-an-edit-to-that-corpus-passes.md) — Ten rules of the editions ledger have one recorded corpus, so a rule change blessed with an edit to that corpus passes
 
 ## What the first typing of this corpus found
 
