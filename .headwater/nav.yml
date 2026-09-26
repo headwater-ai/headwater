@@ -39,6 +39,7 @@ nav:
       - "Q28 — Whether an evaluation is governed prose": "decisions/0028-q28-whether-an-evaluation-is-governed-prose.md"
       - "A verification is a kind, and its identity is minted rather than found in the code that cites it": "decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md"
       - "A code path anchor is a pattern over the tree, and it binds when the pattern matches at least one entry": "decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md"
+      - "A language rule reaches front-door prose outside the corpus root, and no other rule does": "decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md"
       - "Q29 — Whether a corpus root may contain code, and what an interface contract may reach": "decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md"
       - "Q30 — Whether what an obligation waits on is a state or a property, and how many values it takes": "decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md"
       - "Q31 — Whether this repository becomes public, and when": "decisions/0031-q31-whether-this-repository-becomes-public-and-when.md"
