@@ -1667,6 +1667,10 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Edge,
             Grain::Edge,
             Grain::Neighbourhood { depth: 1 },
+            // Two relations telling one generated document two states. A
+            // neighbourhood centers on a typed document and a generated one is
+            // not typed, so the corpus is the grain that reaches it (#1086).
+            Grain::Corpus,
             // The two Graph-origin rules whose grain is the document. Each one
             // routes a phase-A defect that stops an edge from existing, so
             // there is no edge to instantiate over and the document that wrote
@@ -1858,15 +1862,15 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         )
     );
     assert_eq!(
-        run.served[12].scope.render(),
+        run.served[13].scope.render(),
         "document scope, one document and its front matter, and what phase A could not make of it"
     );
     // The same declaration at the other grain, and the sentence says what the
     // difference is: one document's news against the identity of every
     // document. A reader counting the barriers finds the word here.
-    assert_eq!(run.served[14].rule, duplicate::RULE);
+    assert_eq!(run.served[15].rule, duplicate::RULE);
     assert_eq!(
-        run.served[14].scope.render(),
+        run.served[15].scope.render(),
         "corpus scope, every row of the census, and what phase A could not make of each \
          document's identity, and it is a barrier"
     );

@@ -453,12 +453,11 @@ fn standing(surface: &Surface<'_>, id: &str, output: &str) -> Option<(String, Lo
 /// The state that an incoming edge puts on this document, where one does.
 ///
 /// Two relations declaring one state agree. Two declaring different states
-/// get the first in sorted order, and nothing reports the disagreement. That is
-/// a gap and not a ruling: no rule in the resolver or the check layer owns it,
-/// and [spec 13](../../../../docs/spec/13-open-obligations.md) records it under
-/// *Two relations can put two different states on one generated document, and
-/// no rule reports it* (#820). The sorted order only keeps the answer the same
-/// on every run until a rule reports the clash.
+/// get the first in sorted order, so the answer is the same on every run. The
+/// check rule `lifecycle.state.set_twice` (`headwater_check::state_set_twice`,
+/// #1086) reads the edges [`incoming`] reads, onto the documents this module
+/// writes a state onto, and reports the disagreement with the state this
+/// picks. A change to either reading changes both.
 fn set_state(surface: &Surface<'_>, id: &str, output: &str) -> Option<String> {
     let mut found: Vec<String> = incoming(surface, id, output)
         .into_iter()
