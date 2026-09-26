@@ -39,7 +39,9 @@ use headwater_yaml::json::Json;
 /// The version of the two documents this module writes.
 ///
 /// One constant for both, because they ship together and a reader who pins one
-/// is pinning this module. `1.0` is the first.
+/// is pinning this module. `1.0` is the first. A member added to an element, as
+/// `reach` and then `targets` (#1092) were, removes nothing a `1.0` reader
+/// reads, so neither moved it.
 pub const VERSION: &str = "1.0";
 
 /// One route as JSON.
@@ -313,6 +315,7 @@ fn of_neighbour(neighbour: &Neighbour) -> Json {
         inbound,
         pointer,
         target,
+        targets,
         cue,
         cue_is_declared,
         governs,
@@ -322,6 +325,10 @@ fn of_neighbour(neighbour: &Neighbour) -> Json {
         ("relation", Json::string(relation.clone())),
         ("inbound", Json::Bool(*inbound)),
         ("target", Json::string(target.clone())),
+        (
+            "targets",
+            Json::Array(targets.iter().cloned().map(Json::string).collect()),
+        ),
     ];
     if let Some(pointer) = pointer {
         members.push(("pointer", of_pointer(pointer)));
