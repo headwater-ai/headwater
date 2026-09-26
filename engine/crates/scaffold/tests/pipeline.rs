@@ -73,10 +73,8 @@ impl Scratch {
     /// Keyed on the test as well as the process, because cargo runs the tests
     /// of one file as threads of one process.
     fn new(test: &str) -> Self {
-        let at = std::env::temp_dir().join(format!(
-            "headwater-scaffold-{}-{test}",
-            std::process::id()
-        ));
+        let at =
+            std::env::temp_dir().join(format!("headwater-scaffold-{}-{test}", std::process::id()));
         let _ = std::fs::remove_dir_all(&at);
         copy_tree(&fixtures_dir().join("corpus"), &at.join("corpus"));
         Scratch(at)
@@ -320,9 +318,7 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
         .findings
         .iter()
         .filter(|finding| finding.rule == headwater_check::initial_dependency::RULE)
-        .filter(|finding| {
-            touched.contains(&finding.path) || FAR.contains(&finding.path.as_str())
-        })
+        .filter(|finding| touched.contains(&finding.path) || FAR.contains(&finding.path.as_str()))
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(
@@ -336,9 +332,7 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
     let against_scaffolded: Vec<String> = run
         .findings
         .iter()
-        .filter(|finding| {
-            touched.contains(&finding.path) || FAR.contains(&finding.path.as_str())
-        })
+        .filter(|finding| touched.contains(&finding.path) || FAR.contains(&finding.path.as_str()))
         .map(|finding| format!("{}:{} {}", finding.path, finding.line, finding.message))
         .collect();
     assert!(
@@ -434,9 +428,7 @@ fn a_promoted_successor_is_owed_its_far_half_and_the_fix_writes_it() {
     let left: Vec<String> = again
         .findings
         .iter()
-        .filter(|finding| {
-            touched.contains(&finding.path) || FAR.contains(&finding.path.as_str())
-        })
+        .filter(|finding| touched.contains(&finding.path) || FAR.contains(&finding.path.as_str()))
         .map(|finding| format!("{} {}: {}", finding.path, finding.rule, finding.message))
         .collect();
     assert!(left.is_empty(), "{}", left.join("\n"));
