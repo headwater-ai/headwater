@@ -26,7 +26,7 @@ It writes questions that the tree cannot answer into the overlay. It does not re
 
 ### The git step
 
-`--git` is the step that makes a merge safe for the derived files of the repository. It appends one line of the form `<path> -merge` to `.gitattributes` for each fold that a producer the tree holds writes. `headwater taxonomy resolve` writes `.headwater/taxonomy.lock`, which carries a digest over its whole text and is always a fold. `headwater generate` writes each file that carries the generated-file marker. Such a file is a fold only where its opening states a count or a digest. [`headwater derived`](headwater-derived.md) computes that shape. It keeps every other line of `.gitattributes` byte for byte, and it writes no line that the file already declares. So a second run writes nothing. A `<path> merge=headwater-regenerate` line that an earlier release committed gets a `-merge` line after it, and git takes the later line.
+`--git` is the step that makes a merge safe for the derived files of the repository. It appends one line of the form `<path> -merge` to `.gitattributes` for each fold that a producer the tree holds writes. `headwater taxonomy resolve` writes `.headwater/taxonomy.lock`, which carries a digest over its whole text and is always a fold. `headwater generate` writes each file that carries the generated-file marker. Such a file is a fold only where its opening states a count or a digest. [`headwater derived`](headwater-derived.md) computes that shape. It keeps every other line of `.gitattributes` byte for byte, and it writes no line that the file already declares. So a second run writes nothing. The step asks `git check-attr` for the attributes. Where git does not answer, the step reads the root `.gitattributes` alone and reads no nested `.gitattributes`. A nested file that the step did not read can already declare a path below its directory. So the step writes no line for that path. It names each such path and the nested file on standard error. A `<path> merge=headwater-regenerate` line that an earlier release committed gets a `-merge` line after it, and git takes the later line.
 
 **The committed line needs no configuration, and that is why it is `-merge`.** Under `-merge`, git keeps the current side, writes no conflict marker and records a conflict. Every clone does this. Git reads a driver that no configuration defines as an ordinary text merge ([#1058](https://github.com/headwater-ai/headwater/issues/1058)). So a committed `merge=headwater-regenerate` line gave a clone without the configuration a silent text merge of each fold.
 
@@ -66,11 +66,11 @@ Without `--git`, the repository must not already contain `.headwater/taxonomy.ym
 
 **0** means that the declaration and overlay were written, and that the git step completed where `--git` asked for it.
 
-**1** means one of four failures. The repository is already bound and `--git` is absent. No corpus root could be proposed. A file could not be written. Or a `git config` line failed, and then no override is written.
+**1** means one of five failures. The repository is already bound and `--git` is absent. No corpus root could be proposed. A file could not be written. A `git config` line failed, and then no override is written. Or `--git` ran inside a git repository and git did not give the merge attributes. The step then does its other work, prints the reason on standard error, and exits 1, as [`headwater derived`](headwater-derived.md) does.
 
 ## Environment
 
-The command reads no environment variable. Under `--git-config`, it runs `git` from the `PATH`.
+The command reads no environment variable. Under `--git`, it runs `git` from the `PATH` for `git check-attr`, `git rev-parse` and `git config --get`. Under `--git-config`, it also runs `git config` to write the two lines.
 
 ## Files
 
