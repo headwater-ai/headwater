@@ -384,8 +384,9 @@ fn a_bare_root_in_a_front_matter_value_is_not_reported_and_a_path_is() {
     let (_, out, err) = root.run(&["check"]);
     let found = root.findings("site");
     assert!(
-        found.iter().any(|f| f
-            .contains("the `governs` front-matter value names `.githooks/pre-commit`,")),
+        found
+            .iter()
+            .any(|f| f.contains("the `governs` front-matter value names `.githooks/pre-commit`,")),
         "a path under a root in a front-matter value is reported\n{found:#?}\n{out}{err}"
     );
     assert!(
