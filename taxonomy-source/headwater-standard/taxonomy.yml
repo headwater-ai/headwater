@@ -149,6 +149,11 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.6.2 changes no declaration in this file. The comment above `controls`
+# states that the `commit` of an observation entry is provenance, that the
+# engine checks it for form and never for ancestry, and that the process of the
+# adopter keeps it honest (#937). It follows 4.6.1 (#350).
+#
 # 4.6.1 changes no declaration in this file. The doctrine of each bundle and
 # the library index `bundles/README.md` now open with front matter, because
 # this repository types them as corpus prose and checks them (#350). A consumer
@@ -190,7 +195,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.6.1
+version: 4.6.2
 
 purposes:
   rationale:
@@ -693,6 +698,17 @@ obligations:
 # A phase carries no severity and produces no finding, so nothing binds to it in
 # the way a rule binds. What the register can state, and does, is that the
 # obligation is discharged and that this engine ran the phase.
+#
+# An entry of `.headwater/observations.yml` records a `commit`, and that field
+# is provenance. The engine checks the `commit` of a verification entry for
+# form only: it must read as a plausible commit reference. The engine never
+# checks that the commit is an ancestor of the tree it reads, and it does not
+# compare the `commit` of a control entry at all. The process of the adopter,
+# which is the job that writes the snapshot, keeps the field honest. A changed
+# criterion needs no history to find: the `criterion_digest` of a verification
+# entry is compared against the bytes of the criterion today. The owner ruled
+# this boundary on 2026-09-25, on #937: "The content digest already catches a
+# changed criterion, and a widening adds a new input to every check run."
 
 controls:
 
