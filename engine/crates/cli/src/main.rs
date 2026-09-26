@@ -1016,11 +1016,44 @@ fn validate(root: &Path) -> ExitCode {
         }
         Err(_) => (Vec::new(), None),
     };
-    if let Some(notice) = notice {
+    if let Some(notice) = &notice {
         println!("\n{notice}");
     }
 
-    if findings.is_empty() && unmatched.is_empty() && unread.is_none() {
+    // HW-DR-0084 clause 2: the paths a language regime lists outside the
+    // corpus root. A pattern that leaves the repository, matches a path under
+    // the root, or reaches a path another regime lists is refused, and one
+    // that matches no file is named on the terms of the governed scope above,
+    // including its skip where no tree stands beside the taxonomy.
+    let no_tree = notice.is_some();
+    let outside = match headwater_check::Shape::read(&repository.resolution.taxonomy) {
+        Ok(shape) => {
+            let consumer = &repository.consumer;
+            let corpus = Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions);
+            headwater_census::outside::take(&corpus, &shape.outside_root())
+        }
+        Err(_) => headwater_census::outside::Outside::default(),
+    };
+    let outside_refusals: Vec<String> = outside
+        .unmatched
+        .iter()
+        .filter(|_| !no_tree)
+        .map(|entry| {
+            format!(
+                "outside-root pattern `{}` of `regimes.language.{}` matches no file: {}",
+                entry.pattern, entry.regime, entry.reason
+            )
+        })
+        .chain(outside.refused.iter().map(|entry| {
+            format!(
+                "outside-root pattern `{}` of `regimes.language.{}` is refused: {}",
+                entry.pattern, entry.regime, entry.reason
+            )
+        }))
+        .collect();
+
+    if findings.is_empty() && unmatched.is_empty() && unread.is_none() && outside_refusals.is_empty()
+    {
         println!("\n{} is valid", repository.consumer.package);
         return ExitCode::SUCCESS;
     }
@@ -1045,6 +1078,9 @@ fn validate(root: &Path) -> ExitCode {
                 "governed scope pattern `{pattern}` matches no entry of the tree: {why}"
             ))
         );
+    }
+    for refusal in &outside_refusals {
+        eprintln!("  {}", err(refusal));
     }
     advise(root, &repository.consumer);
     ExitCode::FAILURE
@@ -3667,7 +3703,10 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
         };
     }
 
-    let census = census::take(&corpus, &taxonomy);
+    let mut census = census::take(&corpus, &taxonomy);
+    // HW-DR-0084: the paths a language regime lists outside the corpus root,
+    // read into a list beside the rows and never into them.
+    census.outside = headwater_census::outside::take(&corpus, &shape.outside_root());
     let config = Config::default();
     let graph = Graph::build(&census, &relations, &resolvers, &corpus, &config);
     Ok(Loaded {

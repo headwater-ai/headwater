@@ -258,7 +258,7 @@ pub struct LanguageRegime {
     /// Paths outside the corpus root that this regime holds, as patterns
     /// relative to the repository root, in the order the regime lists them.
     /// Empty for a regime that lists none. See
-    /// [HW-DR-0084](../../../../docs/decisions/0084-a-language-regime-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md).
+    /// [HW-DR-0084](../../../../docs/decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md).
     pub outside_root: Vec<String>,
     pub span: Span,
 }

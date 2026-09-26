@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The paths outside the corpus root that a language regime lists.
 //!
-//! [HW-DR-0084](../../../../docs/decisions/0084-a-language-regime-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md)
+//! [HW-DR-0084](../../../../docs/decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md)
 //! lets a language regime name paths outside the corpus root under
 //! `outside_root`, so that the prose a newcomer reads first is held to the
 //! controlled language the rest of the corpus is held to. Three rules read
@@ -19,7 +19,7 @@
 //! matches nothing is kept and reported by name rather than skipped.
 
 use crate::walk::{self, Corpus, EntryKind};
-use headwater_doc::{Document, Mapping, Reason, Span};
+use headwater_doc::Document;
 use headwater_meta::pattern::Pattern;
 
 /// What a set of regimes lists outside the corpus root, as this walk found it.
@@ -29,6 +29,9 @@ pub struct Outside {
     pub rows: Vec<OutsideRow>,
     /// Every pattern that matched no path, in the order the regimes list them.
     pub unmatched: Vec<Unmatched>,
+    /// Every pattern HW-DR-0084 clause 2 refuses, in the same order. A refused
+    /// pattern reads no path.
+    pub refused: Vec<Unmatched>,
 }
 
 /// One path outside the corpus root, and the regime that lists it.
@@ -48,7 +51,8 @@ pub struct OutsideRow {
     pub unread: Option<String>,
 }
 
-/// A pattern that a regime lists and that matched no path.
+/// A pattern that a regime lists, and why it reads nothing: it matched no path,
+/// or HW-DR-0084 clause 2 refuses it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Unmatched {
     pub pattern: String,
@@ -88,7 +92,7 @@ impl Outside {
     /// A corpus that declares no `outside_root` prints nothing, so its report
     /// is the one it printed before this list existed.
     pub fn render(&self) -> String {
-        if self.rows.is_empty() && self.unmatched.is_empty() {
+        if self.rows.is_empty() && self.unmatched.is_empty() && self.refused.is_empty() {
             return String::new();
         }
         let counts = self
@@ -115,40 +119,59 @@ impl Outside {
                 unmatched.pattern, unmatched.regime, unmatched.reason
             ));
         }
+        for refused in &self.refused {
+            out.push_str(&format!(
+                "  refused `{}` in `{}`: {}\n",
+                refused.pattern, refused.regime, refused.reason
+            ));
+        }
         out
     }
 }
 
 /// Resolve every listed pattern against the repository and read what matched.
 ///
-/// A path under the corpus root is not read here: the census already holds it
-/// as a row, and a second reading would give one file two answers. The
-/// refusal of such a pattern is `taxonomy validate`'s, which has the consumer
-/// declaration in hand; here the path is dropped and the pattern, if nothing
-/// else matched, is reported as unmatched with that reason.
+/// HW-DR-0084 clause 2 refuses three entries, and a refused pattern reads no
+/// path at all: a pattern that leaves the repository, a pattern that matches a
+/// path under the corpus root, and a path that a second regime lists. A path
+/// under the root is placed, and placement is the one way it gets a kind, so a
+/// second reading here would give one file two answers. `taxonomy validate`
+/// fails on a refusal and on an unmatched pattern, and `headwater check`
+/// names both in its report.
 pub fn take(corpus: &Corpus, listed: &[Listed]) -> Outside {
     let mut outside = Outside::default();
     for regime in listed {
         for source in &regime.patterns {
+            let note = |reason: String| Unmatched {
+                pattern: source.clone(),
+                regime: regime.regime.clone(),
+                reason,
+            };
             let matched = match resolve(corpus, source) {
-                Ok(matched) => matched,
-                Err(reason) => {
-                    outside.unmatched.push(Unmatched {
-                        pattern: source.clone(),
-                        regime: regime.regime.clone(),
-                        reason,
-                    });
+                Resolved::Paths(matched) => matched,
+                Resolved::Nothing(reason) => {
+                    outside.unmatched.push(note(reason));
+                    continue;
+                }
+                Resolved::Refused(reason) => {
+                    outside.refused.push(note(reason));
                     continue;
                 }
             };
             for path in matched {
-                // Two regimes that list one path are refused at resolution.
-                // The first reading stands here, so a lock that slipped past
-                // the refusal still gives each path one regime.
-                if outside.holds(&path) {
-                    continue;
+                match outside.rows.iter().find(|row| row.path == path) {
+                    // One regime that reaches one path through two of its
+                    // patterns reads it once.
+                    Some(row) if row.regime == regime.regime => {}
+                    Some(row) => {
+                        let reason = format!(
+                            "`{path}` is listed by `{}` as well, and a path answers to one regime",
+                            row.regime
+                        );
+                        outside.refused.push(note(reason));
+                    }
+                    None => outside.rows.push(read(corpus, path, &regime.regime)),
                 }
-                outside.rows.push(read(corpus, path, &regime.regime));
             }
         }
     }
@@ -156,25 +179,34 @@ pub fn take(corpus: &Corpus, listed: &[Listed]) -> Outside {
     outside
 }
 
+/// What one pattern came to.
+enum Resolved {
+    /// The paths it matches, every one of them outside the corpus root.
+    Paths(Vec<String>),
+    /// It matched no file, and why.
+    Nothing(String),
+    /// HW-DR-0084 clause 2 refuses it, and why.
+    Refused(String),
+}
+
 /// The paths one pattern matches outside the corpus root, or why none.
-fn resolve(corpus: &Corpus, source: &str) -> Result<Vec<String>, String> {
+fn resolve(corpus: &Corpus, source: &str) -> Resolved {
     if let Some(why) = leaves_the_repository(source) {
-        return Err(why);
+        return Resolved::Refused(why);
     }
     let pattern = Pattern::new(source);
-    let inside = |path: &str| {
-        path == corpus.root || path.starts_with(&format!("{}/", corpus.root.trim_end_matches('/')))
-    };
+    let root = corpus.root.trim_end_matches('/');
+    let inside = |path: &str| path == root || path.starts_with(&format!("{root}/"));
     let matched: Vec<String> = if pattern.is_literal() {
         let path = pattern.literal_prefix();
         match corpus.base.join(&path).is_file() {
             true => vec![path],
-            false => return Err(format!("no file `{path}` in the repository")),
+            false => return Resolved::Nothing(format!("no file `{path}` in the repository")),
         }
     } else {
         let prefix = pattern.literal_prefix();
         if prefix.is_empty() {
-            return Err(
+            return Resolved::Refused(
                 "the pattern opens with a wildcard, and no literal segment bounds the search; \
                  write a literal directory before the first `*` or `**`"
                     .to_string(),
@@ -190,28 +222,31 @@ fn resolve(corpus: &Corpus, source: &str) -> Result<Vec<String>, String> {
         found.sort();
         found.dedup();
         if found.is_empty() {
-            return Err("no file in the repository matches the pattern".to_string());
+            return Resolved::Nothing("no file in the repository matches the pattern".to_string());
         }
         found
     };
-    let outside: Vec<String> = matched.into_iter().filter(|path| !inside(path)).collect();
-    if outside.is_empty() {
-        return Err(format!(
-            "every path the pattern matches is under the corpus root `{}`, where a kind binds the regime",
-            corpus.root
+    if let Some(path) = matched.iter().find(|path| inside(path)) {
+        return Resolved::Refused(format!(
+            "the pattern matches `{path}`, which is under the corpus root `{root}`; a path there \
+             gets its regime through the kind its placement gives it"
         ));
     }
-    Ok(outside)
+    Resolved::Paths(matched)
 }
 
 /// Why a pattern leaves the repository, and nothing when it stays inside it.
 ///
-/// HW-DR-0084 clause 2 refuses both shapes. `taxonomy resolve` refuses them
-/// first; this is the reading that keeps a lock written before the refusal from
-/// opening a file outside the tree.
+/// HW-DR-0084 clause 2 refuses both shapes: an absolute path, and a `..`
+/// segment. The test runs before any file is opened, so a refused pattern never
+/// reads a file outside the tree.
 pub fn leaves_the_repository(source: &str) -> Option<String> {
     if source.starts_with('/') || source.starts_with('\\') || source.contains(':') {
-        return Some("the pattern is absolute, and a path outside the root is still inside the repository".to_string());
+        return Some(
+            "the pattern is absolute, and a path outside the corpus root still has to be inside \
+             the repository"
+                .to_string(),
+        );
     }
     if source.split(['/', '\\']).any(|segment| segment == "..") {
         return Some("the pattern climbs out of the repository with `..`".to_string());
@@ -235,13 +270,8 @@ fn read(corpus: &Corpus, path: String, regime: &str) -> OutsideRow {
     let Ok(source) = String::from_utf8(bytes) else {
         return unread("the bytes are not UTF-8".to_string(), Some(digest));
     };
-    let document = match headwater_doc::parse(&source) {
+    let document = match headwater_doc::parse_prose(&source) {
         Ok(document) => document,
-        Err(errors) if errors.iter().any(|e| e.reason == Reason::NoFrontMatter) => Document {
-            facets: Mapping::default(),
-            block: Span::default(),
-            body: headwater_doc::body::scan(&source, &source, 0),
-        },
         Err(errors) => {
             let why = errors
                 .iter()

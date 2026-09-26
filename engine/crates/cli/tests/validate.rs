@@ -103,6 +103,20 @@ impl Root {
                 .expect("the scope directory is there");
             std::fs::write(to, "").expect("the scope entry writes");
         }
+        // The four paths `ste_house` lists outside the corpus root
+        // (HW-DR-0084). `taxonomy validate` names a pattern that matches no
+        // file, so each gets a stub.
+        for entry in [
+            "README.md",
+            ".github/CONTRIBUTING.md",
+            ".github/SECURITY.md",
+            ".github/ISSUE_TEMPLATE/issue.md",
+        ] {
+            let to = self.at.join(entry);
+            std::fs::create_dir_all(to.parent().expect("it has a parent"))
+                .expect("the directory is there");
+            std::fs::write(to, "# A stub\n").expect("the stub writes");
+        }
         self
     }
 
@@ -589,6 +603,44 @@ fn validate_refuses_a_governed_scope_pattern_that_matches_no_entry() {
         "the root has no manifest"
     );
     assert!(!ran.err.contains("package.yml"), "{ran:?}");
+}
+
+/// A path a language regime lists outside the corpus root that matches no file
+/// is named, and a pattern that leaves the repository is refused (HW-DR-0084
+/// clause 2, #1159).
+#[test]
+fn validate_names_an_outside_root_pattern_that_matches_nothing_and_refuses_one_that_leaves() {
+    let root = Root::new("outside-root");
+    let overlay = root.at.join(".headwater/overlay.yml");
+    let text = std::fs::read_to_string(&overlay).expect("the overlay reads");
+    let anchor = "      - .github/SECURITY.md\n";
+    assert!(text.contains(anchor), "the overlay lists .github/SECURITY.md");
+    std::fs::write(
+        &overlay,
+        text.replacen(
+            anchor,
+            &format!("{anchor}      - MISSING.md\n      - ../elsewhere.md\n"),
+            1,
+        ),
+    )
+    .expect("the overlay writes");
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "{resolved:?}");
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err.contains(
+            "outside-root pattern `MISSING.md` of `regimes.language.ste_house` matches no file"
+        ),
+        "{ran:?}"
+    );
+    assert!(
+        ran.err.contains(
+            "outside-root pattern `../elsewhere.md` of `regimes.language.ste_house` is refused"
+        ),
+        "{ran:?}"
+    );
+    assert!(!ran.err.contains("`README.md`"), "{ran:?}");
 }
 
 /// A taxonomy with no tree beside it is valid, and the verb says it did not

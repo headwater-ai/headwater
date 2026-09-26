@@ -905,6 +905,13 @@ pub fn run(
         ctx,
         cache,
     ));
+    // The paths a language regime lists outside the corpus root, and the three
+    // rules HW-DR-0084 clause 5 gives them. No other registration here reaches
+    // one: `over_outside_root` takes only a check that implements
+    // `OutsideCheck`, and these three are the only ones that do.
+    instances.extend(scope::over_outside_root(&language, census, cache));
+    instances.extend(scope::over_outside_root(&retired, census, cache));
+    instances.extend(scope::over_outside_root(&source_form, census, cache));
     instances.extend(scope::over_documents(&sections, census, graph, ctx, cache));
     instances.extend(scope::over_corpus(
         &fragments, census, graph, claims, ctx, cache,

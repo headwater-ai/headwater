@@ -155,6 +155,23 @@ fn a_listed_path_outside_the_root_is_read_by_the_three_language_rules_and_no_oth
     );
 }
 
+/// An allow directive on an outside path suppresses the finding it names, as
+/// it does on a document under the root.
+#[test]
+fn an_allow_directive_on_an_outside_path_holds() {
+    let (_, run) = checked(Some(&["README.md", "CONTRIBUTING.md"]));
+    assert_eq!(
+        findings_at(&run, "CONTRIBUTING.md"),
+        Vec::<&Finding>::new(),
+        "the directive holds the contraction"
+    );
+    assert_eq!(findings_at(&run, README).len(), 1, "and only that one");
+    assert!(
+        rules_reading(&run, "CONTRIBUTING.md").contains(&"language.controlled.not_met"),
+        "the rule still read the file"
+    );
+}
+
 #[test]
 fn an_unlisted_path_outside_the_root_is_read_by_nothing() {
     let (taken, run) = checked(Some(&[]));
@@ -179,11 +196,47 @@ fn a_pattern_that_matches_nothing_is_reported_by_name() {
 }
 
 #[test]
-fn a_pattern_that_matches_only_inside_the_root_is_reported_and_reads_nothing_twice() {
+fn a_pattern_that_leaves_the_repository_is_refused_and_reads_nothing() {
+    let (taken, _) = checked(Some(&["../outside-root/README.md"]));
+    assert_eq!(taken.outside.rows.len(), 0);
+    assert_eq!(taken.outside.refused.len(), 1);
+    assert!(
+        taken
+            .render(Detail::Exceptions)
+            .contains("refused `../outside-root/README.md` in `house`"),
+        "the report names the refused pattern"
+    );
+}
+
+/// A path two regimes list is refused, and the first regime's reading stands,
+/// so the path still answers to one regime.
+#[test]
+fn a_path_two_regimes_list_is_refused() {
+    let corpus = Corpus::new(base(), "docs");
+    let listed = [
+        outside::Listed {
+            regime: "house".to_string(),
+            patterns: vec![README.to_string()],
+        },
+        outside::Listed {
+            regime: "strict".to_string(),
+            patterns: vec![README.to_string()],
+        },
+    ];
+    let taken = outside::take(&corpus, &listed);
+    assert_eq!(taken.rows.len(), 1);
+    assert_eq!(taken.rows[0].regime, "house");
+    assert_eq!(taken.refused.len(), 1);
+    assert_eq!(taken.refused[0].regime, "strict");
+    assert!(taken.refused[0].reason.contains("listed by `house`"));
+}
+
+#[test]
+fn a_pattern_that_matches_inside_the_root_is_refused_and_reads_nothing_twice() {
     let (taken, run) = checked(Some(&["docs/notes/plain.md"]));
     assert_eq!(taken.outside.rows.len(), 0);
-    assert_eq!(taken.outside.unmatched.len(), 1);
-    assert!(taken.outside.unmatched[0].reason.contains("under the corpus root"));
+    assert_eq!(taken.outside.refused.len(), 1);
+    assert!(taken.outside.refused[0].reason.contains("under the corpus root"));
     let rules = rules_reading(&run, "docs/notes/plain.md");
     let language = rules
         .iter()

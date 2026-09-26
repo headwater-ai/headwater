@@ -390,7 +390,7 @@ fn halves_of(path: &str, patches: &[&Patch]) -> Vec<Half> {
 
 /// Every text patch over one file, under the four guards.
 fn substitute(path: &str, source: &str, patches: &[&Patch]) -> Result<String, Refused> {
-    let before = headwater_doc::parse(source).map_err(|errors| Refused::Unreadable {
+    let before = headwater_doc::parse_prose(source).map_err(|errors| Refused::Unreadable {
         path: path.to_string(),
         why: format!("{} parse errors", errors.len()),
     })?;
@@ -451,7 +451,7 @@ fn substitute(path: &str, source: &str, patches: &[&Patch]) -> Result<String, Re
     }
 
     // Guard 4. The read back.
-    let after = headwater_doc::parse(&patched).map_err(|errors| Refused::Unparseable {
+    let after = headwater_doc::parse_prose(&patched).map_err(|errors| Refused::Unparseable {
         path: path.to_string(),
         why: format!("{} parse errors", errors.len()),
     })?;

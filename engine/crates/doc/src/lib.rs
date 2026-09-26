@@ -183,9 +183,48 @@ pub fn parse(source: &str) -> Result<Document, Vec<ParseError>> {
     })
 }
 
+/// Parse a file that may carry no front matter at all.
+///
+/// A file with no block is a document with an empty mapping and a body that
+/// starts at the first byte. Every other error is the error [`parse`] reports.
+///
+/// This is for prose that no kind binds, which owes no facets: a path a
+/// language regime lists outside the corpus root
+/// ([HW-DR-0084](../../../../docs/decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md)),
+/// and the read-back `check --fix` makes of a patch to one. The census keeps
+/// using [`parse`], because under the corpus root a file with no block is an
+/// untyped document and that distinction is the one it exists to keep.
+pub fn parse_prose(source: &str) -> Result<Document, Vec<ParseError>> {
+    match parse(source) {
+        Err(errors) if errors.iter().any(|error| error.reason == Reason::NoFrontMatter) => {
+            Ok(Document {
+                facets: Mapping::default(),
+                block: Span::default(),
+                body: body::scan(source, source, 0),
+            })
+        }
+        parsed => parsed,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_file_with_no_front_matter_is_prose_with_an_empty_mapping() {
+        let source = "# Title\n\nThis file doesn't open with a block.\n";
+        let document = parse_prose(source).expect("parses as prose");
+        assert!(document.facets.is_empty());
+        let sentence = document
+            .body
+            .sentences()
+            .into_iter()
+            .find(|sentence| sentence.text.contains("doesn't"))
+            .expect("the sentence");
+        assert_eq!(sentence.span.start.line, 3);
+        assert!(parse(source).is_err(), "the census reading is unchanged");
+    }
 
     const DOC: &str = "\
 ---

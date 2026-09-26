@@ -830,6 +830,9 @@ pub struct DocumentView<'a> {
     phase_a: Option<Trouble<'a>>,
     clock: Option<Date>,
     prior: Option<Prior<'a>>,
+    /// The language regime that lists this path outside the corpus root, and
+    /// nothing for a census row. See [`over_outside_root`].
+    regime: Option<&'a str>,
 }
 
 impl<'a> DocumentView<'a> {
@@ -839,8 +842,18 @@ impl<'a> DocumentView<'a> {
     }
 
     /// The kind the census resolved for this document.
+    ///
+    /// The empty string for a path outside the corpus root, which no kind
+    /// binds. No kind has that name, so no `instantiates` accepts it.
     pub fn kind(&self) -> &'a str {
         self.kind
+    }
+
+    /// The language regime that lists this path outside the corpus root, and
+    /// nothing for a document under it. A check that reads it looks its
+    /// binding up by this name rather than by [`DocumentView::kind`].
+    pub fn outside_regime(&self) -> Option<&'a str> {
+        self.regime
     }
 
     /// The shelf whose placement carried the kind, and nothing when a
@@ -1502,6 +1515,7 @@ pub fn over_documents<C: DocumentCheck>(
             },
             clock,
             prior,
+            regime: None,
         };
         // The target of a document-scoped instance is the document, so the
         // path is its identity as well as its one input.
@@ -1519,6 +1533,95 @@ pub fn over_documents<C: DocumentCheck>(
             &reads,
             clock,
             prior,
+            None,
+            || check.evaluate(&view),
+        );
+        instances.push(Instance::of(C::RULE, Grain::Document, reads, outcome));
+    }
+    instances
+}
+
+/// A document-scoped check that also reads a path outside the corpus root
+/// that a language regime lists.
+///
+/// [HW-DR-0084](../../../../docs/decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md)
+/// clause 5 gives three rules such a path and no other rule. The trait is the
+/// enforcement: [`over_outside_root`] takes only a check that implements it,
+/// and only the three language rules do, so no registration can hand an
+/// outside path to a fourth rule by calling the wrong runner.
+pub trait OutsideCheck: DocumentCheck {
+    /// The generation step for an outside path: whether this template binds
+    /// the regime that lists it. It reads the taxonomy and never the file.
+    fn binds_regime(&self, regime: &str) -> bool;
+}
+
+/// Instantiate a check over the paths outside the corpus root that a language
+/// regime lists.
+///
+/// One instance per listed path whose regime the check binds. The view carries
+/// the regime rather than a kind, and it carries no phase-A report, no clock
+/// and no prior version: none of the three rules declares any of them, and a
+/// path that is not a node has no phase-A report to carry. A check that
+/// declared one would read `None` where it expects a value, so the runner
+/// refuses the pairing at compile time with the assertion below.
+///
+/// The census holds these paths outside its rows, so they never reach
+/// [`over_documents`] and never join the coverage denominator.
+pub fn over_outside_root<C: OutsideCheck>(
+    check: &C,
+    census: &Census,
+    cache: &mut Cache,
+) -> Vec<Instance> {
+    const {
+        assert!(
+            !C::NEEDS_PHASE_A && !C::NEEDS_CLOCK && !C::NEEDS_PRIOR,
+            "an outside path carries no phase-A report, clock or prior version"
+        );
+    }
+    let scope = document_scope::<C>();
+    let mut instances = Vec::new();
+    for row in &census.outside.rows {
+        if !check.binds_regime(&row.regime) {
+            continue;
+        }
+        let Some(document) = &row.document else {
+            cache.undecided();
+            instances.push(Instance::skipped(
+                C::RULE,
+                Grain::Document,
+                vec![Input::new(&row.path, row.digest.as_deref())],
+                row.unread.as_deref().unwrap_or(NO_DOCUMENT),
+            ));
+            continue;
+        };
+        let view = DocumentView {
+            path: &row.path,
+            digest: row.digest.as_deref(),
+            kind: "",
+            placed_on: None,
+            // Front-door prose usually declares no facets, and the census
+            // gives such a file an empty mapping. A file that does declare
+            // some is read as written, and the scent facet reaches the rules
+            // exactly as it does for a document under the root.
+            facets: &document.facets,
+            body: match C::NEEDS_BODY {
+                true => Some(&document.body),
+                false => None,
+            },
+            phase_a: None,
+            clock: None,
+            prior: None,
+            regime: Some(&row.regime),
+        };
+        let reads = view.reads();
+        let outcome = cache.outcome(
+            C::RULE,
+            C::VERSION,
+            scope,
+            &row.path,
+            &reads,
+            None,
+            None,
             None,
             || check.evaluate(&view),
         );
