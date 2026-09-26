@@ -244,7 +244,8 @@ conformance:
       owner: a team
       until: 2027-01-01
 ";
-    let tmp = std::env::temp_dir().join(format!("headwater-waiver-{}", std::process::id()));
+    let tmp =
+        Scratch(std::env::temp_dir().join(format!("headwater-waiver-{}", std::process::id())));
     let write = |text: &str| {
         let dir = tmp.join(".headwater");
         std::fs::create_dir_all(&dir).expect("a scratch directory");
@@ -298,7 +299,8 @@ conformance:
 /// could not read, from the consumer's side rather than the publisher's.
 #[test]
 fn a_key_this_engine_does_not_read_ends_the_run_and_a_level_is_the_one_to_expect() {
-    let tmp = std::env::temp_dir().join(format!("headwater-unknown-key-{}", std::process::id()));
+    let tmp =
+        Scratch(std::env::temp_dir().join(format!("headwater-unknown-key-{}", std::process::id())));
     let dir = tmp.join(".headwater");
     std::fs::create_dir_all(&dir).expect("a scratch directory");
     let write = |text: &str| std::fs::write(dir.join("taxonomy.yml"), text).expect("write");
@@ -695,11 +697,11 @@ fn every_waiver_this_repository_declares_names_a_shipped_rule() {
 /// a conformance rule set naming two rules on one level — `lock.current` and
 /// `corpus.classified`, both real readings — and a real release record over
 /// all three files, computed the way `taxonomy publish` computes one.
-fn diverged_package_root(label: &str) -> (PathBuf, PathBuf) {
-    let root = std::env::temp_dir().join(format!(
+fn diverged_package_root(label: &str) -> (Scratch, PathBuf) {
+    let root = Scratch(std::env::temp_dir().join(format!(
         "headwater-conformance-rules-{}-{label}",
         std::process::id()
-    ));
+    )));
     let _ = std::fs::remove_dir_all(&root);
     let dir = root.join(".headwater/packages/acme-taxonomy");
     std::fs::create_dir_all(&dir).expect("the package directory");
@@ -738,6 +740,35 @@ fn diverged_package_root(label: &str) -> (PathBuf, PathBuf) {
     )
     .expect("the record");
     (root, dir)
+}
+
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(std::path::PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = std::path::Path;
+    fn deref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::path::Path> for Scratch {
+    fn as_ref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
 }
 
 fn taxonomy_consumer() -> headwater_resolve::package::Consumer {

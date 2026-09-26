@@ -125,14 +125,43 @@ fn written(plan: &Plan, path: &str) -> String {
 
 /// A scratch directory for one case. `label` names the case, because cargo
 /// runs the cases of one target as threads of one process.
-fn scratch(label: &str) -> PathBuf {
-    let at = std::env::temp_dir().join(format!(
+fn scratch(label: &str) -> Scratch {
+    let at = Scratch(std::env::temp_dir().join(format!(
         "headwater-generate-stored-count-{}-{label}",
         std::process::id()
-    ));
+    )));
     let _ = std::fs::remove_dir_all(&at);
     copy_tree(&fixtures_dir().join("generate"), &at.join("generate"));
     at
+}
+
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(std::path::PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = std::path::Path;
+    fn deref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::path::Path> for Scratch {
+    fn as_ref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
 }
 
 fn copy_tree(from: &Path, to: &Path) {
