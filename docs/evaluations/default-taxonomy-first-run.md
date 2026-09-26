@@ -128,7 +128,7 @@ relations:
     from: [governed_document]
     to:   [code_path]
     cardinality: many
-    created_by: hook
+    created_by: agent
   constrains:
     family: governance
     from: [decision]
@@ -146,7 +146,7 @@ relations:
     family: evidence
     from: [governed_document]
     to:   [governed_document, code_path]
-    created_by: hook
+    created_by: agent
 
 shelves:
   decisions:      {path: docs/decisions/**,      homogeneous: true, kind: decision}
@@ -177,9 +177,9 @@ Four facets, one abstract kind, two concrete kinds, two shelves, five relations,
 
 **No default relation attaches the corpus to code.** Spec 2 enables four by default, and it selected all four from the Kruchten decision-relation vocabulary. That vocabulary runs between decisions by construction, so the count was taken over a set that could not contain the edge in question. Add a behavior kind to that base and every document of that kind is unlinked. That is an orphan finding under the base's own generated checks. `governs`, which ends on the `code_path` anchor, is what fixes it. It also supplies write-time impact detection ([spec 5](../spec/05-ai-integration.md)), which is the most valuable thing the corpus does for a coding agent. No default edge carried it.
 
-**Two of the default four have no mechanical creator.** Spec 2 states that every relation the default enables is creatable by scaffold, generator, or hook, and it explains why. A default that works only if assisted authoring raises edge capture is a bet rather than a design. Write the base out and the claim fails on its own list. A scaffold can propose `supersedes`, and a hook can propose `traces_to` and `governs` from the change. Nothing mechanical proposes `conflicts_with` or `constrains`. Both come from the coherence sweep, which is an agent.
+**Four of the five base relations have no mechanical creator.** Spec 2 states that every relation the default enables is creatable by scaffold, generator, or hook, and it explains why. A default that works only if assisted authoring raises edge capture is a bet rather than a design. Write the base out and the claim fails on its own list. A scaffold can propose `supersedes`, and nothing mechanical proposes the other four. No hook writes `traces_to` or `governs`, so both are `created_by: agent` ([HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md)). `conflicts_with` and `constrains` come from the coherence sweep, which is also an agent.
 
-The rule that does the intended work is narrower than the one spec 2 states: **no relation in the base is `created_by: author`.** That preserves the point, because the claim under test is that unassisted human capture decays. It also stops the base from asserting a creator it does not have. It also makes the bet visible instead of hiding it. Two of the base's five edges depend on the agent-authoring claim, which [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#what-the-theory-did-not-settle) records as the least-tested claim in the system. `taxonomy audit` already reports edge counts and staleness by creator, so the instrument to measure the dependence exists.
+The rule that does the intended work is narrower than the one spec 2 states: **no relation in the base is `created_by: author`.** That preserves the point, because the claim under test is that unassisted human capture decays. It also stops the base from asserting a creator it does not have. It also makes the bet visible instead of hiding it. Four of the base's five edges depend on the agent-authoring claim, which [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#what-the-theory-did-not-settle) records as the least-tested claim in the system. `taxonomy audit` already reports edge counts and staleness by creator, so the instrument to measure the dependence exists.
 
 ## Bundles, and why one line per relation does not generalize
 
@@ -282,7 +282,7 @@ Q3 presented three options as alternatives. All three survive as layers, and the
 |---|---|---|
 | 1 | The core requires the `behavior` purpose, and the smallest column of the worked example does not serve it. | [Worked example](../spec/02-taxonomy-model.md#worked-example-three-taxonomies-one-engine) |
 | 2 | All four default relations run between decisions, so no default edge attaches the corpus to code. And a behavior kind added to that base is a permanent orphan. Enable `governs`. | [The decision-relation vocabulary](../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) |
-| 3 | "Creatable by scaffold, generator, or hook" is false for two of the default four. The rule that does the work is that no base relation is `created_by: author`. | [Who creates each edge](../spec/02-taxonomy-model.md#who-creates-each-edge) |
+| 3 | "Creatable by scaffold, generator, or hook" is false for four of the five base relations. The rule that does the work is that no base relation is `created_by: author`. | [Who creates each edge](../spec/02-taxonomy-model.md#who-creates-each-edge) |
 | 4 | Enabling by reference does not generalize past relations. Optional content ships as add-only bundles with declared closures, and add-only is what makes any subset resolve. | [Defined and enabled](../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) and [spec 7](../spec/07-distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction) |
 | 5 | The base package and the doctrine starter kit are two artifacts, and spec 0 and spec 2 name them as if they were one. | [Spec 0 item 6](../spec/00-vision-and-scope.md#what-we-build) and [spec 7](../spec/07-distribution-and-federation.md#the-starter-kit-is-an-assembly) |
 | 6 | The interview is package data rather than engine code, and it is `infer` with a second evidence source. | [Spec 7](../spec/07-distribution-and-federation.md#the-interview) and [Q12](../spec/09-open-questions.md#q12--migration-path-for-an-existing-corpus) |
