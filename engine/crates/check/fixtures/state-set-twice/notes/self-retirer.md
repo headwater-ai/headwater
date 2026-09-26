@@ -1,9 +1,9 @@
 ---
 id: NOTE-FIX-self-retirer
 status: current
-summary: the source of a `retires` edge its target wrote
+summary: named by a generated page's own `retired_by`
 ---
 
 # self-retirer
 
-Writes nothing. `self-written.md` wrote the edge.
+Writes nothing. `pages/gen-self-written.md` wrote the edge.

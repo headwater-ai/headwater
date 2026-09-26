@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# The state-set-twice tree read against a taxonomy where only `supersedes`
-# writes a state. `replaces` and `retires` are still declared, so every edge in
-# the tree still resolves, but neither writes anything onto its target. One
-# relation writes one state, so no document can be told two, and the rule runs
-# no instance.
+# The state-set-twice tree read against a taxonomy where two relations write a
+# state and both write the same one: `supersedes` and `replaces` write
+# `superseded`, and `retires` writes nothing. Two setters that agree can tell
+# no document two states, so the rule runs no instance. This is the direction
+# of the gate that a count of setters alone gets wrong.
 
 facets:
   status:
@@ -33,6 +33,7 @@ relations:
     from: [note, page, plain]
     to:   [note, page, plain]
     inverse: replaced_by
+    on_target: {set_state: superseded}
     created_by: author
   retires:
     family: succession

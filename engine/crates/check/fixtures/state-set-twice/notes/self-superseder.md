@@ -1,9 +1,9 @@
 ---
 id: NOTE-FIX-self-superseder
 status: current
-summary: the source of a `supersedes` edge its target wrote
+summary: named by a generated page's own `superseded_by`
 ---
 
 # self-superseder
 
-Writes nothing. `self-written.md` wrote the edge.
+Writes nothing. `pages/gen-self-written.md` wrote the edge.
