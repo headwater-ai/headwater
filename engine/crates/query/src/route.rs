@@ -694,12 +694,13 @@ impl Surface<'_> {
 
     /// The path one word of a task names, or `None` where it names none.
     ///
-    /// The word as written comes first, and a shorter reading is taken only
-    /// where the longer one is not on the tree and no edge reaches it. So a
-    /// file that exists as `tools/a:b.sh` or `tools/zz.` is read as written,
-    /// and never as `tools/a` or `tools/zz`. Where the word as written names
-    /// nothing, the first shorter reading that is on the tree or that an edge
-    /// reaches is the path: `tools/hw-cargo's` names `tools/hw-cargo`.
+    /// Every reading is held against the tree first, longest first, and only
+    /// then against the edges. So a file that exists as `tools/a:b.sh` or
+    /// `tools/zz.` is read as written, and never as `tools/a` or `tools/zz`,
+    /// and `tools/hw-cargo's` names `tools/hw-cargo`. A glob edge admits the
+    /// longer string too, and it used to win over the file on the tree
+    /// (#953). Where no reading is on the tree, the first that an edge reaches
+    /// is the path. The MCP tool holds no tree, so it reads the edges alone.
     ///
     /// A word that no reading resolves names the path as written when nothing
     /// was taken off it, which is how a write of a new file is named. Where
@@ -708,15 +709,17 @@ impl Surface<'_> {
     /// than a missing one, because the route would propose an edge onto it.
     fn read_path(&self, word: &str, tree: &dyn Fn(&str) -> Entry) -> Option<String> {
         let readings = readings(word);
-        let known = |path: &str| {
-            tree(path) != Entry::Absent
-                || self
-                    .graph
-                    .edges
-                    .iter()
-                    .any(|edge| edge.target.reaches(path))
+        let reached = |path: &str| {
+            self.graph
+                .edges
+                .iter()
+                .any(|edge| edge.target.reaches(path))
         };
-        if let Some(found) = readings.iter().find(|reading| known(reading)) {
+        if let Some(found) = readings
+            .iter()
+            .find(|reading| tree(reading) != Entry::Absent)
+            .or_else(|| readings.iter().find(|reading| reached(reading)))
+        {
             return Some(found.clone());
         }
         match readings.as_slice() {
