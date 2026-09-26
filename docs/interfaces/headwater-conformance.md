@@ -68,6 +68,8 @@ The projections must read from the resolved taxonomy. The host must provide a da
 
 **A rung the package does not declare is a refusal, and the two formats print it in a different order.** The text report is written before the gate is asked, so an undeclared rung is refused under the gaps it is about. The document cannot take that order, so `--json` writes nothing at all on that run.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 No environment variable reaches this verb. The package, taxonomy, repository and date come from the tree and command line.
