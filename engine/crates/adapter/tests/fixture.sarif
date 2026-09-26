@@ -309,7 +309,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 4,
+                  "version": 5,
                   "obligations": [
                     "OB-FIX-7"
                   ],
@@ -325,7 +325,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 3,
+                  "version": 4,
                   "obligations": [
                     "OB-FIX-8"
                   ],
@@ -341,7 +341,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 3,
+                  "version": 4,
                   "obligations": [
                     "OB-FIX-22"
                   ],

@@ -462,7 +462,7 @@
     {
       "rule": "voice.forbidden_construction",
       "scope": "document",
-      "version": 4,
+      "version": 5,
       "obligations": [
         "OB-FIX-7"
       ]
@@ -470,7 +470,7 @@
     {
       "rule": "language.controlled.not_met",
       "scope": "document",
-      "version": 3,
+      "version": 4,
       "obligations": [
         "OB-FIX-8"
       ]
@@ -478,7 +478,7 @@
     {
       "rule": "language.retired_term.used",
       "scope": "document",
-      "version": 3,
+      "version": 4,
       "obligations": [
         "OB-FIX-22"
       ]

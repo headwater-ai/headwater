@@ -56,6 +56,8 @@ The repository must load its taxonomy, corpus and projection declarations. A str
 
 **A refusal of this verb names the spelling of the target that the caller typed.** `--json` and `--format json` reach one value, so the two write one artifact byte for byte. A message a person reads is not an artifact. A message that named the other flag would send a reader to a flag nobody typed.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 The command reads no environment variable.

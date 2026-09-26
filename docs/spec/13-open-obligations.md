@@ -338,6 +338,8 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0213](../obligations/0213-ci-builds-no-mkdocs-site-so-a-generated-page-under-docs-is-never-checked-against-a-strict-build-before-merge.md) — CI builds no MkDocs site, so a generated page under docs/ is never checked against a strict build before merge
 - [HW-OBL-0214](../obligations/0214-the-commit-gate-does-not-see-docs-taxonomies-readme-md-drift-from-its-vendored-copy.md) — The commit gate does not see docs/taxonomies/README.md drift from its vendored copy
 - [HW-OBL-0215](../obligations/0215-a-bless-run-of-the-conformance-render-tests-races-two-tests-over-one-fixture-file.md) — A bless run of the conformance render tests races two tests over one fixture file
+- [HW-OBL-0217](../obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md) — The site-review marker lives in the common directory of a clone, so one worktree's unreviewed merge blocks the push of every worktree
+- [HW-OBL-0218](../obligations/0218-the-opening-sentence-of-the-self-found-list-in-spec-13-counts-forty-nine-items-in-ranges-that-do-not-match-the-list.md) — The opening sentence of the self-found list in spec 13 counts forty-nine items in ranges that do not match the list
 
 ## What the first typing of this corpus found
 

@@ -184,6 +184,8 @@ pub mod verification;
 pub mod voice;
 
 pub use adoption::Ledger;
+#[doc(hidden)]
+pub use cache::cached_form;
 pub use cache::{rules_digest, Cache};
 pub use context::{Context, Date};
 pub use coverage::Coverage;

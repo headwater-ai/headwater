@@ -6089,7 +6089,7 @@
           "status": "current",
           "status_since": "2026-08-12",
           "waiting_on": "build",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-09-26",
           "summary": "Two editions of one rule differ only in code that no digest covers, so a stale version reads the verdicts of the rule before the change.",
           "provenance": {
             "warrant": "accepted",
@@ -9515,6 +9515,34 @@
           "summary": "The merge-regenerate and merged-fold-check hooks tell the merger to run headwater taxonomy resolve --write, and the verb rejects --write because it writes by default.",
           "last_verified": "2026-09-25",
           "title": "Two merge hooks of this repository print a resolve flag that the verb refuses",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0217",
+        "facets": {
+          "id": "HW-OBL-0217",
+          "status": "current",
+          "status_since": "2026-09-26",
+          "summary": "The pre-push hook reads a site-review marker that every worktree of a clone shares, so one unreviewed site merge refuses the push of every worktree.",
+          "last_verified": "2026-09-26",
+          "title": "The site-review marker lives in the common directory of a clone, so one worktree's unreviewed merge blocks the push of every worktree",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0218-the-opening-sentence-of-the-self-found-list-in-spec-13-counts-forty-nine-items-in-ranges-that-do-not-match-the-list.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0218",
+        "facets": {
+          "id": "HW-OBL-0218",
+          "status": "current",
+          "status_since": "2026-09-26",
+          "summary": "Spec 13 opens its self-found list with a count of forty-nine items in five ranges, and no check compares the count to the list.",
+          "last_verified": "2026-09-26",
+          "title": "The opening sentence of the self-found list in spec 13 counts forty-nine items in ranges that do not match the list",
           "waiting_on": "build"
         }
       },

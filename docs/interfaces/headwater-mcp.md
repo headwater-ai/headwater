@@ -57,6 +57,8 @@ The process must have readable standard input and writable standard output. The 
 
 **1** means that the command line, date, taxonomy, consumer declaration or corpus could not load. A protocol error is carried in the response with its JSON-RPC code.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 No environment variable reaches this verb. The date, write consent and repository come from the command line, and all other inputs come from the loaded tree and protocol messages.

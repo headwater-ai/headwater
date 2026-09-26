@@ -57,6 +57,8 @@ A shelf whose path puts a glob before a fixed file name, such as `docs/modules/*
 
 **1** means that the command line, taxonomy, requested values or write failed. A failed run can leave a document when its reading failed to append. A run whose claim could not be made writes nothing at all, because the claim is made before the document.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 The command reads the system date when `--now` is absent. It reads no other environment variable.

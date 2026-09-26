@@ -384,6 +384,8 @@ nav:
       - "The commit gate does not see docs/taxonomies/README.md drift from its vendored copy": "obligations/0214-the-commit-gate-does-not-see-docs-taxonomies-readme-md-drift-from-its-vendored-copy.md"
       - "A bless run of the conformance render tests races two tests over one fixture file": "obligations/0215-a-bless-run-of-the-conformance-render-tests-races-two-tests-over-one-fixture-file.md"
       - "Two merge hooks of this repository print a resolve flag that the verb refuses": "obligations/0216-two-merge-hooks-of-this-repository-print-a-resolve-flag-that-the-verb-refuses.md"
+      - "The site-review marker lives in the common directory of a clone, so one worktree's unreviewed merge blocks the push of every worktree": "obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md"
+      - "The opening sentence of the self-found list in spec 13 counts forty-nine items in ranges that do not match the list": "obligations/0218-the-opening-sentence-of-the-self-found-list-in-spec-13-counts-forty-nine-items-in-ranges-that-do-not-match-the-list.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"
