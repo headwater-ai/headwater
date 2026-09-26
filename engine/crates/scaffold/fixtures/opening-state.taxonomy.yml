@@ -1,0 +1,91 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy that `tests/opening_state.rs` scaffolds against. Three kinds
+# open at three states through three regimes, and one relation requires both
+# ends. A new document owes its far half at promotion only when it opens at a
+# state whose role is `initial` (HW-DR-0086), so the far half is owed for one
+# kind and written for the other two.
+#
+# `proposed` carries no role at all. A reading that deferred on anything but a
+# live state, or on anything but a terminal one, would defer it or `current`,
+# and the test holds each case apart.
+
+facets:
+  status:
+    role: state
+    required: true
+    volatility: mutable
+    values:
+      - {value: draft, role: initial}
+      - {value: proposed}
+      - {value: current, role: live}
+      - {value: superseded, role: terminal-retained}
+  status_since:
+    role: state_entered
+    type: date
+    required: true
+    volatility: mutable
+  summary:
+    role: scent
+    type: string
+    required: true
+    volatility: mutable
+
+regimes:
+  lifecycle:
+    opens_draft:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+    opens_proposed:
+      initial: proposed
+      transitions: {proposed: [current], current: [superseded]}
+      retain_terminal: true
+    opens_current:
+      initial: current
+      transitions: {current: [superseded]}
+      retain_terminal: true
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+  at_draft:
+    is_a: governed_document
+    identifier: {scheme: note_id}
+    lifecycle: opens_draft
+  at_proposed:
+    is_a: governed_document
+    identifier: {scheme: note_id}
+    lifecycle: opens_proposed
+  at_current:
+    is_a: governed_document
+    identifier: {scheme: note_id}
+    lifecycle: opens_current
+
+shelves:
+  drafts:
+    path: opening-state/drafts/**
+    homogeneous: true
+    kind: at_draft
+  proposals:
+    path: opening-state/proposals/**
+    homogeneous: true
+    kind: at_proposed
+  currents:
+    path: opening-state/currents/**
+    homogeneous: true
+    kind: at_current
+
+relations:
+  elaborates:
+    family: association
+    from: [governed_document]
+    to:   [governed_document]
+    inverse: elaborated_by
+    reciprocal: required
+    nuclearity: multinuclear
+    created_by: scaffold

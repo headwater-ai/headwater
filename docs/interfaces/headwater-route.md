@@ -67,6 +67,8 @@ The task must contain at least one word of two characters or more after parsing.
 
 **All three reasons for exit 1 are refusals, so standard output is empty on every one of them.** Each is decided before anything is written, and the account is one English sentence on standard error. That holds under `--json` as under the report a person reads, which is what [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 No environment variable reaches this verb. The task, budget and repository come from the command line, and the graph and corpus come from the tree.

@@ -71,6 +71,8 @@ The first row is checked before the other four, and it never runs `Corpus::class
 
 **The identifier state does not say whether the identifier is a typo or an invention.** `headwater explain HW-DR-9999` and `headwater explain HW-DR-004` both write "is shaped like an identifier of this corpus, and no document declares it" (measured 2026-09-23, repairing [#845](https://github.com/headwater-ai/headwater/issues/845)). Before that repair, both fell through to the fourth row instead. Both read "is outside every corpus root this repository declares" — true of a path, and irrelevant to an identifier (measured 2026-09-12). The `resolve_identifier` tool of [`headwater mcp`](headwater-mcp.md) is the read that separates a typo from an invention. It reports an identifier that no document carries at all. It also reports the path of an untyped document that carries the identifier. That match is exact, never a fuzzy one over case or separator. A caller that has to tell the two apart asks that tool rather than this verb.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 No environment variable reaches this verb. The target and repository come from the command line, and the census and graph come from the tree.
