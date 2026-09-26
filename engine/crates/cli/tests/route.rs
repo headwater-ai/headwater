@@ -85,3 +85,104 @@ fn a_governed_path_and_a_path_outside_the_scope_name_nothing() {
         assert!(!text.out.contains("governed scope"), "{path}: {}", text.out);
     }
 }
+
+/// A word that ends in prose punctuation, or in a line number, names the path
+/// without it. A governed file named that way is named as governed, and never
+/// as a path that nothing governs with a malformed edge proposed for it.
+#[test]
+fn a_path_named_with_prose_punctuation_or_a_line_number_is_the_path_itself() {
+    let root = root("route-punctuation");
+    for task in [
+        "Look at tools/governed.sh.",
+        "tools/governed.sh:12",
+        "(tools/governed.sh),",
+    ] {
+        let ran = root.run(&["route", task, "--json"]);
+        assert_eq!(ran.code, Some(0), "{ran:?}");
+        let member = ungoverned(&ran.out);
+        assert!(!member.contains("\"path\""), "{task}: {member}");
+        assert!(
+            ran.out
+                .contains("\"anchors\": [\n    \"tools/governed.sh\"\n  ]"),
+            "{task}: {}",
+            ran.out
+        );
+    }
+    let ran = root.run(&["route", "edit", "tools/unrelated.sh:3.", "--json"]);
+    let member = ungoverned(&ran.out);
+    assert!(
+        member.contains("\"path\": \"tools/unrelated.sh\""),
+        "{member}"
+    );
+}
+
+/// The #951 owner ruling, "nobody governs a cache": a path git ignores is not
+/// named, though a scope pattern admits it. The same root before `git init`
+/// names it, so the case cannot pass on a path the scope never admitted.
+#[test]
+fn a_path_git_ignores_is_not_named_as_ungoverned() {
+    let root = root("route-ignored");
+    let path = "tools/__pycache__/stub.cpython-312.pyc";
+    let cache = root.at.join(path);
+    std::fs::create_dir_all(cache.parent().expect("a parent")).expect("the cache is made");
+    std::fs::write(&cache, "").expect("the cache writes");
+    std::fs::write(root.at.join(".gitignore"), "__pycache__/\n")
+        .expect("the ignore file writes");
+
+    let before = root.run(&["route", "edit", path, "--json"]);
+    assert!(
+        ungoverned(&before.out).contains(&format!("\"path\": \"{path}\"")),
+        "{}",
+        before.out
+    );
+
+    let init = std::process::Command::new("git")
+        .args(["init", "-q"])
+        .current_dir(&root.at)
+        .status()
+        .expect("git runs");
+    assert!(init.success());
+
+    let after = root.run(&["route", "edit", path, "--json"]);
+    assert_eq!(after.code, Some(0), "{after:?}");
+    assert!(!ungoverned(&after.out).contains("\"path\""), "{}", after.out);
+    let text = root.run(&["route", "edit", path]);
+    assert!(!text.out.contains("governed scope"), "{}", text.out);
+}
+
+/// The relations are read off the taxonomy. A bundle that declares a second
+/// governance relation onto `code_path` puts it beside `governs`, with no
+/// change to the engine, so a route that named `governs` alone fails here.
+#[test]
+fn every_declared_relation_that_governs_the_anchor_kind_is_proposed() {
+    let root = Root::shaped("route-relations", |at| {
+        common::write_bundle(
+            at,
+            "zz-rules",
+            "add:\n  relations.zz_rules:\n    family: governance\n    from: \
+             [governed_document]\n    to: [code_path]\n    cardinality: many\n    created_by: \
+             hook\n",
+        );
+        let declaration = at.join(".headwater/taxonomy.yml");
+        let text = std::fs::read_to_string(&declaration).expect("the declaration reads");
+        let from = "  bundles: [";
+        assert!(text.contains(from), "the declaration lists its bundles");
+        std::fs::write(
+            &declaration,
+            text.replacen(from, "  bundles: [zz-rules, ", 1),
+        )
+        .expect("the declaration writes");
+    });
+    let ran = root.run(&["route", "edit", "tools/unrelated.sh", "--json"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    let member = ungoverned(&ran.out);
+    assert!(member.contains("\"governs\""), "{member}");
+    assert!(member.contains("\"zz_rules\""), "{member}");
+    let text = root.run(&["route", "edit", "tools/unrelated.sh"]);
+    assert!(
+        text.out
+            .contains("      zz_rules:\n        - tools/unrelated.sh\n"),
+        "{}",
+        text.out
+    );
+}

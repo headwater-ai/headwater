@@ -253,6 +253,26 @@ struct Scored {
     terms: Vec<String>,
 }
 
+/// The path a word of a task names, with the prose around it taken off.
+///
+/// A task names a path the way a person writes one: at the end of a sentence,
+/// in parentheses, or with a line number after a colon. `Look at
+/// tools/hw-cargo.` and `tools/hw-cargo:12` both name `tools/hw-cargo`. Before
+/// #953 the trailing `.` and the `:12` stayed on the word, so the anchor step
+/// missed a governed path in silence. Once the route also named ungoverned
+/// paths, the same miss became a false "nothing governs it" and a proposed
+/// edge onto a path that does not exist, so both steps read words through
+/// this one function.
+///
+/// A path holding a colon, or ending in a dot, is not named by a task. That is
+/// the cost, and a path of either shape in a governed scope is rare enough to
+/// pay it.
+fn path_word(word: &str) -> &str {
+    let word = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '/' && c != '.');
+    let word = word.split(':').next().unwrap_or(word);
+    word.trim_end_matches('.')
+}
+
 /// The four surfaces spec 5 lets a route read, for one document.
 ///
 /// Held apart rather than joined, because each one weighs differently: a term
@@ -538,7 +558,7 @@ impl Surface<'_> {
     fn named_anchors(&self, task: &str) -> Vec<String> {
         let mut found: Vec<String> = Vec::new();
         for word in task.split_whitespace() {
-            let word = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '/' && c != '.');
+            let word = path_word(word);
             let Ok(normalized) = headwater_graph::anchors::normalize(word) else {
                 continue;
             };
@@ -576,7 +596,7 @@ impl Surface<'_> {
             return found;
         }
         for word in task.split_whitespace() {
-            let word = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '/' && c != '.');
+            let word = path_word(word);
             if !word.contains('/') {
                 continue;
             }
