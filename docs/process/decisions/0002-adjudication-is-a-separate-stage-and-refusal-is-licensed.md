@@ -2,7 +2,7 @@
 id: HW-PD-0002
 status: current
 status_since: 2026-09-07
-summary: "Adjudication runs as its own stage before construction and its prompt licenses refusal, because a run that separated them returned a refusal or a correction from six of eight slots, and that costs one parent turn per issue which is paid."
+summary: "Adjudication runs as its own stage before construction, and its prompt licenses refusal. That is because a run that separated them returned a refusal or a correction from six of eight slots. The separation costs one parent turn per issue, and that cost is paid."
 last_verified: 2026-09-07
 title: "Adjudication is a separate stage, and refusal is licensed"
 provenance:
