@@ -3,7 +3,7 @@ id: HW-OBL-0214
 status: current
 status_since: 2026-09-26
 summary: "Only the required Engine tests job catches a drift between the taxonomy bundles and their vendored copy. So a contributor learns of it at CI and not at commit."
-last_verified: 2026-09-24
+last_verified: 2026-09-27
 title: "The commit gate does not see docs/taxonomies/README.md drift from its vendored copy"
 waiting_on: build
 ---
@@ -22,8 +22,10 @@ Since #350, the README is typed `library_doctrine`, and every rule of the house 
 
 The same comparison covers `bundles/` only. The adjudication did not confirm that any test compares `taxonomy.yml` or `conformance.yml` under `taxonomy-source/headwater-standard` with the vendored copy.
 
+Since #1139, the verb that the discharge example names exists, as `taxonomy publish --from <dir> --check`. It compares every member of the vendored copy with a fresh publish of the source, `taxonomy.yml` and `conformance.yml` included. The "Engine tests" job runs it. The hook does not run it, so the drift still reaches a contributor at CI and not at commit, and the obligation stays open.
+
 ## Discharge
 
-This record discharges when a local gate fails on the drift before a commit. An example is a `taxonomy vendor --check --from` verb that the hook runs only when a staged path is under `docs/taxonomies/` or `taxonomy-source/`. A comparison written into the hook is not a discharge, because a rule has no second copy in a script.
+This record discharges when a local gate fails on the drift before a commit. An example is a hook line that runs `taxonomy publish --from taxonomy-source/headwater-standard --check` only when a staged path is under `docs/taxonomies/` or `taxonomy-source/`. A comparison written into the hook is not a discharge, because a rule has no second copy in a script.
 
 The question reopens as an issue when one of four conditions holds. The first is that "Engine tests" leaves the `Protect main` ruleset. The second is that an artifact an adopter receives comes from the vendored copy. The third is that a rule of `check` reads a file under `bundles/` other than `bundle.yml`. The fourth is that a third late drift costs a run an iteration.
