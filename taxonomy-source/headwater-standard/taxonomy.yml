@@ -149,6 +149,19 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.9.1 changes the promotion threshold of `CT-ID-5` and nothing else. The
+# threshold said that `identifier.claim.stale` reports nothing for a claimant
+# the corpus no longer holds, and that stopped being true when the rule began to
+# report a claim whose one holding document is at another path (#1106). The
+# threshold now states the three cases the rule tells apart by what it sees, and
+# the one case in which it can still give a false positive. It also corrects
+# the brd-prd, standards-spec and design-spec bundles, whose comments and
+# doctrine said that the run which opens a document from another writes both
+# halves of a required relation. Since HW-DR-0086 (#1168) that run writes the
+# new document's half and defers the far half until the new document leaves
+# its initial state. No rule reads a threshold or a comment, so this is a
+# patch. It follows 4.9.0 (#569).
+#
 # 4.9.0 adds `OB-LIFE-5` and `CT-LIFE-5`, which are the obligation and the
 # control behind `lifecycle.dependency.on_initial`. Nothing is removed and
 # nothing already declared changes meaning, so it is a minor. What a consumer
@@ -224,7 +237,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.9.0
+version: 4.9.1
 
 purposes:
   rationale:
@@ -905,7 +918,7 @@ controls:
     promotion:
       criteria:
         window: one release of the taxonomy over an adopting corpus
-        threshold: no false positive, because the rule reads the claimant a claim names and reports nothing for a claimant the corpus no longer holds
+        threshold: no false positive. The rule reads a claim whose path the corpus no longer holds, and it counts the typed documents of a kind that mints under the claim's scheme and hold the identifier. With none, the document was deleted and keeps its claim, and the rule reports nothing. With exactly one, the claim names a path that is not the path of its one holding document, which follows a rename or a claim edited by hand, and the rule reports one warning that names both paths. With two or more, the rule reports nothing and identifier.claimed_twice reports the pair. The one false positive left is a document that takes the identifier of a deleted document by hand, which the never-reuse rule of spec 3 forbids
         sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-REL-2:

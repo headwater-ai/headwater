@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0205
-status: current
-status_since: 2026-09-26
-summary: "Two sample counts predate the scent-role fix #774 landed: HW-OBL-0002's, and voice.rs's own census. Neither was re-taken, so both figures now understate what the rule covers."
-last_verified: 2026-09-23
+status: discharged
+status_since: 2026-09-27
+summary: "HW-OBL-0002 and the voice.rs census now carry the reading of 2026-09-27, taken over the body and the summary facet that the scent-role fix #774 added."
+last_verified: 2026-09-27
 title: "Two sample counts, HW-OBL-0002's and voice.rs's own census, predate the scent-role fix and need retaking"
 waiting_on: build
 ---
@@ -21,3 +21,5 @@ HW-OBL-0002's dated reading needs the same disclaimer voice.rs already carries, 
 ## Discharge
 
 This discharges when a session does three things. It re-runs the `future_intent`, `change_narration` and `phased_rollout` counts over the population #774 widened. It records a new dated reading in HW-OBL-0002 that names the commit. It either reaches the 50-finding adjudicated sample or restates why it still does not. HW-OBL-0002 has waited on that sample since 2026-08-11.
+
+**The reading of 2026-09-27, on commit `0ee88a2d`, discharges this record.** It counts the body and the `summary` facet together. [HW-OBL-0002](0002-declarative-voice-is-called-detectable-at-useful-precision.md) carries it as a dated reading that names the commit, and the census in `engine/crates/check/src/voice.rs` carries the same numbers. The wider population did not change either reading of saturation. `phased_rollout` has 0 of its 13 patterns in the 382 documents it governs. `future_intent` reports one finding, and it is false. No category reaches the sample of 50, and HW-OBL-0002 states why.

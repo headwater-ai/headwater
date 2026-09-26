@@ -53,6 +53,8 @@ A recorded fixture is re-recorded rather than edited by hand:
 
 The digest of the resolved taxonomy lock reaches several recorded fixtures and the committed corpus descriptor, so a taxonomy change moves files your diff never named. Read that diff instead of blessing past it.
 
+One recorded fixture refuses a bless. `engine/crates/check/fixtures/editions.ledger` holds, for each check rule over each recorded corpus, its `VERSION`, a fingerprint of the corpus, and a digest of every verdict it reaches there. When a rule's verdicts change over an unchanged corpus and its `VERSION` does not change, `tests/editions.rs` fails with the rule's name, the file that declares it and the corpus. It fails under `HEADWATER_BLESS` as well. Raise `VERSION` in that file, then bless: a warm cache keyed on the old `VERSION` would otherwise keep serving the old verdicts to every adopter. An edit to a recorded corpus moves its fingerprint, and a bless re-records that corpus's rows without a raised `VERSION`. The ledger cannot see a change that no recorded corpus exercises, a rule that no recorded corpus reaches (the test lists each one with the reason), a rule change in the same commit as an edit to its corpus, or a change that only a warm cache from an older binary shows.
+
 `cargo test` stops at the first failing target, so a poisoned run reports a fraction of the suite and the smaller number reads like a collapse rather than like an early stop.
 
 ## The release build, and what it is not for
@@ -143,10 +145,11 @@ The engine's own verbs, run over this corpus in the `headwater` job:
     headwater generate --check
     headwater export --check
     headwater conformance --level L0
+    headwater taxonomy publish --from taxonomy-source/headwater-standard --check
     headwater taxonomy audit
     headwater check
 
-The first three run in `--check` form, which refuses a committed artifact that the sources no longer produce. `check` runs several times rather than once: with the cache and without it, scoped to the change the pull request carries, and once per output format, because the cache must not be able to change a verdict and no format may disagree with another. CI also pins the clock with `--now`, so a rule that reads a date gives the same answer on a rerun. `taxonomy audit` is the one verb here that cannot fail, because it exits 0 whatever it finds. CI runs it to print the governed-scope section into the job summary.
+The first three run in `--check` form, which refuses a committed artifact that the sources no longer produce. `check` runs several times rather than once: with the cache and without it, scoped to the change the pull request carries, and once per output format, because the cache must not be able to change a verdict and no format may disagree with another. CI also pins the clock with `--now`, so a rule that reads a date gives the same answer on a rerun. `taxonomy publish --check` publishes the maintained source into a directory outside the tree and fails when the vendored copy is not what that publish produces. `taxonomy audit` is the one verb here that cannot fail, because it exits 0 whatever it finds. CI runs it to print the governed-scope section into the job summary.
 
 The fixture suites, which are shell and Python rather than cargo, and which you can run yourself from the repository root:
 

@@ -9,6 +9,9 @@
 # `tests/governs_suspect.rs` builds its corpus in a scratch directory rather
 # than holding one here, because every case edits the bytes of a governed file
 # and a digest that the test did not compute from those bytes proves nothing.
+# `tests/editions.rs` reads the one recorded corpus of this shape, under
+# `editions/`, whose bytes never change: it pins what each arm of the rule
+# decides, so a change to that under an unchanged VERSION fails.
 
 facets:
   status:
