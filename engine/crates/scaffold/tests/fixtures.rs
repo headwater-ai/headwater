@@ -295,8 +295,7 @@ fn cases() -> Vec<Case> {
         // refuses the flag rather than dropping it.
         case("module_readme", "A fixed name with no directory"),
         case("module_readme", "A fixed name in a named directory").within("corpus/modules/alpha"),
-        case("module_readme", "A fixed name with a trailing slash")
-            .within("corpus/modules/beta/"),
+        case("module_readme", "A fixed name with a trailing slash").within("corpus/modules/beta/"),
         case("module_readme", "A fixed name off the shelf").within("corpus/elsewhere/alpha"),
         case("module_readme", "A fixed name one level too deep")
             .within("corpus/modules/alpha/deeper"),

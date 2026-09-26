@@ -222,7 +222,10 @@ fn a_directory_off_the_shelf_is_refused_and_nothing_is_written() {
     ]);
     assert_eq!(ran.code, Some(1), "{ran:?}");
     assert!(ran.err.contains("docs/modules/*/README.md"), "{ran:?}");
-    assert!(!ran.err.contains("defect"), "not blamed on the scaffolder: {ran:?}");
+    assert!(
+        !ran.err.contains("defect"),
+        "not blamed on the scaffolder: {ran:?}"
+    );
     assert!(!root.has("docs/other"), "nothing was written: {ran:?}");
 }
 
