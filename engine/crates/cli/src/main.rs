@@ -248,12 +248,22 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             summary,
             relates,
             facet,
+            directory,
             now,
         } => match kind {
             None => fail(
                 "`new` takes a kind. Try `headwater new decision --title \"Adopt an overlay\"`",
             ),
-            Some(kind) => new(root, &kind, title, summary, &relates, &facet, now),
+            Some(kind) => new(
+                root,
+                &kind,
+                title,
+                summary,
+                &relates,
+                &facet,
+                directory.as_deref(),
+                now,
+            ),
         },
         Verb::Capture { format, json } => capture(root, chosen(json, format)),
         Verb::Sweep { word } => match word {
@@ -3620,7 +3630,26 @@ fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode
         Some(pointers) => Budget { pointers },
         None => Budget::default(),
     };
-    let route = loaded.surface().route(task, budget);
+    let corpus = Corpus::declared(
+        root,
+        &loaded.consumer.corpus_root,
+        &loaded.consumer.exclusions,
+    );
+    // The route asks the tree whether a word of the task names a path as
+    // written, so `tools/a:b.sh` is read as that file wherever it exists
+    // (#953). It costs at most one metadata call per reading of a word, and a
+    // task holds a few dozen words.
+    let tree = |path: &str| match std::fs::metadata(corpus.base.join(path)) {
+        Ok(metadata) if metadata.is_dir() => headwater_query::Entry::Directory,
+        Ok(_) => headwater_query::Entry::File,
+        Err(_) => headwater_query::Entry::Absent,
+    };
+    let mut route = loaded.surface().route_in(task, budget, &tree);
+    // Git is read only where the route named an ungoverned path, so a route
+    // that named none runs no version control command (#953).
+    if !route.ungoverned.is_empty() {
+        route.retain_unignored(&headwater_graph::scope::Ignored::read(&corpus.base));
+    }
     // One route, rendered two ways, and the JSON document carries the text form
     // inside it. `.claude/hooks/intent.sh` is the caller that needs both out of
     // one run: it decides on the pointer set and then puts the report a person
@@ -3874,6 +3903,7 @@ fn classification_text(
 /// scaffolded edge from a hand-typed one.
 /// [HW-OBL-0001](../../../../docs/obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md)
 /// holds the debt that nothing trends this number yet.
+#[allow(clippy::too_many_arguments)]
 fn new(
     root: &Path,
     kind: &str,
@@ -3881,6 +3911,7 @@ fn new(
     summary: Option<String>,
     relates: &[(String, String)],
     given: &[(String, String)],
+    directory: Option<&str>,
     now: Option<Date>,
 ) -> ExitCode {
     let Some(title) = title else {
@@ -3896,6 +3927,7 @@ fn new(
         summary.as_deref(),
         relates,
         given,
+        directory,
         now,
         EntryPoint::Terminal,
     ) {
@@ -3930,6 +3962,7 @@ fn scaffold(
     summary: Option<&str>,
     relates: &[(String, String)],
     given: &[(String, String)],
+    directory: Option<&str>,
     now: Option<Date>,
     surface: EntryPoint,
 ) -> Result<Written, String> {
@@ -3974,6 +4007,7 @@ fn scaffold(
         now,
         relates,
         given,
+        directory,
     };
 
     // Nothing below this line has written anything yet, which is why every
@@ -4864,6 +4898,7 @@ fn probe_stale(root: &Path) -> ExitCode {
         config: &loaded.config,
         lock: &loaded.bound.digest,
     };
+    let mode = headwater_cli::paint::stdout_color();
     let mut seen = 0usize;
     let mut stale = 0usize;
     for row in &loaded.census.rows {
@@ -4874,7 +4909,15 @@ fn probe_stale(root: &Path) -> ExitCode {
             continue;
         }
         seen += 1;
-        println!("## The result of {}", row.path);
+        println!(
+            "{} {}",
+            headwater_cli::paint::paint(
+                headwater_cli::paint::Role::Heading,
+                "## The result of",
+                mode
+            ),
+            headwater_cli::paint::paint(headwater_cli::paint::Role::Path, &row.path, mode)
+        );
         println!();
         let source = match std::fs::read_to_string(root.join(&row.path)) {
             Ok(source) => source,
@@ -4892,7 +4935,7 @@ fn probe_stale(root: &Path) -> ExitCode {
         if !staleness.verdict().stands() {
             stale += 1;
         }
-        print!("{}", staleness.render());
+        print!("{}", staleness.render(mode));
         println!();
     }
 
@@ -5278,15 +5321,17 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
             root,
             kind,
             title,
-            // No summary and no facet values. The write tool declares a kind,
-            // a title and relations, and nothing else, so a kind that
-            // requires a facet no declaration determines is refused over the
+            // No summary, no facet values and no directory. The write tool
+            // declares a kind, a title and relations, and nothing else, so a
+            // kind that requires a facet no declaration determines, or whose
+            // shelf fixes the file name under a glob, is refused over the
             // protocol and written from a terminal. Widening the tool is a
             // change to the write class that [Q7](../../../../docs/spec/09-decisions.md#q7--scope-of-the-mcp-surface)
             // fixed, and not a change to this call.
             None,
             relates,
             &[],
+            None,
             Some(now),
             EntryPoint::Protocol,
         )

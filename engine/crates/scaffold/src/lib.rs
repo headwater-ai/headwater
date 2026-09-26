@@ -134,6 +134,16 @@ pub struct Request<'a> {
     /// is one a declaration determines: the kind argument states it, and this
     /// flag is not a second route to it.
     pub given: &'a [(String, String)],
+    /// The directory a caller names for a shelf whose pattern fixes the file
+    /// name and globs a directory before it, such as `docs/modules/*/README.md`.
+    ///
+    /// The taxonomy does not decide which directory the glob stands for, so
+    /// the scaffolder asks for it rather than inventing one from the slug. The
+    /// path written is this directory joined to the pattern's last segment, and
+    /// it must classify back to the shelf. On any other shelf a value here is
+    /// refused rather than dropped, for the reason [`Refusal::FacetNotAsked`]
+    /// gives.
+    pub directory: Option<&'a str>,
 }
 
 /// Everything the resolved taxonomy and the corpus hand a scaffolder.
@@ -382,6 +392,31 @@ pub enum Refusal {
         shelf: String,
         pattern: String,
     },
+    /// The shelf's path fixes the file name and globs a directory before it,
+    /// and the caller named no directory. The taxonomy does not decide which
+    /// directory the glob stands for, so the verb asks rather than inventing
+    /// one.
+    DirectoryNeeded {
+        shelf: String,
+        pattern: String,
+    },
+    /// The caller named a directory, and the path it makes is not a path the
+    /// shelf claims. This is the caller's input, so it is reported as that and
+    /// not as [`Refusal::PlacementDoesNotResolve`], which blames this crate.
+    DirectoryOffShelf {
+        shelf: String,
+        pattern: String,
+        directory: String,
+        why: String,
+    },
+    /// The caller named a directory for a shelf whose path already decides
+    /// it, so nothing would have read the value and the caller would not have
+    /// been told.
+    DirectoryNotAsked {
+        shelf: String,
+        pattern: String,
+        directory: String,
+    },
     /// The shelf's layout names a placeholder that this document holds nothing
     /// for, so the rendered file name would carry a hole where a value belongs.
     LayoutUnresolved {
@@ -581,6 +616,31 @@ impl std::fmt::Display for Refusal {
                 f,
                 "the shelf `{shelf}` declares `{pattern}`, and a glob before the last segment \
                  names no directory to write into"
+            ),
+            Refusal::DirectoryNeeded { shelf, pattern } => write!(
+                f,
+                "the shelf `{shelf}` declares `{pattern}`, which fixes the file name and not the \
+                 directory. Name the directory the glob stands for with `--directory <path>`"
+            ),
+            Refusal::DirectoryOffShelf {
+                shelf,
+                pattern,
+                directory,
+                why,
+            } => write!(
+                f,
+                "`--directory {directory}` does not place a document on the shelf `{shelf}`, \
+                 which declares `{pattern}`: {why}"
+            ),
+            Refusal::DirectoryNotAsked {
+                shelf,
+                pattern,
+                directory,
+            } => write!(
+                f,
+                "`--directory {directory}` names a directory, and the shelf `{shelf}` declares \
+                 `{pattern}`, which decides the directory itself. Nothing would have read the \
+                 value, so leave the flag out"
             ),
             Refusal::LayoutUnresolved {
                 shelf,
@@ -791,7 +851,7 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
     }
 
     let shelf = one_shelf(sources.shelves, kind)?;
-    let directory = literal_directory(shelf)?;
+    let placement = placement(shelf, request.directory)?;
 
     let fields = front_matter(
         sources,
@@ -808,7 +868,7 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
     // so the only thing this ordering decides is which refusal a request that
     // trips two of them reports first.
     let minting = mint(sources, kind, shelf, &slug)?;
-    let path = place(&directory, shelf, &fields, &slug, minting.as_ref())?;
+    let path = place(&placement, shelf, &fields, &slug, minting.as_ref())?;
 
     if sources.index.by_path(&path).is_some() {
         return Err(Refusal::PathTaken { path });
@@ -819,6 +879,18 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
     // and it is reported rather than written.
     match shelf_for(&path, sources.shelves) {
         ShelfMatch::Matched { shelf: found, .. } if found.name == shelf.name => {}
+        // A path the caller's directory made is the caller's input. The
+        // pattern matched it, so what claims it instead is a narrower shelf.
+        ShelfMatch::Matched { shelf: found, .. }
+            if matches!(placement, Placement::Named { .. }) =>
+        {
+            return Err(Refusal::DirectoryOffShelf {
+                shelf: shelf.name.clone(),
+                pattern: shelf.pattern.source().to_string(),
+                directory: request.directory.unwrap_or_default().to_string(),
+                why: format!("{path} belongs to the shelf `{}`", found.name),
+            })
+        }
         ShelfMatch::Matched { shelf: found, .. } => {
             return Err(Refusal::PlacementDoesNotResolve {
                 path,
@@ -931,36 +1003,109 @@ fn one_shelf<'a>(shelves: &'a Taxonomy, kind: &str) -> Result<&'a Shelf, Refusal
     }
 }
 
-/// The directory a shelf pattern names, which is its run of leading literals.
+/// Where a shelf puts a new document, read from the shape of its pattern.
+enum Placement {
+    /// `docs/obligations/**` names `docs/obligations`, and the file name comes
+    /// from the slug or the layout.
+    Directory(String),
+    /// `docs/modules/*/README.md` fixes the name `README.md`, and the caller
+    /// named the directory the glob stands for.
+    Named { directory: String, name: String },
+    /// `docs/INDEX.md` is one file, and the pattern is its path.
+    File(String),
+}
+
+/// The placement a shelf pattern allows, with the caller's `--directory`.
 ///
-/// `docs/obligations/**` names `docs/obligations`. A pattern with a glob before
-/// its last segment names no directory, and this crate refuses rather than
-/// picking one of the paths it could mean.
-fn literal_directory(shelf: &Shelf) -> Result<String, Refusal> {
+/// A pattern whose last segment is a glob names a directory, which is its run
+/// of leading literals. A glob before that last segment names no directory,
+/// and this crate refuses rather than picking one of the paths it could mean.
+///
+/// A pattern whose last segment is literal fixes the file name. Every segment
+/// literal is one file. A glob before a literal file name is a directory the
+/// taxonomy leaves open, so the caller names it, and the path is that directory
+/// joined to the file name. It must match the pattern, and the classifier in
+/// [`propose`] checks it again against every other shelf.
+///
+/// A shelf `layout` is not read on either fixed-name shape, because the
+/// pattern already fixes the file name and a layout would be a second writer
+/// of it.
+fn placement(shelf: &Shelf, directory: Option<&str>) -> Result<Placement, Refusal> {
     let source = shelf.pattern.source();
     let segments: Vec<&str> = source.split('/').filter(|s| !s.is_empty()).collect();
-    let mut directory: Vec<&str> = Vec::new();
-    for (position, segment) in segments.iter().enumerate() {
-        let last = position + 1 == segments.len();
-        let globbed = *segment == "**" || segment.contains(['*', '?']);
-        match (globbed, last) {
-            (false, _) => directory.push(segment),
-            (true, true) => {}
-            (true, false) => {
-                return Err(Refusal::ShelfPathNotLiteral {
-                    shelf: shelf.name.clone(),
-                    pattern: source.to_string(),
-                })
-            }
-        }
-    }
-    match directory.is_empty() {
-        true => Err(Refusal::ShelfPathNotLiteral {
+    let globbed = |segment: &str| segment == "**" || segment.contains(['*', '?']);
+    let not_literal = || Refusal::ShelfPathNotLiteral {
+        shelf: shelf.name.clone(),
+        pattern: source.to_string(),
+    };
+    let Some((last, leading)) = segments.split_last() else {
+        return Err(not_literal());
+    };
+    let open = leading.iter().any(|segment| globbed(segment));
+
+    let placement = match (globbed(last), open) {
+        (true, true) => return Err(not_literal()),
+        (true, false) if leading.is_empty() => return Err(not_literal()),
+        (true, false) => Placement::Directory(leading.join("/")),
+        (false, false) => Placement::File(segments.join("/")),
+        (false, true) => return named(shelf, last, directory),
+    };
+    match directory {
+        Some(given) => Err(Refusal::DirectoryNotAsked {
             shelf: shelf.name.clone(),
             pattern: source.to_string(),
+            directory: given.to_string(),
         }),
-        false => Ok(directory.join("/")),
+        None => Ok(placement),
     }
+}
+
+/// The caller's directory for a shelf that fixes the file name `name` under a
+/// glob, checked before anything is derived from it.
+///
+/// The directory is relative to the corpus root, and a trailing `/` is dropped.
+/// A `.`, `..` or empty segment is refused rather than normalized: a `**`
+/// before the file name would match `..` itself, so the pattern check alone
+/// would pass a path that leaves the directory the shelf names.
+fn named(shelf: &Shelf, name: &str, directory: Option<&str>) -> Result<Placement, Refusal> {
+    let pattern = shelf.pattern.source();
+    let Some(given) = directory else {
+        return Err(Refusal::DirectoryNeeded {
+            shelf: shelf.name.clone(),
+            pattern: pattern.to_string(),
+        });
+    };
+    let off = |why: String| Refusal::DirectoryOffShelf {
+        shelf: shelf.name.clone(),
+        pattern: pattern.to_string(),
+        directory: given.to_string(),
+        why,
+    };
+    if given.starts_with('/') {
+        return Err(off(
+            "the path is absolute, and a document is placed relative to the corpus root"
+                .to_string(),
+        ));
+    }
+    let trimmed = given.trim_end_matches('/');
+    if trimmed
+        .split('/')
+        .any(|segment| matches!(segment, "" | "." | ".."))
+    {
+        return Err(off(
+            "a `.`, `..` or empty segment names no directory, and a glob would match `..` \
+             where the corpus does not mean it"
+                .to_string(),
+        ));
+    }
+    let path = format!("{trimmed}/{name}");
+    if !shelf.pattern.matches(&path) {
+        return Err(off(format!("{path} is not a path the pattern matches")));
+    }
+    Ok(Placement::Named {
+        directory: trimmed.to_string(),
+        name: name.to_string(),
+    })
 }
 
 /// The path, from the shelf's `layout` where it declares one.
@@ -985,12 +1130,17 @@ fn literal_directory(shelf: &Shelf) -> Result<String, Refusal> {
 /// string. A layout that renders `-a-title.md` names a document nobody asked
 /// for, and the declaration that produced it is the thing to repair.
 fn place(
-    directory: &str,
+    placement: &Placement,
     shelf: &Shelf,
     fields: &[Field],
     slug: &str,
     minting: Option<&Minting>,
 ) -> Result<String, Refusal> {
+    let directory = match placement {
+        Placement::Directory(directory) => directory,
+        Placement::Named { directory, name } => return Ok(format!("{directory}/{name}")),
+        Placement::File(path) => return Ok(path.clone()),
+    };
     let Some(layout) = shelf.layout.as_deref() else {
         return Ok(format!("{directory}/{slug}.md"));
     };

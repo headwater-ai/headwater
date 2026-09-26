@@ -71,6 +71,7 @@
 use crate::intake::Record;
 use crate::plan::{Because, Plan};
 use headwater_census::census::{Census, Outcome};
+use headwater_check::paint::{paint, ColorMode, Role};
 
 /// One document a recorded tool call named, with the identity the recorder
 /// observed it return.
@@ -323,50 +324,69 @@ impl Staleness {
     }
 
     /// The report, which no caller branches on.
-    pub fn render(&self) -> String {
+    ///
+    /// `mode` is a parameter and never a read, as it is for
+    /// [`Plan::render`]: the one human call site in `headwater_cli` states
+    /// `stdout_color()` and every test states [`ColorMode::Plain`]. Three roles
+    /// reach this report. `Warn` paints the opening words of a verdict that
+    /// voids the result or cannot decide about it, `Info` paints the opening
+    /// sentence of a verdict that stands, and `Path` paints the path of each
+    /// member of the read set. Nothing here folds, so every paint is applied
+    /// where the token is written, and under [`ColorMode::Plain`] the bytes are
+    /// the ones this report wrote before it took a mode.
+    pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
         let verdict = self.verdict();
+        let stale = paint(Role::Warn, "**This result is stale.**", mode);
 
         match verdict {
             Verdict::Unusable => {
                 let reason = self.unusable.as_deref().unwrap_or("there is no read set");
                 let _ = writeln!(
                     out,
-                    "Nothing here decides whether this result is stale: {reason}"
+                    "{} {reason}",
+                    paint(
+                        Role::Warn,
+                        "Nothing here decides whether this result is stale:",
+                        mode
+                    )
                 );
                 return out;
             }
             Verdict::Stands => {
                 let _ = writeln!(
                     out,
-                    "Nothing this run read has moved. The read set covers {}, and the digest the \
-                     transcript recorded is the digest this corpus composes.",
+                    "{} The read set covers {}, and the digest the transcript recorded is the \
+                     digest this corpus composes.",
+                    paint(Role::Info, "Nothing this run read has moved.", mode),
                     crate::plural(self.declared(), "document")
                 );
             }
             Verdict::SetMoved => {
                 let _ = writeln!(
                     out,
-                    "**This result is stale.** The read set covers {}, and the digest the \
-                     transcript recorded is not the digest this corpus composes, so a document \
-                     this run was planned over has moved.",
+                    "{} The read set covers {}, and the digest the transcript recorded is not \
+                     the digest this corpus composes, so a document this run was planned over \
+                     has moved.",
+                    stale,
                     crate::plural(self.declared(), "document")
                 );
             }
             Verdict::OpenedFileMoved => {
                 let _ = writeln!(
                     out,
-                    "**This result is stale.** The read set holds still, and a document a session \
-                     opened is not what the recorder observed."
+                    "{stale} The read set holds still, and a document a session opened is not \
+                     what the recorder observed."
                 );
             }
             Verdict::Both => {
                 let _ = writeln!(
                     out,
-                    "**This result is stale.** The read set covers {}, the digest the transcript \
-                     recorded is not the digest this corpus composes, and a document a session \
-                     opened is not what the recorder observed either.",
+                    "{} The read set covers {}, the digest the transcript recorded is not the \
+                     digest this corpus composes, and a document a session opened is not what \
+                     the recorder observed either.",
+                    stale,
                     crate::plural(self.declared(), "document")
                 );
             }
@@ -379,7 +399,7 @@ impl Staleness {
             let _ = writeln!(
                 out,
                 "- {} ({}) {}",
-                member.path,
+                paint(Role::Path, &member.path, mode),
                 member.because.name(),
                 member.now.as_deref().unwrap_or("no such document"),
             );

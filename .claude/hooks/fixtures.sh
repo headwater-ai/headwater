@@ -273,9 +273,12 @@ expect 'an absolute path inside the repository is refused the same way' \
 refute 'an edit to a document that already exists passes' \
     write.sh 'permissionDecision' \
     '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/spec/05-ai-integration.md"}}'
+# #953: a path inside the governed scope now carries the ungoverned-path
+# advisory, so this case names one outside it. "Passes" is still the absence
+# of any output.
 expect 'a file outside the corpus root passes' \
     write.sh 0 '' \
-    '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"engine/crates/query/src/nothing.rs"}}'
+    '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"engine/crates/query/tests/nothing.rs"}}'
 expect 'a new Markdown file outside the corpus root passes' \
     write.sh 0 '' \
     '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"engine/crates/query/NOTES.md"}}'
@@ -370,9 +373,28 @@ if [ -x "$engine" ]; then
     expect 'the advisory says it blocks nothing' \
         write.sh 0 'Nothing here blocks the edit' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/intent.sh"}}'
-    expect 'an edit to a path nothing governs is silent' \
-        write.sh 0 '' \
+    # #953: a path the governed scope admits and nothing governs is not a
+    # silence. The engine states the fact and the front-matter lines that
+    # would declare the edge, and the hook writes neither. Both paths below
+    # are names with no file, so a later `governs` edge on a real file cannot
+    # move either case.
+    expect 'an edit to a path in the governed scope that nothing governs says so' \
+        write.sh 0 'engine/crates/query/src/unrelated.rs is in the governed scope, and nothing governs it' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+    expect 'the same advisory prints the front-matter lines that declare the edge' \
+        write.sh 0 '      governs:\n        - engine/crates/query/src/unrelated.rs' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+    # An advisory that names no document to read does not tell the agent to
+    # read each one (#953, verify finding 3).
+    refute 'the ungoverned advisory with no document to name asks for no reading' \
+        write.sh 'Read each one' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+    expect 'the ungoverned advisory still says it blocks nothing and writes nothing' \
+        write.sh 0 'Nothing here blocks the edit, and nothing here writes the edge' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+    expect 'an edit to a path outside the governed scope that nothing governs is silent' \
+        write.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/tests/unrelated.rs"}}'
     # HW-DR-0074 discharged HW-OBL-0104: a `code_path` anchor is a pattern, and
     # spec 5 now governs `.claude/hooks/**` rather than five files by name, so
     # a new file under that directory is named too.
@@ -404,13 +426,20 @@ if [ -x "$engine" ]; then
         write.sh 0 'docs/interfaces/headwater-sweep.md' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/cli/src/main.rs"}}'
 
-    # `runner.rs` sits beside a file `docs/interfaces/headwater-check.md`
+    # A made-up file beside `lib.rs`, which `docs/interfaces/headwater-check.md`
     # governs by a literal, one-file anchor. HW-DR-0074 lets an author widen
     # that anchor to a pattern; this contract has not been rewritten to one,
-    # so the edge still answers for no file beside the one it names.
-    expect 'a file beside a governed crate file is silent, until its contract adopts a pattern' \
-        write.sh 0 '' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/runner.rs"}}'
+    # so the edge still answers for no file beside the one it names. Since
+    # #953 the path is named as ungoverned in scope instead of meeting silence.
+    # A name with no file behind it, so no later edge on a real file moves it.
+    # The contract can still appear among the documents a term route reached,
+    # so the case refutes the governing header rather than the contract's path.
+    refute 'a file beside a governed crate file is governed by no contract, until its contract adopts a pattern' \
+        write.sh 'a document in this corpus declares that it governs' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/nothing-governs-this.rs"}}'
+    expect 'the same file is named as in the governed scope with nothing governing it' \
+        write.sh 0 'engine/crates/check/src/nothing-governs-this.rs is in the governed scope, and nothing governs it' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/nothing-governs-this.rs"}}'
 
     # #953: the advisory is heard before the edit, and it says so. Until then
     # this branch exited at once for a path that exists, so the case above on

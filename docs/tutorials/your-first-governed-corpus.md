@@ -28,8 +28,8 @@ This tutorial takes an empty directory to a repository that passes `headwater ch
 You need four things.
 
 - `git`, and a name and an email address configured in it.
-- A Rust toolchain, version 1.91 or later, for `cargo install`. The floor is the highest `rust-version` in the resolved dependency graph, and `engine/Cargo.toml` declares it.
-- `curl`, for step 3.
+- Linux on x86_64, or macOS on Apple silicon. You do not need a Rust toolchain.
+- `curl` and `tar`, to install the engine.
 - About twenty minutes.
 
 Three facts about the blocks below.
@@ -38,19 +38,23 @@ Three facts about the blocks below.
 - **Your dates differ.** The engine reads a clock, and it puts the date of your run into what it writes. Where a block below shows `2026-09-09`, yours shows the day you read this.
 - **Long output is trimmed.** A block that is shorter than the real output says so on the line above it.
 
-Install the engine once.
-
-<!-- headwater allow=surface.command.undeclared scope=block until=2026-12-31 reason=accepted_deviation note=HW-DR-0077 makes no Rust toolchain mandatory and #975 carries the archive that replaces this step -->
+Install the engine once. The block below downloads the release archive for Linux on x86_64 and puts the `headwater` binary in `~/.local/bin`. The archive holds a static build, so it needs no particular C library.
 
 ```sh
-cargo install headwater-cli
+mkdir -p ~/.local/bin
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.2.1/headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
 ```
+
+On macOS on Apple silicon, the archive is `headwater-v0.2.1-aarch64-apple-darwin.tar.gz`. Use that name in the `curl` line and in the `tar` line.
+
+Each archive has a checksum file beside it on [the release page](https://github.com/headwater-ai/headwater/releases/tag/v0.2.1). The name of the checksum file is the name of the archive with `.sha256` added. To verify the archive, download that file too and give it to `sha256sum -c`, or to `shasum -a 256 -c` on macOS.
 
 **Check.** `headwater --version` prints a number.
 
-`cargo install` puts the binary in `cargo`'s own bin directory. `cargo` already put that directory on your `PATH` when it set itself up. Nothing here needs exporting, and nothing has to survive into a new shell.
+Many Linux distributions put `~/.local/bin` on your `PATH` when the directory exists at login. macOS does not. If your shell cannot find `headwater`, add `~/.local/bin` to your `PATH` in the startup file of your shell. Then open a new shell. You can also run the binary as `~/.local/bin/headwater`.
 
-This installs whatever the newest version published on crates.io. It does not get you `taxonomy-source`; step 3 fetches that. The README's *Obtaining a named version* section covers a fixed-version route instead.
+This installs version 0.2.1 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli` is an alternative route, and the README's *Obtaining a named version* section describes it.
 
 ## Steps
 
@@ -99,17 +103,17 @@ The first heading names what a tree states about itself: the **corpus** is `docs
 
 ### Step 3 — Fetch the package into your tree
 
-`headwater taxonomy vendor <dir> --expect <digest>` is the directory form of the vendor route Step 2 named, and it is the form this tutorial takes. Point it at a package directory you have, fetched by whatever means your organization allows — the GitHub release page, a mirror, an air-gapped copy. It checks the digest and installs the result. This step fetches that directory over the network for you, then runs exactly that command. The script below does the fetching. It is a convenience over the verb, and not a substitute for it.
+`headwater taxonomy vendor` is the vendor route that step 2 named. Give it the `https://` location of a published zip and the digest that its publisher printed. It fetches the zip, checks every file against the digest, and installs the result. The command below fetches version 4.2.0 of `headwater/standard` from its release page.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/main/tools/headwater-bootstrap.sh | sh -s -- --tag taxonomy/headwater-standard/v4.2.0 --expect sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
+headwater taxonomy vendor https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.2.0/headwater-standard-4.2.0.zip --expect sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
 ```
 
-Trimmed to the account of what the script fetched.
+Trimmed to the account of what `vendor` fetched and installed.
 
 ```
-headwater-bootstrap: fetching packages/headwater-standard at taxonomy/headwater-standard/v4.2.0
 vendored headwater/standard 4.2.0
+  from https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.2.0/headwater-standard-4.2.0.zip
   31 files, all of them the pinned bytes
   digest sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
   doctrine at .headwater/packages/headwater-standard/doctrine/
@@ -118,7 +122,7 @@ vendored headwater/standard 4.2.0
 
 The last line says that `vendor` wrote the digest you passed into `.headwater/taxonomy.yml`, in place of the commented `# digest:` line that step 2 wrote. It writes it only after the files match it, and only where the file pins no digest yet.
 
-The two paths in that account are two different trees. `packages/headwater-standard` is where the package sits inside the release tag the script fetched, and a tag's tree never moves. `.headwater/packages/headwater-standard` is where `vendor` installed it in yours ([HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)).
+The `from` line is the location that `vendor` fetched. The `digest` line says that the files are the bytes the publisher pinned. `.headwater/packages/headwater-standard` is where `vendor` installed the package in your tree ([HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)).
 
 **Check.** `ls .headwater/packages/headwater-standard` prints seven lines:
 
@@ -134,7 +138,7 @@ taxonomy.yml
 
 A **package** carries a taxonomy: the kinds, the facets, the shelves and the rules. `headwater/standard` is the base package, and the taxonomy it declares is deliberately small. Four of the seven entries are not taxonomy at all. `assemblies/` holds the publisher recipes this package ships. `bundles/` holds optional traditions nothing here selects. `doctrine/` holds the prose that explains them to a person. `release.yml` is the publish record that carries the digest this fetch just checked. Nothing you run in this tutorial reads any of the four.
 
-Step 2 named two routes, and this step took the second. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. This fetch just checked it, file by file, against the digest you passed. `headwater-bootstrap.sh` is the harness around that verb, and not a part of this engine. It fetches a tagged release into a scratch directory nothing here keeps, extracts one package, and hands the result to `vendor`. Nothing under `engine/` opened a socket to get it. `vendor` itself takes a path and never a location. The script is what reached the network on `vendor`'s behalf.
+Step 2 named two routes, and this step took the second. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. This fetch just checked it, file by file, against the digest you passed. `vendor` fetched the zip itself, and after the install this is the one command in this tutorial that uses the network. Your organization can refuse a tool that reaches the network. Then get the zip by a means it allows, such as a mirror or an air-gapped copy. Unpack it, and give `vendor` that directory in place of the location. The digest check is the same for the two forms.
 
 `taxonomy/headwater-standard/v<version>` is the taxonomy-only route. It publishes `headwater/standard` alone, with no engine release. A release workflow of this repository cuts a tag of this form whenever the package authors choose to. It needs no new engine version.
 

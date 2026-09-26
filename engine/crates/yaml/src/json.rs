@@ -395,6 +395,23 @@ mod tests {
         assert_eq!(field(PAYLOAD, &path(&["matched", "x"])), None);
         assert_eq!(field(PAYLOAD, &path(&["matched", "-1", "purpose"])), None);
         assert_eq!(field(PAYLOAD, &path(&["matched", "+0", "purpose"])), None);
+        assert_eq!(field(PAYLOAD, &path(&["matched", " 0", "purpose"])), None);
+        assert_eq!(field(PAYLOAD, &path(&["matched", "0x0", "purpose"])), None);
+        assert_eq!(field(PAYLOAD, &path(&["matched", "", "purpose"])), None);
+        // A leading zero is the same number, as the interface contract states.
+        assert_eq!(
+            field(PAYLOAD, &path(&["matched", "00", "purpose"])).as_deref(),
+            Some("rationale")
+        );
+        assert_eq!(field(PAYLOAD, &path(&["matched", "01", "purpose"])), None);
+        // An index past the largest `usize` is past the end, not an error.
+        assert_eq!(
+            field(
+                PAYLOAD,
+                &path(&["matched", "99999999999999999999999", "purpose"])
+            ),
+            None
+        );
         // An element that is an object is not a scalar.
         assert_eq!(field(PAYLOAD, &path(&["matched", "0"])), None);
         // A decimal step into a mapping is still a key, and here an absent one.

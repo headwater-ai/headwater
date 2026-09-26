@@ -47,7 +47,7 @@ Every other relation is yours to type into the front matter, and two of them car
 
 **`governs` reaches every entry a pattern admits, and a bare path still reaches only itself.** A `code_path` anchor's raw value is a pattern in the language of `headwater_meta::pattern`, or a YAML sequence of such patterns for one anchor over several files ([HW-DR-0074](../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)). So a document that governs a directory of forty files can propose one pattern instead of forty edges, and two files that no single pattern names can share one list anchor. Nothing forces an existing hand-typed edge to change: propose a pattern where it earns its keep, and say how many entries it reaches.
 
-**`governs` and `traces_to` both declare `created_by: hook`, and no verb writes either.** [HW-OBL-0105](../../../docs/obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) records that every such edge in this corpus is hand entry. So a proposal of yours is the only mechanism there is, and it goes to a human rather than into a file you wrote alone.
+**`governs` and `traces_to` both declare `created_by: agent`, and no verb writes either.** [HW-DR-0083](../../../docs/decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) rules that a session proposes the line and a person types it. So a proposal of yours is the only mechanism there is, and it goes to a human rather than into a file you wrote alone.
 
 ## The stop rules
 

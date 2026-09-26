@@ -4,7 +4,7 @@ title: "Nothing plays the hook role that two relations name as their author"
 status: current
 status_since: 2026-08-13
 waiting_on: ruling
-last_verified: 2026-08-13
+last_verified: 2026-09-26
 summary: "`governs` and `traces_to` declare `created_by: hook`, no verb of this engine writes either one, and every such edge in this corpus is hand entry."
 provenance:
   warrant: accepted
@@ -42,6 +42,8 @@ Which document governs which code is a judgment. The [stop rules](../spec/05-ai-
 
 `traces_to` is the easier half and it is not free either. A commit that cites an identifier supplies a candidate edge, and nothing reads a commit message today.
 
+Since #953, the write-time hook covers one part of this. An edit to a path that the governed scope admits and that no document governs gets the front-matter lines that declare a `governs` edge. The engine composes them, and the hook writes nothing. This does not discharge the record. The hook names no document that should declare the edge, and nothing brings the proposal to a human.
+
 ## Discharge
 
 A verb that proposes these edges from a change, with the fixtures that hold what it refuses to propose. The proposal reaches a human, because [spec 3](../spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) makes acceptance a human act.
@@ -49,3 +51,5 @@ A verb that proposes these edges from a change, with the fixtures that hold what
 Where no such verb is written, the base package owes a `created_by` value that is true, and the walkthrough owes the corrected count. `author` states the cost plainly, and `agent` states that the coherence sweep owns the proposal.
 
 [HW-OBL-0104](0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) raises what either answer costs. A `governs` edge reaches one path, so an actor that proposes them proposes one for every governed file.
+
+**The correction half has landed (2026-09-26).** [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) rules that both relations are `created_by: agent`, and the base package declares that value from 4.7.0. Spec 2 and the walkthrough now count four of the five base relations with no mechanical creator. No verb writes either edge, so the correction discharges this record rather than the proposing verb. The move of this record to its end state is the owner's.
