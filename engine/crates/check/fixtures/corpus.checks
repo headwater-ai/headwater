@@ -7,8 +7,6 @@
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
     827 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
-  a check read .headwater/ids, which the census never walked
-  a check read .headwater/ids, which the census never walked
 adoption
   0 pairs open, 1 closed, holding 0 findings, in 1 task
   AD-1 0 open, 1 closed, holding 0 findings, owner the specification authors,

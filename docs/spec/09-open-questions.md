@@ -123,7 +123,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links
 
-[HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) — `headwater taxonomy vendor` may accept a location, ruled yes with a boundary: the fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it.
+[HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) — `headwater taxonomy vendor` may accept a location, ruled yes with a boundary. The fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it.
 
 ## Q22 — The integrity posture of a published package
 
@@ -303,7 +303,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## The vendored package root moves under .headwater and the old root is named in a refusal
 
-[HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) — The vendored package root moves to `.headwater/packages/`, on the ground that the visibility it bought is one explainer, and a tree at the old root now meets a named refusal. (asserted, and no human has accepted it)
+[HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) — The vendored package root is `.headwater/packages/`, because the old root bought only the visibility of one explainer, and a tree there meets a named refusal. (asserted, and no human has accepted it)
 
 ## The front-matter key that carries a minted identifier is id
 
