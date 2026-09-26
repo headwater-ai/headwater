@@ -1108,6 +1108,7 @@ mod tests {
             }],
             withheld: 3,
             silence: None,
+            ungoverned: Vec::new(),
         }
     }
 

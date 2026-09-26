@@ -412,6 +412,7 @@ mod tests {
             evidence: Vec::new(),
             withheld: 0,
             silence: Some(silence),
+            ungoverned: Vec::new(),
         }
     }
 
