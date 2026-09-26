@@ -102,7 +102,11 @@ pub fn of(body: &Body) -> Vec<Sentence> {
 }
 
 /// The sentences of one block, and none for a block that holds no prose.
-fn of_block(block: &Block, links: &[Link]) -> Vec<Sentence> {
+///
+/// Public so that a rule that counts per block, such as the paragraph limit of
+/// `language.controlled.not_met`, reads the same segmentation as [`of`] and
+/// needs no second splitter.
+pub fn of_block(block: &Block, links: &[Link]) -> Vec<Sentence> {
     if block.quote_depth > 0 || matches!(block.kind, BlockKind::Code | BlockKind::Html) {
         return Vec::new();
     }

@@ -77,6 +77,11 @@ pub const RULE: &str = "language.controlled.not_met";
 /// The sentence length ASD-STE100 rule 6.3 allows in descriptive text.
 const MAX_WORDS: usize = 25;
 
+/// The sentences ASD-STE100 rule 6.6 allows in one paragraph of descriptive
+/// text. [HW-DR-0069](../../../../docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md)
+/// adopts the count and never a word count.
+const MAX_SENTENCES: usize = 6;
+
 /// The controlled language and profile pairs this engine has rules for.
 ///
 /// Two spellings of one thing: spec 2 writes the profile into `controlled`,
@@ -409,6 +414,33 @@ impl DocumentCheck for Language {
                 }
             }
         }
+        if let Some(body) = body {
+            for block in body.blocks.iter().filter(|block| is_a_paragraph(block)) {
+                let sentences = headwater_doc::sentences::of_block(block, &body.links);
+                if sentences.len() <= MAX_SENTENCES {
+                    continue;
+                }
+                let first = &sentences[0];
+                findings.push(Finding {
+                    rule: self::RULE,
+                    severity: Severity::Warn,
+                    obligation: None,
+                    path: view.path().to_string(),
+                    line: first.span.start.line,
+                    column: first.span.start.col,
+                    message: format!(
+                        "`{}` holds a paragraph to {MAX_SENTENCES} sentences, and this paragraph has {}",
+                        bound.regime,
+                        sentences.len()
+                    ),
+                    // HW-DR-0069: name the topic and never the count, because
+                    // a paragraph cut short by joining two sentences is then a
+                    // finding of the length rule above.
+                    remediation: "split the paragraph where its second topic starts, or move the sentences that do not carry its first topic into a paragraph of their own".to_string(),
+                    patch: None,
+                });
+            }
+        }
         findings.sort_by_key(|finding| (finding.line, finding.column));
         Outcome::failed(findings)
     }
@@ -434,6 +466,11 @@ fn is_a_citation_line(text: &str) -> bool {
 /// rule and its reason are `tools/ste-lint.py`'s, moved here unchanged.
 fn is_running_prose(kind: BlockKind) -> bool {
     matches!(kind, BlockKind::Paragraph | BlockKind::Item)
+}
+
+/// Whether a block is a paragraph the paragraph limit reads.
+fn is_a_paragraph(block: &headwater_doc::Block) -> bool {
+    block.kind == BlockKind::Paragraph && block.quote_depth == 0
 }
 
 /// Whether a sentence writes a semicolon outside a parenthesis.
