@@ -187,7 +187,17 @@ pub enum Problem {
     /// check (a missing `criterion_digest`, an implausible `commit`) is not
     /// a control, and a field that called it one would mislabel it in the
     /// one place a reader meets it, the rendered finding.
-    Entry { id: String, reason: String },
+    ///
+    /// `verification` is whether the entry named `kind: verification`,
+    /// matched exactly. The verification block reads it to name a
+    /// verification entry that did not read and names no verification of the
+    /// corpus. An entry of any other kind, or of none, is the register's to
+    /// report and stays out of that block.
+    Entry {
+        id: String,
+        reason: String,
+        verification: bool,
+    },
 }
 
 /// The observation snapshot of one corpus, read once at the start of a run.
@@ -228,6 +238,10 @@ pub const PATH: &str = ".headwater/observations.yml";
 
 /// The file a run reads, beside the claim store and the taxonomy lock.
 const FILE: &str = "observations.yml";
+
+/// Why a verification that a kindless entry names is not `declared`: see
+/// [`Observations::recorded`].
+const READ_AS_CONTROL: &str = "it names no `kind: verification`, so it read as a control";
 
 /// Whether `commit` reads as a plausible commit reference: non-empty, all
 /// hexadecimal digits, and within the length a short or a full SHA takes.
@@ -341,6 +355,7 @@ impl Observations {
             let Value::Map(fields) = &entry.value.value else {
                 problems.push(Problem::Entry {
                     id: id.clone(),
+                    verification: false,
                     reason: "it names no mapping under the identifier".to_string(),
                 });
                 continue;
@@ -357,6 +372,7 @@ impl Observations {
                     let Some(commit) = text_field("commit") else {
                         problems.push(Problem::Entry {
                             id: id.clone(),
+                            verification: false,
                             reason: "it names no `commit`".to_string(),
                         });
                         continue;
@@ -370,6 +386,7 @@ impl Observations {
                     let Some(commit) = text_field("commit") else {
                         problems.push(Problem::Entry {
                             id: id.clone(),
+                            verification: true,
                             reason: "it names no `commit`".to_string(),
                         });
                         continue;
@@ -377,6 +394,7 @@ impl Observations {
                     let Some(criterion_digest) = text_field("criterion_digest") else {
                         problems.push(Problem::Entry {
                             id: id.clone(),
+                            verification: true,
                             reason: "it names no `criterion_digest`".to_string(),
                         });
                         continue;
@@ -386,6 +404,7 @@ impl Observations {
                     if criterion_digest.trim().is_empty() {
                         problems.push(Problem::Entry {
                             id: id.clone(),
+                            verification: true,
                             reason: "its `criterion_digest` is empty".to_string(),
                         });
                         continue;
@@ -393,6 +412,7 @@ impl Observations {
                     if !plausible_commit(&commit) {
                         problems.push(Problem::Entry {
                             id: id.clone(),
+                            verification: true,
                             reason: format!(
                                 "its `commit` (`{commit}`) does not read as a plausible commit \
                                  reference, so it cannot be treated as observed"
@@ -409,6 +429,7 @@ impl Observations {
                 other => {
                     problems.push(Problem::Entry {
                         id: id.clone(),
+                        verification: false,
                         reason: format!(
                             "it names `kind: {other}`, which is neither `control` nor \
                              `verification`"
@@ -473,13 +494,22 @@ impl Observations {
                 criterion_digest,
             };
         }
-        match self.problems.iter().find_map(|problem| match problem {
-            Problem::Entry { id: named, reason } if named == id => Some(reason.as_str()),
+        if let Some(reason) = self.problems.iter().find_map(|problem| match problem {
+            Problem::Entry {
+                id: named, reason, ..
+            } if named == id => Some(reason.as_str()),
             _ => None,
         }) {
-            Some(reason) => Recorded::Unread(reason),
-            None => Recorded::Absent,
+            return Recorded::Unread(reason);
         }
+        // An entry keyed by this identifier that names no `kind` read as a
+        // control, the reader's default. It is still an entry about this
+        // identifier, so a run does not know that no entry names it, and
+        // `declared` would say it does.
+        if self.observed(id) {
+            return Recorded::Unread(READ_AS_CONTROL);
+        }
+        Recorded::Absent
     }
 
     /// The whole-file problem, where the snapshot could not be read at all.
@@ -716,6 +746,7 @@ mod tests {
             Problem::Entry {
                 id: "CT-EXT-2".to_string(),
                 reason: "it names no `commit`".to_string(),
+                verification: false,
             }
         );
         let _ = std::fs::remove_dir_all(&dir);
@@ -808,6 +839,7 @@ mod tests {
             &[Problem::Entry {
                 id: "FIX-VER-0001".to_string(),
                 reason: "it names no `criterion_digest`".to_string(),
+                verification: true,
             }]
         );
         let _ = std::fs::remove_dir_all(&dir);
