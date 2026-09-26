@@ -351,4 +351,4 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite
 
-[HW-DR-0084](../decisions/0084-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md) — A live document with any relation to a draft is a warning, unless the relation writes a state onto its target (asserted, and no human has accepted it)
+[HW-DR-0085](../decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md) — A live document with any relation to a draft is a warning, unless the relation writes a state onto its target (asserted, and no human has accepted it)

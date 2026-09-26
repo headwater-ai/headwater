@@ -2395,12 +2395,12 @@
         }
       },
       {
-        "path": "docs/decisions/0084-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
+        "path": "docs/decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
         "kind": "decision",
-        "id": "HW-DR-0084",
+        "id": "HW-DR-0085",
         "warrant": "asserted",
         "facets": {
-          "id": "HW-DR-0084",
+          "id": "HW-DR-0085",
           "status": "current",
           "status_since": "2026-09-26",
           "summary": "A live document with any relation to a draft is a warning, unless the relation writes a state onto its target",
@@ -13935,7 +13935,7 @@
         }
       },
       {
-        "source": "docs/decisions/0084-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
+        "source": "docs/decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -13946,7 +13946,7 @@
         }
       },
       {
-        "source": "docs/decisions/0084-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
+        "source": "docs/decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -13957,7 +13957,7 @@
         }
       },
       {
-        "source": "docs/decisions/0084-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
+        "source": "docs/decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
