@@ -428,6 +428,35 @@ mod tests {
             url: https://example.invalid/vocab.txt\n    \
             digest: sha256:07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3\n";
 
+    /// A directory under the temporary directory that is removed when this value
+    /// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+    struct Scratch(std::path::PathBuf);
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    impl std::ops::Deref for Scratch {
+        type Target = std::path::Path;
+        fn deref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::path::Path> for Scratch {
+        fn as_ref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::ffi::OsStr> for Scratch {
+        fn as_ref(&self) -> &std::ffi::OsStr {
+            self.0.as_os_str()
+        }
+    }
+
     #[test]
     fn a_pin_reads_every_field() {
         let pin = Pin::parse(PINNED).expect("the fixture pin parses");
@@ -463,8 +492,9 @@ mod tests {
 
     #[test]
     fn a_file_that_is_not_the_pinned_bytes_is_refused_before_anything_loads() {
-        let dir =
-            std::env::temp_dir().join(format!("headwater-embed-refuse-{}", std::process::id()));
+        let dir = Scratch(
+            std::env::temp_dir().join(format!("headwater-embed-refuse-{}", std::process::id())),
+        );
         std::fs::create_dir_all(&dir).expect("a scratch directory");
         std::fs::write(dir.join(GRAPH), b"not a model").expect("a planted file");
         let pin = Pin::parse(PINNED).expect("the fixture pin parses");
@@ -475,8 +505,9 @@ mod tests {
 
     #[test]
     fn a_stamp_that_no_longer_matches_the_file_does_not_skip_the_digest() {
-        let dir =
-            std::env::temp_dir().join(format!("headwater-embed-stamp-{}", std::process::id()));
+        let dir = Scratch(
+            std::env::temp_dir().join(format!("headwater-embed-stamp-{}", std::process::id())),
+        );
         std::fs::create_dir_all(&dir).expect("a scratch directory");
         std::fs::write(dir.join(GRAPH), b"not a model").expect("a planted file");
         let pin = Pin::parse(PINNED).expect("the fixture pin parses");

@@ -32,6 +32,7 @@
 //! carry a string the rendered help does not.
 
 use headwater_cli::{command, GLOBALS};
+use std::path::{Path, PathBuf};
 use std::process::Command as Process;
 
 /// One invocation from a directory that is not a corpus, with the streams apart.
@@ -41,9 +42,39 @@ struct Ran {
     err: String,
 }
 
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = Path;
+    fn deref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<Path> for Scratch {
+    fn as_ref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
+}
+
 fn ran(label: &str, arguments: &[&str]) -> Ran {
-    let at =
-        std::env::temp_dir().join(format!("headwater-cli-help-{}-{label}", std::process::id()));
+    let at = Scratch(
+        std::env::temp_dir().join(format!("headwater-cli-help-{}-{label}", std::process::id())),
+    );
     let _ = std::fs::remove_dir_all(&at);
     std::fs::create_dir_all(&at).expect("the directory is there");
     let output = Process::new(env!("CARGO_BIN_EXE_headwater"))

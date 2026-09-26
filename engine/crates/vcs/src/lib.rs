@@ -571,9 +571,17 @@ mod tests {
     /// of this crate, so each case makes and tears down its own directory
     /// under `std::env::temp_dir()`, keyed by the test name and the process
     /// id for the reason `engine/crates/cli/tests/wiring.rs` states: cargo
-    /// runs the cases of one target as threads of one process.
+    /// runs the cases of one target as threads of one process. Dropping a
+    /// `Repo` removes its directory, so a case that fails an assertion
+    /// leaves nothing behind (#1158).
     struct Repo {
         at: PathBuf,
+    }
+
+    impl Drop for Repo {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.at);
+        }
     }
 
     impl Repo {
@@ -621,13 +629,42 @@ mod tests {
             self.git(&["rev-parse", "HEAD"])
         }
 
-        fn out(&self, label: &str) -> PathBuf {
+        fn out(&self, label: &str) -> Scratch {
             let out = std::env::temp_dir().join(format!(
                 "headwater-vcs-tests-{label}-out-{}",
                 std::process::id()
             ));
             let _ = fs::remove_dir_all(&out);
-            out
+            Scratch(out)
+        }
+    }
+
+    /// A directory under the temporary directory that is removed when this value
+    /// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+    struct Scratch(std::path::PathBuf);
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    impl std::ops::Deref for Scratch {
+        type Target = std::path::Path;
+        fn deref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::path::Path> for Scratch {
+        fn as_ref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::ffi::OsStr> for Scratch {
+        fn as_ref(&self) -> &std::ffi::OsStr {
+            self.0.as_os_str()
         }
     }
 
@@ -852,10 +889,10 @@ mod tests {
     /// some other way.
     #[test]
     fn merge_attributes_outside_a_repository_is_none() {
-        let at = std::env::temp_dir().join(format!(
+        let at = Scratch(std::env::temp_dir().join(format!(
             "headwater-vcs-tests-attributes-no-repository-{}",
             std::process::id()
-        ));
+        )));
         let _ = fs::remove_dir_all(&at);
         fs::create_dir_all(&at).expect("the directory is there");
         fs::write(at.join(".gitattributes"), "a.md merge=union\n").expect("the file writes");
@@ -871,10 +908,10 @@ mod tests {
     /// ceiling directory is not entered.
     #[test]
     fn the_search_upward_finds_a_repository_where_git_would() {
-        let at = std::env::temp_dir().join(format!(
+        let at = Scratch(std::env::temp_dir().join(format!(
             "headwater-vcs-tests-git-entry-{}",
             std::process::id()
-        ));
+        )));
         let _ = fs::remove_dir_all(&at);
         for dir in [
             "worktree/sub",
@@ -945,10 +982,10 @@ mod tests {
     /// on #1115, 2026-09-25). Test the contents of `HEAD`, and this case fails.
     #[test]
     fn a_repository_shaped_git_directory_with_a_corrupt_head_is_refused_on_purpose() {
-        let at = std::env::temp_dir().join(format!(
+        let at = Scratch(std::env::temp_dir().join(format!(
             "headwater-vcs-tests-corrupt-head-{}",
             std::process::id()
-        ));
+        )));
         let _ = fs::remove_dir_all(&at);
         for part in ["sub", ".git/objects", ".git/refs"] {
             fs::create_dir_all(at.join(part)).expect("the directory is there");
@@ -966,10 +1003,10 @@ mod tests {
     /// boundary check, and the first assertion fails.
     #[test]
     fn the_search_upward_stops_at_a_filesystem_boundary() {
-        let at = std::env::temp_dir().join(format!(
+        let at = Scratch(std::env::temp_dir().join(format!(
             "headwater-vcs-tests-boundary-{}",
             std::process::id()
-        ));
+        )));
         let _ = fs::remove_dir_all(&at);
         fs::create_dir_all(at.join("inner/sub")).expect("the directories are there");
         fs::write(at.join(".git"), "gitdir: /elsewhere\n").expect("the file writes");
@@ -1079,10 +1116,10 @@ mod tests {
     #[test]
     fn the_search_crosses_for_a_value_that_is_not_utf8() {
         use std::os::unix::ffi::OsStrExt;
-        let at = std::env::temp_dir().join(format!(
+        let at = Scratch(std::env::temp_dir().join(format!(
             "headwater-vcs-tests-boundary-not-utf8-{}",
             std::process::id()
-        ));
+        )));
         let _ = fs::remove_dir_all(&at);
         fs::create_dir_all(at.join("inner/sub")).expect("the directories are there");
         fs::write(at.join(".git"), "gitdir: /elsewhere\n").expect("the file writes");
@@ -1114,10 +1151,10 @@ mod tests {
     /// takes for the same reason.
     #[test]
     fn a_tree_with_no_git_repository_reports_nothing_ignored() {
-        let at = std::env::temp_dir().join(format!(
+        let at = Scratch(std::env::temp_dir().join(format!(
             "headwater-vcs-tests-no-repository-{}",
             std::process::id()
-        ));
+        )));
         let _ = fs::remove_dir_all(&at);
         fs::create_dir_all(&at).expect("the directory is there");
         fs::write(at.join("a.md"), "x\n").expect("the file writes");

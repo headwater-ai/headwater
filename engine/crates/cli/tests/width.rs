@@ -42,9 +42,49 @@ struct Ran {
     err: Vec<u8>,
 }
 
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = Path;
+    fn deref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<Path> for Scratch {
+    fn as_ref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
+}
+
 /// One invocation, with `COLUMNS` set as the case asks and the streams apart.
+///
+/// The directory is keyed on a counter as well as the process, because cargo
+/// runs the cases of one target as threads of one process and each call
+/// removes its own directory when it returns.
 fn ran(arguments: &[&str], columns: Option<&str>) -> Ran {
-    let at = std::env::temp_dir().join(format!("headwater-width-{}", std::process::id()));
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    static NEXT: AtomicUsize = AtomicUsize::new(0);
+    let at = Scratch(std::env::temp_dir().join(format!(
+        "headwater-width-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::SeqCst)
+    )));
+    let _ = std::fs::remove_dir_all(&at);
     std::fs::create_dir_all(&at).expect("the directory is there");
     let mut process = Process::new(env!("CARGO_BIN_EXE_headwater"));
     process
@@ -463,7 +503,8 @@ fn no_escape_byte_reaches_a_caller_under_any_of_the_four_conditions() {
         ),
     ];
     for Case(label, environment, arguments) in cases {
-        let at = std::env::temp_dir().join(format!("headwater-color-{}", std::process::id()));
+        let at =
+            Scratch(std::env::temp_dir().join(format!("headwater-color-{}", std::process::id())));
         std::fs::create_dir_all(&at).expect("the directory is there");
         let mut process = Process::new(env!("CARGO_BIN_EXE_headwater"));
         process
@@ -522,7 +563,8 @@ fn no_escape_byte_reaches_a_machine_format() {
 fn no_escape_byte_reaches_a_file_this_binary_writes() {
     let root = repository();
     let root = root.to_str().expect("the path is text").to_string();
-    let at = std::env::temp_dir().join(format!("headwater-artifacts-{}", std::process::id()));
+    let at =
+        Scratch(std::env::temp_dir().join(format!("headwater-artifacts-{}", std::process::id())));
     let _ = std::fs::remove_dir_all(&at);
     std::fs::create_dir_all(&at).expect("the directory is there");
 
@@ -554,7 +596,8 @@ fn no_escape_byte_reaches_a_file_this_binary_writes() {
 /// simplest one every verb reaches through `load`.
 #[test]
 fn no_escape_byte_reaches_a_refusal_that_is_not_fail_or_the_bare_invocation() {
-    let at = std::env::temp_dir().join(format!("headwater-refusal-{}", std::process::id()));
+    let at =
+        Scratch(std::env::temp_dir().join(format!("headwater-refusal-{}", std::process::id())));
     let _ = std::fs::remove_dir_all(&at);
     std::fs::create_dir_all(&at).expect("the directory is there");
     let output = Process::new(env!("CARGO_BIN_EXE_headwater"))
@@ -787,7 +830,8 @@ fn no_banner_and_its_environment_variable_suppress_the_masthead_and_both_are_acc
         ),
     ];
     for Case(label, environment, arguments) in cases {
-        let at = std::env::temp_dir().join(format!("headwater-banner-{}", std::process::id()));
+        let at =
+            Scratch(std::env::temp_dir().join(format!("headwater-banner-{}", std::process::id())));
         std::fs::create_dir_all(&at).expect("the directory is there");
         let mut process = Process::new(env!("CARGO_BIN_EXE_headwater"));
         process
@@ -1044,7 +1088,8 @@ fn no_finding_states_its_severity_on_a_line_of_its_own() {
 /// This case goes red the day somebody folds that block.
 #[test]
 fn the_read_set_block_of_the_report_is_the_artifact_the_flag_writes() {
-    let at = std::env::temp_dir().join(format!("headwater-readset-{}", std::process::id()));
+    let at =
+        Scratch(std::env::temp_dir().join(format!("headwater-readset-{}", std::process::id())));
     let _ = std::fs::remove_dir_all(&at);
     std::fs::create_dir_all(&at).expect("the directory is there");
     let path = at.join("read-set");
@@ -1147,7 +1192,8 @@ fn a_report_written_to_a_pipe_a_file_and_a_terminal_is_the_same_bytes() {
     let root = repository();
     let root = root.to_str().expect("the path is text").to_string();
     let binary = env!("CARGO_BIN_EXE_headwater");
-    let at = std::env::temp_dir().join(format!("headwater-streams-{}", std::process::id()));
+    let at =
+        Scratch(std::env::temp_dir().join(format!("headwater-streams-{}", std::process::id())));
     let _ = std::fs::remove_dir_all(&at);
     std::fs::create_dir_all(&at).expect("the directory is there");
 

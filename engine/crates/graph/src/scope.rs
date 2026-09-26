@@ -311,15 +311,44 @@ mod tests {
     use super::*;
     use crate::declarations::AnchorKind;
     use headwater_census::walk::Corpus;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
+
+    /// A directory under the temporary directory that is removed when this value
+    /// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+    struct Scratch(std::path::PathBuf);
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    impl std::ops::Deref for Scratch {
+        type Target = std::path::Path;
+        fn deref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::path::Path> for Scratch {
+        fn as_ref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::ffi::OsStr> for Scratch {
+        fn as_ref(&self) -> &std::ffi::OsStr {
+            self.0.as_os_str()
+        }
+    }
 
     /// A tree of two files under `tools/`, keyed on the case name, because the
     /// cases of one target run as threads of one process.
-    fn tree(label: &str) -> PathBuf {
-        let at = std::env::temp_dir().join(format!(
+    fn tree(label: &str) -> Scratch {
+        let at = Scratch(std::env::temp_dir().join(format!(
             "headwater-graph-scope-{}-{label}",
             std::process::id()
-        ));
+        )));
         let _ = std::fs::remove_dir_all(&at);
         for file in ["tools/a.sh", "tools/site/b.py", "tools-old/c.sh"] {
             let path = at.join(file);
@@ -482,8 +511,9 @@ mod tests {
         // The root of a taxonomy published on its own: the taxonomy's own
         // sources and content directories, dot-directories, top-level files, and a directory git
         // ignores.
-        let bare =
-            std::env::temp_dir().join(format!("headwater-graph-scope-{}-bare", std::process::id()));
+        let bare = Scratch(
+            std::env::temp_dir().join(format!("headwater-graph-scope-{}-bare", std::process::id())),
+        );
         let _ = std::fs::remove_dir_all(&bare);
         for file in [
             ".headwater/overlay.yml",

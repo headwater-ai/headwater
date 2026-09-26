@@ -249,11 +249,11 @@ fn a_prior_version_that_did_not_read_is_skipped_rather_than_passed() {
 /// both sides of that comparison hold one change.
 #[test]
 fn a_warm_run_does_not_serve_a_verdict_across_a_change_to_the_prior_version() {
-    let directory = std::env::temp_dir().join(format!(
+    let directory = Scratch(std::env::temp_dir().join(format!(
         "headwater-promotion-{}-{}",
         std::process::id(),
         line!()
-    ));
+    )));
     std::fs::create_dir_all(&directory).expect("a scratch directory");
 
     let mut cold = Cache::at(
@@ -295,6 +295,35 @@ fn a_warm_run_does_not_serve_a_verdict_across_a_change_to_the_prior_version() {
     );
 
     let _ = std::fs::remove_dir_all(&directory);
+}
+
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(std::path::PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = std::path::Path;
+    fn deref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::path::Path> for Scratch {
+    fn as_ref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
 }
 
 /// A path the corpus holds no row at is reported, and never absorbed.

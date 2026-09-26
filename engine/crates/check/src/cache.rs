@@ -875,16 +875,45 @@ mod tests {
         }
     }
 
+    /// A directory under the temporary directory that is removed when this value
+    /// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+    struct Scratch(std::path::PathBuf);
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    impl std::ops::Deref for Scratch {
+        type Target = std::path::Path;
+        fn deref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::path::Path> for Scratch {
+        fn as_ref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::ffi::OsStr> for Scratch {
+        fn as_ref(&self) -> &std::ffi::OsStr {
+            self.0.as_os_str()
+        }
+    }
+
     /// The directory `write` creates carries its own `.gitignore`, so a fresh
     /// corpus never needs one written by hand for the cache to stay out of
     /// the repository. The pattern excludes the cache file and keeps the
     /// ignore file itself, which is the one a reviewer would otherwise write.
     #[test]
     fn write_leaves_a_gitignore_that_excludes_the_cache_and_keeps_itself() {
-        let root = std::env::temp_dir().join(format!(
+        let root = Scratch(std::env::temp_dir().join(format!(
             "headwater-write-leaves-a-gitignore-{}",
             std::process::id()
-        ));
+        )));
         let _ = std::fs::remove_dir_all(&root);
         Cache::at(&root, "sha256:lock", "sha256:rules")
             .write(&root)

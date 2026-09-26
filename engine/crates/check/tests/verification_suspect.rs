@@ -67,15 +67,44 @@ fn shipped_fixtures_dir() -> PathBuf {
 /// target as threads of one process, so the pid alone is not unique across the
 /// three tests in this file and one's cleanup raced another's read the first
 /// time this test ran.
-fn scratch_corpus(label: &str) -> PathBuf {
-    let root = std::env::temp_dir().join(format!(
-        "hw-verification-suspect-test-{label}-{}",
+fn scratch_corpus(label: &str) -> Scratch {
+    let root = Scratch(std::env::temp_dir().join(format!(
+        "headwater-verification-suspect-test-{label}-{}",
         std::process::id()
-    ));
+    )));
     let _ = std::fs::remove_dir_all(&root);
     let source = shipped_fixtures_dir().join("acceptance-criterion-proven");
     copy_tree(&source, &root.join("acceptance-criterion-proven"));
     root
+}
+
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(std::path::PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = std::path::Path;
+    fn deref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::path::Path> for Scratch {
+    fn as_ref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
 }
 
 fn copy_tree(from: &Path, to: &Path) {

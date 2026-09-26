@@ -417,6 +417,35 @@ fn copy_tree(from: &Path, to: &Path) {
     }
 }
 
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(std::path::PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = std::path::Path;
+    fn deref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::path::Path> for Scratch {
+    fn as_ref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
+}
+
 /// An edge of a relation outside the `governance` family governs nothing.
 ///
 /// A copy of the fixture tree lets `catalogues`, an `evidence` relation, reach
@@ -425,10 +454,10 @@ fn copy_tree(from: &Path, to: &Path) {
 /// it as governed and fails here (#951).
 #[test]
 fn an_edge_outside_the_governance_family_does_not_govern_an_entry() {
-    let at = std::env::temp_dir().join(format!(
+    let at = Scratch(std::env::temp_dir().join(format!(
         "headwater-audit-scope-family-{}",
         std::process::id()
-    ));
+    )));
     let _ = std::fs::remove_dir_all(&at);
     copy_tree(&fixtures_dir(), &at);
 
@@ -463,7 +492,7 @@ fn an_edge_outside_the_governance_family_does_not_govern_an_entry() {
         .as_map()
         .expect("a mapping")
         .clone();
-    let built = Built::over(&Corpus::new(at.clone(), "audit"), &root);
+    let built = Built::over(&Corpus::new(at.to_path_buf(), "audit"), &root);
     assert!(
         built
             .graph

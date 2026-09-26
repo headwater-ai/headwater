@@ -473,6 +473,35 @@ mod tests {
         }
     }
 
+    /// A directory under the temporary directory that is removed when this value
+    /// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+    struct Scratch(std::path::PathBuf);
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    impl std::ops::Deref for Scratch {
+        type Target = std::path::Path;
+        fn deref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::path::Path> for Scratch {
+        fn as_ref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::ffi::OsStr> for Scratch {
+        fn as_ref(&self) -> &std::ffi::OsStr {
+            self.0.as_os_str()
+        }
+    }
+
     #[test]
     fn a_reading_renders_as_one_line_in_a_fixed_member_order() {
         assert_eq!(
@@ -544,7 +573,10 @@ mod tests {
 
     #[test]
     fn an_absent_store_is_an_empty_store() {
-        let scratch = std::env::temp_dir().join("headwater-adoption-reading-absent");
+        let scratch = Scratch(std::env::temp_dir().join(format!(
+            "headwater-adoption-reading-absent-{}",
+            std::process::id()
+        )));
         let _ = std::fs::remove_dir_all(&scratch);
         std::fs::create_dir_all(&scratch).expect("a scratch directory");
         assert_eq!(load(&scratch), Ok((vec![], vec![])));
@@ -553,7 +585,10 @@ mod tests {
 
     #[test]
     fn a_line_the_store_cannot_read_is_named_by_its_line_number_and_never_counted() {
-        let scratch = std::env::temp_dir().join("headwater-adoption-reading-unreadable");
+        let scratch = Scratch(std::env::temp_dir().join(format!(
+            "headwater-adoption-reading-unreadable-{}",
+            std::process::id()
+        )));
         let _ = std::fs::remove_dir_all(&scratch);
         std::fs::create_dir_all(&scratch).expect("a scratch directory");
         std::fs::create_dir_all(scratch.join(".headwater")).expect("the directory is there");
@@ -572,7 +607,10 @@ mod tests {
     /// The byte-identity promise of the `--now` help text, in the writer.
     #[test]
     fn a_reading_the_store_already_holds_is_not_appended_twice() {
-        let scratch = std::env::temp_dir().join("headwater-adoption-reading-append");
+        let scratch = Scratch(std::env::temp_dir().join(format!(
+            "headwater-adoption-reading-append-{}",
+            std::process::id()
+        )));
         let _ = std::fs::remove_dir_all(&scratch);
         std::fs::create_dir_all(&scratch).expect("a scratch directory");
         assert_eq!(append(&scratch, &a_reading()), Ok(Appended::Written));
