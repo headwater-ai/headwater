@@ -6058,7 +6058,7 @@
           "status": "current",
           "status_since": "2026-08-12",
           "waiting_on": "build",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-09-26",
           "summary": "Two editions of one rule differ only in code that no digest covers, so a stale version reads the verdicts of the rule before the change.",
           "provenance": {
             "warrant": "accepted",
