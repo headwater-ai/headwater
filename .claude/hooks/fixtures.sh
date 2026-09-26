@@ -488,6 +488,12 @@ if [ -x "$engine" ]; then
     # Independence: the forward advisory on a governed code path is unchanged,
     # and a code path is no document, so the reverse part is absent.
     wait_edit='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/wait.sh"}}'
+    # A pointer whose short title the report folds so that the line ends in
+    # the dash, with the summary on the next line. A grep for ` — ` missed it
+    # (HW-OBL-0149), and the pointers are read from route --json now (#953).
+    expect 'a pointer the report folds after its dash is still named' \
+        write.sh 0 'docs/how-to/diagnose-an-isolation-failure.md (Diagnose an isolation failure) — Five questions' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"tools/hw-cargo"}}'
     expect 'a governed code path still hears the decision that governs it' \
         write.sh 0 'docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md' "$wait_edit"
     refute 'a code path carries no reverse advisory' \
@@ -514,6 +520,18 @@ if [ -x "$engine" ]; then
     reverse_doc 0002-beta.md HW-PD-0002 'Beta traces to alpha' 'relations:\n  traces_to:\n    - HW-PD-0001\n'
     reverse_doc 0003-gamma.md HW-PD-0003 'Gamma governs alpha' 'relations:\n  governs:\n    - docs/process/decisions/0001-alpha.md\n'
     reverse_doc 0004-delta.md HW-PD-0004 'Delta has no edge' ''
+    # Zeta records a revision of tools/beta.sh that the file does not have,
+    # so its edge is suspect from the start: the state an edit leaves behind
+    # when it changes a path a document verified (#953).
+    printf 'echo beta\n' > "$reverse_root/tools/beta.sh"
+    # Eta constrains Alpha: an inbound edge that is not `traces_to`, so a
+    # reverse part narrowed to one relation loses it (#953).
+    reverse_doc 0007-eta.md HW-PD-0007 'Eta constrains alpha' 'relations:\n  constrains:\n    - HW-PD-0001\n'
+    # Theta governs one list anchor whose first member holds a comma, so the
+    # reverse part has to read each target apart and never split a joined one.
+    : > "$reverse_root/tools/a,b.sh"
+    reverse_doc 0008-theta.md HW-PD-0008 'Theta governs a list' 'relations:\n  governs:\n    - ["tools/a,b.sh", tools/alpha.sh]\n'
+    reverse_doc 0006-zeta.md HW-PD-0006 'Zeta verified beta once' 'relations:\n  governs:\n    - to: tools/beta.sh\n      verified_revision: sha256:0000\n'
 
     if resolved=$("$reverse_root/engine/target/release/headwater" taxonomy resolve --root "$reverse_root" 2>&1); then
         HEADWATER_HOOK_ROOT="$reverse_root"
@@ -536,6 +554,11 @@ if [ -x "$engine" ]; then
             printf 'FAIL %s\n  expected one parseable object, got:\n%s\n' 'both parts arrive in one JSON object' "$out"
             failed=$((failed + 1))
         fi
+        expect 'an inbound edge of any relation, not only traces_to, is named' \
+            write.sh 0 'docs/process/decisions/0007-eta.md (constrains' "$alpha"
+        theta='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0008-theta.md"}}'
+        expect 'a list anchor is named one target to a line, a comma inside a member kept' \
+            write.sh 0 'It governs these code paths (2):\n  tools/a,b.sh\n  tools/alpha.sh' "$theta"
         expect 'a document with no edge in either direction is silent' \
             write.sh 0 '' \
             '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0004-delta.md"}}'
@@ -545,6 +568,25 @@ if [ -x "$engine" ]; then
         expect 'the reverse advisory is silent after the edit' \
             write.sh 0 '' \
             '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0001-alpha.md"}}'
+        # The decisive case of #953: an edit that leaves a governing edge
+        # suspect is told so, in one line that names the edge and the check.
+        beta='{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"tools/beta.sh"}}'
+        expect 'an edit that leaves a governing edge suspect names the edge after the edit' \
+            write.sh 0 'the edge of docs/process/decisions/0006-zeta.md onto tools/beta.sh (verified at sha256:0000' "$beta"
+        expect 'the suspect line names the check that reports the edge' \
+            write.sh 0 '`headwater check` reports it' "$beta"
+        out=$(printf '%s' "$beta" | sh "$hooks/write.sh" 2>/dev/null)
+        said=$(printf '%s' "$out" | "$engine" json field hookSpecificOutput additionalContext 2>/dev/null)
+        if [ -n "$said" ] && [ "$(printf '%s\n' "$said" | wc -l)" -eq 1 ]; then
+            printf 'ok   %s\n' 'the suspect advisory is exactly one line'
+            passed=$((passed + 1))
+        else
+            printf 'FAIL %s\n  expected one line of context, got:\n%s\n' 'the suspect advisory is exactly one line' "$out"
+            failed=$((failed + 1))
+        fi
+        expect 'an edit to a governed path whose edge recorded no revision is silent after the edit' \
+            write.sh 0 '' \
+            '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"tools/alpha.sh"}}'
         HEADWATER_HOOK_ROOT="$root"
         export HEADWATER_HOOK_ROOT
     else
@@ -556,10 +598,11 @@ else
     skip 'write.sh PreToolUse reverse advisory cases' 'no built engine'
 fi
 
-printf '\n# write.sh, on PostToolUse: silent, and write.sh says why #952 left it so\n'
-# The advisory moved to PreToolUse, so the post-edit position says nothing and
-# no edit prints the same pointers twice. These are the payloads that printed
-# the advisory before #953.
+printf '\n# write.sh, on PostToolUse: one line for a suspect edge, and nothing else\n'
+# The advisory moved to PreToolUse, so the post-edit position never prints the
+# pointers again. These are the payloads that printed the advisory before
+# #953, and no governing edge of either path records a revision. The line for a
+# suspect edge is held in the scratch corpus of the reverse advisory above.
 if [ -x "$engine" ]; then
     expect 'an edit to a path a document governs is silent after the edit' \
         write.sh 0 '' \
@@ -778,6 +821,15 @@ if [ -x "$engine" ]; then
     stub_route '{"version":"1.0","task":"t","pointers":[{"path":"docs/a.md","kind":"decision","unwarranted":false}],"text":"only-the-rendered-report-carries-this\n"}'
     expect 'a pointer set with something in it hands back the report the engine rendered' \
         intent.sh 0 'only-the-rendered-report-carries-this' "$intent_payload"
+
+    # A governing document that declares no summary. The report renders its
+    # pointer with no em dash, and the hook used to select pointers by one, so
+    # the document dropped out of the advisory in silence (HW-OBL-0149). The
+    # hook reads the pointer members now, and names it (#953).
+    stub_route '{"version":"1.0","task":"t","anchors":["tools/x.sh"],"pointers":[{"path":"docs/a.md","kind":"decision","name":"A decision with no summary","unwarranted":false,"evidence":{"by":"anchor","anchors":["tools/x.sh"],"suspect":[]}}],"text":"route \"t\"\n  docs/a.md (A decision with no summary)\n"}'
+    expect 'a governing document with no summary still reaches the pre-edit advisory' \
+        write.sh 0 'docs/a.md (A decision with no summary)' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"tools/x.sh"}}'
 
     cp "$engine" "$open_root/engine/target/release/headwater"
 
