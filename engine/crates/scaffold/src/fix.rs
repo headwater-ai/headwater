@@ -390,7 +390,21 @@ fn halves_of(path: &str, patches: &[&Patch]) -> Vec<Half> {
 
 /// Every text patch over one file, under the four guards.
 fn substitute(path: &str, source: &str, patches: &[&Patch]) -> Result<String, Refused> {
-    let before = headwater_doc::parse_prose(source).map_err(|errors| Refused::Unreadable {
+    // A file with no front matter is prose that no kind binds: a path a
+    // language regime lists outside the corpus root (HW-DR-0084). It reads as
+    // prose, and so does its read-back. A file that opened with a block keeps
+    // the strict reading on both sides, so a patch that lost the block is
+    // refused as it always was.
+    let prose = headwater_doc::parse(source).is_err_and(|errors| {
+        errors
+            .iter()
+            .any(|error| error.reason == headwater_doc::Reason::NoFrontMatter)
+    });
+    let read = |text: &str| match prose {
+        true => headwater_doc::parse_prose(text),
+        false => headwater_doc::parse(text),
+    };
+    let before = read(source).map_err(|errors| Refused::Unreadable {
         path: path.to_string(),
         why: format!("{} parse errors", errors.len()),
     })?;
@@ -451,7 +465,7 @@ fn substitute(path: &str, source: &str, patches: &[&Patch]) -> Result<String, Re
     }
 
     // Guard 4. The read back.
-    let after = headwater_doc::parse_prose(&patched).map_err(|errors| Refused::Unparseable {
+    let after = read(&patched).map_err(|errors| Refused::Unparseable {
         path: path.to_string(),
         why: format!("{} parse errors", errors.len()),
     })?;

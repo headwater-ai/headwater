@@ -463,7 +463,7 @@
     {
       "rule": "identifier.claim.stale",
       "scope": "corpus",
-      "version": 1,
+      "version": 2,
       "obligations": []
     },
     {
@@ -586,6 +586,12 @@
     },
     {
       "rule": "adoption.task.expired",
+      "scope": "taxonomy",
+      "version": 1,
+      "obligations": []
+    },
+    {
+      "rule": "language.outside_root.refused",
       "scope": "taxonomy",
       "version": 1,
       "obligations": []

@@ -249,7 +249,9 @@ pub const RULES: [(&str, Ran); 23] = [
     (
         "projection targets",
         Ran::Partly {
-            decides: "every projection writes a relative path that stays inside the corpus root",
+            decides: "every projection writes a relative path that stays inside the corpus root, \
+                      and every path a language regime lists outside the corpus root stays \
+                      inside the repository and answers to one regime",
             waits: "the collision with an authored path, which needs the census. `generate \
                     --check` is where that lands",
         },
@@ -1987,6 +1989,69 @@ fn projection_targets(view: &View, out: &mut Vec<ResolveError>) {
                 &at,
                 format!("is `{output}`, which climbs above the corpus root"),
             ));
+        }
+    }
+
+    // HW-DR-0084 clause 2, the half that needs no tree: a path a language
+    // regime lists outside the corpus root still stays inside the repository,
+    // and one literal path answers to one regime. The half that needs the tree
+    // is `language.outside_root.refused` in `headwater check`.
+    let Some(language) = view
+        .root
+        .get("regimes")
+        .and_then(|node| node.value.as_map())
+        .and_then(|regimes| regimes.get("language"))
+        .and_then(|node| node.value.as_map())
+    else {
+        return;
+    };
+    let mut listed: BTreeMap<String, String> = BTreeMap::new();
+    for entry in language {
+        let regime = entry.key.value.as_str();
+        let Some(body) = entry.value.value.as_map() else {
+            continue;
+        };
+        for (index, pattern) in strings(body, "outside_root").into_iter().enumerate() {
+            let at = format!("regimes.language.{regime}.outside_root.{index}");
+            if pattern.starts_with('/') || pattern.starts_with('\\') || pattern.contains(':') {
+                out.push(refusal(
+                    RULE,
+                    &at,
+                    format!(
+                        "is `{pattern}`, which is absolute. A path outside the corpus root is \
+                         still a path inside the repository"
+                    ),
+                ));
+            }
+            if pattern.split(['/', '\\']).any(|segment| segment == "..") {
+                out.push(refusal(
+                    RULE,
+                    &at,
+                    format!("is `{pattern}`, which climbs out of the repository with `..`"),
+                ));
+            }
+            let normalized = pattern
+                .split(['/', '\\'])
+                .filter(|segment| !segment.is_empty() && *segment != ".")
+                .collect::<Vec<_>>()
+                .join("/");
+            if normalized.contains(['*', '?']) {
+                continue;
+            }
+            match listed.get(&normalized) {
+                Some(other) if other != regime => out.push(refusal(
+                    RULE,
+                    &at,
+                    format!(
+                        "is `{pattern}`, which `regimes.language.{other}.outside_root` lists as \
+                         well. A path answers to one regime"
+                    ),
+                )),
+                Some(_) => {}
+                None => {
+                    listed.insert(normalized, regime.to_string());
+                }
+            }
         }
     }
 }

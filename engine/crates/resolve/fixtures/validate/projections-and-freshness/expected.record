@@ -2,3 +2,6 @@ the resolved taxonomy `projections.2`: warrant integrity: is a transcription and
 the resolved taxonomy `facets.last_verified`: context safety: carries the freshness role and declares no staleness policy, so nothing decides when a verification has expired
 the resolved taxonomy `projections.0.output`: projection targets: is `/var/tmp/index.md`, which is absolute. A projection writes inside the corpus
 the resolved taxonomy `projections.1.output`: projection targets: is `../outside/index.md`, which climbs above the corpus root
+the resolved taxonomy `regimes.language.house.outside_root.0`: projection targets: is `../elsewhere.md`, which climbs out of the repository with `..`
+the resolved taxonomy `regimes.language.house.outside_root.1`: projection targets: is `/etc/motd`, which is absolute. A path outside the corpus root is still a path inside the repository
+the resolved taxonomy `regimes.language.strict.outside_root.0`: projection targets: is `./README.md`, which `regimes.language.house.outside_root` lists as well. A path answers to one regime

@@ -45,7 +45,12 @@ fn base() -> PathBuf {
 /// The census and the run, with the regime's `outside_root` replaced by
 /// `listed` when it is given and read from the fixture taxonomy when not.
 fn checked(listed: Option<&[&str]>) -> (Census, Run) {
-    let corpus = Corpus::new(base(), "docs");
+    checked_at(&base(), listed)
+}
+
+/// [`checked`] over a tree at `at`, which a case may have built in scratch.
+fn checked_at(at: &Path, listed: Option<&[&str]>) -> (Census, Run) {
+    let corpus = Corpus::new(at.to_path_buf(), "docs");
     let path = base().with_file_name(format!("{TREE}.taxonomy.yml"));
     let source = std::fs::read_to_string(&path).expect("the fixture taxonomy");
     let root = headwater_yaml::load(&source)
@@ -247,4 +252,144 @@ fn a_pattern_that_matches_inside_the_root_is_refused_and_reads_nothing_twice() {
         .filter(|rule| **rule == "language.controlled.not_met")
         .count();
     assert_eq!(language, 1, "the kind's own instance, and no second one");
+}
+
+/// The refusals by the rule that makes `check --strict` fail on them.
+fn refusals(run: &Run) -> Vec<&Finding> {
+    run.findings
+        .iter()
+        .filter(|finding| finding.rule == "language.outside_root.refused")
+        .collect()
+}
+
+#[test]
+fn a_refused_or_unmatched_pattern_is_an_error_that_fails_a_strict_run() {
+    let (_, run) = checked(Some(&["MISSING.md", "docs/notes/plain.md"]));
+    let found = refusals(&run);
+    assert_eq!(found.len(), 2, "{found:#?}");
+    assert!(found
+        .iter()
+        .all(|finding| finding.severity == headwater_check::Severity::Error));
+    assert!(found[0].message.contains("`MISSING.md`"));
+    assert!(found[1].message.contains("`docs/notes/plain.md`"));
+    let (_, clean) = checked(None);
+    assert_eq!(refusals(&clean), Vec::<&Finding>::new());
+}
+
+/// `./docs/…` names a path under the root as `docs/…` does, so it is refused
+/// and reads nothing.
+#[test]
+fn a_dot_segment_does_not_carry_a_path_under_the_root_past_the_refusal() {
+    for listed in [
+        "./docs/notes/plain.md",
+        "docs/./notes/plain.md",
+        "./docs/notes/*.md",
+    ] {
+        let (taken, run) = checked(Some(&[listed]));
+        assert_eq!(taken.outside.rows.len(), 0, "{listed}");
+        assert_eq!(taken.outside.refused.len(), 1, "{listed}");
+        assert_eq!(refusals(&run).len(), 1, "{listed}");
+    }
+}
+
+/// A scratch copy of the tree beside a directory it does not hold, with a
+/// symlink out of the tree and a symlink into the corpus root. Keyed on the
+/// case name as well as the pid, because cargo runs cases as threads of one
+/// process.
+struct Scratch {
+    top: PathBuf,
+}
+
+impl Scratch {
+    fn new(case: &str) -> Scratch {
+        let top = std::env::temp_dir().join(format!(
+            "headwater-outside-root-{}-{case}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&top);
+        copy(&base(), &top.join("repo"));
+        std::fs::create_dir_all(top.join("elsewhere")).expect("the outside directory");
+        std::fs::write(
+            top.join("elsewhere/secret.md"),
+            "# Not this repository\n\nThis file isn't in the repository.\n",
+        )
+        .expect("the outside file");
+        let repo = top.join("repo");
+        std::os::unix::fs::symlink("../elsewhere/secret.md", repo.join("link-out.md"))
+            .expect("the link out");
+        std::os::unix::fs::symlink("docs/notes/plain.md", repo.join("link-in.md"))
+            .expect("the link in");
+        std::os::unix::fs::symlink("../elsewhere", repo.join("linked-dir"))
+            .expect("the linked directory");
+        std::fs::create_dir_all(repo.join("front")).expect("a directory of front-door files");
+        std::os::unix::fs::symlink("../../elsewhere/secret.md", repo.join("front/out.md"))
+            .expect("a link a wildcard matches");
+        Scratch { top }
+    }
+
+    fn repo(&self) -> PathBuf {
+        self.top.join("repo")
+    }
+
+    fn secret(&self) -> String {
+        std::fs::read_to_string(self.top.join("elsewhere/secret.md")).expect("the outside file")
+    }
+}
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.top);
+    }
+}
+
+fn copy(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("the scratch directory");
+    for entry in std::fs::read_dir(from).expect("the fixture tree").flatten() {
+        let target = to.join(entry.file_name());
+        match entry.path().is_dir() {
+            true => copy(&entry.path(), &target),
+            false => {
+                std::fs::copy(entry.path(), &target).expect("a fixture file");
+            }
+        }
+    }
+}
+
+/// A symlink is never followed, in either direction and whatever the pattern:
+/// each is refused as an error, reads nothing, and leaves `check --fix`
+/// nothing to write through the link.
+#[test]
+fn a_symlink_is_refused_in_both_directions_and_nothing_is_read_or_written_through_it() {
+    let scratch = Scratch::new("symlink");
+    let before = scratch.secret();
+    for listed in [
+        "link-out.md",
+        "link-in.md",
+        "linked-dir/secret.md",
+        "front/*.md",
+    ] {
+        let (taken, run) = checked_at(&scratch.repo(), Some(&[listed]));
+        assert_eq!(taken.outside.rows.len(), 0, "{listed} reads nothing");
+        assert_eq!(taken.outside.refused.len(), 1, "{listed} is refused");
+        assert!(
+            taken.outside.refused[0].reason.contains("symlink"),
+            "{listed}: {}",
+            taken.outside.refused[0].reason
+        );
+        assert_eq!(refusals(&run).len(), 1, "{listed} is an error");
+        let through: Vec<&Finding> = run
+            .findings
+            .iter()
+            .filter(|finding| finding.rule != "language.outside_root.refused")
+            .filter(|finding| !finding.path.starts_with("docs/"))
+            .collect();
+        assert_eq!(through, Vec::<&Finding>::new(), "{listed}");
+        let patches: Vec<_> = run
+            .findings
+            .iter()
+            .filter_map(|finding| finding.patch.clone())
+            .collect();
+        assert!(patches.is_empty(), "{listed}: nothing for --fix to write");
+    }
+    assert_eq!(scratch.secret(), before, "the outside file is untouched");
 }

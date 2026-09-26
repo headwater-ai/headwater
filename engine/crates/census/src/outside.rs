@@ -135,9 +135,10 @@ impl Outside {
 /// path at all: a pattern that leaves the repository, a pattern that matches a
 /// path under the corpus root, and a path that a second regime lists. A path
 /// under the root is placed, and placement is the one way it gets a kind, so a
-/// second reading here would give one file two answers. `taxonomy validate`
-/// fails on a refusal and on an unmatched pattern, and `headwater check`
-/// names both in its report.
+/// second reading here would give one file two answers. A symlink is refused
+/// too, in either direction. `headwater check` reports each refusal and each
+/// unmatched pattern as an error of `language.outside_root.refused`, and
+/// `taxonomy validate` fails on both.
 pub fn take(corpus: &Corpus, listed: &[Listed]) -> Outside {
     let mut outside = Outside::default();
     for regime in listed {
@@ -190,18 +191,36 @@ enum Resolved {
 }
 
 /// The paths one pattern matches outside the corpus root, or why none.
+///
+/// The pattern is normalized first: an empty segment and a `.` segment are
+/// dropped, so `./docs/x.md` and `docs//x.md` meet the inside-root test as
+/// `docs/x.md` does.
+///
+/// **A symlink is never followed**, which is the rule [`crate::walk`] states
+/// for the census. A listed path that is a link, or that passes through a
+/// linked directory, is refused and reads nothing, and so is a wildcard match
+/// that is a link. A link out of the repository would read, and under
+/// `check --fix` write, a file this repository does not hold. A link into the
+/// corpus root would give one document two readings.
 fn resolve(corpus: &Corpus, source: &str) -> Resolved {
     if let Some(why) = leaves_the_repository(source) {
         return Resolved::Refused(why);
     }
-    let pattern = Pattern::new(source);
-    let root = corpus.root.trim_end_matches('/');
-    let inside = |path: &str| path == root || path.starts_with(&format!("{root}/"));
+    let normalized = normalize(source);
+    let pattern = Pattern::new(&normalized);
+    let root = normalize(&corpus.root);
+    let inside =
+        |path: &str| root.is_empty() || path == root || path.starts_with(&format!("{root}/"));
     let matched: Vec<String> = if pattern.is_literal() {
         let path = pattern.literal_prefix();
-        match corpus.base.join(&path).is_file() {
-            true => vec![path],
-            false => return Resolved::Nothing(format!("no file `{path}` in the repository")),
+        if let Some(link) = linked(&corpus.base, &path) {
+            return Resolved::Refused(format!(
+                "`{link}` is a symlink, and a path this regime lists is never read through one"
+            ));
+        }
+        match std::fs::symlink_metadata(corpus.base.join(&path)) {
+            Ok(meta) if meta.is_file() => vec![path],
+            _ => return Resolved::Nothing(format!("no file `{path}` in the repository")),
         }
     } else {
         let prefix = pattern.literal_prefix();
@@ -212,12 +231,30 @@ fn resolve(corpus: &Corpus, source: &str) -> Resolved {
                     .to_string(),
             );
         }
+        if let Some(link) = linked(&corpus.base, &prefix) {
+            return Resolved::Refused(format!(
+                "`{link}` is a symlink, and a path this regime lists is never read through one"
+            ));
+        }
         let scoped = Corpus::new(corpus.base.clone(), &prefix);
-        let mut found: Vec<String> = walk::walk(&scoped)
+        let entries: Vec<walk::Entry> = walk::walk(&scoped)
+            .into_iter()
+            .filter(|entry| pattern.matches(&entry.path))
+            .collect();
+        if let Some(link) = entries
+            .iter()
+            .find(|entry| matches!(entry.kind, EntryKind::Symlink { .. }))
+        {
+            return Resolved::Refused(format!(
+                "the pattern matches `{}`, which is a symlink, and a path this regime lists is \
+                 never read through one",
+                link.path
+            ));
+        }
+        let mut found: Vec<String> = entries
             .into_iter()
             .filter(|entry| matches!(entry.kind, EntryKind::File))
             .map(|entry| entry.path)
-            .filter(|path| pattern.matches(path))
             .collect();
         found.sort();
         found.dedup();
@@ -233,6 +270,33 @@ fn resolve(corpus: &Corpus, source: &str) -> Resolved {
         ));
     }
     Resolved::Paths(matched)
+}
+
+/// A path with its empty and `.` segments dropped, joined with `/`.
+pub fn normalize(path: &str) -> String {
+    path.split(['/', '\\'])
+        .filter(|segment| !segment.is_empty() && *segment != ".")
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
+/// The first leading part of a relative path that is a symlink on disk, and
+/// nothing when no part is one. A part that does not exist ends the test,
+/// because nothing past it can be read.
+fn linked(base: &std::path::Path, path: &str) -> Option<String> {
+    let mut at = String::new();
+    for segment in path.split('/') {
+        if !at.is_empty() {
+            at.push('/');
+        }
+        at.push_str(segment);
+        match std::fs::symlink_metadata(base.join(&at)) {
+            Ok(meta) if meta.file_type().is_symlink() => return Some(at),
+            Ok(_) => {}
+            Err(_) => return None,
+        }
+    }
+    None
 }
 
 /// Why a pattern leaves the repository, and nothing when it stays inside it.
