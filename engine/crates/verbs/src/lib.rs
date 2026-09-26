@@ -350,7 +350,7 @@ pub const VERBS: &[Verb] = &[
             Word {
                 name: "publish",
                 summary: "write the artifact of a package into a directory",
-                description: "Write the artifact of a package into a directory, with a release record over it: every file, the digest of its bytes, and one digest over that list. It prints the digest, which is the number the release notes state and a consumer pins. It reads every migration payload the manifest declares before it writes a file, and refuses one that the taxonomy under publication contradicts.",
+                description: "Write the artifact of a package into a directory, with a release record over it: every file, the digest of its bytes, and one digest over that list. It prints the digest, which is the number the release notes state and a consumer pins. It reads every migration payload the manifest declares before it writes a file, and refuses one that the taxonomy under publication contradicts. With `--from <dir> --check` it writes nothing in the tree and exits 1 when the vendored copy under `.headwater/packages/` is not what a fresh publish of that source produces, naming each file that moved.",
             },
             Word {
                 name: "vendor",

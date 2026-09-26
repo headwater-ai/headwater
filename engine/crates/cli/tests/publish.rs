@@ -1521,8 +1521,18 @@ fn publish_check_refuses_out_package_and_a_missing_from() {
         .output()
         .expect("the binary runs");
     let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(output.status.code(), Some(1), "`--check --package` must be refused: {stderr}");
+    assert!(stderr.contains("`--package`"), "{stderr}");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["taxonomy", "publish", "--check"])
+        .arg("--root")
+        .arg(root.path())
+        .output()
+        .expect("the binary runs");
+    let stderr = String::from_utf8_lossy(&output.stderr);
     assert_eq!(output.status.code(), Some(1), "`--check` without `--from` must be refused: {stderr}");
-    assert!(stderr.contains("--from"), "{stderr}");
+    assert!(stderr.contains("Name the source with `--from <dir>`"), "{stderr}");
 }
 
 /// A root with a source and no vendored copy of it has nothing to compare, and

@@ -509,9 +509,10 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 assembly,
                 out,
                 clear_killed,
+                check,
                 json,
-            }) => {
-                publish(
+            }) => match check {
+                true => publish_check(
                     root,
                     package.as_deref(),
                     from.as_deref(),
@@ -519,8 +520,17 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                     out.as_deref(),
                     clear_killed,
                     json,
-                )
-            }
+                ),
+                false => publish(
+                    root,
+                    package.as_deref(),
+                    from.as_deref(),
+                    assembly.as_deref(),
+                    out.as_deref(),
+                    clear_killed,
+                    json,
+                ),
+            },
             Some(TaxonomyWord::Vendor { path, expect }) => match path {
                 None => fail(
                     "`taxonomy vendor` takes the path of an artifact somebody already fetched, \
@@ -1695,6 +1705,127 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
 /// [#271]: https://github.com/headwater-ai/headwater/issues/271
 /// [#353]: https://github.com/headwater-ai/headwater/issues/353
 /// [HW-DR-0043]: ../../../../docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md
+/// `headwater taxonomy publish --from <dir> --check` (#1139).
+///
+/// Whether the vendored copy of a package is what a fresh publish of its
+/// maintained source produces. It writes nothing in the tree: the library
+/// publishes into a private directory outside it and removes that directory on
+/// every exit path. Exit 0 says the two agree, and exit 1 names each member
+/// that moved and the four steps that republish.
+fn publish_check(
+    root: &Path,
+    package: Option<&str>,
+    from: Option<&Path>,
+    assembly: Option<&str>,
+    out: Option<&Path>,
+    clear_killed: bool,
+    json: bool,
+) -> ExitCode {
+    let refused: Vec<&str> = [
+        (out.is_some(), "`--out`"),
+        (package.is_some(), "`--package`"),
+        (assembly.is_some(), "`--assembly`"),
+        (clear_killed, "`--clear-killed`"),
+        (json, "`--json`"),
+    ]
+    .into_iter()
+    .filter_map(|(given, flag)| given.then_some(flag))
+    .collect();
+    if !refused.is_empty() {
+        return fail(&format!(
+            "`--check` writes nothing and compares a fresh publish of `--from <dir>` with the \
+             vendored copy, so it does not take {}",
+            refused.join(", ")
+        ));
+    }
+    let Some(from) = from else {
+        return fail(
+            "`--check` compares a maintained source with its vendored copy. Name the source with \
+             `--from <dir>`: a package `--package` finds under `.headwater/packages/` is the \
+             vendored copy itself",
+        );
+    };
+
+    let checked = match headwater_resolve::package::check_vendored(root, from) {
+        Ok(checked) => checked,
+        Err(errors) => {
+            eprintln!(
+                "headwater: {}",
+                err("the vendored copy could not be compared with the source")
+            );
+            eprint!("{}", indent(&err(&render_errors(&errors))));
+            return ExitCode::FAILURE;
+        }
+    };
+    let vendored = checked
+        .vendored
+        .strip_prefix(root)
+        .unwrap_or(&checked.vendored)
+        .display()
+        .to_string();
+
+    if checked.fresh() {
+        println!(
+            "{} {} {} is a fresh publish of {}, digest {}",
+            vendored,
+            checked.fresh.package,
+            checked.fresh.version,
+            from.display(),
+            checked.fresh.digest
+        );
+        return ExitCode::SUCCESS;
+    }
+
+    eprintln!(
+        "headwater: {}",
+        err(&format!(
+            "{vendored} is not what a fresh publish of {} produces",
+            from.display()
+        ))
+    );
+    for moved in &checked.moved {
+        match moved {
+            headwater_resolve::release::Divergence::Changed {
+                path,
+                published,
+                actual,
+            } => eprintln!(
+                "  {path}: the vendored bytes are {actual}, and a fresh publish writes {published}"
+            ),
+            headwater_resolve::release::Divergence::Missing(path) => {
+                eprintln!("  {path}: a fresh publish writes it, and the vendored copy lacks it")
+            }
+            headwater_resolve::release::Divergence::Unnamed(path) => eprintln!(
+                "  {path}: the vendored copy carries it, and a fresh publish does not write it"
+            ),
+        }
+    }
+    if checked.vendored_digest != checked.fresh.digest {
+        eprintln!(
+            "  the vendored digest is {}, and a fresh publish states {}",
+            checked.vendored_digest, checked.fresh.digest
+        );
+    } else if checked.record_moved {
+        // Every member agrees and the digest over them agrees, so what moved is
+        // a field of the record the digest does not cover.
+        eprintln!(
+            "  release.yml: the vendored record does not hold the bytes a fresh publish writes for it"
+        );
+    }
+    eprint!(
+        "{}",
+        indent(&format!(
+            "The source changed and nobody republished it. Run these four steps in this order:\n  \
+             headwater taxonomy publish --from {from} --out <scratch-dir>\n  \
+             write the digest `publish` prints as `taxonomy.digest` in `.headwater/taxonomy.yml`\n  \
+             headwater taxonomy vendor <scratch-dir>\n  \
+             headwater taxonomy resolve",
+            from = from.display()
+        ))
+    );
+    ExitCode::FAILURE
+}
+
 fn publish(
     root: &Path,
     package: Option<&str>,
