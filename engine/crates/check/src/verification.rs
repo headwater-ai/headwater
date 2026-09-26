@@ -57,10 +57,15 @@
 //! whether an entry names it, so the state is `unknown` and the rule
 //! decides nothing for that instance. Reading it as `declared` turned a
 //! suspect verification green in the block, which is the veto on #1056.
-//! `control.observation.invalid` reports the file or the entry. An entry
-//! that names no verification of the corpus is named too, rather than
-//! dropped. The rule and the block both call [`compare`], so the state a
-//! finding reports and the state the block prints cannot disagree.
+//! `control.observation.invalid` reports the file or the entry, and the
+//! instance is skipped with that reason, so it shows in the coverage line and
+//! never as a pass. An entry keyed by a verification that names no `kind`
+//! reads as a control, and the verification is `unknown` for the same reason.
+//! A verification entry that names no verification of the corpus is named
+//! too, rather than dropped, and so is one that named `kind: verification`
+//! and failed its own shape, with the reason. The rule and the block both
+//! read [`Observations::recorded`], the rule through [`compare`], so the state
+//! a finding reports and the state the block prints cannot disagree.
 //!
 //! # The denominator
 //!
@@ -85,7 +90,7 @@
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
-use crate::observation::{Observation, Observations, Recorded};
+use crate::observation::{Observation, Observations, Problem, Recorded};
 use crate::scope::{EdgeCheck, EdgeUnit, EdgeView};
 use headwater_census::census::Census;
 use headwater_graph::declarations::Relation;
@@ -281,8 +286,9 @@ pub struct Block {
     /// transcribed from.
     pub snapshot: Option<String>,
     /// Every verification entry of the snapshot that names no verification
-    /// of the corpus, sorted.
-    pub orphans: Vec<String>,
+    /// of the corpus, sorted, each with the reason its entry did not read
+    /// where it named `kind: verification` and failed its own shape.
+    pub orphans: Vec<(String, Option<String>)>,
     /// Whether the whole snapshot file did not read.
     pub unread: bool,
 }
@@ -383,23 +389,37 @@ impl Block {
 
         // A verification entry that names no verification of the corpus. No
         // line above can carry it, and dropping it would hide a typo in the
-        // snapshot.
-        let orphans = observations
-            .entries()
-            .iter()
-            .filter_map(|entry| match entry {
-                Observation::Verification { verification, .. }
-                    if lines
-                        .binary_search_by(|line| line.verification.as_str().cmp(verification))
-                        .is_err() =>
-                {
-                    Some(verification.clone())
+        // snapshot. An entry that named `kind: verification` and failed its
+        // own shape is one too, with the reason it did not read. An entry of
+        // any other kind is the register's.
+        let named = |verification: &str| {
+            lines
+                .binary_search_by(|line| line.verification.as_str().cmp(verification))
+                .is_ok()
+        };
+        let mut orphans: BTreeMap<String, Option<String>> = BTreeMap::new();
+        for entry in observations.entries() {
+            if let Observation::Verification { verification, .. } = entry {
+                if !named(verification) {
+                    orphans.insert(verification.clone(), None);
                 }
-                _ => None,
-            })
-            .collect::<BTreeSet<String>>()
-            .into_iter()
-            .collect();
+            }
+        }
+        for problem in observations.problems() {
+            if let Problem::Entry {
+                id,
+                reason,
+                verification: true,
+            } = problem
+            {
+                if !named(id) {
+                    orphans
+                        .entry(id.clone())
+                        .or_insert_with(|| Some(reason.clone()));
+                }
+            }
+        }
+        let orphans = orphans.into_iter().collect();
 
         Block {
             lines,
@@ -476,11 +496,18 @@ impl Block {
                 }
             };
         }
-        for orphan in &self.orphans {
-            let _ = writeln!(
-                out,
-                "  {orphan} is named in the snapshot and is no verification of this corpus"
-            );
+        for (orphan, unread) in &self.orphans {
+            let _ = match unread {
+                None => writeln!(
+                    out,
+                    "  {orphan} is named in the snapshot and is no verification of this corpus"
+                ),
+                Some(reason) => writeln!(
+                    out,
+                    "  {orphan} is named in the snapshot and is no verification of this corpus, \
+                     and its entry did not read: {reason}"
+                ),
+            };
         }
         out
     }

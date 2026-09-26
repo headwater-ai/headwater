@@ -253,24 +253,68 @@ struct Scored {
     terms: Vec<String>,
 }
 
-/// The path a word of a task names, with the prose around it taken off.
+/// What the tree holds at one path, as the verb that runs a route sees it.
+///
+/// This crate reads no file. The verb answers from the tree it loaded, and a
+/// caller that holds no tree, such as the read tools of the MCP server,
+/// answers [`Entry::Absent`] for every path.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Entry {
+    File,
+    Directory,
+    Absent,
+}
+
+/// The readings of one word of a task as a path, longest first, each already
+/// normalized as the resolver normalizes an anchor.
 ///
 /// A task names a path the way a person writes one: at the end of a sentence,
-/// in parentheses, or with a line number after a colon. `Look at
-/// tools/hw-cargo.` and `tools/hw-cargo:12` both name `tools/hw-cargo`. Before
-/// #953 the trailing `.` and the `:12` stayed on the word, so the anchor step
-/// missed a governed path in silence. Once the route also named ungoverned
-/// paths, the same miss became a false "nothing governs it" and a proposed
-/// edge onto a path that does not exist, so both steps read words through
-/// this one function.
+/// in parentheses, as a possessive, or with a line number after a colon. So
+/// `tools/hw-cargo.`, `tools/hw-cargo's` and `tools/hw-cargo:12` all name
+/// `tools/hw-cargo`. The first reading is the word as written, with only the
+/// brackets, quotes and punctuation around it taken off. Each later reading
+/// takes off one more thing: trailing dots, a possessive, everything from the
+/// first colon, and trailing dots again. [`Surface::read_path`] decides which reading the
+/// word names, and the word as written is always tried first.
 ///
-/// A path holding a colon, or ending in a dot, is not named by a task. That is
-/// the cost, and a path of either shape in a governed scope is rare enough to
-/// pay it.
-fn path_word(word: &str) -> &str {
-    let word = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '/' && c != '.');
-    let word = word.split(':').next().unwrap_or(word);
-    word.trim_end_matches('.')
+/// A word that holds `://` is a URL and has no reading.
+fn readings(word: &str) -> Vec<String> {
+    let written = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '/' && c != '.');
+    if written.contains("://") {
+        return Vec::new();
+    }
+    fn possessive(w: &str) -> &str {
+        w.strip_suffix("'s")
+            .or_else(|| w.strip_suffix("\u{2019}s"))
+            .unwrap_or(w)
+    }
+    fn line(w: &str) -> &str {
+        w.split(':').next().unwrap_or(w)
+    }
+    fn dots(w: &str) -> &str {
+        w.trim_end_matches('.')
+    }
+    // Dots twice: `tools/hw-cargo's.` ends a sentence with a possessive, and
+    // `tools/hw-cargo:12.` ends one with a line number.
+    let strips: [fn(&str) -> &str; 4] = [dots, possessive, line, dots];
+    let mut shapes: Vec<&str> = vec![written];
+    let mut last = written;
+    for strip in strips {
+        last = strip(last);
+        shapes.push(last);
+    }
+    let mut found: Vec<String> = Vec::new();
+    for shape in shapes {
+        if shape.is_empty() {
+            continue;
+        }
+        if let Ok(normalized) = headwater_graph::anchors::normalize(shape) {
+            if !found.contains(&normalized) {
+                found.push(normalized);
+            }
+        }
+    }
+    found
 }
 
 /// The four surfaces spec 5 lets a route read, for one document.
@@ -340,6 +384,15 @@ impl Surfaces {
 impl Surface<'_> {
     /// Route a task description to pointers.
     pub fn route(&self, task: &str, budget: Budget) -> Route {
+        self.route_in(task, budget, &|_| Entry::Absent)
+    }
+
+    /// Route a task description, reading which paths of it are on the tree
+    /// through `tree` (#953). A word is read as the path it names as written
+    /// wherever the tree holds that path, and never as a shorter one, so the
+    /// verb that holds the tree passes it here. [`Surface::route`] is this with
+    /// a tree that holds nothing.
+    pub fn route_in(&self, task: &str, budget: Budget, tree: &dyn Fn(&str) -> Entry) -> Route {
         let terms = terms(task);
         let mut route = Route {
             task: task.to_string(),
@@ -365,8 +418,8 @@ impl Surface<'_> {
         // set: `governing_docs_for_path` deduplicates inside one anchor and
         // cannot see across them, so a document that governs two of the named
         // paths would otherwise be offered twice.
-        route.anchors = self.named_anchors(task);
-        route.ungoverned = self.ungoverned_in_scope(task);
+        route.anchors = self.named_anchors(task, tree);
+        route.ungoverned = self.ungoverned_in_scope(task, tree);
         let mut anchored: Vec<Pointer> = Vec::new();
         let mut evidence: Vec<(String, Evidence)> = Vec::new();
         for anchor in &route.anchors {
@@ -555,11 +608,10 @@ impl Surface<'_> {
     /// anchor is written as, so what has to hold is whether some anchor's
     /// pattern set *reaches* the word, not whether the word spells an
     /// anchor's own identity.
-    fn named_anchors(&self, task: &str) -> Vec<String> {
+    fn named_anchors(&self, task: &str, tree: &dyn Fn(&str) -> Entry) -> Vec<String> {
         let mut found: Vec<String> = Vec::new();
         for word in task.split_whitespace() {
-            let word = path_word(word);
-            let Ok(normalized) = headwater_graph::anchors::normalize(word) else {
+            let Some(normalized) = self.read_path(word, tree) else {
                 continue;
             };
             if found.contains(&normalized) {
@@ -577,6 +629,35 @@ impl Surface<'_> {
         found
     }
 
+    /// The path one word of a task names, or `None` where it names none.
+    ///
+    /// The word as written comes first, and a shorter reading is taken only
+    /// where the longer one is not on the tree and no edge reaches it. So a
+    /// file that exists as `tools/a:b.sh` or `tools/zz.` is read as written,
+    /// and never as `tools/a` or `tools/zz`. Where the word as written names
+    /// nothing, the first shorter reading that is on the tree or that an edge
+    /// reaches is the path: `tools/hw-cargo's` names `tools/hw-cargo`.
+    ///
+    /// A word that no reading resolves names the path as written when nothing
+    /// was taken off it, which is how a write of a new file is named. Where
+    /// something would have to be taken off to name a path, and no shorter
+    /// reading exists either, the word names nothing. A wrong path costs more
+    /// than a missing one, because the route would propose an edge onto it.
+    fn read_path(&self, word: &str, tree: &dyn Fn(&str) -> Entry) -> Option<String> {
+        let readings = readings(word);
+        let known = |path: &str| {
+            tree(path) != Entry::Absent
+                || self.graph.edges.iter().any(|edge| edge.target.reaches(path))
+        };
+        if let Some(found) = readings.iter().find(|reading| known(reading)) {
+            return Some(found.clone());
+        }
+        match readings.as_slice() {
+            [only] => Some(only.clone()),
+            _ => None,
+        }
+    }
+
     /// The paths of the task that the governed scope admits and that no
     /// governing edge reaches.
     ///
@@ -589,20 +670,23 @@ impl Surface<'_> {
     ///
     /// [`Scope`]: headwater_graph::scope::Scope
     /// [`Scope::declared`]: headwater_graph::scope::Scope::declared
-    fn ungoverned_in_scope(&self, task: &str) -> Vec<Ungoverned> {
+    fn ungoverned_in_scope(&self, task: &str, tree: &dyn Fn(&str) -> Entry) -> Vec<Ungoverned> {
         let scope = headwater_graph::scope::Scope::declared(self.relations());
         let mut found: Vec<Ungoverned> = Vec::new();
         if scope.is_empty() {
             return found;
         }
         for word in task.split_whitespace() {
-            let word = path_word(word);
             if !word.contains('/') {
                 continue;
             }
-            let Ok(normalized) = headwater_graph::anchors::normalize(word) else {
+            let Some(normalized) = self.read_path(word, tree) else {
                 continue;
             };
+            // A directory is not a path an edge governs one file of.
+            if tree(&normalized) == Entry::Directory {
+                continue;
+            }
             if found.iter().any(|seen| seen.path == normalized) {
                 continue;
             }

@@ -199,7 +199,7 @@ add:
   # The base's `traces_to` was refused, and doctrine.md carries the subsection.
   # Its family is `evidence`, which is not lifecycle-sensitive, so the staleness
   # this relation exists to buy would not arrive. It declares no inverse, no
-  # reciprocity and no nuclearity, and its `created_by` is `hook`.
+  # reciprocity and no nuclearity, and its `created_by` is `agent`.
   #
   # `created_by: scaffold`, on the argument design-spec used for `applied_in`:
   # the run that opens a PRD from a BRD writes both ends.

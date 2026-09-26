@@ -96,6 +96,9 @@ fn a_path_named_with_prose_punctuation_or_a_line_number_is_the_path_itself() {
         "Look at tools/governed.sh.",
         "tools/governed.sh:12",
         "(tools/governed.sh),",
+        "tools/governed.sh's",
+        "tools/governed.sh's.",
+        "tools/governed.sh:12:3.",
     ] {
         let ran = root.run(&["route", task, "--json"]);
         assert_eq!(ran.code, Some(0), "{ran:?}");
@@ -108,12 +111,50 @@ fn a_path_named_with_prose_punctuation_or_a_line_number_is_the_path_itself() {
             ran.out
         );
     }
+    // An ungoverned file on the tree is named the same way.
+    std::fs::write(root.at.join("tools/other.sh"), "").expect("the file writes");
+    let ran = root.run(&["route", "edit", "tools/other.sh:3.", "--json"]);
+    let member = ungoverned(&ran.out);
+    assert!(member.contains("\"path\": \"tools/other.sh\""), "{member}");
+
+    // Where something would have to come off and no shorter reading is on the
+    // tree or reached by an edge, the word names nothing rather than a guess.
     let ran = root.run(&["route", "edit", "tools/unrelated.sh:3.", "--json"]);
     let member = ungoverned(&ran.out);
-    assert!(
-        member.contains("\"path\": \"tools/unrelated.sh\""),
-        "{member}"
-    );
+    assert!(!member.contains("\"path\""), "{member}");
+}
+
+/// A path that exists as written is read as written, never as a shorter path
+/// that punctuation stripping would make of it. A directory and a URL name no
+/// ungoverned file.
+#[test]
+fn a_path_on_the_tree_as_written_is_never_read_as_a_shorter_one() {
+    let root = root("route-as-written");
+    for (file, named) in [
+        ("tools/a:b.sh", "tools/a:b.sh"),
+        ("tools/zz.", "tools/zz."),
+        ("tools/it's", "tools/it's"),
+    ] {
+        std::fs::write(root.at.join(file), "").expect("the file writes");
+        let ran = root.run(&["route", "edit", file, "--json"]);
+        assert_eq!(ran.code, Some(0), "{ran:?}");
+        let member = ungoverned(&ran.out);
+        assert!(
+            member.contains(&format!("\"path\": \"{named}\"")),
+            "{file}: {member}"
+        );
+        assert_eq!(member.matches("\"path\"").count(), 1, "{file}: {member}");
+    }
+    for task in [
+        "tools/.",
+        "tools/",
+        "https://github.com/headwater-ai/headwater/blob/main/tools/other.sh",
+    ] {
+        let ran = root.run(&["route", "edit", task, "--json"]);
+        assert_eq!(ran.code, Some(0), "{ran:?}");
+        let member = ungoverned(&ran.out);
+        assert!(!member.contains("\"path\""), "{task}: {member}");
+    }
 }
 
 /// The #951 owner ruling, "nobody governs a cache": a path git ignores is not
@@ -185,6 +226,16 @@ fn every_declared_relation_that_governs_the_anchor_kind_is_proposed() {
     assert!(
         text.out
             .contains("      zz_rules:\n        - tools/unrelated.sh\n"),
+        "{}",
+        text.out
+    );
+    // Exactly these two. The taxonomy declares other relations whose target
+    // admits `code_path`, `traces_to` among them, and none of them governs, so
+    // a route that proposed one would propose an edge nobody reads as
+    // governance.
+    assert_eq!(
+        text.out.matches("        - tools/unrelated.sh\n").count(),
+        2,
         "{}",
         text.out
     );
