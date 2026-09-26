@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0211
-status: draft
-status_since: 2026-09-24
+status: current
+status_since: 2026-09-26
 summary: "Since #1047 and the link suite of #849, the two hw-cargo workarounds in hw-run-policy may be dead text that every build-order stage pays to read."
 last_verified: 2026-09-24
 title: "Two hand-remedy lines for hw-cargo in hw-run-policy may not earn their cost on every dispatch"

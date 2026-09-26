@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0215
-status: draft
-status_since: 2026-09-24
+status: current
+status_since: 2026-09-26
 summary: "Under HEADWATER_BLESS=1, one render test reads fixtures/wrapped.report while a sibling test in the same process rewrites it, and the reader can panic."
 last_verified: 2026-09-24
 title: "A bless run of the conformance render tests races two tests over one fixture file"

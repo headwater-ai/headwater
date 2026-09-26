@@ -39,6 +39,7 @@ nav:
       - "Q28 — Whether an evaluation is governed prose": "decisions/0028-q28-whether-an-evaluation-is-governed-prose.md"
       - "A verification is a kind, and its identity is minted rather than found in the code that cites it": "decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md"
       - "A code path anchor is a pattern over the tree, and it binds when the pattern matches at least one entry": "decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md"
+      - "A language rule reaches front-door prose outside the corpus root, and no other rule does": "decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md"
       - "Q29 — Whether a corpus root may contain code, and what an interface contract may reach": "decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md"
       - "Q30 — Whether what an obligation waits on is a state or a property, and how many values it takes": "decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md"
       - "Q31 — Whether this repository becomes public, and when": "decisions/0031-q31-whether-this-repository-becomes-public-and-when.md"
@@ -86,6 +87,7 @@ nav:
       - "The hand-authored decision register indexes a subset of the shelf, and stops asserting it supersedes the complete one": "decisions/0081-the-hand-authored-decision-register-indexes-a-subset-of-the-shelf-and-stops-asserting-it-supersedes-the-complete-one.md"
       - "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file": "decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md"
       - "Governs and traces_to are created by an agent, because a session proposes the line and a person types it": "decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md"
+      - "A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite": "decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"

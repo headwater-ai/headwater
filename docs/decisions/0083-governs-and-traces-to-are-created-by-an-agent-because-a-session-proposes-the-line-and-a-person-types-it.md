@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: taxonomy-source/headwater-standard/taxonomy.yml
-      verified_revision: sha256:e14a63433c104e3e0e3038027048b594f98bfa7ad1893e1026f221fcee18e5d5
+      verified_revision: sha256:c189a575d97e4ab6630a09b916c0e3d8492b0020e8ff55f2b059266c2d7672cf
   traces_to:
     - HW-OBL-0105
     - HW-SPEC-taxonomy-model
@@ -43,10 +43,10 @@ The change is a minor release of the package, 4.7.0. No check reads `hook` or `a
 
 Four of the five base relations have no mechanical creator: `governs`, `traces_to`, `constrains` and `conflicts_with`. Only `supersedes` has one, which is the scaffold. No base relation is `created_by: author`, so the rule that spec 2 states still holds.
 
-Over this corpus on 2026-09-26 the audit moves 533 of 762 declared edge halves from `hook` to `agent`. The capture of each relation does not change, because the reading keys on the relation and not on its actor.
+Over this corpus on 2026-09-26, the audit moved 533 of 762 declared edge halves from `hook` to `agent`. The 533 are the halves of `governs` and `traces_to` on that date, and the `hook` row kept the 166 halves of the bundle relations below. At 4.8.0 the `agent` row holds 548 of 766 halves, and the `hook` row is empty. The capture of each relation does not change, because the reading keys on the relation and not on its actor.
 
 The skills fixture that holds the refusal of `headwater new --relates traces_to` now expects `created_by: agent` in the message. The refusal itself does not change.
 
-This ruling covers the base package only. The bundle relations `discharges` and `cites_evidence` still declare `created_by: hook`, and nothing writes either of them.
+The bundle relations `discharges` and `cites_evidence` declare `created_by: author` from 4.8.0. A person types either line, and no verb, hook or agent proposes it. The owner ruled this on 2026-09-26 in a [comment on #955](https://github.com/headwater-ai/headwater/issues/955#issuecomment-5844324178). No relation of this package now declares `hook`. A verb or an agent that proposes a `discharges` or a `cites_evidence` edge reopens this ruling.
 
 A verb that writes these edges from a change, with no person between the proposal and the file, reopens this question. That verb would make `hook` true again.

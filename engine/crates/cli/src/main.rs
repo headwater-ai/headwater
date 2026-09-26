@@ -4942,8 +4942,7 @@ fn probe_stale(root: &Path) -> ExitCode {
         lock: &loaded.bound.digest,
     };
     let mode = headwater_cli::paint::stdout_color();
-    let mut seen = 0usize;
-    let mut stale = 0usize;
+    let mut tally = headwater_probe::read_set::Tally::default();
     for row in &loaded.census.rows {
         let headwater_census::census::Outcome::Typed { kind, .. } = &row.outcome else {
             continue;
@@ -4951,7 +4950,6 @@ fn probe_stale(root: &Path) -> ExitCode {
         if kind != headwater_probe::intake::KIND {
             continue;
         }
-        seen += 1;
         println!(
             "{} {}",
             headwater_cli::paint::paint(
@@ -4970,30 +4968,25 @@ fn probe_stale(root: &Path) -> ExitCode {
                      {error}"
                 );
                 println!();
+                tally.count(None);
                 continue;
             }
         };
         let record = headwater_probe::Record::read(&source, &tree);
         let staleness = headwater_probe::read_set::Staleness::over(&record, &plan, &loaded.census);
-        if !staleness.verdict().stands() {
-            stale += 1;
-        }
+        tally.count(Some(staleness.verdict()));
         print!("{}", staleness.render(mode));
         println!();
     }
 
-    match seen {
+    match tally.seen {
         0 => println!(
             "This corpus holds no `{}` document, so no result has been recorded and a change \
              voids nothing. A transcript is written by a recorder that observes a session from \
              outside it, and no verb of this engine writes one.",
             headwater_probe::intake::KIND
         ),
-        seen => println!(
-            "Of {}, this tree moved the read set of {}.",
-            headwater_probe::plural(seen, "committed transcript"),
-            stale
-        ),
+        _ => println!("{}", tally.closing()),
     }
     ExitCode::SUCCESS
 }

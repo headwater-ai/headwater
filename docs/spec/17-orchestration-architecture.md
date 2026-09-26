@@ -177,7 +177,7 @@ Seven records under [`docs/process/decisions/`](../process/decisions/README.md) 
 
 ## Where each part of this architecture lives
 
-The front matter of this part declares a `governs` edge onto each `.claude/` file below. [HW-OBL-0105](../obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) records that nothing plays the hook role that relation names. So a person keeps both the edge and the row true, and no check reports a definition that neither one reaches.
+The front matter of this part declares a `governs` edge onto each `.claude/` file below. That relation is `created_by: agent`, and no verb writes it ([HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md)). So a person keeps both the edge and the row true, and no check reports a definition that neither one reaches.
 
 | File | What it holds |
 |---|---|

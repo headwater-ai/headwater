@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0201
-status: draft
-status_since: 2026-09-22
+status: current
+status_since: 2026-09-26
 summary: "1233 tests exist under engine/crates and nobody has measured whether they would catch a defect, with cargo-llvm-cov and cargo-mutants as the named, unrun instruments."
 last_verified: 2026-09-22
 title: "No coverage or mutation measurement has ever been taken over the engine's test suite"

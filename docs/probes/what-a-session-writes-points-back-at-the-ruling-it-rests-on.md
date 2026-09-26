@@ -2,7 +2,7 @@
 id: HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on
 status: current
 status_since: 2026-09-11
-summary: Every traceability edge in this corpus is hand entry under a creator value that names a hook, and this asks whether an agent supplies the identifier with nobody asking for one.
+summary: No verb writes a traceability edge in this corpus, so a person types every one, and this asks whether an agent supplies the identifier with nobody asking for one.
 last_verified: 2026-09-11
 probe_category: navigability
 expectation: cited
@@ -39,4 +39,4 @@ The task names no verb, no file and no kind. It asks for a piece of writing and 
 
 **What the two arms separate is discovery of the ruling and not agreement with it.** A session with the corpus absent can state the same reason and has no identifier to name. So a miss here is either a session that did not find the ruling or a session that found it and wrote nothing a reader can follow, and the produced artifact separates those two by hand rather than by grade.
 
-[HW-OBL-0105](../obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) records the claim this narrows. `traces_to` declares `created_by: hook`, no verb of this engine writes one, and every half of every such edge in this corpus is hand entry. That record says the honest creator may be `agent` rather than `hook`, and it asks for the actor or the correction. A rate from this probe is the first evidence about which of the two the corpus should declare.
+[HW-OBL-0105](../obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) is the claim this narrows. `traces_to` declared `created_by: hook`, and no verb of this engine writes one, so every half of every such edge in this corpus is hand entry. [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) moved the value to `agent`, because a session proposes the line and a person types it. A rate from this probe is the first evidence of how often a session proposes that line with nobody asking for it.

@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0206
-status: draft
-status_since: 2026-09-23
+status: current
+status_since: 2026-09-26
 summary: "hw-run-policy tells a subagent needing its own workspace to make one by hand with git worktree add. Edit and Write on a file under that hand-made worktree are refused. That is because the write sandbox stays pinned to the worktree the subagent was launched into."
 last_verified: 2026-09-23
 title: "hw-run-policy names a worktree-add workaround that Write/Edit refuses under this harness"
