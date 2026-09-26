@@ -65,7 +65,15 @@
 # The prose of a discharge sentence, or whether one exists at all for a given
 # discharged record. Spec 13 states that a record "stays on the shelf and
 # leaves the list", and not that every departure is narrated; some already are
-# not. This suite holds only the two set memberships, in both directions.
+# not. This suite holds the two set memberships, in both directions, and one
+# property of the file's prose: no line outside a bullet or a fenced block
+# opens with a spelled count of items or names an `HW-OBL-NNNN through
+# HW-OBL-NNNN` range (case group 3). That third property serves
+# [HW-OBL-0218](../../docs/obligations/0218-the-opening-sentence-of-the-self-found-list-in-spec-13-counts-forty-nine-items-in-ranges-that-do-not-match-the-list.md)
+# and [HW-OBL-0143](../../docs/obligations/0143-a-specification-sentence-closes-a-set-with-a-count-the-source-exceeds-and-115-of-127-candidates-are-unchecked.md).
+# It does not read a count stated in any other shape, such as "the list holds
+# ten", and it counts no words or sentences, which HW-DR-0069 refuses as a
+# proxy.
 
 set -u
 
@@ -179,6 +187,25 @@ bulleted_ids() {
 membership_judge() {
     LC_ALL=C comm -23 "$1" "$2" | sed 's/^/a current record with no bullet line: /'
     LC_ALL=C comm -13 "$1" "$2" | sed 's/^/a bulleted line naming no current record: /'
+}
+
+# hand_count_judge FILE — one line, `line N: <its first 60 characters>`, for
+# every prose line of FILE that states a hand-kept count or an identifier
+# range: a line that matches `HW-OBL-NNNN through HW-OBL-NNNN`, or that opens
+# with a spelled number followed by ` items:`. A bullet line (opening with
+# `- `) and a line inside a fenced block are not prose and are never read, so
+# a record whose title happens to say "through" does not redden it. Empty
+# output is a register whose prose counts nothing that its lists hold.
+hand_count_judge() {
+    awk '
+        /^(```|~~~)/ { fenced = !fenced; next }
+        fenced { next }
+        /^- / { next }
+        /HW-OBL-[0-9][0-9][0-9][0-9] through HW-OBL-[0-9][0-9][0-9][0-9]/ ||
+        /^[A-Z][a-z]+(-[a-z]+)? items:/ {
+            printf "line %d: %s\n", NR, substr($0, 1, 60)
+        }
+    ' "$1"
 }
 
 # ---------------------------------------------------------------------------
@@ -297,6 +324,34 @@ printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0003](../obligati
     >"$scratch/reg-annotated.md"
 same "an annotated bullet for a discharged record still counts as bulleted" \
     "HW-OBL-0003" "$(bulleted_ids "$scratch/reg-annotated.md")"
+
+echo
+echo "the file's prose states no count that a person keeps aligned by hand"
+
+# 3a. No prose line of the register counts its own items or names a range of
+#     identifiers. Each such sentence restates a list that sits under it, and
+#     nothing but a person keeps the two aligned: HW-OBL-0218 records the
+#     self-found opener that counted forty-nine items in ranges the list did
+#     not match, and HW-OBL-0143 records the class of a sentence that closes a
+#     set with a count its source exceeds.
+same "no prose line of the register states a hand-kept count or an identifier range" \
+    "" "$(hand_count_judge "$register" | tr '\n' '|')"
+
+# 3b. A paragraph in the shape the file used to carry reddens the judge, on
+#     both of its arms.
+printf '# 13 — Open obligations\n\n## A heading\n\nTwo items: HW-OBL-0001 through HW-OBL-0002.\n\nThe list holds HW-OBL-0001 through HW-OBL-0002.\n\n- [HW-OBL-0001](../obligations/0001-one.md) — One\n' \
+    >"$scratch/reg-count.md"
+same "a spelled count and an identifier range in prose redden the judge" \
+    "line 5: Two items: HW-OBL-0001 through HW-OBL-0002.|line 7: The list holds HW-OBL-0001 through HW-OBL-0002.|" \
+    "$(hand_count_judge "$scratch/reg-count.md" | tr '\n' '|')"
+
+# 3c. A bullet whose title says "through", a range inside a fenced block, and
+#     a sanctioned discharge sentence are not prose that counts, so none of
+#     them reddens the judge.
+printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0001](../obligations/0001-one.md) — HW-OBL-0001 through HW-OBL-0002 in its title\n\n```\nTwo items: HW-OBL-0001 through HW-OBL-0002.\n```\n\n[HW-OBL-0003](../obligations/0003-three.md) is discharged and it is not in the list below.\n' \
+    >"$scratch/reg-nocount.md"
+same "a bullet, a fenced block and a discharge sentence do not redden the judge" \
+    "" "$(hand_count_judge "$scratch/reg-nocount.md" | tr '\n' '|')"
 
 exec 2>&3 3>&-
 same "no sort or comm in this run wrote to standard error" \
