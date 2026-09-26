@@ -758,7 +758,7 @@ fn validate_names_a_root_package_manifest_whose_yaml_does_not_parse() {
     std::fs::write(root.at.join("package.yml"), "package: [unclosed\n")
         .expect("the manifest writes");
     let ran = root.run(&["taxonomy", "validate"]);
-    assert_names_the_unread_manifest(&ran, "PROBE");
+    assert_names_the_unread_manifest(&ran, "while parsing a flow sequence");
 }
 
 #[test]
