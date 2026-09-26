@@ -2395,6 +2395,33 @@
         }
       },
       {
+        "path": "docs/decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md",
+        "kind": "decision",
+        "id": "HW-DR-0084",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0084",
+          "status": "current",
+          "status_since": "2026-09-26",
+          "summary": "A language regime lists the paths outside the corpus root that it binds, and only the three language rules read them. Such a path is not a document, so no facet, voice, link or relation rule reaches a README.",
+          "last_verified": "2026-09-26",
+          "title": "A language rule reaches front-door prose outside the corpus root, and no other rule does",
+          "relations": {
+            "constrains": [
+              "HW-DR-0029",
+              "HW-DR-0056"
+            ]
+          },
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md",
         "kind": "evaluation",
         "id": "HW-EVAL-a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt",
@@ -13904,6 +13931,28 @@
           "id": "HW-EVAL-default-taxonomy-first-run",
           "path": "docs/evaluations/default-taxonomy-first-run.md",
           "kind": "evaluation"
+        }
+      },
+      {
+        "source": "docs/decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0029",
+          "path": "docs/decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0056",
+          "path": "docs/decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md",
+          "kind": "decision"
         }
       },
       {
