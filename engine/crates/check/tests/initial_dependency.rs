@@ -292,10 +292,71 @@ fn an_edge_onto_an_anchor_generates_no_instance() {
     );
 }
 
+/// The author who writes the line is the one who cites, whichever name of the
+/// relation they wrote.
+///
+/// `verified_by` runs from the verified document to the verifier, and its
+/// inverse is `verifies`. `live/verifies-draft.md` writes `verifies` onto a
+/// draft, so the declared source is the draft. A rule that read the declared
+/// direction calls the source not live and passes. The document that wrote the
+/// line is live, and it rests on a draft.
+#[test]
+fn a_live_document_writing_the_inverse_name_onto_a_draft_is_reported() {
+    let run = run();
+    let message =
+        about(&run, "NOTE-FIX-verifies-draft").expect("the inverse-written finding");
+    assert!(message.contains("`verifies`"), "the name written: {message}");
+    assert!(
+        message.contains("NOTE-FIX-argued-over"),
+        "the draft: {message}"
+    );
+    // Writer first, far end second, in the direction the author wrote.
+    let writer_at = message.find("NOTE-FIX-verifies-draft").expect("the writer");
+    let draft_at = message.find("NOTE-FIX-argued-over").expect("the draft");
+    assert!(writer_at < draft_at, "the ends are the wrong way round: {message}");
+}
+
+/// The mirror: a draft writes the inverse name onto a live document. The
+/// declared direction runs from the live document to the draft, and the draft
+/// wrote the line, so nothing is reported.
+#[test]
+fn a_draft_writing_the_inverse_name_onto_a_live_document_passes() {
+    let run = run();
+    assert!(
+        about(&run, "NOTE-FIX-draft-verifies-standing").is_none(),
+        "{:?}",
+        refusals(&run)
+    );
+    let outcomes = outcomes_reading(
+        &run,
+        "terminal-dependency/records/draft-verifies-standing.md",
+    );
+    assert_eq!(outcomes.len(), 1, "{outcomes:?}");
+    assert!(matches!(outcomes[0], Outcome::Passed), "{outcomes:?}");
+}
+
+/// A terminal source onto a draft passes. Only a live source is the finding,
+/// and a rule that tested "not initial" rather than "live" reports this pair.
+#[test]
+fn a_terminal_source_onto_a_draft_target_passes() {
+    let run = run();
+    assert!(
+        about(&run, "NOTE-FIX-retired-mentions-draft").is_none(),
+        "{:?}",
+        refusals(&run)
+    );
+    let outcomes = outcomes_reading(
+        &run,
+        "terminal-dependency/records/retired-mentions-draft.md",
+    );
+    assert_eq!(outcomes.len(), 1, "{outcomes:?}");
+    assert!(matches!(outcomes[0], Outcome::Passed), "{outcomes:?}");
+}
+
 /// The whole tree, in one assertion, so a case that stops being reported
 /// cannot hide behind a test that names only its own document.
 #[test]
-fn the_tree_reports_two_pairs_and_no_others() {
+fn the_tree_reports_three_pairs_and_no_others() {
     let run = run();
     let mut reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
     reported.sort_unstable();
@@ -304,6 +365,7 @@ fn the_tree_reports_two_pairs_and_no_others() {
         [
             "terminal-dependency/live/cites-draft.md",
             "terminal-dependency/live/mentions-draft.md",
+            "terminal-dependency/live/verifies-draft.md",
         ]
     );
     // Advisory, for the reason `CT-LIFE-5` states: the repair is to promote the

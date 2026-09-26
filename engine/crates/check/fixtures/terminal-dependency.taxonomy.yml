@@ -32,6 +32,11 @@
 # names it. A record standing there is the case `lifecycle.dependency.on_initial`
 # leaves to `lifecycle.state.not_admitted`, as the terminal rule does for a
 # record at `discharged`.
+#
+# `verified_by` declares an inverse, `verifies`, and nothing marks it. An
+# author who writes `verifies` cites the document named, although the relation
+# declares the other direction. `lifecycle.dependency.on_initial` reads the
+# direction the author wrote, so the writer of a half is the source it judges.
 
 facets:
   status:
@@ -79,6 +84,12 @@ relations:
     family: association
     from: [record, receipt]
     to:   [record, receipt, stub]
+    created_by: author
+  verified_by:
+    family: association
+    from: [record, receipt]
+    to:   [record, receipt, stub]
+    inverse: verifies
     created_by: author
   cites:
     family: evidence
