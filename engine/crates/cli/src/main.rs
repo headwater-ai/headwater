@@ -836,6 +836,7 @@ fn validate(root: &Path) -> ExitCode {
     // it, as one published as its own repository has, skips the count with a
     // one-line notice instead of refusing every pattern. And the count leaves
     // out what git ignores, so a cache on one host is not an entry.
+    let mut unread: Option<String> = None;
     let (unmatched, notice) = match Declarations::read(&repository.resolution.taxonomy) {
         Ok(declarations) => {
             let consumer = &repository.consumer;
@@ -846,10 +847,21 @@ fn validate(root: &Path) -> ExitCode {
             // A root that is an authored package source holds its own content
             // directories, `assemblies/` and `doctrine/` among them, and they
             // are the taxonomy rather than a tree (#1103). A root with no
-            // manifest, or one that does not read, names none.
-            let own = headwater_resolve::package::manifest_at(&corpus.base)
-                .map(|manifest| headwater_resolve::package::content_roots(&manifest))
-                .unwrap_or_default();
+            // manifest names none, and says nothing. A manifest that is there
+            // and does not read names none too, and the run names it and is
+            // not valid, because `publish` would refuse the same file (#1123).
+            let own = match headwater_resolve::package::manifest_at(&corpus.base) {
+                Ok(manifest) => headwater_resolve::package::content_roots(&manifest),
+                Err(errors) => {
+                    // Anything at the path is a manifest that did not read: a
+                    // directory or a dangling link as much as bad YAML.
+                    let at = corpus.base.join(headwater_resolve::package::MANIFEST);
+                    if std::fs::symlink_metadata(&at).is_ok() {
+                        unread = Some(unread_manifest(&errors, &at));
+                    }
+                    Vec::new()
+                }
+            };
             let beside = headwater_graph::scope::tree_directories(
                 &corpus.base,
                 &repository.resolution.sources,
@@ -876,13 +888,23 @@ fn validate(root: &Path) -> ExitCode {
         println!("\n{notice}");
     }
 
-    if findings.is_empty() && unmatched.is_empty() {
+    if findings.is_empty() && unmatched.is_empty() && unread.is_none() {
         println!("\n{} is valid", repository.consumer.package);
         return ExitCode::SUCCESS;
     }
     println!("\n{} is not valid", repository.consumer.package);
     if !findings.is_empty() {
         eprint!("{}", indent(&err(&render_errors(&findings))));
+    }
+    if let Some(reason) = &unread {
+        eprintln!(
+            "  {}",
+            err(&format!(
+                "root {} was not read, so no content directory is left out of the governed-scope \
+                 tree: {reason}",
+                headwater_resolve::package::MANIFEST
+            ))
+        );
     }
     for (pattern, why) in &unmatched {
         eprintln!(
@@ -894,6 +916,27 @@ fn validate(root: &Path) -> ExitCode {
     }
     advise(root, &repository.consumer);
     ExitCode::FAILURE
+}
+
+/// Why a root package manifest that is there did not read, on one line: the
+/// finding names the file once, so each reason is its own text, and where the
+/// loader wrote the manifest's path into it, the reason says `it` (#1123).
+fn unread_manifest(errors: &[headwater_resolve::ResolveError], at: &Path) -> String {
+    let path = at.display().to_string();
+    errors
+        .iter()
+        .flat_map(|error| {
+            error
+                .to_string()
+                .replace(&path, "it")
+                .lines()
+                .map(str::trim)
+                .filter(|line| !line.is_empty())
+                .map(str::to_owned)
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>()
+        .join("; ")
 }
 
 /// Which bundle would have completed an incomplete selection, under the refusal
