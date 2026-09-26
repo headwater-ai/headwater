@@ -11,9 +11,10 @@
 //! `supersedes` and `replaces` both write `superseded`.
 //!
 //! **A rule that read the writing file as the source** reports
-//! `notes/inverse.md`, which wrote `retired_by` toward another document and so
-//! sets a state there rather than being told one. It also misses
-//! `notes/self-written.md`, whose clash is written entirely in inverse names.
+//! `notes/inverse.md`. `notes/retired-by-inverse.md` wrote `retired_by` toward
+//! it, so `inverse.md` is the source of that `retires` edge and is told no
+//! state by it. The same rule misses `notes/self-written.md`, whose clash is
+//! written entirely in inverse names by the target itself.
 //!
 //! **A rule that ran on every taxonomy** generates instances where one relation
 //! is the only one that writes a state and no clash can exist.
@@ -130,8 +131,8 @@ fn two_relations_that_write_one_state_are_silent() {
     assert!(at(&run, "agree.md").is_empty(), "{:?}", reported(&run));
 }
 
-/// The document that wrote an inverse name is the source of that relation, and
-/// a source is told no state by it.
+/// A document named by another file's inverse half is the source of that
+/// relation, and a source is told no state by it.
 #[test]
 fn an_inverse_half_is_read_from_the_declared_end() {
     let run = run();

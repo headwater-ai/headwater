@@ -1,10 +1,13 @@
 ---
 id: NOTE-FIX-retired-by-inverse
 status: retired
-summary: retired by a document that wrote the inverse half
+relations:
+  retired_by:
+    - NOTE-FIX-inverse
+summary: retired by a document, through the inverse half this file wrote
 ---
 
 # retired-by-inverse
 
-`inverse.md` writes `retired_by` toward this document, so this document is
-the target of `retires` and of nothing else.
+This file writes `retired_by` toward `NOTE-FIX-inverse`, so that document
+retires this one. This document is the target of `retires` and of nothing else.

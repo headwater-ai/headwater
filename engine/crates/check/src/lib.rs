@@ -687,7 +687,7 @@ pub fn run(
     let participation = participation::Participation::over(declared.shape, declared.relations);
     // Two relations telling one document two states, over the relations that
     // declare `on_target.set_state`. See [`state_set_twice`].
-    let set_twice = state_set_twice::StateSetTwice::over(declared.relations);
+    let set_twice = state_set_twice::StateSetTwice::over(declared.relations, declared.shape);
     let declarations = declaration::Unusable::over(declared.relations, declared.shape);
     let identities = identity::Identity::over(
         declared.relations,
