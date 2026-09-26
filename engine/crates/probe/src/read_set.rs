@@ -196,10 +196,10 @@ impl Tally {
     /// Count one transcript. `None` is a transcript that did not read.
     pub fn count(&mut self, verdict: Option<Verdict>) {
         self.seen += 1;
-        if let Some(verdict) = verdict {
-            if !verdict.stands() {
-                self.moved += 1;
-            }
+        match verdict {
+            None | Some(Verdict::Unusable) => self.unusable += 1,
+            Some(Verdict::SetMoved | Verdict::OpenedFileMoved | Verdict::Both) => self.moved += 1,
+            Some(Verdict::Stands) => {}
         }
     }
 
