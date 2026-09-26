@@ -647,7 +647,11 @@ impl Surface<'_> {
         let readings = readings(word);
         let known = |path: &str| {
             tree(path) != Entry::Absent
-                || self.graph.edges.iter().any(|edge| edge.target.reaches(path))
+                || self
+                    .graph
+                    .edges
+                    .iter()
+                    .any(|edge| edge.target.reaches(path))
         };
         if let Some(found) = readings.iter().find(|reading| known(reading)) {
             return Some(found.clone());
