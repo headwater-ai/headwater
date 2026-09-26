@@ -54,33 +54,29 @@
 //! discharges it: an adjudicated sample of at least 50 findings per category,
 //! under the two labels spec 4 declares.
 //!
-//! # Two of the three categories report zero, and the zero is saturation
+//! # Two of the three categories stand at saturation, and one reports a false positive
 //!
-//! Read on `58f46a8d` on 2026-09-11, by a word-boundary count of every pattern:
-//! **`future_intent` matches on 0 of its 14 patterns over the 291 documents
-//! whose kind binds `declarative`, and `phased_rollout` on 0 of its 13 over the
-//! 293 that bind `declarative` or `prospective`.** The two denominators are the
-//! kind-to-regime binding of `.headwater/taxonomy.lock` applied to the 320
-//! documents of `.headwater/export.json`, of which 27 bind `narrative`.
+//! Read on `0ee88a2d` on 2026-09-27, over the body and the `summary` facet of
+//! each document, which is the population edition four reads. The count is a
+//! word-boundary search for every pattern, with front matter, code blocks and
+//! code spans taken out. **`future_intent` occurs on 2 of its 14 patterns over
+//! the 378 documents whose kind binds `declarative`, and `phased_rollout` on 0
+//! of its 13 over the 382 that bind `declarative` or `prospective`.** The two
+//! denominators are the kind-to-regime binding of `.headwater/taxonomy.lock`
+//! applied to the 421 documents of `.headwater/export.json`, of which 39 bind
+//! `narrative`. `change_narration` occurs on 5 of its 23 patterns over the
+//! same 382.
 //!
-//! The count itself ran over a wider file list, and that is how it found the
-//! three occurrences there are: one `will become` and two of
-//! `in the first release`, all under `docs/reviews/` or `docs/evaluations/`,
-//! whose kinds bind `narrative` and forbid nothing.
-//!
-//! So neither zero reports a clean corpus. Both sets stand where edition one of
-//! `change_narration` stood, and no run separates the two readings:
+//! Of the two `future_intent` patterns, `will be` occurs twice, and both
+//! occurrences sit inside a quotation in one doctrine page, so
+//! `Sentence::authored` never gives them to the rule. The other is
+//! `will eventually`, the one finding the category reports, and it is false:
+//! `the_rulings_of_2026_09_27_still_match` holds the sentence and names its
+//! mode. So neither category reports a fault that the corpus holds. Both sets
+//! still stand where edition one of `change_narration` stood, and no run
+//! separates the two readings:
 //! [HW-OBL-0168](../../../../docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md)
 //! holds the coverage line that would, and it is open.
-//!
-//! **This census predates edition four ([#774](https://github.com/headwater-ai/headwater/issues/774)),
-//! which widens the population it counts over.** The two denominators above are
-//! body-only: they exclude every `scent`-role facet (`summary` in this
-//! corpus), which edition four adds to what every category reads. A summary
-//! enters the population for the first time, so the true denominators are now
-//! at least as large as stated and the two zero numerators are unconfirmed
-//! over the wider set. Re-run the count rather than trust this comment for
-//! either number.
 
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
@@ -173,6 +169,36 @@ const CATEGORIES: [Category; 3] = [
         // residual in place, so a later reading that finds the genuine count
         // at zero with the false count unmoved is the reading that retires the
         // pattern.
+        //
+        // **Re-read on `0ee88a2d` on 2026-09-27, and the trend is moving.**
+        // The category reports 22 findings, and 10 of them are `no longer`.
+        // Of those 10, 1 is genuine and 9 are false. Since 2026-09-11 the
+        // genuine count fell from 9 to 1, and the false count fell too: the
+        // quotation exclusion of #783 removed one, and rewrites made for other
+        // reasons reworded others. So "unmoved" above needs a baseline, and
+        // this reading is it: 1 genuine and 9 false. A later reading compares
+        // its false count with 9, not with the figures of 2026-09-11. The
+        // pattern stays until a reading finds the genuine count at zero.
+        //
+        // **No regime can name the sections it reads, and a `## Context`
+        // narration takes no directive.** A decision record's `## Context` is
+        // where it carries history, and the rule reads it as it reads any other
+        // section. On `0ee88a2d`, 4 of the 23 findings of this rule stand in a
+        // `## Context` section: 3 are narration that a reader wants there, and
+        // 1 is a false positive of the definition mode. A section scope clears
+        // those 4 and misses the fourth legitimate narration, which stands in a
+        // `## Consequences` section, so it prices a schema change at 4 findings.
+        // The convention an author may use instead is a block directive on the
+        // sentence, `headwater allow=voice.forbidden_construction scope=block
+        // reason=accepted_deviation`, with an `until` and a note. It costs 4
+        // directives today, and none is spent: an `until` buys a
+        // re-adjudication of a sentence that never becomes wrong, which is the
+        // argument against a directive on the false positives below as well.
+        // Two cases hold the ruling. `the_rulings_of_2026_09_27_still_match`
+        // holds the parse half, and
+        // `the_voice_rule_reads_a_context_section_like_any_other` in
+        // `tests/fixtures.rs` holds the whole run, so a section scope added to
+        // `evaluate` fails it.
         //
         // The 18 false positives are five ways that English states something
         // other than a change, and `the_measured_false_positives_still_match`
@@ -593,6 +619,58 @@ mod tests {
                 "no pattern matched `{sentence}`, and the ruling of 2026-09-11 records that one does"
             );
         }
+    }
+
+    /// The two findings of the census of 2026-09-27 that the rulings of #606
+    /// rest on, verbatim from the corpus of `0ee88a2d`. Each one runs the real
+    /// path, from the scan to `Sentence::authored` to `matched`, and each one
+    /// names the pattern it expects, so a narrowing that moves the finding to
+    /// another pattern meets this case as well as one that drops it.
+    ///
+    /// **`future_intent` reports one finding, and the finding is false.** It
+    /// is `docs/taxonomies/diataxis/doctrine.md:46`, and it is the first finding
+    /// this category has reported on this corpus. It is a sixth mode, a general
+    /// prediction stated as a property of a thing, and nothing about this
+    /// system is planned in it. A reader who sees the count move from 0 to 1
+    /// and reads it as a set that woke up meets this case first.
+    ///
+    /// **A decision record's `## Context` answers to the rule like any other
+    /// section.** The second source is `docs/decisions/0008-probe-cost-and-cadence.md:26`,
+    /// with its heading. The module comment states the ruling and its price.
+    /// This case holds the half that the parse owns: the heading does not
+    /// keep the sentence from a pattern. A section scope added to `evaluate`
+    /// would not fail it. `the_voice_rule_reads_a_context_section_like_any_other`
+    /// in `tests/fixtures.rs` runs the whole check and holds that half.
+    #[test]
+    fn the_rulings_of_2026_09_27_still_match() {
+        let first = |category: &Category, source: &str| {
+            let body = headwater_doc::body::scan(source, source, 0);
+            headwater_doc::sentences::of(&body)
+                .iter()
+                .find_map(|sentence| matched(category, sentence))
+        };
+
+        let intent = &CATEGORIES[0];
+        assert_eq!(intent.name, "future_intent");
+        assert_eq!(
+            first(
+                intent,
+                "Spec 2 names orthogonality over two facets that are near-perfectly correlated: the redundant one does no work and will eventually disagree with the other.\n"
+            ),
+            Some("will eventually"),
+            "the one `future_intent` finding of 2026-09-27 stopped matching, and the census records it as a false positive that does"
+        );
+
+        let narration = &CATEGORIES[1];
+        assert_eq!(narration.name, "change_narration");
+        assert_eq!(
+            first(
+                narration,
+                "## Context\n\nThere was no declaration, no authored form, no owner, and no definition of the declared expectation that the grader compares against.\n"
+            ),
+            Some("there was no"),
+            "a `## Context` narration stopped reaching `change_narration`, and the ruling of 2026-09-27 declines section scoping"
+        );
     }
 
     /// The pair that replaces the inline-quotation entry above, and the reason
