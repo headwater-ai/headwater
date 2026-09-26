@@ -83,6 +83,8 @@ rules, and for each the scope that binds it
     edge scope, one relation instance and both endpoints
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
+  lifecycle.state.set_twice
+    neighbourhood scope, one document and the documents one relation away from it
   relation.declaration.unusable
     document scope, one document and its front matter, and what phase A could not make of it
   identifier.unusable
@@ -152,6 +154,7 @@ register
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 0 suppressed
   facet.value.blank reaches no obligation, so it names none
+  lifecycle.state.set_twice reaches no obligation, so it names none
   surface.local_path.instructed reaches no obligation, so it names none
   surface.command.undeclared reaches no obligation, so it names none
   control.observation.invalid reaches no obligation, so it names none

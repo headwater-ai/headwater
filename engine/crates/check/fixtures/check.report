@@ -69,6 +69,8 @@ rules, and for each the scope that binds it
     edge scope, one relation instance and both endpoints
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
+  lifecycle.state.set_twice
+    neighbourhood scope, one document and the documents one relation away from it
   relation.declaration.unusable
     document scope, one document and its front matter, and what phase A could not make of it
   identifier.unusable
@@ -148,6 +150,7 @@ register
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
   lifecycle.dependency.on_terminal reaches no obligation, so it names none
   warrant.evidence.unsupported reaches no obligation, so it names none
+  lifecycle.state.set_twice reaches no obligation, so it names none
   identifier.claimed_twice reaches no obligation, so it names none
   identifier.claim.missing reaches no obligation, so it names none
   identifier.claim.stale reaches no obligation, so it names none
