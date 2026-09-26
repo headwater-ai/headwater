@@ -117,6 +117,7 @@ fn scaffold(root: &Path, kind: &str, title: &str) -> headwater_scaffold::Plan {
             now: Date::parse(PINNED).expect("the pinned date"),
             relates: &[],
             given: &[],
+            directory: None,
         },
     )
     .unwrap_or_else(|refusal| panic!("{kind} `{title}`: {refusal}"));

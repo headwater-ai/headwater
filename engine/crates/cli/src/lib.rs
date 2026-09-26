@@ -695,6 +695,15 @@ pub enum Verb {
         facet: Vec<(String, String)>,
         #[arg(
             long,
+            value_name = "path",
+            help = "the directory to write into, relative to the root, for a kind whose shelf \
+                    fixes the file name under a glob, such as `docs/modules/*/README.md`. The \
+                    document is written as `<path>/` and the file name the shelf fixes, and must match the \
+                    shelf. Refused on any other shelf, whose path already decides the directory"
+        )]
+        directory: Option<String>,
+        #[arg(
+            long,
             value_name = "date",
             value_parser = a_date,
             help = "the date the document is stamped with, as `YYYY-MM-DD`. Defaults to today"
