@@ -327,8 +327,9 @@ fn a_bare_local_root_in_code_is_reported_and_a_word_of_prose_is_not() {
 }
 
 /// A program with a path under its own root, a bare root in a shell block,
-/// and the same bare root as a value in a `yaml` block (#1085).
-const BARE_BY_PLACE: &str = "\nBuild the site.\n\n```sh\nmkdocs build\nsh mkdocs/build.sh\nrm -rf site\n```\n\nSet the output directory.\n\n```yaml\nsite_dir: site\ndocs_dir: site/docs\n```\n";
+/// the same bare root as a value in a `yaml` block, and the same bare root in
+/// a fence with no info string, which is as often output as input (#1085).
+const BARE_BY_PLACE: &str = "\nBuild the site.\n\n```sh\nmkdocs build\nsh mkdocs/build.sh\nrm -rf site\n```\n\nSet the output directory.\n\n```yaml\nsite_dir: site\ndocs_dir: site/docs\n```\n\nThe output of a run.\n\n```\nrm -r site\n```\n";
 
 /// A bare root counts only where a shell runs it, and a prefixed token counts
 /// everywhere (#1085).
@@ -362,8 +363,10 @@ fn a_bare_root_counts_only_in_a_shell_block_and_a_prefixed_one_counts_everywhere
         site,
         vec![root.line_of("p", "rm -rf site")],
         "the bare `site` of `rm -rf site` in the shell block is reported, and the `site` of \
-         `site_dir: site` in the `yaml` block, at line {}, is not\n{p:#?}",
-        root.line_of("p", "site_dir: site")
+         `site_dir: site` in the `yaml` block, at line {}, and of `rm -r site` in the fence \
+         with no info string, at line {}, are not\n{p:#?}",
+        root.line_of("p", "site_dir: site"),
+        root.line_of("p", "rm -r site")
     );
     assert!(
         p.iter().any(|f| f.contains("names `site/docs`,")),
