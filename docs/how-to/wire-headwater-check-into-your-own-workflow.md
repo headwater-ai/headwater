@@ -56,6 +56,8 @@ Two different refs are in play, and they answer two different questions. `@main`
 
 The action runs three checks, and you add no step of your own for the lock. `headwater check --strict` reads your documents against your lock. `headwater generate --check` compares each committed projection with what your corpus and your lock produce. `headwater taxonomy resolve --check` compares your lock with what your overlay and your vendored packages resolve to. Neither of the first two checks reads the overlay or the packages, so only the third check finds a lock that is out of date. When the lock fails, the job log and the job summary show the message of the engine, which names the source that changed.
 
+Commit `.headwater/overlay.yml` and every package under `.headwater/packages/` together with the lock. The third check resolves the lock again from those files, in the checkout of the job. When they are not in the repository, the check cannot read them, and the job fails with a line that names the missing file. A corpus that commits only the lock passed the action before it ran this check, and it now fails.
+
 ## Make it cover a merge
 
 `headwater init --git` commits a `-merge` line in `.gitattributes` for each generated file that states a count or a digest. In an adopter's tree, that file is the taxonomy lock. On your machine, git stops a merge that moves such a file. GitHub does not read that attribute. We measured this on the throwaway pull request [#1073](https://github.com/headwater-ai/headwater/pull/1073). GitHub showed it as mergeable, and its test merge held the edits of both branches in one `-merge` file.
@@ -74,8 +76,10 @@ The run covers the merge only when you set two things in the branch protection o
 
 ## How to know it worked
 
-Two runs prove it, and the action's own CI holds both as one fixture.
+Three runs prove it, and the CI of the action holds all three.
 
 A corpus with nothing wrong passes. The job succeeds. A SARIF file, named `headwater-check.sarif` by default or whatever `sarif-path` names, appears in the job's working directory, and it holds no `error`-level result.
 
 A corpus with something wrong fails. Edit a document's `summary:` front matter, and leave its committed shelf index unregenerated. The job exits non-zero. Open the uploaded SARIF report on your repository's code-scanning page, or the local file when you set `upload-sarif: "false"`. One `error`-level result, under the rule `headwater/projection.stale`, names the path that disagrees with what your corpus and your lock produce. Its message states the remedy: run `headwater generate` and commit the result.
+
+A corpus whose lock is out of date fails. Change `.headwater/overlay.yml`, and do not run `headwater taxonomy resolve`. The job exits non-zero, although `headwater check --strict` and `headwater generate --check` both pass. The job log and the job summary show an `error` line from the engine. The line says that `.headwater/taxonomy.lock` is not what the sources resolve to, and it names the source that changed. The SARIF report holds no result for the lock. To repair the corpus, run `headwater taxonomy resolve`, then `headwater generate`, and commit the result.
