@@ -46,7 +46,7 @@ A single claimant-bearing line **cannot express what a resolver needs**. One lin
 
 **The claim comes first and the document second.** Nothing is written before the claim, so a claim that cannot be made refuses with an untouched tree. A document write that then fails leaves a spent number with no document, and spec 3 already declares that state legitimate.
 
-**Two rules hold the store, and one direction of the pair is deliberately absent.** `identifier.claim.missing` is an error and it carries a patch, because the correction is one file whose content is the path of the document. `identifier.claim.stale` is advisory, because a decision about which of the two moved is a rewrite. A claim that names a document the corpus no longer holds is **correct** under the rule that an identifier is never reused. No rule reports one.
+**Two rules hold the store, and one direction of the pair is deliberately absent.** `identifier.claim.missing` is an error and it carries a patch, because the correction is one file whose content is the path of the document. `identifier.claim.stale` is advisory, because a decision about which of the two moved is a rewrite. A claim whose identifier no document of the corpus holds is **correct** under the rule that an identifier is never reused. No rule reports one. That warrant does not cover a rename, because a rename reuses nothing. Where one document holds the identifier at a path other than the claim's, `identifier.claim.stale` reports the claim and names the current path.
 
 ## Consequences
 

@@ -123,3 +123,53 @@ jobs:
         run: |
           python3 integrations/headwater-check/fixtures/assert-sarif-names-staleness.py \
             "$RUNNER_TEMP/staled.sarif" docs/decisions/README.md
+
+      # #1118's decisive fixture: a lock its own sources no longer resolve
+      # to, and nothing else wrong. It is built in a second directory, because
+      # the steps above leave the first fixture failing on purpose.
+      # `stale-lock-one-sided.sh` refuses to finish unless `check --strict`
+      # and `generate --check` both pass the tree and `taxonomy resolve
+      # --check` does not, so the lock is the only thing this case can fail on.
+      - name: Build a second fixture and take one side of a lock conflict
+        run: |
+          set -euo pipefail
+          HEADWATER_BIN="$FIXTURE_ENGINE" \
+          sh integrations/headwater-check/fixtures/build-decisive-fixture.sh "$RUNNER_TEMP/lock-fixture"
+          HEADWATER_BIN="$FIXTURE_ENGINE" \
+          sh integrations/headwater-check/fixtures/stale-lock-one-sided.sh "$RUNNER_TEMP/lock-fixture"
+
+      - name: Run the action against the stale lock, expecting failure
+        id: stale-lock
+        continue-on-error: true
+        uses: ./integrations/headwater-check
+        with:
+          root: ${{ runner.temp }}/lock-fixture
+          version: ${{ env.FIXTURE_TAG }}
+          sarif-path: ${{ runner.temp }}/stale-lock.sarif
+          upload-sarif: "false"
+
+      - name: The stale lock failed the run
+        env:
+          OUTCOME: ${{ steps.stale-lock.outcome }}
+        run: |
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "::error::a corpus whose taxonomy.lock its own overlay no longer resolves to passed this action. check --strict and generate --check read the lock and never the overlay, so only taxonomy resolve --check sees this. This is #1118's decisive fixture, and it must exit non-zero." >&2
+            exit 1
+          fi
+
+      # The remedy the verb names, then `generate`: with FIXTURE_TAG's engine,
+      # `generate --check` fails this tree after the resolve alone, because
+      # the new lock moves a committed projection.
+      - name: Resolve the lock and regenerate the second fixture
+        run: |
+          set -euo pipefail
+          "$FIXTURE_ENGINE" taxonomy resolve --root "$RUNNER_TEMP/lock-fixture"
+          "$FIXTURE_ENGINE" generate --root "$RUNNER_TEMP/lock-fixture"
+
+      - name: Run the action against the resolved fixture
+        uses: ./integrations/headwater-check
+        with:
+          root: ${{ runner.temp }}/lock-fixture
+          version: ${{ env.FIXTURE_TAG }}
+          sarif-path: ${{ runner.temp }}/resolved-lock.sarif
+          upload-sarif: "false"
