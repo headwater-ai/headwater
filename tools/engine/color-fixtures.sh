@@ -406,9 +406,22 @@ sed -e "s/^lock: sha256:.*/$(printf '%s\n' "$identity" | grep '^lock: sha256:')/
 senses_its_terminal 'probe record' "$engine probe record $transcript --root ."
 senses_its_terminal 'probe grade' "$engine probe grade $transcript --root ."
 
+# `probe stale` reads the committed transcripts in place, and it writes one
+# section for each of them. `probe_stale` paints the `## The result of` frame
+# around each section, so the four arms alone would pass a `Staleness::render`
+# call site that states `ColorMode::Plain`. The line check below reads a line
+# that only `Staleness::render` writes. Every committed transcript is pinned to
+# a lock this tree no longer carries, so that line is the sentence of the
+# unusable verdict. A transcript written into a copy of the tree cannot reach
+# the member lines instead, because the file moves the tree digest that it
+# states.
+senses_its_terminal 'probe stale' "$engine probe stale --root ."
+paints_the_line 'probe stale' "$engine probe stale --root ." \
+    'Nothing here decides whether this result is stale'
+
 rm -rf "$scratch"
 
-# Two report surfaces stay outside this page, each on a measured reason.
+# One report surface stays outside this page, on a measured reason.
 #
 # `import` needs a snapshot directory with a release record over it and an
 # import block in `.headwater/taxonomy.yml` pinned to that record's digest. No
@@ -418,11 +431,6 @@ rm -rf "$scratch"
 # computation here would be a second implementation of the digest, and a wrong
 # one would fail the case for a reason that has nothing to do with color. It is
 # held by the palette unit test beside its renderer in `headwater-import`.
-#
-# `probe stale` renders through `Staleness::render`, which takes no
-# `ColorMode` at all, so its report is plain under a terminal and there is no
-# wiring for a case here to hold. HW-OBL-0180 names it as the one report site
-# with no mode, and `docs/interfaces/headwater-probe.md` says it is plain.
 
 # The help family, which is four templates rather than one. The root screen is
 # written by `first_screen`, a verb page is `clap`'s own `{options}` renderer, a
