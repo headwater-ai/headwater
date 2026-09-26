@@ -4898,6 +4898,7 @@ fn probe_stale(root: &Path) -> ExitCode {
         config: &loaded.config,
         lock: &loaded.bound.digest,
     };
+    let mode = headwater_cli::paint::stdout_color();
     let mut seen = 0usize;
     let mut stale = 0usize;
     for row in &loaded.census.rows {
@@ -4908,7 +4909,15 @@ fn probe_stale(root: &Path) -> ExitCode {
             continue;
         }
         seen += 1;
-        println!("## The result of {}", row.path);
+        println!(
+            "{} {}",
+            headwater_cli::paint::paint(
+                headwater_cli::paint::Role::Heading,
+                "## The result of",
+                mode
+            ),
+            headwater_cli::paint::paint(headwater_cli::paint::Role::Path, &row.path, mode)
+        );
         println!();
         let source = match std::fs::read_to_string(root.join(&row.path)) {
             Ok(source) => source,
@@ -4926,7 +4935,7 @@ fn probe_stale(root: &Path) -> ExitCode {
         if !staleness.verdict().stands() {
             stale += 1;
         }
-        print!("{}", staleness.render());
+        print!("{}", staleness.render(mode));
         println!();
     }
 

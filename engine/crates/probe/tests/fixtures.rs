@@ -379,7 +379,7 @@ fn a_generated_document_a_probe_examines_moves_the_read_set_when_it_moves() {
 fn the_read_set_over_the_committed_run_is_recorded() {
     compare(
         &fixtures_dir().join("read-set.txt"),
-        &staleness_at(&fixtures_dir()).render(),
+        &staleness_at(&fixtures_dir()).render(ColorMode::Plain),
     );
 }
 
@@ -418,7 +418,7 @@ fn an_edit_the_read_set_does_not_cover_voids_no_result() {
         "a member is reported as moved: {:?}",
         staleness.moved()
     );
-    let report = staleness.render();
+    let report = staleness.render(ColorMode::Plain);
     assert!(
         !report.contains(VOIDED),
         "the report calls this result stale:\n{report}"
@@ -444,7 +444,7 @@ fn an_edit_to_an_examined_document_voids_the_result_and_names_it() {
         .map(|member| member.path.as_str())
         .collect();
     assert_eq!(moved, vec!["corpus/probes/0002-answered.md"]);
-    let report = staleness.render();
+    let report = staleness.render(ColorMode::Plain);
     assert!(report.contains("corpus/probes/0002-answered.md"));
     assert!(report.contains("so this document moved"), "{report}");
 }
@@ -469,7 +469,7 @@ fn an_edit_to_a_probe_no_call_witnessed_still_voids_the_result() {
         staleness.moved().is_empty(),
         "no call witnessed this document, so nothing can name it as the mover"
     );
-    let report = staleness.render();
+    let report = staleness.render(ColorMode::Plain);
     assert!(report.contains("corpus/probes/0005-patched.md"));
     assert!(
         report.contains("no recorded call named it"),
@@ -500,7 +500,7 @@ fn an_absent_calls_key_is_not_a_session_that_opened_nothing() {
         witnessed.witness.is_none(),
         "an unwatched session produced a witness"
     );
-    assert!(staleness.render().contains("recorded no `calls` key"));
+    assert!(staleness.render(ColorMode::Plain).contains("recorded no `calls` key"));
 }
 
 /// A path a call named that this corpus classifies no document at is on no read
@@ -1058,7 +1058,7 @@ fn a_plan_that_composed_no_read_set_decides_nothing_about_a_result() {
         std::fs::read_to_string(fixtures_dir().join(COMMITTED)).expect("the committed transcript");
     let staleness = Staleness::over(&record_of(&source), &plan, &taken);
     assert_eq!(staleness.verdict(), Stale::Unusable);
-    let report = staleness.render();
+    let report = staleness.render(ColorMode::Plain);
     assert!(report.contains("composed no read set"), "{report}");
     assert!(
         !report.contains(VOIDED),
@@ -1305,6 +1305,23 @@ fn the_colored_plan_strips_to_the_plain_plan() {
     assert!(
         ansi.contains('\u{1b}'),
         "the colored plan has to carry color, or this comparison holds nothing"
+    );
+    assert_eq!(stripped(&ansi), plain);
+}
+
+/// The colored staleness report strips to the plain one, byte for byte.
+///
+/// The plain report is the recorded `read-set.txt`, so this is what keeps the
+/// mode `Staleness::render` took from moving a byte of it. The report carries a
+/// verdict and member lines, so the `Info` and `Path` paints both reach it.
+#[test]
+fn the_colored_staleness_report_strips_to_the_plain_one() {
+    let staleness = staleness_at(&fixtures_dir());
+    let ansi = staleness.render(ColorMode::Ansi);
+    let plain = staleness.render(ColorMode::Plain);
+    assert!(
+        ansi.contains('\u{1b}'),
+        "the colored report has to carry color, or this comparison holds nothing"
     );
     assert_eq!(stripped(&ansi), plain);
 }

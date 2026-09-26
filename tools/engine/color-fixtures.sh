@@ -406,18 +406,36 @@ sed -e "s/^lock: sha256:.*/$(printf '%s\n' "$identity" | grep '^lock: sha256:')/
 senses_its_terminal 'probe record' "$engine probe record $transcript --root ."
 senses_its_terminal 'probe grade' "$engine probe grade $transcript --root ."
 
-# `probe stale` reads the committed transcripts in place, and it writes one
-# section for each of them. `probe_stale` paints the `## The result of` frame
-# around each section, so the four arms alone would pass a `Staleness::render`
-# call site that states `ColorMode::Plain`. The line check below reads a line
-# that only `Staleness::render` writes. Every committed transcript is pinned to
-# a lock this tree no longer carries, so that line is the sentence of the
-# unusable verdict. A transcript written into a copy of the tree cannot reach
-# the member lines instead, because the file moves the tree digest that it
-# states.
-senses_its_terminal 'probe stale' "$engine probe stale --root ."
-paints_the_line 'probe stale' "$engine probe stale --root ." \
-    'Nothing here decides whether this result is stale'
+# `probe stale` reads the transcripts committed in the tree it is given, and it
+# writes one section for each of them. `probe_stale` paints the `## The result
+# of` frame around each section, so the four arms alone would pass a
+# `Staleness::render` call site that states `ColorMode::Plain`. The two line
+# checks below read lines that only `Staleness::render` writes. Every committed
+# transcript is pinned to a lock this tree no longer carries, so over the
+# committed tree the report holds only the sentence of the unusable verdict. So
+# the case runs over a copy of the tree with one more transcript in it, the one
+# above with the digests `probe plan` prints over the copy. That transcript
+# reads, and its section writes a member line. The file moves the tree digest
+# the transcript states, and nothing here reads that digest.
+stale_root="$scratch/stale-root"
+mkdir "$stale_root"
+if git archive HEAD | tar -x -C "$stale_root"; then
+    stale_identity=$("$engine" probe plan --root "$stale_root" 2>/dev/null)
+    sed -e "s/^lock: sha256:.*/$(printf '%s\n' "$stale_identity" | grep '^lock: sha256:')/" \
+        -e "s/^tree: sha256:.*/$(printf '%s\n' "$stale_identity" | grep '^tree: sha256:')/" \
+        -e "s/^selection: sha256:.*/$(printf '%s\n' "$stale_identity" | grep '^selection: sha256:')/" \
+        -e "s/^read_set: sha256:.*/$(printf '%s\n' "$stale_identity" | grep '^read_set: sha256:')/" \
+        docs/probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md \
+        >"$stale_root/docs/probe-runs/color-fixture-transcript.md"
+    senses_its_terminal 'probe stale' "$engine probe stale --root $stale_root"
+    paints_the_line 'probe stale, unusable verdict' "$engine probe stale --root $stale_root" \
+        'Nothing here decides whether this result is stale'
+    paints_the_line 'probe stale, member line' "$engine probe stale --root $stale_root" \
+        '(probe) sha256:'
+else
+    echo "FAIL probe stale — \`git archive HEAD\` wrote no copy of the tree to record into"
+    failed=$((failed + 1))
+fi
 
 rm -rf "$scratch"
 
