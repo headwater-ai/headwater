@@ -584,7 +584,10 @@ fn validate_refuses_a_governed_scope_pattern_that_matches_no_entry() {
     );
     assert!(!ran.err.contains("`site/**` matches no entry"), "{ran:?}");
     // A root with no package manifest names none, and says nothing of it (#1123).
-    assert!(!root.at.join("package.yml").exists(), "the root has no manifest");
+    assert!(
+        !root.at.join("package.yml").exists(),
+        "the root has no manifest"
+    );
     assert!(!ran.err.contains("package.yml"), "{ran:?}");
 }
 
