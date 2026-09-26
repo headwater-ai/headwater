@@ -26,4 +26,4 @@ The same comparison covers `bundles/` only. The adjudication did not confirm tha
 
 This record discharges when a local gate fails on the drift before a commit. An example is a `taxonomy vendor --check --from` verb that the hook runs only when a staged path is under `docs/taxonomies/` or `taxonomy-source/`. A comparison written into the hook is not a discharge, because a rule has no second copy in a script.
 
-The question reopens as an issue when one of these holds: "Engine tests" leaves the `Protect main` ruleset, an artifact an adopter receives comes from the vendored copy, a rule of `check` reads a file under `bundles/` other than `bundle.yml`, or a third late drift costs a run an iteration.
+The question reopens as an issue when one of four conditions holds. The first is that "Engine tests" leaves the `Protect main` ruleset. The second is that an artifact an adopter receives comes from the vendored copy. The third is that a rule of `check` reads a file under `bundles/` other than `bundle.yml`. The fourth is that a third late drift costs a run an iteration.

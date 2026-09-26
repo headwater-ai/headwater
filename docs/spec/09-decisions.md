@@ -3,7 +3,7 @@ id: HW-REG-decisions
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-13
-summary: An index of the twenty-one design decisions and the ones that the build raised. It is where the record of each one lives, and the evidence that closed it.
+summary: An index of the twenty-one design decisions and the ones that the build raised. For each one, it names where the record lives and the evidence that closed it.
 doc_type: decision_register
 sequence: 9
 title: "The decision register"
