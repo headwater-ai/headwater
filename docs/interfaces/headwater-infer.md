@@ -51,6 +51,8 @@ The repository must load through its committed taxonomy lock and corpus. The hos
 
 **1** also means that the payload this run built did not load. That is a defect in this engine, because the verb escapes every value it writes.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 The command reads the system date when `--now` is absent. It reads no other environment variable.

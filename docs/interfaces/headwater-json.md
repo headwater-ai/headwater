@@ -55,6 +55,8 @@ Standard input carries one JSON document and is text. The verb reads it to the e
 
 **1** when standard input is not text, when a second word is absent, and when `field` is given no key. A second word this verb does not carry is refused the same way.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 No environment variable reaches this verb. `NO_COLOR` and `HEADWATER_NO_BANNER` reach the global parser as they do for every verb.

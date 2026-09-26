@@ -509,6 +509,19 @@ impl Cache {
 /// runs without a second count, and a shape this reader does not know is a
 /// record it drops rather than a record it half-reads.
 fn encode(outcome: &Outcome) -> Option<String> {
+    cached_form(outcome)
+}
+
+/// The record a cache stores for one outcome, and nothing for an outcome it
+/// does not hold. [`encode`] is this function, under the name the cache calls.
+///
+/// It is public for one reader: `tests/editions.rs` digests every verdict a
+/// rule reaches over the recorded corpora, and it must digest exactly what a
+/// cache would serve back. A second statement of this format in that test
+/// could drift from this one, and then the ledger and the cache would disagree
+/// about what a verdict is. It is hidden because no other caller needs it.
+#[doc(hidden)]
+pub fn cached_form(outcome: &Outcome) -> Option<String> {
     match outcome {
         Outcome::Passed => Some("passed".to_string()),
         Outcome::Skipped(_) => None,

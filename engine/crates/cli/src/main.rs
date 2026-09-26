@@ -72,7 +72,123 @@ use headwater_scaffold::reading::Surface as EntryPoint;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+/// Every write this binary makes to its two streams goes through these four,
+/// and none of them panics.
+///
+/// # Why the standard names are shadowed
+///
+/// `std`'s `print!` and its three siblings panic when the write fails, and the
+/// process then exits **101** with Rust's own `panicked` message: a status no
+/// caller can tell from a defect in this engine.
+/// [#1157](https://github.com/headwater-ai/headwater/issues/1157) found every
+/// verb but `check` writing that way, through about 340 lines of this file.
+/// A `macro_rules!` defined here takes precedence over the prelude's macro of
+/// the same name for the rest of the file, so every one of those lines now
+/// reaches [`emit`] with no edit, and a line added later cannot reach the
+/// panicking one by accident. `tests/unwritable.rs` holds every verb to that.
+macro_rules! print {
+    ($($arg:tt)*) => {
+        crate::emit(crate::Stream::Out, &format!($($arg)*))
+    };
+}
+
+macro_rules! println {
+    () => {
+        crate::emit(crate::Stream::Out, "\n")
+    };
+    ($($arg:tt)*) => {
+        crate::emit(crate::Stream::Out, &(format!($($arg)*) + "\n"))
+    };
+}
+
+macro_rules! eprint {
+    ($($arg:tt)*) => {
+        crate::emit(crate::Stream::Err, &format!($($arg)*))
+    };
+}
+
+macro_rules! eprintln {
+    () => {
+        crate::emit(crate::Stream::Err, "\n")
+    };
+    ($($arg:tt)*) => {
+        crate::emit(crate::Stream::Err, &(format!($($arg)*) + "\n"))
+    };
+}
+
+/// Which of the two streams [`emit`] writes.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Stream {
+    Out,
+    Err,
+}
+
+/// The payload a failed write unwinds with, and the one [`main`] turns into
+/// status 1 rather than letting it end the process as a panic.
+struct Unwritten;
+
+/// Write `text` to one stream and flush it, and unwind to [`main`] when the
+/// write fails.
+///
+/// The flush is here and not left to the exit of the process, because the
+/// flush Rust makes at exit ignores a failure. A standard output that fails is
+/// named in one sentence on standard error, in the shape [`report`] writes for
+/// `check`. A standard error that fails leaves nothing to say anything on.
+fn emit(stream: Stream, text: &str) {
+    use std::io::Write;
+    let written = match stream {
+        Stream::Out => {
+            let mut out = std::io::stdout().lock();
+            out.write_all(text.as_bytes()).and_then(|()| out.flush())
+        }
+        Stream::Err => {
+            let mut stream = std::io::stderr().lock();
+            stream
+                .write_all(text.as_bytes())
+                .and_then(|()| stream.flush())
+        }
+    };
+    match (written, stream) {
+        (Ok(()), _) => {}
+        (Err(error), Stream::Out) => unwritten(&error),
+        (Err(_), Stream::Err) => std::panic::resume_unwind(Box::new(Unwritten)),
+    }
+}
+
+/// End the run on a standard output that could not be written: one sentence
+/// on standard error, then an unwind that [`main`] ends with status 1.
+///
+/// # Why this unwinds rather than exiting
+///
+/// `std::process::exit` runs no destructor, and a verb can be holding a value
+/// whose destructor is the cleanup: `headwater_fetch::Fetched` removes its
+/// temporary directory when it drops. An unwind drops every value between the
+/// failed write and [`main`], as a return would. `resume_unwind` calls no panic
+/// hook, so nothing prints `panicked`.
+fn unwritten(error: &std::io::Error) -> ! {
+    // The status is 1 whether or not this sentence lands, so its own failure
+    // has nothing left to change.
+    let _ = say(&format!(
+        "headwater: {}\n",
+        err(&format!("cannot write to standard output: {error}"))
+    ));
+    std::panic::resume_unwind(Box::new(Unwritten))
+}
+
+/// The process, with every failed write turned into status 1.
+///
+/// A payload that is not [`Unwritten`] is a real panic. Its hook has already
+/// printed its message, and it resumes here so that it still ends with 101,
+/// which is what a defect in this engine exits with.
 fn main() -> ExitCode {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(entered)) {
+        Ok(code) => code,
+        Err(payload) if payload.is::<Unwritten>() => ExitCode::FAILURE,
+        Err(payload) => std::panic::resume_unwind(payload),
+    }
+}
+
+fn entered() -> ExitCode {
     // `clap` exits **2** on a parse error, and this binary has one failing
     // status and it is 1: `docs/interfaces/headwater-check.md` lists twelve
     // reasons for it under "There is no third status", and a 2 anywhere makes
@@ -108,7 +224,11 @@ fn main() -> ExitCode {
         Err(error) => match error.use_stderr() {
             true => return fail(&headwater_cli::headline(&error)),
             false => {
-                let _ = error.print();
+                // `clap` writes this to standard output itself, so its error
+                // is read here rather than in `emit`.
+                if let Err(error) = error.print().and_then(|()| flush_stdout()) {
+                    unwritten(&error);
+                }
                 return ExitCode::SUCCESS;
             }
         },
@@ -584,8 +704,16 @@ fn print_help_for(words: &[String]) -> ExitCode {
         );
     }
     let target = descend(&mut command, words).expect("the walk above found every word");
-    let _ = target.print_help();
+    if let Err(error) = target.print_help().and_then(|()| flush_stdout()) {
+        unwritten(&error);
+    }
     ExitCode::SUCCESS
+}
+
+/// Flush what `clap` wrote to standard output, so that a failure surfaces here
+/// and not in the flush at exit, which ignores it.
+fn flush_stdout() -> std::io::Result<()> {
+    std::io::Write::flush(&mut std::io::stdout())
 }
 
 /// The completion script of one shell, on standard output.
@@ -656,12 +784,16 @@ fn completions(shell: Option<headwater_cli::Shell>) -> ExitCode {
         headwater_cli::paint::WIDTH,
         headwater_cli::paint::ColorMode::Plain,
     ));
+    // Into memory first, because `clap_complete` panics on a sink that fails,
+    // and then out through the one writer that does not.
+    let mut script = Vec::new();
     clap_complete::generate(
         clap_complete::Shell::from(shell),
         &mut command,
         headwater_verbs::BINARY,
-        &mut std::io::stdout(),
+        &mut script,
     );
+    print!("{}", String::from_utf8_lossy(&script));
     ExitCode::SUCCESS
 }
 
@@ -4171,8 +4303,8 @@ fn scaffold_report(
                 "  {} {} — `created_by: {}`, so a scaffold pays for it",
                 edge.relation, edge.target, edge.created_by
             );
-            match &edge.reciprocal {
-                Some(half) => {
+            match (&edge.reciprocal, &edge.owed) {
+                (Some(half), _) => {
                     let _ = writeln!(
                         out,
                         "    the far half `{}` went into {}, because reciprocity is required",
@@ -4180,7 +4312,17 @@ fn scaffold_report(
                         paint(Role::Path, &half.path, mode)
                     );
                 }
-                None => {
+                (None, Some(owed)) => {
+                    let _ = writeln!(
+                        out,
+                        "    the far half `{}` is owed by {} once this document leaves `{}`, \
+                         and `headwater check --fix` writes it then",
+                        owed.half.relation,
+                        paint(Role::Path, &owed.half.path, mode),
+                        owed.until
+                    );
+                }
+                (None, None) => {
                     let _ = writeln!(out, "    the relation asks for no far half");
                 }
             }
@@ -5394,7 +5536,11 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
             }),
         },
     };
-    headwater_query::mcp::serve(&server, std::io::stdin().lock(), std::io::stdout().lock());
+    if let Err(error) =
+        headwater_query::mcp::serve(&server, std::io::stdin().lock(), std::io::stdout().lock())
+    {
+        unwritten(&error);
+    }
     ExitCode::SUCCESS
 }
 
