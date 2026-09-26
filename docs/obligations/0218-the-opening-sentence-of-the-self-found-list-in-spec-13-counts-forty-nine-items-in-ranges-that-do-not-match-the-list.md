@@ -2,7 +2,7 @@
 id: HW-OBL-0218
 status: current
 status_since: 2026-09-26
-summary: "Spec 13 opens its self-found list with forty-nine items in five ranges, and the list under that sentence holds 66."
+summary: "Spec 13 opens its self-found list with a count of forty-nine items in five ranges, and no check compares that count to the list under it."
 last_verified: 2026-09-26
 title: "The opening sentence of the self-found list in spec 13 counts forty-nine items in ranges that do not match the list"
 waiting_on: build
