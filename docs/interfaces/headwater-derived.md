@@ -114,6 +114,8 @@ The verb takes no option of its own. It computes one answer about one tree, and 
 
 **1** means that at least one of those disagrees. Five things give this status. A producer output carries no attribute. A declared path has no producer. A shape carries an attribute that is not its treatment. Outside a git repository, a merge attribute is one this verb cannot read. Inside one, git did not give the merge attributes, because it refused, did not run, or could not find the repository. The report prints the whole answer, on standard output, under either status.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 The verb reads no environment variable itself. The root comes from the command line, and every other input comes from the tree. Inside a git repository, git reads the configuration of the clone and its own environment, such as `GIT_DIR`. So `core.attributesFile` and `$GIT_DIR/info/attributes` can change the merge attribute of a path, as they change what a merge does.
