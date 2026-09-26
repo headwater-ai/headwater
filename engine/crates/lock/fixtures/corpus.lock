@@ -1,8 +1,8 @@
-headwater/standard 4.9.0
-sha256:744a8cabe7262e9bb8b93c4415973b46c4ff17e93fdf6a298e7aaeaa88e116b6
+headwater/standard 4.9.1
+sha256:41ecfcc51bbec1f35dc498df866d209b6e92ceebbb8b3623e428e3862e8843ea
 
 sources
-  sha256:4f0386438a4202c3373251ea4cac303e8e12e04eeb24d255b081cd05d87fa69d .headwater/packages/headwater-standard/taxonomy.yml
+  sha256:6525ccc6c2d578bad56b3854dbc692921f746f417eb57791ef240bf25ef9ef05 .headwater/packages/headwater-standard/taxonomy.yml
   sha256:6b82d47783829d0cee5809190340c2c28f680458ab70b99adab952a2d24048d1 .headwater/packages/headwater-standard/bundles/design-spec/bundle.yml
   sha256:1092c56eb53e4f4d439e6e15c932087ee84b256eb0fd27cc3edbafb1abb3202f .headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
   sha256:d2e1dd60f5adf97dcefd3aa46b0f377ed5e7eca533f82fad8a3d90224f79673f .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
