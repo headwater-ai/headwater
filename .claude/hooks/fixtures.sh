@@ -384,6 +384,14 @@ if [ -x "$engine" ]; then
     expect 'the same advisory prints the front-matter lines that declare the edge' \
         write.sh 0 '      governs:\n        - engine/crates/query/src/unrelated.rs' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+    # An advisory that names no document to read does not tell the agent to
+    # read each one (#953, verify finding 3).
+    refute 'the ungoverned advisory with no document to name asks for no reading' \
+        write.sh 'Read each one' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+    expect 'the ungoverned advisory still says it blocks nothing and writes nothing' \
+        write.sh 0 'Nothing here blocks the edit, and nothing here writes the edge' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
     expect 'an edit to a path outside the governed scope that nothing governs is silent' \
         write.sh 0 '' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/tests/unrelated.rs"}}'
@@ -418,17 +426,20 @@ if [ -x "$engine" ]; then
         write.sh 0 'docs/interfaces/headwater-sweep.md' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/cli/src/main.rs"}}'
 
-    # `runner.rs` sits beside a file `docs/interfaces/headwater-check.md`
+    # A made-up file beside `lib.rs`, which `docs/interfaces/headwater-check.md`
     # governs by a literal, one-file anchor. HW-DR-0074 lets an author widen
     # that anchor to a pattern; this contract has not been rewritten to one,
     # so the edge still answers for no file beside the one it names. Since
-    # #953 the file is named as ungoverned in scope instead of meeting silence.
-    refute 'a file beside a governed crate file names no contract, until its contract adopts a pattern' \
-        write.sh 'docs/interfaces/headwater-check.md' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/runner.rs"}}'
+    # #953 the path is named as ungoverned in scope instead of meeting silence.
+    # A name with no file behind it, so no later edge on a real file moves it.
+    # The contract can still appear among the documents a term route reached,
+    # so the case refutes the governing header rather than the contract's path.
+    refute 'a file beside a governed crate file is governed by no contract, until its contract adopts a pattern' \
+        write.sh 'a document in this corpus declares that it governs' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/nothing-governs-this.rs"}}'
     expect 'the same file is named as in the governed scope with nothing governing it' \
-        write.sh 0 'engine/crates/check/src/runner.rs is in the governed scope, and nothing governs it' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/runner.rs"}}'
+        write.sh 0 'engine/crates/check/src/nothing-governs-this.rs is in the governed scope, and nothing governs it' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/nothing-governs-this.rs"}}'
 
     # #953: the advisory is heard before the edit, and it says so. Until then
     # this branch exited at once for a path that exists, so the case above on
