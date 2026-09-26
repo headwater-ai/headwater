@@ -191,8 +191,9 @@ fn a_relation_that_marks_itself_is_read_as_any_other() {
 /// A relation that writes a state onto its target is exempt outright.
 ///
 /// `supersedes` declares `on_target: {set_state: superseded}`. An edge of it
-/// is a statement about the target, which it retires, and never a reliance on
-/// what the target says.
+/// states that its target is replaced, and it is not a reliance on what the
+/// target says. The draft here still stands at `draft`, which is the silent
+/// case HW-DR-0085 names.
 #[test]
 fn a_relation_that_writes_its_target_s_state_is_exempt() {
     let run = run();
@@ -303,9 +304,11 @@ fn an_edge_onto_an_anchor_generates_no_instance() {
 #[test]
 fn a_live_document_writing_the_inverse_name_onto_a_draft_is_reported() {
     let run = run();
-    let message =
-        about(&run, "NOTE-FIX-verifies-draft").expect("the inverse-written finding");
-    assert!(message.contains("`verifies`"), "the name written: {message}");
+    let message = about(&run, "NOTE-FIX-verifies-draft").expect("the inverse-written finding");
+    assert!(
+        message.contains("`verifies`"),
+        "the name written: {message}"
+    );
     assert!(
         message.contains("NOTE-FIX-argued-over"),
         "the draft: {message}"
@@ -313,7 +316,10 @@ fn a_live_document_writing_the_inverse_name_onto_a_draft_is_reported() {
     // Writer first, far end second, in the direction the author wrote.
     let writer_at = message.find("NOTE-FIX-verifies-draft").expect("the writer");
     let draft_at = message.find("NOTE-FIX-argued-over").expect("the draft");
-    assert!(writer_at < draft_at, "the ends are the wrong way round: {message}");
+    assert!(
+        writer_at < draft_at,
+        "the ends are the wrong way round: {message}"
+    );
 }
 
 /// The mirror: a draft writes the inverse name onto a live document. The

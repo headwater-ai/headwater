@@ -30,11 +30,15 @@ The owner ruled on both questions on 2026-09-26, in [a comment on the issue](htt
 
 ## Decision
 
-`lifecycle.dependency.on_initial` reports a live source that declares a relation to a target at a state with the role `initial`. It reads every relation whose two ends are documents. It does not read `lifecycle_sensitive`.
+`lifecycle.dependency.on_initial` reports a live document that writes a relation to a document at a state with the role `initial`. It reads every relation whose two ends are documents. It does not read `lifecycle_sensitive`.
+
+The rule reads each edge in the direction that its author wrote it. The document that writes the line is the document that cites. So a live document that writes the inverse name onto a draft gets a warning. The relation declares the draft as its source, and that does not change the finding. A draft that writes the inverse name onto a live document gets no warning.
 
 HW-DR-0065 leaves `traces_to` unmarked for a reason. A live document can cite a retired one correctly, as a citation of the record that the retired document left. A draft leaves no record. The guidance that its state declares is that nothing may rely on it. So no citation of a draft is correct in the sense that HW-DR-0065 protects, and the rule has no reason to read the flag.
 
-One relation is exempt: a relation that declares `on_target.set_state`. An edge of it is a statement about its target, and it is not a reliance on the text of the target. The exemption applies at every target state, because a successor that supersedes a draft closes that draft.
+One relation is exempt: a relation that declares `on_target.set_state`. An edge of it states that its target is replaced, and it is not a reliance on the text of the target. The exemption applies at every target state, as the parent ruled. It has a silent case. A live document that supersedes a draft which still stands at `draft` gets no warning. The base regimes let a draft move only to `current` or `deprecated`. So a draft cannot move to `superseded`, and no verb writes that state onto a target. The draft stays at `draft`, and this rule does not report the pair.
+
+Two relations of the base are read although neither is a reliance of the writer on the document named. `constrains` runs from the decision that constrains to the decision it constrains, so a settled decision that constrains a new draft is the usual shape. `conflicts_with` declares that it is invalid when both ends are `current`. So a current decision that conflicts with a draft is the only valid shape of that relation with a live end. The rule warns on both on purpose. The ruling is every relation, and the engine exempts a relation only by a declaration that it can read. A live document that constrains a draft, or conflicts with one, names a text that can still change. A declaration on the relation that says it is not a reliance would exempt it, and no such declaration exists yet.
 
 The finding is a warning and never an error. This also applies to a current specification that cites a draft one. The repair is to promote the target, to point the source at a document that stands, or to move the source back to draft. Only the author can choose among the three. `CT-LIFE-5` is `permanently_advisory` for this reason.
 
@@ -46,4 +50,6 @@ An adopter of the base gets the finding with no overlay change, over every relat
 
 A target that stands at a state its own regime does not name is skipped. `lifecycle.state.not_admitted` reports it once. A target with no state is also skipped, and an edge to an anchor forms no pair.
 
-The rule does not find a draft that no live document cites. The thirteen obligation records had no incoming edge from a live document, so this rule would not have reported them. What files a record at `draft` in a run is a separate gap.
+`headwater new` writes a new document at `draft`. For a relation that it creates, it also writes the reciprocal half into the live document at the far end. That live document then writes a line to a draft, and it gets a warning until the author promotes the new document. The base `supersedes` is exempt, so this does not occur for a successor. It does occur for `verified_by` in this repository, and for every relation that the scaffolder creates and that writes no state. The repair is the one that [HW-DR-0052](0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md) names: promote the new document before you propose it.
+
+The rule does not find a draft that no live document cites. What files a record at `draft` in a run is a separate gap.

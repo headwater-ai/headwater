@@ -274,11 +274,40 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
         headwater_check::paint::ColorMode::Plain,
     );
 
+    // One advisory finding per spliced far half, and it is the ruling working
+    // rather than a defect of the scaffolder. The scaffolder writes a new
+    // document at the regime's initial state, and it writes the required
+    // reciprocal `superseded_by` into the live document the successor
+    // replaces. That live document now names a draft, and
+    // `lifecycle.dependency.on_initial` reads each half from the document
+    // that wrote it (HW-DR-0085). This fixture's `supersedes` writes no state
+    // onto its target, so the relation is not exempt. The repair is the one
+    // HW-DR-0052 names: the author promotes the successor before proposing
+    // it. The base package's `supersedes` writes `superseded` and is exempt,
+    // so an adopter of the base never meets this pair.
+    let mut on_initial: Vec<&str> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == headwater_check::initial_dependency::RULE)
+        .filter(|finding| touched.contains(&finding.path))
+        .map(|finding| finding.path.as_str())
+        .collect();
+    on_initial.sort_unstable();
+    assert_eq!(
+        on_initial,
+        [
+            "corpus/decisions/an-earlier-decision.md",
+            "corpus/spec/02-the-second-part.md"
+        ],
+        "one warning on each spliced far half, and nowhere else"
+    );
+
     // The assertion the issue asks for.
     let against_scaffolded: Vec<String> = run
         .findings
         .iter()
         .filter(|finding| touched.contains(&finding.path))
+        .filter(|finding| finding.rule != headwater_check::initial_dependency::RULE)
         .map(|finding| format!("{}:{} {}", finding.path, finding.line, finding.message))
         .collect();
     assert!(

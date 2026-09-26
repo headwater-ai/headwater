@@ -22,13 +22,34 @@
 //! rule gated on the same flag would reach no pair in any adopter of the base.
 //! So this rule reads every relation whose two ends are documents.
 //!
+//! # The direction is the one the author wrote
+//!
+//! A relation declares a direction, and an author may write either of its two
+//! names. The document that writes the line is the one that cites, so each
+//! written half is judged from its writer to the document it names. A live
+//! document that writes `verifies` onto a draft rests on that draft, although
+//! the relation declares the draft as its source. Where both halves are
+//! written, each is judged, and each finding anchors at its own entry.
+//!
+//! # Every relation is read, including the ones that are not a reliance
+//!
+//! `constrains` runs from the constraining decision to the constrained one,
+//! and `conflicts_with` is valid with a live end only while the other end is
+//! not live. Neither is a reliance of the writer on the document named. This
+//! rule reads both anyway, because the ruling is every relation, and a
+//! relation is exempt only by a declaration the engine can read. A live
+//! document that constrains a draft or conflicts with one names a text that
+//! can still change under it, and the warning says so.
+//!
 //! # The one exemption: a relation that writes a state onto its target
 //!
-//! `supersedes` declares `on_target: {set_state: superseded}`. An edge of it is
-//! a statement about its target, which it retires, and never a reliance on
-//! what the target says. The exemption is the relation outright, whatever state
-//! the target stands at, because superseding a draft is how a draft that lost
-//! an argument is closed.
+//! `supersedes` declares `on_target: {set_state: superseded}`. An edge of it
+//! states that its target is replaced, and it is not a reliance on what the
+//! target says. The exemption is the relation outright, whatever state the
+//! target stands at. That exemption has a silent case: a live document that
+//! supersedes a draft which still stands at `draft`. The base regimes do not
+//! let a draft move to `superseded`, and no verb writes that state onto a
+//! target, so the draft stays where it is and this rule does not report it.
 //!
 //! # What the rule shares with its sibling
 //!
@@ -49,9 +70,10 @@ use crate::dependency::{not_a_state, undeclared};
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
 use crate::lifecycle_state::{Standing, StateFacet, Stood};
-use crate::scope::{EdgeCheck, EdgeUnit, EdgeView};
+use crate::scope::{EdgeCheck, EdgeEnd, EdgeUnit, EdgeView};
 use crate::shape::Shape;
 use headwater_graph::declarations::Relation;
+use headwater_graph::edges::Edge;
 use headwater_graph::Declarations;
 
 pub const RULE: &str = "lifecycle.dependency.on_initial";
@@ -104,13 +126,13 @@ impl EdgeCheck for InitialDependency<'_> {
     }
 
     fn evaluate(&self, view: &EdgeView<'_>) -> Outcome {
-        let Some(half) = view.declared_half().or_else(|| view.inverse_half()) else {
+        let Some(first) = view.declared_half().or_else(|| view.inverse_half()) else {
             return Outcome::Skipped(NO_HALF.to_string());
         };
         let Some(relation) = self
             .relations
             .iter()
-            .find(|known| known.name == half.declared)
+            .find(|known| known.name == first.declared)
         else {
             return Outcome::Skipped(NO_PAIR.to_string());
         };
@@ -124,48 +146,88 @@ impl EdgeCheck for InitialDependency<'_> {
             return Outcome::Passed;
         }
 
-        let (Some(source_facets), Some(target_facets)) = (source.facets(), target.facets()) else {
-            return Outcome::Skipped(
+        // Each half an author wrote, read from the document that wrote it. The
+        // declared half is written at the source and points at the target, and
+        // the inverse half is written at the target and points at the source.
+        let written = [
+            view.declared_half().map(|half| (half, source, target)),
+            view.inverse_half().map(|half| (half, target, source)),
+        ];
+        let mut findings = Vec::new();
+        let mut skipped = None;
+        for (half, writer, cited) in written.into_iter().flatten() {
+            match self.judge(half, writer, cited) {
+                Judged::Passed => {}
+                Judged::Skipped(why) => {
+                    skipped.get_or_insert(why);
+                }
+                Judged::Failed(finding) => findings.push(finding),
+            }
+        }
+        if !findings.is_empty() {
+            return Outcome::failed(findings);
+        }
+        match skipped {
+            Some(why) => Outcome::Skipped(why),
+            None => Outcome::Passed,
+        }
+    }
+}
+
+/// What one written half comes to.
+enum Judged {
+    Passed,
+    Skipped(String),
+    Failed(Finding),
+}
+
+impl InitialDependency<'_> {
+    /// One half, from the document that wrote it to the document it names.
+    fn judge(&self, half: &Edge, writer: EdgeEnd<'_>, cited: EdgeEnd<'_>) -> Judged {
+        // Three states at each end, and the two absences are kept apart from
+        // the values, as in [`crate::dependency`].
+        let (Some(writer_facets), Some(cited_facets)) = (writer.facets(), cited.facets()) else {
+            return Judged::Skipped(
                 "the census parsed no document at one end of this edge, so there is no state to \
                  read there"
                     .to_string(),
             );
         };
-        let source_state = match self.facet.stood(source_facets) {
+        let writer_state = match self.facet.stood(writer_facets) {
             Stood::At(state) => state,
-            Stood::Undeclared => return Outcome::Skipped(undeclared("source", source.id)),
+            Stood::Undeclared => return Judged::Skipped(undeclared("source", writer.id)),
             Stood::NotAState(value) => {
-                return Outcome::Skipped(not_a_state("source", source.id, value))
+                return Judged::Skipped(not_a_state("source", writer.id, value))
             }
         };
-        let target_state = match self.facet.stood(target_facets) {
+        let cited_state = match self.facet.stood(cited_facets) {
             Stood::At(state) => state,
-            Stood::Undeclared => return Outcome::Skipped(undeclared("target", target.id)),
+            Stood::Undeclared => return Judged::Skipped(undeclared("target", cited.id)),
             Stood::NotAState(value) => {
-                return Outcome::Skipped(not_a_state("target", target.id, value))
+                return Judged::Skipped(not_a_state("target", cited.id, value))
             }
         };
 
-        if self.facet.standing(source_state) != Standing::Live {
-            return Outcome::Passed;
+        if self.facet.standing(writer_state) != Standing::Live {
+            return Judged::Passed;
         }
-        if self.facet.standing(target_state) != Standing::Initial {
-            return Outcome::Passed;
+        if self.facet.standing(cited_state) != Standing::Initial {
+            return Judged::Passed;
         }
-        // A state the target's own regime does not name is a defect of that
-        // document, and `lifecycle.state.not_admitted` is reporting it.
-        if !self.regime_names(target.kind, target_state) {
-            return Outcome::Skipped(format!(
-                "`{}` stands at `{target_state}`, which the lifecycle regime of a `{}` does not \
+        // A state the cited document's own regime does not name is a defect
+        // of that document, and `lifecycle.state.not_admitted` is reporting it.
+        if !self.regime_names(cited.kind, cited_state) {
+            return Judged::Skipped(format!(
+                "`{}` stands at `{cited_state}`, which the lifecycle regime of a `{}` does not \
                  name, and `{}` reports that",
-                target.id,
-                target.kind,
+                cited.id,
+                cited.kind,
                 crate::lifecycle_state::RULE
             ));
         }
 
         let (line, column) = at(Some(half.span));
-        Outcome::failed_with(Finding {
+        Judged::Failed(Finding {
             rule: self::RULE,
             severity: Severity::Warn,
             obligation: None,
@@ -173,15 +235,15 @@ impl EdgeCheck for InitialDependency<'_> {
             line,
             column,
             message: format!(
-                "`{}` stands at `{source_state}` and declares `{}` to `{}`, which stands at the \
-                 initial state `{target_state}`: nothing has promoted that document, so a live \
+                "`{}` stands at `{writer_state}` and writes `{}` to `{}`, which stands at the \
+                 initial state `{cited_state}`: nothing has promoted that document, so a live \
                  document does not rest on it",
-                source.id, relation.name, target.id
+                writer.id, half.name, cited.id
             ),
             remediation: format!(
                 "promote {} once it is settled, point `{}` in {} at a document that stands, or \
                  move {} back to its initial state until the target is settled",
-                target.path, half.name, half.source.path, source.path
+                cited.path, half.name, half.source.path, writer.path
             ),
             // No patch. Which of the three repairs is right is a judgment
             // about both documents that only an author can make.

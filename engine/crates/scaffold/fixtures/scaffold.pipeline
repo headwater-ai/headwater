@@ -158,8 +158,9 @@ register
   control.observation.invalid reaches no obligation, so it names none
   adoption.task.expired reaches no obligation, so it names none
   relation.target.verification.suspect reaches no obligation, so it names none
-1 findings
+3 findings
       1 ✗ error
+      2 ▲ warn
 
 instances
   facet.required.missing corpus/decisions/a-scaffolded-successor.md
@@ -279,9 +280,9 @@ instances
   relation.endpoint.not_permitted corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md
     passed
   lifecycle.dependency.on_initial corpus/decisions/a-scaffolded-successor.md + corpus/spec/02-the-second-part.md
-    passed
+    failed
   lifecycle.dependency.on_initial corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md
-    passed
+    failed
   lifecycle.dependency.on_initial corpus/spec/02-the-second-part.md + corpus/spec/01-the-first-part.md
     passed
   lifecycle.dependency.on_initial corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md
@@ -419,6 +420,12 @@ instances
   lifecycle.deletion.not_permitted corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 
+corpus/decisions/an-earlier-decision.md:9:7 ▲ warn
+  lifecycle.dependency.on_initial: `DR-FIX-0007` stands at `current` and writes `superseded_by` to `DR-FIX-0009`, which stands at the initial state `draft`: nothing has promoted that document, so a live document does not rest on it
+  fix: promote corpus/decisions/a-second-successor.md once it is settled, point `superseded_by` in corpus/decisions/an-earlier-decision.md at a document that stands, or move corpus/decisions/an-earlier-decision.md back to its initial state until the target is settled
+corpus/spec/02-the-second-part.md:14:7 ▲ warn
+  lifecycle.dependency.on_initial: `SPEC-FIX-the-second-part` stands at `current` and writes `superseded_by` to `DR-FIX-0008`, which stands at the initial state `draft`: nothing has promoted that document, so a live document does not rest on it
+  fix: promote corpus/decisions/a-scaffolded-successor.md once it is settled, point `superseded_by` in corpus/spec/02-the-second-part.md at a document that stands, or move corpus/spec/02-the-second-part.md back to its initial state until the target is settled
 corpus/standards/a-standard.md:1:1 ✗ error
   identifier.unusable (OB-FIX-1): a typed `standard` that declares no identifier, so no edge can name it
   fix: write one identifier of this document under the `id` key, because a relation names a document by its identifier and a document with none can stand at neither end of one
