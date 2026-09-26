@@ -755,6 +755,45 @@ fn a_shape_failed_verification_entry_naming_no_verification_is_named() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// As above, for each shape test that only a verification entry meets. Each
+/// reader marks the problem as a verification entry's, so each one reaches
+/// the block.
+fn assert_unread_orphan_line(label: &str, entry: &str, reason: &str) {
+    let root = scratch_corpus(label);
+    let observations = snapshot_on_disk(
+        &root,
+        &format!("ACP-FIX-verification-nowhere:\n  kind: verification\n{entry}"),
+    );
+    let run = run_over(&root, &observations);
+    let text = rendered(&run);
+    assert!(
+        text.contains(&format!(
+            "  ACP-FIX-verification-nowhere is named in the snapshot and is no verification \
+             of this corpus, and its entry did not read: {reason}"
+        )),
+        "{text}"
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn a_verification_orphan_with_an_empty_digest_is_named_with_the_reason() {
+    assert_unread_orphan_line(
+        "orphan-empty-digest",
+        &format!("  commit: {SNAPSHOT_COMMIT}\n  criterion_digest: \"\"\n"),
+        "its `criterion_digest` is empty",
+    );
+}
+
+#[test]
+fn a_verification_orphan_with_an_implausible_commit_is_named_with_the_reason() {
+    assert_unread_orphan_line(
+        "orphan-bad-commit",
+        "  commit: \"not a commit\"\n  criterion_digest: \"sha256:00\"\n",
+        "its `commit` (`not a commit`) does not read as a plausible commit reference",
+    );
+}
+
 /// `kind` is matched exactly. `Verification` is neither kind, so the entry is
 /// the register's to report, and the block does not claim it as a
 /// verification entry.
