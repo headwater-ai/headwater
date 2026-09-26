@@ -679,7 +679,10 @@ pub enum Verb {
                     other end. Repeatable. It is refused unless the taxonomy declares \
                     `created_by: scaffold` on the relation, unless both ends are kinds the \
                     relation permits, and unless the target resolves. Where reciprocity is \
-                    required the far half is written into the target document"
+                    required and the new document opens at an initial state, the far half is \
+                    owed until the document leaves that state, and `headwater check --fix` \
+                    writes it then. In every other case the far half is written into the \
+                    target document at once"
         )]
         relates: Vec<(String, String)>,
         #[arg(
