@@ -151,8 +151,16 @@ fn a_clash_written_in_inverse_names_is_reported() {
     let run = run();
     let messages = at(&run, "self-written.md");
     assert_eq!(messages.len(), 1, "{:?}", reported(&run));
-    assert!(messages[0].contains("NOTE-FIX-self-superseder"), "{}", messages[0]);
-    assert!(messages[0].contains("NOTE-FIX-self-retirer"), "{}", messages[0]);
+    assert!(
+        messages[0].contains("NOTE-FIX-self-superseder"),
+        "{}",
+        messages[0]
+    );
+    assert!(
+        messages[0].contains("NOTE-FIX-self-retirer"),
+        "{}",
+        messages[0]
+    );
 }
 
 /// Exactly the two clashes, and nothing else in the tree.

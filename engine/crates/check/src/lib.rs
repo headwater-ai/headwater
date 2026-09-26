@@ -822,12 +822,7 @@ pub fn run(
         cache,
     ));
     instances.extend(scope::over_neighbourhoods(
-        &set_twice,
-        census,
-        graph,
-        &digests,
-        ctx,
-        cache,
+        &set_twice, census, graph, &digests, ctx, cache,
     ));
     instances.extend(scope::over_documents(
         &declarations,
