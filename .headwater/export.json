@@ -1233,7 +1233,7 @@
           "id": "HW-DR-0042",
           "status": "current",
           "status_since": "2026-08-30",
-          "summary": "\"One screen\" is retired as a claim about a terminal and replaced by a claim about content: the first screen carries one line per entry, and the ceiling that follows from it is 64 lines.",
+          "summary": "\"One screen\" is retired as a claim about a terminal and replaced by a claim about content. The first screen carries one line per entry, and the ceiling that follows from it is 64 lines.",
           "last_verified": "2026-09-18",
           "title": "Q42 — What \"one screen\" means for the first help screen",
           "provenance": {
@@ -9453,7 +9453,7 @@
           "id": "HW-OBL-0214",
           "status": "current",
           "status_since": "2026-09-26",
-          "summary": "Only the required Engine tests job catches a drift between the taxonomy bundles and their vendored copy, so a contributor learns of it at CI and not at commit.",
+          "summary": "Only the required Engine tests job catches a drift between the taxonomy bundles and their vendored copy. So a contributor learns of it at CI and not at commit.",
           "last_verified": "2026-09-24",
           "title": "The commit gate does not see docs/taxonomies/README.md drift from its vendored copy",
           "waiting_on": "build"
@@ -9484,6 +9484,34 @@
           "summary": "The merge-regenerate and merged-fold-check hooks tell the merger to run headwater taxonomy resolve --write, and the verb rejects --write because it writes by default.",
           "last_verified": "2026-09-25",
           "title": "Two merge hooks of this repository print a resolve flag that the verb refuses",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0217",
+        "facets": {
+          "id": "HW-OBL-0217",
+          "status": "current",
+          "status_since": "2026-09-26",
+          "summary": "The pre-push hook reads a site-review marker that every worktree of a clone shares, so one unreviewed site merge refuses the push of every worktree.",
+          "last_verified": "2026-09-26",
+          "title": "The site-review marker lives in the common directory of a clone, so one worktree's unreviewed merge blocks the push of every worktree",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0218-the-opening-sentence-of-the-self-found-list-in-spec-13-counts-forty-nine-items-in-ranges-that-do-not-match-the-list.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0218",
+        "facets": {
+          "id": "HW-OBL-0218",
+          "status": "current",
+          "status_since": "2026-09-26",
+          "summary": "Spec 13 opens its self-found list with a count of forty-nine items in five ranges, and no check compares the count to the list.",
+          "last_verified": "2026-09-26",
+          "title": "The opening sentence of the self-found list in spec 13 counts forty-nine items in ranges that do not match the list",
           "waiting_on": "build"
         }
       },
@@ -9892,7 +9920,7 @@
           "id": "HW-PD-0001",
           "status": "current",
           "status_since": "2026-09-07",
-          "summary": "Every sentence of orchestration prose has exactly one home, decided by who must obey it and whether it changes per dispatch, so the command holds only what the parent decides and each agent loads only what it must obey.",
+          "summary": "Every sentence of orchestration prose has exactly one home, decided by who must obey it and whether it changes per dispatch. So the command holds only what the parent decides and each agent loads only what it must obey.",
           "last_verified": "2026-09-07",
           "title": "Orchestration prose has one owner per sentence",
           "provenance": {
@@ -9987,7 +10015,7 @@
           "id": "HW-PD-0005",
           "status": "current",
           "status_since": "2026-09-07",
-          "summary": "The run ledger is one directory of small files rather than one markdown file, its per-iteration log and its findings are JSONL read by the line, every total is derived and never stored, and a database is deferred until a cross-run question asks for one.",
+          "summary": "The run ledger is one directory of small files rather than one markdown file. Its per-iteration log and its findings are JSONL read by the line, and every total is derived and never stored. A database is deferred until a cross-run question asks for one.",
           "last_verified": "2026-09-07",
           "title": "The ledger is split, its tabular parts are JSONL, and its totals are derived",
           "provenance": {
@@ -10703,7 +10731,7 @@
           "status": "current",
           "status_since": "2026-08-11",
           "last_verified": "2026-08-13",
-          "summary": "An index of the twenty-one design decisions and the ones that the build raised, where the record of each one lives, and the evidence that closed it.",
+          "summary": "An index of the twenty-one design decisions and the ones that the build raised. For each one, it names where the record lives and the evidence that closed it.",
           "doc_type": "decision_register",
           "sequence": "9",
           "title": "The decision register",

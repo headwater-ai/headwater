@@ -732,6 +732,10 @@ docs/obligations/0215-a-bless-run-of-the-conformance-render-tests-races-two-test
   typed: obligation_record
 docs/obligations/0216-two-merge-hooks-of-this-repository-print-a-resolve-flag-that-the-verb-refuses.md
   typed: obligation_record
+docs/obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md
+  typed: obligation_record
+docs/obligations/0218-the-opening-sentence-of-the-self-found-list-in-spec-13-counts-forty-nine-items-in-ranges-that-do-not-match-the-list.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md

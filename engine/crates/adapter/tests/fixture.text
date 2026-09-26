@@ -652,9 +652,9 @@ read set
   version identifier.claimed_twice 1
   version identifier.claim.missing 2
   version identifier.claim.stale 1
-  version voice.forbidden_construction 4
-  version language.controlled.not_met 3
-  version language.retired_term.used 3
+  version voice.forbidden_construction 5
+  version language.controlled.not_met 4
+  version language.retired_term.used 4
   version surface.local_path.instructed 5
   version surface.command.undeclared 1
   version language.source_form.not_met 1
