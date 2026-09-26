@@ -109,7 +109,7 @@ fn rules_reading(run: &Run, path: &str) -> Vec<&'static str> {
         .filter(|instance| instance.reads.iter().any(|input| input.path == path))
         .map(|instance| instance.rule)
         .collect();
-    rules.sort();
+    rules.sort_unstable();
     rules
 }
 
