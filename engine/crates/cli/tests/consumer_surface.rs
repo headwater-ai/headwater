@@ -163,6 +163,30 @@ impl Root {
 
     /// The same, for any rule of the surface.
     fn findings_of(&self, rule: &str, slug: &str) -> Vec<String> {
+        self.located(rule, slug)
+            .into_iter()
+            .map(|(_, message)| message)
+            .collect()
+    }
+
+    /// The line of the page each finding of this rule stands on, beside the
+    /// finding's message, so a test can tell two findings with one message
+    /// apart by where they are (#1085).
+    fn findings_at(&self, slug: &str) -> Vec<(usize, String)> {
+        self.located(RULE, slug)
+    }
+
+    /// The 1-based line of the page's source that holds `text`.
+    fn line_of(&self, slug: &str, text: &str) -> usize {
+        let page = std::fs::read_to_string(self.at.join(format!("docs/interfaces/{slug}.md")))
+            .expect("the contract reads");
+        page.lines()
+            .position(|line| line == text)
+            .map(|at| at + 1)
+            .expect("the page holds the line")
+    }
+
+    fn located(&self, rule: &str, slug: &str) -> Vec<(usize, String)> {
         let (_, out, _) = self.run(&["check", "--format", "json"]);
         let path = format!("\"path\": \"docs/interfaces/{slug}.md\",");
         let lines: Vec<&str> = out.lines().map(str::trim).collect();
@@ -187,7 +211,12 @@ impl Root {
                     .any(|l| l.starts_with("\"escape\": \"none\""))
             {
                 if let Some(message) = finding.iter().find(|l| l.starts_with("\"message\"")) {
-                    messages.push(message.to_string());
+                    let line = finding
+                        .iter()
+                        .find_map(|l| l.strip_prefix("\"line\": "))
+                        .and_then(|n| n.trim_end_matches(',').parse().ok())
+                        .unwrap_or(0);
+                    messages.push((line, message.to_string()));
                 }
             }
         }
@@ -323,15 +352,45 @@ fn a_bare_root_counts_only_in_a_shell_block_and_a_prefixed_one_counts_everywhere
         p.iter().any(|f| f.contains("names `mkdocs/build.sh`,")),
         "a token under the root of a program's name is still a path of this repository\n{p:#?}"
     );
+    let site: Vec<usize> = root
+        .findings_at("p")
+        .into_iter()
+        .filter(|(_, f)| f.contains("names `site`,"))
+        .map(|(line, _)| line)
+        .collect();
     assert_eq!(
-        p.iter().filter(|f| f.contains("names `site`,")).count(),
-        1,
+        site,
+        vec![root.line_of("p", "rm -rf site")],
         "the bare `site` of `rm -rf site` in the shell block is reported, and the `site` of \
-         `site_dir: site` in the `yaml` block is not\n{p:#?}"
+         `site_dir: site` in the `yaml` block, at line {}, is not\n{p:#?}",
+        root.line_of("p", "site_dir: site")
     );
     assert!(
         p.iter().any(|f| f.contains("names `site/docs`,")),
         "a token that opens with a root and its slash counts in a `yaml` block\n{p:#?}"
+    );
+}
+
+/// A bare root in a front-matter value is the author's own word, and a path
+/// under a root there still counts (#1085).
+///
+/// The page is named `site`, so its `title` facet is the bare word `site`, one
+/// scalar with no whitespace, which is what the front-matter loop reads. Its
+/// `governs` value `.githooks/pre-commit` opens with a root and its slash.
+#[test]
+fn a_bare_root_in_a_front_matter_value_is_not_reported_and_a_path_is() {
+    let root = Root::new("frontmatter", &["docs/interfaces/site.md"]);
+    root.contract("site", "\nNothing to run.\n");
+    let (_, out, err) = root.run(&["check"]);
+    let found = root.findings("site");
+    assert!(
+        found.iter().any(|f| f
+            .contains("the `governs` front-matter value names `.githooks/pre-commit`,")),
+        "a path under a root in a front-matter value is reported\n{found:#?}\n{out}{err}"
+    );
+    assert!(
+        !found.iter().any(|f| f.contains("names `site`,")),
+        "the bare `site` of the `title` facet is not reported\n{found:#?}"
     );
 }
 
