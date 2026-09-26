@@ -1665,46 +1665,6 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
     }
 }
 
-/// `headwater taxonomy publish`.
-///
-/// The publisher's half. It writes the artifact and prints the digest, which is
-/// what the release notes carry and what a consumer writes into its own
-/// declaration. The number is printed rather than filed anywhere, because a
-/// digest that travels inside the artifact it describes checks nothing.
-///
-/// **`nothing was published` is printed for every error and it is a statement
-/// about the disk.** Nothing here establishes it: this arm never learns whether
-/// the library reached a write. What makes it true is
-/// [`headwater_resolve::package::publish`], which reads every path the manifest
-/// declares before it creates `--out` and returns `--out` to the state it found
-/// it in when a write fails. That was false until [#271], where a failing run
-/// left three files and an empty `bundles/` under a directory it said it had not
-/// written to, and the next run was refused by the `--out` precondition catching
-/// the first run's leftovers. `engine/crates/cli/tests/publish.rs` holds this
-/// line to the disk from the state an adopter is in.
-///
-/// **`--json` writes the record as one document, because the handoff is a step
-/// somebody scripts.** The digest has to be told to a consumer out of band, so
-/// passing it on is automated, and a paragraph of English is what that
-/// automation had to read until [#353]. The document is
-/// [`headwater_resolve::release::document`], and it names its own shape rather
-/// than this engine's version. A refusal writes no document and stays on
-/// standard error, which is [HW-DR-0043]'s rule for every `--json` this binary
-/// takes.
-///
-/// **`delivery` says how the artifact reached `--out`, on every publish.** A
-/// publish into a mount point cannot rename onto it, falls back to writing the
-/// artifact file by file, and until [#664] said so on none of this verb's three
-/// surfaces — so a continuous-integration publisher writing into a mounted
-/// volume had the one configuration with no atomicity guarantee and no way to
-/// learn it. The member is `renamed` or `direct` and is never absent, and the
-/// prose reason for a `direct` is on standard error in both output modes.
-///
-/// [#664]: https://github.com/headwater-ai/headwater/issues/664
-///
-/// [#271]: https://github.com/headwater-ai/headwater/issues/271
-/// [#353]: https://github.com/headwater-ai/headwater/issues/353
-/// [HW-DR-0043]: ../../../../docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md
 /// `headwater taxonomy publish --from <dir> --check` (#1139).
 ///
 /// Whether the vendored copy of a package is what a fresh publish of its
@@ -1807,15 +1767,18 @@ fn publish_check(
         );
     } else if checked.record_moved {
         // Every member agrees and the digest over them agrees, so what moved is
-        // a field of the record the digest does not cover.
+        // a field of the record the digest does not cover: the package, the
+        // version or the engine range.
         eprintln!(
-            "  release.yml: the vendored record does not hold the bytes a fresh publish writes for it"
+            "  release.yml: the vendored record does not state what a fresh publish states for it"
         );
     }
     eprint!(
         "{}",
         indent(&format!(
-            "The source changed and nobody republished it. Run these four steps in this order:\n  \
+            "The vendored copy and a fresh publish of the source differ: either the source changed \
+             and nobody republished it, or somebody edited the vendored copy. These four steps, in \
+             this order, make the vendored copy a fresh publish again:\n  \
              headwater taxonomy publish --from {from} --out <scratch-dir>\n  \
              write the digest `publish` prints as `taxonomy.digest` in `.headwater/taxonomy.yml`\n  \
              headwater taxonomy vendor <scratch-dir>\n  \
@@ -1826,6 +1789,46 @@ fn publish_check(
     ExitCode::FAILURE
 }
 
+/// `headwater taxonomy publish`.
+///
+/// The publisher's half. It writes the artifact and prints the digest, which is
+/// what the release notes carry and what a consumer writes into its own
+/// declaration. The number is printed rather than filed anywhere, because a
+/// digest that travels inside the artifact it describes checks nothing.
+///
+/// **`nothing was published` is printed for every error and it is a statement
+/// about the disk.** Nothing here establishes it: this arm never learns whether
+/// the library reached a write. What makes it true is
+/// [`headwater_resolve::package::publish`], which reads every path the manifest
+/// declares before it creates `--out` and returns `--out` to the state it found
+/// it in when a write fails. That was false until [#271], where a failing run
+/// left three files and an empty `bundles/` under a directory it said it had not
+/// written to, and the next run was refused by the `--out` precondition catching
+/// the first run's leftovers. `engine/crates/cli/tests/publish.rs` holds this
+/// line to the disk from the state an adopter is in.
+///
+/// **`--json` writes the record as one document, because the handoff is a step
+/// somebody scripts.** The digest has to be told to a consumer out of band, so
+/// passing it on is automated, and a paragraph of English is what that
+/// automation had to read until [#353]. The document is
+/// [`headwater_resolve::release::document`], and it names its own shape rather
+/// than this engine's version. A refusal writes no document and stays on
+/// standard error, which is [HW-DR-0043]'s rule for every `--json` this binary
+/// takes.
+///
+/// **`delivery` says how the artifact reached `--out`, on every publish.** A
+/// publish into a mount point cannot rename onto it, falls back to writing the
+/// artifact file by file, and until [#664] said so on none of this verb's three
+/// surfaces — so a continuous-integration publisher writing into a mounted
+/// volume had the one configuration with no atomicity guarantee and no way to
+/// learn it. The member is `renamed` or `direct` and is never absent, and the
+/// prose reason for a `direct` is on standard error in both output modes.
+///
+/// [#664]: https://github.com/headwater-ai/headwater/issues/664
+///
+/// [#271]: https://github.com/headwater-ai/headwater/issues/271
+/// [#353]: https://github.com/headwater-ai/headwater/issues/353
+/// [HW-DR-0043]: ../../../../docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md
 fn publish(
     root: &Path,
     package: Option<&str>,

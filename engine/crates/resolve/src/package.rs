@@ -1173,16 +1173,20 @@ pub struct Checked {
     /// that the vendored copy lacks, and a file the vendored copy carries that
     /// the fresh publish does not write.
     pub moved: Vec<release::Divergence>,
-    /// The vendored `release.yml` does not hold the bytes the fresh publish
-    /// wrote for it, which no member divergence reports because the record is
-    /// not its own member.
+    /// The vendored `release.yml` does not state what the fresh record states:
+    /// the package, the version, the engine range, the digest and every member
+    /// with its digest. No member divergence reports it, because the record is
+    /// not its own member. It compares what the record says and not its bytes,
+    /// so a comment header an engine release rewords does not read as stale.
     pub record_moved: bool,
 }
 
 impl Checked {
     /// The vendored copy is what a fresh publish of the source produces.
     pub fn fresh(&self) -> bool {
-        self.moved.is_empty() && !self.record_moved && self.vendored_digest == self.fresh.digest
+        // `record_moved` compares the digest too, so a digest that differs is
+        // never fresh even where every member agrees.
+        self.moved.is_empty() && !self.record_moved
     }
 }
 
@@ -1266,8 +1270,7 @@ pub fn check_vendored(root: &Path, directory: &Path) -> Result<Checked, Vec<Reso
             &format!("cannot read the vendored copy: {error}"),
         )
     })?;
-    let record_moved = std::fs::read(out.join(release::RECORD)).ok()
-        != std::fs::read(vendored.join(release::RECORD)).ok();
+    let record_moved = published.release != vendored_record;
     Ok(Checked {
         vendored,
         fresh: published.release,

@@ -1396,18 +1396,39 @@ fn the_vendored_bundles_agree_with_a_fresh_publish_of_the_maintained_source() {
 /// `taxonomy publish --from <dir> --check` over a root the caller names, with
 /// any further arguments after it.
 fn publish_check(root: &Path, from: &Path, extra: &[&str]) -> (Option<i32>, String, String) {
+    // Each run gets a private temporary directory of its own through
+    // `TMPDIR`, which `std::env::temp_dir` reads, so this helper can say that
+    // the run left nothing there on every path it took: a pass, a divergence
+    // and a refusal alike. A directory shared with the other cases of this
+    // binary could not say it, because they run at the same time.
+    static RUN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let tmp = std::env::temp_dir().join(format!(
+        "headwater-cli-publish-{}-check-tmp-{}",
+        std::process::id(),
+        RUN.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
+    let _ = std::fs::remove_dir_all(&tmp);
+    std::fs::create_dir_all(&tmp).expect("the private temporary directory is made");
     let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
         .args(["taxonomy", "publish", "--check", "--from"])
         .arg(from)
         .args(extra)
         .arg("--root")
         .arg(root)
+        .env("TMPDIR", &tmp)
         .output()
         .expect("the binary runs");
+    let left = relative_files(&tmp);
+    let _ = std::fs::remove_dir_all(&tmp);
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    assert!(
+        left.is_empty(),
+        "`--check` left its scratch publish behind: {left:?}\nstderr: {stderr}"
+    );
     (
         output.status.code(),
         String::from_utf8_lossy(&output.stdout).into_owned(),
-        String::from_utf8_lossy(&output.stderr).into_owned(),
+        stderr,
     )
 }
 
@@ -1571,6 +1592,139 @@ fn publish_check_with_no_vendored_copy_is_refused_and_names_the_package() {
         "no vendored copy must fail the check.\nstdout: {stdout}\nstderr: {stderr}"
     );
     assert!(stderr.contains("headwater/standard"), "{stderr}");
+}
+
+/// Replace the one line of a file that starts with `prefix` (after its
+/// indentation) with `line`, keeping the indentation.
+fn replace_line(path: &Path, prefix: &str, line: &str) {
+    let text = std::fs::read_to_string(path).expect("the file reads");
+    let mut hit = false;
+    let edited: Vec<String> = text
+        .lines()
+        .map(|each| {
+            let body = each.trim_start();
+            match !hit && body.starts_with(prefix) {
+                true => {
+                    hit = true;
+                    format!("{}{line}", &each[..each.len() - body.len()])
+                }
+                false => each.to_string(),
+            }
+        })
+        .collect();
+    assert!(hit, "no line of {} starts with {prefix}", path.display());
+    std::fs::write(path, edited.join("\n") + "\n").expect("the file is written");
+}
+
+/// A member the source gained since the last publish is one the vendored copy
+/// lacks, and a member the source lost is one the vendored copy still carries.
+/// Each is named on its own line, and the digest over the member list moves.
+#[test]
+fn a_member_the_source_adds_or_drops_is_named_on_its_own_line() {
+    let root = publisher_and_consumer("check-added");
+    let source = root.path().join("taxonomy-source/headwater-standard");
+    std::fs::write(source.join("doctrine/extra.md"), "# Extra\n\nA page nobody published.\n")
+        .expect("the added member is written");
+    let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
+    assert_eq!(code, Some(1), "stdout: {stdout}\nstderr: {stderr}");
+    assert!(
+        stderr.contains("doctrine/extra.md: a fresh publish writes it, and the vendored copy lacks it"),
+        "{stderr}"
+    );
+    assert!(stderr.contains("the vendored digest is"), "{stderr}");
+
+    let root = publisher_and_consumer("check-dropped");
+    let source = root.path().join("taxonomy-source/headwater-standard");
+    std::fs::remove_file(root.path().join("docs/taxonomies/diataxis-site/templates/tutorial.md"))
+        .expect("the dropped member is removed");
+    let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
+    assert_eq!(code, Some(1), "stdout: {stdout}\nstderr: {stderr}");
+    assert!(
+        stderr.contains(
+            "bundles/diataxis-site/templates/tutorial.md: the vendored copy carries it, and a fresh publish does not write it"
+        ),
+        "{stderr}"
+    );
+    assert!(stderr.contains("the vendored digest is"), "{stderr}");
+}
+
+/// The vendored record is compared by what it states and not by its bytes. A
+/// field it states that a fresh publish does not state fails the check with
+/// every member agreeing, and a comment header an engine release rewords
+/// passes it.
+#[test]
+fn the_vendored_record_is_compared_by_what_it_states_and_not_by_its_bytes() {
+    let root = publisher_and_consumer("check-record-field");
+    let source = root.path().join("taxonomy-source/headwater-standard");
+    let record = root
+        .path()
+        .join(".headwater/packages/headwater-standard/release.yml");
+    replace_line(&record, "version:", "version: 0.0.1");
+    let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
+    assert_eq!(
+        code,
+        Some(1),
+        "a vendored record that states another version must fail.\nstdout: {stdout}\nstderr: {stderr}"
+    );
+    assert!(stderr.contains("release.yml:"), "{stderr}");
+
+    let root = publisher_and_consumer("check-record-header");
+    let source = root.path().join("taxonomy-source/headwater-standard");
+    let record = root
+        .path()
+        .join(".headwater/packages/headwater-standard/release.yml");
+    let text = std::fs::read_to_string(&record).expect("the record reads");
+    std::fs::write(&record, format!("# a header an engine release reworded\n{text}"))
+        .expect("the header is edited");
+    let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
+    assert_eq!(
+        code,
+        Some(0),
+        "a reworded comment header alone must pass.\nstdout: {stdout}\nstderr: {stderr}"
+    );
+}
+
+/// A vendored file edited by hand fails the check too, and the message says
+/// what is known rather than that the source changed.
+#[test]
+fn a_hand_edited_vendored_copy_fails_and_the_message_does_not_blame_the_source() {
+    let root = publisher_and_consumer("check-hand-edited");
+    let source = root.path().join("taxonomy-source/headwater-standard");
+    let vendored = root
+        .path()
+        .join(".headwater/packages/headwater-standard/taxonomy.yml");
+    let mut text = std::fs::read_to_string(&vendored).expect("the vendored taxonomy reads");
+    text.push_str("# a hand edit\n");
+    std::fs::write(&vendored, text).expect("the vendored taxonomy is edited");
+    let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
+    assert_eq!(code, Some(1), "stdout: {stdout}\nstderr: {stderr}");
+    assert!(stderr.contains("taxonomy.yml: the vendored bytes are"), "{stderr}");
+    assert!(
+        stderr.contains("or somebody edited the vendored copy"),
+        "the message must not say the source changed when it may not have: {stderr}"
+    );
+}
+
+/// `--from` naming the vendored copy has no source to compare, and a directory
+/// that declares the name with no release record is not a vendored copy.
+#[test]
+fn publish_check_refuses_the_vendored_copy_as_its_source_and_a_copy_with_no_record() {
+    let root = publisher_and_consumer("check-from-vendored");
+    let vendored = root.path().join(".headwater/packages/headwater-standard");
+    let (code, stdout, stderr) = publish_check(root.path(), &vendored, &[]);
+    assert_eq!(code, Some(1), "stdout: {stdout}\nstderr: {stderr}");
+    assert!(stderr.contains("names the vendored copy"), "{stderr}");
+
+    let root = publisher_and_consumer("check-no-record");
+    let source = root.path().join("taxonomy-source/headwater-standard");
+    std::fs::remove_file(
+        root.path()
+            .join(".headwater/packages/headwater-standard/release.yml"),
+    )
+    .expect("the record is removed");
+    let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
+    assert_eq!(code, Some(1), "stdout: {stdout}\nstderr: {stderr}");
+    assert!(stderr.contains("carries no readable release record"), "{stderr}");
 }
 
 /// What CI runs: this repository's own source against its own vendored copy.
