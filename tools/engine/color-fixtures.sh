@@ -406,9 +406,40 @@ sed -e "s/^lock: sha256:.*/$(printf '%s\n' "$identity" | grep '^lock: sha256:')/
 senses_its_terminal 'probe record' "$engine probe record $transcript --root ."
 senses_its_terminal 'probe grade' "$engine probe grade $transcript --root ."
 
+# `probe stale` reads the transcripts committed in the tree it is given, and it
+# writes one section for each of them. `probe_stale` paints the `## The result
+# of` frame around each section, so the four arms alone would pass a
+# `Staleness::render` call site that states `ColorMode::Plain`. The two line
+# checks below read lines that only `Staleness::render` writes. Every committed
+# transcript is pinned to a lock this tree no longer carries, so over the
+# committed tree the report holds only the sentence of the unusable verdict. So
+# the case runs over a copy of the tree with one more transcript in it, the one
+# above with the digests `probe plan` prints over the copy. That transcript
+# reads, and its section writes a member line. The file moves the tree digest
+# the transcript states, and nothing here reads that digest.
+stale_root="$scratch/stale-root"
+mkdir "$stale_root"
+if git archive HEAD | tar -x -C "$stale_root"; then
+    stale_identity=$("$engine" probe plan --root "$stale_root" 2>/dev/null)
+    sed -e "s/^lock: sha256:.*/$(printf '%s\n' "$stale_identity" | grep '^lock: sha256:')/" \
+        -e "s/^tree: sha256:.*/$(printf '%s\n' "$stale_identity" | grep '^tree: sha256:')/" \
+        -e "s/^selection: sha256:.*/$(printf '%s\n' "$stale_identity" | grep '^selection: sha256:')/" \
+        -e "s/^read_set: sha256:.*/$(printf '%s\n' "$stale_identity" | grep '^read_set: sha256:')/" \
+        docs/probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md \
+        >"$stale_root/docs/probe-runs/color-fixture-transcript.md"
+    senses_its_terminal 'probe stale' "$engine probe stale --root $stale_root"
+    paints_the_line 'probe stale, unusable verdict' "$engine probe stale --root $stale_root" \
+        'Nothing here decides whether this result is stale'
+    paints_the_line 'probe stale, member line' "$engine probe stale --root $stale_root" \
+        '(probe) sha256:'
+else
+    echo "FAIL probe stale — \`git archive HEAD\` wrote no copy of the tree to record into"
+    failed=$((failed + 1))
+fi
+
 rm -rf "$scratch"
 
-# Two report surfaces stay outside this page, each on a measured reason.
+# One report surface stays outside this page, on a measured reason.
 #
 # `import` needs a snapshot directory with a release record over it and an
 # import block in `.headwater/taxonomy.yml` pinned to that record's digest. No
@@ -418,11 +449,6 @@ rm -rf "$scratch"
 # computation here would be a second implementation of the digest, and a wrong
 # one would fail the case for a reason that has nothing to do with color. It is
 # held by the palette unit test beside its renderer in `headwater-import`.
-#
-# `probe stale` renders through `Staleness::render`, which takes no
-# `ColorMode` at all, so its report is plain under a terminal and there is no
-# wiring for a case here to hold. HW-OBL-0180 names it as the one report site
-# with no mode, and `docs/interfaces/headwater-probe.md` says it is plain.
 
 # The help family, which is four templates rather than one. The root screen is
 # written by `first_screen`, a verb page is `clap`'s own `{options}` renderer, a
