@@ -24,6 +24,14 @@
 #                            to answer "no doc impact" by reflex, and that
 #                            destroys the signal.
 #
+#                            A path that the governed scope admits and that no
+#                            document governs gets the engine's account instead
+#                            of silence: the scope fact and the front-matter
+#                            lines that would declare the edge (#953). The hook
+#                            writes nothing, and a path outside the scope stays
+#                            silent. `headwater route` decides both; this file
+#                            holds no scope pattern.
+#
 #                            The reverse direction, in the same call and the
 #                            same JSON object: an edit to a document that
 #                            governs code paths, or that other documents
@@ -115,6 +123,15 @@ advise() {
         advisory="Headwater impact detection: a document in this corpus declares that it governs \`$rel\`, which you are about to change.
 
 $pointers"
+    elif ungoverned=$(hw_ungoverned_in_scope "$rel"); then
+        # #953: the path is one the taxonomy expects a `governs` edge to reach,
+        # and none does. A term route over such a path reached a document for
+        # 3 of 213 in-scope ungoverned entries on 2026-09-26, so the advisory
+        # speaks whether or not it has a document to name. It proposes the
+        # edge and writes nothing.
+        advisory="Headwater impact detection: \`$rel\`, which you are about to change, is a path this taxonomy expects a document to govern, and no document governs it.
+
+$ungoverned"
     fi
     if reverse=$(hw_governed_by_document "$rel"); then
         [ -n "$advisory" ] && advisory="$advisory

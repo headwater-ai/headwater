@@ -273,9 +273,12 @@ expect 'an absolute path inside the repository is refused the same way' \
 refute 'an edit to a document that already exists passes' \
     write.sh 'permissionDecision' \
     '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/spec/05-ai-integration.md"}}'
+# #953: a path inside the governed scope now carries the ungoverned-path
+# advisory, so this case names one outside it. "Passes" is still the absence
+# of any output.
 expect 'a file outside the corpus root passes' \
     write.sh 0 '' \
-    '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"engine/crates/query/src/nothing.rs"}}'
+    '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"engine/crates/query/tests/nothing.rs"}}'
 expect 'a new Markdown file outside the corpus root passes' \
     write.sh 0 '' \
     '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"engine/crates/query/NOTES.md"}}'
@@ -418,9 +421,13 @@ if [ -x "$engine" ]; then
     # `runner.rs` sits beside a file `docs/interfaces/headwater-check.md`
     # governs by a literal, one-file anchor. HW-DR-0074 lets an author widen
     # that anchor to a pattern; this contract has not been rewritten to one,
-    # so the edge still answers for no file beside the one it names.
-    expect 'a file beside a governed crate file is silent, until its contract adopts a pattern' \
-        write.sh 0 '' \
+    # so the edge still answers for no file beside the one it names. Since
+    # #953 the file is named as ungoverned in scope instead of meeting silence.
+    refute 'a file beside a governed crate file names no contract, until its contract adopts a pattern' \
+        write.sh 'docs/interfaces/headwater-check.md' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/runner.rs"}}'
+    expect 'the same file is named as in the governed scope with nothing governing it' \
+        write.sh 0 'engine/crates/check/src/runner.rs is in the governed scope, and nothing governs it' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/runner.rs"}}'
 
     # #953: the advisory is heard before the edit, and it says so. Until then
