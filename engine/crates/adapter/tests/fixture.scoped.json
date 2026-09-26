@@ -456,7 +456,7 @@
     {
       "rule": "identifier.claim.stale",
       "scope": "corpus",
-      "version": 1,
+      "version": 2,
       "obligations": []
     },
     {
