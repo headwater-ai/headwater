@@ -34,7 +34,7 @@ The repository must have a readable consumer declaration, resolved taxonomy lock
 
 The title is required. A supplied relation must be declared as scaffold-created, connect permitted kinds and resolve at its target. A supplied facet must be required by the kind, must not be one that a declaration decides, and must use a permitted value. The identifier the run mints must be claimed by no document and by no file of the claim store.
 
-A shelf whose path puts a glob before a fixed file name, such as `docs/modules/*/README.md`, does not decide the directory. For a kind on such a shelf, `--directory` is required. The directory must be relative, must contain no `.`, `..` or empty segment, and must make a path that the shelf claims. On every other shelf, `--directory` is refused. A shelf whose path is one file, such as `docs/INDEX.md`, takes that path, and the command refuses when the file is already there.
+A shelf whose path puts a glob before a fixed file name, such as `docs/modules/*/README.md`, does not decide the directory. For a kind on such a shelf, `--directory` is required. The directory must be relative, must contain no `.`, `..` or empty segment, and must make a path that the shelf claims. No segment can hold `*`, `?` or `[`, because the command reads the directory as a literal path and not as a glob. On every other shelf, `--directory` is refused. A shelf whose path is one file, such as `docs/INDEX.md`, takes that path, and the command refuses when the file is already there.
 
 ## Options
 
