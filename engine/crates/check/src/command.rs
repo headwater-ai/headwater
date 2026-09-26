@@ -58,7 +58,7 @@ pub const RULE: &str = "surface.command.undeclared";
 
 /// The info strings that mark a block as commands to run. This is the syntax
 /// of a Markdown fence, and not a list of programs.
-const SHELLS: [&str; 4] = ["sh", "shell", "bash", "console"];
+pub(crate) const SHELLS: [&str; 4] = ["sh", "shell", "bash", "console"];
 
 /// The check, generated from the `surface` block of the taxonomy.
 pub struct Undeclared {
