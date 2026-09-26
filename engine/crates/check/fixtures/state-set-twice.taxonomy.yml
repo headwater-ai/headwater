@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the state-set-twice tree is checked against. It declares three
+# relations that write a state onto their target, and two of them agree.
+#
+# `supersedes` and `replaces` both write `superseded`, so a document that is the
+# target of both is told one thing twice. `retires` writes `retired`, so a
+# document that is the target of `supersedes` and `retires` is told two things,
+# and generate can only write one of them onto its page. `cites` writes nothing,
+# and an edge of it is never part of a clash.
+#
+# `state-set-twice-single.taxonomy.yml` reads the same tree with only
+# `supersedes` writing a state, and there no clash is possible.
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+      - {value: retired,    role: terminal-retained}
+  summary:
+    role: scent
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  supersedes:
+    family: succession
+    from: [note]
+    to:   [note]
+    inverse: superseded_by
+    on_target: {set_state: superseded}
+    created_by: author
+  replaces:
+    family: succession
+    from: [note]
+    to:   [note]
+    inverse: replaced_by
+    on_target: {set_state: superseded}
+    created_by: author
+  retires:
+    family: succession
+    from: [note]
+    to:   [note]
+    inverse: retired_by
+    on_target: {set_state: retired}
+    created_by: author
+  cites:
+    family: evidence
+    from: [note]
+    to:   [note]
+    created_by: author
+
+kinds:
+  note:
+    identifier: {scheme: note_id}
+
+shelves:
+  notes:
+    path: state-set-twice/notes/**
+    homogeneous: true
+    kind: note

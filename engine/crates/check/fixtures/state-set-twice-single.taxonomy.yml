@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The state-set-twice tree read against a taxonomy where only `supersedes`
+# writes a state. `replaces` and `retires` are still declared, so every edge in
+# the tree still resolves, but neither writes anything onto its target. One
+# relation writes one state, so no document can be told two, and the rule
+# generates no instance at all.
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+      - {value: retired,    role: terminal-retained}
+  summary:
+    role: scent
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  supersedes:
+    family: succession
+    from: [note]
+    to:   [note]
+    inverse: superseded_by
+    on_target: {set_state: superseded}
+    created_by: author
+  replaces:
+    family: succession
+    from: [note]
+    to:   [note]
+    inverse: replaced_by
+    created_by: author
+  retires:
+    family: succession
+    from: [note]
+    to:   [note]
+    inverse: retired_by
+    created_by: author
+  cites:
+    family: evidence
+    from: [note]
+    to:   [note]
+    created_by: author
+
+kinds:
+  note:
+    identifier: {scheme: note_id}
+
+shelves:
+  notes:
+    path: state-set-twice/notes/**
+    homogeneous: true
+    kind: note
