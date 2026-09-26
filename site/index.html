@@ -146,6 +146,7 @@
     font-size: 0.88rem; line-height: 1.7; border-left: 3px solid var(--accent);
     background: var(--code-bg); padding: 0.7rem 1.1rem; max-width: 32rem;
   }
+  .install div { overflow-wrap: anywhere; }
   .install .note {
     font-family: var(--sans); font-size: 0.75rem;
     color: var(--muted); margin-top: 0.3rem;
@@ -378,15 +379,16 @@
           <a class="sans" href="/how-it-works/">How it works</a>
         </div>
         <div class="install">
-          <div><span class="dim">$</span> cargo install headwater-cli <span class="cursor" aria-hidden="true">▍</span></div>
-          <!-- This line works: all 23 workspace crates are on crates.io,
-               published in dependency order by
-               `.github/workflows/publish-crates.yml` (#735, closed
-               2026-09-10). The v0.1.2 tag's run (34398366170) succeeded
-               2026-09-09. Verified by an actual `cargo install
-               headwater-cli` into a scratch root, not only by the registry
-               listing (see #754). -->
-          <div class="note">This works: <code>cargo install headwater-cli</code> gets you the binary at whatever the newest published version is, no clone needed. It doesn't include the taxonomy package — the tutorial and the README's <em>Obtaining a named version</em> section are the two routes to that.</div>
+          <div><span class="dim">$</span> mkdir -p ~/.local/bin</div>
+          <div><span class="dim">$</span> curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.2.1/headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz</div>
+          <div><span class="dim">$</span> tar -xzf headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater <span class="cursor" aria-hidden="true">▍</span></div>
+          <!-- #975. The release download leads, because HW-DR-0077 makes no
+               Rust toolchain mandatory. These three lines are the
+               tutorial's install block, and they were run against the
+               v0.2.1 release on 2026-09-26: the archive unpacked, the
+               binary printed 0.2.1, and `sha256sum -c` read the checksum
+               beside it as OK. -->
+          <div class="note">No Rust toolchain needed: this is the static Linux x86_64 build. On macOS on Apple silicon, put <code>aarch64-apple-darwin</code> in place of <code>x86_64-unknown-linux-musl</code>. Each archive has a <code>.sha256</code> beside it on the release. With a Rust toolchain, <code>cargo install headwater-cli</code> is the alternative. Neither route includes the taxonomy package, and the tutorial and the README's <em>Obtaining a named version</em> section say how to fetch it.</div>
         </div>
       </div>
       <div class="cards">
@@ -420,8 +422,8 @@ census
       <b class="key" data-figure="census.typed">412</b> typed
         <b class="key" data-figure="census.untyped">2</b> untyped
         <b class="key" data-figure="census.unaccounted">2</b> unaccounted for
-  <b class="key" data-figure="findings.reported">595</b> findings
-        <b class="key" data-figure="findings.suppressed">9</b> suppressed, by dated directive
+  <b class="key" data-figure="findings.reported">585</b> findings
+        <b class="key" data-figure="findings.suppressed">8</b> suppressed, by dated directive
   taxonomy <span class="dim"><span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.6.1</span></span></pre>
         </div>
       </div>
@@ -433,8 +435,8 @@ census
      translate of -50% loops seamlessly. Pure CSS, no script. -->
 <div class="tickerwrap" aria-hidden="true">
   <div class="tickerrun">
-    <span class="tickseg"><span data-figure="census.seen">593</span> files under the corpus root · <span data-figure="census.typed">412</span> typed · <span data-figure="census.untyped">2</span> untyped, reported as such · <span data-figure="census.unaccounted">2</span> silently unaccounted for · <span data-figure="census.instances">8344</span> check instances · <span data-figure="findings.reported">595</span> findings, every one named · <span data-figure="findings.suppressed">9</span> suppressed, each by a dated directive · <span data-figure="oblig.total">36</span> obligations: <span data-figure="oblig.verified">33</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable · taxonomy <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.6.1</span> · </span>
-    <span class="tickseg"><span data-figure="census.seen">593</span> files under the corpus root · <span data-figure="census.typed">412</span> typed · <span data-figure="census.untyped">2</span> untyped, reported as such · <span data-figure="census.unaccounted">2</span> silently unaccounted for · <span data-figure="census.instances">8344</span> check instances · <span data-figure="findings.reported">595</span> findings, every one named · <span data-figure="findings.suppressed">9</span> suppressed, each by a dated directive · <span data-figure="oblig.total">36</span> obligations: <span data-figure="oblig.verified">33</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable · taxonomy <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.6.1</span> · </span>
+    <span class="tickseg"><span data-figure="census.seen">593</span> files under the corpus root · <span data-figure="census.typed">412</span> typed · <span data-figure="census.untyped">2</span> untyped, reported as such · <span data-figure="census.unaccounted">2</span> silently unaccounted for · <span data-figure="census.instances">8344</span> check instances · <span data-figure="findings.reported">585</span> findings, every one named · <span data-figure="findings.suppressed">8</span> suppressed, each by a dated directive · <span data-figure="oblig.total">36</span> obligations: <span data-figure="oblig.verified">33</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable · taxonomy <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.6.1</span> · </span>
+    <span class="tickseg"><span data-figure="census.seen">593</span> files under the corpus root · <span data-figure="census.typed">412</span> typed · <span data-figure="census.untyped">2</span> untyped, reported as such · <span data-figure="census.unaccounted">2</span> silently unaccounted for · <span data-figure="census.instances">8344</span> check instances · <span data-figure="findings.reported">585</span> findings, every one named · <span data-figure="findings.suppressed">8</span> suppressed, each by a dated directive · <span data-figure="oblig.total">36</span> obligations: <span data-figure="oblig.verified">33</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable · taxonomy <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">4.6.1</span> · </span>
   </div>
 </div>
 
@@ -442,7 +444,7 @@ census
   <div class="bar pad">
     <div class="sechead">
       <span class="secnum">01</span>
-      <h2>Measured — headwater check on this repository, <span data-figure="run.date">2026-09-25</span></h2>
+      <h2>Measured — headwater check on this repository, <span data-figure="run.date">2026-09-26</span></h2>
       <span class="secline"></span>
     </div>
     <p style="font-size: 1.35rem; max-width: 46rem; margin: 0 0 3rem; line-height: 1.45;">Where a vendor site puts logos and percentages, this one puts the run — including the ugly number. A full board with a name against each item beats a clean one.</p>
@@ -455,11 +457,11 @@ census
       <div><div class="statnum" data-figure="census.seen">593</div><div class="statlab">files under the corpus root — the denominator for the tiles that follow</div></div>
       <div><div class="statnum" data-figure="census.typed">412</div><div class="statlab">of those files typed, and all <span data-figure="census.checked">412</span> checked</div></div>
       <div><div class="statnum" data-figure="census.unaccounted">2</div><div class="statlab">of those files silently unaccounted for</div></div>
-      <div><div class="statnum" data-figure="findings.reported">595</div><div class="statlab">findings reported, every one named and located</div></div>
-      <div><div class="statnum" data-figure="findings.suppressed">9</div><div class="statlab">further findings suppressed, each by a dated directive</div></div>
-      <div><div class="statnum" data-figure="findings.errors">0</div><div class="statlab">of the <span data-figure="findings.reported">595</span> are errors — every one is advisory</div></div>
+      <div><div class="statnum" data-figure="findings.reported">585</div><div class="statlab">findings reported, every one named and located</div></div>
+      <div><div class="statnum" data-figure="findings.suppressed">8</div><div class="statlab">further findings suppressed, each by a dated directive</div></div>
+      <div><div class="statnum" data-figure="findings.errors">0</div><div class="statlab">of the <span data-figure="findings.reported">585</span> are errors — every one is advisory</div></div>
     </div>
-    <p style="font-size: 0.95rem; max-width: 52rem; margin: 0 0 2.5rem; opacity: 0.85;"><span data-figure="census.instances">8344</span> check instances ran over those <span data-figure="census.typed">412</span> documents, from <span data-figure="rules.wired">36</span> wired rules, of which <span data-figure="rules.fired">6</span> found anything. The obligation register behind them holds <span data-figure="oblig.total">36</span> obligations: <span data-figure="oblig.verified">33</span> verified, <span data-figure="oblig.gap">2</span> gap and <span data-figure="oblig.unverifiable">1</span> unverifiable, and each gap names its owner.</p>
+    <p style="font-size: 0.95rem; max-width: 52rem; margin: 0 0 2.5rem; opacity: 0.85;"><span data-figure="census.instances">8344</span> check instances ran over those <span data-figure="census.typed">412</span> documents, from <span data-figure="rules.wired">36</span> wired rules, of which <span data-figure="rules.fired">5</span> found anything. The obligation register behind them holds <span data-figure="oblig.total">36</span> obligations: <span data-figure="oblig.verified">33</span> verified, <span data-figure="oblig.gap">2</span> gap and <span data-figure="oblig.unverifiable">1</span> unverifiable, and each gap names its owner.</p>
     <div class="emptyrow">
       <span style="font-size: 1rem;">Benchmark against comparables</span>
       <span class="tag">unmeasured</span>

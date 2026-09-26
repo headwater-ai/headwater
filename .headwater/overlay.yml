@@ -1320,8 +1320,9 @@ add:
     # names each of them as a platform prerequisite, by the owner's amendment
     # of 2026-09-24 (#1070), so this list and the decision name the same
     # commands. `headwater` is the mandatory binary and not a prerequisite.
-    # `cargo` is not here: no Rust toolchain is mandatory, and the one step
-    # that runs it carries a directive until #975 replaces it.
+    # `cargo` is not here: no Rust toolchain is mandatory. The tutorial
+    # installs from the release download and names `cargo install` in prose
+    # alone, so no block runs it and no directive excuses one (#975).
     commands: [headwater, git, sh, curl, tar, cd, echo, grep, mkdir, printf, rm, wc, xargs]
 
 # --- projections ------------------------------------------------------------
