@@ -9507,10 +9507,10 @@
         "id": "HW-OBL-0218",
         "facets": {
           "id": "HW-OBL-0218",
-          "status": "current",
-          "status_since": "2026-09-26",
-          "summary": "Spec 13 opens its self-found list with a count of forty-nine items in five ranges, and no check compares the count to the list.",
-          "last_verified": "2026-09-26",
+          "status": "discharged",
+          "status_since": "2026-09-27",
+          "summary": "Spec 13 opened its self-found list with a count of forty-nine items in five ranges that the list did not match. The sentence now states no count and no range, and a fixture fails on a prose line of spec 13 that does.",
+          "last_verified": "2026-09-27",
           "title": "The opening sentence of the self-found list in spec 13 counts forty-nine items in ranges that do not match the list",
           "waiting_on": "build"
         }
