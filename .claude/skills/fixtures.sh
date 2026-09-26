@@ -423,8 +423,8 @@ $names"
     claim 'an edge the taxonomy does not assign to a scaffold is refused' \
         headwater-authoring/SKILL.md \
         'The verb writes an edge only where the taxonomy declares `created_by: scaffold` on the relation.' \
-        1 'created_by: hook' \
-        "$engine" new obligation_record --title 'An edge a hook pays for' \
+        1 'created_by: agent' \
+        "$engine" new obligation_record --title 'An edge an agent proposes' \
         --facet waiting_on=build \
         --relates traces_to=HW-SPEC-ai-integration --root "$scratch"
 

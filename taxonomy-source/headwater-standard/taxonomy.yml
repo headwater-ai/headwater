@@ -353,7 +353,7 @@ relations:
     from: [governed_document]
     to:   [code_path]
     cardinality: many
-    created_by: hook
+    created_by: agent
     # The digest of the bytes the target reached when the governing document
     # was last verified against it. `relation.target.suspect` compares it
     # against the digest `source-tree` states now, and `headwater check --fix`
@@ -377,7 +377,7 @@ relations:
     family: evidence
     from: [governed_document]
     to:   [governed_document, code_path]
-    created_by: hook
+    created_by: agent
     # Q20 puts a cue on the referring end of a relation instance. `traces_to`
     # is the one relation of this package whose `to` set already reaches
     # plain prose (`governed_document`) rather than only an anchor, so it is
