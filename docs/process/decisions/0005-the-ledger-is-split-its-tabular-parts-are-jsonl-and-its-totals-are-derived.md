@@ -17,9 +17,9 @@ provenance:
 
 ## Context
 
-The ledger was one markdown file at `~/.claude/headwater-build-order-ledger.md`, and by 2026-08-24 it was 713 KB across 3,155 lines. Nothing reads it but a model. A design put the parent's doctrine at the head of that file so that it reloads on a turn already paid. That design ran into the file's own shape. A header cannot be read without the body behind it, and pull request #685 measured that a large read is worse than its size, because every later turn re-reads it.
+The ledger was one markdown file at `~/.claude/headwater-build-order-ledger.md`, and by 2026-08-24 it was 713 KB across 3,155 lines. Nothing reads it but a model. A design put the parent's doctrine at the head of that file so that it reloads on a turn already paid. That design ran into the file's own shape. A header cannot be read without the body behind it. Pull request #685 measured that a large read is worse than its size, because every later turn re-reads it.
 
-Run 22 measured the other hazard. It spent 31,568 tokens and 2.8 million token-reads writing the ledger through forty `cat >>` heredocs, because a shell argument is context as permanent as any result. Any store whose writes go through a shell command inherits that cost.
+Run 22 measured the other hazard. It spent 31,568 tokens and 2.8 million token-reads writing the ledger through forty `cat >>` heredocs. That is because a shell argument is context as permanent as any result. Any store whose writes go through a shell command inherits that cost.
 
 [HW-DR-0049](../../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) rules that a recorded artifact holds one record per entity and derives every total. The ledger's log carried a net issue delta as a hand-maintained number, which is a stored fold.
 
@@ -28,7 +28,7 @@ Run 22 measured the other hazard. It spent 31,568 tokens and 2.8 million token-r
 The ledger is a directory under the run directory, and each part is read by whoever needs it and nobody else.
 
 - `doctrine.md` holds the parent's doctrine block alone, at most ten numbered lines and at most 600 tokens, so it reads without any other part.
-- `log.jsonl` holds one object per iteration: the iteration, the issue, the pull request, the merge commit, the verdict, what verification proved, and the counts opened and closed. Any total across iterations is derived by `jq` at the moment it is wanted and is never written.
+- `log.jsonl` holds one object per iteration: the iteration, the issue, the pull request, the merge commit, and the verdict. Each object also holds what verification proved and the counts opened and closed. Any total across iterations is derived by `jq` at the moment it is wanted and is never written.
 - `findings.jsonl` holds one object per open finding, so the findings that touch one issue are a query at dispatch.
 - `lessons.md` and `decisions.md` stay prose, because the owner reads them.
 
