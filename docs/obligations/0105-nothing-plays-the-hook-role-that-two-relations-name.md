@@ -4,7 +4,7 @@ title: "Nothing plays the hook role that two relations name as their author"
 status: current
 status_since: 2026-08-13
 waiting_on: ruling
-last_verified: 2026-08-13
+last_verified: 2026-09-26
 summary: "`governs` and `traces_to` declare `created_by: hook`, no verb of this engine writes either one, and every such edge in this corpus is hand entry."
 provenance:
   warrant: accepted
@@ -49,3 +49,5 @@ A verb that proposes these edges from a change, with the fixtures that hold what
 Where no such verb is written, the base package owes a `created_by` value that is true, and the walkthrough owes the corrected count. `author` states the cost plainly, and `agent` states that the coherence sweep owns the proposal.
 
 [HW-OBL-0104](0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) raises what either answer costs. A `governs` edge reaches one path, so an actor that proposes them proposes one for every governed file.
+
+**The correction half has landed (2026-09-26).** [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) rules that both relations are `created_by: agent`, and the base package declares that value from 4.7.0. Spec 2 and the walkthrough now count four of the five base relations with no mechanical creator. No verb writes either edge, so the correction discharges this record rather than the proposing verb. The move of this record to its end state is the owner's.

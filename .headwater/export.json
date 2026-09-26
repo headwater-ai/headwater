@@ -2361,6 +2361,40 @@
         }
       },
       {
+        "path": "docs/decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md",
+        "kind": "decision",
+        "id": "HW-DR-0083",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0083",
+          "status": "current",
+          "status_since": "2026-09-26",
+          "summary": "The base package declares `created_by: agent` on `governs` and `traces_to`, because no verb writes either edge and a person types the line a session proposes",
+          "last_verified": "2026-09-26",
+          "title": "Governs and traces_to are created by an agent, because a session proposes the line and a person types it",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              {
+                "to": "taxonomy-source/headwater-standard/taxonomy.yml",
+                "verified_revision": "sha256:e14a63433c104e3e0e3038027048b594f98bfa7ad1893e1026f221fcee18e5d5"
+              }
+            ],
+            "traces_to": [
+              "HW-OBL-0105",
+              "HW-SPEC-taxonomy-model",
+              "HW-EVAL-default-taxonomy-first-run"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md",
         "kind": "evaluation",
         "id": "HW-EVAL-a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt",
@@ -6849,7 +6883,7 @@
           "status": "current",
           "status_since": "2026-08-13",
           "waiting_on": "ruling",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-09-26",
           "summary": "`governs` and `traces_to` declare `created_by: hook`, no verb of this engine writes either one, and every such edge in this corpus is hand entry.",
           "provenance": {
             "warrant": "accepted",
@@ -11744,6 +11778,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "taxonomy-source/headwater-standard/taxonomy.yml",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "tools/cap-run",
         "resolver": "source-tree"
       },
@@ -13818,6 +13857,53 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/cli/src/taxonomy_graph.rs",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "taxonomy-source/headwater-standard/taxonomy.yml",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:e14a63433c104e3e0e3038027048b594f98bfa7ad1893e1026f221fcee18e5d5"
+        }
+      },
+      {
+        "source": "docs/decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0105",
+          "path": "docs/obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-taxonomy-model",
+          "path": "docs/spec/02-taxonomy-model.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-EVAL-default-taxonomy-first-run",
+          "path": "docs/evaluations/default-taxonomy-first-run.md",
+          "kind": "evaluation"
         }
       },
       {

@@ -87,7 +87,7 @@ The base already declares a relation that reaches from any governed document to 
 
 **`traces_to` declares no nuclearity, and the evidence family's cell in the table is blank.** [Spec 2](https://github.com/headwater-ai/headwater/blob/main/docs/spec/02-taxonomy-model.md#reading-precedence-is-derived) says evidence carries no reading order, so context pruning has nothing to order by.
 
-**`created_by: hook`.** A hook writes it, and the base means the hook that reads a change. Nothing mechanical turns a business need and a product document into a pair.
+**`created_by: agent`.** Nothing mechanical turns a business need and a product document into a pair. A session proposes the line and a person types it ([HW-DR-0083](https://github.com/headwater-ai/headwater/blob/main/docs/decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md)).
 
 This entry also cannot repair `traces_to` in place. Adding an inverse to it is an `override`, and criterion 3 forbids an override outright.
 
