@@ -223,8 +223,8 @@ python3 - "$action" "$scratch/vulnerable.yml" <<'PY'
 import sys
 src, dst = sys.argv[1], sys.argv[2]
 text = open(src, encoding="utf-8").read()
-old = 'Read $SARIF_PATH, or run'
-new = 'Read ${{ steps.merge.outputs.sarif-path }}, or run'
+old = 'Read $SARIF_PATH and this job'
+new = 'Read ${{ steps.merge.outputs.sarif-path }} and this job'
 if old not in text:
     print(f"the line to corrupt ({old!r}) was not found verbatim in {src}", file=sys.stderr)
     sys.exit(2)

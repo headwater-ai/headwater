@@ -4046,7 +4046,7 @@
           "status": "current",
           "status_since": "2026-08-11",
           "waiting_on": "adopter",
-          "last_verified": "2026-09-11",
+          "last_verified": "2026-09-27",
           "summary": "The three voice categories run over this corpus, and no category reaches the adjudicated sample bar of 50 findings.",
           "provenance": {
             "warrant": "accepted",
@@ -8493,7 +8493,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "The voice rule reports zero because not one of its forty patterns occurs here, and that reads the same as a clean corpus.",
-          "last_verified": "2026-09-11",
+          "last_verified": "2026-09-27",
           "title": "A saturated pattern set and a clean corpus are the same zero, and no report separates them",
           "waiting_on": "build",
           "provenance": {
@@ -9356,10 +9356,10 @@
         "id": "HW-OBL-0205",
         "facets": {
           "id": "HW-OBL-0205",
-          "status": "current",
-          "status_since": "2026-09-26",
-          "summary": "Two sample counts predate the scent-role fix #774 landed: HW-OBL-0002's, and voice.rs's own census. Neither was re-taken, so both figures now understate what the rule covers.",
-          "last_verified": "2026-09-23",
+          "status": "discharged",
+          "status_since": "2026-09-27",
+          "summary": "HW-OBL-0002 and the voice.rs census now carry the reading of 2026-09-27, taken over the body and the summary facet that the scent-role fix #774 added.",
+          "last_verified": "2026-09-27",
           "title": "Two sample counts, HW-OBL-0002's and voice.rs's own census, predate the scent-role fix and need retaking",
           "waiting_on": "build"
         }
