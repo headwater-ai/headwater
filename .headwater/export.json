@@ -2450,6 +2450,37 @@
         }
       },
       {
+        "path": "docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md",
+        "kind": "decision",
+        "id": "HW-DR-0086",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0086",
+          "status": "current",
+          "status_since": "2026-09-26",
+          "summary": "While a draft holds the only half of a required pair, nothing is owed. The far document owes its half once the draft is promoted.",
+          "last_verified": "2026-09-26",
+          "title": "A reciprocal half is owed once its writer leaves its initial state",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "constrains": [
+              "HW-DR-0004",
+              "HW-DR-0085"
+            ],
+            "traces_to": [
+              "HW-DR-0052",
+              "HW-SPEC-authoring-and-lifecycle"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md",
         "kind": "evaluation",
         "id": "HW-EVAL-a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt",
@@ -4015,7 +4046,7 @@
           "status": "current",
           "status_since": "2026-08-11",
           "waiting_on": "adopter",
-          "last_verified": "2026-09-11",
+          "last_verified": "2026-09-27",
           "summary": "The three voice categories run over this corpus, and no category reaches the adjudicated sample bar of 50 findings.",
           "provenance": {
             "warrant": "accepted",
@@ -6058,7 +6089,7 @@
           "status": "current",
           "status_since": "2026-08-12",
           "waiting_on": "build",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-09-26",
           "summary": "Two editions of one rule differ only in code that no digest covers, so a stale version reads the verdicts of the rule before the change.",
           "provenance": {
             "warrant": "accepted",
@@ -8462,7 +8493,7 @@
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "The voice rule reports zero because not one of its forty patterns occurs here, and that reads the same as a clean corpus.",
-          "last_verified": "2026-09-11",
+          "last_verified": "2026-09-27",
           "title": "A saturated pattern set and a clean corpus are the same zero, and no report separates them",
           "waiting_on": "build",
           "provenance": {
@@ -9325,10 +9356,10 @@
         "id": "HW-OBL-0205",
         "facets": {
           "id": "HW-OBL-0205",
-          "status": "current",
-          "status_since": "2026-09-26",
-          "summary": "Two sample counts predate the scent-role fix #774 landed: HW-OBL-0002's, and voice.rs's own census. Neither was re-taken, so both figures now understate what the rule covers.",
-          "last_verified": "2026-09-23",
+          "status": "discharged",
+          "status_since": "2026-09-27",
+          "summary": "HW-OBL-0002 and the voice.rs census now carry the reading of 2026-09-27, taken over the body and the summary facet that the scent-role fix #774 added.",
+          "last_verified": "2026-09-27",
           "title": "Two sample counts, HW-OBL-0002's and voice.rs's own census, predate the scent-role fix and need retaking",
           "waiting_on": "build"
         }
@@ -9507,10 +9538,10 @@
         "id": "HW-OBL-0218",
         "facets": {
           "id": "HW-OBL-0218",
-          "status": "current",
-          "status_since": "2026-09-26",
-          "summary": "Spec 13 opens its self-found list with a count of forty-nine items in five ranges, and no check compares the count to the list.",
-          "last_verified": "2026-09-26",
+          "status": "discharged",
+          "status_since": "2026-09-27",
+          "summary": "Spec 13 opened its self-found list with a count of forty-nine items in five ranges that the list did not match. The sentence now states no count and no range, and a fixture fails on a prose line of spec 13 that does.",
+          "last_verified": "2026-09-27",
           "title": "The opening sentence of the self-found list in spec 13 counts forty-nine items in ranges that do not match the list",
           "waiting_on": "build"
         }
@@ -14035,6 +14066,50 @@
       },
       {
         "source": "docs/decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-authoring-and-lifecycle",
+          "path": "docs/spec/03-authoring-and-lifecycle.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0004",
+          "path": "docs/decisions/0004-relation-storage.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0085",
+          "path": "docs/decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0052",
+          "path": "docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {

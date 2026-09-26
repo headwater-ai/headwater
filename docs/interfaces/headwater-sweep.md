@@ -102,6 +102,8 @@ There is no precondition about a model, about a network, or about a plan having 
 
 **Where each status is asserted.** `engine/crates/cli/tests/sweep.rs` starts the binary and holds all four rows above, including the third non-zero reason and the `--strict` that changes nothing. `engine/crates/sweep/tests/fixtures.rs` covers the intake as a library, which is where a refusal is decided, and it starts no process. So the refusal and the status it does not move are asserted in two places, one either side of the process boundary.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 **No environment variable reaches either half.** The slice is `--under`, the repository is `--root`, and the taxonomy is the lock.

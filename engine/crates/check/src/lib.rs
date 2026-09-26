@@ -184,6 +184,8 @@ pub mod verification;
 pub mod voice;
 
 pub use adoption::Ledger;
+#[doc(hidden)]
+pub use cache::cached_form;
 pub use cache::{rules_digest, Cache};
 pub use context::{Context, Date};
 pub use coverage::Coverage;
@@ -675,7 +677,9 @@ pub fn run(
     // The drift rule, over the relations that can carry a revision: the ones
     // an importer may write, and the ones onto an anchor kind. See [`suspect`].
     let suspect = suspect::Suspect::over(declared.relations, declared.shape);
-    let reciprocity = reciprocity::Reciprocity::over(declared.relations);
+    // A lone half written by a document at an initial state is owed nothing
+    // yet. See [`reciprocity`].
+    let reciprocity = reciprocity::Reciprocity::over(declared.relations, declared.shape);
     let endpoints = endpoint::Endpoints::over(declared.relations, declared.shape);
     // A live document resting on a terminal one, over the relations whose
     // family a core requirement declares `lifecycle_sensitive`. Edge-scoped

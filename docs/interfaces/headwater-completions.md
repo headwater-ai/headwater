@@ -48,6 +48,8 @@ The global `--help` and `--version` flags are answered before this command runs.
 
 **1** when the shell is omitted, the shell name is not supported, or the command line has an invalid option or extra word. The refusal names the supported shells and writes no script.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 No environment variable reaches the command. The command tree is the only input, so the bytes of the script do not move with the terminal of the caller.
