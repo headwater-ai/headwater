@@ -620,10 +620,26 @@ mod tests {
         assert_eq!(finding.severity, Severity::Warn);
         assert!(finding.patch.is_none(), "{finding:#?}");
         assert_eq!(finding.path, "docs/decisions/0002-new-name.md");
-        assert!(finding.message.contains(".headwater/ids/decision_id/DR-0002"), "{finding:#?}");
-        assert!(finding.message.contains("docs/decisions/0002-old-name.md"), "{finding:#?}");
-        assert!(finding.message.contains("docs/decisions/0002-new-name.md"), "{finding:#?}");
-        assert!(finding.remediation.contains("docs/decisions/0002-new-name.md"), "{finding:#?}");
+        assert!(
+            finding
+                .message
+                .contains(".headwater/ids/decision_id/DR-0002"),
+            "{finding:#?}"
+        );
+        assert!(
+            finding.message.contains("docs/decisions/0002-old-name.md"),
+            "{finding:#?}"
+        );
+        assert!(
+            finding.message.contains("docs/decisions/0002-new-name.md"),
+            "{finding:#?}"
+        );
+        assert!(
+            finding
+                .remediation
+                .contains("docs/decisions/0002-new-name.md"),
+            "{finding:#?}"
+        );
         assert!(!finding.message.contains("DR-0001"), "{finding:#?}");
     }
 }
