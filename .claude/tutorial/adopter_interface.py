@@ -361,7 +361,7 @@ REGRESSION_CASES = [
     ('a bare undeclared command',
      'npm install',
      ['npm install']),
-    ('an undeclared script beside an incidental mention of the exception',
+    ('an undeclared script beside a mention of the retired bootstrap script',
      'tools/malicious-script.sh --do-it\n'
      '# see tools/headwater-bootstrap.sh for comparison',
      ['tools/malicious-script.sh --do-it']),
@@ -377,19 +377,34 @@ REGRESSION_CASES = [
     ('cargo allowed only for install/build, not by verb alone',
      'cargo run --manifest-path tools/evil/Cargo.toml',
      ['cargo run --manifest-path tools/evil/Cargo.toml']),
-    ('a command chained onto the declared exception with &&',
+    ('a command chained onto a curl of the retired bootstrap script',
      'curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/'
      'main/tools/headwater-bootstrap.sh | sh -s -- --tag x --expect y '
      '&& npm install',
-     ['npm install']),
+     ['curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/'
+      'main/tools/headwater-bootstrap.sh',
+      'sh -s -- --tag x --expect y',
+      'npm install']),
     ('an undeclared script backgrounded with a bare &',
      'git clone https://example.com/repo.git & sh tools/evil.sh',
      ['sh tools/evil.sh']),
-    ('the real declared exception, alone, is not undeclared',
+    ('a curl of the retired bootstrap script piped into sh is undeclared',
      'curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/'
      'main/tools/headwater-bootstrap.sh | sh -s -- --tag '
      'taxonomy/headwater-standard/v4.2.0 --expect sha256:961ecf2ae2c3c74',
-     []),
+     ['curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/'
+      'main/tools/headwater-bootstrap.sh',
+      'sh -s -- --tag taxonomy/headwater-standard/v4.2.0 '
+      '--expect sha256:961ecf2ae2c3c74']),
+    ('a backslash-escaped quote opens no quoted span to hide a chain in',
+     "printf a\\' && npm install",
+     ['npm install']),
+    ('a backslash inside single quotes is literal and closes nothing',
+     "printf 'a\\' && npm install",
+     ['npm install']),
+    ('an escaped double quote inside double quotes does not close the span',
+     'printf "a\\" && b" && npm install',
+     ['npm install']),
     ('cargo install, alone in a block, is undeclared: no toolchain is '
      'mandatory (HW-DR-0077)',
      'cargo install headwater-cli',
