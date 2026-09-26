@@ -134,6 +134,16 @@ pub struct Request<'a> {
     /// is one a declaration determines: the kind argument states it, and this
     /// flag is not a second route to it.
     pub given: &'a [(String, String)],
+    /// The directory a caller names for a shelf whose pattern fixes the file
+    /// name and globs a directory before it, such as `docs/modules/*/README.md`.
+    ///
+    /// The taxonomy does not decide which directory the glob stands for, so
+    /// the scaffolder asks for it rather than inventing one from the slug. The
+    /// path written is this directory joined to the pattern's last segment, and
+    /// it must classify back to the shelf. On any other shelf a value here is
+    /// refused rather than dropped, for the reason [`Refusal::FacetNotAsked`]
+    /// gives.
+    pub directory: Option<&'a str>,
 }
 
 /// Everything the resolved taxonomy and the corpus hand a scaffolder.

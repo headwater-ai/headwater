@@ -3974,6 +3974,7 @@ fn scaffold(
         now,
         relates,
         given,
+        directory: None,
     };
 
     // Nothing below this line has written anything yet, which is why every

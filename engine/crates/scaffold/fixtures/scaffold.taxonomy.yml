@@ -177,6 +177,19 @@ kinds:
     identifier: {scheme: spec_id}
     lifecycle: standard
 
+  # Its shelf fixes the file name under a glob, so the caller names the
+  # directory the glob stands for.
+  module_readme:
+    is_a: governed_document
+    identifier: {scheme: spec_id}
+    lifecycle: standard
+
+  # Its shelf is one file.
+  index_page:
+    is_a: governed_document
+    identifier: {scheme: spec_id}
+    lifecycle: standard
+
   # Its scheme's field is full.
   exhausted:
     is_a: governed_document
@@ -275,6 +288,18 @@ shelves:
     path: corpus/*/misplaced/**
     homogeneous: true
     kind: misplaced
+
+  # A fixed file name under a glob. The caller names the directory.
+  module_readmes:
+    path: corpus/modules/*/README.md
+    homogeneous: true
+    kind: module_readme
+
+  # One file, and every segment literal.
+  index_pages:
+    path: corpus/INDEX.md
+    homogeneous: true
+    kind: index_page
 
   exhausteds:
     path: corpus/exhausted/**
