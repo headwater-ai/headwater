@@ -2,7 +2,7 @@
 id: HW-EVAL-the-build-order-as-a-multi-agent-system
 status: current
 status_since: 2026-09-07
-summary: "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, the architecture that follows, what was rejected, and the numbers the next run is held against."
+summary: "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, and the architecture that follows. What was rejected, and the numbers the next run is held against."
 last_verified: 2026-09-24
 title: "The build order as a multi-agent system"
 provenance:
@@ -18,21 +18,21 @@ relations:
 
 # The build order as a multi-agent system
 
-The build order is the loop that turns a session into an orchestrator, picks issues, dispatches agents, and merges what they build. `.claude/commands/next-run.md` carried its whole design as prose for eleven runs, and the prose was read by the one agent that could not be reloaded. This evaluation records what one run measured about that shape, the cost model the measurements settle, the architecture that follows, and what was rejected on the way. Six decision records carry the rulings, and this document carries the evidence they cite.
+The build order is the loop that turns a session into an orchestrator, picks issues, dispatches agents, and merges what they build. `.claude/commands/next-run.md` carried its whole design as prose for eleven runs, and the prose was read by the one agent that could not be reloaded. This evaluation records what one run measured about that shape, the cost model the measurements settle, and the architecture that follows. It also records what was rejected on the way. Six decision records carry the rulings, and this document carries the evidence they cite.
 
 The reader outside this repository is an adopter who runs an agentic loop over a Headwater corpus of their own. Every number here was taken on this repository, and the cost model is stated so that another corpus can take its own.
 
 ## How the numbers were taken
 
-A session log writes one API response as several lines, one per content block, and every line carries a copy of the same usage record. A count per line inflates turns and cost by about 2.3 times, and it inflates them unevenly, because a response with four tool calls is copied more often than one with a single call. Every figure here groups by `message.id` and takes one usage record per identifier. The orchestrator of the run below reads as 712 turns and $156 per line, and as 304 turns and $67 per message.
+A session log writes one API response as several lines, one per content block, and every line carries a copy of the same usage record. A count per line inflates turns and cost by about 2.3 times, and it inflates them unevenly. That is because a response with four tool calls is copied more often than one with a single call. Every figure here groups by `message.id` and takes one usage record per identifier. The orchestrator of the run below reads as 712 turns and $156 per line, and as 304 turns and $67 per message.
 
-The unit that explains the cost is carry. A tool result costs its own size times the number of turns that follow it. Seven thousand tokens read at turn 20 of a 170-turn agent carry 1.05 million token-reads, and the same seven thousand read at turn 150 carry 140 thousand. Position is worth as much as size, which is why cheap-looking calls dominate. In the single-agent shape, Bash results were 68% of all carry and file reads 29%, because an iteration made 142 Bash calls against eleven reads.
+The unit that explains the cost is carry. A tool result costs its own size times the number of turns that follow it. Seven thousand tokens read at turn 20 of a 170-turn agent carry 1.05 million token-reads. The same seven thousand read at turn 150 carry 140 thousand. Position is worth as much as size, which is why cheap-looking calls dominate. In the single-agent shape, Bash results were 68% of all carry and file reads 29%, because an iteration made 142 Bash calls against eleven reads.
 
 ## What the single-agent shape cost, and what the four-agent split bought
 
 Across 80 single-agent iterations, 77% of the cost was cache reads, the context re-read on every turn. Output was 12% and cache writes 11%. The median iteration ran 170 turns, peaked at 286k of context, and re-read 32 million tokens on the way.
 
-Splitting one iteration into adjudication, construction, verification and write-back bought peak context and did not buy dollars. Adjudication at $3 and construction at $17 came to $20 against $21 for the single-agent shape, a 4% saving over a ten-hour run that merged seven pull requests. Peak context per agent fell from 286k to 211k, and adjudication alone ran at 116k and $3 because settling a premise never needs the test output. Construction grew back to 196 turns against the old 170, because the work did not shrink when it moved.
+Splitting one iteration into adjudication, construction, verification and write-back bought peak context and did not buy dollars. Adjudication at $3 and construction at $17 came to $20 against $21 for the single-agent shape. That is a 4% saving over a ten-hour run that merged seven pull requests. Peak context per agent fell from 286k to 211k, and adjudication alone ran at 116k and $3. That is because settling a premise never needs the test output. Construction grew back to 196 turns against the old 170, because the work did not shrink when it moved.
 
 | Shape | Turns | Peak context | Cache read | Cost |
 |---|---|---|---|---|
@@ -40,47 +40,47 @@ Splitting one iteration into adjudication, construction, verification and write-
 | Adjudication, median of 7 | 37 | 116k | 2.3M | $3 |
 | Construction, median of 8 | 196 | 211k | 28.4M | $17 |
 
-Run 22 measured the shape with verification split out. The parent was 9% of the run, against 27% before, and cache reads were 99% of every token billed. What did not move was growth: the parent climbed from 65k to 687k of context in under three hours with no compaction, and its last 84 turns cost about twice its first 84 for the same work. The built-in tool definitions were 28,987 tokens of that context, and the parent called four of the fourteen tools. Returned reports were its largest input class at 113.7k tokens, with a median of 1,475 each, and three agents notified two or three times, re-injecting the whole report on each.
+Run 22 measured the shape with verification split out. The parent was 9% of the run, against 27% before, and cache reads were 99% of every token billed. What did not move was growth. The parent climbed from 65k to 687k of context in under three hours with no compaction. Its last 84 turns cost about twice its first 84 for the same work. The built-in tool definitions were 28,987 tokens of that context, and the parent called four of the fourteen tools. Returned reports were its largest input class at 113.7k tokens, with a median of 1,475 each. Three agents notified two or three times, re-injecting the whole report on each.
 
 ## The run that measured the orchestrator as the constraint
 
 Session `19108df3` ran for 20 hours and 29 minutes, dispatched 152 agents, and touched 45 pull requests. The human sent eight prompts in that time. The measurements below were taken from its session log after the run.
 
-**The fleet ran at a third of its target width.** Mean in-flight concurrency was 3.03 against a target of eight. No agent at all was in flight for 20.9% of the active window, which is 3.4 hours across four windows, and the largest window was 114 minutes. In each of those windows the parent was merging, building or keeping records by itself.
+**The fleet ran at a third of its target width.** Mean in-flight concurrency was 3.03 against a target of eight. No agent at all was in flight for 20.9% of the active window, which is 3.4 hours across four windows. The largest window was 114 minutes. In each of those windows the parent was merging, building or keeping records by itself.
 
 **The parent was the mutex.** Of the parent's own serial shell time, 61% contended on four shared resources: the one main checkout, the one `engine/target`, `origin/main`, and the post-merge regenerate. `cargo build` alone was 49% of it, at 67 minutes over 26 calls. The merge itself was cheap, at about eleven seconds over 46 merges. Only 13% of that time was per-job work, and most of that was polling other agents' pull requests.
 
 **The batches had a barrier by accident.** Subagent runtime had a median of 13.5 minutes, a ninetieth percentile of 46, and a longest of 91. Across the batches of three agents or more, 9.3 hours separated the first completion from the last. No code wrote that barrier. The parent advanced a batch when its slowest member returned.
 
-**Merging was not the constraint.** Of the 45 pull requests, 44 merged at a median of 40 minutes from opening to merge, and the runner queued nothing that showed as idle workers.
+**Merging was not the constraint.** Of the 45 pull requests, 44 merged at a median of 40 minutes from opening to merge. The runner queued nothing that showed as idle workers.
 
-**Width eight measured worse than width five, and the comparison is confounded.** The width was raised from five to eight in the middle of the run. Mean concurrency fell from 4.00 to 3.22, and the share of the window with an idle fleet rose from none to 32.1%. The owner of that run attributes the largest single cause to merging in ready order rather than in artifact-footprint order, so that one branch touching every corpus-wide derived artifact was overtaken four times and re-derived four times. The comparison stands as a caution and not as a finding, and the next measurement takes it again under footprint order.
+**Width eight measured worse than width five, and the comparison is confounded.** The width was raised from five to eight in the middle of the run. Mean concurrency fell from 4.00 to 3.22, and the share of the window with an idle fleet rose from none to 32.1%. The owner of that run attributes the largest single cause to merging in ready order rather than in artifact-footprint order. So one branch touching every corpus-wide derived artifact was overtaken four times and re-derived four times. The comparison stands as a caution and not as a finding, and the next measurement takes it again under footprint order.
 
-**The parent compacted five times.** Its single largest gap, 82.8 minutes, ended at a compaction. The doctrine it ran under was 67 KB of prose in its own context, and a compaction summarizes prose of that length rather than preserving it.
+**The parent compacted five times.** Its single largest gap, 82.8 minutes, ended at a compaction. The doctrine it ran under was 67 KB of prose in its own context. A compaction summarizes prose of that length rather than preserving it.
 
 **Of 67 messages the parent sent, two kinds want opposite treatment.** Most were authority: a branch sent back with a defect named, or a delta sent for re-verification. A few were coordination: a warning to one worker that another was about to touch the same derived artifact. The first kind is the parent exercising a veto only it may exercise. The second kind is a shared-state problem the parent was relaying by hand.
 
 ## The finding that set the unit of cost
 
-Pull request #685 measured the same parent's polling. It made 76 `gh pr view` and `gh pr list` calls whose combined output was 25 KB. Those calls occupied 77 turns and 21.3 million cache reads, which is 10.3% of the parent's entire 207 million for the run, to carry about 6.3 thousand tokens of payload. That is roughly 3,400 times the payload in carrier cost.
+Pull request #685 measured the same parent's polling. It made 76 `gh pr view` and `gh pr list` calls whose combined output was 25 KB. Those calls occupied 77 turns and 21.3 million cache reads, which is 10.3% of the parent's entire 207 million for the run. That carried about 6.3 thousand tokens of payload. That is roughly 3,400 times the payload in carrier cost.
 
-The unit of cost is therefore a parent turn at the parent's full context, and not a token. The same finding rules out the obvious remedy: a fresh agent dispatched to make one poll is worse than the poll, because the dispatch is itself a parent turn at the same context, with a prompt on top. A dispatch pays only when it retires more parent turns than it costs. [HW-PD-0003](../process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) is that rule.
+The unit of cost is therefore a parent turn at the parent's full context, and not a token. The same finding rules out the obvious remedy: a fresh agent dispatched to make one poll is worse than the poll. That is because the dispatch is itself a parent turn at the same context, with a prompt on top. A dispatch pays only when it retires more parent turns than it costs. [HW-PD-0003](../process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) is that rule.
 
 Counting repeated calls does not find this class. The 76 calls covered 43 pull requests at about one and a half calls each, and no shape repeated more than 40 times. An earlier incident, 232 identical calls in twelve minutes, was visible from any angle. This one was visible only by grouping shell calls by purpose and reading the total.
 
-Session `9ab3be93` measured a second class at the same unit of cost, a turn at full context, this time paid on the way out of a wait rather than on the way through a poll. Thirteen turns across three builders read a background-task notification after their own wait had run longer than the prompt cache holds a copy of a subagent's context, about five minutes, and each one paid to write the whole context back rather than to read it, at 1.25 times the input rate against 0.1 times. The three builders rewrote 3.72M, 1.48M and 0.74M tokens across six, five and two such gaps each, $14.85 of the run's $130.73 total, 11.4%. A wait that came back inside the cache lifetime instead would have cost about $3.84 in cache reads over roughly 32 extra turns. [HW-PD-0007](../process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md) bounds a background wait under that lifetime and re-issues it on return, and `tools/run/run-census.sh` reports the class directly so the next run is held to a number rather than to this record.
+Session `9ab3be93` measured a second class at the same unit of cost, a turn at full context. This time it was paid on the way out of a wait rather than on the way through a poll. Thirteen turns across three builders read a background-task notification after their own wait had run longer than the prompt cache holds a copy of a subagent's context, about five minutes, and each one paid to write the whole context back rather than to read it, at 1.25 times the input rate against 0.1 times. The three builders rewrote 3.72M, 1.48M and 0.74M tokens across six, five and two such gaps each, $14.85 of the run's $130.73 total, 11.4%. A wait that came back inside the cache lifetime instead would have cost about $3.84 in cache reads over roughly 32 extra turns. [HW-PD-0007](../process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md) bounds a background wait under that lifetime and re-issues it on return. `tools/run/run-census.sh` reports the class directly, so the next run is held to a number rather than to this record.
 
 ## What the following run added
 
 Run 24 ran under the integrator slot and with polling moved out of the parent. Its owner reported four things this evaluation carries forward.
 
-**Refusal was the highest-value output.** Six of eight slots returned something other than "build as specified". Three rejected part of their own Done-when, and one found a pre-existing defect that permanently bricks an output path, reproducible at one run in three with its own change stashed. The owner's reading is that this happens only when adjudication is separate from construction and refusal is licensed in the prompt, because an agent handed a prescribed remedy implements it and cannot find the error in it. [HW-PD-0002](../process/decisions/0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md) rules on it.
+**Refusal was the highest-value output.** Six of eight slots returned something other than "build as specified". Three rejected part of their own Done-when. One found a pre-existing defect that permanently bricks an output path, reproducible at one run in three with its own change stashed. The owner's reading is that this happens only when adjudication is separate from construction and refusal is licensed in the prompt. That is because an agent handed a prescribed remedy implements it and cannot find the error in it. [HW-PD-0002](../process/decisions/0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md) rules on it.
 
-**Widest artifact footprint merges first.** Under that rule no branch was overtaken. Its corollary is to never add rebase work to a branch that is still running, because a finished branch waiting costs nothing and a working branch redoing its derives costs a full pass.
+**Widest artifact footprint merges first.** Under that rule no branch was overtaken. Its corollary is to never add rebase work to a branch that is still running. That is because a finished branch waiting costs nothing, and a working branch redoing its derives costs a full pass.
 
 **A blocking wait outlives the agent that started it.** The run ended with 30 orphaned `until … sleep 30` loops, the oldest still polling after eleven hours, emitting phantom notifications and pinning deleted worktrees on disk. One of them was still alive nine hours after the run stopped.
 
-**A stale instrument reports a correct tree as defective.** A binary four hours behind `main` reported twelve site figures stale, and the gate's own printed remedy would have written the wrong values into three pages and staged them. Two sessions read that report and both concluded the pages were stale. Rebuilt at the same commit, the check reported zero stale. The direction of every delta was the tell: a measurement missing something the page knows about is an old binary, not a stale page. Issue #679 holds it as a correctness root.
+**A stale instrument reports a correct tree as defective.** A binary four hours behind `main` reported twelve site figures stale. The gate's own printed remedy would have written the wrong values into three pages and staged them. Two sessions read that report and both concluded the pages were stale. Rebuilt at the same commit, the check reported zero stale. The direction of every delta was the tell: a measurement missing something the page knows about is an old binary, not a stale page. Issue #679 holds it as a correctness root.
 
 ## The cost model
 
@@ -96,7 +96,7 @@ Decomposing the command into agent definitions serves the second quantity only. 
 
 [HW-PD-0001](../process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md) states the ownership rule, which decides where any sentence of orchestration prose lives. Under it the command shrinks to a doctrine block of ten numbered lines, a loop, a veto and a dispatch template. Each stage becomes an agent definition with its model in frontmatter. Rules two or more stages obey become skills. Measurement and rationale become this evaluation and the records it cites.
 
-The stages are adjudication, construction, verification and integration, and integration fuses the merge, the regenerate and the write-back because all three are mechanical and all three touch the one shared checkout. A fifth definition writes the queue. The parent takes four turns per issue, which is one more than the fused shape would take, and [HW-PD-0002](../process/decisions/0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md) records why that turn is paid.
+The stages are adjudication, construction, verification and integration, and integration fuses the merge, the regenerate and the write-back. That is because all three are mechanical and all three touch the one shared checkout. A fifth definition writes the queue. The parent takes four turns per issue, which is one more than the fused shape would take, and [HW-PD-0002](../process/decisions/0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md) records why that turn is paid.
 
 [HW-PD-0004](../process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md) moves coordination to create-only claims in a run directory and keeps the veto with the parent. [HW-PD-0005](../process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md) splits the ledger so that its doctrine reads alone and its log reads by the line. [HW-PD-0006](../process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md) keeps `/next-run` and makes a run resumable from that directory.
 
@@ -116,7 +116,7 @@ The stages are adjudication, construction, verification and integration, and int
 
 **SQLite for the ledger** is deferred and not refused. The problem it solves, reading a header without the body, is solved by splitting the file and writing the tabular parts as JSONL. A database earns its place when a cross-run question is asked, and JSONL imports cleanly then.
 
-**A headless loop**, where a script drives each stage and the session spends turns only on verdicts, is the end state this design points at and does not take. Of the 45 pull requests in the measured run, 44 merged under the veto, and nothing has measured what merges without one.
+**A headless loop**, where a script drives each stage and the session spends turns only on verdicts, is the end state this design points at. This design does not take that state. Of the 45 pull requests in the measured run, 44 merged under the veto, and nothing has measured what merges without one.
 
 ## The numbers the next run is held against
 
@@ -132,7 +132,7 @@ The stages are adjudication, construction, verification and integration, and int
 
 `tools/run/run-census.sh` takes these from a session log and the agent transcripts beside it. The run that follows this design writes its numbers into this table.
 
-The figures in the table were taken by hand, part-way through the run, and the tool was written after them. Over the whole transcript of that run the tool reports 880 turns and 227.3 million cache reads. Mentions of `gh pr view` cost 66 calls, 66 turns and 18.1 million cache reads, which is 8.0% of the run. Mentions of `gh pr list` cost 24 calls, 24 turns and 6.7 million, which is 2.9%. The tool counts a call once per turn and a turn once per message, and it reads a verb past a leading `cd` or `set -e`, because that run wrote nearly every command in that shape. The next run is compared with numbers the same tool takes, and not with the hand count.
+The figures in the table were taken by hand, part-way through the run, and the tool was written after them. Over the whole transcript of that run the tool reports 880 turns and 227.3 million cache reads. Mentions of `gh pr view` cost 66 calls, 66 turns and 18.1 million cache reads, which is 8.0% of the run. Mentions of `gh pr list` cost 24 calls, 24 turns and 6.7 million, which is 2.9%. The tool counts a call once per turn and a turn once per message, and it reads a verb past a leading `cd` or `set -e`. That is because that run wrote nearly every command in that shape. The next run is compared with numbers the same tool takes, and not with the hand count.
 
 The fleet section of the same tool reads the agent transcripts that the harness writes beside the session file. Over the whole run it does not reproduce the hand count. It finds 165 agents at depth one over a span of 20 hours. No window had nothing in flight, and 9.54 agents were in flight on average. The hand count found 20.9% idle and a mean between 3.03 and 4.00. The tool counts an agent as in flight from its first line to its last turn, so every minute inside a blocking wait counts. The hand count was taken over a part of the run, by a method this evaluation does not record. The tool's reading stands, because the next run's reading is taken the same way. The largest gap before a compaction was 87.6 minutes from the parent's last turn. The largest gap after one was 22.3 minutes to its next dispatch. The parent took 5.5 turns per agent over 161 agents of one type, and 19.6 turns per pull request over 45.
 
@@ -148,7 +148,7 @@ One risk surfaced outside the measured numbers. A construction agent for issue #
 
 ## What two later runs added
 
-Four more measurements spend the same unit of cost, a turn at full context, and each one set a rule that the stages now carry without the number.
+Four more measurements spend the same unit of cost, a turn at full context. Each one set a rule that the stages now carry without the number.
 
 **A parent that checks pays for a turn that learns nothing.** The parent of run `20260911-1331` ran a bare `true` 193 times, and those turns cost 55% of the run. The parent of run `20260920-2058` grew its context from 62K to 721K tokens over 424 turns, with a mean of 409K. Of its 239 turns that did work, 126 were checks on a background agent that found no change. Those turns had a mean context of 462K tokens and read 58M tokens from the cache in total. The parent's cache holds for an hour, so a check keeps nothing warm that the next report would not find warm. Doctrine line 2 of `.claude/commands/next-run.md` is the rule: with agents in flight, the parent ends its turn.
 
@@ -156,8 +156,8 @@ Four more measurements spend the same unit of cost, a turn at full context, and 
 
 **A builder that runs the whole suite on each edit pays for the workspace on each turn.** In the same run, one builder ran `cargo test --workspace` eleven times over its own build. Another builder ran `cargo` directly thirteen times, outside the slots of `tools/hw-cargo`. `.claude/agents/hw-build.md` now scopes a test run to one crate while the builder iterates, and it keeps one workspace run before the pull request.
 
-**A long report costs the parent on every later turn.** In one run, forty of forty-one stage reports were two to four times the 400-token limit, and the parent read each one again on every later turn. Each stage now writes its narrative to a file and returns only the fixed block that its definition names.
+**A long report costs the parent on every later turn.** In one run, forty of forty-one stage reports were two to four times the 400-token limit. The parent read each one again on every later turn. Each stage now writes its narrative to a file and returns only the fixed block that its definition names.
 
 ## What this evaluation cannot show
 
-One run measured the orchestrator, and one run reported the refusals. The width comparison is confounded and is recorded as such. The claim that a compaction preserves a short numbered list and not a long narrative is plausible and untested, and the doctrine sizing rests on it. The integrator's net saving of about five parent turns per merge is arithmetic from the measured turn classes and not a measurement of the new shape. Each of these is a thing the next measurement can settle.
+One run measured the orchestrator, and one run reported the refusals. The width comparison is confounded and is recorded as such. The claim that a compaction preserves a short numbered list and not a long narrative is plausible and untested. The doctrine sizing rests on it. The integrator's net saving of about five parent turns per merge is arithmetic from the measured turn classes. It is not a measurement of the new shape. Each of these is a thing the next measurement can settle.
