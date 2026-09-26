@@ -25,7 +25,7 @@ The command reads one JSON object on standard input. `field` and `count` write o
 
 `headwater json` is the one verb of this binary that reads no corpus. A harness hands a hook one JSON object on standard input. A hook that read it alone would need an interpreter that nothing else in a session requires. [HW-DR-0055](../decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) rules that the engine answers this and that no `headwater hook <moment>` verb exists.
 
-`field` takes a path of steps, outermost first, and prints the member at the end of it. A step is a key into an object or a decimal index into an array, counted from 0. `headwater json field tool_input file_path` prints the `file_path` member of the `tool_input` member. `headwater json field related 0 target` prints the `target` member of the first element of the `related` array. A string arrives with its escapes resolved, a number as it was written, and a boolean as `true` or `false`.
+`field` takes a path of steps, outermost first, and prints the member at the end of it. A step is a key into an object or a decimal index into an array, counted from 0. `headwater json field tool_input file_path` prints the `file_path` member of the `tool_input` member. `headwater json field related 0 target` prints the `target` member of the first element of the `related` array. An index is one or more ASCII digits `0` to `9` and nothing else. A sign, a space, a `0x` prefix and an empty step reach nothing. A leading zero gives the same number, so `00` is the first element. An index past the last element reaches nothing, and so does an index too large for the platform to hold. A string arrives with its escapes resolved, a number as it was written, and a boolean as `true` or `false`.
 
 `count` prints how many elements the array or the object at that path holds. It is the read `field` cannot do. An empty array and an absent member both give a caller nothing back through `field`, and they are different facts about a message.
 
@@ -41,7 +41,7 @@ Standard input carries one JSON document and is text. The verb reads it to the e
 
 | Option | What it does |
 |---|---|
-| `<key>...` | The path to the member, outermost first. A step into an array is a decimal index. `field` requires at least one. `count` with none counts the document on standard input itself. |
+| `<key>...` | The path to the member, outermost first. A step into an array is a decimal index of ASCII digits only. `field` requires at least one. `count` with none counts the document on standard input itself. |
 | `--root <path>` | Accepted for the global parser. This verb reads nothing under it. |
 | `--no-color` | Force plain text on both streams. The artifact carries no color at any setting, and the account on standard error does. |
 | `--no-banner` | Accepted and does nothing, since only the root help screen prints a masthead. |

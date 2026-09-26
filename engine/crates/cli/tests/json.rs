@@ -765,3 +765,177 @@ fn member(value: &headwater_yaml::Value, key: &str) -> Option<String> {
         .map(headwater_yaml::core_schema::as_str)
         .map(str::to_string)
 }
+
+/// One `related` element of an `explain --json` document.
+struct Related {
+    direction: String,
+    relation: String,
+    target: String,
+    targets: Option<Vec<String>>,
+}
+
+/// Every `related` element of one `explain --json` document.
+fn related(text: &str) -> Vec<Related> {
+    let value = headwater_yaml::load(text)
+        .unwrap_or_else(|errors| panic!("the explain document parses: {errors:?}\n{text}"))
+        .value;
+    let elements = value
+        .as_map()
+        .and_then(|map| map.get("related"))
+        .and_then(|spanned| spanned.value.as_seq())
+        .expect("the explain document carries a `related` sequence");
+    elements
+        .iter()
+        .map(|element| Related {
+            direction: match member(&element.value, "inbound").as_deref() {
+                Some("true") => "inbound".to_string(),
+                Some("false") => "outbound".to_string(),
+                other => panic!("`inbound` is a boolean, not {other:?}"),
+            },
+            relation: member(&element.value, "relation").expect("a `relation`"),
+            target: member(&element.value, "target").expect("a `target` string"),
+            targets: element
+                .value
+                .as_map()
+                .and_then(|map| map.get("targets"))
+                .and_then(|spanned| spanned.value.as_seq())
+                .map(|members| {
+                    members
+                        .iter()
+                        .map(|member| {
+                            member
+                                .value
+                                .as_scalar()
+                                .map(headwater_yaml::core_schema::as_str)
+                                .expect("a member of `targets` is a string")
+                                .to_string()
+                        })
+                        .collect()
+                }),
+        })
+        .collect()
+}
+
+/// `targets` is on every element, and `target` is its members joined by `, `.
+fn assert_targets_join_to_target(related: &[Related]) {
+    for element in related {
+        let targets = element.targets.as_ref().unwrap_or_else(|| {
+            panic!(
+                "the {} `{}` element onto `{}` carries `targets`",
+                element.direction, element.relation, element.target
+            )
+        });
+        assert!(
+            !targets.is_empty(),
+            "`targets` is never empty: {}",
+            element.target
+        );
+        assert_eq!(
+            targets.join(", "),
+            element.target,
+            "`target` is `targets` joined by `, ` for a reader"
+        );
+    }
+}
+
+/// A list anchor is an array of its targets, not one comma-joined string.
+///
+/// [#1092](https://github.com/headwater-ai/headwater/issues/1092). The contract
+/// is `docs/interfaces/headwater-explain.md`, which declares a two-member list
+/// itself, so the live repository holds the case. `target` stays the display
+/// string, because `.claude/hooks/lib.sh` reads it through
+/// `headwater json field related <i> target`.
+#[test]
+fn explain_writes_a_list_anchor_as_an_array_of_its_targets() {
+    let run = ran(&["explain", "--json", "docs/interfaces/headwater-explain.md"]);
+    assert_eq!(run.code, Some(0), "{run:?}");
+    let related = related(&run.text());
+    let list = related
+        .iter()
+        .find(|element| {
+            element.direction == "outbound"
+                && element.relation == "governs"
+                && element.target.contains(", ")
+        })
+        .expect("the contract governs a two-member list, so the case is not vacuous");
+    assert_eq!(
+        list.targets.as_deref(),
+        Some(
+            &[
+                "engine/crates/cli/src/lib.rs".to_string(),
+                "engine/crates/cli/src/main.rs".to_string(),
+            ][..]
+        ),
+        "the list anchor is written as its two targets"
+    );
+    assert_targets_join_to_target(&related);
+}
+
+/// A member that holds a comma stays one member of `targets`, in the order
+/// the author wrote it.
+///
+/// The join in `target` cannot tell `[src/c.rs, "src/a, b.rs", "src/a,b.rs"]`
+/// from four or five members, and `targets` can. One member holds `, `, the
+/// join's own separator, so an implementation that splits `target` or
+/// `raw_target` again goes red here. The list is written out of sorted order,
+/// so one that sorts an unbound list goes red too. The scratch corpus holds no
+/// source tree, so the anchor binds nothing, and the list comes from the edge
+/// as written rather than from the resolver's patterns. That is the case a
+/// stale path puts in front of an adopter.
+#[test]
+fn a_member_that_holds_a_comma_stays_one_member_of_targets() {
+    let at = scratch().join("comma-member");
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
+    for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
+        std::fs::copy(
+            repository().join(".headwater").join(name),
+            at.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    std::fs::write(
+        at.join("docs/interfaces/headwater-comma.md"),
+        "---\nid: HW-IFACE-headwater-comma\nstatus: current\nstatus_since: 2026-09-26\nsummary: \"A list anchor whose members hold a comma.\"\nlast_verified: 2026-09-26\ntitle: \"headwater comma\"\nrelations:\n  governs:\n    - [src/c.rs, \"src/a, b.rs\", \"src/a,b.rs\"]\n---\n\n# headwater comma\n\n## Synopsis\n\n    headwater comma\n",
+    )
+    .expect("the document is written");
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args([
+            "explain",
+            "--json",
+            "docs/interfaces/headwater-comma.md",
+            "--root",
+        ])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "{text}\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let related = related(&text);
+    let list = related
+        .iter()
+        .find(|element| element.direction == "outbound" && element.relation == "governs")
+        .expect("the document governs its list");
+    assert_eq!(
+        list.target, "src/c.rs, src/a, b.rs, src/a,b.rs",
+        "the display string is the join"
+    );
+    assert_eq!(
+        list.targets.as_deref(),
+        Some(
+            &[
+                "src/c.rs".to_string(),
+                "src/a, b.rs".to_string(),
+                "src/a,b.rs".to_string(),
+            ][..]
+        ),
+        "three members as written, in the written order"
+    );
+    assert_targets_join_to_target(&related);
+}
