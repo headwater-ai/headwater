@@ -225,7 +225,6 @@ impl EdgeCheck for Suspect<'_> {
             _ => return Outcome::Passed,
         };
 
-
         // A fix writes `verified_revision`, so it is offered only where the
         // relation declares that attribute: spec 2 makes an undeclared one a
         // finding, and a fix must not write what a later rule refuses.
