@@ -21,9 +21,11 @@ set -eu
 
 dest=${1:?usage: build-decisive-fixture.sh <dest-dir>}
 bin=${HEADWATER_BIN:?set HEADWATER_BIN to the pinned engine binary}
-tag=${FIXTURE_TAXONOMY_TAG:?set FIXTURE_TAXONOMY_TAG, e.g. taxonomy/headwater-standard/v4.2.0}
+# The whole location of the published zip, and never a tag that this script
+# turns into one: an asset name built by concatenation is what
+# `release-taxonomy.yml` says not to do, because a release names its asset.
+url=${FIXTURE_TAXONOMY_URL:?set FIXTURE_TAXONOMY_URL to the https:// location of a published taxonomy zip}
 digest=${FIXTURE_TAXONOMY_DIGEST:?set FIXTURE_TAXONOMY_DIGEST, e.g. sha256:...}
-bootstrap=${BOOTSTRAP_SCRIPT:?set BOOTSTRAP_SCRIPT to the path of tools/headwater-bootstrap.sh}
 
 rm -rf "$dest"
 mkdir -p "$dest/docs/decisions"
@@ -32,15 +34,16 @@ printf '# Store attempts in Postgres\n\nThe queue keeps every delivery attempt i
 
 "$bin" init --root "$dest"
 
-HEADWATER_BIN="$bin" sh "$bootstrap" --root "$dest" --tag "$tag" --expect "$digest"
+# The engine fetches the zip itself: `vendor` takes a location from v0.2.1.
+"$bin" taxonomy vendor "$url" --expect "$digest" --root "$dest"
 
 # `init` proposes `taxonomy.version: 0.0.0`, because no package sat under
-# `packages/` yet when it ran. Pin it at the version the vendored package
-# itself declares, read back rather than assumed, so a change to
-# FIXTURE_TAXONOMY_TAG never needs a second edit here.
-version=$(sed -n 's/^version: *//p' "$dest/packages/headwater-standard/package.yml" | head -1)
+# `.headwater/packages/` yet when it ran. Pin it at the version the vendored
+# package itself declares, read back rather than assumed, so a change to
+# FIXTURE_TAXONOMY_URL never needs a second edit here.
+version=$(sed -n 's/^version: *//p' "$dest/.headwater/packages/headwater-standard/package.yml" | head -1)
 if [ -z "$version" ]; then
-    echo "$0: packages/headwater-standard/package.yml states no version" >&2
+    echo "$0: .headwater/packages/headwater-standard/package.yml states no version" >&2
     exit 1
 fi
 sed -i "s/version: 0.0.0/version: $version/" "$dest/.headwater/taxonomy.yml"

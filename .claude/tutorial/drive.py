@@ -20,10 +20,11 @@ refuses an indented block so that the property stays true.
 temporary directory that this script removes at the end, and `HOME` is redirected
 into it so that a `~` in a tutorial command cannot escape.
 
-**One command reaches the network, and it is step 3's.** Step 3 curls
-`tools/headwater-bootstrap.sh` off the default branch and pipes it into `sh`,
-against the real `taxonomy/headwater-standard/v4.2.0` release — the taxonomy-only
-route `.github/workflows/release-taxonomy.yml` cuts, and not an engine tag. Every
+**One command reaches the network, and it is step 3's.** Step 3 runs
+`headwater taxonomy vendor` on the `https://` location of the zip that the real
+`taxonomy/headwater-standard/v4.2.0` release carries — the taxonomy-only route
+`.github/workflows/release-taxonomy.yml` cuts, and not an engine tag. The engine
+under test does the fetch itself. Every
 assertion before it runs first and reaches no network, so a fetch failure here is
 reported as its own claim and never read as a defect earlier. Nothing after step
 3 reaches the network again.
@@ -322,15 +323,14 @@ def main():
         compare('step 2: ls .headwater', run('ls .headwater').stdout,
                 'overlay.yml\ntaxonomy.yml', today)
 
-        # Step 3. The one command in this suite that reaches the network: it
-        # curls `tools/headwater-bootstrap.sh` off the default branch and pipes
-        # it into `sh`, against the real `taxonomy/headwater-standard/v4.2.0`
-        # release. A fetch or network failure here is reported as its own claim,
-        # never read as a defect in a step above it, and nothing below this step
-        # reaches the network
-        # again.
+        # Step 3. The one command in this suite that reaches the network:
+        # `headwater taxonomy vendor` fetches the zip of the real
+        # `taxonomy/headwater-standard/v4.2.0` release itself. A fetch or
+        # network failure here is reported as its own claim, never read as a
+        # defect in a step above it, and nothing below this step reaches the
+        # network again.
         result = run(used(5).strip())
-        cut('step 3: the account of what the script fetched', result.stdout + result.stderr, 6)
+        cut('step 3: the account of what vendor fetched', result.stdout + result.stderr, 6)
         whole('step 3: ls .headwater/packages/headwater-standard',
               run('ls .headwater/packages/headwater-standard').stdout, 7)
 

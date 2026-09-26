@@ -576,6 +576,12 @@
       ]
     },
     {
+      "rule": "lifecycle.state.set_twice",
+      "scope": "corpus",
+      "version": 1,
+      "obligations": []
+    },
+    {
       "rule": "relation.declaration.unusable",
       "scope": "document",
       "version": 1,
@@ -636,7 +642,7 @@
     {
       "rule": "surface.local_path.instructed",
       "scope": "document",
-      "version": 4,
+      "version": 5,
       "obligations": []
     },
     {
