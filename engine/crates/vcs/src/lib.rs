@@ -21,7 +21,7 @@
 //!
 //! [manifest]: https://github.com/headwater-ai/headwater/blob/main/docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version
 
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -340,7 +340,23 @@ pub fn merge_attributes(
 /// each of the last three shapes, and a verb that refused there would refuse
 /// a tree that git itself reads as no repository.
 fn finds_a_repository(root: &Path) -> bool {
-    let ceilings: Vec<PathBuf> = std::env::var_os("GIT_CEILING_DIRECTORIES")
+    finds_a_repository_in(root, &|name| std::env::var_os(name), &device_of)
+}
+
+/// [`finds_a_repository`] with the environment and the device lookup passed
+/// in, so that a test can set a variable without changing the environment
+/// of the process, which cargo shares between the cases of one target.
+///
+/// `var_os` reads one environment variable as the process holds it, bytes
+/// that are not UTF-8 included. Both settings are read through it and
+/// nothing else, so a test that passes a value here tests the path that
+/// ships (#1120).
+fn finds_a_repository_in(
+    root: &Path,
+    var_os: &dyn Fn(&str) -> Option<OsString>,
+    device_of: &dyn Fn(&Path) -> Option<u64>,
+) -> bool {
+    let ceilings: Vec<PathBuf> = var_os("GIT_CEILING_DIRECTORIES")
         .map(|value| {
             std::env::split_paths(&value)
                 .filter(|dir| !dir.as_os_str().is_empty())
@@ -348,9 +364,9 @@ fn finds_a_repository(root: &Path) -> bool {
                 .collect()
         })
         .unwrap_or_default();
-    let across =
-        crosses_filesystems_os(std::env::var_os("GIT_DISCOVERY_ACROSS_FILESYSTEM").as_deref());
-    search_upward(root, &ceilings, across, &device_of)
+    let across = std::env::var("GIT_DISCOVERY_ACROSS_FILESYSTEM")
+        .is_ok_and(|value| crosses_filesystems_os(Some(OsStr::new(&value))));
+    search_upward(root, &ceilings, across, device_of)
 }
 
 /// Whether the search crosses a filesystem boundary, for `value` of
@@ -1049,6 +1065,48 @@ mod tests {
             crosses_filesystems_os(Some(OsStr::new("1"))),
             "git reads \"1\" as true"
         );
+    }
+
+    /// The search that ships reads `GIT_DISCOVERY_ACROSS_FILESYSTEM` as the
+    /// process holds it, and a value that is not UTF-8 crosses (#1120).
+    ///
+    /// This drives [`finds_a_repository_in`], the body of the verb's search,
+    /// with the environment passed in and a stand-in boundary, as
+    /// `the_search_upward_stops_at_a_filesystem_boundary` places one. Read
+    /// the variable with `std::env::var`, or drop the value that is not
+    /// UTF-8 anywhere on the way to the search, and the first assertion
+    /// fails. Unset, the repository above the boundary is not reached.
+    #[cfg(unix)]
+    #[test]
+    fn the_search_crosses_for_a_value_that_is_not_utf8() {
+        use std::os::unix::ffi::OsStrExt;
+        let at = std::env::temp_dir().join(format!(
+            "headwater-vcs-tests-boundary-not-utf8-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&at);
+        fs::create_dir_all(at.join("inner/sub")).expect("the directories are there");
+        fs::write(at.join(".git"), "gitdir: /elsewhere\n").expect("the file writes");
+        let inner = at
+            .join("inner")
+            .canonicalize()
+            .expect("the directory is there");
+        let device = |dir: &Path| Some(if dir.starts_with(&inner) { 2 } else { 1 });
+        for bytes in [&b"\xff"[..], &b"1\xff"[..]] {
+            let env = |name: &str| {
+                (name == "GIT_DISCOVERY_ACROSS_FILESYSTEM")
+                    .then(|| OsStr::from_bytes(bytes).to_os_string())
+            };
+            assert!(
+                finds_a_repository_in(&inner.join("sub"), &env, &device),
+                "git refuses {bytes:?}, and the search crosses to the repository"
+            );
+        }
+        assert!(
+            !finds_a_repository_in(&inner.join("sub"), &|_| None, &device),
+            "unset, the repository above the boundary is not reached"
+        );
+        let _ = fs::remove_dir_all(&at);
     }
 
     /// A tree with no `.git` at all — the shape this crate's own tests build
