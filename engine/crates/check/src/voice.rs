@@ -172,10 +172,13 @@ const CATEGORIES: [Category; 3] = [
         //
         // **Re-read on `0ee88a2d` on 2026-09-27, and the trend is moving.**
         // The category reports 22 findings, and 10 of them are `no longer`.
-        // Of those 10, 1 is genuine and 9 are false. The rewrites since
-        // 2026-09-11 took the genuine count from 9 to 1, and they could not
-        // touch the false ones. So the reading that retires the pattern is one
-        // rewrite away, and the pattern stays until a reading finds it.
+        // Of those 10, 1 is genuine and 9 are false. Since 2026-09-11 the
+        // genuine count fell from 9 to 1, and the false count fell too: the
+        // quotation exclusion of #783 removed one, and rewrites made for other
+        // reasons reworded others. So "unmoved" above needs a baseline, and
+        // this reading is it: 1 genuine and 9 false. A later reading compares
+        // its false count with 9, not with the figures of 2026-09-11. The
+        // pattern stays until a reading finds the genuine count at zero.
         //
         // **No regime can name the sections it reads, and a `## Context`
         // narration takes no directive.** A decision record's `## Context` is
@@ -183,7 +186,7 @@ const CATEGORIES: [Category; 3] = [
         // section. On `0ee88a2d`, 4 of the 23 findings of this rule stand in a
         // `## Context` section: 3 are narration that a reader wants there, and
         // 1 is a false positive of the definition mode. A section scope clears
-        // those 4 and misses the fifth legitimate narration, which stands in a
+        // those 4 and misses the fourth legitimate narration, which stands in a
         // `## Consequences` section, so it prices a schema change at 4 findings.
         // The convention an author may use instead is a block directive on the
         // sentence, `headwater allow=voice.forbidden_construction scope=block
@@ -191,8 +194,11 @@ const CATEGORIES: [Category; 3] = [
         // directives today, and none is spent: an `until` buys a
         // re-adjudication of a sentence that never becomes wrong, which is the
         // argument against a directive on the false positives below as well.
-        // `the_rulings_of_2026_09_27_still_match` holds a `## Context` sentence
-        // that still matches.
+        // Two cases hold the ruling. `the_rulings_of_2026_09_27_still_match`
+        // holds the parse half, and
+        // `the_voice_rule_reads_a_context_section_like_any_other` in
+        // `tests/fixtures.rs` holds the whole run, so a section scope added to
+        // `evaluate` fails it.
         //
         // The 18 false positives are five ways that English states something
         // other than a change, and `the_measured_false_positives_still_match`
@@ -415,7 +421,31 @@ impl DocumentCheck for Voice {
         // sentence (`crate::frontmatter` states why).
         let prose = body
             .into_iter()
-            .flat_map(|body| body.sentences().into_iter().map(|s| (s, true)))
+            .flat_map(|body| {
+                // MUTANT: a section scope that drops `## Context`.
+                let contexts: Vec<(usize, usize)> = {
+                    let heads: Vec<&headwater_doc::body::Block> = body.headings().collect();
+                    heads
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, h)| h.text().trim() == "Context")
+                        .map(|(i, h)| {
+                            (
+                                h.span.start.line,
+                                heads.get(i + 1).map_or(usize::MAX, |n| n.span.start.line),
+                            )
+                        })
+                        .collect()
+                };
+                body.sentences()
+                    .into_iter()
+                    .filter(move |s| {
+                        !contexts
+                            .iter()
+                            .any(|(a, b)| s.span.start.line > *a && s.span.start.line < *b)
+                    })
+                    .map(|s| (s, true))
+            })
             .chain(
                 scent
                     .iter()
@@ -633,7 +663,8 @@ mod tests {
     /// with its heading. The module comment states the ruling and its price.
     /// This case holds the half that the parse owns: the heading does not
     /// keep the sentence from a pattern. A section scope added to `evaluate`
-    /// would not fail it, and the ruling is where that change is weighed.
+    /// would not fail it. `the_voice_rule_reads_a_context_section_like_any_other`
+    /// in `tests/fixtures.rs` runs the whole check and holds that half.
     #[test]
     fn the_rulings_of_2026_09_27_still_match() {
         let first = |category: &Category, source: &str| {

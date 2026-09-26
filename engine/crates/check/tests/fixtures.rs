@@ -553,6 +553,47 @@ fn the_voice_rule_reads_the_facet_in_the_scent_role_and_the_body_and_not_the_tit
     assert_eq!(from_body[0].line, body, "{from_body:#?}");
 }
 
+/// The ruling of #606 that no voice regime names the sections it reads, held
+/// through the whole run rather than through the pattern alone. A
+/// `change_narration` sentence under `## Context` reports, on its own line,
+/// like a sentence under any other heading. A section scope added anywhere
+/// between the parse and `Voice::evaluate` fails this case, and that change
+/// has to meet the price that `engine/crates/check/src/voice.rs` records.
+#[test]
+fn the_voice_rule_reads_a_context_section_like_any_other() {
+    const PATH: &str = "check/spec/24-voice-context-section.md";
+    const SENTENCE: &str = "There was no declaration, no authored form, and no owner.";
+    let source = std::fs::read_to_string(fixtures_dir().join(PATH)).expect("the fixture");
+    let lines: Vec<&str> = source.lines().collect();
+    let line = lines
+        .iter()
+        .position(|line| *line == SENTENCE)
+        .expect("the sentence")
+        + 1;
+    assert_eq!(
+        lines[..line - 1]
+            .iter()
+            .rev()
+            .find(|l| l.starts_with('#'))
+            .copied(),
+        Some("## Context"),
+        "the sentence must stand under `## Context`"
+    );
+
+    let run = fixture_run();
+    let mine: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.path == PATH && finding.rule == voice::RULE)
+        .collect();
+    assert_eq!(mine.len(), 1, "{mine:#?}");
+    assert_eq!(mine[0].line, line, "{mine:#?}");
+    assert!(
+        mine[0].message.contains("change_narration") && mine[0].message.contains("`there was no`"),
+        "{mine:#?}"
+    );
+}
+
 /// A document whose kind binds a voice regime, with no body sentence and no
 /// `scent`-role facet carrying one, skips with a written reason rather than
 /// silently claiming a hold it never checked. #774: the empty population was
@@ -1572,8 +1613,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 30);
-    assert_eq!(run.coverage.classified(), 28);
+    assert_eq!(run.coverage.seen(), 31);
+    assert_eq!(run.coverage.classified(), 29);
 
     // A file this engine wrote is the third state, and it is accounted for
     // without being judged. `check/spec/12-generated.md` sits on a heterogeneous
@@ -1936,7 +1977,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
         &mut Cache::disabled(),
     );
 
-    assert_eq!(declared.len(), 28, "one instance per typed document");
+    assert_eq!(declared.len(), 29, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()

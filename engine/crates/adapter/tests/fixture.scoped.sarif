@@ -944,6 +944,17 @@
           "hashes": {
             "sha-256": "43da22615732693705b57847374fa9b93eeadc834fa0007fbf6eecd929f30e6a"
           }
+        },
+        {
+          "location": {
+            "uri": "check/spec/24-voice-context-section.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "fd29ca33cfa7fb0582f0131f5eddd05b3c032efd3cf63e45bf51dc87f963ffd5"
+          }
         }
       ],
       "results": [
@@ -2767,6 +2778,39 @@
           }
         },
         {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 19,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids change_narration, and this sentence writes `there was no`",
+            "markdown": "`declarative` forbids change_narration, and this sentence writes `there was no`\n\n**Fix:** state the position that holds, and leave the change to the decision that made it"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/24-voice-context-section.md"
+                },
+                "region": {
+                  "startLine": 13,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state the position that holds, and leave the change to the decision that made it",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
           "ruleId": "control.mechanism.unimplemented",
           "ruleIndex": 34,
           "level": "warning",
@@ -2993,12 +3037,12 @@
             "promotions": 0
           },
           "coverage": {
-            "seen": 30,
-            "classified": 28,
-            "checked": 28,
+            "seen": 31,
+            "classified": 29,
+            "checked": 29,
             "generated": 1,
-            "instances": 345,
-            "skipped": 32,
+            "instances": 357,
+            "skipped": 33,
             "skips": [
               {
                 "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
@@ -3030,7 +3074,7 @@
               },
               {
                 "reason": "the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it",
-                "instances": 21,
+                "instances": 22,
                 "documents": [
                   {
                     "path": "check/spec/00-both-halves.md",
@@ -3178,6 +3222,13 @@
                       "shelf.placement_is_primary"
                     ],
                     "routings": 1
+                  },
+                  {
+                    "path": "check/spec/24-voice-context-section.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
                   }
                 ],
                 "unrouted": 0
@@ -3299,7 +3350,7 @@
             "suppressed": 2
           },
           "read_set": {
-            "inputs": 32,
+            "inputs": 33,
             "unhashed": 0
           },
           "loss_set": [
