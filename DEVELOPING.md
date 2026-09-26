@@ -145,10 +145,11 @@ The engine's own verbs, run over this corpus in the `headwater` job:
     headwater generate --check
     headwater export --check
     headwater conformance --level L0
+    headwater taxonomy publish --from taxonomy-source/headwater-standard --check
     headwater taxonomy audit
     headwater check
 
-The first three run in `--check` form, which refuses a committed artifact that the sources no longer produce. `check` runs several times rather than once: with the cache and without it, scoped to the change the pull request carries, and once per output format, because the cache must not be able to change a verdict and no format may disagree with another. CI also pins the clock with `--now`, so a rule that reads a date gives the same answer on a rerun. `taxonomy audit` is the one verb here that cannot fail, because it exits 0 whatever it finds. CI runs it to print the governed-scope section into the job summary.
+The first three run in `--check` form, which refuses a committed artifact that the sources no longer produce. `check` runs several times rather than once: with the cache and without it, scoped to the change the pull request carries, and once per output format, because the cache must not be able to change a verdict and no format may disagree with another. CI also pins the clock with `--now`, so a rule that reads a date gives the same answer on a rerun. `taxonomy publish --check` publishes the maintained source into a directory outside the tree and fails when the vendored copy is not what that publish produces. `taxonomy audit` is the one verb here that cannot fail, because it exits 0 whatever it finds. CI runs it to print the governed-scope section into the job summary.
 
 The fixture suites, which are shell and Python rather than cargo, and which you can run yourself from the repository root:
 

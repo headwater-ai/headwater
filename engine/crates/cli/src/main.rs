@@ -1793,7 +1793,7 @@ fn publish_check(
                 "  {path}: the vendored bytes are {actual}, and a fresh publish writes {published}"
             ),
             headwater_resolve::release::Divergence::Missing(path) => {
-                eprintln!("  {path}: a fresh publish writes it, and the vendored copy lacks it")
+                eprintln!("  {path}: a fresh publish writes it, and the vendored copy lacks it");
             }
             headwater_resolve::release::Divergence::Unnamed(path) => eprintln!(
                 "  {path}: the vendored copy carries it, and a fresh publish does not write it"
