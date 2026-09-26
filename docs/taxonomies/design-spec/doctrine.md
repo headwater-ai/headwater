@@ -95,9 +95,9 @@ The sentence that credited the member stood here for two milestones, and nothing
 
 ## Relations, and who creates each edge
 
-Three relations, all in the `evidence` family, and none of them `created_by: author`.
+Three relations, all in the `evidence` family. One of them is `created_by: author`, and a scaffold writes the other two.
 
-- **`cites_evidence`**, from any of the three register-shelf kinds to an `evaluation`, with `cited_by` as its inverse and reciprocity required. A commit that adds an evaluation and edits a register in the same change is what proposes it, so the creator is a hook.
+- **`cites_evidence`**, from any of the three register-shelf kinds to an `evaluation`, with `cited_by` as its inverse and reciprocity required. A person types the line into the register, and no verb, hook or agent proposes it, so the creator is the author. An earlier version declared `hook`, and nothing played that role (HW-OBL-0105).
 - **`applied_in`**, from a `review_prompt` to a `review_record`, reciprocity required. The scaffold that opens a review record from a prompt writes both halves, so the creator is a scaffold. This is the checkable form of a rule that this repository states in prose. A review whose instrument is unrecorded cannot be repeated against a later draft.
 - **`assesses`**, from a `review_record` to whatever it reviewed. The same scaffold knows the targets, because a review names them before it runs.
 

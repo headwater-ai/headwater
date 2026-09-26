@@ -126,10 +126,10 @@ relations.discharges:
   to:   [obligation_record]
   inverse: discharged_by
   reciprocal: required
-  created_by: hook
+  created_by: author
 ```
 
-The creator is a hook for the reason the design-spec entry gave for `cites_evidence`. One commit adds the evaluation and closes the obligation, and the commit is what proposes both halves.
+The creator is the author, for the reason the design-spec entry gives for `cites_evidence`. A person types the front-matter line, and no verb, hook or agent proposes it. An earlier version declared `hook`, and nothing played that role (HW-OBL-0105). The owner ruled `author` on 2026-09-26, and HW-DR-0083 records the ruling.
 
 **This entry declares no participation expectation, and the absence is the finding.** An expectation states that a document of a kind, in a state, should acquire a named relation inside a window. The two failures this tradition actually has are neither. An accepted record that somebody edited has all its edges. A proposal that nobody ruled on is a document that never left a state, and no edge is missing from it. Spec 2 requires a window on every expectation, and an honest window does not exist for the other candidate either: an obligation that waits on a first adopter waits for as long as it takes, and this corpus says so about nine of its items.
 
