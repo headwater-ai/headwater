@@ -92,6 +92,14 @@ pub struct Block {
     pub span: Span,
     /// How many block quotes enclose it. Zero is the document's own author.
     pub quote_depth: usize,
+    /// How many list items enclose it, the item itself included. Zero is a
+    /// block outside every list.
+    ///
+    /// The kind alone does not say this. A tight list item is an `Item`, but
+    /// the item of a loose list holds a `Paragraph`, and [`close`] drops the
+    /// empty `Item` around it. A rule that holds paragraphs and never list
+    /// items, such as the paragraph limit of HW-DR-0069, reads this field.
+    pub list_depth: usize,
     pub runs: Vec<Run>,
     /// Where the source broke this block over a line without ending it: one
     /// span per CommonMark soft break, in document order.
@@ -219,6 +227,7 @@ pub fn scan(source: &str, body: &str, offset: usize) -> Body {
     // inside a block quote collects into the paragraph.
     let mut open: Vec<Block> = Vec::new();
     let mut quote_depth = 0usize;
+    let mut list_depth = 0usize;
     // A link can nest inside emphasis and emphasis inside a link, so the text
     // of a link is collected on a stack of its own rather than from the block.
     let mut links: Vec<Link> = Vec::new();
@@ -244,20 +253,35 @@ pub fn scan(source: &str, body: &str, offset: usize) -> Body {
         match event {
             Event::Start(tag) => match tag {
                 Tag::BlockQuote(_) => quote_depth += 1,
-                Tag::Paragraph => {
-                    open.push(block(BlockKind::Paragraph, span_of(range), quote_depth));
-                }
+                Tag::Paragraph => open.push(block(
+                    BlockKind::Paragraph,
+                    span_of(range),
+                    quote_depth,
+                    list_depth,
+                )),
                 Tag::Heading { level, .. } => open.push(block(
                     BlockKind::Heading(level_of(level)),
                     span_of(range),
                     quote_depth,
+                    list_depth,
                 )),
-                Tag::Item => open.push(block(BlockKind::Item, span_of(range), quote_depth)),
-                Tag::TableCell => {
-                    open.push(block(BlockKind::TableCell, span_of(range), quote_depth));
+                Tag::Item => {
+                    list_depth += 1;
+                    open.push(block(
+                        BlockKind::Item,
+                        span_of(range),
+                        quote_depth,
+                        list_depth,
+                    ));
                 }
+                Tag::TableCell => open.push(block(
+                    BlockKind::TableCell,
+                    span_of(range),
+                    quote_depth,
+                    list_depth,
+                )),
                 Tag::CodeBlock(kind) => {
-                    let mut code = block(BlockKind::Code, span_of(range), quote_depth);
+                    let mut code = block(BlockKind::Code, span_of(range), quote_depth, list_depth);
                     if let CodeBlockKind::Fenced(info) = kind {
                         code.info = info.split_whitespace().next().map(str::to_string);
                     }
@@ -291,11 +315,13 @@ pub fn scan(source: &str, body: &str, offset: usize) -> Body {
             },
             Event::End(tag) => match tag {
                 TagEnd::BlockQuote(_) => quote_depth = quote_depth.saturating_sub(1),
-                TagEnd::Paragraph
-                | TagEnd::Heading(_)
-                | TagEnd::Item
-                | TagEnd::TableCell
-                | TagEnd::CodeBlock => close(&mut open, &mut out),
+                TagEnd::Item => {
+                    close(&mut open, &mut out);
+                    list_depth = list_depth.saturating_sub(1);
+                }
+                TagEnd::Paragraph | TagEnd::Heading(_) | TagEnd::TableCell | TagEnd::CodeBlock => {
+                    close(&mut open, &mut out);
+                }
                 TagEnd::Link | TagEnd::Image => {
                     if let Some(link) = links.pop() {
                         out.links.push(link);
@@ -313,7 +339,12 @@ pub fn scan(source: &str, body: &str, offset: usize) -> Body {
             }
             Event::Html(text) | Event::InlineHtml(text) => {
                 if open.is_empty() {
-                    let mut html = block(BlockKind::Html, span_of(range.clone()), quote_depth);
+                    let mut html = block(
+                        BlockKind::Html,
+                        span_of(range.clone()),
+                        quote_depth,
+                        list_depth,
+                    );
                     html.runs.push(Run {
                         text: text.to_string(),
                         span: span_of(range),
@@ -359,11 +390,12 @@ pub fn scan(source: &str, body: &str, offset: usize) -> Body {
     out
 }
 
-fn block(kind: BlockKind, span: Span, quote_depth: usize) -> Block {
+fn block(kind: BlockKind, span: Span, quote_depth: usize, list_depth: usize) -> Block {
     Block {
         kind,
         span,
         quote_depth,
+        list_depth,
         runs: Vec::new(),
         soft_breaks: Vec::new(),
         info: None,
@@ -627,6 +659,33 @@ mod tests {
             .iter()
             .map(|run| format!("{}:{}", run.ownership.name(), run.text))
             .collect()
+    }
+
+    /// A loose list's item holds a paragraph, and the paragraph carries the
+    /// list depth that says so. The kind alone reads it as a top-level
+    /// paragraph, which is the trap #903 found for the paragraph limit.
+    #[test]
+    fn a_loose_list_paragraph_carries_its_list_depth_and_a_top_level_one_carries_none() {
+        let body =
+            body_of("Top level.\n\n- Loose one.\n\n- Loose two.\n\n  - Nested tight.\n\n- Tight\n");
+        let depth = |text: &str| {
+            let block = body
+                .blocks
+                .iter()
+                .find(|block| block.text() == text)
+                .expect("the block");
+            (block.kind, block.list_depth)
+        };
+        assert_eq!(depth("Top level."), (BlockKind::Paragraph, 0));
+        assert_eq!(depth("Loose one."), (BlockKind::Paragraph, 1));
+        assert_eq!(depth("Nested tight."), (BlockKind::Item, 2));
+        let tight = body_of("Top level.\n\n- Tight\n- Tighter\n");
+        let item = tight
+            .blocks
+            .iter()
+            .find(|block| block.text() == "Tight")
+            .expect("the item");
+        assert_eq!((item.kind, item.list_depth), (BlockKind::Item, 1));
     }
 
     /// The case the issue exists for. The words between the marks are another

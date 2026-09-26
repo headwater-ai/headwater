@@ -1,37 +1,37 @@
-30 seen, 28 classified, 27 checked, 344 check instances
+31 seen, 29 classified, 28 checked, 356 check instances
       1 generated, held to regeneration by `headwater generate --check`
       1 skipped: no `id` facet, which is the key this engine reads an identifier from and which no declaration states
       1 skipped: the `id` facet is a sequence, and an identifier is a word
-     21 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+     22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: `guarded` forbids hedging, and this engine has no pattern set for it
       1 skipped: `declarative` binds this kind and this document carries no prose to read: no body and no `summary` facet with a value
       2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
-     29 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
-30 documents in the read set, and 6 barriers that no gate carries across a merge
-     27 instances of facet.required.missing
-     27 instances of facet.value.not_permitted
-     27 instances of facet.value.blank
-     27 instances of identifier.pattern.not_met
-     28 instances of shelf.placement_is_primary
+     30 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+31 documents in the read set, and 6 barriers that no gate carries across a merge
+     28 instances of facet.required.missing
+     28 instances of facet.value.not_permitted
+     28 instances of facet.value.blank
+     28 instances of identifier.pattern.not_met
+     29 instances of shelf.placement_is_primary
      10 instances of relation.target.unresolved
       4 instances of relation.reciprocity.missing
       7 instances of relation.endpoint.not_permitted
       7 instances of lifecycle.dependency.on_initial
       7 instances of warrant.evidence.unsupported
       7 instances of relation.participation.overdue
-     27 instances of relation.declaration.unusable
-     27 instances of identifier.unusable
+     28 instances of relation.declaration.unusable
+     28 instances of identifier.unusable
       1 instances of identifier.claimed_twice
       1 instances of identifier.claim.missing
       1 instances of identifier.claim.stale
-     20 instances of voice.forbidden_construction
-     20 instances of language.controlled.not_met
-     18 instances of language.retired_term.used
-     18 instances of language.source_form.not_met
+     21 instances of voice.forbidden_construction
+     21 instances of language.controlled.not_met
+     19 instances of language.retired_term.used
+     19 instances of language.source_form.not_met
       2 instances of section.required.missing
       1 instances of link.fragment.unresolved
       1 instances of link.path.unresolved
-     28 instances of warrant.promoted
+     29 instances of warrant.promoted
       1 instances of lifecycle.deletion.not_permitted
 suppressions
   2 findings hidden by 2 directives
@@ -167,9 +167,9 @@ register
   control.observation.invalid reaches no obligation, so it names none
   adoption.task.expired reaches no obligation, so it names none
   relation.target.verification.suspect reaches no obligation, so it names none
-61 findings
+62 findings
      39 ✗ error
-     22 ▲ warn
+     23 ▲ warn
 
 instances
   facet.required.missing check/evaluations/alpha.md
@@ -226,6 +226,8 @@ instances
     passed
   facet.required.missing check/spec/23-voice-empty-population.md
     passed
+  facet.required.missing check/spec/24-paragraph-sentences.md
+    passed
   facet.value.not_permitted check/evaluations/alpha.md
     passed
   facet.value.not_permitted check/evaluations/beta.md
@@ -279,6 +281,8 @@ instances
   facet.value.not_permitted check/spec/22-voice-facet-prose.md
     passed
   facet.value.not_permitted check/spec/23-voice-empty-population.md
+    passed
+  facet.value.not_permitted check/spec/24-paragraph-sentences.md
     passed
   facet.value.blank check/evaluations/alpha.md
     passed
@@ -334,6 +338,8 @@ instances
     passed
   facet.value.blank check/spec/23-voice-empty-population.md
     failed
+  facet.value.blank check/spec/24-paragraph-sentences.md
+    passed
   identifier.pattern.not_met check/evaluations/alpha.md
     passed
   identifier.pattern.not_met check/evaluations/beta.md
@@ -387,6 +393,8 @@ instances
   identifier.pattern.not_met check/spec/22-voice-facet-prose.md
     passed
   identifier.pattern.not_met check/spec/23-voice-empty-population.md
+    passed
+  identifier.pattern.not_met check/spec/24-paragraph-sentences.md
     passed
   shelf.placement_is_primary check/evaluations/alpha.md
     passed
@@ -443,6 +451,8 @@ instances
   shelf.placement_is_primary check/spec/22-voice-facet-prose.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   shelf.placement_is_primary check/spec/23-voice-empty-population.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/24-paragraph-sentences.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   relation.target.unresolved check/evaluations/alpha.md + check/spec/00-both-halves.md
     passed
@@ -582,6 +592,8 @@ instances
     passed
   relation.declaration.unusable check/spec/23-voice-empty-population.md
     passed
+  relation.declaration.unusable check/spec/24-paragraph-sentences.md
+    passed
   identifier.unusable check/evaluations/alpha.md
     passed
   identifier.unusable check/evaluations/beta.md
@@ -636,11 +648,13 @@ instances
     passed
   identifier.unusable check/spec/23-voice-empty-population.md
     passed
-  identifier.claimed_twice check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md
+  identifier.unusable check/spec/24-paragraph-sentences.md
     passed
-  identifier.claim.missing check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md + .headwater/ids
+  identifier.claimed_twice check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md + check/spec/24-paragraph-sentences.md
+    passed
+  identifier.claim.missing check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md + check/spec/24-paragraph-sentences.md + .headwater/ids
     failed
-  identifier.claim.stale check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md + .headwater/ids
+  identifier.claim.stale check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md + check/spec/24-paragraph-sentences.md + .headwater/ids
     passed
   voice.forbidden_construction check/spec/00-both-halves.md
     passed
@@ -682,6 +696,8 @@ instances
     failed
   voice.forbidden_construction check/spec/23-voice-empty-population.md
     skipped: `declarative` binds this kind and this document carries no prose to read: no body and no `summary` facet with a value
+  voice.forbidden_construction check/spec/24-paragraph-sentences.md
+    passed
   language.controlled.not_met check/spec/00-both-halves.md
     passed
   language.controlled.not_met check/spec/01-one-half.md
@@ -722,6 +738,8 @@ instances
     passed
   language.controlled.not_met check/spec/23-voice-empty-population.md
     passed
+  language.controlled.not_met check/spec/24-paragraph-sentences.md
+    failed
   language.retired_term.used check/spec/00-both-halves.md
     passed
   language.retired_term.used check/spec/01-one-half.md
@@ -757,6 +775,8 @@ instances
   language.retired_term.used check/spec/22-voice-facet-prose.md
     passed
   language.retired_term.used check/spec/23-voice-empty-population.md
+    passed
+  language.retired_term.used check/spec/24-paragraph-sentences.md
     passed
   language.source_form.not_met check/spec/00-both-halves.md
     passed
@@ -794,13 +814,15 @@ instances
     passed
   language.source_form.not_met check/spec/23-voice-empty-population.md
     passed
+  language.source_form.not_met check/spec/24-paragraph-sentences.md
+    passed
   section.required.missing check/spec/08-contract-met.md
     passed
   section.required.missing check/spec/09-contract-missing.md
     failed
-  link.fragment.unresolved check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md
+  link.fragment.unresolved check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md + check/spec/24-paragraph-sentences.md
     failed
-  link.path.unresolved check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md
+  link.path.unresolved check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md + check/spec/24-paragraph-sentences.md
     failed
   warrant.promoted check/evaluations/alpha.md
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
@@ -858,7 +880,9 @@ instances
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   warrant.promoted check/spec/23-voice-empty-population.md
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
-  lifecycle.deletion.not_permitted check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md
+  warrant.promoted check/spec/24-paragraph-sentences.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  lifecycle.deletion.not_permitted check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md + check/spec/24-paragraph-sentences.md
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 
 check/evaluations/delta.md:8:7 ✗ error
@@ -1023,6 +1047,9 @@ check/spec/22-voice-facet-prose.md:16:1 ▲ warn
 check/spec/23-voice-empty-population.md:6:10 ✗ error
   facet.value.blank: `summary` is declared as empty text
   fix: write the value of `summary` into check/spec/23-voice-empty-population.md, which this kind requires
+check/spec/24-paragraph-sentences.md:14:1 ▲ warn
+  language.controlled.not_met (OB-FIX-8): `ste_house` holds a paragraph to 6 sentences, and this paragraph has 7
+  fix: split the paragraph where its second topic starts, or move the sentences that do not carry its first topic into a paragraph of their own
 engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
   control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18
   fix: name a rule this engine carries, or a phase of it, or a mechanism outside it under a prefix this engine does not read

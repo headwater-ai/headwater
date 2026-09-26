@@ -26,8 +26,8 @@
 //!
 //! # What the house profile holds prose to
 //!
-//! Three rules, and each one is an exact match rather than a judgment. Two of
-//! the three are the reason [`headwater_doc::sentences`] exists.
+//! Five rules, and each one is an exact match rather than a judgment. Three of
+//! the five are the reason [`headwater_doc::sentences`] exists.
 //!
 //! - **Sentence length**, ASD-STE100 writing rule 6.3 for descriptive text.
 //!   Advisory: the remediation is a rewrite, and
@@ -46,6 +46,13 @@
 //! - **The spelling variant the tag declares.** An error on the same terms. The
 //!   tag is data and the word list is not, which is the same split as the voice
 //!   patterns and is recorded in spec 13 as one gap rather than two.
+//! - **A paragraph past six sentences**, ASD-STE100 writing rule 6.6, as
+//!   [HW-DR-0069](../../../../docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md)
+//!   adopts it. Advisory for the same reason as the length rule. It reads the
+//!   document's own paragraphs and nothing else: a list item, tight or loose,
+//!   and a quotation are outside it. The remediation names the topic and
+//!   never the count, because a paragraph cut short by joining two sentences
+//!   is then a finding of the length rule.
 //!
 //! # Not every contraction has one expansion, and the split is per finding
 //!
@@ -76,6 +83,11 @@ pub const RULE: &str = "language.controlled.not_met";
 
 /// The sentence length ASD-STE100 rule 6.3 allows in descriptive text.
 const MAX_WORDS: usize = 25;
+
+/// The sentences ASD-STE100 rule 6.6 allows in one paragraph of descriptive
+/// text. [HW-DR-0069](../../../../docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md)
+/// adopts the count and never a word count.
+const MAX_SENTENCES: usize = 6;
 
 /// The controlled language and profile pairs this engine has rules for.
 ///
@@ -257,7 +269,12 @@ impl DocumentCheck for Language {
     /// unchanged, so a warm cache from the previous engine would serve the old
     /// verdict on every document that quotes anybody and the change would read
     /// as working while it did nothing.
-    const VERSION: u32 = 3;
+    ///
+    /// **Edition four, on 2026-09-27.** #903 added the paragraph limit. The
+    /// population is unchanged and the verdict is wider: a document with a
+    /// paragraph past six sentences now fails where it passed. A warm cache
+    /// from edition three would serve the old pass on every such document.
+    const VERSION: u32 = 4;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, kind: &str) -> bool {
@@ -409,6 +426,33 @@ impl DocumentCheck for Language {
                 }
             }
         }
+        if let Some(body) = body {
+            for block in body.blocks.iter().filter(|block| is_a_paragraph(block)) {
+                let sentences = headwater_doc::sentences::of_block(block, &body.links);
+                if sentences.len() <= MAX_SENTENCES {
+                    continue;
+                }
+                let first = &sentences[0];
+                findings.push(Finding {
+                    rule: self::RULE,
+                    severity: Severity::Warn,
+                    obligation: None,
+                    path: view.path().to_string(),
+                    line: first.span.start.line,
+                    column: first.span.start.col,
+                    message: format!(
+                        "`{}` holds a paragraph to {MAX_SENTENCES} sentences, and this paragraph has {}",
+                        bound.regime,
+                        sentences.len()
+                    ),
+                    // HW-DR-0069: name the topic and never the count, because
+                    // a paragraph cut short by joining two sentences is then a
+                    // finding of the length rule above.
+                    remediation: "split the paragraph where its second topic starts, or move the sentences that do not carry its first topic into a paragraph of their own".to_string(),
+                    patch: None,
+                });
+            }
+        }
         findings.sort_by_key(|finding| (finding.line, finding.column));
         Outcome::failed(findings)
     }
@@ -434,6 +478,17 @@ fn is_a_citation_line(text: &str) -> bool {
 /// rule and its reason are `tools/ste-lint.py`'s, moved here unchanged.
 fn is_running_prose(kind: BlockKind) -> bool {
     matches!(kind, BlockKind::Paragraph | BlockKind::Item)
+}
+
+/// Whether a block is a paragraph the paragraph limit reads.
+///
+/// HW-DR-0069 holds the document's own paragraphs and puts a list item outside
+/// the limit. The kind alone cannot say that, because the item of a loose list
+/// reaches this rule as a `Paragraph`, so the list depth decides. A quotation
+/// is another author's paragraph, and `sentences::of_block` already returns
+/// nothing for it; the depth test here says so where the rule is read.
+fn is_a_paragraph(block: &headwater_doc::Block) -> bool {
+    block.kind == BlockKind::Paragraph && block.quote_depth == 0 && block.list_depth == 0
 }
 
 /// Whether a sentence writes a semicolon outside a parenthesis.

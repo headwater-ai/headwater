@@ -58,6 +58,7 @@ findings before
   check/spec/22-voice-facet-prose.md voice.forbidden_construction `declarative` forbids future_intent, and the `summary` facet writes `will be`
   check/spec/22-voice-facet-prose.md voice.forbidden_construction `declarative` forbids future_intent, and this sentence writes `will be`
   check/spec/23-voice-empty-population.md facet.value.blank `summary` is declared as empty text
+  check/spec/24-paragraph-sentences.md language.controlled.not_met `ste_house` holds a paragraph to 6 sentences, and this paragraph has 7
   engine/crates/check/fixtures/check.taxonomy.yml control.mechanism.unimplemented control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18
   engine/crates/check/fixtures/check.taxonomy.yml control.mechanism.unimplemented control CT-FIX-17 names the mechanism phase:no.such.phase, which this engine does not implement, so nothing discharges OB-FIX-20
   engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance
@@ -112,6 +113,7 @@ findings after
   check/spec/22-voice-facet-prose.md voice.forbidden_construction `declarative` forbids future_intent, and the `summary` facet writes `will be`
   check/spec/22-voice-facet-prose.md voice.forbidden_construction `declarative` forbids future_intent, and this sentence writes `will be`
   check/spec/23-voice-empty-population.md facet.value.blank `summary` is declared as empty text
+  check/spec/24-paragraph-sentences.md language.controlled.not_met `ste_house` holds a paragraph to 6 sentences, and this paragraph has 7
   engine/crates/check/fixtures/check.taxonomy.yml control.mechanism.unimplemented control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18
   engine/crates/check/fixtures/check.taxonomy.yml control.mechanism.unimplemented control CT-FIX-17 names the mechanism phase:no.such.phase, which this engine does not implement, so nothing discharges OB-FIX-20
   engine/crates/check/fixtures/check.taxonomy.yml obligation.disposition.not_one obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance

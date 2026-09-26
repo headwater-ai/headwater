@@ -325,7 +325,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 3,
+                  "version": 4,
                   "obligations": [
                     "OB-FIX-8"
                   ],
@@ -921,6 +921,17 @@
           ],
           "hashes": {
             "sha-256": "43da22615732693705b57847374fa9b93eeadc834fa0007fbf6eecd929f30e6a"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/24-paragraph-sentences.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "728d579c11baa09481526252bbf6edff2b05bead66e5080d668550251464ab3f"
           }
         }
       ],
@@ -2772,6 +2783,39 @@
           }
         },
         {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 20,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds a paragraph to 6 sentences, and this paragraph has 7",
+            "markdown": "`ste_house` holds a paragraph to 6 sentences, and this paragraph has 7\n\n**Fix:** split the paragraph where its second topic starts, or move the sentences that do not carry its first topic into a paragraph of their own"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/24-paragraph-sentences.md"
+                },
+                "region": {
+                  "startLine": 14,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the paragraph where its second topic starts, or move the sentences that do not carry its first topic into a paragraph of their own",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
           "ruleId": "control.mechanism.unimplemented",
           "ruleIndex": 34,
           "level": "warning",
@@ -2985,12 +3029,12 @@
           },
           "clock": "2026-08-12",
           "coverage": {
-            "seen": 30,
-            "classified": 28,
-            "checked": 27,
+            "seen": 31,
+            "classified": 29,
+            "checked": 28,
             "generated": 1,
-            "instances": 345,
-            "skipped": 58,
+            "instances": 357,
+            "skipped": 60,
             "skips": [
               {
                 "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
@@ -3022,7 +3066,7 @@
               },
               {
                 "reason": "the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it",
-                "instances": 21,
+                "instances": 22,
                 "documents": [
                   {
                     "path": "check/spec/00-both-halves.md",
@@ -3170,6 +3214,13 @@
                       "shelf.placement_is_primary"
                     ],
                     "routings": 1
+                  },
+                  {
+                    "path": "check/spec/24-paragraph-sentences.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
                   }
                 ],
                 "unrouted": 0
@@ -3232,7 +3283,7 @@
               },
               {
                 "reason": "change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change",
-                "instances": 29,
+                "instances": 30,
                 "documents": [
                   {
                     "path": "check/evaluations/alpha.md",
@@ -3429,6 +3480,13 @@
                       "warrant.promoted"
                     ],
                     "routings": 1
+                  },
+                  {
+                    "path": "check/spec/24-paragraph-sentences.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
                   }
                 ],
                 "unrouted": 1
@@ -3463,7 +3521,7 @@
             "suppressed": 2
           },
           "read_set": {
-            "inputs": 30,
+            "inputs": 31,
             "unhashed": 0
           },
           "loss_set": [
