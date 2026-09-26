@@ -942,12 +942,41 @@ fn the_seed_is_recorded_as_the_caller_stated_it() {
 // disk stays well-formed, because a fixture corpus that shipped a broken probe
 // would report the same defect through every other test in this file.
 
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(std::path::PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = std::path::Path;
+    fn deref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::path::Path> for Scratch {
+    fn as_ref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
+}
+
 fn plan_over_probe(edit: &dyn Fn(&str) -> String) -> Plan {
-    let directory = std::env::temp_dir().join(format!(
+    let directory = Scratch(std::env::temp_dir().join(format!(
         "headwater-probe-fixture-{}-{:?}",
         std::process::id(),
         std::thread::current().id()
-    ));
+    )));
     let shelf = directory.join("corpus/probes");
     let _ = std::fs::remove_dir_all(&directory);
     std::fs::create_dir_all(&shelf).expect("the scratch shelf");
@@ -956,7 +985,7 @@ fn plan_over_probe(edit: &dyn Fn(&str) -> String) -> Plan {
             .expect("the fixture probe");
         std::fs::write(shelf.join(name), edit(&source)).expect("the scratch probe");
     }
-    let scratch = Corpus::new(directory.clone(), "corpus");
+    let scratch = Corpus::new(directory.to_path_buf(), "corpus");
     let root = taxonomy_map();
     let taxonomy = Taxonomy::read(&root).expect("the taxonomy reads");
     let taken = census::take(&scratch, &taxonomy);

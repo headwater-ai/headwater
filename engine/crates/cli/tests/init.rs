@@ -160,8 +160,22 @@ add: {}
 "#;
 
 /// A scratch repository, and what one run of `init` leaves in it.
+///
+/// Dropping it removes the tree and every directory [`Root::beside`] made, so
+/// a case that fails an assertion leaves nothing under the temporary directory
+/// (#1158).
 struct Root {
     at: PathBuf,
+    beside: std::cell::RefCell<Vec<PathBuf>>,
+}
+
+impl Drop for Root {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.at);
+        for at in self.beside.borrow().iter() {
+            let _ = std::fs::remove_dir_all(at);
+        }
+    }
 }
 
 impl Root {
@@ -180,7 +194,10 @@ impl Root {
         let _ = std::fs::remove_dir_all(&at);
         std::fs::create_dir_all(at.join("docs")).expect("the corpus directory is there");
         std::fs::write(at.join("docs/one.md"), "# a document\n").expect("the document writes");
-        Root { at }
+        Root {
+            at,
+            beside: std::cell::RefCell::default(),
+        }
     }
 
     /// The same tree, plus the manifest of the package this repository
@@ -253,6 +270,7 @@ impl Root {
         ));
         let _ = std::fs::remove_dir_all(&at);
         std::fs::create_dir_all(&at).expect("the scratch directory is made");
+        self.beside.borrow_mut().push(at.clone());
         at
     }
 

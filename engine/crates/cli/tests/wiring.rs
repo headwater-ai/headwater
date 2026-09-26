@@ -63,9 +63,16 @@ fn fixtures() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
 
-/// A repository root assembled over one fixture corpus.
+/// A repository root assembled over one fixture corpus, removed when it is
+/// dropped (#1158).
 struct Root {
     at: PathBuf,
+}
+
+impl Drop for Root {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.at);
+    }
 }
 
 impl Root {
@@ -169,6 +176,35 @@ fn git(dir: &Path, arguments: &[&str]) -> String {
     String::from_utf8_lossy(&output.stdout).trim().to_string()
 }
 
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = Path;
+    fn deref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<Path> for Scratch {
+    fn as_ref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
+}
+
 /// A directory outside `root`, for the manifest `headwater change` writes.
 ///
 /// The producer names an added file for everything the working tree holds
@@ -176,13 +212,13 @@ fn git(dir: &Path, arguments: &[&str]) -> String {
 /// describes would be named as a document the change adds. The two cases
 /// below write here for the reason `.githooks/fixtures.sh` writes to a second
 /// `mktemp -d`, beside the one it copies the corpus into.
-fn out_dir(label: &str) -> PathBuf {
+fn out_dir(label: &str) -> Scratch {
     let at = std::env::temp_dir().join(format!(
         "headwater-cli-wiring-change-out-{}-{label}",
         std::process::id()
     ));
     let _ = std::fs::remove_dir_all(&at);
-    at
+    Scratch(at)
 }
 
 /// `check --change` reaches the verdict, and not only the parser.
@@ -327,8 +363,6 @@ fn a_change_the_flag_named_reaches_the_verdict_and_not_only_the_parser() {
         "the manifest the verb produced reaches the same verdict as the hand-written one:\n{}",
         via_verb.out
     );
-
-    let _ = std::fs::remove_dir_all(&out);
 }
 
 /// The decisive fixture of #929: a corpus that carries no `.githooks/` at
@@ -409,8 +443,6 @@ fn a_shell_script_free_corpus_reaches_the_rule_through_the_verb_alone() {
         "the promotion this corpus carries is evaluated, not skipped:\n{}",
         scoped.out
     );
-
-    let _ = std::fs::remove_dir_all(&out);
 }
 
 /// `probe grade` reads `Plan::gradable` and never the selection beside it.
@@ -541,10 +573,10 @@ fn flattened(help: &str) -> String {
 }
 
 fn outside_a_corpus(label: &str, arguments: &[&str]) -> Ran {
-    let at = std::env::temp_dir().join(format!(
+    let at = Scratch(std::env::temp_dir().join(format!(
         "headwater-cli-wiring-{}-{label}",
         std::process::id()
-    ));
+    )));
     let _ = std::fs::remove_dir_all(&at);
     std::fs::create_dir_all(&at).expect("the directory is there");
     let output = Command::new(env!("CARGO_BIN_EXE_headwater"))

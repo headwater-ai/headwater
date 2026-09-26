@@ -1075,12 +1075,13 @@ fn the_git_step_writes_no_line_for_a_producer_the_adopter_does_not_hold() {
 /// The verb, called as git calls it, with nothing of git around it.
 #[test]
 fn the_driver_leaves_the_current_side_and_exits_non_zero() {
-    let dir = std::env::temp_dir().join(format!(
+    let outer = Outer(std::env::temp_dir().join(format!(
         "headwater-cli-merge-driver-{}-bare",
         std::process::id()
-    ));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).expect("the directory is made");
+    )));
+    let dir = &outer.0;
+    let _ = std::fs::remove_dir_all(dir);
+    std::fs::create_dir_all(dir).expect("the directory is made");
     for (name, body) in [("o", "ancestor\n"), ("a", "current\n"), ("b", "other\n")] {
         std::fs::write(dir.join(name), body).expect("the side writes");
     }
@@ -1113,5 +1114,4 @@ fn the_driver_leaves_the_current_side_and_exits_non_zero() {
             "the current side is left byte for byte"
         );
     }
-    let _ = std::fs::remove_dir_all(&dir);
 }

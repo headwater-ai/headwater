@@ -25,7 +25,36 @@ fn fixtures() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures/answered-export")
 }
 
-fn scratch() -> PathBuf {
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = Path;
+    fn deref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<Path> for Scratch {
+    fn as_ref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
+}
+
+fn scratch() -> Scratch {
     let suffix = NEXT.fetch_add(1, Ordering::Relaxed);
     let path = std::env::temp_dir().join(format!(
         "headwater-cli-answered-export-{}-{suffix}",
@@ -33,7 +62,7 @@ fn scratch() -> PathBuf {
     ));
     let _ = std::fs::remove_dir_all(&path);
     std::fs::create_dir_all(&path).expect("the scratch directory is made");
-    path
+    Scratch(path)
 }
 
 fn export(root: &Path, profile: &str) -> std::process::Output {
