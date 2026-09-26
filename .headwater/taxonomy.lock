@@ -22,13 +22,13 @@
 
 lock:
   format: 3
-  digest: sha256:41ecfcc51bbec1f35dc498df866d209b6e92ceebbb8b3623e428e3862e8843ea
+  digest: sha256:e0b49afcd4b430f4b3082717aa8326d3606abbacc13b5b6756e4a1f3478bd8ca
   rules: 2
   package: headwater/standard
   version: 4.9.1
   sources:
     - path: .headwater/packages/headwater-standard/taxonomy.yml
-      digest: sha256:6525ccc6c2d578bad56b3854dbc692921f746f417eb57791ef240bf25ef9ef05
+      digest: sha256:6d47ec96cc2ab8712a16408c77fb29a3d5413611395836ce9baab346341ae9b7
     - path: .headwater/packages/headwater-standard/bundles/design-spec/bundle.yml
       digest: sha256:6b82d47783829d0cee5809190340c2c28f680458ab70b99adab952a2d24048d1
     - path: .headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
@@ -1424,7 +1424,7 @@ resolved:
       promotion:
         criteria:
           window: "one release of the taxonomy over an adopting corpus"
-          threshold: "no false positive. The rule reads a claim whose path the corpus no longer holds, and it counts the typed documents of a kind that mints under the claim's scheme and hold the identifier. With none, the document was deleted and keeps its claim, and the rule reports nothing. With exactly one, the document was renamed, and the rule reports one warning that names both paths. With two or more, the rule reports nothing and identifier.claimed_twice reports the pair. The one false positive left is a document that takes the identifier of a deleted document by hand, which the never-reuse rule of spec 3 forbids"
+          threshold: "no false positive. The rule reads a claim whose path the corpus no longer holds, and it counts the typed documents of a kind that mints under the claim's scheme and hold the identifier. With none, the document was deleted and keeps its claim, and the rule reports nothing. With exactly one, the claim names a path that is not the path of its one holding document, which follows a rename or a claim edited by hand, and the rule reports one warning that names both paths. With two or more, the rule reports nothing and identifier.claimed_twice reports the pair. The one false positive left is a document that takes the identifier of a deleted document by hand, which the never-reuse rule of spec 3 forbids"
           sample: "every finding of one run over the adopting corpus, adjudicated once"
     CT-REL-2:
       mechanism: "check:relation.endpoint.not_permitted"

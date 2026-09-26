@@ -1361,7 +1361,7 @@ controls:
     promotion:
       criteria:
         window: "one release of the taxonomy over an adopting corpus"
-        threshold: "no false positive. The rule reads a claim whose path the corpus no longer holds, and it counts the typed documents of a kind that mints under the claim's scheme and hold the identifier. With none, the document was deleted and keeps its claim, and the rule reports nothing. With exactly one, the document was renamed, and the rule reports one warning that names both paths. With two or more, the rule reports nothing and identifier.claimed_twice reports the pair. The one false positive left is a document that takes the identifier of a deleted document by hand, which the never-reuse rule of spec 3 forbids"
+        threshold: "no false positive. The rule reads a claim whose path the corpus no longer holds, and it counts the typed documents of a kind that mints under the claim's scheme and hold the identifier. With none, the document was deleted and keeps its claim, and the rule reports nothing. With exactly one, the claim names a path that is not the path of its one holding document, which follows a rename or a claim edited by hand, and the rule reports one warning that names both paths. With two or more, the rule reports nothing and identifier.claimed_twice reports the pair. The one false positive left is a document that takes the identifier of a deleted document by hand, which the never-reuse rule of spec 3 forbids"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-REL-2:
     mechanism: "check:relation.endpoint.not_permitted"
