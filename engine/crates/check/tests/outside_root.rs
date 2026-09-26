@@ -178,7 +178,9 @@ fn an_unlisted_path_outside_the_root_is_read_by_nothing() {
     assert_eq!(findings_at(&run, README), Vec::<&Finding>::new());
     assert_eq!(rules_reading(&run, README), Vec::<&str>::new());
     assert!(
-        !taken.render(Detail::Exceptions).contains("outside the corpus root"),
+        !taken
+            .render(Detail::Exceptions)
+            .contains("outside the corpus root"),
         "a corpus that lists nothing prints the report it printed before"
     );
 }
@@ -236,7 +238,9 @@ fn a_pattern_that_matches_inside_the_root_is_refused_and_reads_nothing_twice() {
     let (taken, run) = checked(Some(&["docs/notes/plain.md"]));
     assert_eq!(taken.outside.rows.len(), 0);
     assert_eq!(taken.outside.refused.len(), 1);
-    assert!(taken.outside.refused[0].reason.contains("under the corpus root"));
+    assert!(taken.outside.refused[0]
+        .reason
+        .contains("under the corpus root"));
     let rules = rules_reading(&run, "docs/notes/plain.md");
     let language = rules
         .iter()

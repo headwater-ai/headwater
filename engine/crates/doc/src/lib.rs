@@ -196,7 +196,11 @@ pub fn parse(source: &str) -> Result<Document, Vec<ParseError>> {
 /// untyped document and that distinction is the one it exists to keep.
 pub fn parse_prose(source: &str) -> Result<Document, Vec<ParseError>> {
     match parse(source) {
-        Err(errors) if errors.iter().any(|error| error.reason == Reason::NoFrontMatter) => {
+        Err(errors)
+            if errors
+                .iter()
+                .any(|error| error.reason == Reason::NoFrontMatter) =>
+        {
             Ok(Document {
                 facets: Mapping::default(),
                 block: Span::default(),

@@ -614,7 +614,10 @@ fn validate_names_an_outside_root_pattern_that_matches_nothing_and_refuses_one_t
     let overlay = root.at.join(".headwater/overlay.yml");
     let text = std::fs::read_to_string(&overlay).expect("the overlay reads");
     let anchor = "      - .github/SECURITY.md\n";
-    assert!(text.contains(anchor), "the overlay lists .github/SECURITY.md");
+    assert!(
+        text.contains(anchor),
+        "the overlay lists .github/SECURITY.md"
+    );
     std::fs::write(
         &overlay,
         text.replacen(

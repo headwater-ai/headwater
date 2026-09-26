@@ -1052,7 +1052,10 @@ fn validate(root: &Path) -> ExitCode {
         }))
         .collect();
 
-    if findings.is_empty() && unmatched.is_empty() && unread.is_none() && outside_refusals.is_empty()
+    if findings.is_empty()
+        && unmatched.is_empty()
+        && unread.is_none()
+        && outside_refusals.is_empty()
     {
         println!("\n{} is valid", repository.consumer.package);
         return ExitCode::SUCCESS;

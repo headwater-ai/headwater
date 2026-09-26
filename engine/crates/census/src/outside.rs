@@ -278,7 +278,10 @@ fn read(corpus: &Corpus, path: String, regime: &str) -> OutsideRow {
                 .map(|error| error.to_string())
                 .collect::<Vec<_>>()
                 .join("; ");
-            return unread(format!("the front matter did not load: {why}"), Some(digest));
+            return unread(
+                format!("the front matter did not load: {why}"),
+                Some(digest),
+            );
         }
     };
     OutsideRow {
