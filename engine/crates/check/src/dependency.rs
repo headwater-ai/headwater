@@ -258,7 +258,7 @@ impl EdgeCheck for Dependency<'_> {
 }
 
 /// The reason an instance skips where one end declares no state.
-fn undeclared(end: &str, id: &str) -> String {
+pub(crate) fn undeclared(end: &str, id: &str) -> String {
     format!(
         "the document at the {end} end, `{id}`, declares no value for the state facet, so there is \
          no state to read there"
@@ -267,7 +267,7 @@ fn undeclared(end: &str, id: &str) -> String {
 
 /// The reason an instance skips where one end writes a value the state facet
 /// does not admit. `facet.value.not_permitted` reports the value itself.
-fn not_a_state(end: &str, id: &str, value: &str) -> String {
+pub(crate) fn not_a_state(end: &str, id: &str, value: &str) -> String {
     format!(
         "the document at the {end} end, `{id}`, writes `{value}`, which the state facet does not \
          admit, and `facet.value.not_permitted` reports that"

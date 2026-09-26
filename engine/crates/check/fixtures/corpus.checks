@@ -1,4 +1,4 @@
-594 seen, 413 classified, 413 checked, 8373 check instances
+594 seen, 413 classified, 413 checked, 8812 check instances
      22 generated, held to regeneration by `headwater generate --check`
      23 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
     313 skipped: the target is a document, which holds no revision for an edge to be verified against
@@ -27,6 +27,7 @@ adoption
      91 instances of relation.reciprocity.missing
     439 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
+    439 instances of lifecycle.dependency.on_initial
     426 instances of warrant.evidence.unsupported
       5 instances of relation.participation.overdue
     413 instances of relation.declaration.unusable
@@ -76,6 +77,8 @@ rules, and for each the scope that binds it
   relation.endpoint.not_permitted
     edge scope, one relation instance and both endpoints
   lifecycle.dependency.on_terminal
+    edge scope, one relation instance and both endpoints
+  lifecycle.dependency.on_initial
     edge scope, one relation instance and both endpoints
   warrant.evidence.unsupported
     edge scope, one relation instance and both endpoints
@@ -152,6 +155,7 @@ register
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 0 suppressed
   facet.value.blank reaches no obligation, so it names none
+  lifecycle.dependency.on_initial reaches no obligation, so it names none
   lifecycle.state.set_twice reaches no obligation, so it names none
   surface.local_path.instructed reaches no obligation, so it names none
   surface.command.undeclared reaches no obligation, so it names none
