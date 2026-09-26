@@ -6,6 +6,6 @@ sources
   sha256:6b82d47783829d0cee5809190340c2c28f680458ab70b99adab952a2d24048d1 .headwater/packages/headwater-standard/bundles/design-spec/bundle.yml
   sha256:1092c56eb53e4f4d439e6e15c932087ee84b256eb0fd27cc3edbafb1abb3202f .headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
   sha256:d2e1dd60f5adf97dcefd3aa46b0f377ed5e7eca533f82fad8a3d90224f79673f .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
-  sha256:a6f62a9c0d1dec442c9066d84d3a969bb71745181f1556e825e2c2f21e57f7db .headwater/overlay.yml
+  sha256:dbdea69dba7bc7dcd917f28858dd9b5ffdc2ffe3575b56a20474660086234036 .headwater/overlay.yml
 
 1565 lines of canonical taxonomy
