@@ -630,7 +630,10 @@ fn no_relation_of_this_repository_names_a_hook_and_the_bundle_relations_are_read
         .iter()
         .find(|reading| reading.name == "cites_evidence")
         .expect("cites_evidence is in the author row");
-    assert!(evidence.capture().is_some(), "cites_evidence has no capture");
+    assert!(
+        evidence.capture().is_some(),
+        "cites_evidence has no capture"
+    );
 }
 
 /// Two audits of one corpus at one date write one set of bytes.
