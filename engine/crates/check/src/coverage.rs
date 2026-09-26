@@ -121,7 +121,6 @@ pub struct Document {
     pub skipped: Vec<(&'static str, String)>,
 }
 
-/// What this run looked at.
 /// Engine state beside the corpus root that a check reads on purpose, and
 /// that [`Coverage::unaccounted`] therefore never lists.
 ///
@@ -136,6 +135,7 @@ pub struct Document {
 /// later store here, with its reason in this comment.
 pub const BESIDE_THE_ROOT: &[&str] = &[crate::claim::STORE];
 
+/// What this run looked at.
 #[derive(Clone, Debug)]
 pub struct Coverage {
     /// One entry per census row, in the census's own order.
