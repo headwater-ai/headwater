@@ -10,6 +10,13 @@
 //! one file, such as `docs/INDEX.md`, was read as a directory, so the verb
 //! composed `docs/INDEX.md/<slug>.md` and then reported its own defect.
 //!
+//! [#1136](https://github.com/headwater-ai/headwater/issues/1136) found that
+//! `--directory docs/modules/*` wrote a directory literally named `*`, because
+//! the shelf's glob matched it, and that two refusals of the flag were held by
+//! no case here. So one case refuses a glob character in a segment, one
+//! refuses the flag on a shelf that decides its own directory, and one
+//! refuses a `..` segment for that cause and no other.
+//!
 //! # Why these cases drive the binary
 //!
 //! The claim an adopter depends on is that the file lands and is read back as

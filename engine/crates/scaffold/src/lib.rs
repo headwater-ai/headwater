@@ -1066,7 +1066,9 @@ fn placement(shelf: &Shelf, directory: Option<&str>) -> Result<Placement, Refusa
 /// The directory is relative to the corpus root, and a trailing `/` is dropped.
 /// A `.`, `..` or empty segment is refused rather than normalized: a `**`
 /// before the file name would match `..` itself, so the pattern check alone
-/// would pass a path that leaves the directory the shelf names.
+/// would pass a path that leaves the directory the shelf names. A segment
+/// that holds `*`, `?` or `[` is refused too, because the shelf's own glob
+/// would match it and the verb would write a directory named for the glob.
 fn named(shelf: &Shelf, name: &str, directory: Option<&str>) -> Result<Placement, Refusal> {
     let pattern = shelf.pattern.source();
     let Some(given) = directory else {
@@ -1097,6 +1099,15 @@ fn named(shelf: &Shelf, name: &str, directory: Option<&str>) -> Result<Placement
              where the corpus does not mean it"
                 .to_string(),
         ));
+    }
+    if let Some(segment) = trimmed
+        .split('/')
+        .find(|segment| segment.contains(['*', '?', '[']))
+    {
+        return Err(off(format!(
+            "the segment `{segment}` holds a glob character, and a directory the caller \
+             names is a literal path"
+        )));
     }
     let path = format!("{trimmed}/{name}");
     if !shelf.pattern.matches(&path) {
