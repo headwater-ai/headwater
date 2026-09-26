@@ -514,6 +514,11 @@ if [ -x "$engine" ]; then
     reverse_doc 0002-beta.md HW-PD-0002 'Beta traces to alpha' 'relations:\n  traces_to:\n    - HW-PD-0001\n'
     reverse_doc 0003-gamma.md HW-PD-0003 'Gamma governs alpha' 'relations:\n  governs:\n    - docs/process/decisions/0001-alpha.md\n'
     reverse_doc 0004-delta.md HW-PD-0004 'Delta has no edge' ''
+    # Zeta records a revision of tools/beta.sh that the file does not have,
+    # so its edge is suspect from the start: the state an edit leaves behind
+    # when it changes a path a document verified (#953).
+    printf 'echo beta\n' > "$reverse_root/tools/beta.sh"
+    reverse_doc 0006-zeta.md HW-PD-0006 'Zeta verified beta once' 'relations:\n  governs:\n    - to: tools/beta.sh\n      verified_revision: sha256:0000\n'
 
     if resolved=$("$reverse_root/engine/target/release/headwater" taxonomy resolve --root "$reverse_root" 2>&1); then
         HEADWATER_HOOK_ROOT="$reverse_root"
@@ -545,6 +550,25 @@ if [ -x "$engine" ]; then
         expect 'the reverse advisory is silent after the edit' \
             write.sh 0 '' \
             '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0001-alpha.md"}}'
+        # The decisive case of #953: an edit that leaves a governing edge
+        # suspect is told so, in one line that names the edge and the check.
+        beta='{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"tools/beta.sh"}}'
+        expect 'an edit that leaves a governing edge suspect names the edge after the edit' \
+            write.sh 0 'the edge of docs/process/decisions/0006-zeta.md onto tools/beta.sh (verified at sha256:0000' "$beta"
+        expect 'the suspect line names the check that reports the edge' \
+            write.sh 0 '`headwater check` reports it' "$beta"
+        out=$(printf '%s' "$beta" | sh "$hooks/write.sh" 2>/dev/null)
+        said=$(printf '%s' "$out" | "$engine" json field hookSpecificOutput additionalContext 2>/dev/null)
+        if [ -n "$said" ] && [ "$(printf '%s\n' "$said" | wc -l)" -eq 1 ]; then
+            printf 'ok   %s\n' 'the suspect advisory is exactly one line'
+            passed=$((passed + 1))
+        else
+            printf 'FAIL %s\n  expected one line of context, got:\n%s\n' 'the suspect advisory is exactly one line' "$out"
+            failed=$((failed + 1))
+        fi
+        expect 'an edit to a governed path whose edge recorded no revision is silent after the edit' \
+            write.sh 0 '' \
+            '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"tools/alpha.sh"}}'
         HEADWATER_HOOK_ROOT="$root"
         export HEADWATER_HOOK_ROOT
     else
@@ -556,10 +580,11 @@ else
     skip 'write.sh PreToolUse reverse advisory cases' 'no built engine'
 fi
 
-printf '\n# write.sh, on PostToolUse: silent, and write.sh says why #952 left it so\n'
-# The advisory moved to PreToolUse, so the post-edit position says nothing and
-# no edit prints the same pointers twice. These are the payloads that printed
-# the advisory before #953.
+printf '\n# write.sh, on PostToolUse: one line for a suspect edge, and nothing else\n'
+# The advisory moved to PreToolUse, so the post-edit position never prints the
+# pointers again. These are the payloads that printed the advisory before
+# #953, and no governing edge of either path records a revision. The line for a
+# suspect edge is held in the scratch corpus of the reverse advisory above.
 if [ -x "$engine" ]; then
     expect 'an edit to a path a document governs is silent after the edit' \
         write.sh 0 '' \
