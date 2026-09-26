@@ -41,8 +41,10 @@ env:
   # day nobody touched the action. `resolve-version.sh`'s own handling of
   # `latest` is exercised by `tools/repo/integrations-fixtures.sh` instead,
   # which needs no corpus and no download to hold.
-  FIXTURE_TAG: v0.1.2
-  FIXTURE_TAXONOMY_TAG: taxonomy/headwater-standard/v4.2.0
+  # v0.2.1 is the first release whose `taxonomy vendor` takes a location and
+  # writes the digest pin, which build-decisive-fixture.sh relies on.
+  FIXTURE_TAG: v0.2.1
+  FIXTURE_TAXONOMY_URL: https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.2.0/headwater-standard-4.2.0.zip
   FIXTURE_TAXONOMY_DIGEST: sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
 
 jobs:
@@ -69,7 +71,6 @@ jobs:
       - name: Build the fixture corpus with that same engine
         run: |
           HEADWATER_BIN="$FIXTURE_ENGINE" \
-          BOOTSTRAP_SCRIPT="$GITHUB_WORKSPACE/tools/headwater-bootstrap.sh" \
           sh integrations/headwater-check/fixtures/build-decisive-fixture.sh "$RUNNER_TEMP/fixture"
 
       - name: Run the action against the clean fixture

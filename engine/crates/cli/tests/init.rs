@@ -1074,6 +1074,89 @@ fn vendor_with_expect_adds_one_line_to_a_declaration_with_no_commented_digest() 
     );
 }
 
+/// Where the value of `version:` continues on a deeper line, the pin lands
+/// after that line and never inside the value.
+///
+/// Held for #1063: without the count of deeper lines in `with_pin`, the pin
+/// sits between the key and its value, the value then continues the pin, the
+/// pin does not read back, and the verb restores the file and exits 1.
+#[test]
+fn vendor_with_expect_puts_the_pin_after_a_version_value_on_a_deeper_line() {
+    let root = Root::over("vendor-expect-deeper-version");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+    root.init();
+    let written = root.read(".headwater/taxonomy.yml");
+    let commented = written
+        .lines()
+        .find(|line| line.trim_start().starts_with("# digest:"))
+        .expect("the declaration names the field `taxonomy vendor` reads");
+    let version_block = format!("  version:\n    {}\n", maintained_version());
+    let before = written
+        .replace(&format!("{commented}\n"), "")
+        .replace("  version: 0.0.0\n", &version_block);
+    assert!(
+        before.contains(&version_block),
+        "the declaration carries the value on its own line:\n{before}"
+    );
+    root.write(".headwater/taxonomy.yml", &before);
+
+    let (code, stderr) = root.run(
+        &["taxonomy", "vendor", "--expect", digest.as_str()],
+        Some(&artifact),
+    );
+    assert_eq!(
+        code,
+        Some(0),
+        "`vendor --expect` pins a declaration whose version value is on a deeper line:\n{stderr}"
+    );
+    assert_eq!(pinned_digest(&root), Some(digest.clone()));
+    assert_eq!(
+        root.read(".headwater/taxonomy.yml"),
+        before.replacen(
+            &version_block,
+            &format!("{version_block}  digest: {digest}\n"),
+            1
+        ),
+        "the pin is one line after the value, and nothing else moved"
+    );
+}
+
+/// Where the `taxonomy:` block is last in the file and its last line has no
+/// newline, the pin is a line of its own.
+///
+/// Held for #1063: without the newline `with_pin` adds to that last line, the
+/// pin joins it, the pin does not read back, and the verb restores the file
+/// and exits 1.
+#[test]
+fn vendor_with_expect_pins_a_last_line_with_no_trailing_newline() {
+    let root = Root::over("vendor-expect-no-trailing-newline");
+    let artifact = root.beside("artifact");
+    let digest = publish_maintained_source_into(&artifact);
+    root.init();
+    let version = maintained_version();
+    let before = format!(
+        "corpus:\n  root: docs\n\ntaxonomy:\n  package: headwater/standard\n  bundles: []\n  overlay: .headwater/overlay.yml\n  version: {version}"
+    );
+    root.write(".headwater/taxonomy.yml", &before);
+
+    let (code, stderr) = root.run(
+        &["taxonomy", "vendor", "--expect", digest.as_str()],
+        Some(&artifact),
+    );
+    assert_eq!(
+        code,
+        Some(0),
+        "`vendor --expect` pins a declaration whose last line has no newline:\n{stderr}"
+    );
+    assert_eq!(pinned_digest(&root), Some(digest.clone()));
+    assert_eq!(
+        root.read(".headwater/taxonomy.yml"),
+        format!("{before}\n  digest: {digest}\n"),
+        "the last line gains its newline, and the pin follows it"
+    );
+}
+
 /// Every comment the adopter wrote keeps its bytes, whatever it says about a
 /// digest.
 ///

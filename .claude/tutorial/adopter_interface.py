@@ -46,16 +46,10 @@ substitution can hide an arbitrary command inside an argument to an
 otherwise-allowed one, and no piece of this corpus's real command blocks
 ever needs it.
 
-**The one declared exception is matched as the two-piece pipeline it is,
-not as a substring of the line.** `tools/headwater-bootstrap.sh`'s network
-fetch — legitimate for as long as `headwater taxonomy vendor` takes a path
-and not a location — is a `curl`/`wget` naming that script piped into a
-bare `sh`/`bash`, and it is recognized only when a line's pipe-split
-resolves to exactly that shape, with neither piece carrying a substitution
-of its own. Chaining a second command after it (`... | sh -s -- ... &&
-rm -rf /`) puts that second command in its own piece, checked exactly like
-any other: the exception excuses the fetch, and it excuses nothing chained
-beside it.
+**No script this repository wrote is excused.** `tools/headwater-bootstrap.sh`
+was, as a curl piped into a bare shell, until `headwater taxonomy vendor`
+fetched a location itself (#1063). A page that still pipes that script, or
+any other, into a shell now reports both pieces.
 
 **Which blocks are commands is knowledge this script borrows rather than
 re-derives.** `README.md` has no output blocks at all — both of its fenced
@@ -125,13 +119,6 @@ TAR_ALLOWED_SHORT = frozenset('xzf')
 # whose character class admits none of these either.
 PLAIN_WORD = re.compile(r'^~?[A-Za-z0-9._/-]+$')
 
-# A curl/wget fetch naming the bootstrap script, and a bare shell taking its
-# output — the two pieces the one declared exception's pipe-split resolves
-# to, checked as two anchored prefixes rather than as one line-wide pattern
-# so that nothing chained beside them borrows the exception.
-BOOTSTRAP_FETCH_PIECE = re.compile(r'^(curl|wget)\b.*headwater-bootstrap\.sh')
-BOOTSTRAP_SHELL_PIECE = re.compile(r'^(sh|bash)\b')
-
 # Command substitution: `$(...)`, a backtick pair, or process substitution.
 # Any of these can hide an arbitrary command inside an argument to a piece
 # that otherwise reads as allowed, and no real command block in either
@@ -184,10 +171,20 @@ def _split_unquoted(text, is_boundary):
     (`|`), so a quoted argument that happens to hold one of those
     characters — `printf`'s literal string is the one line in this corpus
     that could otherwise be cut in half — is never split.
+
+    A backslash outside single quotes escapes the character after it, as
+    the engine's own splitter (`engine/crates/check/src/command.rs`,
+    `segments`) and a shell both read it: `printf a\\' && npm install`
+    opens no quoted span, so the chained command is still split out.
+    Inside single quotes a backslash is literal.
     """
     pieces, buf, quote, i = [], [], None, 0
     while i < len(text):
         ch = text[i]
+        if ch == '\\' and quote != "'":
+            buf.append(text[i:i + 2])
+            i += 2
+            continue
         if quote:
             buf.append(ch)
             if ch == quote:
@@ -235,18 +232,6 @@ def split_pipe(segment):
     def boundary(text, i):
         return 1 if text[i] == '|' else 0
     return _split_unquoted(segment, boundary)
-
-
-def is_declared_exception(segment):
-    """Whether `segment`, as a whole, is the one declared exception: a
-    fetch naming the bootstrap script piped into a bare shell, with neither
-    piece carrying a substitution of its own."""
-    pieces = split_pipe(segment)
-    return (len(pieces) == 2
-            and BOOTSTRAP_FETCH_PIECE.match(pieces[0])
-            and BOOTSTRAP_SHELL_PIECE.match(pieces[1])
-            and not SUBSTITUTION.search(pieces[0])
-            and not SUBSTITUTION.search(pieces[1]))
 
 
 def is_release_download(piece):
@@ -317,15 +302,12 @@ def check_piece(piece, cargo_allowed=False):
 
 
 def _pieces(block):
-    """Every piece of every line of a command block that the declared
-    exception does not excuse."""
+    """Every piece of every line of a command block."""
     for line in block.split('\n'):
         stripped = line.strip()
         if not stripped or stripped.startswith('#'):
             continue
         for segment in split_chain(stripped):
-            if is_declared_exception(segment):
-                continue
             yield from split_pipe(segment)
 
 
@@ -361,7 +343,7 @@ REGRESSION_CASES = [
     ('a bare undeclared command',
      'npm install',
      ['npm install']),
-    ('an undeclared script beside an incidental mention of the exception',
+    ('an undeclared script beside a mention of the retired bootstrap script',
      'tools/malicious-script.sh --do-it\n'
      '# see tools/headwater-bootstrap.sh for comparison',
      ['tools/malicious-script.sh --do-it']),
@@ -377,19 +359,34 @@ REGRESSION_CASES = [
     ('cargo allowed only for install/build, not by verb alone',
      'cargo run --manifest-path tools/evil/Cargo.toml',
      ['cargo run --manifest-path tools/evil/Cargo.toml']),
-    ('a command chained onto the declared exception with &&',
+    ('a command chained onto a curl of the retired bootstrap script',
      'curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/'
      'main/tools/headwater-bootstrap.sh | sh -s -- --tag x --expect y '
      '&& npm install',
-     ['npm install']),
+     ['curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/'
+      'main/tools/headwater-bootstrap.sh',
+      'sh -s -- --tag x --expect y',
+      'npm install']),
     ('an undeclared script backgrounded with a bare &',
      'git clone https://example.com/repo.git & sh tools/evil.sh',
      ['sh tools/evil.sh']),
-    ('the real declared exception, alone, is not undeclared',
+    ('a curl of the retired bootstrap script piped into sh is undeclared',
      'curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/'
      'main/tools/headwater-bootstrap.sh | sh -s -- --tag '
      'taxonomy/headwater-standard/v4.2.0 --expect sha256:961ecf2ae2c3c74',
-     []),
+     ['curl -fsSL https://raw.githubusercontent.com/headwater-ai/headwater/'
+      'main/tools/headwater-bootstrap.sh',
+      'sh -s -- --tag taxonomy/headwater-standard/v4.2.0 '
+      '--expect sha256:961ecf2ae2c3c74']),
+    ('a backslash-escaped quote opens no quoted span to hide a chain in',
+     "printf a\\' && npm install",
+     ['npm install']),
+    ('a backslash inside single quotes is literal and closes nothing',
+     "printf 'a\\' && npm install",
+     ['npm install']),
+    ('an escaped double quote inside double quotes does not close the span',
+     'printf "a\\" && b" && npm install',
+     ['npm install']),
     ('cargo install, alone in a block, is undeclared: no toolchain is '
      'mandatory (HW-DR-0077)',
      'cargo install headwater-cli',

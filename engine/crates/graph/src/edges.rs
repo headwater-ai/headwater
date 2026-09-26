@@ -59,8 +59,15 @@ pub struct Edge {
     /// The relation type that name resolves to.
     pub declared: String,
     pub direction: Direction,
-    /// The target as written, before anything normalized it.
+    /// The target as written, before anything normalized it. A list entry is
+    /// its members joined by `, `, which a reader can print and nothing can
+    /// split again: a member may hold a comma itself.
     pub raw_target: String,
+    /// The members of the target as written, one per list member, in the
+    /// author's order. A scalar entry is a list of one. `raw_target` is these
+    /// joined by `, `, and this is the form that survives a comma inside a
+    /// member (#1092).
+    pub raw_targets: Vec<String>,
     pub target: Target,
     /// Instance attributes: every key of the entry except `to`.
     pub attributes: Vec<Entry>,
@@ -642,6 +649,7 @@ fn read_relation_entry(
             declared: named.relation.name.clone(),
             direction: named.direction,
             raw_target,
+            raw_targets: raws,
             target,
             attributes,
             created_by: named.relation.created_by.clone(),
@@ -971,6 +979,7 @@ mod tests {
             declared: "governs".to_string(),
             direction: Direction::AsDeclared,
             raw_target: ".claude/hooks/lib.sh".to_string(),
+            raw_targets: vec![".claude/hooks/lib.sh".to_string()],
             target,
             attributes: Vec::new(),
             created_by: None,

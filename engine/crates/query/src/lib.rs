@@ -162,8 +162,17 @@ pub struct Neighbour {
     /// The far end. An edge that reaches an anchor or nothing carries no
     /// pointer, and [`Neighbour::target`] is what it reached instead.
     pub pointer: Option<Pointer>,
-    /// The far end as a string, whatever it resolved to.
+    /// The far end as a string, whatever it resolved to. For a list anchor it
+    /// is [`Neighbour::targets`] joined by `, `, for a reader.
     pub target: String,
+    /// The far end as its members, one per pattern of a list anchor, so that a
+    /// pattern holding a comma stays one member (#1092). A bound anchor gives
+    /// its normalized patterns, sorted, which is the anchor's identity order
+    /// (HW-DR-0074). An anchor that binds nothing gives the members as written,
+    /// in the written order. A document target gives its identifier, and an
+    /// inbound edge gives the path of the document that declared it. Never
+    /// empty, and `target` is always these joined by `, `.
+    pub targets: Vec<String>,
     /// Spec 5: "`related` and `explain` serve the cue where one exists, and the
     /// target's summary otherwise."
     pub cue: Option<String>,
@@ -435,6 +444,15 @@ impl<'a> Surface<'a> {
                     .target
                     .anchor_display()
                     .unwrap_or_else(|| edge.normalized_target()),
+            },
+            targets: match (inbound, &edge.target) {
+                (true, _) => vec![edge.source.path.clone()],
+                (false, Target::Anchor { patterns, .. }) => patterns
+                    .iter()
+                    .map(|member| member.pattern.clone())
+                    .collect(),
+                (false, Target::Document { id, .. }) => vec![id.clone()],
+                (false, Target::Withheld { .. } | Target::Unbound(_)) => edge.raw_targets.clone(),
             },
             governs: match (self.governs_of(edge), inbound) {
                 (Governs::Neither, _) => Governs::Neither,
