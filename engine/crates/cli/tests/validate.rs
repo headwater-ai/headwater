@@ -103,6 +103,20 @@ impl Root {
                 .expect("the scope directory is there");
             std::fs::write(to, "").expect("the scope entry writes");
         }
+        // The four paths `ste_house` lists outside the corpus root
+        // (HW-DR-0084). `taxonomy validate` names a pattern that matches no
+        // file, so each gets a stub.
+        for entry in [
+            "README.md",
+            ".github/CONTRIBUTING.md",
+            ".github/SECURITY.md",
+            ".github/ISSUE_TEMPLATE/issue.md",
+        ] {
+            let to = self.at.join(entry);
+            std::fs::create_dir_all(to.parent().expect("it has a parent"))
+                .expect("the directory is there");
+            std::fs::write(to, "# A stub\n").expect("the stub writes");
+        }
         self
     }
 
@@ -589,6 +603,76 @@ fn validate_refuses_a_governed_scope_pattern_that_matches_no_entry() {
         "the root has no manifest"
     );
     assert!(!ran.err.contains("package.yml"), "{ran:?}");
+}
+
+/// Add `extra` to the `outside_root` list of `ste_house` in a root's overlay.
+fn lists_outside_root(root: &Root, extra: &str) {
+    let overlay = root.at.join(".headwater/overlay.yml");
+    let text = std::fs::read_to_string(&overlay).expect("the overlay reads");
+    let anchor = "      - .github/SECURITY.md\n";
+    assert!(
+        text.contains(anchor),
+        "the overlay lists .github/SECURITY.md"
+    );
+    std::fs::write(
+        &overlay,
+        text.replacen(anchor, &format!("{anchor}      - {extra}\n"), 1),
+    )
+    .expect("the overlay writes");
+}
+
+/// A path a language regime lists outside the corpus root that matches no file
+/// is named, and the run is not valid (HW-DR-0084 clause 2, #1159).
+#[test]
+fn validate_names_an_outside_root_pattern_that_matches_nothing() {
+    let root = Root::new("outside-root-missing");
+    lists_outside_root(&root, "MISSING.md");
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "{resolved:?}");
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err.contains(
+            "outside-root pattern `MISSING.md` of `regimes.language.ste_house` matches no file"
+        ),
+        "{ran:?}"
+    );
+    assert!(!ran.err.contains("`README.md`"), "{ran:?}");
+}
+
+/// A pattern that climbs out of the repository and an absolute one need no
+/// tree, so `taxonomy resolve` refuses each and writes no lock, and
+/// `resolve --check` fails too (HW-DR-0084 clause 2: "refused when the
+/// taxonomy resolves").
+#[test]
+fn resolve_refuses_an_outside_root_pattern_that_leaves_the_repository() {
+    for (label, extra) in [
+        ("outside-root-climbs", "../elsewhere.md"),
+        ("outside-root-absolute", "/etc/motd"),
+    ] {
+        let root = Root::new(label);
+        let first = root.run(&["taxonomy", "resolve"]);
+        assert_eq!(first.code, Some(0), "the fixture resolves: {first:?}");
+        let lock = root.at.join(".headwater/taxonomy.lock");
+        let written = std::fs::read(&lock).expect("the fixture resolved once");
+        lists_outside_root(&root, extra);
+        let resolved = root.run(&["taxonomy", "resolve"]);
+        assert_eq!(resolved.code, Some(1), "{extra}: {resolved:?}");
+        assert!(
+            resolved.err.contains("projection targets")
+                && resolved
+                    .err
+                    .contains("regimes.language.ste_house.outside_root"),
+            "{extra}: {resolved:?}"
+        );
+        assert_eq!(
+            std::fs::read(&lock).expect("the lock is still there"),
+            written,
+            "{extra}: no lock is written"
+        );
+        let checked = root.run(&["taxonomy", "resolve", "--check"]);
+        assert_eq!(checked.code, Some(1), "{extra}: {checked:?}");
+    }
 }
 
 /// A taxonomy with no tree beside it is valid, and the verb says it did not

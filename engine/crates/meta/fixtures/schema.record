@@ -37,6 +37,7 @@ declarations
             term (required) scalar:string
             reason (required) scalar:string
             replacement scalar:string
+        outside_root seq of scalar:string
   relations map of members
       family (required) enum[succession derivation governance evidence composition association]
       from (required) seq of scalar:string

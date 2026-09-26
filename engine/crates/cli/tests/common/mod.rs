@@ -131,6 +131,22 @@ impl Root {
                 .expect("the scope directory is there");
             std::fs::write(to, "").expect("the scope entry writes");
         }
+        // The overlay lists four paths outside the corpus root under
+        // `regimes.language.ste_house.outside_root` (HW-DR-0084), and
+        // `taxonomy validate` names a pattern that matches no file, so each
+        // gets a stub that obeys the regime.
+        for entry in [
+            "README.md",
+            ".github/CONTRIBUTING.md",
+            ".github/SECURITY.md",
+            ".github/ISSUE_TEMPLATE/issue.md",
+        ] {
+            let to = at.join(entry);
+            std::fs::create_dir_all(to.parent().expect("it has a parent"))
+                .expect("the directory is there");
+            std::fs::write(to, "# A stub\n\nThis file stands in for the real one.\n")
+                .expect("the stub writes");
+        }
 
         prepare(&at);
         pin(&at, "1.0.0");

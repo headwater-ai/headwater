@@ -215,6 +215,8 @@ checks
       taxonomy scope, the resolved taxonomy, and no document
     adoption.task.expired
       taxonomy scope, the resolved taxonomy, and no document
+    language.outside_root.refused
+      taxonomy scope, the resolved taxonomy, and no document
     relation.target.verification.suspect
       edge scope, one relation instance and both endpoints, and the committed
         observation snapshot
@@ -273,6 +275,7 @@ checks
     coverage.document_unchecked reaches no obligation, so it names none
     control.observation.invalid reaches no obligation, so it names none
     adoption.task.expired reaches no obligation, so it names none
+    language.outside_root.refused reaches no obligation, so it names none
     relation.target.verification.suspect reaches no obligation, so it names none
   61 findings
        38 ✗ error
@@ -675,6 +678,7 @@ read set
   version control.mechanism.unimplemented 1
   version control.observation.invalid 1
   version adoption.task.expired 1
+  version language.outside_root.refused 1
   version relation.target.verification.suspect 2
   input .headwater/ids sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   input check/evaluations/alpha.md sha256:e651a58ed6489f388954343391d6321a708a2b7492bb4dc1386699a8bf65cc7b

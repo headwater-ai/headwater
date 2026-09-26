@@ -630,6 +630,7 @@ fn row(path: &str, outcome: Outcome) -> Row {
 #[test]
 fn the_reading_counts_a_file_with_no_kind_and_no_stated_reason_and_no_other() {
     let accounted = Census {
+        outside: Default::default(),
         rows: vec![
             row(
                 "docs/a.md",
@@ -663,6 +664,7 @@ fn the_reading_counts_a_file_with_no_kind_and_no_stated_reason_and_no_other() {
     assert_eq!(corpus_classified(&accounted), Verdict::Met);
 
     let untyped = Census {
+        outside: Default::default(),
         rows: vec![row(
             "docs/loose.md",
             Outcome::Untyped(Untyped::NoFrontMatter {
@@ -676,6 +678,7 @@ fn the_reading_counts_a_file_with_no_kind_and_no_stated_reason_and_no_other() {
     assert!(detail.contains("1 file under the corpus root carries"));
 
     let unreadable = Census {
+        outside: Default::default(),
         rows: vec![row(
             "docs/bytes.md",
             Outcome::Unreadable(Unreadable::NotText),
@@ -693,6 +696,7 @@ fn the_reading_counts_a_file_with_no_kind_and_no_stated_reason_and_no_other() {
 #[test]
 fn a_shelf_claimed_gap_names_the_shelf_and_kind_and_points_at_headwater_new() {
     let homogeneous = Census {
+        outside: Default::default(),
         rows: vec![row(
             "docs/decisions/loose.md",
             Outcome::Untyped(Untyped::NoFrontMatter {
@@ -706,6 +710,7 @@ fn a_shelf_claimed_gap_names_the_shelf_and_kind_and_points_at_headwater_new() {
     assert!(detail.contains("headwater new decision"), "{detail}");
 
     let heterogeneous = Census {
+        outside: Default::default(),
         rows: vec![row(
             "walk/spec/loose.md",
             Outcome::Untyped(Untyped::NoFrontMatter {
@@ -719,6 +724,7 @@ fn a_shelf_claimed_gap_names_the_shelf_and_kind_and_points_at_headwater_new() {
     assert!(detail.contains("headwater new"), "{detail}");
 
     let no_shelf_claim = Census {
+        outside: Default::default(),
         rows: vec![row(
             "docs/unshelved.md",
             Outcome::Untyped(Untyped::Unresolved {

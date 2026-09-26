@@ -346,6 +346,18 @@ add:
         reason: it stands in for use or apply
       - term: robust
         reason: it stands in for the failure the thing survives
+    # The front-door prose outside the corpus root, which HW-DR-0084 lets this
+    # regime hold. Three rules read these paths and no other rule does, so
+    # none of them owes front matter, and none joins the census. The four are
+    # the files the record's Context names. `.github/*.md` is not written,
+    # because it also matches `.github/copilot-instructions.md`: that file is
+    # a copy of CLAUDE.md for an agent, not prose a newcomer reads, and it
+    # quotes every retired term in the section that retires them.
+    outside_root:
+      - README.md
+      - .github/CONTRIBUTING.md
+      - .github/SECURITY.md
+      - .github/ISSUE_TEMPLATE/issue.md
 
   kinds.design_spec.language:         ste_house
   kinds.decision_register.language:   ste_house
@@ -1306,10 +1318,10 @@ add:
     # Only pages the rule can read belong here: typed documents under the
     # corpus root. `README.md` at the root and the shipped package text are
     # pages for an adopter too, and neither is typed, so listing them would
-    # claim a hold the rule does not have. No check holds either one, and
-    # `docs/interfaces/headwater-check.md` states that as a limit. HW-DR-0084
-    # rules that a language regime will reach `README.md` through its
-    # `outside_root` list, and that no surface rule will.
+    # claim a hold the rule does not have. No surface rule holds either one,
+    # and `docs/interfaces/headwater-check.md` states that as a limit. Since
+    # HW-DR-0084, the three language rules hold `README.md` through the
+    # `outside_root` list of `ste_house` above, and no surface rule does.
     adopter_documents:
       - docs/interfaces/*.md
       - docs/tutorials/*.md

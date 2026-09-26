@@ -227,6 +227,11 @@ regimes:
       controlled: none
     ste_house:
       controlled: ASD-STE100
+      outside_root:
+        - README.md
+        - ".github/CONTRIBUTING.md"
+        - ".github/SECURITY.md"
+        - ".github/ISSUE_TEMPLATE/issue.md"
       profile: house
       retired_terms:
         - term: load-bearing

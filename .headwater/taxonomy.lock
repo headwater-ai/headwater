@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:744a8cabe7262e9bb8b93c4415973b46c4ff17e93fdf6a298e7aaeaa88e116b6
+  digest: sha256:38170e84cd1a579f48427469f0d3352e2106d3ee579db1c1881a77565d53ec75
   rules: 2
   package: headwater/standard
   version: 4.9.0
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:d2e1dd60f5adf97dcefd3aa46b0f377ed5e7eca533f82fad8a3d90224f79673f
     - path: .headwater/overlay.yml
-      digest: sha256:dbdea69dba7bc7dcd917f28858dd9b5ffdc2ffe3575b56a20474660086234036
+      digest: sha256:43f2648ca23b298213555842801d81763343e3a11c4a17353e355466625fd807
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -290,6 +290,11 @@ resolved:
         controlled: none
       ste_house:
         controlled: ASD-STE100
+        outside_root:
+          - README.md
+          - ".github/CONTRIBUTING.md"
+          - ".github/SECURITY.md"
+          - ".github/ISSUE_TEMPLATE/issue.md"
         profile: house
         retired_terms:
           - term: load-bearing

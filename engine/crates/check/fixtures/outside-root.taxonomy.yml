@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the outside-root tree is checked against. HW-DR-0084 lets a
+# language regime list paths outside the corpus root, and three rules read such
+# a path while no other rule does.
+#
+# The tree is its own repository root. The corpus root is `docs/`, and
+# `README.md` sits beside it, outside it, with a contraction in it. `house`
+# lists that file. The kind requires a facet the README does not declare, so a
+# runner that handed the README to every rule would report it missing, and the
+# case table asserts that nothing does.
+#
+# The regime also retires a term and fixes the source form, so each of the three
+# rules has an instance to create over the README.
+
+facets:
+  summary:
+    role: scent
+    required: true
+    type: string
+
+regimes:
+  language:
+    house:
+      tag: en-US
+      controlled: ASD-STE100
+      profile: house
+      source_form: one_line_per_block
+      retired_terms:
+        - {term: robust, reason: it stands in for the failure the thing survives}
+      outside_root:
+        - README.md
+
+kinds:
+  note:
+    language: house
+    facets: {require: [summary]}
+
+shelves:
+  notes:
+    path: docs/notes/**
+    homogeneous: true
+    kind: note

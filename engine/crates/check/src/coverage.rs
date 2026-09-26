@@ -213,7 +213,13 @@ impl Coverage {
                     // arriving here is a defect, and one line reports all of
                     // them, because the fact stated is the same one — coverage
                     // was computed over a set that does not hold this path.
+                    //
+                    // A path a language regime lists outside the corpus root
+                    // is exempt too, for the reason it is not a row: HW-DR-0084
+                    // reads it with three rules and keeps it out of this
+                    // denominator on purpose. See `headwater_census::outside`.
                     if !BESIDE_THE_ROOT.contains(&path)
+                        && !census.outside.holds(path)
                         && !unaccounted.iter().any(|known| known == path)
                     {
                         unaccounted.push(path.to_string());
@@ -394,7 +400,13 @@ mod tests {
     }
 
     fn over(rows: Vec<Row>, instances: Vec<Instance>) -> Coverage {
-        Coverage::of(&Census { rows }, &instances)
+        Coverage::of(
+            &Census {
+                rows,
+                outside: Default::default(),
+            },
+            &instances,
+        )
     }
 
     /// One edge-scoped skip is one instance, and the routing holds it twice.

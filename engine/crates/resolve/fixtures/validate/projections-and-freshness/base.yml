@@ -4,6 +4,8 @@
 # declaration exists for.
 #
 #   one projection writes an absolute path and one climbs above the corpus root
+#   an outside-root path climbs out of the repository, one is absolute, and
+#   one literal path answers to two regimes
 #   a transcription pins nothing, so a reader cannot ask the authority whether
 #   the copy is current
 #   the facet that carries the freshness role declares no staleness policy, so
@@ -30,6 +32,18 @@ facets:
 
 anchors:
   requirement: {resolver: tracker}
+
+# HW-DR-0084 clause 2, the half that needs no tree: one path outside the corpus
+# root climbs out of the repository, one is absolute, and one literal path is
+# listed by two regimes. `./README.md` is the same path as `README.md`.
+regimes:
+  language:
+    house:
+      tag: en-US
+      outside_root: ["../elsewhere.md", "/etc/motd", "README.md"]
+    strict:
+      tag: en-US
+      outside_root: ["./README.md", "CONTRIBUTING.md"]
 
 kinds:
   decision:

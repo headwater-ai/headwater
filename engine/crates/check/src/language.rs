@@ -68,8 +68,8 @@
 
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
-use crate::scope::{DocumentCheck, DocumentView};
-use crate::shape::Shape;
+use crate::scope::{DocumentCheck, DocumentView, OutsideCheck};
+use crate::shape::{LanguageRegime, Shape};
 use headwater_doc::body::BlockKind;
 
 pub const RULE: &str = "language.controlled.not_met";
@@ -176,6 +176,9 @@ pub fn known(controlled: &str, profile: Option<&str>) -> bool {
 /// The check, generated from the language regimes and the kinds that bind them.
 pub struct Language {
     bound: Vec<Bound>,
+    /// One binding per regime that lists paths outside the corpus root, with
+    /// an empty `kind`. See [`crate::scope::over_outside_root`].
+    outside: Vec<Bound>,
     /// The facet in the `scent` role, resolved once from the shape. See
     /// [`crate::frontmatter`] for why the population is a role rather than a
     /// name, and `None` for a corpus that declares no such facet.
@@ -201,38 +204,69 @@ enum Profile {
 
 impl Language {
     /// The generation step, in full.
+    ///
+    /// A kind binds the regime it names, and a regime that lists paths
+    /// outside the corpus root binds those too, on the same terms
+    /// (HW-DR-0084 clause 4). The second list is keyed on the regime, so an
+    /// outside path never reaches a binding through a kind.
     pub fn over(shape: &Shape) -> Self {
-        let mut bound = Vec::new();
-        for kind in &shape.kinds {
-            let Some(regime) = shape.language_of(&kind.name) else {
-                continue;
-            };
-            let controlled = regime.controlled.as_deref().unwrap_or("none");
-            // `none` is a regime that holds prose to nothing, and a document
-            // under one owes this rule no instance.
-            if controlled.eq_ignore_ascii_case("none") {
-                continue;
-            }
-            let profile = known(controlled, regime.profile.as_deref()).then_some(Profile::House);
-            bound.push(Bound {
-                kind: kind.name.clone(),
-                regime: regime.name.clone(),
-                profile,
-                declared: match &regime.profile {
-                    Some(profile) => format!("{controlled}, profile {profile}"),
-                    None => controlled.to_string(),
-                },
-                tag: regime.tag.clone(),
-            });
-        }
+        let bound = shape
+            .kinds
+            .iter()
+            .filter_map(|kind| bind(&kind.name, shape.language_of(&kind.name)?))
+            .collect();
+        let outside = shape
+            .language
+            .iter()
+            .filter(|regime| !regime.outside_root.is_empty())
+            .filter_map(|regime| bind("", regime))
+            .collect();
         Language {
             bound,
+            outside,
             scent: crate::frontmatter::scent_facet(shape),
         }
     }
 
     fn bound_to(&self, kind: &str) -> Option<&Bound> {
         self.bound.iter().find(|bound| bound.kind == kind)
+    }
+
+    /// The binding a view is read under: its regime for a path outside the
+    /// corpus root, and its kind for every other document.
+    fn bound_for(&self, view: &DocumentView<'_>) -> Option<&Bound> {
+        match view.outside_regime() {
+            Some(regime) => self.outside.iter().find(|bound| bound.regime == regime),
+            None => self.bound_to(view.kind()),
+        }
+    }
+}
+
+/// One binding of the rule to a regime, and nothing for a regime that holds
+/// prose to nothing.
+fn bind(kind: &str, regime: &LanguageRegime) -> Option<Bound> {
+    let controlled = regime.controlled.as_deref().unwrap_or("none");
+    // `none` is a regime that holds prose to nothing, and a document under one
+    // owes this rule no instance.
+    if controlled.eq_ignore_ascii_case("none") {
+        return None;
+    }
+    let profile = known(controlled, regime.profile.as_deref()).then_some(Profile::House);
+    Some(Bound {
+        kind: kind.to_string(),
+        regime: regime.name.clone(),
+        profile,
+        declared: match &regime.profile {
+            Some(profile) => format!("{controlled}, profile {profile}"),
+            None => controlled.to_string(),
+        },
+        tag: regime.tag.clone(),
+    })
+}
+
+impl OutsideCheck for Language {
+    fn binds_regime(&self, regime: &str) -> bool {
+        self.outside.iter().any(|bound| bound.regime == regime)
     }
 }
 
@@ -274,7 +308,7 @@ impl DocumentCheck for Language {
     }
 
     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
-        let Some(bound) = self.bound_to(view.kind()) else {
+        let Some(bound) = self.bound_for(view) else {
             return Outcome::Passed;
         };
         if bound.profile.is_none() {
