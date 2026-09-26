@@ -46,8 +46,8 @@ use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{
-    basis, dependency, endpoint, initial_dependency, reciprocity, suspect, target, verification,
-    Cache, Context, Date, Declared, Observation, Observations, Outcome, Register, Run, Shape,
+    adoption, basis, command, coverage, dependency, endpoint, initial_dependency, reciprocity,
+    register, surface, suspect, target, verification, Cache, Context, Date, Declared, Observation, Observations, Outcome, Register, Run, Shape,
     RULES,
 };
 use headwater_graph::anchors::Resolvers;
@@ -74,7 +74,42 @@ const EDGE_RULES: [&str; 8] = [
 /// The rules no recorded corpus reaches, each with the reason. A rule here has
 /// no ledger row, so a change to what it decides passes this test. The list is
 /// held honest from both sides: a rule that gains an instance must leave it.
-const UNCOVERED: &[(&str, &str)] = &[];
+const UNCOVERED: &[(&str, &str)] = &[
+    (
+        surface::RULE,
+        "its cases are unit tests in src/surface.rs, and no recorded corpus declares a \
+         `surface` and an adopter shelf",
+    ),
+    (
+        command::RULE,
+        "its cases are unit tests in src/command.rs, and no recorded corpus declares a \
+         `surface` and an adopter shelf",
+    ),
+    (
+        coverage::RULE,
+        "the runner reaches it outside any instance, so no cache entry holds its verdict",
+    ),
+    (
+        register::DISPOSITION,
+        "the runner reaches it from the taxonomy outside any instance, so no cache entry \
+         holds its verdict",
+    ),
+    (
+        register::MECHANISM,
+        "the runner reaches it from the taxonomy outside any instance, so no cache entry \
+         holds its verdict",
+    ),
+    (
+        register::OBSERVATION,
+        "the runner reaches it from the snapshot outside any instance, so no cache entry \
+         holds its verdict",
+    ),
+    (
+        adoption::RULE,
+        "the runner reaches it from the lock outside any instance, so no cache entry holds \
+         its verdict",
+    ),
+];
 
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
@@ -131,6 +166,16 @@ fn recorded() -> Vec<Recorded> {
             name: "terminal-dependency",
             taxonomy: "terminal-dependency.taxonomy.yml",
             lock: "sha256:terminal-dependency-fixture".to_string(),
+            clock: "2026-08-12",
+            observations: Observations::empty(),
+            full: false,
+        },
+        Recorded {
+            label: "state-set-twice",
+            base: fixtures_dir(),
+            name: "state-set-twice",
+            taxonomy: "state-set-twice.taxonomy.yml",
+            lock: "sha256:state-set-twice-fixture".to_string(),
             clock: "2026-08-12",
             observations: Observations::empty(),
             full: false,
@@ -361,8 +406,62 @@ struct Judgement {
 /// change inside one process: the tests below stand a hand-made ledger in for
 /// the one an older binary recorded, as `tests/cache.rs` stands in a second
 /// rule list for an upgrade.
-fn judge(_recorded: &str, _computed: &[Row], _bless: bool) -> Judgement {
-    todo!("no comparator exists yet")
+fn judge(recorded: &str, computed: &[Row], bless: bool) -> Judgement {
+    let (rows, mut failures) = parse(recorded);
+    let mut old: BTreeMap<&str, &Row> = rows.iter().map(|row| (row.rule.as_str(), row)).collect();
+    let mut kept = Vec::new();
+    for row in computed {
+        match old.remove(row.rule.as_str()) {
+            None => {
+                if !bless {
+                    failures.push(format!(
+                        "{} has no row in the ledger: record it with HEADWATER_BLESS=1",
+                        row.rule
+                    ));
+                }
+                kept.push(row.clone());
+            }
+            Some(was) if was.version == row.version && was.digest != row.digest => {
+                failures.push(format!(
+                    "{} changed its verdicts over {} at VERSION {}, and VERSION did not move: \
+                     raise it in {}, then re-record with HEADWATER_BLESS=1. A warm cache keeps \
+                     serving what VERSION {} decided, and HEADWATER_BLESS does not re-record \
+                     this row",
+                    row.rule,
+                    row.corpora.join(", "),
+                    row.version,
+                    declaring_file(&row.rule),
+                    row.version,
+                ));
+                kept.push(was.clone());
+            }
+            Some(was) if was.version != row.version || was.instances != row.instances => {
+                if !bless {
+                    failures.push(format!(
+                        "{} is at VERSION {} and the ledger records VERSION {}: re-record with \
+                         HEADWATER_BLESS=1",
+                        row.rule, row.version, was.version
+                    ));
+                }
+                kept.push(row.clone());
+            }
+            Some(was) => kept.push(was.clone()),
+        }
+    }
+    for (rule, _) in old {
+        if !bless {
+            failures.push(format!(
+                "{rule} has a row in the ledger and reached no verdict on any recorded corpus, so \
+                 the row pins nothing: re-record with HEADWATER_BLESS=1, and list the rule in \
+                 UNCOVERED with the reason"
+            ));
+        }
+    }
+    kept.sort_by(|a, b| a.rule.cmp(&b.rule));
+    Judgement {
+        ledger: render(&kept),
+        failures,
+    }
 }
 
 fn bless() -> bool {
