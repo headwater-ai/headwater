@@ -3,7 +3,7 @@ id: HW-EVAL-n8n-worked-example
 status: current
 status_since: 2026-09-01
 last_verified: 2026-09-01
-summary: Forty-six real governing documents from n8n, typed against three entries of the library, and what three runs and one coherence sweep found in a corpus that keeps its prose beside the code.
+summary: Forty-six real governing documents from n8n, typed against three entries of the library. This document also records what three runs and one coherence sweep found in a corpus that keeps its prose beside the code.
 title: "n8n as a worked instance — a corpus with no docs root"
 provenance:
   warrant: asserted
@@ -67,7 +67,7 @@ The entry assumed that a design specification belongs to a numbered series. A mo
 
 The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full, with the assembly that reproduces it. The summary:
 
-**4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 46 check instances, 13 findings, all 13 of them errors.** `headwater check --strict` exits 1. The first and third read 42 and 38 until [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md): the 38 were the vendored taxonomy package, which sat inside this corpus root and had to be excluded from it.
+**4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 46 check instances, 13 findings, all 13 of them errors.** `headwater check --strict` exits 1. The first and third read 42 and 38 until [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md). The 38 were the vendored taxonomy package, which sat inside this corpus root and had to be excluded from it.
 
 Three findings per document, and the same three on each one.
 
@@ -109,7 +109,7 @@ That arm reported 0 findings and exited 0 until headwater/standard 4.3.0. A gree
 
 Three properties, and each one was measured rather than assumed.
 
-**The corpus root is `packages` and not `docs`.** That forced an exclusion until [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md), because a taxonomy package was found under `packages/` and n8n's prose is under `packages/` too. A corpus root that reached the second reached the first. The three earlier fixtures of this library never met it, because each of them roots its corpus at `docs`. **This corpus is the measurement that priced the old root**, and the move took the exclusion with it: the package now lands under `.headwater/packages/`, which no corpus root an adopter can name reaches.
+**The corpus root is `packages` and not `docs`.** That forced an exclusion until [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md), because a taxonomy package was found under `packages/` and n8n's prose is under `packages/` too. A corpus root that reached the second reached the first. The three earlier fixtures of this library never met it, because each of them roots its corpus at `docs`. **This corpus is the measurement that priced the old root.** The move took the exclusion with it: the package now lands under `.headwater/packages/`, which no corpus root an adopter can name reaches.
 
 **The path pattern has to be `packages/**`, which fixes one segment out of 27,688 files.** The four documents share no directory. What they share is a filename, and the pattern language reads a path rather than a name. `packages/**/ARCHITECTURE.md` is legal and it claims **2 of the 4**, because the other two are named `architecture.md` and `ARCHITECTURE_CONNECTION_VS_SETTINGS.md`. That run reports 2 typed, 2 untyped, 22 check instances and 6 findings, and the two documents it misses report nothing at all.
 
@@ -383,7 +383,7 @@ The terms are #492's. #511 recorded 8 findings for the architecture documents an
 
 This is the first two Done-when bullets of [#495](https://github.com/headwater-ai/headwater/issues/495). Every number in this section was measured on 2026-09-08 against `n8n-io/n8n@master`, which is the live branch and not the pin.
 
-**The `last_verified` date in the front matter covers neither this section nor [the one above](#what-was-enumerated-here-and-what-was-not), and the carve-out is deliberate rather than deferred.** A claim taken from a moving branch goes stale when the branch moves, so a single date over the whole document would say something false about this section within a week. Moving `last_verified` forward would also assert a re-verification of the two pinned runs that nobody ran.
+**The `last_verified` date in the front matter covers neither this section nor [the one above](#what-was-enumerated-here-and-what-was-not), and the carve-out is deliberate rather than deferred.** A claim taken from a moving branch goes stale when the branch moves. That is why a single date over the whole document would say something false about this section within a week. Moving `last_verified` forward would also assert a re-verification of the two pinned runs that nobody ran.
 
 ### Every recorded finding, partitioned
 
@@ -395,9 +395,9 @@ The two runs and the sweep put 38 findings and facts into this document. This is
 | An artifact of this library's vocabulary | 33 | 87% |
 | Contestable, and this document adjudicates neither | 2 | 5% |
 
-**34 of the 38 were reported by one of the two `headwater check` runs, and 33 of those 34 are in the artifact bucket.** 13 came from the design-spec corpus, out of 46 check instances over 4 typed documents, which are the whole of that root now that the vendored package is not under it. 21 came from the standards-spec corpus, out of 97 check instances over 7 typed documents of 7 files. All 34 are errors. The 34th is the broken link. It sits in the genuine-defect bucket, and a rule started to report it at headwater/standard 4.3.0. The other 33 are about the distance between an admitted entry and n8n's shape: a `sequence` facet that a package has no number for, a `title` facet that upstream does not write, an identifier scheme that the entry never declares, and three headings that this tradition writes as labeled paragraphs. Not one is about n8n's prose, [for the reason recorded above](#not-one-finding-is-about-n8ns-writing).
+**34 of the 38 were reported by one of the two `headwater check` runs, and 33 of those 34 are in the artifact bucket.** 13 came from the design-spec corpus, out of 46 check instances over 4 typed documents. Those 4 documents are the whole of that root now that the vendored package is not under it. 21 came from the standards-spec corpus, out of 97 check instances over 7 typed documents of 7 files. All 34 are errors. The 34th is the broken link. It sits in the genuine-defect bucket, and a rule started to report it at headwater/standard 4.3.0. The other 33 are about the distance between an admitted entry and n8n's shape: a `sequence` facet that a package has no number for, a `title` facet that upstream does not write, an identifier scheme that the entry never declares, and three headings that this tradition writes as labeled paragraphs. Not one is about n8n's prose, [for the reason recorded above](#not-one-finding-is-about-n8ns-writing).
 
-The 143-finding run under this repository's own house regime stays out of the denominator on purpose. A house regime is not an admitted library entry, and holding somebody else's corpus to this repository's line breaks and contractions produces nothing that n8n would call a defect.
+The 143-finding run under this repository's own house regime stays out of the denominator on purpose. A house regime is not an admitted library entry. Holding somebody else's corpus to this repository's line breaks and contractions produces nothing that n8n would call a defect.
 
 **1 of the 3 genuine defects is reported by a `headwater check` rule, and 0 of them were when this evaluation was recorded.** [The broken link](#the-broken-link-that-no-rule-reported-until-430) reached the 4.0.0 run as a fact in the graph section and never as a finding, and `link.path.unresolved` reports it from 4.3.0. One [reaches no run at all](#what-this-taxonomy-would-report-and-what-it-does-not), because no admitted entry declares a procedure-shaped kind and no run reads `.agents/skills/`. One came out of `headwater sweep`, which is a sampler and not a check. That inversion was the sharpest result here, and it is one third smaller than it was. The library, pointed at eleven real governing documents, raised 33 errors that say nothing n8n would act on. It stays silent on 2 of the 3 things n8n would fix.
 
@@ -437,7 +437,7 @@ The first prints `5` and the second prints `2`, so three agents do not link `tes
 
 The fixes stand on the branch [`fix-agents-doc-defects`](https://github.com/headwater-ai/n8n/tree/fix-agents-doc-defects) of the fork, cut from the pin, one commit per defect. Titles follow n8n's [pull-request title convention](https://github.com/n8n-io/n8n/blob/master/.github/pull_request_title_conventions.md).
 
-**Two of the three files carry the same bytes on `master` today as at the pin, and the third does not.** `packages/@n8n/expression-runtime/ARCHITECTURE.md` is blob `d4d9c5b` at both, and `.agents/skills/spec-driven-development/SKILL.md` is `57470f1` at both. `.agents/review-rules/README.md` moved from `28140c5` to `b95b525`, in two hunks: the `security/` scope row of the Layout table, and a new paragraph under step 3 of *Adding a rule*. **Neither hunk reaches the three lines that the third fix rewrites**, which are lines 25 to 27 and identical at both. So a fix cut from the pin still applies to all three, and the reason is a line-level comparison rather than a whole-file one. This was measured on 2026-09-08 and it goes stale the same way every other number in this section does.
+**Two of the three files carry the same bytes on `master` today as at the pin, and the third does not.** `packages/@n8n/expression-runtime/ARCHITECTURE.md` is blob `d4d9c5b` at both, and `.agents/skills/spec-driven-development/SKILL.md` is `57470f1` at both. `.agents/review-rules/README.md` moved from `28140c5` to `b95b525`, in two hunks. The two hunks are the `security/` scope row of the Layout table, and a new paragraph under step 3 of *Adding a rule*. **Neither hunk reaches the three lines that the third fix rewrites**, which are lines 25 to 27 and identical at both. So a fix cut from the pin still applies to all three, and the reason is a line-level comparison rather than a whole-file one. This was measured on 2026-09-08 and it goes stale the same way every other number in this section does.
 
 | defect | commit | what the fix writes | the rule that reported it |
 |---|---|---|---|
@@ -447,23 +447,23 @@ The fixes stand on the branch [`fix-agents-doc-defects`](https://github.com/head
 
 **The rule column reads `none` three times, and that is the result rather than a gap in the table.** Each fix here was found by a person reading, by a graph fact that no rule consumes, or by a sampler. Whether an unresolved prose link should become a finding is one open obligation of this repository. Whether a stated practice that no artifact backs should become a rule is [#496](https://github.com/headwater-ai/headwater/issues/496), and defect 2 is one instance of it.
 
-**No fixture copy was touched.** Two of the three fixed files are also held here as fixture copies, and [the typing note above](#what-was-typed-and-as-what) claims byte identity with the pin for those copies. Editing a copy would make that claim false and no check would report it. The fixes live on the fork and nowhere else.
+**No fixture copy was touched.** Two of the three fixed files are also held here as fixture copies. [The typing note above](#what-was-typed-and-as-what) claims byte identity with the pin for those copies. Editing a copy would make that claim false and no check would report it. The fixes live on the fork and nowhere else.
 
 ### Why nothing was sent, and what would reopen it
 
-The third Done-when bullet of [#495](https://github.com/headwater-ai/headwater/issues/495) asks for a pull request against `n8n-io/n8n`. **Nothing was posted, and that is a decision rather than an omission.** n8n's [CONTRIBUTING.md](https://github.com/n8n-io/n8n/blob/master/CONTRIBUTING.md) gates an incoming change three ways, and an autonomous run satisfies none of them.
+The third Done-when bullet of [#495](https://github.com/headwater-ai/headwater/issues/495) asks for a pull request against `n8n-io/n8n`. **Nothing was posted, and that is a decision rather than an omission.** Its [CONTRIBUTING.md](https://github.com/n8n-io/n8n/blob/master/CONTRIBUTING.md) gates an incoming change three ways, and an autonomous run satisfies none of them.
 
 - **A bug fix needs a linked issue first.** Section 1 states that a bug-fix pull request with no linked issue is returned. Filing that issue is a claim on n8n's tracker, and it belongs to a person.
 - **A typo-only pull request is rejected.** Section 5 asks that a small fix go into a larger related change. Defect 1 on its own is exactly the shape that rule names.
 - **The description must be the author's own words.** Section 4 requires the author to understand every line and to write the description themselves, and it forbids pasted model output. Section 3 closes a pull request with no real description, and section 6 closes one with no tests after 14 days.
 
-So this run prepared everything and posted nothing. The commits are on the fork. The upstream issue text is in [`.headwater/notes/n8n-upstream/issue.md`](https://github.com/headwater-ai/headwater/blob/main/.headwater/notes/n8n-upstream/issue.md) and the pull-request body is in [`.headwater/notes/n8n-upstream/pull-request.md`](https://github.com/headwater-ai/headwater/blob/main/.headwater/notes/n8n-upstream/pull-request.md). Both are drafts for a person to rewrite in their own words and to send under their own name, with the disclosure that section 4 invites.
+So this run prepared everything and posted nothing. The commits are on the fork. The upstream issue text is in [`.headwater/notes/n8n-upstream/issue.md`](https://github.com/headwater-ai/headwater/blob/main/.headwater/notes/n8n-upstream/issue.md) and the pull-request body is in [`.headwater/notes/n8n-upstream/pull-request.md`](https://github.com/headwater-ai/headwater/blob/main/.headwater/notes/n8n-upstream/pull-request.md). Both are drafts for a person to rewrite in their own words and to send under their own name. They should carry the disclosure that section 4 invites.
 
 **What reopens it:** the owner of this repository says to post, or n8n drops the linked-issue gate and the own-words gate. The upstream half is [#729](https://github.com/headwater-ai/headwater/issues/729), which carries the branch, the two drafts and the bar for sending. It stays open on a person, and this document records why rather than leaving a reader to guess.
 
 ## What this did not cover
 
-Sending any finding of the skills corpus upstream, or fixing one, which is [#495](https://github.com/headwater-ai/headwater/issues/495). Typing that corpus is no longer outstanding: [#509](https://github.com/headwater-ai/headwater/issues/509) was blocked on a procedure-shaped kind, the `diataxis-site` entry declares one, and *The skills corpus, typed* above is the run.
+Sending any finding of the skills corpus upstream, or fixing one, which is [#495](https://github.com/headwater-ai/headwater/issues/495). Typing that corpus is no longer outstanding. [#509](https://github.com/headwater-ai/headwater/issues/509) was blocked on a procedure-shaped kind, the `diataxis-site` entry declares one, and *The skills corpus, typed* above is the run.
 
 A census of all 22 review-rule files as typed documents. Seven is the sample, and #508's own scope note sets that bar.
 
