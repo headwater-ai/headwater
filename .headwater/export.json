@@ -9805,7 +9805,7 @@
           "id": "HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on",
           "status": "current",
           "status_since": "2026-09-11",
-          "summary": "Every traceability edge in this corpus is hand entry under a creator value that names a hook, and this asks whether an agent supplies the identifier with nobody asking for one.",
+          "summary": "No verb writes a traceability edge in this corpus, so a person types every one, and this asks whether an agent supplies the identifier with nobody asking for one.",
           "last_verified": "2026-09-11",
           "probe_category": "navigability",
           "expectation": "cited",
