@@ -677,7 +677,9 @@ pub fn run(
     // The drift rule, over the relations that can carry a revision: the ones
     // an importer may write, and the ones onto an anchor kind. See [`suspect`].
     let suspect = suspect::Suspect::over(declared.relations, declared.shape);
-    let reciprocity = reciprocity::Reciprocity::over(declared.relations);
+    // A lone half written by a document at an initial state is owed nothing
+    // yet. See [`reciprocity`].
+    let reciprocity = reciprocity::Reciprocity::over(declared.relations, declared.shape);
     let endpoints = endpoint::Endpoints::over(declared.relations, declared.shape);
     // A live document resting on a terminal one, over the relations whose
     // family a core requirement declares `lifecycle_sensitive`. Edge-scoped
@@ -715,7 +717,11 @@ pub fn run(
     // store reaches them through the view, which is what puts it in the key.
     // See [`claim`].
     let claim_missing = claim::Missing::over(declared.shape, declared.taxonomy, &graph.index);
-    let claim_stale = claim::Stale::over(&declared.config.identifier_facet, &graph.index);
+    let claim_stale = claim::Stale::over(
+        &declared.config.identifier_facet,
+        declared.shape,
+        &graph.index,
+    );
     let voice = voice::Voice::over(declared.shape);
     let language = language::Language::over(declared.shape);
     let retired = retired::Retired::over(declared.shape);

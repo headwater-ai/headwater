@@ -436,12 +436,16 @@ fn render_plan(plan: &Plan) -> String {
             "  edge {} -> {} [created_by: {}]\n",
             edge.relation, edge.target, edge.created_by
         ));
-        match &edge.reciprocal {
-            Some(half) => out.push_str(&format!(
+        match (&edge.reciprocal, &edge.owed) {
+            (Some(half), _) => out.push_str(&format!(
                 "    far half `{}` into {}\n",
                 half.relation, half.path
             )),
-            None => out.push_str("    no far half\n"),
+            (None, Some(owed)) => out.push_str(&format!(
+                "    far half `{}` owed by {} once it leaves `{}`\n",
+                owed.half.relation, owed.half.path, owed.until
+            )),
+            (None, None) => out.push_str("    no far half\n"),
         }
     }
     let assisted = plan.assisted();

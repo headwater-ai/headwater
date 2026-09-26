@@ -22,6 +22,21 @@
 //! carries is what says which end wrote it, so the test is that both directions
 //! are present on one triple.
 //!
+//! # A draft writer owes nothing yet
+//!
+//! The far half is owed only once the document that wrote the one half that
+//! exists has left its initial state
+//! ([HW-DR-0086](../../../../docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md)).
+//! A pair with one half, written by a document whose state carries the role
+//! `initial`, passes. The writer is read through
+//! [`crate::lifecycle_state::StateFacet::standing`], the one reader of that
+//! role, so no state name is written here, and `headwater new` defers on the
+//! same predicate. A writer this rule cannot read a state from (no state facet,
+//! no value, or a value that is not a state) defers nothing, which keeps the
+//! behavior the check had before the deferral. The deferral follows the writer
+//! and never the target: a live document that writes its half onto a draft is
+//! reported, and the draft owes the half now.
+//!
 //! # Where the finding reports, and where the fix goes
 //!
 //! Against the document that *did* write its half, at the line of the entry it
@@ -47,7 +62,9 @@
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
+use crate::lifecycle_state::{Standing, StateFacet, Stood};
 use crate::scope::{EdgeCheck, EdgeView};
+use crate::shape::Shape;
 use headwater_graph::declarations::Relation;
 use headwater_graph::{Declarations, Reciprocal, Target};
 
@@ -67,16 +84,20 @@ const NO_RELATION: &str = "no declaration holds the relation this pair declares"
 pub struct Reciprocity<'a> {
     /// The relations that say `required`, which is the generation step in full.
     required: Vec<&'a Relation>,
+    /// The state facet, read for the writer of a lone half. See the module
+    /// comment.
+    facet: StateFacet,
 }
 
 impl<'a> Reciprocity<'a> {
-    pub fn over(declarations: &'a Declarations) -> Self {
+    pub fn over(declarations: &'a Declarations, shape: &Shape) -> Self {
         Reciprocity {
             required: declarations
                 .relations
                 .iter()
                 .filter(|relation| relation.reciprocal == Reciprocal::Required)
                 .collect(),
+            facet: StateFacet::of(shape),
         }
     }
 }
@@ -84,7 +105,8 @@ impl<'a> Reciprocity<'a> {
 impl EdgeCheck for Reciprocity<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
-    const VERSION: u32 = 1;
+    /// 2: a lone half written by a document at an initial state passes.
+    const VERSION: u32 = 2;
 
     fn instantiates(&self, relation: &str) -> bool {
         self.required.iter().any(|known| known.name == relation)
@@ -100,6 +122,17 @@ impl EdgeCheck for Reciprocity<'_> {
             (None, Some(edge)) => (edge, Missing::TheDeclaredHalf),
             (None, None) => return Outcome::Skipped(NO_HALF.to_string()),
         };
+
+        // With one half, the declaring document is the writer, because the view
+        // keys the instance on the one half that exists. A writer at an initial
+        // state owes nothing yet. See the module comment.
+        if let Some(facets) = view.declarer_facets() {
+            if let Stood::At(state) = self.facet.stood(facets) {
+                if self.facet.standing(state) == Standing::Initial {
+                    return Outcome::Passed;
+                }
+            }
+        }
 
         let Some(relation) = self
             .required

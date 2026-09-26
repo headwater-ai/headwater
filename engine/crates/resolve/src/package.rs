@@ -1156,6 +1156,130 @@ pub fn publish_from_delivered(
     publish_at(root, directory, &manifest, out)
 }
 
+/// What [`check_vendored`] found: the vendored copy it compared, the record a
+/// fresh publish of the source wrote, and every way the two differ.
+#[derive(Clone, Debug)]
+pub struct Checked {
+    /// The directory under `.headwater/packages/` whose manifest declares the
+    /// source's name.
+    pub vendored: PathBuf,
+    /// The record of the fresh publish, which is what the vendored copy is
+    /// compared against.
+    pub fresh: Release,
+    /// The digest the vendored copy's own record states.
+    pub vendored_digest: String,
+    /// Each member that moved, read as the vendored copy against the fresh
+    /// record: a member whose bytes differ, a member the fresh publish writes
+    /// that the vendored copy lacks, and a file the vendored copy carries that
+    /// the fresh publish does not write.
+    pub moved: Vec<release::Divergence>,
+    /// The vendored `release.yml` does not state what the fresh record states:
+    /// the package, the version, the engine range, the digest and every member
+    /// with its digest. No member divergence reports it, because the record is
+    /// not its own member. It compares what the record says and not its bytes,
+    /// so a comment header an engine release rewords does not read as stale.
+    pub record_moved: bool,
+}
+
+impl Checked {
+    /// The vendored copy is what a fresh publish of the source produces.
+    pub fn fresh(&self) -> bool {
+        // `record_moved` compares the digest too, so a digest that differs is
+        // never fresh even where every member agrees.
+        self.moved.is_empty() && !self.record_moved
+    }
+}
+
+/// A private directory outside every tree, removed on every exit path.
+struct Scratch(PathBuf);
+
+impl Scratch {
+    fn new() -> Result<Scratch, Vec<ResolveError>> {
+        static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|elapsed| elapsed.as_nanos())
+            .unwrap_or(0);
+        let at = std::env::temp_dir().join(format!(
+            "headwater-publish-check-{}-{nanos}-{}",
+            std::process::id(),
+            COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        ));
+        std::fs::create_dir_all(&at).map_err(|error| {
+            refusal(
+                &at.display().to_string(),
+                &format!("cannot make the directory a check publishes into: {error}"),
+            )
+        })?;
+        Ok(Scratch(at))
+    }
+}
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+/// `taxonomy publish --from <dir> --check`: whether the vendored copy of a
+/// package is what a fresh publish of its maintained source produces (#1139).
+///
+/// It publishes the source through [`publish_from_delivered`], the path a real
+/// publish takes, so every refusal of a publish is a refusal here too. The
+/// artifact goes to a private directory outside the tree, which is removed on
+/// every exit path, so the check writes nothing a person can see. The vendored
+/// copy is the directory under `.headwater/packages/` whose manifest declares
+/// the source's `package:` name, found by the lookup `--package` makes, and it
+/// must carry a release record. [`release::diverged`] then reads the vendored
+/// bytes against the fresh record.
+pub fn check_vendored(root: &Path, directory: &Path) -> Result<Checked, Vec<ResolveError>> {
+    let manifest = manifest_at(directory)?;
+    let source_manifest = directory.join(MANIFEST).display().to_string();
+    let Some(name) = text(&manifest, "package") else {
+        return Err(refusal(
+            &source_manifest,
+            "the source manifest declares no `package:` name, so nothing says which vendored copy to compare",
+        ));
+    };
+    let (vendored, _) = find(root, &name)?;
+    if vendored.canonicalize().ok() == directory.canonicalize().ok() {
+        return Err(refusal(
+            &source_manifest,
+            &format!(
+                "`--from` names the vendored copy of `{name}` itself, so there is no source to \
+                 compare it with. Name the maintained source"
+            ),
+        ));
+    }
+    let vendored_record = release::at(&vendored).map_err(|error| {
+        refusal(
+            &display(root, &vendored),
+            &format!(
+                "the directory that declares `{name}` carries no readable release record, so it \
+                 is not a vendored copy: {error}"
+            ),
+        )
+    })?;
+
+    let scratch = Scratch::new()?;
+    let out = scratch.0.join("artifact");
+    let published = publish_from_delivered(root, directory, &out)?;
+    let moved = release::diverged(&vendored, &published.release).map_err(|error| {
+        refusal(
+            &display(root, &vendored),
+            &format!("cannot read the vendored copy: {error}"),
+        )
+    })?;
+    let record_moved = published.release != vendored_record;
+    Ok(Checked {
+        vendored,
+        fresh: published.release,
+        vendored_digest: vendored_record.digest,
+        moved,
+        record_moved,
+    })
+}
+
 /// Write the flattened artifact a named assembly derives from a package found
 /// under `.headwater/packages/`.
 pub fn publish_assembly(

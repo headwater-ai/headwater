@@ -445,9 +445,16 @@ def main():
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '0', today)
 
         # Step 12.
-        commands = used(31).strip('\n').split('\n')
-        run(commands[0])
-        result = run(commands[1])
+        # The promotion is an edit the reader makes by hand, as step 5's is, so
+        # this makes it. The far half is owed only once the new decision
+        # leaves its initial state (HW-DR-0086), which is what the finding
+        # below reports.
+        path = os.path.join(cwd['at'], 'docs/decisions/0002-deliver-at-least-once.md')
+        source = open(path).read()
+        assert_true('step 12: the new decision opens at draft',
+                    '\nstatus: draft\n' in source, source[:200])
+        open(path, 'w').write(source.replace('\nstatus: draft\n', '\nstatus: current\n', 1))
+        result = run(used(31).strip())
         cut('step 12: the finding', result.stdout, 32)
         cut('step 12: the head of the register', result.stdout, 33)
         cut('step 12: every rule reaches one obligation', result.stdout, 34)

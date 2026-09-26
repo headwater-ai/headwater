@@ -361,23 +361,23 @@ Trimmed to the two blocks that matter:
 
 ```
 wrote docs/decisions/0002-deliver-at-least-once.md
-edited docs/decisions/0001-store-attempts-in-postgres.md
 ```
 
 ```
 the edges it proposed
   supersedes ACME-DR-0001 — `created_by: scaffold`, so a scaffold pays for it
-    the far half `superseded_by` went into docs/decisions/0001-store-attempts-in-postgres.md, because reciprocity is required
+    the far half `superseded_by` is owed by docs/decisions/0001-store-attempts-in-postgres.md once this document leaves `draft`, and `headwater check --fix` writes it then
 ```
 
 **Check.** `headwater check --strict > /dev/null 2>&1; echo $?` prints `0`.
 
-A **relation** is a typed edge between two documents, and it names its target by identifier rather than by path. A path dies at the first rename and an identifier does not. `supersedes` requires both ends, so the verb wrote the far half into the target for you. Two documents now carry one edge between them.
+A **relation** is a typed edge between two documents, and it names its target by identifier rather than by path. A path dies at the first rename and an identifier does not. `supersedes` requires both ends. The new decision is a draft, and nothing may rely on a draft yet, so the verb left the target alone. The far half is owed only once the new decision leaves `draft`.
 
-### Step 12 — Break one half, and read the finding
+### Step 12 — Promote the new decision, and read the finding
+
+Open `docs/decisions/0002-deliver-at-least-once.md`. Change `status: draft` to `status: current`. A document states the state it will hold once your change lands, so a decision you propose as settled is `current`.
 
 ```sh
-git checkout -- docs/decisions/0001-store-attempts-in-postgres.md
 headwater check
 ```
 
@@ -397,7 +397,7 @@ Trimmed to the findings block:
 
 **Check.** `headwater check --strict > /dev/null 2>&1; echo $?` prints `1`.
 
-The `git checkout` put the target back to the version you committed, which is the version before the far half arrived. One edge now has one end.
+The new decision is live now, so the far half is owed. One edge has one end.
 
 Read the identifier in parentheses. An **obligation** is a claim this system makes about itself, with the rule that verifies it named beside it. `OB-REL-1` is the obligation that this rule discharges, and every finding names the one it serves.
 

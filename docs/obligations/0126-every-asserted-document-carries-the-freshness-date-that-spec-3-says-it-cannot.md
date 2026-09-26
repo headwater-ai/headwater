@@ -25,7 +25,7 @@ relations:
 
 The pairing table beside it names what each warrant requires and what it forbids. `asserted` requires `drafted_by`, `activity` and the sources that produced the content, and it forbids `accepted_by`. The table says nothing about `last_verified`, so the ruling stands in the paragraph alone.
 
-The facet contract answers the other way. `last_verified` is in the `freshness` role, every kind that carries the facet requires it, and `facet.required.missing` reports its absence as an error. A document with the `asserted` warrant and no `last_verified` therefore fails the commit gate. This record was drafted after a run of `headwater check` reported exactly that against a new decision.
+The facet contract answers the other way. `last_verified` is in the `freshness` role, every kind that carries the facet requires it, and `facet.required.missing` reports its absence as an error. A document with the `asserted` warrant and no `last_verified` therefore fails the commit gate. This record was drafted after a run of `headwater check` reported exactly that against a new decision. That decision was [HW-DR-0024](../decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md), for Q24, which is the first decision here drafted with the `asserted` warrant. The commit gate refused it.
 
 ## Obligation
 
