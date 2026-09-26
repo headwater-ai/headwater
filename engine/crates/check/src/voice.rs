@@ -123,7 +123,7 @@ const CATEGORIES: [Category; 3] = [
             "will be",
             "will become",
             "will then",
-            "will eventually",
+            // MUTANT "will eventually",
             "will later",
             "is planned",
             "are planned",
@@ -205,7 +205,7 @@ const CATEGORIES: [Category; 3] = [
             "in the old",
             "the previous version",
             "an earlier version",
-            "there was no",
+            // MUTANT "there was no",
             "there were no",
             "did not exist",
             "has since",
@@ -593,6 +593,57 @@ mod tests {
                 "no pattern matched `{sentence}`, and the ruling of 2026-09-11 records that one does"
             );
         }
+    }
+
+    /// The two findings of the census of 2026-09-27 that the rulings of #606
+    /// rest on, verbatim from the corpus of `0ee88a2d`. Each one runs the real
+    /// path, from the scan to `Sentence::authored` to `matched`, and each one
+    /// names the pattern it expects, so a narrowing that moves the finding to
+    /// another pattern meets this case as well as one that drops it.
+    ///
+    /// **`future_intent` reports one finding, and the finding is false.** It
+    /// is `docs/taxonomies/diataxis/doctrine.md:46`, and it is the first finding
+    /// this category has reported on this corpus. It is a sixth mode, a general
+    /// prediction stated as a property of a thing, and nothing about this
+    /// system is planned in it. A reader who sees the count move from 0 to 1
+    /// and reads it as a set that woke up meets this case first.
+    ///
+    /// **A decision record's `## Context` answers to the rule like any other
+    /// section.** The second source is `docs/decisions/0008-probe-cost-and-cadence.md:26`,
+    /// with its heading. The module comment states the ruling and its price.
+    /// This case holds the half that the parse owns: the heading does not
+    /// keep the sentence from a pattern. A section scope added to `evaluate`
+    /// would not fail it, and the ruling is where that change is weighed.
+    #[test]
+    fn the_rulings_of_2026_09_27_still_match() {
+        let first = |category: &Category, source: &str| {
+            let body = headwater_doc::body::scan(source, source, 0);
+            headwater_doc::sentences::of(&body)
+                .iter()
+                .find_map(|sentence| matched(category, sentence))
+        };
+
+        let intent = &CATEGORIES[0];
+        assert_eq!(intent.name, "future_intent");
+        assert_eq!(
+            first(
+                intent,
+                "Spec 2 names orthogonality over two facets that are near-perfectly correlated: the redundant one does no work and will eventually disagree with the other.\n"
+            ),
+            Some("will eventually"),
+            "the one `future_intent` finding of 2026-09-27 stopped matching, and the census records it as a false positive that does"
+        );
+
+        let narration = &CATEGORIES[1];
+        assert_eq!(narration.name, "change_narration");
+        assert_eq!(
+            first(
+                narration,
+                "## Context\n\nThere was no declaration, no authored form, no owner, and no definition of the declared expectation that the grader compares against.\n"
+            ),
+            Some("there was no"),
+            "a `## Context` narration stopped reaching `change_narration`, and the ruling of 2026-09-27 declines section scoping"
+        );
     }
 
     /// The pair that replaces the inline-quotation entry above, and the reason
