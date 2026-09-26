@@ -24,10 +24,12 @@ handful of ordinary shell verbs this repository's own commands already use
 for scaffolding (`git`, `mkdir`, `cd`, `printf`, `rm`). The release
 download passes through an allowlist of what the tutorial's block runs: a
 `curl` passes only when every token is `-fsSLO` or a subset of it, or a URL
-under this project's `releases/download/` path, and a `tar` passes only
-when every option is `-xzf` or a subset of it, or `-C`. Anything else in
-either piece refuses it, because curl and GNU tar both accept spellings a
-denylist does not name.
+of a `.tar.gz` or `.tar.gz.sha256` under this project's `releases/download/`
+path, and a `tar` passes only when every option is `-xzf` or a subset of
+it, or `-C`. Every word must also be plain text the shell hands over
+unchanged, with no quote, escape, brace or glob, and a tar operand names no
+host. Anything else in either piece refuses it, because curl and GNU tar
+both accept spellings a denylist does not name.
 
 **`cargo` is never the lead route.**
 [HW-DR-0077](../../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)
@@ -103,13 +105,25 @@ CARGO_ALLOWED_SUBCOMMANDS = frozenset({'install', 'build'})
 # `CURL_ALLOWED_SHORT` or a URL that `RELEASE_DOWNLOAD_URL` matches in full.
 # No long option, no bare operand, no percent-encoding, no glob and no `..`.
 RELEASE_DOWNLOAD_URL = re.compile(
-    r'^https://github\.com/headwater-ai/headwater/releases/download/[A-Za-z0-9._/-]+$')
+    r'^https://github\.com/headwater-ai/headwater/releases/download/'
+    r'[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*\.tar\.gz(\.sha256)?$')
 CURL_ALLOWED_SHORT = frozenset('fsSLO')
 
 # `tar`: the first operand is a dash cluster drawn from `TAR_ALLOWED_SHORT`,
 # every later dash token is such a cluster or `-C`, and no long option is
 # admitted. A bare token is a file or member operand.
 TAR_ALLOWED_SHORT = frozenset('xzf')
+
+# Every word of a `curl` or `tar` piece is read as the text the shell will
+# hand the program, so a word must be one whose text the shell leaves alone:
+# no quote, backslash, brace, glob character, `$`, `=` or `@`, and a `~`
+# only at its start, where it expands to a home directory. Anything else is
+# refused rather than unquoted by hand here, because a second shell parser
+# is what the verifier's quoted `--to-command` spellings got past. A tar
+# operand also carries no `:`, which GNU tar reads as `host:path`, a remote
+# archive. The release URL is matched on its own by `RELEASE_DOWNLOAD_URL`,
+# whose character class admits none of these either.
+PLAIN_WORD = re.compile(r'^~?[A-Za-z0-9._/-]+$')
 
 # A curl/wget fetch naming the bootstrap script, and a bare shell taking its
 # output — the two pieces the one declared exception's pipe-split resolves
@@ -250,7 +264,8 @@ def is_release_download(piece):
     urls = 0
     for token in tokens[1:]:
         if token.startswith('-') and not token.startswith('--'):
-            if len(token) < 2 or not set(token[1:]) <= CURL_ALLOWED_SHORT:
+            if (len(token) < 2 or not PLAIN_WORD.match(token)
+                    or not set(token[1:]) <= CURL_ALLOWED_SHORT):
                 return False
         elif RELEASE_DOWNLOAD_URL.match(token) and '..' not in token:
             urls += 1
@@ -263,13 +278,18 @@ def check_tar(tokens):
     """Whether a `tar` piece only unpacks, as an allowlist: the first
     operand is a dash cluster drawn from `TAR_ALLOWED_SHORT`, so it is never
     read as old-style options. Every later dash token is such a cluster or
-    `-C`. No long option passes, whatever prefix of one it spells."""
+    `-C`. No long option passes, whatever prefix of one it spells. Every
+    word is a `PLAIN_WORD`, so no quoting, escaping or expansion can turn a
+    word this reads as an operand into an option, and no operand names a
+    host."""
     def cluster(token):
         return (token.startswith('-') and not token.startswith('--')
                 and len(token) > 1 and set(token[1:]) <= TAR_ALLOWED_SHORT)
     if len(tokens) < 2 or not cluster(tokens[1]):
         return False
     for token in tokens[2:]:
+        if not PLAIN_WORD.match(token):
+            return False
         if token.startswith('-') and token != '-C' and not cluster(token):
             return False
     return True
@@ -486,6 +506,16 @@ REGRESSION_CASES = [
     ('tar reading its archive from standard input is undeclared',
      'tar -xzf -',
      ['tar -xzf -']),
+    ('curl fetching a release file that is not an archive or its checksum '
+     'is undeclared',
+     'curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+     'v1/.bashrc',
+     ['curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+      'v1/.bashrc']),
+    ('the checksum download is not undeclared',
+     'curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+     'v0.2.1/headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz.sha256',
+     []),
     ('curl with a quoted release URL is undeclared',
      'curl -fsSLO "https://github.com/headwater-ai/headwater/releases/download/'
      'v0.2.1/x.tar.gz"',
