@@ -92,21 +92,16 @@ impl Root {
     /// This repository's maintained source, copied to where `--package` looks
     /// a package up, with no library beside it.
     fn copied(label: &str) -> Root {
-        let at = std::env::temp_dir().join(format!(
-            "headwater-cli-publish-{}-{label}",
-            std::process::id()
-        ));
-        let _ = std::fs::remove_dir_all(&at);
-        std::fs::create_dir_all(&at).expect("the root is made");
+        let root = Root::scratch(label);
         copy(
             &repository().join("taxonomy-source/headwater-standard"),
-            &at.join(".headwater/packages/headwater-standard"),
+            &root.0.join(".headwater/packages/headwater-standard"),
         );
         assert!(
-            !at.join("docs/taxonomies").exists(),
+            !root.0.join("docs/taxonomies").exists(),
             "the library the manifest points at must not be in the copy"
         );
-        Root(at)
+        root
     }
 
     fn publish(&self, out: &Path) -> (Option<i32>, String) {

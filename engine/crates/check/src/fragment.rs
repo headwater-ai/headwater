@@ -570,12 +570,41 @@ mod comment_links {
         assert!(!real.contains(&"the-four-scopes".to_string()));
     }
 
+    /// A directory under the temporary directory that is removed when this value
+    /// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+    struct Scratch(std::path::PathBuf);
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    impl std::ops::Deref for Scratch {
+        type Target = std::path::Path;
+        fn deref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::path::Path> for Scratch {
+        fn as_ref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::ffi::OsStr> for Scratch {
+        fn as_ref(&self) -> &std::ffi::OsStr {
+            self.0.as_os_str()
+        }
+    }
+
     /// A directory nothing else in this process writes into.
     ///
     /// The process identifier alone is not a key here, because cargo runs the
     /// cases of one target as threads of one process (#189). The test's own
     /// name and the clock carry the rest.
-    fn scratch(name: &str) -> PathBuf {
+    fn scratch(name: &str) -> Scratch {
         let nanos = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("a clock later than the epoch")
@@ -585,7 +614,7 @@ mod comment_links {
             std::process::id()
         ));
         std::fs::create_dir_all(&dir).expect("a scratch directory");
-        dir
+        Scratch(dir)
     }
 
     fn write(path: &Path, body: &str) {
