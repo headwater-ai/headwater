@@ -5512,9 +5512,10 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
         ctx,
         &mut cache,
     );
-    if let Err((path, error)) = cache.write(root) {
-        say(&unwritten_cache(&path, &error))?;
-    }
+    // Held for the account rather than said here. A standard error that
+    // cannot take this line must not stop the patches below, and the account
+    // is where the caller reads what this run did to the disk.
+    let unwritten = cache.write(root).err();
 
     // A suppressed finding is not in this list, which is the author asking for
     // the text to stand. The runner filters, and a fix reads what a reader
@@ -5537,7 +5538,10 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
         say(&format!("headwater: {}\n", err(&format!("{refusal}"))))?;
         return Err(ExitCode::FAILURE);
     }
-    let mut account = String::new();
+    let mut account = match unwritten {
+        Some((path, error)) => unwritten_cache(&path, &error),
+        None => String::new(),
+    };
     for file in &composed.files {
         use std::fmt::Write;
         let _ = writeln!(
@@ -5761,11 +5765,17 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     // The write, and then the read. See `fix` above: the report below is the
     // state after the patches landed, so a fix that produced a document these
     // checks reject reports it on the same run rather than on the next one.
+    //
+    // An account that did not reach standard error does not stop the report.
+    // The patches already landed, and the contract keeps standard output
+    // complete where standard error fails. The failure is the exit status,
+    // decided after the report.
+    let mut unsaid = false;
     let refused = match fixing {
         false => Vec::new(),
         true => match fix(root, &ctx, cached) {
             Ok(fixed) => {
-                say(&fixed.account)?;
+                unsaid = say(&fixed.account).is_err();
                 fixed.refused
             }
             Err(code) => return Ok(code),
@@ -5894,6 +5904,9 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     say(&run.cache.render())?;
     if let Some((path, error)) = unwritten {
         say(&unwritten_cache(&path, &error))?;
+    }
+    if unsaid {
+        return Ok(ExitCode::FAILURE);
     }
 
     if !refused.is_empty() {

@@ -618,7 +618,7 @@ fn a_fix_whose_account_cannot_be_written_still_patches_and_reports() {
     let root = common::Root::shaped("json-fix-stderr-full", |at| {
         let path = at.join(DOCUMENT);
         let mut text = std::fs::read_to_string(&path).expect("the document reads");
-        text.push_str("\nThe behaviour of the colour.\n");
+        text.push_str("\nThe behaviour of the corpus.\n");
         std::fs::write(&path, text).expect("the document writes");
     });
     std::fs::write(root.at.join(".headwater/cache"), "not a directory\n")
@@ -636,7 +636,7 @@ fn a_fix_whose_account_cannot_be_written_still_patches_and_reports() {
         .expect("the binary runs");
     let patched = std::fs::read_to_string(root.at.join(DOCUMENT)).expect("the document reads");
     assert!(
-        patched.contains("The behavior of the color.") && !patched.contains("behaviour"),
+        patched.contains("The behavior of the corpus.") && !patched.contains("behaviour"),
         "the patch landed although standard error failed: {patched}"
     );
     assert_eq!(
