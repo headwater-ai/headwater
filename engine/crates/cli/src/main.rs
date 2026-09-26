@@ -1438,7 +1438,7 @@ fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
     // ledger is what a check run says about the payload, and re-deriving it here
     // would be the second account of one tree that `take` exists to refuse.
     let reading = headwater_audit::reading::Reading::of(
-        &run_of(&loaded, &context).adoption,
+        &run_of(root, &loaded, &context).adoption,
         &loaded.bound.digest,
         context.now(),
     );
@@ -3101,8 +3101,8 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     // A second run of either side would be a second reading of one question,
     // and `consequence` and `instance_validity` would then be able to disagree
     // about a corpus that changed between them.
-    let before = run_of(&taking, &ctx);
-    let after = run_of(&against, &ctx);
+    let before = run_of(root, &taking, &ctx);
+    let after = run_of(root, &against, &ctx);
     let identity = taking.identity();
 
     // The two dimensions a migration step is a remedy for, and each one answers
@@ -3407,14 +3407,14 @@ fn unreachable_by_a_step(broken: &std::collections::BTreeSet<String>) -> bool {
 /// `taxonomy audit` reuses it for a second reason that reaches the same answer:
 /// that verb gates nothing and exits 0 whatever it reads, so a report of it
 /// should not leave cache entries behind as a side effect of being run.
-fn run_of(loaded: &Loaded, ctx: &Context) -> headwater_check::Run {
+fn run_of(root: &Path, loaded: &Loaded, ctx: &Context) -> headwater_check::Run {
     let mut cache = Cache::disabled();
     headwater_check::run(
         &loaded.census,
         &loaded.graph,
         &loaded.declared(),
         &loaded.claims,
-        ctx,
+        &loaded.check_context(ctx.clone(), root),
         &mut cache,
     )
 }
@@ -3787,6 +3787,34 @@ impl Loaded {
             package: self.bound.package.clone(),
             version: self.bound.version.clone(),
             lock: self.bound.digest.clone(),
+        }
+    }
+
+    /// The context a check run over this corpus takes, told which marked files
+    /// the projection plan claims no output for (#1137).
+    ///
+    /// Every call of `headwater_check::run` in this binary goes through here,
+    /// because the check crate cannot build the plan itself: the generate crate
+    /// depends on it. The plan costs about as much as the cached check it
+    /// feeds, so it is built only where the one rule that reads the set can
+    /// fire, which is a taxonomy with two setter relations that name two
+    /// states. A taxonomy whose projections do not read hands the context back
+    /// unchanged, because `headwater generate` reports that failure itself and
+    /// a check that refused over it would report it a second time.
+    fn check_context(&self, ctx: Context, root: &Path) -> Context {
+        if !headwater_check::state_set_twice::StateSetTwice::over(&self.relations, &self.shape)
+            .can_clash()
+        {
+            return ctx;
+        }
+        match plan_of(root, self, &self.identity()) {
+            Ok(plan) => ctx.with_orphaned(
+                plan.orphaned
+                    .into_iter()
+                    .map(|orphaned| orphaned.path)
+                    .collect(),
+            ),
+            Err(_) => ctx,
         }
     }
 }
@@ -5681,7 +5709,7 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
         &loaded.graph,
         &loaded.declared(),
         &loaded.claims,
-        ctx,
+        &loaded.check_context(ctx.clone(), root),
         &mut cache,
     );
     // Held for the account rather than said here. A standard error that
@@ -5815,7 +5843,7 @@ fn fix_over(root: &Path, ctx: &Context, format: Format) -> Result<Written, Strin
         &loaded.graph,
         &loaded.declared(),
         &loaded.claims,
-        ctx,
+        &loaded.check_context(ctx.clone(), root),
         &mut cache,
     );
     let subject = Subject {
@@ -5976,6 +6004,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
             ctx.scoped_to(unbound.bind(|path| taken.rows.iter().any(|row| row.path == path)))
         }
     };
+    let ctx = loaded.check_context(ctx, root);
 
     // Phase B. The cache is keyed on the lock digest among other things, so a
     // taxonomy that moved invalidates every entry without anyone clearing a
@@ -6226,7 +6255,7 @@ fn infer(
             source: headwater_lock::LOCK,
         },
         &loaded.claims,
-        &ctx,
+        &loaded.check_context(ctx.clone(), root),
         &mut Cache::disabled(),
     );
 
