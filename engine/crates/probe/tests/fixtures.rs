@@ -500,7 +500,9 @@ fn an_absent_calls_key_is_not_a_session_that_opened_nothing() {
         witnessed.witness.is_none(),
         "an unwatched session produced a witness"
     );
-    assert!(staleness.render(ColorMode::Plain).contains("recorded no `calls` key"));
+    assert!(staleness
+        .render(ColorMode::Plain)
+        .contains("recorded no `calls` key"));
 }
 
 /// A path a call named that this corpus classifies no document at is on no read
