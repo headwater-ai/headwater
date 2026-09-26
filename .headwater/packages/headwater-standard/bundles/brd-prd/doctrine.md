@@ -75,7 +75,7 @@ The nuclearity is what this entry is for, and [spec 2](https://github.com/headwa
 
 **One honest wrinkle.** A product requirements document written with no business document above it is common practice rather than a defect. Plenty of teams keep only a PRD. The nuclearity is still right, because it is a claim about this tradition's two-document shape. A corpus that keeps product documents alone is not running this tradition. The declaration reports the missing half only when a corpus opts into the shape. The expectation sits on `brd`, and no expectation sits on `prd`.
 
-`created_by: scaffold`, on the argument the design-spec entry used for `applied_in`. The run that opens a product document from a business one writes both halves of the edge. No relation here is `created_by: author`, so this entry owes no author-edge sentence under the rule the [library index](../README.md#one-rule-of-the-base-is-not-a-criterion-here) states.
+`created_by: scaffold`, on the argument the design-spec entry used for `applied_in`. The run that opens a product document from a business one writes the product document's half of the edge. The product document opens at an initial state, so the run writes no half into the business document and reports that half as owed. The business document owes it once the product document is promoted, and `headwater check --fix` writes it then ([HW-DR-0086](https://github.com/headwater-ai/headwater/blob/main/docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md)). No relation here is `created_by: author`, so this entry owes no author-edge sentence under the rule the [library index](../README.md#one-rule-of-the-base-is-not-a-criterion-here) states.
 
 ### Why the base's `traces_to` does not serve
 
