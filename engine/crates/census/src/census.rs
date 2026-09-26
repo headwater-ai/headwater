@@ -140,6 +140,11 @@ use headwater_doc::{ParseError, Reason};
 #[derive(Clone, Debug)]
 pub struct Census {
     pub rows: Vec<Row>,
+    /// The paths outside the corpus root that a language regime lists, which
+    /// are not rows. See [`crate::outside`] for why they stay out of the
+    /// denominator. Empty from [`take`], and filled by
+    /// [`crate::outside::take`] where a caller has the regimes in hand.
+    pub outside: crate::outside::Outside,
 }
 
 #[derive(Clone, Debug)]
@@ -284,7 +289,10 @@ pub fn take(corpus: &Corpus, taxonomy: &Taxonomy) -> Census {
             }
         })
         .collect();
-    Census { rows }
+    Census {
+        rows,
+        outside: crate::outside::Outside::default(),
+    }
 }
 
 /// What one file gave this walk: an outcome, the document if it parsed, and
@@ -702,6 +710,14 @@ impl Census {
             for (pattern, reason, count) in exclusions {
                 out.push_str(&format!("  {count:5} `{pattern}`\n        {reason}\n"));
             }
+        }
+
+        // The paths a language regime lists outside the corpus root, on their
+        // own line and in none of the totals above. See [`crate::outside`].
+        let outside = self.outside.render();
+        if !outside.is_empty() {
+            out.push('\n');
+            out.push_str(&outside);
         }
 
         let rows = self.render_rows(detail);

@@ -255,6 +255,11 @@ pub struct LanguageRegime {
     pub source_form: Option<String>,
     /// The terms this corpus retired, in the order the regime lists them.
     pub retired_terms: Vec<RetiredTerm>,
+    /// Paths outside the corpus root that this regime holds, as patterns
+    /// relative to the repository root, in the order the regime lists them.
+    /// Empty for a regime that lists none. See
+    /// [HW-DR-0084](../../../../docs/decisions/0084-a-language-regime-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md).
+    pub outside_root: Vec<String>,
     pub span: Span,
 }
 
@@ -562,6 +567,7 @@ impl Shape {
                         profile: scalar(map, "profile"),
                         source_form: scalar(map, "source_form"),
                         retired_terms: retired_terms(map),
+                        outside_root: sequence(map, "outside_root"),
                         span: entry.key.span,
                     });
                 }
@@ -681,6 +687,20 @@ impl Shape {
             .iter()
             .find_map(|step| step.language.clone())?;
         self.language.iter().find(|regime| regime.name == name)
+    }
+
+    /// What each language regime lists outside the corpus root, for
+    /// [`headwater_census::outside::take`]. A regime that lists nothing is
+    /// left out.
+    pub fn outside_root(&self) -> Vec<headwater_census::outside::Listed> {
+        self.language
+            .iter()
+            .filter(|regime| !regime.outside_root.is_empty())
+            .map(|regime| headwater_census::outside::Listed {
+                regime: regime.name.clone(),
+                patterns: regime.outside_root.clone(),
+            })
+            .collect()
     }
 
     /// Every section a document of this kind owes, in one order.

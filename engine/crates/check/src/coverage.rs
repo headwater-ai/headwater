@@ -394,7 +394,13 @@ mod tests {
     }
 
     fn over(rows: Vec<Row>, instances: Vec<Instance>) -> Coverage {
-        Coverage::of(&Census { rows }, &instances)
+        Coverage::of(
+            &Census {
+                rows,
+                outside: Default::default(),
+            },
+            &instances,
+        )
     }
 
     /// One edge-scoped skip is one instance, and the routing holds it twice.

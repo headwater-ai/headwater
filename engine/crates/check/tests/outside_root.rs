@@ -1,0 +1,193 @@
+// SPDX-License-Identifier: Apache-2.0
+//! A language regime reaches a path outside the corpus root that it lists, and
+//! no other rule does (HW-DR-0084, clauses 2 to 6).
+//!
+//! The tree `fixtures/outside-root/` is its own repository root. Its corpus root
+//! is `docs/`, and `README.md` sits beside that root with one contraction in it.
+//!
+//! **A runner that did not read the list** reports nothing at `README.md`, which
+//! is the state before HW-DR-0084 had an implementation.
+//!
+//! **A runner that made the path a census row** moves the denominator, and hands
+//! the file to every rule, so `facet.required.missing` reports the `summary`
+//! facet that front-door prose never declares.
+//!
+//! **A runner that skipped an unmatched pattern in silence** prints no line that
+//! names `MISSING.md`.
+
+use headwater_census::census::{self, Census, Detail};
+use headwater_census::outside;
+use headwater_census::shelves::Taxonomy;
+use headwater_census::walk::Corpus;
+use headwater_check::{Cache, Context, Date, Declared, Finding, Register, Run, Shape};
+use headwater_graph::anchors::Resolvers;
+use headwater_graph::declarations::Declarations;
+use headwater_graph::{Config, Graph};
+use std::path::{Path, PathBuf};
+
+const PINNED: &str = "2026-09-27";
+const TREE: &str = "outside-root";
+const README: &str = "README.md";
+
+/// The three rules HW-DR-0084 clause 3 names, as literals.
+const LANGUAGE_RULES: [&str; 3] = [
+    "language.controlled.not_met",
+    "language.retired_term.used",
+    "language.source_form.not_met",
+];
+
+fn base() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("fixtures")
+        .join(TREE)
+}
+
+/// The census and the run, with the regime's `outside_root` replaced by
+/// `listed` when it is given and read from the fixture taxonomy when not.
+fn checked(listed: Option<&[&str]>) -> (Census, Run) {
+    let corpus = Corpus::new(base(), "docs");
+    let path = base().with_file_name(format!("{TREE}.taxonomy.yml"));
+    let source = std::fs::read_to_string(&path).expect("the fixture taxonomy");
+    let root = headwater_yaml::load(&source)
+        .expect("the fixture taxonomy loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+
+    let taxonomy = Taxonomy::read(&root).expect("the taxonomy reads");
+    let declarations = Declarations::read(&root).expect("the declarations read");
+    let register = Register::read(&root).expect("the register reads");
+    let mut shape = Shape::read(&root).expect("the shape reads");
+    if let Some(listed) = listed {
+        shape.language[0].outside_root = listed.iter().map(|p| p.to_string()).collect();
+    }
+    let mut taken = census::take(&corpus, &taxonomy);
+    taken.outside = outside::take(&corpus, &shape.outside_root());
+    let config = Config::default();
+    let graph = Graph::build(
+        &taken,
+        &declarations,
+        &Resolvers::over(&corpus),
+        &corpus,
+        &config,
+    );
+    let lock = format!("sha256:{TREE}-fixture");
+    let source = format!("engine/crates/check/fixtures/{TREE}.taxonomy.yml");
+    let run = headwater_check::run(
+        &taken,
+        &graph,
+        &Declared {
+            lock: &lock,
+            taxonomy: &taxonomy,
+            shape: &shape,
+            relations: &declarations,
+            config: &config,
+            register: &register,
+            observations: &headwater_check::Observations::empty(),
+            adoption: None,
+            source: &source,
+        },
+        &headwater_check::claim::Claims::empty(),
+        &Context::at(Date::parse(PINNED).expect("the pinned date")),
+        &mut Cache::disabled(),
+    );
+    (taken, run)
+}
+
+fn findings_at<'a>(run: &'a Run, path: &str) -> Vec<&'a Finding> {
+    run.findings
+        .iter()
+        .filter(|finding| finding.path == path)
+        .collect()
+}
+
+fn rules_reading(run: &Run, path: &str) -> Vec<&'static str> {
+    let mut rules: Vec<&'static str> = run
+        .instances
+        .iter()
+        .filter(|instance| instance.reads.iter().any(|input| input.path == path))
+        .map(|instance| instance.rule)
+        .collect();
+    rules.sort();
+    rules
+}
+
+#[test]
+fn a_listed_path_outside_the_root_is_read_by_the_three_language_rules_and_no_other() {
+    let (taken, run) = checked(None);
+
+    let findings = findings_at(&run, README);
+    assert_eq!(
+        findings.len(),
+        1,
+        "one finding at {README}, and nothing from a rule HW-DR-0084 leaves out: {findings:#?}"
+    );
+    assert_eq!(findings[0].rule, "language.controlled.not_met");
+    assert!(
+        findings[0].message.contains("doesn't"),
+        "the finding names the contraction: {}",
+        findings[0].message
+    );
+    assert_eq!(findings[0].line, 3, "the sentence is on line 3");
+
+    assert_eq!(
+        rules_reading(&run, README),
+        LANGUAGE_RULES.to_vec(),
+        "exactly the three language rules read {README}"
+    );
+
+    let (unlisted, _) = checked(Some(&[]));
+    assert_eq!(
+        taken.rows.len(),
+        unlisted.rows.len(),
+        "a path outside the root is not a census row"
+    );
+    assert!(
+        run.coverage.unaccounted.is_empty(),
+        "an outside path is not a read outside the denominator: {:?}",
+        run.coverage.unaccounted
+    );
+    let report = taken.render(Detail::Exceptions);
+    assert!(
+        report.contains("outside the corpus root: 1 path, house 1"),
+        "the census counts the outside path on its own line:\n{report}"
+    );
+}
+
+#[test]
+fn an_unlisted_path_outside_the_root_is_read_by_nothing() {
+    let (taken, run) = checked(Some(&[]));
+    assert_eq!(findings_at(&run, README), Vec::<&Finding>::new());
+    assert_eq!(rules_reading(&run, README), Vec::<&str>::new());
+    assert!(
+        !taken.render(Detail::Exceptions).contains("outside the corpus root"),
+        "a corpus that lists nothing prints the report it printed before"
+    );
+}
+
+#[test]
+fn a_pattern_that_matches_nothing_is_reported_by_name() {
+    let (taken, run) = checked(Some(&["MISSING.md"]));
+    assert_eq!(rules_reading(&run, README), Vec::<&str>::new());
+    assert_eq!(taken.outside.unmatched.len(), 1);
+    let report = taken.render(Detail::Exceptions);
+    assert!(
+        report.contains("unmatched `MISSING.md` in `house`"),
+        "the report names the pattern that matched nothing:\n{report}"
+    );
+}
+
+#[test]
+fn a_pattern_that_matches_only_inside_the_root_is_reported_and_reads_nothing_twice() {
+    let (taken, run) = checked(Some(&["docs/notes/plain.md"]));
+    assert_eq!(taken.outside.rows.len(), 0);
+    assert_eq!(taken.outside.unmatched.len(), 1);
+    assert!(taken.outside.unmatched[0].reason.contains("under the corpus root"));
+    let rules = rules_reading(&run, "docs/notes/plain.md");
+    let language = rules
+        .iter()
+        .filter(|rule| **rule == "language.controlled.not_met")
+        .count();
+    assert_eq!(language, 1, "the kind's own instance, and no second one");
+}
