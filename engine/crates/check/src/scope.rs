@@ -52,9 +52,19 @@
 //! verdict, so a change to what a rule decides invalidates the entries the
 //! earlier edition wrote. Nothing derives it: two editions of a rule read the
 //! same documents and the same lock, and they differ only in code. So an author
-//! raises it by hand, and
+//! raises it by hand.
+//!
+//! `tests/editions.rs` catches an author who forgets, where a recorded corpus
+//! shows it. `fixtures/editions.ledger` holds, for each rule the recorded
+//! corpora reach, its `VERSION` and a digest of what the cache would store for
+//! every verdict it reaches there. A digest that moves while `VERSION` stays
+//! fails, and `HEADWATER_BLESS` does not re-record it. The ledger cannot see
+//! three things: a change that no recorded corpus exercises, a rule with no
+//! instance on any of them (the test lists each one with the reason), and a
+//! change visible only against a warm cache that an older binary wrote. The
+//! last is the digest over the compiled rule that
 //! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
-//! carries the gap that no instrument catches an author who forgets.
+//! still carries.
 //!
 //! # The clock is one declaration with two uses, and that is the point
 //!
@@ -438,7 +448,8 @@ pub trait DocumentCheck {
     const RULE: &'static str;
     /// Which edition of this rule reached a verdict. See the module comment:
     /// it keys the cache, and raising it is what invalidates every entry an
-    /// earlier edition wrote.
+    /// earlier edition wrote. Raise it whenever `tests/editions.rs` reports
+    /// that this rule's verdicts moved, then re-record with `HEADWATER_BLESS=1`.
     const VERSION: u32;
     /// The emitter targets this check exports to. See [`ExportTargets`]. The
     /// default is the empty set, because most checks reach nothing a schema

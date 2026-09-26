@@ -53,6 +53,8 @@ A recorded fixture is re-recorded rather than edited by hand:
 
 The digest of the resolved taxonomy lock reaches several recorded fixtures and the committed corpus descriptor, so a taxonomy change moves files your diff never named. Read that diff instead of blessing past it.
 
+One recorded fixture refuses a bless. `engine/crates/check/fixtures/editions.ledger` holds, for each check rule, its `VERSION` and a digest of every verdict it reaches over the recorded corpora. When a rule's verdicts change and its `VERSION` does not, `tests/editions.rs` fails with the rule's name and the file that declares it, and it fails under `HEADWATER_BLESS` as well. Raise `VERSION` in that file, then bless: a warm cache keyed on the old `VERSION` would otherwise keep serving the old verdicts to every adopter. The ledger cannot see a change that no recorded corpus exercises, a rule that no recorded corpus reaches (the test lists each one with the reason), or a change that only a warm cache from an older binary shows.
+
 `cargo test` stops at the first failing target, so a poisoned run reports a fraction of the suite and the smaller number reads like a collapse rather than like an early stop.
 
 ## The release build, and what it is not for

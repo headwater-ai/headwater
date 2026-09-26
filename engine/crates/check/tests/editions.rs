@@ -47,8 +47,8 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{
     adoption, basis, command, coverage, dependency, endpoint, initial_dependency, reciprocity,
-    register, surface, suspect, target, verification, Cache, Context, Date, Declared, Observation, Observations, Outcome, Register, Run, Shape,
-    RULES,
+    register, surface, suspect, target, verification, Cache, Context, Date, Declared, Observation,
+    Observations, Outcome, Register, Run, Shape, RULES,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -549,10 +549,7 @@ fn a_moved_digest_at_an_unchanged_version_fails_and_bless_keeps_the_row() {
             message.contains("engine/crates/check/src/suspect.rs"),
             "{message}"
         );
-        assert!(
-            message.contains("editions/governs-suspect"),
-            "{message}"
-        );
+        assert!(message.contains("editions/governs-suspect"), "{message}");
         assert_eq!(
             judgement.ledger, ledger,
             "bless={bless} rewrote a row whose digest moved at an unchanged VERSION"

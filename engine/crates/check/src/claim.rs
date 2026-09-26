@@ -360,8 +360,10 @@ impl CorpusCheck for Missing<'_> {
     /// with the two new scheme directories removed: the old engine warms the
     /// cache and reports 0 `identifier.claim.missing`, the new engine reads
     /// that cache and reports 0, and the same new engine with `--no-cache`
-    /// reports 16 and fails a strict run. Every test of this workspace starts
-    /// cold, so none of them can report that difference.
+    /// reports 16 and fails a strict run. Every test of this workspace ran one
+    /// binary, so none of them could report that difference. `tests/editions.rs`
+    /// now does, for this rule and every rule it ledgers: a verdict that moves
+    /// at an unchanged edition fails there.
     const VERSION: u32 = 2;
     /// The duplicate guard reads the build's own report, on
     /// [`crate::duplicate`]'s terms, rather than comparing identifiers a second
