@@ -2383,7 +2383,7 @@
             "governs": [
               {
                 "to": "taxonomy-source/headwater-standard/taxonomy.yml",
-                "verified_revision": "sha256:e14a63433c104e3e0e3038027048b594f98bfa7ad1893e1026f221fcee18e5d5"
+                "verified_revision": "sha256:c189a575d97e4ab6630a09b916c0e3d8492b0020e8ff55f2b059266c2d7672cf"
               }
             ],
             "traces_to": [
@@ -6880,11 +6880,11 @@
         "facets": {
           "id": "HW-OBL-0105",
           "title": "Nothing plays the hook role that two relations name as their author",
-          "status": "current",
-          "status_since": "2026-08-13",
+          "status": "discharged",
+          "status_since": "2026-09-26",
           "waiting_on": "ruling",
           "last_verified": "2026-09-26",
-          "summary": "`governs` and `traces_to` declare `created_by: hook`, no verb of this engine writes either one, and every such edge in this corpus is hand entry.",
+          "summary": "Four relations declared `created_by: hook` and no verb of this engine wrote any of them. From headwater-standard 4.8.0 no relation names `hook`.",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -9805,7 +9805,7 @@
           "id": "HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on",
           "status": "current",
           "status_since": "2026-09-11",
-          "summary": "Every traceability edge in this corpus is hand entry under a creator value that names a hook, and this asks whether an agent supplies the identifier with nobody asking for one.",
+          "summary": "No verb writes a traceability edge in this corpus, so a person types every one, and this asks whether an agent supplies the identifier with nobody asking for one.",
           "last_verified": "2026-09-11",
           "probe_category": "navigability",
           "expectation": "cited",
@@ -13870,7 +13870,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e14a63433c104e3e0e3038027048b594f98bfa7ad1893e1026f221fcee18e5d5"
+          "verified_revision": "sha256:c189a575d97e4ab6630a09b916c0e3d8492b0020e8ff55f2b059266c2d7672cf"
         }
       },
       {

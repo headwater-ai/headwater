@@ -120,7 +120,7 @@ add:
     inverse: discharged_by
     reciprocal: required
     cardinality: many
-    created_by: hook
+    created_by: author
 
   # --- shelves --------------------------------------------------------------
   # Decisions sit on the base shelf, which is homogeneous and already declares
