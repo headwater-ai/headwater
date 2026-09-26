@@ -167,8 +167,9 @@ pub struct Neighbour {
     pub target: String,
     /// The far end as its members, one per pattern of a list anchor, so that a
     /// pattern holding a comma stays one member (#1092). A bound anchor gives
-    /// its patterns in the anchor's order, an anchor that binds nothing gives
-    /// the members as written, a document target gives its identifier, and an
+    /// its normalized patterns, sorted, which is the anchor's identity order
+    /// (HW-DR-0074). An anchor that binds nothing gives the members as written,
+    /// in the written order. A document target gives its identifier, and an
     /// inbound edge gives the path of the document that declared it. Never
     /// empty, and `target` is always these joined by `, `.
     pub targets: Vec<String>,
