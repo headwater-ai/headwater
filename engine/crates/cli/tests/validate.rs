@@ -583,6 +583,9 @@ fn validate_refuses_a_governed_scope_pattern_that_matches_no_entry() {
         "{ran:?}"
     );
     assert!(!ran.err.contains("`site/**` matches no entry"), "{ran:?}");
+    // A root with no package manifest names none, and says nothing of it (#1123).
+    assert!(!root.at.join("package.yml").exists(), "the root has no manifest");
+    assert!(!ran.err.contains("package.yml"), "{ran:?}");
 }
 
 /// A taxonomy with no tree beside it is valid, and the verb says it did not
@@ -732,4 +735,37 @@ fn validate_refuses_a_misspelled_pattern_beside_a_tree_the_manifest_does_not_nam
         "{ran:?}"
     );
     assert!(!ran.err.contains("`tools/**` matches no entry"), "{ran:?}");
+}
+
+/// A root `package.yml` that does not read is named, and it leaves nothing out
+/// of the tree count (#1123). Before, it was read as a root with no manifest,
+/// and the seven refusals it caused named nothing about it.
+fn assert_names_the_unread_manifest(ran: &Ran, reason: &str) {
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    let named: Vec<&str> = ran
+        .err
+        .lines()
+        .filter(|line| line.contains("package.yml"))
+        .collect();
+    assert_eq!(named.len(), 1, "{ran:?}");
+    assert!(named[0].contains(reason), "{named:?}");
+    assert_eq!(ran.err.matches("matches no entry").count(), 7, "{ran:?}");
+}
+
+#[test]
+fn validate_names_a_root_package_manifest_whose_yaml_does_not_parse() {
+    let root = authored_source_root("scope-manifest-syntax");
+    std::fs::write(root.at.join("package.yml"), "package: [unclosed\n")
+        .expect("the manifest writes");
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_names_the_unread_manifest(&ran, "PROBE");
+}
+
+#[test]
+fn validate_names_a_root_package_manifest_that_is_not_a_mapping() {
+    let root = authored_source_root("scope-manifest-sequence");
+    std::fs::write(root.at.join("package.yml"), "- package: acme/x\n")
+        .expect("the manifest writes");
+    let ran = root.run(&["taxonomy", "validate"]);
+    assert_names_the_unread_manifest(&ran, "not a mapping");
 }
