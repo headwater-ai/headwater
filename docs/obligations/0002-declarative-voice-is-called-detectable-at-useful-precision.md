@@ -51,7 +51,37 @@ So this claim is short for all three categories rather than for two, and the rea
 
 **All 23 findings were adjudicated one at a time.** 7 are genuine, and each one narrates a change to this repository. 4 stand where the narration is the content a reader wants: 3 in a `## Context` section and 1 in a dated measurement. 12 are false, and no rewrite repairs them. 11 of the 12 are `change_narration`, in the five modes above. The twelfth is the one `future_intent` finding, and it is a sixth mode: a general prediction that states a property of a thing. It is in `docs/taxonomies/diataxis/doctrine.md`. So the first finding that `future_intent` has reported on this corpus is not evidence that the set detects the fault.
 
-**The loosest pattern now yields 1 genuine finding of 10.** `no longer` carries 10 of the 22 `change_narration` findings. The rewrites since 2026-09-11 took its genuine count from 9 to 1, and no rewrite can remove the 9 false findings. The ruling in `engine/crates/check/src/voice.rs` retires the pattern when a reading finds the genuine count at zero with the false count unmoved. This reading is one rewrite from that state, and the pattern stays until a reading finds it.
+Each finding carries one label. `genuine` is a finding to repair. `accepted_deviation` and `false_positive` are the two labels that spec 4 declares, and this reading spends no directive on either.
+
+| document and line | pattern | label | reason |
+|---|---|---|---|
+| `docs/decisions/0008-probe-cost-and-cadence.md:26` | `there was no` | `accepted_deviation` | history in the `## Context` section |
+| `docs/decisions/0012-migration-path-for-an-existing-corpus.md:42` | `no longer` | `false_positive` | the present behavior of another tool |
+| `docs/decisions/0017-governed-access-and-the-solution-layer.md:94` | `did not exist` | genuine | tells the change that a ruling made |
+| `docs/decisions/0022-q22-the-integrity-posture-of-a-published-package.md:26` | `did not exist` | `accepted_deviation` | history in the `## Context` section |
+| `docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md:54` | `no longer` | `false_positive` | a conditional inside a hypothetical |
+| `docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md:54` | `no longer` | `false_positive` | the condition that makes a script fail |
+| `docs/decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md:48` | `did not exist` | `accepted_deviation` | a dated measurement in the `## Consequences` section |
+| `docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md:49` | `no longer` | `false_positive` | a definition |
+| `docs/interfaces/headwater-probe.md:33` | `no longer` | `false_positive` | a definition |
+| `docs/obligations/0129-spec-12-calls-two-phase-a-outcomes-structural-findings-and-the-engine-emits-none.md:29` | `no longer` | `false_positive` | a definition, in the `## Context` section |
+| `docs/obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md:28` | `there was no` | `accepted_deviation` | history in the `## Context` section |
+| `docs/spec/07-distribution-and-federation.md:159` | `no longer` | `false_positive` | a conditional inside a hypothetical |
+| `docs/spec/glossary.md:592` | `no longer` | `false_positive` | the definition of a retired term |
+| `docs/spec/glossary.md:811` | `used to` | `false_positive` | a heading |
+| `docs/taxonomies/README.md:225` | `used to` | genuine | tells what a fixture README said before |
+| `docs/taxonomies/README.md:233` | `has since` | genuine | tells the history of a milestone |
+| `docs/taxonomies/decision-record/doctrine.md:69` | `no longer` | genuine | tells a move of a facet to the base |
+| `docs/taxonomies/decision-record/doctrine.md:100` | `no longer` | `false_positive` | a table row that defines a state |
+| `docs/taxonomies/design-spec/doctrine.md:137` | `has since` | genuine | tells a change to spec 2 |
+| `docs/taxonomies/diataxis/doctrine.md:46` | `will eventually` | `false_positive` | a general prediction that states a property |
+| `docs/taxonomies/diataxis/doctrine.md:137` | `has since` | `false_positive` | a conditional inside a hypothetical |
+| `docs/taxonomies/diataxis/doctrine.md:141` | `has since` | genuine | tells that a demonstration ran |
+| `docs/taxonomies/evidence-and-obligation/doctrine.md:28` | `used to` | genuine | tells what an older kind carried |
+
+The rate of each pattern is its genuine findings over its findings. `no longer` is 1 of 10. `has since` is 3 of 4. `used to` is 2 of 3. `did not exist` is 1 of 3. `there was no` is 0 of 2, and both are `accepted_deviation`. `will eventually` is 0 of 1. Two labels are close calls. The line of `0051` could be genuine, because it tells a change to the site. The line of the `design-spec` doctrine could be `accepted_deviation`, because its section records what a draft assumed. Neither call moves a ruling below.
+
+**The loosest pattern now yields 1 genuine finding of 10.** `no longer` carries 10 of the 22 `change_narration` findings. Since 2026-09-11 its genuine count fell from 9 to 1, and its false count fell too. The quotation exclusion of #783 removed one false finding, and rewrites made for other reasons changed the words of others. So the false count is not a floor that no rewrite reaches. The ruling in `engine/crates/check/src/voice.rs` retires the pattern when a reading finds the genuine count at zero and the false count unmoved. This reading sets the baseline for that ruling: 1 genuine and 9 false. A later reading compares its false count with 9, not with the figures of 2026-09-11.
 
 **The two quiet categories are still at saturation.** Of the patterns that `future_intent` declares, 2 of 14 occur in the 378 documents whose kind binds the declarative regime. Both occurrences of `will be` are inside a quotation, which the rule does not read. The other pattern is the false finding above. Of the patterns that `phased_rollout` declares, 0 of 13 occur in the 382 documents that bind the declarative or the prospective regime. `change_narration` has 5 of its 23 patterns in the same 382. Both denominators come from the kind-to-regime binding of the lock, applied to the 421 documents of the graph. 39 of those documents bind `narrative`.
 

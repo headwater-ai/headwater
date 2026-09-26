@@ -421,31 +421,7 @@ impl DocumentCheck for Voice {
         // sentence (`crate::frontmatter` states why).
         let prose = body
             .into_iter()
-            .flat_map(|body| {
-                // MUTANT: a section scope that drops `## Context`.
-                let contexts: Vec<(usize, usize)> = {
-                    let heads: Vec<&headwater_doc::body::Block> = body.headings().collect();
-                    heads
-                        .iter()
-                        .enumerate()
-                        .filter(|(_, h)| h.text().trim() == "Context")
-                        .map(|(i, h)| {
-                            (
-                                h.span.start.line,
-                                heads.get(i + 1).map_or(usize::MAX, |n| n.span.start.line),
-                            )
-                        })
-                        .collect()
-                };
-                body.sentences()
-                    .into_iter()
-                    .filter(move |s| {
-                        !contexts
-                            .iter()
-                            .any(|(a, b)| s.span.start.line > *a && s.span.start.line < *b)
-                    })
-                    .map(|s| (s, true))
-            })
+            .flat_map(|body| body.sentences().into_iter().map(|s| (s, true)))
             .chain(
                 scent
                     .iter()

@@ -588,10 +588,8 @@ fn the_voice_rule_reads_a_context_section_like_any_other() {
         .collect();
     assert_eq!(mine.len(), 1, "{mine:#?}");
     assert_eq!(mine[0].line, line, "{mine:#?}");
-    assert!(
-        mine[0].message.contains("change_narration") && mine[0].message.contains("`there was no`"),
-        "{mine:#?}"
-    );
+    assert!(mine[0].message.contains("change_narration"), "{mine:#?}");
+    assert!(mine[0].message.contains("`there was no`"), "{mine:#?}");
 }
 
 /// A document whose kind binds a voice regime, with no body sentence and no
