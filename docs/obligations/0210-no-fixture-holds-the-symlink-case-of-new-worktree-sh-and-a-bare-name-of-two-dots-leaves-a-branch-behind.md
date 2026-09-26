@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0210
-status: draft
-status_since: 2026-09-24
+status: current
+status_since: 2026-09-26
 summary: "The worktree script's suite stays green when pwd -P is dropped, and --name .. passes the bare-name check and leaves a branch when git then fails."
 last_verified: 2026-09-24
 title: "No fixture holds the symlink case of new-worktree.sh, and a bare name of two dots leaves a branch behind"

@@ -2395,6 +2395,34 @@
         }
       },
       {
+        "path": "docs/decisions/0084-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
+        "kind": "decision",
+        "id": "HW-DR-0084",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0084",
+          "status": "current",
+          "status_since": "2026-09-26",
+          "summary": "A live document with any relation to a draft is a warning, unless the relation writes a state onto its target",
+          "last_verified": "2026-09-26",
+          "title": "A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0065",
+              "HW-DR-0052",
+              "HW-SPEC-authoring-and-lifecycle"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md",
         "kind": "evaluation",
         "id": "HW-EVAL-a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt",
@@ -9214,8 +9242,8 @@
         "id": "HW-OBL-0201",
         "facets": {
           "id": "HW-OBL-0201",
-          "status": "draft",
-          "status_since": "2026-09-22",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "1233 tests exist under engine/crates and nobody has measured whether they would catch a defect, with cargo-llvm-cov and cargo-mutants as the named, unrun instruments.",
           "last_verified": "2026-09-22",
           "title": "No coverage or mutation measurement has ever been taken over the engine's test suite",
@@ -9228,8 +9256,8 @@
         "id": "HW-OBL-0202",
         "facets": {
           "id": "HW-OBL-0202",
-          "status": "draft",
-          "status_since": "2026-09-23",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "tools/run/run-dir.sh claim treats the literal string none as an artifact path with no special case, so two issues that both report footprint none produce a spurious WAITS-ON even when they touch disjoint files.",
           "last_verified": "2026-09-23",
           "title": "A bare none footprint is claimed as a literal path, so two disjoint issues collide",
@@ -9242,8 +9270,8 @@
         "id": "HW-OBL-0203",
         "facets": {
           "id": "HW-OBL-0203",
-          "status": "draft",
-          "status_since": "2026-09-23",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "A missing project-board item for two issues, an interactive-shell grep shadowed to basic-regex semantics, and a stale hook-exit-code comment, none with a reader outside this repository, recorded together under the intake cap.",
           "last_verified": "2026-09-23",
           "title": "Three small run-tooling gaps from run 20260922-1121, filed together",
@@ -9270,8 +9298,8 @@
         "id": "HW-OBL-0205",
         "facets": {
           "id": "HW-OBL-0205",
-          "status": "draft",
-          "status_since": "2026-09-23",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "Two sample counts predate the scent-role fix #774 landed: HW-OBL-0002's, and voice.rs's own census. Neither was re-taken, so both figures now understate what the rule covers.",
           "last_verified": "2026-09-23",
           "title": "Two sample counts, HW-OBL-0002's and voice.rs's own census, predate the scent-role fix and need retaking",
@@ -9284,8 +9312,8 @@
         "id": "HW-OBL-0206",
         "facets": {
           "id": "HW-OBL-0206",
-          "status": "draft",
-          "status_since": "2026-09-23",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "hw-run-policy tells a subagent needing its own workspace to make one by hand with git worktree add. Edit and Write on a file under that hand-made worktree are refused, because the write sandbox stays pinned to the worktree the subagent was launched into.",
           "last_verified": "2026-09-23",
           "title": "hw-run-policy names a worktree-add workaround that Write/Edit refuses under this harness",
@@ -9312,8 +9340,8 @@
         "id": "HW-OBL-0208",
         "facets": {
           "id": "HW-OBL-0208",
-          "status": "draft",
-          "status_since": "2026-09-23",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "A collation opener class, a cache key's CLI wiring, a cache doc word and a recurring board-card gap, each with no reader outside this repository.",
           "last_verified": "2026-09-23",
           "title": "Four small test and wording gaps from run 20260923-0733 filed together",
@@ -9326,8 +9354,8 @@
         "id": "HW-OBL-0209",
         "facets": {
           "id": "HW-OBL-0209",
-          "status": "draft",
-          "status_since": "2026-09-24",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "No dispatch in next-run.md asks for an isolated worktree, so a stage can start inside the parent's worktree. new-worktree.sh refuses the nested path but the inheritance remains.",
           "last_verified": "2026-09-24",
           "title": "A build-order dispatch passes no isolation, so a stage can inherit the parent worktree as its working directory",
@@ -9340,8 +9368,8 @@
         "id": "HW-OBL-0210",
         "facets": {
           "id": "HW-OBL-0210",
-          "status": "draft",
-          "status_since": "2026-09-24",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "The worktree script's suite stays green when pwd -P is dropped, and --name .. passes the bare-name check and leaves a branch when git then fails.",
           "last_verified": "2026-09-24",
           "title": "No fixture holds the symlink case of new-worktree.sh, and a bare name of two dots leaves a branch behind",
@@ -9354,8 +9382,8 @@
         "id": "HW-OBL-0211",
         "facets": {
           "id": "HW-OBL-0211",
-          "status": "draft",
-          "status_since": "2026-09-24",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "Since #1047 and the link suite of #849, the two hw-cargo workarounds in hw-run-policy may be dead text that every build-order stage pays to read.",
           "last_verified": "2026-09-24",
           "title": "Two hand-remedy lines for hw-cargo in hw-run-policy may not earn their cost on every dispatch",
@@ -9368,8 +9396,8 @@
         "id": "HW-OBL-0212",
         "facets": {
           "id": "HW-OBL-0212",
-          "status": "draft",
-          "status_since": "2026-09-24",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "The CI wait script counts every run that shares a commit, so a cancelled push run of a feature branch turns a green main merge red.",
           "last_verified": "2026-09-24",
           "title": "ci-done.sh reads a cancelled run of another branch as a red result on a main merge commit",
@@ -9382,8 +9410,8 @@
         "id": "HW-OBL-0213",
         "facets": {
           "id": "HW-OBL-0213",
-          "status": "draft",
-          "status_since": "2026-09-24",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "No CI job runs mkdocs build --strict, and this host has neither mkdocs nor rustfmt, so a new generated page and a clippy change reach main unchecked.",
           "last_verified": "2026-09-24",
           "title": "CI builds no MkDocs site, so a generated page under docs/ is never checked against a strict build before merge",
@@ -9396,8 +9424,8 @@
         "id": "HW-OBL-0214",
         "facets": {
           "id": "HW-OBL-0214",
-          "status": "draft",
-          "status_since": "2026-09-24",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "Only the required Engine tests job catches a drift between the taxonomy bundles and their vendored copy, so a contributor learns of it at CI and not at commit.",
           "last_verified": "2026-09-24",
           "title": "The commit gate does not see docs/taxonomies/README.md drift from its vendored copy",
@@ -9410,8 +9438,8 @@
         "id": "HW-OBL-0215",
         "facets": {
           "id": "HW-OBL-0215",
-          "status": "draft",
-          "status_since": "2026-09-24",
+          "status": "current",
+          "status_since": "2026-09-26",
           "summary": "Under HEADWATER_BLESS=1, one render test reads fixtures/wrapped.report while a sibling test in the same process rewrites it, and the reader can panic.",
           "last_verified": "2026-09-24",
           "title": "A bless run of the conformance render tests races two tests over one fixture file",
@@ -13904,6 +13932,39 @@
           "id": "HW-EVAL-default-taxonomy-first-run",
           "path": "docs/evaluations/default-taxonomy-first-run.md",
           "kind": "evaluation"
+        }
+      },
+      {
+        "source": "docs/decisions/0084-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0065",
+          "path": "docs/decisions/0065-a-relation-declares-lifecycle-sensitive-for-itself-and-a-core-requirement-demands-it-of-a-family.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0084-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0052",
+          "path": "docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0084-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-authoring-and-lifecycle",
+          "path": "docs/spec/03-authoring-and-lifecycle.md",
+          "kind": "design_spec"
         }
       },
       {

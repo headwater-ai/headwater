@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0212
-status: draft
-status_since: 2026-09-24
+status: current
+status_since: 2026-09-26
 summary: "The CI wait script counts every run that shares a commit, so a cancelled push run of a feature branch turns a green main merge red."
 last_verified: 2026-09-24
 title: "ci-done.sh reads a cancelled run of another branch as a red result on a main merge commit"

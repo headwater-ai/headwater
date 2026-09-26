@@ -86,6 +86,7 @@ nav:
       - "The hand-authored decision register indexes a subset of the shelf, and stops asserting it supersedes the complete one": "decisions/0081-the-hand-authored-decision-register-indexes-a-subset-of-the-shelf-and-stops-asserting-it-supersedes-the-complete-one.md"
       - "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file": "decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md"
       - "Governs and traces_to are created by an agent, because a session proposes the line and a person types it": "decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md"
+      - "A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite": "decisions/0084-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
