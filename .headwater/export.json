@@ -9488,6 +9488,34 @@
         }
       },
       {
+        "path": "docs/obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0217",
+        "facets": {
+          "id": "HW-OBL-0217",
+          "status": "current",
+          "status_since": "2026-09-26",
+          "summary": "The pre-push hook reads a site-review marker that every worktree of a clone shares, so one unreviewed site merge refuses the push of every worktree.",
+          "last_verified": "2026-09-26",
+          "title": "The site-review marker lives in the common directory of a clone, so one worktree's unreviewed merge blocks the push of every worktree",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0218-the-opening-sentence-of-the-self-found-list-in-spec-13-counts-forty-nine-items-in-ranges-that-do-not-match-the-list.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0218",
+        "facets": {
+          "id": "HW-OBL-0218",
+          "status": "current",
+          "status_since": "2026-09-26",
+          "summary": "Spec 13 opens its self-found list with forty-nine items in five ranges, and the list under that sentence holds 66.",
+          "last_verified": "2026-09-26",
+          "title": "The opening sentence of the self-found list in spec 13 counts forty-nine items in ranges that do not match the list",
+          "waiting_on": "build"
+        }
+      },
+      {
         "path": "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
         "kind": "probe_result",
         "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
