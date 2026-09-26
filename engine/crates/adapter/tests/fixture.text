@@ -656,7 +656,7 @@ read set
   version identifier.unusable 1
   version identifier.claimed_twice 1
   version identifier.claim.missing 2
-  version identifier.claim.stale 1
+  version identifier.claim.stale 2
   version voice.forbidden_construction 5
   version language.controlled.not_met 4
   version language.retired_term.used 4
