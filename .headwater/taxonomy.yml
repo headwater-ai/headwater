@@ -17,7 +17,7 @@
 taxonomy:
   package: headwater/standard
   version: 4.8.0
-  digest: sha256:d837a8567fc4b9c83f39439d168f55aff836e0515b51177bb276bf15a6bf6a87
+  digest: sha256:31a5015ab9b4b51636388d1cf6ba9b7fbb488e76e850a1b38ff8e1fe2c976091
   bundles: [design-spec, evidence-and-obligation, decision-record]
   overlay: .headwater/overlay.yml
 

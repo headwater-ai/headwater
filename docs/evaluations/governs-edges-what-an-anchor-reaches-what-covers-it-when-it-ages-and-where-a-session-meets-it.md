@@ -100,7 +100,7 @@ Spec 5 states that a hook calls a verb that ships and introduces none, and every
 
 ### The actor: `created_by: agent`, and the proposal reaches a person
 
-HW-OBL-0105 records that `governs` declares `created_by: hook` and no hook writes one. The design above makes the write-time position propose and never write, so the honest actor is `agent`, which the closed set holds. The base package owes that value. The first-run walkthrough owes the corrected count of relations with no mechanical creator. This is a change to a published package, and it takes a record of its own when it is built.
+HW-OBL-0105 recorded that `governs` declared `created_by: hook` and that no hook wrote one. The design above makes the write-time position propose and never write, so the honest actor is `agent`, which the closed set holds. [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) moved `governs` and `traces_to` to that value in headwater-standard 4.7.0, and the first-run walkthrough now gives the corrected count. From 4.8.0 no relation of the package declares `hook`, and HW-OBL-0105 is discharged.
 
 ## What this change declares
 
