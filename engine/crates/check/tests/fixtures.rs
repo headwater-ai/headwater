@@ -1131,17 +1131,15 @@ fn a_corpus_instance_reads_a_document_without_covering_it() {
         "nothing would have changed, so this test proves nothing"
     );
 
-    // It read nothing outside the census that is not the claim store, which is
-    // the denominator question and is asked of every grain. The store is the
-    // deliberate case: it sits beside the corpus root, so the walk never
-    // reaches it, and the two rules of `claim` name it in their read sets.
-    assert_eq!(
-        run.coverage.unaccounted,
-        vec![
-            headwater_check::claim::STORE.to_string(),
-            headwater_check::claim::STORE.to_string()
-        ],
-        "one entry per reading, and the two claim rules are the two readers"
+    // It read nothing outside the census, which is the denominator question
+    // and is asked of every grain. The two rules of `claim` read the claim
+    // store, which sits beside the corpus root where no walk reaches it, and
+    // the list exempts it by name (`coverage::BESIDE_THE_ROOT`, #1146): the
+    // read set states that read with its digest instead.
+    assert!(
+        run.coverage.unaccounted.is_empty(),
+        "{:?}",
+        run.coverage.unaccounted
     );
 }
 
@@ -1502,13 +1500,11 @@ fn an_edge_instance_is_counted_against_both_of_its_endpoints() {
         .find(|document| document.path == "check/spec/02-cited-only.md")
         .expect("the fixture");
     assert!(document.ran >= counted, "{document:#?}");
-    assert_eq!(
-        run.coverage.unaccounted,
-        vec![
-            headwater_check::claim::STORE.to_string(),
-            headwater_check::claim::STORE.to_string()
-        ],
-        "one entry per reading, and the two claim rules are the two readers"
+    // The claim store is exempt from the list, so nothing else is on it.
+    assert!(
+        run.coverage.unaccounted.is_empty(),
+        "{:?}",
+        run.coverage.unaccounted
     );
 }
 

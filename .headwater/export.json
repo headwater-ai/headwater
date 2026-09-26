@@ -8432,10 +8432,10 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0169",
-          "status": "current",
-          "status_since": "2026-09-06",
-          "summary": "coverage.unaccounted reads ['.headwater/ids', '.headwater/ids'], so the self-assessment page publishes 2 under a label that names files nobody accounted for.",
-          "last_verified": "2026-09-06",
+          "status": "discharged",
+          "status_since": "2026-09-26",
+          "summary": "Coverage::of now lists each unaccounted path once and exempts the claim store by name, so coverage.unaccounted reads [] and the self-assessment page publishes 0.",
+          "last_verified": "2026-09-26",
           "title": "The coverage report lists one path twice, so the self-assessment page publishes two unaccounted files where one exists",
           "waiting_on": "adopter",
           "provenance": {
