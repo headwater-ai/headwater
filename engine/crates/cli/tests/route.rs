@@ -126,8 +126,7 @@ fn a_path_git_ignores_is_not_named_as_ungoverned() {
     let cache = root.at.join(path);
     std::fs::create_dir_all(cache.parent().expect("a parent")).expect("the cache is made");
     std::fs::write(&cache, "").expect("the cache writes");
-    std::fs::write(root.at.join(".gitignore"), "__pycache__/\n")
-        .expect("the ignore file writes");
+    std::fs::write(root.at.join(".gitignore"), "__pycache__/\n").expect("the ignore file writes");
 
     let before = root.run(&["route", "edit", path, "--json"]);
     assert!(
@@ -145,7 +144,11 @@ fn a_path_git_ignores_is_not_named_as_ungoverned() {
 
     let after = root.run(&["route", "edit", path, "--json"]);
     assert_eq!(after.code, Some(0), "{after:?}");
-    assert!(!ungoverned(&after.out).contains("\"path\""), "{}", after.out);
+    assert!(
+        !ungoverned(&after.out).contains("\"path\""),
+        "{}",
+        after.out
+    );
     let text = root.run(&["route", "edit", path]);
     assert!(!text.out.contains("governed scope"), "{}", text.out);
 }
