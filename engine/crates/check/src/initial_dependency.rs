@@ -161,7 +161,7 @@ impl EdgeCheck for InitialDependency<'_> {
                 Judged::Skipped(why) => {
                     skipped.get_or_insert(why);
                 }
-                Judged::Failed(finding) => findings.push(finding),
+                Judged::Failed(finding) => findings.push(*finding),
             }
         }
         if !findings.is_empty() {
@@ -178,7 +178,8 @@ impl EdgeCheck for InitialDependency<'_> {
 enum Judged {
     Passed,
     Skipped(String),
-    Failed(Finding),
+    /// Boxed, because a finding is many times the size of the other two arms.
+    Failed(Box<Finding>),
 }
 
 impl InitialDependency<'_> {
@@ -227,7 +228,7 @@ impl InitialDependency<'_> {
         }
 
         let (line, column) = at(Some(half.span));
-        Judged::Failed(Finding {
+        Judged::Failed(Box::new(Finding {
             rule: self::RULE,
             severity: Severity::Warn,
             obligation: None,
@@ -248,6 +249,6 @@ impl InitialDependency<'_> {
             // No patch. Which of the three repairs is right is a judgment
             // about both documents that only an author can make.
             patch: None,
-        })
+        }))
     }
 }
