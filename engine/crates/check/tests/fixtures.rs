@@ -483,6 +483,54 @@ fn a_lexical_rule_reads_the_facet_in_the_scent_role_and_no_other() {
     }
 }
 
+/// A paragraph past six sentences is one advisory finding, and nothing else
+/// that holds seven sentences is ([HW-DR-0069](../../../../docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md)).
+///
+/// `24-paragraph-sentences.md` holds five blocks of seven sentences or six: a
+/// paragraph of seven, a paragraph of six, an item of seven in a tight list, an
+/// item of seven in a loose list, and a quotation of seven. The loose item is
+/// the decisive case. The parser hands its text over as a paragraph, so a rule
+/// that reads the block kind alone reports it, and the decision puts a list
+/// item outside the rule.
+///
+/// The remediation names the topic and never the count, because a paragraph
+/// cut to six sentences by joining two of them is then a finding of the length
+/// rule.
+#[test]
+fn a_paragraph_past_six_sentences_is_one_advisory_finding_and_a_list_item_is_none() {
+    const PATH: &str = "check/spec/24-paragraph-sentences.md";
+    // The seven-sentence paragraph is the first line that opens with this
+    // sentence and is not an item or a quotation.
+    let source = std::fs::read_to_string(fixtures_dir().join(PATH)).expect("the fixture");
+    let paragraph = source
+        .lines()
+        .position(|line| line.starts_with("The gate reads the lock."))
+        .expect("the paragraph")
+        + 1;
+
+    let run = fixture_run();
+    let mine: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.path == PATH && finding.rule == language::RULE)
+        .collect();
+    assert_eq!(mine.len(), 1, "{mine:#?}");
+    let finding = mine[0];
+    assert_eq!(
+        finding.severity,
+        headwater_check::Severity::Warn,
+        "{finding:#?}"
+    );
+    assert_eq!(finding.line, paragraph, "{finding:#?}");
+    assert_eq!(finding.column, 1, "{finding:#?}");
+    assert!(finding.message.contains("has 7"), "{finding:#?}");
+    assert!(finding.patch.is_none(), "{finding:#?}");
+    assert!(
+        !finding.remediation.contains("six") && !finding.remediation.contains('6'),
+        "the remediation names the topic and never the count: {finding:#?}"
+    );
+}
+
 /// The sibling case for `voice.forbidden_construction`, which #774 brought
 /// into line with the lexical rules above. A `future_intent` construction
 /// planted in the `summary` facet alone produced zero `voice.*` findings
