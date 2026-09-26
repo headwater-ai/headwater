@@ -548,35 +548,108 @@ fn a_report_that_cannot_reach_standard_output_exits_1_and_says_so() {
 /// A cache that cannot be written is one line on standard error, and it moves
 /// no verdict and no byte of the report.
 ///
-/// A regular file at `.headwater/cache` stops the verb from making the
-/// directory. That holds for every user, root included, where a mode bit does
-/// not. The contract calls a cache that cannot be read "not an error", and a
-/// cache that cannot be written is the same cost: one full run next time.
+/// Two shapes, one for each end of `Cache::write`. A regular file at
+/// `.headwater/cache` stops the verb from making the directory. A directory
+/// at `.headwater/cache/checks` lets it make the directory and the
+/// `.gitignore`, and stops the last write, the one that holds the cache. Both
+/// hold for every user, root included, where a mode bit does not. The
+/// contract calls a cache that cannot be read "not an error", and a cache that
+/// cannot be written is the same cost: one full run next time.
 #[test]
 fn an_unwritable_cache_is_reported_by_path_and_moves_no_verdict() {
-    let root = common::Root::shaped("json-unwritable-cache", |_| {});
+    for (label, blocked, block) in [
+        (
+            "json-unwritable-cache-directory",
+            ".headwater/cache",
+            (|at: &Path| {
+                std::fs::write(at.join(".headwater/cache"), "not a directory\n")
+                    .expect("the file that blocks the cache directory writes");
+            }) as fn(&Path),
+        ),
+        (
+            "json-unwritable-cache-file",
+            ".headwater/cache/checks",
+            (|at: &Path| {
+                std::fs::create_dir_all(at.join(".headwater/cache/checks"))
+                    .expect("the directory that blocks the cache file is made");
+            }) as fn(&Path),
+        ),
+    ] {
+        let root = common::Root::shaped(label, |_| {});
+        block(&root.at);
+        let cached = root.run(&["check", "--format", "json"]);
+        let uncached = root.run(&["check", "--format", "json", "--no-cache"]);
+        assert_eq!(
+            cached.code,
+            Some(0),
+            "a cache that cannot be written at `{blocked}` is not an error: {cached:?}"
+        );
+        assert!(
+            cached.err.contains("cache not written") && cached.err.contains(blocked),
+            "standard error names `{blocked}`, the path that could not be written: {}",
+            cached.err
+        );
+        assert!(
+            cached.err.contains("os error"),
+            "and the error the host gave: {}",
+            cached.err
+        );
+        assert_eq!(
+            cached.out, uncached.out,
+            "standard output is the bytes of a run with no cache, with `{blocked}` blocked"
+        );
+    }
+}
+
+/// `--fix` with a standard error that cannot be written still patches, and
+/// still puts the whole report on standard output.
+///
+/// The contract says that where standard error fails, the report on standard
+/// output stays complete. Under `--fix` the account of the patches and the
+/// line for an unwritable cache both go to standard error before the report,
+/// so a failed line there must not stop the patch or the report. The cache is
+/// blocked here too, because that line is the first one `fix` writes, before
+/// it writes any patch.
+#[cfg(target_os = "linux")]
+#[test]
+fn a_fix_whose_account_cannot_be_written_still_patches_and_reports() {
+    use std::process::Stdio;
+    const DOCUMENT: &str = "docs/decisions/0001-the-warrant-a-person-set.md";
+    let root = common::Root::shaped("json-fix-stderr-full", |at| {
+        let path = at.join(DOCUMENT);
+        let mut text = std::fs::read_to_string(&path).expect("the document reads");
+        text.push_str("\nThe behaviour of the colour.\n");
+        std::fs::write(&path, text).expect("the document writes");
+    });
     std::fs::write(root.at.join(".headwater/cache"), "not a directory\n")
         .expect("the file that blocks the cache writes");
-    let cached = root.run(&["check", "--format", "json"]);
-    let uncached = root.run(&["check", "--format", "json", "--no-cache"]);
-    assert_eq!(
-        cached.code,
-        Some(0),
-        "a cache that cannot be written is not an error: {cached:?}"
-    );
+    let full = std::fs::File::options()
+        .write(true)
+        .open("/dev/full")
+        .expect("/dev/full opens");
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["check", "--fix", "--format", "json", "--root"])
+        .arg(&root.at)
+        .stdout(Stdio::piped())
+        .stderr(full)
+        .output()
+        .expect("the binary runs");
+    let patched = std::fs::read_to_string(root.at.join(DOCUMENT)).expect("the document reads");
     assert!(
-        cached.err.contains("cache not written") && cached.err.contains(".headwater/cache"),
-        "standard error names the path that could not be written: {}",
-        cached.err
-    );
-    assert!(
-        cached.err.contains("os error"),
-        "and the error the host gave: {}",
-        cached.err
+        patched.contains("The behavior of the color.") && !patched.contains("behaviour"),
+        "the patch landed although standard error failed: {patched}"
     );
     assert_eq!(
-        cached.out, uncached.out,
-        "standard output is the bytes of a run with no cache"
+        output.status.code(),
+        Some(1),
+        "a standard error that cannot be written exits 1 under `--fix` too"
+    );
+    let artifact = String::from_utf8_lossy(&output.stdout).into_owned();
+    let parsed = headwater_yaml::load(&artifact)
+        .unwrap_or_else(|_| panic!("the whole JSON report is on standard output: {artifact}"));
+    assert!(
+        member(&parsed.value, "version").is_some(),
+        "the report is the whole document and not a prefix of one"
     );
 }
 
