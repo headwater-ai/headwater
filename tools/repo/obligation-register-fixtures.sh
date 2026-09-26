@@ -338,11 +338,13 @@ same "no prose line of the register states a hand-kept count or an identifier ra
     "" "$(hand_count_judge "$register" | tr '\n' '|')"
 
 # 3b. A paragraph in the shape the file used to carry reddens the judge, on
-#     both of its arms.
-printf '# 13 — Open obligations\n\n## A heading\n\nTwo items: HW-OBL-0001 through HW-OBL-0002.\n\nThe list holds HW-OBL-0001 through HW-OBL-0002.\n\n- [HW-OBL-0001](../obligations/0001-one.md) — One\n' \
+#     each of its arms alone: line 7 carries a range and no count, and line 9
+#     carries a count and no range, so neither arm can go missing while the
+#     other keeps this case red.
+printf '# 13 — Open obligations\n\n## A heading\n\nTwo items: HW-OBL-0001 through HW-OBL-0002.\n\nThe list holds HW-OBL-0001 through HW-OBL-0002.\n\nTwenty-one items: each one is below.\n\n- [HW-OBL-0001](../obligations/0001-one.md) — One\n' \
     >"$scratch/reg-count.md"
 same "a spelled count and an identifier range in prose redden the judge" \
-    "line 5: Two items: HW-OBL-0001 through HW-OBL-0002.|line 7: The list holds HW-OBL-0001 through HW-OBL-0002.|" \
+    "line 5: Two items: HW-OBL-0001 through HW-OBL-0002.|line 7: The list holds HW-OBL-0001 through HW-OBL-0002.|line 9: Twenty-one items: each one is below.|" \
     "$(hand_count_judge "$scratch/reg-count.md" | tr '\n' '|')"
 
 # 3c. A bullet whose title says "through", a range inside a fenced block, and
