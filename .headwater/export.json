@@ -1233,7 +1233,7 @@
           "id": "HW-DR-0042",
           "status": "current",
           "status_since": "2026-08-30",
-          "summary": "\"One screen\" is retired as a claim about a terminal and replaced by a claim about content: the first screen carries one line per entry, and the ceiling that follows from it is 64 lines.",
+          "summary": "\"One screen\" is retired as a claim about a terminal and replaced by a claim about content. The first screen carries one line per entry, and the ceiling that follows from it is 64 lines.",
           "last_verified": "2026-09-18",
           "title": "Q42 — What \"one screen\" means for the first help screen",
           "provenance": {
@@ -8819,7 +8819,7 @@
           "id": "HW-OBL-0181",
           "status": "current",
           "status_since": "2026-09-08",
-          "summary": "A link in prose whose target path is absent is counted in the graph section of a run and reaches no rule, so it never becomes a finding and never fails a strict run.",
+          "summary": "A link in prose whose target path is absent is counted in the graph section of a run and reaches no rule. So it never becomes a finding and never fails a strict run.",
           "last_verified": "2026-09-08",
           "title": "An unresolved prose link reaches a run as a graph fact and no rule turns it into a finding",
           "waiting_on": "build",
@@ -9285,7 +9285,7 @@
           "id": "HW-OBL-0202",
           "status": "current",
           "status_since": "2026-09-26",
-          "summary": "tools/run/run-dir.sh claim treats the literal string none as an artifact path with no special case, so two issues that both report footprint none produce a spurious WAITS-ON even when they touch disjoint files.",
+          "summary": "tools/run/run-dir.sh claim treats the literal string none as an artifact path with no special case. As a result, two issues that both report footprint none produce a spurious WAITS-ON even when they touch disjoint files.",
           "last_verified": "2026-09-23",
           "title": "A bare none footprint is claimed as a literal path, so two disjoint issues collide",
           "waiting_on": "build"
@@ -9341,7 +9341,7 @@
           "id": "HW-OBL-0206",
           "status": "current",
           "status_since": "2026-09-26",
-          "summary": "hw-run-policy tells a subagent needing its own workspace to make one by hand with git worktree add. Edit and Write on a file under that hand-made worktree are refused, because the write sandbox stays pinned to the worktree the subagent was launched into.",
+          "summary": "hw-run-policy tells a subagent needing its own workspace to make one by hand with git worktree add. Edit and Write on a file under that hand-made worktree are refused. That is because the write sandbox stays pinned to the worktree the subagent was launched into.",
           "last_verified": "2026-09-23",
           "title": "hw-run-policy names a worktree-add workaround that Write/Edit refuses under this harness",
           "waiting_on": "build"
@@ -9918,7 +9918,7 @@
           "id": "HW-PD-0002",
           "status": "current",
           "status_since": "2026-09-07",
-          "summary": "Adjudication runs as its own stage before construction and its prompt licenses refusal, because a run that separated them returned a refusal or a correction from six of eight slots, and that costs one parent turn per issue which is paid.",
+          "summary": "Adjudication runs as its own stage before construction, and its prompt licenses refusal. That is because a run that separated them returned a refusal or a correction from six of eight slots. The separation costs one parent turn per issue, and that cost is paid.",
           "last_verified": "2026-09-07",
           "title": "Adjudication is a separate stage, and refusal is licensed",
           "provenance": {
@@ -9987,7 +9987,7 @@
           "id": "HW-PD-0005",
           "status": "current",
           "status_since": "2026-09-07",
-          "summary": "The run ledger is one directory of small files rather than one markdown file, its per-iteration log and its findings are JSONL read by the line, every total is derived and never stored, and a database is deferred until a cross-run question asks for one.",
+          "summary": "The run ledger is one directory of small files rather than one markdown file. Its per-iteration log and its findings are JSONL read by the line, and every total is derived and never stored. A database is deferred until a cross-run question asks for one.",
           "last_verified": "2026-09-07",
           "title": "The ledger is split, its tabular parts are JSONL, and its totals are derived",
           "provenance": {
