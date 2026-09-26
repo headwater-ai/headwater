@@ -7,6 +7,7 @@ The documents on this shelf, in the reading order this corpus derives.
 - [Q1 — Implementation language](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [Q2 — Schema format](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
 - [Q3 — How much of the default taxonomy ships in the box](0003-how-much-of-the-default-taxonomy-ships-in-the-box.md) — The base package is minimal and derived from the core, and optional content ships as add-only bundles.
+- [A reciprocal half is owed once its writer leaves its initial state](0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md) — While a draft holds the only half of a required pair, nothing is owed. The far document owes its half once the draft is promoted. (asserted, and no human has accepted it)
 - [Q4 — Relation storage](0004-relation-storage.md) — Front matter is authoritative, and a relation instance is an object rather than a pointer.
 - [Q5 — Voice checking depth](0005-voice-checking-depth.md) — Voice checking stays lexical, with a curated pattern set, a per-category posture and a reasoned escape hatch.
 - [Q6 — Where the corpus graph lives at rest](0006-where-the-corpus-graph-lives-at-rest.md) — The graph never rests. Every run rebuilds it, and no derived artifact is canonical for anything.

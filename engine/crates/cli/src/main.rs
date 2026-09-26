@@ -4303,8 +4303,8 @@ fn scaffold_report(
                 "  {} {} — `created_by: {}`, so a scaffold pays for it",
                 edge.relation, edge.target, edge.created_by
             );
-            match &edge.reciprocal {
-                Some(half) => {
+            match (&edge.reciprocal, &edge.owed) {
+                (Some(half), _) => {
                     let _ = writeln!(
                         out,
                         "    the far half `{}` went into {}, because reciprocity is required",
@@ -4312,7 +4312,17 @@ fn scaffold_report(
                         paint(Role::Path, &half.path, mode)
                     );
                 }
-                None => {
+                (None, Some(owed)) => {
+                    let _ = writeln!(
+                        out,
+                        "    the far half `{}` is owed by {} once this document leaves `{}`, \
+                         and `headwater check --fix` writes it then",
+                        owed.half.relation,
+                        paint(Role::Path, &owed.half.path, mode),
+                        owed.until
+                    );
+                }
+                (None, None) => {
                     let _ = writeln!(out, "    the relation asks for no far half");
                 }
             }
