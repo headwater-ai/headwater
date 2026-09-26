@@ -6,6 +6,7 @@ nav:
       - "Q1 — Implementation language": "decisions/0001-implementation-language.md"
       - "Q2 — Schema format": "decisions/0002-schema-format.md"
       - "Q3 — How much of the default taxonomy ships in the box": "decisions/0003-how-much-of-the-default-taxonomy-ships-in-the-box.md"
+      - "A reciprocal half is owed once its writer leaves its initial state": "decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md"
       - "Q4 — Relation storage": "decisions/0004-relation-storage.md"
       - "Q5 — Voice checking depth": "decisions/0005-voice-checking-depth.md"
       - "Q6 — Where the corpus graph lives at rest": "decisions/0006-where-the-corpus-graph-lives-at-rest.md"

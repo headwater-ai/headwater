@@ -572,18 +572,16 @@ git commit -m "A first governed corpus"</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">11</span>Declare an edge between two documents</h2>
-        <p class="prose">A <strong>relation</strong> is a typed edge between two documents, and it names its target by identifier rather than by path. A path dies at the first rename and an identifier does not. <code>supersedes</code> requires both ends, so the verb wrote the far half into the target for you. Two documents now carry one edge between them.</p>
+        <p class="prose">A <strong>relation</strong> is a typed edge between two documents, and it names its target by identifier rather than by path. A path dies at the first rename and an identifier does not. <code>supersedes</code> requires both ends. The new decision is a draft, and nothing may rely on a draft yet, so the verb left the target alone. The far half is owed only once the new decision leaves <code>draft</code>.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>0</code>.</span></p>
       </div>
       <div>
           <pre class="cmd verbatim">headwater new decision --title "Deliver at least once" --relates supersedes=ACME-DR-0001 --summary "Retrying a delivery is safe, so the queue may send one attempt twice."</pre>
-          <p class="blocklabel">what that prints</p>
-          <pre class="out verbatim">wrote docs/decisions/0002-deliver-at-least-once.md
-edited docs/decisions/0001-store-attempts-in-postgres.md</pre>
+          <pre class="out verbatim">wrote docs/decisions/0002-deliver-at-least-once.md</pre>
           <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">the edges it proposed
   supersedes ACME-DR-0001 — `created_by: scaffold`, so a scaffold pays for it
-    the far half `superseded_by` went into docs/decisions/0001-store-attempts-in-postgres.md, because reciprocity is required</pre>
+    the far half `superseded_by` is owed by docs/decisions/0001-store-attempts-in-postgres.md once this document leaves `draft`, and `headwater check --fix` writes it then</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
       </div>
     </div>
@@ -599,8 +597,9 @@ edited docs/decisions/0001-store-attempts-in-postgres.md</pre>
     </div>
     <div class="stepgrid">
       <div>
-        <h2><span class="n">12</span>Break one half, and read the finding</h2>
-        <p class="prose">The <code>git checkout</code> put the target back to the version you committed, which is the version before the far half arrived. One edge now has one end.</p>
+        <h2><span class="n">12</span>Promote the new decision, and read the finding</h2>
+        <p class="prose">Open <code>docs/decisions/0002-deliver-at-least-once.md</code>. Change <code>status: draft</code> to <code>status: current</code>. A document states the state it will hold once your change lands, so a decision you propose as settled is <code>current</code>.</p>
+        <p class="prose">The new decision is live now, so the far half is owed. One edge has one end.</p>
         <p class="prose">Read the identifier in parentheses. An <strong>obligation</strong> is a claim this system makes about itself, with the rule that verifies it named beside it. <code>OB-REL-1</code> is the obligation that this rule discharges, and every finding names the one it serves.</p>
         <p class="prose"><strong>One of those readings is about the package and one is about your run.</strong> The thirty-two obligations and their severities come from <code>headwater/standard</code>. They read the same on your first day and on your thousandth. The last line is derived from the run in front of you. It names every rule that fired at you with no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.</p>
         <p class="prose">One rule is named there. <code>facet.value.blank</code> reports a facet a document declares and leaves empty, and no control in <code>headwater/standard</code> names it yet. HW-OBL-0170 records that debt. A finding it raises is a true finding, and the line above is how a report tells you which of its rules answers to nothing.</p>
@@ -609,8 +608,7 @@ edited docs/decisions/0001-store-attempts-in-postgres.md</pre>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>1</code>. <code>headwater check 2&gt;/dev/null | grep 'obligations:'</code> prints the <code>32 obligations:</code> line of the register block above, and nothing else.</span></p>
       </div>
       <div>
-          <pre class="cmd verbatim">git checkout -- docs/decisions/0001-store-attempts-in-postgres.md
-headwater check</pre>
+          <pre class="cmd verbatim">headwater check</pre>
           <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">  1 findings
         1 ✗ error
