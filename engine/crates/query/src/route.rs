@@ -171,6 +171,26 @@ pub struct Route {
     pub withheld: usize,
     /// Why the pointer list is empty, and `None` where it is not.
     pub silence: Option<Silence>,
+    /// The paths of the task that the governed scope admits and that no
+    /// document governs, in task order (#953). Empty where the task names none.
+    pub ungoverned: Vec<Ungoverned>,
+}
+
+/// A path of the task that the governed scope admits and that nothing governs.
+///
+/// The write-time hook asks the route one question per edit, and before #953
+/// this case answered with silence: a path the taxonomy expects a `governs`
+/// edge to reach, and no edge reaches it. The route states the fact and the
+/// front-matter lines that would declare the edge, and it writes nothing.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Ungoverned {
+    /// The path, normalized as the resolver normalizes an anchor.
+    pub path: String,
+    /// The relations that govern and whose target admits the anchor kind of a
+    /// scope pattern that admits the path, in declaration order. They are read
+    /// off the taxonomy and never named here, so an adopter's own governance
+    /// relation appears with no change to this crate.
+    pub relations: Vec<String>,
 }
 
 /// Why a route offered one pointer.
@@ -312,6 +332,7 @@ impl Surface<'_> {
             evidence: Vec::new(),
             withheld: 0,
             silence: None,
+            ungoverned: Vec::new(),
         };
 
         // Step 0. An anchor the task named outright. This is an identity and
@@ -325,6 +346,7 @@ impl Surface<'_> {
         // cannot see across them, so a document that governs two of the named
         // paths would otherwise be offered twice.
         route.anchors = self.named_anchors(task);
+        route.ungoverned = self.ungoverned_in_scope(task);
         let mut anchored: Vec<Pointer> = Vec::new();
         let mut evidence: Vec<(String, Evidence)> = Vec::new();
         for anchor in &route.anchors {
@@ -531,6 +553,65 @@ impl Surface<'_> {
             if reached {
                 found.push(normalized);
             }
+        }
+        found
+    }
+
+    /// The paths of the task that the governed scope admits and that no
+    /// governing edge reaches.
+    ///
+    /// A word counts only when it holds a `/`, so a prose task whose words
+    /// happen to match a pattern such as `site/**` does not. The scope is the
+    /// one `taxonomy audit` counts, read through [`Scope::declared`], and the
+    /// test is [`Scope`]'s pattern test and no second matcher. What git ignores
+    /// is not read here, because this crate runs no version control command:
+    /// the verb drops those paths afterward with [`Route::retain_unignored`].
+    ///
+    /// [`Scope`]: headwater_graph::scope::Scope
+    /// [`Scope::declared`]: headwater_graph::scope::Scope::declared
+    fn ungoverned_in_scope(&self, task: &str) -> Vec<Ungoverned> {
+        let scope = headwater_graph::scope::Scope::declared(self.relations());
+        let mut found: Vec<Ungoverned> = Vec::new();
+        if scope.is_empty() {
+            return found;
+        }
+        for word in task.split_whitespace() {
+            let word = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '/' && c != '.');
+            if !word.contains('/') {
+                continue;
+            }
+            let Ok(normalized) = headwater_graph::anchors::normalize(word) else {
+                continue;
+            };
+            if found.iter().any(|seen| seen.path == normalized) {
+                continue;
+            }
+            let kinds: Vec<&str> = scope
+                .members
+                .iter()
+                .filter(|member| {
+                    member
+                        .pattern
+                        .as_ref()
+                        .is_ok_and(|pattern| pattern.matches(&normalized))
+                })
+                .map(|member| member.anchor_kind.as_str())
+                .collect();
+            if kinds.is_empty() || !self.governing_docs_for_path(&normalized).is_empty() {
+                continue;
+            }
+            let relations = self
+                .relations()
+                .relations
+                .iter()
+                .filter(|relation| relation.governs() == Governs::Source)
+                .filter(|relation| relation.to.iter().any(|to| kinds.contains(&to.as_str())))
+                .map(|relation| relation.name.clone())
+                .collect();
+            found.push(Ungoverned {
+                path: normalized,
+                relations,
+            });
         }
         found
     }
@@ -831,6 +912,13 @@ impl Route {
         self
     }
 
+    /// Drop each ungoverned path that git ignores (#951's owner ruling:
+    /// "nobody governs a cache"). The verb calls this, because this crate reads
+    /// no version control, and it reads git only where the list is not empty.
+    pub fn retain_unignored(&mut self, ignored: &headwater_graph::scope::Ignored) {
+        self.ungoverned.retain(|entry| !ignored.covers(&entry.path));
+    }
+
     /// The route as text: what it matched, and what it offers.
     ///
     /// A silent route prints why it is silent. Spec 5 makes silence a result,
@@ -869,6 +957,24 @@ impl Route {
         }
         for anchor in &self.anchors {
             let _ = writeln!(out, "  names the anchor {anchor}");
+        }
+        // No em dash on any of these lines, for the reason the withheld line
+        // below gives: the write-time hook selects pointer lines by one.
+        for entry in &self.ungoverned {
+            let _ = writeln!(
+                out,
+                "  {} is in the governed scope, and nothing governs it",
+                entry.path
+            );
+            if entry.relations.is_empty() {
+                out.push_str("    no declared relation that governs takes it as a target\n");
+                continue;
+            }
+            out.push_str("    a document declares the edge in its front matter:\n");
+            out.push_str("    relations:\n");
+            for relation in &entry.relations {
+                let _ = writeln!(out, "      {relation}:\n        - {}", entry.path);
+            }
         }
         match self.matched.is_empty() {
             true => out.push_str("  no purpose matched\n"),

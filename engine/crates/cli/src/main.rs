@@ -3620,7 +3620,17 @@ fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode
         Some(pointers) => Budget { pointers },
         None => Budget::default(),
     };
-    let route = loaded.surface().route(task, budget);
+    let mut route = loaded.surface().route(task, budget);
+    // Git is read only where the route named an ungoverned path, so a route
+    // that named none runs no version control command (#953).
+    if !route.ungoverned.is_empty() {
+        let corpus = Corpus::declared(
+            root,
+            &loaded.consumer.corpus_root,
+            &loaded.consumer.exclusions,
+        );
+        route.retain_unignored(&headwater_graph::scope::Ignored::read(&corpus.base));
+    }
     // One route, rendered two ways, and the JSON document carries the text form
     // inside it. `.claude/hooks/intent.sh` is the caller that needs both out of
     // one run: it decides on the pointer set and then puts the report a person
