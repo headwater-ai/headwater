@@ -1393,6 +1393,172 @@ fn the_vendored_bundles_agree_with_a_fresh_publish_of_the_maintained_source() {
     );
 }
 
+/// `taxonomy publish --from <dir> --check` over a root the caller names, with
+/// any further arguments after it.
+fn publish_check(root: &Path, from: &Path, extra: &[&str]) -> (Option<i32>, String, String) {
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["taxonomy", "publish", "--check", "--from"])
+        .arg(from)
+        .args(extra)
+        .arg("--root")
+        .arg(root)
+        .output()
+        .expect("the binary runs");
+    (
+        output.status.code(),
+        String::from_utf8_lossy(&output.stdout).into_owned(),
+        String::from_utf8_lossy(&output.stderr).into_owned(),
+    )
+}
+
+/// A scratch root that is both a publisher and a consumer of
+/// `headwater/standard`, in the shape this repository is: the maintained
+/// source under `taxonomy-source/`, the library its `bundles` scalar climbs
+/// out to at `docs/taxonomies/`, and the vendored artifact under
+/// `.headwater/packages/`.
+fn publisher_and_consumer(label: &str) -> Root {
+    let root = Root::scratch(label);
+    for path in [
+        "taxonomy-source/headwater-standard",
+        ".headwater/packages/headwater-standard",
+        "docs/taxonomies",
+    ] {
+        copy(&repository().join(path), &root.path().join(path));
+    }
+    std::fs::copy(
+        repository().join(".headwater/taxonomy.yml"),
+        root.path().join(".headwater/taxonomy.yml"),
+    )
+    .expect("the declaration copies");
+    root
+}
+
+/// Every file under a root with its bytes, so a case can say the tree did not
+/// move.
+fn snapshot(root: &Path) -> Vec<(String, Vec<u8>)> {
+    let mut files: Vec<(String, Vec<u8>)> = relative_files(root)
+        .into_iter()
+        .map(|path| {
+            let bytes = std::fs::read(root.join(&path)).expect("the file reads");
+            (path, bytes)
+        })
+        .collect();
+    files.sort();
+    files
+}
+
+/// #1139: a source `taxonomy.yml` changed without a republish leaves the
+/// vendored copy stale, and before `--check` nothing said so. The bundles
+/// comparison above covers `bundles/` alone, so an edit to `taxonomy.yml`,
+/// `conformance.yml`, `package.yml` or `doctrine/` passed every gate.
+///
+/// The control comes first: a root whose vendored copy is a fresh publish of
+/// its source passes, so a check that always fails does not pass this case.
+/// Then one comment line in the source's `taxonomy.yml` fails the check, the
+/// failure names the file, and the run leaves every file of the tree as it
+/// was, because a check that writes is a publish.
+#[test]
+fn a_source_taxonomy_changed_without_a_republish_fails_publish_check_and_names_the_file() {
+    let root = publisher_and_consumer("check-stale-taxonomy");
+    let source = root.path().join("taxonomy-source/headwater-standard");
+
+    let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
+    assert_eq!(
+        code,
+        Some(0),
+        "a vendored copy that is a fresh publish of its source must pass the check.\nstdout: {stdout}\nstderr: {stderr}"
+    );
+
+    let taxonomy = source.join("taxonomy.yml");
+    let mut text = std::fs::read_to_string(&taxonomy).expect("the source taxonomy reads");
+    text.push_str("# an edit nobody republished\n");
+    std::fs::write(&taxonomy, text).expect("the source taxonomy is edited");
+    let before = snapshot(root.path());
+
+    let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
+    assert_eq!(
+        code,
+        Some(1),
+        "a source edited without a republish must fail the check.\nstdout: {stdout}\nstderr: {stderr}"
+    );
+    assert!(
+        stderr.contains("taxonomy.yml"),
+        "the failure must name the member that moved: {stderr}"
+    );
+    assert!(
+        !stderr.contains("bundles/"),
+        "only the edited member moved, so no bundle may be named: {stderr}"
+    );
+    assert_eq!(
+        before,
+        snapshot(root.path()),
+        "`--check` changed a file in the tree it was checking"
+    );
+}
+
+/// `--check` compares against a directory it writes to itself, so an `--out`
+/// is a request it cannot honor, and a `--package` source is by construction
+/// the vendored copy it would be compared with.
+#[test]
+fn publish_check_refuses_out_package_and_a_missing_from() {
+    let root = publisher_and_consumer("check-refusals");
+    let source = root.path().join("taxonomy-source/headwater-standard");
+    let out = root.path().join("release");
+
+    let (code, _, stderr) = publish_check(
+        root.path(),
+        &source,
+        &["--out", out.to_str().expect("utf-8")],
+    );
+    assert_eq!(code, Some(1), "`--check --out` must be refused: {stderr}");
+    assert!(stderr.contains("--out"), "{stderr}");
+    assert!(!out.exists(), "a refused `--check --out` wrote the artifact");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["taxonomy", "publish", "--check", "--package", "headwater/standard"])
+        .arg("--root")
+        .arg(root.path())
+        .output()
+        .expect("the binary runs");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(output.status.code(), Some(1), "`--check` without `--from` must be refused: {stderr}");
+    assert!(stderr.contains("--from"), "{stderr}");
+}
+
+/// A root with a source and no vendored copy of it has nothing to compare, and
+/// the refusal names the package it looked for.
+#[test]
+fn publish_check_with_no_vendored_copy_is_refused_and_names_the_package() {
+    let root = publisher_and_consumer("check-no-vendored");
+    std::fs::remove_dir_all(root.path().join(".headwater/packages/headwater-standard"))
+        .expect("the vendored copy is removed");
+    let source = root.path().join("taxonomy-source/headwater-standard");
+
+    let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
+    assert_eq!(
+        code,
+        Some(1),
+        "no vendored copy must fail the check.\nstdout: {stdout}\nstderr: {stderr}"
+    );
+    assert!(stderr.contains("headwater/standard"), "{stderr}");
+}
+
+/// What CI runs: this repository's own source against its own vendored copy.
+#[test]
+fn this_repository_passes_publish_check_on_its_own_source() {
+    let (code, stdout, stderr) = publish_check(
+        &repository(),
+        &repository().join("taxonomy-source/headwater-standard"),
+        &[],
+    );
+    assert_eq!(
+        code,
+        Some(0),
+        "the vendored copy of headwater/standard is not a fresh publish of \
+         taxonomy-source/headwater-standard.\nstdout: {stdout}\nstderr: {stderr}"
+    );
+}
+
 /// #518: an artifact carries no bundle reference corpus, and the publisher
 /// keeps every one of its own.
 ///
