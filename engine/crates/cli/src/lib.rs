@@ -679,7 +679,10 @@ pub enum Verb {
                     other end. Repeatable. It is refused unless the taxonomy declares \
                     `created_by: scaffold` on the relation, unless both ends are kinds the \
                     relation permits, and unless the target resolves. Where reciprocity is \
-                    required the far half is written into the target document"
+                    required and the new document opens at an initial state, the far half is \
+                    owed until the document leaves that state, and `headwater check --fix` \
+                    writes it then. In every other case the far half is written into the \
+                    target document at once"
         )]
         relates: Vec<(String, String)>,
         #[arg(
@@ -1169,6 +1172,17 @@ pub enum TaxonomyWord {
                     without this flag"
         )]
         clear_killed: bool,
+        #[arg(
+            long,
+            help = "write nothing, and exit 1 when the vendored copy under `.headwater/packages/` \
+                    is not what a fresh publish of the source at `--from` produces. It publishes \
+                    into a private directory outside the tree, removes it, and names each member \
+                    that moved. For a repository that maintains a package and also consumes it, \
+                    so that a source changed without a republish fails a gate. Needs `--from`, \
+                    and is refused with `--out`, `--package`, `--assembly`, `--clear-killed` and \
+                    `--json`"
+        )]
+        check: bool,
         #[arg(long, help = JSON_ALONE)]
         json: bool,
     },

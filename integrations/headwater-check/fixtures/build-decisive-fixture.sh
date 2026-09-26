@@ -94,5 +94,9 @@ DOC
 
 "$bin" check --root "$dest" --strict
 "$bin" generate --root "$dest" --check
+# The action runs this third verb since #1118. `new` above runs after the
+# resolve and does not move the lock (measured with v0.2.1), so no second
+# resolve is needed before this line.
+"$bin" taxonomy resolve --root "$dest" --check
 
 echo "$0: built a clean, passing fixture corpus at $dest" >&2

@@ -193,7 +193,11 @@ add:
   # which is wrong. It is a second document about one subject at a second level.
   #
   # `created_by: scaffold`, on the argument design-spec used for `applied_in`:
-  # the run that opens a technical spec from a functional spec writes both ends.
+  # the run that opens a technical spec from a functional spec writes the
+  # technical spec's half. The technical spec opens at an initial state, so the
+  # run writes no half into the functional spec and reports it as owed. The
+  # functional spec owes it once the technical spec is promoted, and
+  # `headwater check --fix` writes it then (HW-DR-0086).
   relations.realizes:
     family: derivation
     from: [technical_spec]
