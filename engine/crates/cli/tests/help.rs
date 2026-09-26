@@ -71,6 +71,25 @@ impl AsRef<std::ffi::OsStr> for Scratch {
     }
 }
 
+/// A case that panics while it holds a scratch directory still removes it.
+///
+/// This is the half of #1158 that a passing suite cannot show: the CI step
+/// that counts what the suite left reads only runs that passed. A trailing
+/// `remove_dir_all` is skipped by a failed assertion, and the guard is not.
+#[test]
+fn a_scratch_directory_is_removed_when_its_case_panics() {
+    let at = std::env::temp_dir().join(format!("headwater-cli-help-{}-panics", std::process::id()));
+    let held = at.clone();
+    let unwound = std::panic::catch_unwind(move || {
+        let scratch = Scratch(held);
+        std::fs::create_dir_all(&scratch).expect("the directory is there");
+        assert!(scratch.is_dir(), "the directory was made");
+        panic!("a failed assertion in the case");
+    });
+    assert!(unwound.is_err(), "the closure panicked");
+    assert!(!at.exists(), "{} survived the panic", at.display());
+}
+
 fn ran(label: &str, arguments: &[&str]) -> Ran {
     let at = Scratch(
         std::env::temp_dir().join(format!("headwater-cli-help-{}-{label}", std::process::id())),
