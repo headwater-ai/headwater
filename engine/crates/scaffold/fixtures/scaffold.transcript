@@ -296,7 +296,7 @@ TODO write this section.
 === new nonesuch --title "A kind nobody declared"
 
 refused, KindUnknown
-  no kind is named `nonesuch`. This taxonomy declares `addressed`, `ambiguous`, `annexed`, `chaptered`, `decision_record`, `deeper`, `design_spec`, `exhausted`, `holed`, `misplaced`, `note`, `numbered`, `orphan`, `standalone`, `standard`, `unmintable`, `unopened_record`
+  no kind is named `nonesuch`. This taxonomy declares `addressed`, `ambiguous`, `annexed`, `chaptered`, `decision_record`, `deeper`, `design_spec`, `exhausted`, `holed`, `index_page`, `misplaced`, `module_readme`, `note`, `numbered`, `orphan`, `standalone`, `standard`, `unmintable`, `unopened_record`
 
 === new governed_document --title "An abstract kind"
 
@@ -509,4 +509,96 @@ refused, FacetIsDiscriminator
 
 refused, FacetIsDiscriminator
   `--facet doc_type=design_spec` names the discriminator of the shelf `spec_series`, and the kind argument decides it: a `design_spec` carries `doc_type: design_spec` and nothing else. A value stated here is a second answer to what this document is, against the identifier, the layout and the sections this run derived from `design_spec`
+
+=== new module_readme --title "A fixed name with no directory"
+
+refused, DirectoryNeeded
+  the shelf `module_readmes` declares `corpus/modules/*/README.md`, which fixes the file name and not the directory. Name the directory the glob stands for with `--directory <path>`
+
+=== new module_readme --title "A fixed name in a named directory" --directory corpus/modules/alpha
+
+wrote corpus/modules/alpha/README.md
+identifier SPEC-FIX-a-fixed-name-in-a-named-directory under `spec_id`, allocation minted-once, reconciled from nothing
+no claim
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+assisted 3 of 4 — fields 2/3, sections 0/0, identifier 1/1, halves 0/0
+--- the document ---
+---
+id: SPEC-FIX-a-fixed-name-in-a-named-directory
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+---
+
+# A fixed name in a named directory
+
+=== new module_readme --title "A fixed name with a trailing slash" --directory corpus/modules/beta/
+
+wrote corpus/modules/beta/README.md
+identifier SPEC-FIX-a-fixed-name-with-a-trailing-slash under `spec_id`, allocation minted-once, reconciled from nothing
+no claim
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+assisted 3 of 4 — fields 2/3, sections 0/0, identifier 1/1, halves 0/0
+--- the document ---
+---
+id: SPEC-FIX-a-fixed-name-with-a-trailing-slash
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+---
+
+# A fixed name with a trailing slash
+
+=== new module_readme --title "A fixed name off the shelf" --directory corpus/elsewhere/alpha
+
+refused, DirectoryOffShelf
+  `--directory corpus/elsewhere/alpha` does not place a document on the shelf `module_readmes`, which declares `corpus/modules/*/README.md`: corpus/elsewhere/alpha/README.md is not a path the pattern matches
+
+=== new module_readme --title "A fixed name one level too deep" --directory corpus/modules/alpha/deeper
+
+refused, DirectoryOffShelf
+  `--directory corpus/modules/alpha/deeper` does not place a document on the shelf `module_readmes`, which declares `corpus/modules/*/README.md`: corpus/modules/alpha/deeper/README.md is not a path the pattern matches
+
+=== new module_readme --title "A fixed name that climbs out" --directory corpus/modules/../spec
+
+refused, DirectoryOffShelf
+  `--directory corpus/modules/../spec` does not place a document on the shelf `module_readmes`, which declares `corpus/modules/*/README.md`: a `.`, `..` or empty segment names no directory, and a glob would match `..` where the corpus does not mean it
+
+=== new module_readme --title "A fixed name from the root" --directory /corpus/modules/alpha
+
+refused, DirectoryOffShelf
+  `--directory /corpus/modules/alpha` does not place a document on the shelf `module_readmes`, which declares `corpus/modules/*/README.md`: the path is absolute, and a document is placed relative to the corpus root
+
+=== new index_page --title "A shelf that is one file"
+
+wrote corpus/INDEX.md
+identifier SPEC-FIX-a-shelf-that-is-one-file under `spec_id`, allocation minted-once, reconciled from nothing
+no claim
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+assisted 3 of 4 — fields 2/3, sections 0/0, identifier 1/1, halves 0/0
+--- the document ---
+---
+id: SPEC-FIX-a-shelf-that-is-one-file
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+---
+
+# A shelf that is one file
+
+=== new index_page --title "A single file with a directory" --directory corpus
+
+refused, DirectoryNotAsked
+  `--directory corpus` names a directory, and the shelf `index_pages` declares `corpus/INDEX.md`, which decides the directory itself. Nothing would have read the value, so leave the flag out
+
+=== new decision_record --title "A directory shelf with a directory" --directory corpus/decisions
+
+refused, DirectoryNotAsked
+  `--directory corpus/decisions` names a directory, and the shelf `decisions` declares `corpus/decisions/**`, which decides the directory itself. Nothing would have read the value, so leave the flag out
 

@@ -219,6 +219,7 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
             now: Date::parse(PINNED).expect("the pinned date"),
             relates,
             given: &[],
+            directory: None,
         };
         let plan = propose(&sources, &request)
             .unwrap_or_else(|refusal| panic!("{kind} `{title}`: {refusal}"));
