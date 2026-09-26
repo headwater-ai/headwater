@@ -176,6 +176,8 @@ docs/decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-
   typed: decision
 docs/decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md
   typed: decision
+docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
