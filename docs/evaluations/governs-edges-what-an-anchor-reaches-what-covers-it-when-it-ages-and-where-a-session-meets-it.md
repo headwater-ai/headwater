@@ -90,7 +90,7 @@ Three alternatives were measured against this repository's own history and refus
 
 Spec 5 states that a hook calls a verb that ships and introduces none, and every position below keeps that term. `headwater route <path>` is the verb at each one.
 
-**Read.** A `PreToolUse` position on `Read` routes the path and prints the governing documents before the agent has the bytes. It is silent when nothing governs the path. So it costs one route per file open, which is 35 milliseconds on this corpus. It adds context only where a document has something to say.
+**Read.** A `PreToolUse` position on `Read` routes the path and prints the governing documents before the agent has the bytes. It is silent when nothing governs the path. So it costs one route per file open. That was 35 milliseconds on this corpus when this evaluation measured it, and 180 milliseconds on 2026-09-26. [Spec 16](../spec/16-harness-support.md) keeps the current figure. It adds context only where a document has something to say.
 
 **Write, before.** The `write.sh` advisory moves from `PostToolUse` to `PreToolUse`, so an agent reads the governing documents before it edits and not after. The `PostToolUse` position keeps one line: the edit made an edge suspect, and `headwater check` reports it.
 

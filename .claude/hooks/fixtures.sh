@@ -822,6 +822,15 @@ if [ -x "$engine" ]; then
     expect 'a pointer set with something in it hands back the report the engine rendered' \
         intent.sh 0 'only-the-rendered-report-carries-this' "$intent_payload"
 
+    # A governing document that declares no summary. The report renders its
+    # pointer with no em dash, and the hook used to select pointers by one, so
+    # the document dropped out of the advisory in silence (HW-OBL-0149). The
+    # hook reads the pointer members now, and names it (#953).
+    stub_route '{"version":"1.0","task":"t","anchors":["tools/x.sh"],"pointers":[{"path":"docs/a.md","kind":"decision","name":"A decision with no summary","unwarranted":false,"evidence":{"by":"anchor","anchors":["tools/x.sh"],"suspect":[]}}],"text":"route \"t\"\n  docs/a.md (A decision with no summary)\n"}'
+    expect 'a governing document with no summary still reaches the pre-edit advisory' \
+        write.sh 0 'docs/a.md (A decision with no summary)' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"tools/x.sh"}}'
+
     cp "$engine" "$open_root/engine/target/release/headwater"
 
     PATH=$real_path

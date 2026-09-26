@@ -243,7 +243,7 @@ pub struct Suspect {
 
 impl Suspect {
     /// The line under the pointer. It carries no em dash, for the reason the
-    /// withheld line gives.
+    /// withheld line gives: in this report the dash marks a pointer.
     pub fn render(&self) -> String {
         format!(
             "suspect: {} was verified at {} and is now at {}, and headwater check reports it",
@@ -1133,7 +1133,7 @@ impl Route {
             let _ = writeln!(out, "  names the anchor {anchor}");
         }
         // No em dash on any of these lines, for the reason the withheld line
-        // below gives: the write-time hook selects pointer lines by one.
+        // below gives: in this report the dash marks a pointer.
         for entry in &self.ungoverned {
             let _ = writeln!(
                 out,
@@ -1197,9 +1197,10 @@ impl Route {
         }
         // Printed only where the budget removed something, so a route that cut
         // nothing renders exactly as it did before. The line carries no em dash,
-        // because `.claude/hooks/write.sh` selects pointer lines with a grep for
-        // one and would show this count to an author as though it were a
-        // document.
+        // because in this report the dash separates a document from its
+        // summary, and a reader would take the count for a document. No hook
+        // reads the dash any more: `.claude/hooks/lib.sh` reads the pointers
+        // from `route --json` (HW-OBL-0149, #953).
         if self.withheld > 0 {
             let more = match self.withheld {
                 1 => "pointer",
