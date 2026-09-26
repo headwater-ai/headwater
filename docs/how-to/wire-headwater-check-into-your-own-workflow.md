@@ -50,20 +50,19 @@ jobs:
           root: .
           version: v0.1.2
           strict: "true"
-      - run: headwater taxonomy resolve --check --root .
 ```
 
-Two different refs are in play, and they answer two different questions. `@main` names the commit of *this action's own YAML and scripts* your workflow runs. No tagged release of this repository yet carries `integrations/`. Pin it at a release tag once one does. `version: v0.1.2` names the *engine binary* the action downloads and runs against your corpus. That choice is entirely independent of the first ref. `root` is the corpus this action checks, relative to your checkout. `latest` also works for `version`. It resolves to the newest tag that carries the binary this action needs. It skips a tag of the `taxonomy/…` release stream, and it skips a tag whose release carries no asset. `strict` is `true` by default. The job fails on an error-severity finding from `headwater check`. It also fails when a committed projection, such as a shelf index or the graph export, disagrees with your corpus and your lock.
+Two different refs are in play, and they answer two different questions. `@main` names the commit of *this action's own YAML and scripts* your workflow runs. No tagged release of this repository yet carries `integrations/`. Pin it at a release tag once one does. `version: v0.1.2` names the *engine binary* the action downloads and runs against your corpus. That choice is entirely independent of the first ref. `root` is the corpus this action checks, relative to your checkout. `latest` also works for `version`. It resolves to the newest tag that carries the binary this action needs. It skips a tag of the `taxonomy/…` release stream, and it skips a tag whose release carries no asset. `strict` is `true` by default. The job fails on an error-severity finding from `headwater check`. It also fails when a committed projection, such as a shelf index or the graph export, disagrees with your corpus and your lock. It also fails when your taxonomy lock is not what your overlay and your vendored packages resolve to.
 
-The last step is not part of the action. It holds your taxonomy lock to your overlay and your vendored packages, and it fails when the lock is not what they resolve to. The action does not run this check, and without the step nothing in the job reads the lock against its sources. The action puts `headwater` on the path of the job, so the step needs no install of its own.
+The action runs three checks, and you add no step of your own for the lock. `headwater check --strict` reads your documents against your lock. `headwater generate --check` compares each committed projection with what your corpus and your lock produce. `headwater taxonomy resolve --check` compares your lock with what your overlay and your vendored packages resolve to. Neither of the first two checks reads the overlay or the packages, so only the third check finds a lock that is out of date. When the lock fails, the job log and the job summary show the message of the engine, which names the source that changed.
 
 ## Make it cover a merge
 
 `headwater init --git` commits a `-merge` line in `.gitattributes` for each generated file that states a count or a digest. In an adopter's tree, that file is the taxonomy lock. On your machine, git stops a merge that moves such a file. GitHub does not read that attribute. We measured this on the throwaway pull request [#1073](https://github.com/headwater-ai/headwater/pull/1073). GitHub showed it as mergeable, and its test merge held the edits of both branches in one `-merge` file.
 
-So when you merge with the button on GitHub, this workflow is the only cover. Its `pull_request` run checks the tree of the test merge, and two of its steps read the result:
+So when you merge with the button on GitHub, this workflow is the only cover. Its `pull_request` run checks the tree of the test merge, and two checks inside the action read the result:
 
-- `headwater taxonomy resolve --check`, the last step, fails when the merged lock is not what the merged overlay and packages resolve to. That includes a lock conflict that somebody resolved by taking one side.
+- `headwater taxonomy resolve --check`, inside the action, fails when the merged lock is not what the merged overlay and packages resolve to. That includes a lock conflict that somebody resolved by taking one side.
 - `headwater generate --check`, inside the action, fails when a committed projection is not what the merged corpus and lock produce.
 
 `headwater check --strict` does not compare the lock with its sources, so it does not cover the lock by itself.
