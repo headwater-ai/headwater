@@ -71,11 +71,11 @@ fn fixtures_dir() -> PathBuf {
 /// The label is in the name beside the process id, because cargo runs the
 /// cases of one target as threads of one process and a directory keyed on the
 /// pid alone is one directory shared by two tests.
-fn scratch(label: &str) -> PathBuf {
-    let at = std::env::temp_dir().join(format!(
+fn scratch(label: &str) -> Scratch {
+    let at = Scratch(std::env::temp_dir().join(format!(
         "headwater-check-renamed-{}-{label}",
         std::process::id()
-    ));
+    )));
     let _ = std::fs::remove_dir_all(&at);
     std::fs::create_dir_all(&at).expect("a scratch directory");
     copy_into(&fixtures_dir().join("check"), &at.join("check"));
@@ -85,6 +85,35 @@ fn scratch(label: &str) -> PathBuf {
     )
     .expect("the fixture taxonomy copies");
     at
+}
+
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(std::path::PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = std::path::Path;
+    fn deref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::path::Path> for Scratch {
+    fn as_ref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
 }
 
 fn copy_into(from: &Path, to: &Path) {
@@ -256,7 +285,7 @@ fn the_links_that_resolve_are_a_population_and_not_an_empty_set() {
     let base = scratch("population");
     let run = run_over(&base, None);
 
-    let corpus = Corpus::new(base.clone(), "check");
+    let corpus = Corpus::new(base.to_path_buf(), "check");
     let source = std::fs::read_to_string(base.join("check.taxonomy.yml")).expect("the taxonomy");
     let root = headwater_yaml::load(&source)
         .expect("it loads")

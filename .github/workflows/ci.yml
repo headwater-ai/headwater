@@ -384,10 +384,19 @@ jobs:
         # on the runner's fourth trial job).
         if: runner.environment == 'self-hosted'
         run: echo "HEADWATER_MOUNT_POINT=/home/runner/hw-mount" >> "$GITHUB_ENV"
+      - name: A temporary directory private to this job
+        # Both test steps below set `TMPDIR` to this directory, so that
+        # `std::env::temp_dir()` names it in every test and in every binary a
+        # test runs. The step after them then reads what the suite left
+        # there. Before #1158 one passing suite run left 91 directories in
+        # the temporary directory, and on 2026-09-26 the host that runs this
+        # suite most often ran out of inodes in `/tmp` with thousands of them.
+        run: mkdir -p "$RUNNER_TEMP/hw-tmp"
       - name: Test
         run: cargo test --locked --workspace --exclude headwater-resolve
         working-directory: engine
         env:
+          TMPDIR: ${{ runner.temp }}/hw-tmp
           HEADWATER_STOCK_VALIDATOR: required
           HEADWATER_SARIF_VALIDATOR: required
           HEADWATER_SHA256_ORACLE: required
@@ -423,6 +432,7 @@ jobs:
         run: cargo test --locked -p headwater-resolve -- --test-threads=1
         working-directory: engine
         env:
+          TMPDIR: ${{ runner.temp }}/hw-tmp
           HEADWATER_STOCK_VALIDATOR: required
           HEADWATER_SARIF_VALIDATOR: required
           HEADWATER_SHA256_ORACLE: required
@@ -434,6 +444,23 @@ jobs:
           # reach it. This turns "DID NOT RUN" into a failure instead of a
           # quiet skip that goes green regardless.
           HEADWATER_MOUNT_REQUIRED: 1
+      - name: The engine suite leaves nothing in its temporary directory
+        # Every directory a test makes under `std::env::temp_dir()` is held
+        # by a guard that removes it on drop, so a passing suite leaves none
+        # (#1158). No single test can see this, because cargo runs each test
+        # target as its own process and nothing of the suite runs after the
+        # last one. This step is that last reader: it names every entry the
+        # two steps above left under a `headwater-` or `hw-` prefix and fails
+        # when there is one. A tool the suite runs, such as sccache, can keep
+        # its own files there under another name, and the step leaves those.
+        run: |
+          left=$(find "$RUNNER_TEMP/hw-tmp" -mindepth 1 -maxdepth 1 \( -name 'headwater-*' -o -name 'hw-*' \) | sort)
+          if [ -n "$left" ]; then
+            printf '%s\n' "$left"
+            echo "::error::the engine suite left $(printf '%s\n' "$left" | wc -l) entries in its temporary directory; hold each one in a guard that removes it on drop (#1158)"
+            exit 1
+          fi
+          echo "the engine suite left nothing in $RUNNER_TEMP/hw-tmp"
       - name: A pooled cargo slot links each worktree's own crates
         # `tools/hw-cargo` shares one target directory per slot across
         # worktrees, and cargo reads another worktree's copy of a workspace

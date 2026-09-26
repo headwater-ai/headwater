@@ -44,19 +44,48 @@ fn repository_root() -> PathBuf {
         .expect("the repository root")
 }
 
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = Path;
+    fn deref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<Path> for Scratch {
+    fn as_ref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
+}
+
 /// A scratch directory keyed on the case as well as the process.
 ///
 /// `cargo` runs the cases of one target as threads of one process, so a helper
 /// keyed on the pid alone hands every case the same directory and each one
 /// deletes the others' trees underneath them.
-fn scratch(case: &str) -> PathBuf {
+fn scratch(case: &str) -> Scratch {
     let dir = std::env::temp_dir().join(format!(
         "headwater-merge-driver-{}-{case}",
         std::process::id()
     ));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).expect("the scratch directory");
-    dir
+    Scratch(dir)
 }
 
 fn git(repo: &Path, args: &[&str]) -> Output {
@@ -276,7 +305,7 @@ fn merge_two_branches(
     gate: Gate,
     first: Figures,
     second: Figures,
-) -> (PathBuf, Output) {
+) -> (Scratch, Output) {
     merge_two_branches_in(Setup::Configured, case, attributes, gate, first, second)
 }
 
@@ -296,7 +325,7 @@ fn merge_two_branches_in(
     gate: Gate,
     first: Figures,
     second: Figures,
-) -> (PathBuf, Output) {
+) -> (Scratch, Output) {
     let repo = scratch(case);
     let driver = repository_root().join(".githooks/merge-regenerate");
     assert!(driver.is_file(), "{} is not there", driver.display());

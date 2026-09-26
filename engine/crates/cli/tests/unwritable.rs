@@ -150,9 +150,38 @@ fn full() -> std::fs::File {
         .expect("/dev/full opens")
 }
 
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = Path;
+    fn deref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<Path> for Scratch {
+    fn as_ref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
+}
+
 /// A fresh directory for `init`, keyed on a counter as well as the process,
 /// because cargo runs the cases of one target as threads of one process.
-fn fresh() -> PathBuf {
+fn fresh() -> Scratch {
     use std::sync::atomic::{AtomicUsize, Ordering};
     static NEXT: AtomicUsize = AtomicUsize::new(0);
     let at = std::env::temp_dir().join(format!(
@@ -163,7 +192,7 @@ fn fresh() -> PathBuf {
     let _ = std::fs::remove_dir_all(&at);
     std::fs::create_dir_all(at.join("docs")).expect("the fresh root is made");
     std::fs::write(at.join("docs/a.md"), "# A\n\nOne paragraph.\n").expect("the document writes");
-    at
+    Scratch(at)
 }
 
 fn run(row: &Row, root: Option<&Path>, which: Full) -> Ran {
@@ -222,8 +251,9 @@ fn every_verb_exits_1_and_never_101_when_a_stream_it_writes_is_full() {
                 At::Scratch => Some(scratch.at.clone()),
                 At::Fresh => {
                     let at = fresh();
-                    made.push(at.clone());
-                    Some(at)
+                    let path = at.to_path_buf();
+                    made.push(at);
+                    Some(path)
                 }
                 At::Nowhere => None,
             }
@@ -272,9 +302,7 @@ fn every_verb_exits_1_and_never_101_when_a_stream_it_writes_is_full() {
             }
         }
     }
-    for at in made {
-        let _ = std::fs::remove_dir_all(at);
-    }
+    drop(made);
 
     assert!(
         wrong.is_empty(),

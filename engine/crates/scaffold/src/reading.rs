@@ -465,6 +465,35 @@ pub fn reach(readings: &[Reading], corpus: &Classified) -> Reach {
 mod tests {
     use super::*;
 
+    /// A directory under the temporary directory that is removed when this value
+    /// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+    struct Scratch(std::path::PathBuf);
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    impl std::ops::Deref for Scratch {
+        type Target = std::path::Path;
+        fn deref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::path::Path> for Scratch {
+        fn as_ref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<std::ffi::OsStr> for Scratch {
+        fn as_ref(&self) -> &std::ffi::OsStr {
+            self.0.as_os_str()
+        }
+    }
+
     fn a_reading() -> Reading {
         Reading {
             lock: "sha256:abc".to_string(),
@@ -583,7 +612,9 @@ mod tests {
 
     #[test]
     fn an_absent_store_is_an_empty_store() {
-        let scratch = std::env::temp_dir().join("headwater-reading-absent");
+        let scratch = Scratch(
+            std::env::temp_dir().join(format!("headwater-reading-absent-{}", std::process::id())),
+        );
         let _ = std::fs::remove_dir_all(&scratch);
         std::fs::create_dir_all(&scratch).expect("a scratch directory");
         assert_eq!(load(&scratch), Ok((vec![], vec![])));
@@ -592,7 +623,10 @@ mod tests {
 
     #[test]
     fn a_line_the_store_cannot_read_is_named_by_its_line_number_and_never_counted() {
-        let scratch = std::env::temp_dir().join("headwater-reading-unreadable");
+        let scratch = Scratch(std::env::temp_dir().join(format!(
+            "headwater-reading-unreadable-{}",
+            std::process::id()
+        )));
         let _ = std::fs::remove_dir_all(&scratch);
         std::fs::create_dir_all(&scratch).expect("a scratch directory");
         append(&scratch, &a_reading()).expect("it appends");
@@ -610,7 +644,9 @@ mod tests {
 
     #[test]
     fn appending_twice_holds_both_readings_in_the_order_they_were_taken() {
-        let scratch = std::env::temp_dir().join("headwater-reading-append");
+        let scratch = Scratch(
+            std::env::temp_dir().join(format!("headwater-reading-append-{}", std::process::id())),
+        );
         let _ = std::fs::remove_dir_all(&scratch);
         std::fs::create_dir_all(&scratch).expect("a scratch directory");
         let mut second = a_reading();

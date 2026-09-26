@@ -664,13 +664,44 @@ struct Block {
     id: String,
 }
 
+/// A directory under the temporary directory that is removed when this value
+/// is dropped, so a case that fails an assertion leaves nothing behind (#1158).
+struct Scratch(std::path::PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for Scratch {
+    type Target = std::path::Path;
+    fn deref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::path::Path> for Scratch {
+    fn as_ref(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Scratch {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.0.as_os_str()
+    }
+}
+
 /// A copy of the fixture corpus, under a directory named for the case.
 ///
 /// Named for the case rather than for the process, because `cargo` runs the
 /// cases of one target as threads of one process and a directory keyed on the
 /// pid alone is shared between them.
-fn scratch(case: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("headwater-sweep-{case}"));
+fn scratch(case: &str) -> Scratch {
+    let dir = Scratch(
+        std::env::temp_dir().join(format!("headwater-sweep-{case}-{}", std::process::id())),
+    );
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(dir.join("corpus")).expect("the scratch corpus");
     for entry in std::fs::read_dir(fixtures_dir().join("corpus")).expect("the fixture corpus") {
