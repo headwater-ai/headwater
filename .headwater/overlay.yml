@@ -1307,7 +1307,9 @@ add:
     # corpus root. `README.md` at the root and the shipped package text are
     # pages for an adopter too, and neither is typed, so listing them would
     # claim a hold the rule does not have. No check holds either one, and
-    # `docs/interfaces/headwater-check.md` states that as a limit.
+    # `docs/interfaces/headwater-check.md` states that as a limit. HW-DR-0084
+    # rules that a language regime will reach `README.md` through its
+    # `outside_root` list, and that no surface rule will.
     adopter_documents:
       - docs/interfaces/*.md
       - docs/tutorials/*.md

@@ -161,6 +161,10 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0074](../decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md) — A `code_path` anchor is a pattern in the shelf language or a list of them, and a bare path matches one entry. An edge binds when every pattern matches at least one entry, and a query matches a path against the patterns.
 
+## A language rule reaches front-door prose outside the corpus root, and no other rule does
+
+[HW-DR-0084](../decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md) — A language regime lists the paths outside the corpus root that it binds, and only the three language rules read them. Such a path is not a document, so no facet, voice, link or relation rule reaches a README. (asserted, and no human has accepted it)
+
 ## Q29 — Whether a corpus root may contain code, and what an interface contract may reach
 
 [HW-DR-0029](../decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md) — The corpus root stays `docs`, because a path is corpus content only where a file with no front matter is a defect, and 185 of the 186 Markdown files under `engine/` exist to be defective. An interface contract lives inside the root and reaches a crate by a `governs` edge that binds on existence alone.
@@ -348,3 +352,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## Governs and traces_to are created by an agent, because a session proposes the line and a person types it
 
 [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) — The base package declares `created_by: agent` on `governs` and `traces_to`, because no verb writes either edge and a person types the line a session proposes (asserted, and no human has accepted it)
+
+## A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite
+
+[HW-DR-0085](../decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md) — A live document with any relation to a draft is a warning, unless the relation writes a state onto its target (asserted, and no human has accepted it)

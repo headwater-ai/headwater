@@ -52,3 +52,7 @@ The form that would turn the profile on is a full regime declaration plus one `l
 **The third answer of the issue stays available and this record does not take it.** Retiring the promise altogether leaves an adopter with a question and no address. Naming a carrier that already exists and already says the right thing costs one publish cycle and about six sentences.
 
 **One test now reads what `headwater init` writes.** `engine/crates/cli/tests/init.rs` holds both written files byte for byte. It is a characterization of the verb rather than a statement of what the verb should write. It carries no language declaration of its own, which is what makes it the record of this ruling in the suite.
+
+## Amendment (2026-09-26)
+
+[HW-DR-0084](0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md) adds a second route. A regime reaches prose inside the corpus root through a kind, as this record states. A regime also reaches a path outside the root that it lists under `outside_root`. The decision of this record stands: the doctrine page of the starter kit carries the writing profile, and no package does.

@@ -29,8 +29,9 @@
 //! which is the distinction the two lists have always drawn: the origin is what
 //! a rule reads a declaration from, and the grain is what one instance covers.
 //!
-//! The nine Graph-origin rules span all four grains. [`target`],
-//! [`reciprocity`], [`endpoint`], [`dependency`] and [`basis`] are edge-grained,
+//! The ten Graph-origin rules span all four grains. [`target`],
+//! [`reciprocity`], [`endpoint`], [`dependency`], [`initial_dependency`] and
+//! [`basis`] are edge-grained,
 //! [`participation`] is neighbourhood-grained, [`duplicate`] is corpus-grained,
 //! and [`declaration`] and [`identity`] are **document-grained**. The last two
 //! are the ones worth stating: they route the phase-A defects that stop an edge
@@ -153,6 +154,7 @@ pub mod frontmatter;
 pub mod gate;
 pub mod identifier;
 pub mod identity;
+pub mod initial_dependency;
 pub mod instance;
 pub mod language;
 pub mod lifecycle_state;
@@ -215,7 +217,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 37] = [
+pub const RULES: [&str; 38] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -226,6 +228,7 @@ pub const RULES: [&str; 37] = [
     reciprocity::RULE,
     endpoint::RULE,
     dependency::RULE,
+    initial_dependency::RULE,
     basis::RULE,
     participation::RULE,
     state_set_twice::RULE,
@@ -440,6 +443,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::edge_scope::<dependency::Dependency<'_>>(),
             scope::edge_version::<dependency::Dependency<'_>>(),
             scope::edge_exports::<dependency::Dependency<'_>>(),
+        ),
+        (
+            initial_dependency::RULE,
+            scope::edge_scope::<initial_dependency::InitialDependency<'_>>(),
+            scope::edge_version::<initial_dependency::InitialDependency<'_>>(),
+            scope::edge_exports::<initial_dependency::InitialDependency<'_>>(),
         ),
         (
             basis::RULE,
@@ -673,6 +682,10 @@ pub fn run(
     // because the unit is the pair: one endpoint decides nothing here. See
     // [`dependency`].
     let dependency = dependency::Dependency::over(declared.relations, declared.shape);
+    // A live document resting on a draft one, over every relation except one
+    // that writes a state onto its target. See [`initial_dependency`].
+    let initial_dependency =
+        initial_dependency::InitialDependency::over(declared.relations, declared.shape);
     // An evidenced claim resting on a document nobody read, over the relations
     // whose declared family is `evidence`. Edge-scoped because the unit is the
     // pair: the claim is at one end and the warrant is at the other. See
@@ -788,6 +801,15 @@ pub fn run(
     ));
     instances.extend(scope::over_edges(
         &dependency,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_edges(
+        &initial_dependency,
         census,
         graph,
         &digests,
