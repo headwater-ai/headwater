@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0221
 status: current
-status_since: 2026-09-26
+status_since: 2026-09-27
 summary: "Every agent of a run reads its skill text from the shared checkout. The integrator is told to fast-forward that checkout after each merge, but under worktree isolation nothing does, so later agents read stale skills."
-last_verified: 2026-09-26
+last_verified: 2026-09-27
 title: "Subagents read skills from the shared checkout, and a worktree-isolated integrator cannot fast-forward it after a merge"
 waiting_on: build
 ---

@@ -9414,8 +9414,8 @@
           "id": "HW-OBL-0209",
           "status": "current",
           "status_since": "2026-09-26",
-          "summary": "hw-run-policy names worktree isolation for each stage, but next-run.md passes none and hw-build and hw-verify still make their own tree with new-worktree.sh. No fixture holds the isolation.",
-          "last_verified": "2026-09-26",
+          "summary": "hw-run-policy names worktree isolation for hw-build and hw-verify, but next-run.md passes none, and both agent files still make their own tree with new-worktree.sh. No fixture holds the isolation.",
+          "last_verified": "2026-09-27",
           "title": "A build-order dispatch passes no isolation, so a stage can inherit the parent worktree as its working directory",
           "waiting_on": "build"
         }
@@ -9553,9 +9553,9 @@
         "facets": {
           "id": "HW-OBL-0220",
           "status": "current",
-          "status_since": "2026-09-26",
+          "status_since": "2026-09-27",
           "summary": "A build-order run states no free-disk floor, and no stage prunes the pooled cargo targets. On 2026-09-27 the pool held about 160 GB and the host disk reached 95%.",
-          "last_verified": "2026-09-26",
+          "last_verified": "2026-09-27",
           "title": "No disk floor is stated for a build-order run, and nothing prunes the cargo pool",
           "waiting_on": "build"
         }
@@ -9567,9 +9567,9 @@
         "facets": {
           "id": "HW-OBL-0221",
           "status": "current",
-          "status_since": "2026-09-26",
+          "status_since": "2026-09-27",
           "summary": "Every agent of a run reads its skill text from the shared checkout. The integrator is told to fast-forward that checkout after each merge, but under worktree isolation nothing does, so later agents read stale skills.",
-          "last_verified": "2026-09-26",
+          "last_verified": "2026-09-27",
           "title": "Subagents read skills from the shared checkout, and a worktree-isolated integrator cannot fast-forward it after a merge",
           "waiting_on": "build"
         }
@@ -9581,9 +9581,9 @@
         "facets": {
           "id": "HW-OBL-0222",
           "status": "current",
-          "status_since": "2026-09-26",
-          "summary": "The editions ledger pins 10 of its 31 rules over one recorded corpus only. For each of them, a bless re-records a moved verdict when the same change adds a byte to that corpus.",
-          "last_verified": "2026-09-26",
+          "status_since": "2026-09-27",
+          "summary": "A bless of the editions ledger re-records any row whose corpus moved. So a rule change needs no VERSION raise when it edits each corpus whose verdicts it moves. Ten of 31 rules have one corpus.",
+          "last_verified": "2026-09-27",
           "title": "Ten rules of the editions ledger have one recorded corpus, so a rule change blessed with an edit to that corpus passes",
           "waiting_on": "build"
         }

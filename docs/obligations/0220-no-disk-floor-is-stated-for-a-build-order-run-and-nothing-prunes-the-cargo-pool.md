@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0220
 status: current
-status_since: 2026-09-26
+status_since: 2026-09-27
 summary: "A build-order run states no free-disk floor, and no stage prunes the pooled cargo targets. On 2026-09-27 the pool held about 160 GB and the host disk reached 95%."
-last_verified: 2026-09-26
+last_verified: 2026-09-27
 title: "No disk floor is stated for a build-order run, and nothing prunes the cargo pool"
 waiting_on: build
 ---
