@@ -1512,16 +1512,29 @@ fn publish_check_refuses_out_package_and_a_missing_from() {
     );
     assert_eq!(code, Some(1), "`--check --out` must be refused: {stderr}");
     assert!(stderr.contains("--out"), "{stderr}");
-    assert!(!out.exists(), "a refused `--check --out` wrote the artifact");
+    assert!(
+        !out.exists(),
+        "a refused `--check --out` wrote the artifact"
+    );
 
     let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
-        .args(["taxonomy", "publish", "--check", "--package", "headwater/standard"])
+        .args([
+            "taxonomy",
+            "publish",
+            "--check",
+            "--package",
+            "headwater/standard",
+        ])
         .arg("--root")
         .arg(root.path())
         .output()
         .expect("the binary runs");
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert_eq!(output.status.code(), Some(1), "`--check --package` must be refused: {stderr}");
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "`--check --package` must be refused: {stderr}"
+    );
     assert!(stderr.contains("`--package`"), "{stderr}");
 
     let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
@@ -1531,8 +1544,15 @@ fn publish_check_refuses_out_package_and_a_missing_from() {
         .output()
         .expect("the binary runs");
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert_eq!(output.status.code(), Some(1), "`--check` without `--from` must be refused: {stderr}");
-    assert!(stderr.contains("Name the source with `--from <dir>`"), "{stderr}");
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "`--check` without `--from` must be refused: {stderr}"
+    );
+    assert!(
+        stderr.contains("Name the source with `--from <dir>`"),
+        "{stderr}"
+    );
 }
 
 /// A root with a source and no vendored copy of it has nothing to compare, and
