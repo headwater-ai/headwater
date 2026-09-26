@@ -427,6 +427,8 @@ anchors
     cited by HW-DR-0053
   code_path `taxonomy-source/headwater-standard/package.yml` via source-tree
     cited by HW-OBL-0174
+  code_path `taxonomy-source/headwater-standard/taxonomy.yml` via source-tree
+    cited by HW-DR-0083
   code_path `tools/cap-run` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `tools/engine/language-spike/**` via source-tree

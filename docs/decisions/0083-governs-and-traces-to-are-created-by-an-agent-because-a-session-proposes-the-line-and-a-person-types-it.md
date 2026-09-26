@@ -13,7 +13,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   governs:
-    - taxonomy-source/headwater-standard/taxonomy.yml
+    - to: taxonomy-source/headwater-standard/taxonomy.yml
+      verified_revision: sha256:e14a63433c104e3e0e3038027048b594f98bfa7ad1893e1026f221fcee18e5d5
   traces_to:
     - HW-OBL-0105
     - HW-SPEC-taxonomy-model
