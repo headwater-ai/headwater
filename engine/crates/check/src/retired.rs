@@ -132,7 +132,16 @@ impl DocumentCheck for Retired {
     /// unchanged, so a warm cache from the previous engine would serve the old
     /// verdict on every document that quotes anybody and the change would read
     /// as working while it did nothing.
-    const VERSION: u32 = 3;
+    ///
+    /// **Edition four, on 2026-09-26 ([#1151](https://github.com/headwater-ai/headwater/issues/1151)).**
+    /// The splitter in `headwater-doc` now opens a sentence at a name whose
+    /// shape says it is a name, such as `n8n` or `macOS`, and at an issue
+    /// reference such as `#791`. Before, each of these merged into the sentence
+    /// before it. This rule locates each finding by the sentence that holds it, so the position of a finding in the second sentence of a merged pair moves. No pattern here moved, and the document, the lock and
+    /// the rule are all unchanged, so a warm cache from the previous engine
+    /// would serve the merged verdict and the fix would read as working while
+    /// it did nothing.
+    const VERSION: u32 = 4;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, kind: &str) -> bool {

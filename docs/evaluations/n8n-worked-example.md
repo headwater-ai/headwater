@@ -451,7 +451,7 @@ The fixes stand on the branch [`fix-agents-doc-defects`](https://github.com/head
 
 ### Why nothing was sent, and what would reopen it
 
-The third Done-when bullet of [#495](https://github.com/headwater-ai/headwater/issues/495) asks for a pull request against `n8n-io/n8n`. **Nothing was posted, and that is a decision rather than an omission.** The [CONTRIBUTING.md](https://github.com/n8n-io/n8n/blob/master/CONTRIBUTING.md) of n8n gates an incoming change three ways, and an autonomous run satisfies none of them.
+The third Done-when bullet of [#495](https://github.com/headwater-ai/headwater/issues/495) asks for a pull request against `n8n-io/n8n`. **Nothing was posted, and that is a decision rather than an omission.** n8n's [CONTRIBUTING.md](https://github.com/n8n-io/n8n/blob/master/CONTRIBUTING.md) gates an incoming change three ways, and an autonomous run satisfies none of them.
 
 - **A bug fix needs a linked issue first.** Section 1 states that a bug-fix pull request with no linked issue is returned. Filing that issue is a claim on n8n's tracker, and it belongs to a person.
 - **A typo-only pull request is rejected.** Section 5 asks that a small fix go into a larger related change. Defect 1 on its own is exactly the shape that rule names.
