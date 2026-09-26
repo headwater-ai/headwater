@@ -74,7 +74,7 @@ use std::process::ExitCode;
 
 fn main() -> ExitCode {
     // `clap` exits **2** on a parse error, and this binary has one failing
-    // status and it is 1: `docs/interfaces/headwater-check.md` lists eleven
+    // status and it is 1: `docs/interfaces/headwater-check.md` lists twelve
     // reasons for it under "There is no third status", and a 2 anywhere makes
     // that sentence false. `Command` exposes no setting for the error exit
     // code, so the only route is `try_parse` and never letting `clap` call

@@ -38,6 +38,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+mod common;
+
 /// The repository this test tree sits in.
 fn repository() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -291,7 +293,7 @@ fn the_two_spellings_of_one_target_write_the_same_bytes() {
 /// and this verb surface has just gained a second name for one value.
 ///
 /// Exit exactly 1 and never `clap`'s own 2: `docs/interfaces/headwater-check.md`
-/// states eleven reasons for exit 1 under *"There is no third status"*.
+/// states twelve reasons for exit 1 under *"There is no third status"*.
 #[test]
 fn a_command_line_that_names_one_target_twice_is_refused() {
     for (name, base) in both_spellings() {
@@ -324,7 +326,7 @@ fn a_command_line_that_names_one_target_twice_is_refused() {
 /// holds in conflict, or a choice the engine will not make for a caller.
 ///
 /// `check` is deliberately absent past the parse conflict, because five of its
-/// eleven exit-1 reasons are decided *after* the report is on standard output.
+/// twelve exit-1 reasons are decided *after* the report is on standard output.
 /// [`a_run_that_completed_and_then_failed_still_wrote_its_document`] holds that
 /// half, and the pair of them is the boundary rather than either alone.
 fn refusals() -> Vec<(&'static str, Vec<&'static str>)> {
@@ -429,7 +431,7 @@ fn a_refusal_writes_no_document_and_accounts_for_itself_on_the_other_stream() {
 ///
 /// "Standard output is empty when the status is 1" is **false** for `check`.
 /// `docs/interfaces/headwater-check.md` states it under *Exit status*: the
-/// report is written before the last five of the eleven reasons are decided, so
+/// report is written before the last five of the twelve reasons are decided, so
 /// a run that exits 1 for one of those five still put a whole report there.
 /// Without this case, a future change that suppressed the report on any
 /// non-zero exit would pass the case above and break the contract.
@@ -469,6 +471,113 @@ fn a_run_that_completed_and_then_failed_still_wrote_its_document() {
             "`{name}` wrote the whole document and not a prefix of one: {artifact}"
         );
     }
+}
+
+/// A stream that cannot be written is an exit of 1, and never a panic.
+///
+/// [#1095](https://github.com/headwater-ai/headwater/issues/1095): a build on a
+/// full disk read exit 101 and an empty message after a complete JSON report.
+/// The report had reached standard output. The cache accounting line to
+/// standard error then failed, the write panicked, and the panic message went
+/// to the same full stream. `docs/interfaces/headwater-check.md` states the
+/// twelfth reason under *Exit status*: a stream that could not be written.
+///
+/// `/dev/full` is the disk that is full, and it is on every Linux host.
+#[cfg(target_os = "linux")]
+#[test]
+fn the_report_survives_a_standard_error_that_cannot_be_written() {
+    use std::process::Stdio;
+    let full = std::fs::File::options()
+        .write(true)
+        .open("/dev/full")
+        .expect("/dev/full opens");
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["check", "--format", "json", "--root"])
+        .arg(repository())
+        .stdout(Stdio::piped())
+        .stderr(full)
+        .output()
+        .expect("the binary runs");
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "a standard error that cannot be written exits 1 and does not panic"
+    );
+    let artifact = String::from_utf8_lossy(&output.stdout).into_owned();
+    let parsed = headwater_yaml::load(&artifact)
+        .unwrap_or_else(|_| panic!("the whole JSON report is on standard output: {artifact}"));
+    assert!(
+        member(&parsed.value, "version").is_some(),
+        "the report is the whole document and not a prefix of one"
+    );
+}
+
+/// The other stream: a report that cannot reach standard output says so once.
+///
+/// The verb tries one sentence on standard error that names standard output
+/// and the error the host gave, and it exits 1. A panic here would print
+/// Rust's own message and exit 101, which no caller can tell from a defect.
+#[cfg(target_os = "linux")]
+#[test]
+fn a_report_that_cannot_reach_standard_output_exits_1_and_says_so() {
+    use std::process::Stdio;
+    let full = std::fs::File::options()
+        .write(true)
+        .open("/dev/full")
+        .expect("/dev/full opens");
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["check", "--format", "json", "--root"])
+        .arg(repository())
+        .stdout(full)
+        .stderr(Stdio::piped())
+        .output()
+        .expect("the binary runs");
+    let says = String::from_utf8_lossy(&output.stderr).into_owned();
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "a standard output that cannot be written exits 1: {says}"
+    );
+    assert!(
+        says.contains("standard output") && says.contains("No space left"),
+        "standard error names the stream and the error: {says}"
+    );
+    assert!(!says.contains("panicked"), "the verb did not panic: {says}");
+}
+
+/// A cache that cannot be written is one line on standard error, and it moves
+/// no verdict and no byte of the report.
+///
+/// A regular file at `.headwater/cache` stops the verb from making the
+/// directory. That holds for every user, root included, where a mode bit does
+/// not. The contract calls a cache that cannot be read "not an error", and a
+/// cache that cannot be written is the same cost: one full run next time.
+#[test]
+fn an_unwritable_cache_is_reported_by_path_and_moves_no_verdict() {
+    let root = common::Root::shaped("json-unwritable-cache", |_| {});
+    std::fs::write(root.at.join(".headwater/cache"), "not a directory\n")
+        .expect("the file that blocks the cache writes");
+    let cached = root.run(&["check", "--format", "json"]);
+    let uncached = root.run(&["check", "--format", "json", "--no-cache"]);
+    assert_eq!(
+        cached.code,
+        Some(0),
+        "a cache that cannot be written is not an error: {cached:?}"
+    );
+    assert!(
+        cached.err.contains("cache not written") && cached.err.contains(".headwater/cache"),
+        "standard error names the path that could not be written: {}",
+        cached.err
+    );
+    assert!(
+        cached.err.contains("os error"),
+        "and the error the host gave: {}",
+        cached.err
+    );
+    assert_eq!(
+        cached.out, uncached.out,
+        "standard output is the bytes of a run with no cache"
+    );
 }
 
 /// A refusal names the spelling the caller typed, and never the other one.
