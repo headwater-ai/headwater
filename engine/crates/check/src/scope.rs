@@ -645,6 +645,17 @@ pub trait CorpusCheck {
     /// its body. See [`crate::fragment`].
     const NEEDS_ANCHORS: bool = false;
 
+    /// Whether the view carries every edge of the graph and every generated
+    /// document of the census.
+    ///
+    /// It joins no cache key, on [`CorpusCheck::NEEDS_LINKS`]'s terms. The
+    /// edges are a reading of the documents this instance already reads, and
+    /// a generated document is a row that carries a document, so it is in the
+    /// read set already. The one rule that declares this reads the edges
+    /// `headwater generate` reads, onto the documents it writes. See
+    /// [`crate::state_set_twice`].
+    const NEEDS_GRAPH: bool = false;
+
     fn evaluate(&self, view: &CorpusView<'_>) -> Outcome;
 }
 
@@ -1195,10 +1206,37 @@ pub struct CorpusView<'a> {
     claims: Option<&'a crate::claim::Claims>,
     links: Option<&'a [headwater_graph::links::Link]>,
     anchors: Option<&'a crate::fragment::Anchors>,
+    edges: Option<&'a [Edge]>,
+    generated: Option<Vec<Generated<'a>>>,
     reads: Vec<Input>,
 }
 
+/// One document the census classified as generated and resolved a kind for,
+/// which is a document `headwater generate` writes the facets of.
+#[derive(Clone, Copy, Debug)]
+pub struct Generated<'a> {
+    pub path: &'a str,
+    /// The identifier the index read off it. A generated file that declares
+    /// none is not here, because an edge names a document by its identifier.
+    pub id: &'a str,
+    pub kind: &'a str,
+    /// Its front matter, as the last run of the emitter wrote it.
+    pub facets: &'a Mapping,
+}
+
 impl<'a> CorpusView<'a> {
+    /// Every edge of the graph, and only for a check that declared
+    /// `NEEDS_GRAPH`.
+    pub fn edges(&self) -> Option<&'a [Edge]> {
+        self.edges
+    }
+
+    /// Every generated document with a kind, in census order, and only for a
+    /// check that declared `NEEDS_GRAPH`.
+    pub fn generated(&self) -> Option<&[Generated<'a>]> {
+        self.generated.as_deref()
+    }
+
     /// What the identifier index could not make of any document, and only for
     /// a check that declared `NEEDS_PHASE_A`.
     ///
@@ -1277,6 +1315,8 @@ impl<'a> CorpusView<'a> {
             claims: None,
             links,
             anchors: None,
+            edges: None,
+            generated: None,
             reads: Vec::new(),
         }
     }
@@ -1294,6 +1334,8 @@ impl<'a> CorpusView<'a> {
             claims: None,
             links,
             anchors,
+            edges: None,
+            generated: None,
             reads: Vec::new(),
         }
     }
@@ -1761,6 +1803,39 @@ pub fn over_corpus<C: CorpusCheck>(
             false => None,
         },
         anchors: anchors.as_ref(),
+        // No input joins the read set with them either. See `NEEDS_GRAPH`.
+        edges: match C::NEEDS_GRAPH {
+            true => Some(&graph.edges),
+            false => None,
+        },
+        generated: match C::NEEDS_GRAPH {
+            true => Some(
+                census
+                    .rows
+                    .iter()
+                    .filter_map(|row| match (&row.outcome, &row.document) {
+                        (
+                            Classification::Generated {
+                                kind: Some(kind), ..
+                            },
+                            Some(document),
+                        ) => graph
+                            .index
+                            .typed
+                            .iter()
+                            .find(|node| node.path == row.path)
+                            .map(|node| Generated {
+                                path: &row.path,
+                                id: &node.id,
+                                kind,
+                                facets: &document.facets,
+                            }),
+                        _ => None,
+                    })
+                    .collect(),
+            ),
+            false => None,
+        },
         reads: reads.clone(),
     };
     // No clock. `CorpusCheck` declares none, so `clock_for` would have nothing
