@@ -177,7 +177,7 @@ rule by rule
     on the result: every kind and every facet value that a mapping names on this side is declared here
     not decided: the far side. A mapping names kinds in another taxonomy, and nothing fetches or resolves one
   projection targets (in part)
-    on the result: every projection writes a relative path that stays inside the corpus root
+    on the result: every projection writes a relative path that stays inside the corpus root, and every path a language regime lists outside the corpus root stays inside the repository and answers to one regime
     not decided: the collision with an authored path, which needs the census. `generate --check` is where that lands
 
 not decided anywhere: 1

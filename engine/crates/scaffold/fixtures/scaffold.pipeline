@@ -106,6 +106,8 @@ rules, and for each the scope that binds it
     taxonomy scope, the resolved taxonomy, and no document
   adoption.task.expired
     taxonomy scope, the resolved taxonomy, and no document
+  language.outside_root.refused
+    taxonomy scope, the resolved taxonomy, and no document
   relation.target.verification.suspect
     edge scope, one relation instance and both endpoints, and the committed observation snapshot
 register
@@ -153,6 +155,7 @@ register
   control.mechanism.unimplemented reaches no obligation, so it names none
   control.observation.invalid reaches no obligation, so it names none
   adoption.task.expired reaches no obligation, so it names none
+  language.outside_root.refused reaches no obligation, so it names none
   relation.target.verification.suspect reaches no obligation, so it names none
 1 findings
       1 ✗ error

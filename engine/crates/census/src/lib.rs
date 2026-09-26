@@ -52,6 +52,7 @@
 
 pub mod census;
 pub mod derived;
+pub mod outside;
 pub mod resolve;
 pub mod shelves;
 pub mod walk;

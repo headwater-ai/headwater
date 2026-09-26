@@ -160,6 +160,7 @@ pub mod language;
 pub mod lifecycle_state;
 pub mod link_path;
 pub mod observation;
+pub mod outside_root;
 pub mod paint;
 pub mod participation;
 pub mod patch;
@@ -219,7 +220,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 38] = [
+pub const RULES: [&str; 39] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -257,6 +258,7 @@ pub const RULES: [&str; 38] = [
     register::MECHANISM,
     register::OBSERVATION,
     adoption::RULE,
+    outside_root::RULE,
     verification::RULE,
 ];
 
@@ -609,6 +611,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             adoption::EXPORTABLE_AS,
         ),
         (
+            outside_root::RULE,
+            outside_root::SCOPE,
+            outside_root::VERSION,
+            outside_root::EXPORTABLE_AS,
+        ),
+        (
             verification::RULE,
             scope::edge_scope::<verification::Verified<'_>>(),
             scope::edge_version::<verification::Verified<'_>>(),
@@ -909,6 +917,13 @@ pub fn run(
         ctx,
         cache,
     ));
+    // The paths a language regime lists outside the corpus root, and the three
+    // rules HW-DR-0084 clause 5 gives them. No other registration here reaches
+    // one: `over_outside_root` takes only a check that implements
+    // `OutsideCheck`, and these three are the only ones that do.
+    instances.extend(scope::over_outside_root(&language, census, cache));
+    instances.extend(scope::over_outside_root(&retired, census, cache));
+    instances.extend(scope::over_outside_root(&source_form, census, cache));
     instances.extend(scope::over_documents(&sections, census, graph, ctx, cache));
     instances.extend(scope::over_corpus(
         &fragments, census, graph, claims, ctx, cache,
@@ -963,6 +978,10 @@ pub fn run(
         declared.source,
         ctx.now(),
     ));
+    // A path a language regime lists outside the corpus root that reads
+    // nothing, as an error, for the reason adoption's enters here: it is about
+    // the taxonomy read against the tree, and it creates no instance.
+    findings.extend(outside_root::findings(census, declared.source));
 
     // The obligation is stamped here rather than written into each rule,
     // because the binding is data. A rule states its id, a control names that

@@ -68,6 +68,23 @@ impl Root {
                 .expect("the declaration copies");
         }
 
+        // The overlay lists four paths outside the corpus root under
+        // `regimes.language.ste_house.outside_root` (HW-DR-0084), and a path
+        // that matches no file is an error of a strict run, so each gets a
+        // stub that obeys the regime.
+        for entry in [
+            "README.md",
+            ".github/CONTRIBUTING.md",
+            ".github/SECURITY.md",
+            ".github/ISSUE_TEMPLATE/issue.md",
+        ] {
+            let to = at.join(entry);
+            std::fs::create_dir_all(to.parent().expect("it has a parent"))
+                .expect("the directory is there");
+            std::fs::write(to, "# A stub\n\nThis file stands in for the real one.\n")
+                .expect("the stub writes");
+        }
+
         let mut root = Root {
             at,
             document: PathBuf::new(),

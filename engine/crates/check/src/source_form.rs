@@ -48,8 +48,8 @@
 
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
-use crate::scope::{DocumentCheck, DocumentView};
-use crate::shape::Shape;
+use crate::scope::{DocumentCheck, DocumentView, OutsideCheck};
+use crate::shape::{LanguageRegime, Shape};
 use headwater_doc::body::BlockKind;
 
 pub const RULE: &str = "language.source_form.not_met";
@@ -61,6 +61,9 @@ const ONE_LINE_PER_BLOCK: &str = "one_line_per_block";
 /// The check, generated from the language regimes and the kinds that bind them.
 pub struct SourceForm {
     bound: Vec<Bound>,
+    /// One binding per regime that lists paths outside the corpus root, with
+    /// an empty `kind`.
+    outside: Vec<Bound>,
 }
 
 struct Bound {
@@ -70,25 +73,54 @@ struct Bound {
 
 impl SourceForm {
     /// The generation step, in full.
+    ///
+    /// A regime that lists paths outside the corpus root binds those paths on
+    /// the same terms (HW-DR-0084 clause 4), in a second list keyed on the
+    /// regime. See [`crate::scope::over_outside_root`].
     pub fn over(shape: &Shape) -> Self {
-        let mut bound = Vec::new();
-        for kind in &shape.kinds {
-            let Some(regime) = shape.language_of(&kind.name) else {
-                continue;
-            };
-            if regime.source_form.as_deref() != Some(ONE_LINE_PER_BLOCK) {
-                continue;
-            }
-            bound.push(Bound {
-                kind: kind.name.clone(),
-                regime: regime.name.clone(),
-            });
-        }
-        SourceForm { bound }
+        let bound = shape
+            .kinds
+            .iter()
+            .filter_map(|kind| bind(&kind.name, shape.language_of(&kind.name)?))
+            .collect();
+        let outside = shape
+            .language
+            .iter()
+            .filter(|regime| !regime.outside_root.is_empty())
+            .filter_map(|regime| bind("", regime))
+            .collect();
+        SourceForm { bound, outside }
     }
 
     fn bound_to(&self, kind: &str) -> Option<&Bound> {
         self.bound.iter().find(|bound| bound.kind == kind)
+    }
+
+    /// The binding a view is read under: its regime for a path outside the
+    /// corpus root, and its kind for every other document.
+    fn bound_for(&self, view: &DocumentView<'_>) -> Option<&Bound> {
+        match view.outside_regime() {
+            Some(regime) => self.outside.iter().find(|bound| bound.regime == regime),
+            None => self.bound_to(view.kind()),
+        }
+    }
+}
+
+/// One binding of the rule to a regime, and nothing for a regime that fixes no
+/// source form.
+fn bind(kind: &str, regime: &LanguageRegime) -> Option<Bound> {
+    if regime.source_form.as_deref() != Some(ONE_LINE_PER_BLOCK) {
+        return None;
+    }
+    Some(Bound {
+        kind: kind.to_string(),
+        regime: regime.name.clone(),
+    })
+}
+
+impl OutsideCheck for SourceForm {
+    fn binds_regime(&self, regime: &str) -> bool {
+        self.outside.iter().any(|bound| bound.regime == regime)
     }
 }
 
@@ -105,7 +137,7 @@ impl DocumentCheck for SourceForm {
     }
 
     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
-        let Some(bound) = self.bound_to(view.kind()) else {
+        let Some(bound) = self.bound_for(view) else {
             return Outcome::Passed;
         };
         let Some(body) = view.body() else {

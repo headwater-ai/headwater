@@ -235,31 +235,53 @@ pub fn declared(census: &Census, rules: &[&'static str]) -> (Vec<Suppression>, V
             }
             _ => None,
         };
-        for (at, block) in document.body.blocks.iter().enumerate() {
-            for text in comments(block) {
-                let Some(directive) = directive(text) else {
-                    continue;
-                };
-                let line = block.span.start.line;
-                match read(
-                    &directive,
-                    &row.path,
-                    shelf.clone(),
+        scan(document, &row.path, shelf, rules, &mut found, &mut refused);
+    }
+    // A path a language regime lists outside the corpus root carries its
+    // directives as a document under the root does, so an exception to one of
+    // the three rules that read it is written where a reader meets it. It has
+    // no shelf, so a directive there can scope to its file or its block only.
+    for row in &census.outside.rows {
+        let Some(document) = &row.document else {
+            continue;
+        };
+        scan(document, &row.path, None, rules, &mut found, &mut refused);
+    }
+    (found, refused)
+}
+
+/// Every directive in one document's body.
+fn scan(
+    document: &headwater_doc::Document,
+    path: &str,
+    shelf: Option<String>,
+    rules: &[&'static str],
+    found: &mut Vec<Suppression>,
+    refused: &mut Vec<Refused>,
+) {
+    for (at, block) in document.body.blocks.iter().enumerate() {
+        for text in comments(block) {
+            let Some(directive) = directive(text) else {
+                continue;
+            };
+            let line = block.span.start.line;
+            match read(
+                &directive,
+                path,
+                shelf.clone(),
+                line,
+                extent(document.body.blocks.as_slice(), at, block),
+                rules,
+            ) {
+                Ok(suppression) => found.push(suppression),
+                Err(why) => refused.push(Refused {
+                    path: path.to_string(),
                     line,
-                    extent(document.body.blocks.as_slice(), at, block),
-                    rules,
-                ) {
-                    Ok(suppression) => found.push(suppression),
-                    Err(why) => refused.push(Refused {
-                        path: row.path.clone(),
-                        line,
-                        why,
-                    }),
-                }
+                    why,
+                }),
             }
         }
     }
-    (found, refused)
 }
 
 /// Apply every directive to the findings of one run.

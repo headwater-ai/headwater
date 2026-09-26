@@ -56,9 +56,9 @@ use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{
-    adoption, basis, command, coverage, dependency, endpoint, initial_dependency, reciprocity,
-    register, surface, suspect, target, verification, Cache, Context, Date, Declared, Observation,
-    Observations, Outcome, Register, Run, Shape, RULES,
+    adoption, basis, command, coverage, dependency, endpoint, initial_dependency, outside_root,
+    reciprocity, register, surface, suspect, target, verification, Cache, Context, Date, Declared,
+    Observation, Observations, Outcome, Register, Run, Shape, RULES,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -98,6 +98,11 @@ const UNCOVERED: &[(&str, &str)] = &[
     (
         coverage::RULE,
         "the runner reaches it outside any instance, so no cache entry holds its verdict",
+    ),
+    (
+        outside_root::RULE,
+        "the runner reaches it from the census outside any instance, so no cache entry holds \
+         its verdict; its cases are in tests/outside_root.rs",
     ),
     (
         register::DISPOSITION,

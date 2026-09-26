@@ -71,14 +71,14 @@ The list sits on the regime and not on a separate key, for two reasons. Each pat
 
 ## Consequences
 
-**The engine does not implement this yet.** The census walker admits only paths under the root. `Language::over` binds a regime only through `Shape::language_of`, and `DocumentCheck` is keyed on a kind. Each needs a second route, and so do the retired-term and source-form rules. The implementation is a separate 0.4 issue. Its first fixture is a path outside the root with a planted contraction, reached through `outside_root`. That fixture fails until the route exists.
+**The engine implements this since [#1159](https://github.com/headwater-ai/headwater/issues/1159).** The census keeps the listed paths in a list of its own, beside its rows and never in them. The three rules read that list through a second runner, and only a rule that declares the second route can use that runner. Decision 2 holds in two halves. The refusals that need no tree are a pattern with `..`, an absolute pattern, and one literal path that two regimes list. `taxonomy resolve` makes these under the projection-targets rule, so no lock that carries one is written, and `resolve --check` fails on it. Three refusals need the tree. The first is a pattern that matches a path under the root. The second is a path that two regimes reach through a wildcard. The third is a symlink. `headwater check` reports each of these as an error of `language.outside_root.refused`, and so does a pattern that matches no file. So `check --strict` fails on each. A refused pattern reads nothing. A symlink is never followed, in either direction, which is the rule the census walk states. The first fixture is `README.md` beside the root of the `outside-root` tree in `engine/crates/check/fixtures/`, with one contraction in it.
 
-**This repository does not declare its list yet.** An overlay edit moves the lock, and a key that nothing reads would claim a hold that the engine does not have. The implementation adds the key and this repository's entries in one change.
+**This repository declares its list** under `regimes.language.ste_house` in `.headwater/overlay.yml`: the four files that the Context names. The list does not use `.github/*.md`, because that pattern also matches `.github/copilot-instructions.md`. That file is a copy of `CLAUDE.md` for an agent, and it quotes every retired term in the section that retires them.
 
 **HW-DR-0056 is amended and not superseded.** Its decision stands: the doctrine page of the starter kit carries the writing profile, and no package does. Its premise, that a regime reaches prose only through a kind, becomes one of two routes. The doctrine page names `outside_root` when the engine reads it.
 
 **Spec 2 states the second route** under [Language is declared, not assumed](../spec/02-taxonomy-model.md#language-is-declared-not-assumed), and it cites this record.
 
-**The overlay comment on `adopter_documents`** says that no check holds the root `README.md`. That stays true until the implementation lands, and the comment now names this record as the ruling that changes it.
+**The overlay comment on `adopter_documents`** now says that the three language rules hold the root `README.md`, and that no surface rule does.
 
 **What would reopen this record.** A rule kind other than language that an adopter needs on front-door prose, measured on a real corpus, reopens decision 5. The owner's ruling closes it until then.
