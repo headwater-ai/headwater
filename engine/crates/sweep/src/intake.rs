@@ -250,9 +250,12 @@ pub struct Proposal {
 ///
 /// A sweep prints front matter for a person to paste, and
 /// [`headwater_check::reciprocity`] reports a pair carrying one half as an
-/// error. So a report that prints one block alone hands a reader an
-/// instruction that their own commit gate refuses, and the reader has no way
-/// back to the sweep from the error they get.
+/// error once the document that wrote that half has left its initial state
+/// (HW-DR-0086). A document a person pastes into is usually live, so a report
+/// that prints one block alone hands a reader an instruction that their own
+/// commit gate refuses, and the reader has no way back to the sweep from the
+/// error they get. The second block is printed whatever the writer's state,
+/// because a half written early is harmless and a half missing late is not.
 ///
 /// The name is direction-dependent, and it is computed here the way that rule
 /// computes it: the inverse name when the printed half is the declared one, and

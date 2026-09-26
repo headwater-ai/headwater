@@ -109,8 +109,8 @@ claim .headwater/ids/decision_id/DR-FIX-0008
   summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
   title = A successor with a far half [scaffolded: the facet is in the `name` role, and `--title` is the name]
   edge supersedes -> SPEC-FIX-the-second-part [created_by: scaffold]
-    far half `superseded_by` into corpus/spec/02-the-second-part.md
-assisted 8 of 10 — fields 3/4, sections 3/3, identifier 1/1, halves 1/2
+    far half `superseded_by` owed by corpus/spec/02-the-second-part.md once it leaves `draft`
+assisted 7 of 9 — fields 3/4, sections 3/3, identifier 1/1, halves 0/1
 --- the document ---
 ---
 id: DR-FIX-0008
@@ -147,8 +147,8 @@ claim .headwater/ids/decision_id/DR-FIX-0008
   summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
   title = A successor into a block with the key [scaffolded: the facet is in the `name` role, and `--title` is the name]
   edge supersedes -> SPEC-FIX-the-third-part [created_by: scaffold]
-    far half `superseded_by` into corpus/spec/03-the-third-part.md
-assisted 8 of 10 — fields 3/4, sections 3/3, identifier 1/1, halves 1/2
+    far half `superseded_by` owed by corpus/spec/03-the-third-part.md once it leaves `draft`
+assisted 7 of 9 — fields 3/4, sections 3/3, identifier 1/1, halves 0/1
 --- the document ---
 ---
 id: DR-FIX-0008
@@ -185,8 +185,8 @@ claim .headwater/ids/decision_id/DR-FIX-0008
   summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
   title = A successor into a document with no block [scaffolded: the facet is in the `name` role, and `--title` is the name]
   edge supersedes -> DR-FIX-0007 [created_by: scaffold]
-    far half `superseded_by` into corpus/decisions/an-earlier-decision.md
-assisted 8 of 10 — fields 3/4, sections 3/3, identifier 1/1, halves 1/2
+    far half `superseded_by` owed by corpus/decisions/an-earlier-decision.md once it leaves `draft`
+assisted 7 of 9 — fields 3/4, sections 3/3, identifier 1/1, halves 0/1
 --- the document ---
 ---
 id: DR-FIX-0008
@@ -224,7 +224,7 @@ claim .headwater/ids/decision_id/DR-FIX-0008
   title = An assessment with no far half [scaffolded: the facet is in the `name` role, and `--title` is the name]
   edge assesses -> SPEC-FIX-the-first-part [created_by: scaffold]
     no far half
-assisted 7 of 10 — fields 3/4, sections 3/3, identifier 1/1, halves 0/2
+assisted 7 of 9 — fields 3/4, sections 3/3, identifier 1/1, halves 0/1
 --- the document ---
 ---
 id: DR-FIX-0008
@@ -261,10 +261,10 @@ claim .headwater/ids/decision_id/DR-FIX-0008
   summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
   title = Two edges at once [scaffolded: the facet is in the `name` role, and `--title` is the name]
   edge supersedes -> SPEC-FIX-the-second-part [created_by: scaffold]
-    far half `superseded_by` into corpus/spec/02-the-second-part.md
+    far half `superseded_by` owed by corpus/spec/02-the-second-part.md once it leaves `draft`
   edge assesses -> SPEC-FIX-the-first-part [created_by: scaffold]
     no far half
-assisted 8 of 12 — fields 3/4, sections 3/3, identifier 1/1, halves 1/4
+assisted 7 of 10 — fields 3/4, sections 3/3, identifier 1/1, halves 0/2
 --- the document ---
 ---
 id: DR-FIX-0008

@@ -70,8 +70,11 @@ fn load_map(path: &Path) -> Mapping {
 struct Scratch(PathBuf);
 
 impl Scratch {
-    fn new() -> Self {
-        let at = std::env::temp_dir().join(format!("headwater-scaffold-{}", std::process::id()));
+    /// Keyed on the test as well as the process, because cargo runs the tests
+    /// of one file as threads of one process.
+    fn new(test: &str) -> Self {
+        let at =
+            std::env::temp_dir().join(format!("headwater-scaffold-{}-{test}", std::process::id()));
         let _ = std::fs::remove_dir_all(&at);
         copy_tree(&fixtures_dir().join("corpus"), &at.join("corpus"));
         Scratch(at)
@@ -139,12 +142,16 @@ fn check_over(root: &Path) -> Run {
     )
 }
 
-/// Scaffold, then check, and record what the checks made of the result.
-#[test]
-fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
-    let scratch = Scratch::new();
-    let root = &scratch.0;
+/// The two documents the successors supersede, which a scaffolder at the
+/// initial state leaves alone (HW-DR-0086).
+const FAR: [&str; 2] = [
+    "corpus/decisions/an-earlier-decision.md",
+    "corpus/spec/02-the-second-part.md",
+];
 
+/// Bootstrap the claim store, then run the scaffolder three times into the
+/// tree, and return every path it composed, in the order it composed them.
+fn scaffold_into(root: &Path) -> Vec<String> {
     // Bootstrap the claim store, the way `headwater check --fix` does over a
     // corpus that minted before it had one. The fixture tree ships documents
     // and no claims, and every one of those identifiers is spent, so a run
@@ -194,7 +201,7 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
         let shelves = Taxonomy::read(&resolved).expect("the shelves read");
         let relations = Declarations::read(&resolved).expect("the relations read");
         let shape = Shape::read(&resolved).expect("the shape reads");
-        let corpus = Corpus::new(root.clone(), "corpus");
+        let corpus = Corpus::new(root.to_path_buf(), "corpus");
         let taken: Census = census::take(&corpus, &shelves);
         let config = Config::default();
         let index = Index::build(&taken, &config);
@@ -232,12 +239,38 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
         headwater_scaffold::claim::write(root, &plan).expect("the claim writes");
         write::apply(root, &composed).expect("the files write");
     }
+    touched
+}
 
+fn read(root: &Path, path: &str) -> String {
+    std::fs::read_to_string(root.join(path)).unwrap_or_else(|why| panic!("{path}: {why}"))
+}
+
+/// Scaffold, then check, and record what the checks made of the result.
+#[test]
+fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
+    let scratch = Scratch::new("passes");
+    let root = &scratch.0;
+
+    let before: Vec<String> = FAR.iter().map(|path| read(root, path)).collect();
+    let touched = scaffold_into(root);
+
+    // The decisive assertion of #1168. Each new document opens at `draft`, so
+    // the far half of each `supersedes` is owed at promotion and not written
+    // now: only the three new documents are composed, and the bytes of the
+    // documents they supersede do not move.
     assert_eq!(
         touched.len(),
-        5,
-        "three documents and two spliced far halves: {touched:?}"
+        3,
+        "three documents and no spliced far half: {touched:?}"
     );
+    for (path, before) in FAR.iter().zip(&before) {
+        assert_eq!(
+            &read(root, path),
+            before,
+            "{path} is a live document, and a draft wrote nothing into it"
+        );
+    }
 
     // The decisive assertion of
     // [#584](https://github.com/headwater-ai/headwater/issues/584), and it is
@@ -274,40 +307,32 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
         headwater_check::paint::ColorMode::Plain,
     );
 
-    // One advisory finding per spliced far half, and it is the ruling working
-    // rather than a defect of the scaffolder. The scaffolder writes a new
-    // document at the regime's initial state, and it writes the required
-    // reciprocal `superseded_by` into the live document the successor
-    // replaces. That live document now names a draft, and
-    // `lifecycle.dependency.on_initial` reads each half from the document
-    // that wrote it (HW-DR-0085). This fixture's `supersedes` writes no state
-    // onto its target, so the relation is not exempt. The repair is the one
-    // HW-DR-0052 names: the author promotes the successor before proposing
-    // it. The base package's `supersedes` writes `superseded` and is exempt,
-    // so an adopter of the base never meets this pair.
-    let mut on_initial: Vec<&str> = run
+    // No live document names a draft. Before #1168 the scaffolder spliced the
+    // required `superseded_by` into each live document a successor replaces,
+    // and `lifecycle.dependency.on_initial` reads each half from the document
+    // that wrote it (HW-DR-0085), so each live document warned that it rested
+    // on a draft. This fixture's `supersedes` writes no state onto its target,
+    // so the relation is not exempt. The far half is now owed at promotion
+    // (HW-DR-0086), so nothing is spliced and nothing warns.
+    let on_initial: Vec<&str> = run
         .findings
         .iter()
         .filter(|finding| finding.rule == headwater_check::initial_dependency::RULE)
-        .filter(|finding| touched.contains(&finding.path))
+        .filter(|finding| touched.contains(&finding.path) || FAR.contains(&finding.path.as_str()))
         .map(|finding| finding.path.as_str())
         .collect();
-    on_initial.sort_unstable();
     assert_eq!(
         on_initial,
-        [
-            "corpus/decisions/an-earlier-decision.md",
-            "corpus/spec/02-the-second-part.md"
-        ],
-        "one warning on each spliced far half, and nowhere else"
+        Vec::<&str>::new(),
+        "a draft writes nothing into a live document, so none of them warns"
     );
 
-    // The assertion the issue asks for.
+    // The assertion the issue asks for, with no rule exempt. A reciprocity
+    // check that did not defer would anchor its finding on a new draft here.
     let against_scaffolded: Vec<String> = run
         .findings
         .iter()
-        .filter(|finding| touched.contains(&finding.path))
-        .filter(|finding| finding.rule != headwater_check::initial_dependency::RULE)
+        .filter(|finding| touched.contains(&finding.path) || FAR.contains(&finding.path.as_str()))
         .map(|finding| format!("{}:{} {}", finding.path, finding.line, finding.message))
         .collect();
     assert!(
@@ -326,6 +351,87 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
     recorded.push('\n');
     recorded.push_str(&report);
     compare(&fixtures_dir().join("scaffold.pipeline"), &recorded);
+}
+
+/// Promote what the scaffolder wrote, and the owed halves come due: the check
+/// reports each one on the new document and `--fix` writes it into the far
+/// one (HW-DR-0086).
+#[test]
+fn a_promoted_successor_is_owed_its_far_half_and_the_fix_writes_it() {
+    let scratch = Scratch::new("promoted");
+    let root = &scratch.0;
+    let touched = scaffold_into(root);
+
+    // The author's promotion, by hand, as HW-DR-0052 has it.
+    let mut promoted = Vec::new();
+    for path in &touched {
+        let text = read(root, path);
+        if text.contains("\nstatus: draft\n") {
+            let text = text.replacen("\nstatus: draft\n", "\nstatus: current\n", 1);
+            std::fs::write(root.join(path), text).expect("the promotion writes");
+            promoted.push(path.clone());
+        }
+    }
+    let successors = [
+        "corpus/decisions/a-scaffolded-successor.md",
+        "corpus/decisions/a-second-successor.md",
+    ];
+    for successor in successors {
+        assert!(
+            promoted.iter().any(|path| path == successor),
+            "{successor} opened at `draft`: {promoted:?}"
+        );
+    }
+
+    let run = check_over(root);
+    let mut owed: Vec<(&str, String)> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == reciprocity::RULE)
+        .map(|finding| (finding.path.as_str(), finding.remediation.clone()))
+        .collect();
+    owed.sort();
+    assert_eq!(owed.len(), 2, "one owed half per successor: {owed:?}");
+    for ((path, remediation), (successor, far)) in owed
+        .iter()
+        .zip([(successors[0], FAR[1]), (successors[1], FAR[0])])
+    {
+        assert_eq!(*path, successor);
+        assert!(
+            remediation.contains(far) && remediation.contains("superseded_by"),
+            "{successor} names {far} and `superseded_by`: {remediation}"
+        );
+    }
+
+    let patches: Vec<_> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == reciprocity::RULE)
+        .filter_map(|finding| finding.patch.clone())
+        .collect();
+    assert_eq!(patches.len(), 2, "each owed half carries its patch");
+    let composed = fix::compose(root, &patches);
+    assert!(composed.refused.is_empty(), "{:?}", composed.refused);
+    fix::apply(root, &composed.files).expect("the halves write");
+    fix::make(root, &composed.created).expect("nothing to make");
+
+    for (far, id) in [(FAR[0], "DR-FIX-0009"), (FAR[1], "DR-FIX-0008")] {
+        let text = read(root, far);
+        assert!(
+            text.contains("superseded_by") && text.contains(id),
+            "{far} carries `superseded_by: {id}`:\n{text}"
+        );
+    }
+
+    // Both ends are live now, so neither rule has anything to say.
+    let again = check_over(root);
+    let left: Vec<String> = again
+        .findings
+        .iter()
+        .filter(|finding| touched.contains(&finding.path) || FAR.contains(&finding.path.as_str()))
+        .map(|finding| format!("{} {}: {}", finding.path, finding.rule, finding.message))
+        .collect();
+    assert!(left.is_empty(), "{}", left.join("\n"));
 }
 
 fn compare(recorded: &Path, actual: &str) {
