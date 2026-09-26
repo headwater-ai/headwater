@@ -8,20 +8,30 @@
 
 ## Obtaining a named version
 
-**The simplest route now, and it works.** All 23 workspace crates are on crates.io as of `v0.1.2`, published in dependency order by `.github/workflows/publish-crates.yml`.
+**Download the binary. You need no Rust toolchain.** Every engine release carries a static Linux x86_64 archive and a macOS arm64 archive. The block below installs `v0.2.1` on Linux into `~/.local/bin`. On macOS on Apple silicon, put `aarch64-apple-darwin` where the block says `x86_64-unknown-linux-musl`.
+
+```
+mkdir -p ~/.local/bin
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.2.1/headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
+```
+
+Each archive has a `.sha256` file beside it on the release, which `sha256sum -c` reads, and `shasum -a 256 -c` on macOS. The archive holds the `headwater` binary and the license, and nothing else. It does not get you `taxonomy-source`, and the taxonomy paragraphs below say how to fetch it.
+
+**The alternative, if you already have a Rust toolchain.** Every workspace crate is on crates.io, published in dependency order by `.github/workflows/publish-crates.yml`.
 
 ```
 cargo install headwater-cli
 ```
 
-The command needs nothing this repository ships: no clone, no toolchain floor beyond what `cargo` itself resolves from the crate's declared `rust-version`. It gets you the `headwater` binary alone, at whatever the newest published version is. It does not get you `taxonomy-source`, so a reader who also wants the base taxonomy package still needs one of the two routes below.
+The command needs nothing this repository ships: no clone, no toolchain floor beyond what `cargo` itself resolves from the crate's declared `rust-version`. It gets you the `headwater` binary alone, at whatever the newest published version is.
 
-**A fixed version, with the taxonomy package beside it.** `v0.1.2` is the newest tagged release, and the block below builds it from source. It needs a Rust toolchain at **1.91 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
+**A fixed version built from source, with the taxonomy package beside it.** `v0.2.1` is the newest tagged release, and the block below builds it from source. It needs a Rust toolchain at **1.91 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
 
 ```
 git clone https://github.com/headwater-ai/headwater.git
 cd headwater
-git checkout v0.1.2
+git checkout v0.2.1
 cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked
 ```
 
@@ -31,9 +41,9 @@ The binary alone gets you the rest of the way there, with nothing else required:
 
 **An engine tag pins whatever `headwater/standard` version happened to ship with it, which is not always the newest one.** An engine tag is cut when the engine changes, not when the taxonomy does, so the version a `v<n>` tag carries can lag behind the version `taxonomy-source/headwater-standard/package.yml` states on the default branch for as long as nobody cuts the next engine release — [#757](https://github.com/headwater-ai/headwater/issues/757) is that gap, and it is a gap in the route rather than in the package. `taxonomy/headwater-standard/v<version>` is a second tag namespace, distinct from `v<version>` so the two never collide, cut independently by whoever maintains `headwater/standard` whenever they choose to publish a fixed version of it alone: no engine version bump and no engine tag required. `.github/workflows/release-taxonomy.yml` ([#760](https://github.com/headwater-ai/headwater/issues/760)) runs `headwater taxonomy publish` against `taxonomy-source/headwater-standard`, and attaches `headwater-standard-<version>.zip` to the tag's GitHub release, with the `release.digest` value printed in the release notes. `tools/headwater-bootstrap.sh --tag taxonomy/headwater-standard/v<version> --expect <digest>` fetches it exactly the way it fetches an engine tag, because it reads whatever source tree a tag names and does not care which workflow cut it. [`taxonomy/headwater-standard/v4.2.0`](https://github.com/headwater-ai/headwater/releases/tag/taxonomy/headwater-standard/v4.2.0) is the first release this route ever cut, and the tutorial's step 3 fetches it.
 
-**`v0.1.2` carries a binary and a checksum on its GitHub release.** `.github/workflows/release.yml` attaches `headwater-<tag>-x86_64-unknown-linux-gnu.tar.gz`, which holds the `headwater` binary and the license, beside `headwater-<tag>-x86_64-unknown-linux-gnu.tar.gz.sha256` for `sha256sum -c`, to every tag whose name starts with `v`. `v0.1.1` remains without a GitHub binary after its release collided with an immutable release object. That build is `x86_64` Linux on `ubuntu-24.04`, so it needs glibc 2.39 or later. The first `v` tag cut after `v0.1.2` also carries two archives that no release carries yet. `headwater-<tag>-x86_64-unknown-linux-musl.tar.gz` is a static Linux build that needs no particular C library, beside `headwater-<tag>-x86_64-unknown-linux-musl.tar.gz.sha256`. `headwater-<tag>-aarch64-apple-darwin.tar.gz` is for macOS on Apple silicon, beside `headwater-<tag>-aarch64-apple-darwin.tar.gz.sha256`. The workflow runs each of the two on a host that did not build it and has no Rust toolchain, and it creates no release until both run. Until that tag is cut, every platform other than `x86_64` Linux with glibc 2.39 still takes the source build above. [The releases page](https://github.com/headwater-ai/headwater/releases) is where you see which tags carry a binary.
+**What each engine release carries.** `.github/workflows/release.yml` attaches three archives to every tag whose name starts with `v`, each beside a checksum for `sha256sum -c`, and each archive holds the `headwater` binary and the license. `headwater-<tag>-x86_64-unknown-linux-musl.tar.gz` is a static Linux build that needs no particular C library, beside `headwater-<tag>-x86_64-unknown-linux-musl.tar.gz.sha256`. `headwater-<tag>-aarch64-apple-darwin.tar.gz` is for macOS on Apple silicon, beside `headwater-<tag>-aarch64-apple-darwin.tar.gz.sha256`. `headwater-<tag>-x86_64-unknown-linux-gnu.tar.gz` is `x86_64` Linux built on `ubuntu-24.04`, so it needs glibc 2.39 or later, beside `headwater-<tag>-x86_64-unknown-linux-gnu.tar.gz.sha256`. The workflow runs the musl and the macOS archives on a host that did not build them and has no Rust toolchain, and it creates no release until both run. `v0.2.0` is the first tag that carries all three. `v0.1.2` carries the glibc archive alone, and `v0.1.1` carries none after its release collided with an immutable release object. [The releases page](https://github.com/headwater-ai/headwater/releases) is where you see which tags carry a binary.
 
-The tutorial installs with `cargo install`, which gets whatever version is newest on crates.io, and that moves. That is deliberate, because the tutorial is a claim about the default branch and CI holds it there. The source build above is where the fixed version is.
+The tutorial installs from the same release download as the first block above, and it names `cargo install` only as the alternative. It pins the version it downloads, and CI runs every other block of the tutorial against the engine on the default branch.
 
 ## Status
 

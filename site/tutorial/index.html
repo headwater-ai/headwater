@@ -217,13 +217,16 @@
     <h2 class="label">Before you start</h2>
     <div class="split">
       <div style="font-size: 0.98rem;">
-        <p>You need four things: <strong>git</strong>, with a name and an email address configured in it, a <strong>Rust toolchain 1.91 or later</strong> for <code>cargo install</code>, <strong>curl</strong> for step 3, and about twenty minutes. No clone.</p>
+        <p>You need four things: <strong>git</strong>, with a name and an email address configured in it, <strong>Linux on x86_64 or macOS on Apple silicon</strong>, <strong>curl</strong> and <strong>tar</strong>, and about twenty minutes. No clone, and no Rust toolchain.</p>
         <p style="color: var(--muted); font-size: 0.92rem; margin: 0;">Three facts about the blocks below. A block is a command or it is output, and the two look the same, so read the sentence above one before you paste it. Your dates differ, and where a block shows a date, yours shows the day you read this. Long output is trimmed, and says so.</p>
       </div>
       <div>
-        <pre class="cmd verbatim">cargo install headwater-cli</pre>
-        <p class="check"><span class="checkword">Check</span> <span><code>headwater --version</code> prints a number. <code>cargo install</code> already put the binary on your <code>PATH</code>, so every step below runs in that same shell with nothing to export.</span></p>
-        <p>This installs whatever the newest published version is, from crates.io: no clone, no local build. It does not get you <code>taxonomy-source</code>, which step 3 fetches the same way. For the engine and the package matched to one commit, the repository&rsquo;s README names the source-build route under <em>Obtaining a named version</em>.</p>
+        <pre class="cmd verbatim">mkdir -p ~/.local/bin
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.2.1/headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.2.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</pre>
+        <p>On macOS on Apple silicon, the archive is <code>headwater-v0.2.1-aarch64-apple-darwin.tar.gz</code>. Use that name in the <code>curl</code> line and in the <code>tar</code> line. Each archive has a <code>.sha256</code> file beside it on the release, for <code>sha256sum -c</code> or <code>shasum -a 256 -c</code>.</p>
+        <p class="check"><span class="checkword">Check</span> <span><code>headwater --version</code> prints a number. Many Linux distributions put <code>~/.local/bin</code> on your <code>PATH</code> when the directory exists at login, and macOS does not. If your shell cannot find <code>headwater</code>, add the directory to your <code>PATH</code> and open a new shell.</span></p>
+        <p>This installs version 0.2.1 of the engine. It does not get you <code>taxonomy-source</code>, which step 3 fetches. With a Rust toolchain, <code>cargo install headwater-cli</code> is the alternative, and the repository&rsquo;s README names it under <em>Obtaining a named version</em>.</p>
       </div>
     </div>
   </div>
