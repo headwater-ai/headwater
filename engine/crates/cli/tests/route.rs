@@ -240,3 +240,71 @@ fn every_declared_relation_that_governs_the_anchor_kind_is_proposed() {
         text.out
     );
 }
+
+/// The stub root, with one decision whose `governs` edge onto
+/// `tools/stale.sh` records a revision the file no longer has, and one whose
+/// edge onto `tools/governed.sh` records none.
+fn stale_root(label: &str) -> Root {
+    Root::shaped(label, |at| {
+        std::fs::write(at.join("tools/stale.sh"), "echo moved\n").expect("the stale file writes");
+        std::fs::write(at.join("tools/governed.sh"), "").expect("the governed file writes");
+        let decision = |id: &str, file: &str, entry: &str| {
+            std::fs::write(
+                at.join(format!("docs/decisions/{file}")),
+                format!(
+                    "---\nid: {id}\ntitle: A decision that governs a tool\nstatus: \
+                     current\nstatus_since: 2026-08-01\nlast_verified: 2026-08-01\nsummary: One \
+                     decision that governs one file under the tools directory.\nprovenance:\n  \
+                     warrant: asserted\n  agency: human\n  evidence_basis: \
+                     unevidenced\nrelations:\n  governs:\n{entry}---\n\n# A decision that \
+                     governs a tool\n\n## Context\n\nA fixture.\n\n## Decision\n\nIt governs \
+                     one file.\n\n## Consequences\n\nThe route names it.\n"
+                ),
+            )
+            .expect("the decision writes");
+        };
+        decision(
+            "HW-DR-0002",
+            "0002-the-decision-whose-edge-went-stale.md",
+            "    - to: tools/stale.sh\n      verified_revision: sha256:0000\n",
+        );
+        decision(
+            "HW-DR-0003",
+            "0003-the-decision-that-recorded-nothing.md",
+            "    - tools/governed.sh\n",
+        );
+    })
+}
+
+/// An edge whose recorded revision differs from the one its target has now is
+/// named on the pointer, in both formats. An edge that recorded nothing is
+/// not, and its pointer carries the member empty (#953).
+#[test]
+fn a_governing_edge_whose_recorded_revision_moved_is_named_on_its_pointer() {
+    let root = stale_root("route-suspect");
+    let ran = root.run(&["route", "edit", "tools/stale.sh", "--json"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    let start = ran
+        .out
+        .find("\"suspect\"")
+        .unwrap_or_else(|| panic!("no suspect member in {}", ran.out));
+    let member = &ran.out[start..];
+    let member = &member[..=member.find(']').expect("the array closes")];
+    assert!(member.contains("\"target\": \"tools/stale.sh\""), "{member}");
+    assert!(member.contains("\"verified\": \"sha256:0000\""), "{member}");
+    assert!(member.contains("\"current\": \"sha256:"), "{member}");
+
+    let text = root.run(&["route", "edit", "tools/stale.sh"]);
+    assert_eq!(text.code, Some(0), "{text:?}");
+    assert!(
+        text.out.contains("suspect: tools/stale.sh") && text.out.contains("headwater check"),
+        "{}",
+        text.out
+    );
+
+    let quiet = root.run(&["route", "edit", "tools/governed.sh", "--json"]);
+    assert_eq!(quiet.code, Some(0), "{quiet:?}");
+    assert!(quiet.out.contains("\"suspect\": []"), "{}", quiet.out);
+    let quiet = root.run(&["route", "edit", "tools/governed.sh"]);
+    assert!(!quiet.out.contains("suspect"), "{}", quiet.out);
+}
