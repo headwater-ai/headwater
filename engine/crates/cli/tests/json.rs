@@ -871,13 +871,17 @@ fn explain_writes_a_list_anchor_as_an_array_of_its_targets() {
     assert_targets_join_to_target(&related);
 }
 
-/// A member that holds a comma stays one member of `targets`.
+/// A member that holds a comma stays one member of `targets`, in the order
+/// the author wrote it.
 ///
-/// The join in `target` cannot tell `["src/a,b.rs", src/c.rs]` from three
-/// members, and `targets` can. The scratch corpus holds no source tree, so the
-/// anchor binds nothing, and the list comes from the edge as written rather
-/// than from the resolver's patterns. That is the case a stale path puts in
-/// front of an adopter.
+/// The join in `target` cannot tell `[src/c.rs, "src/a, b.rs", "src/a,b.rs"]`
+/// from four or five members, and `targets` can. One member holds `, `, the
+/// join's own separator, so an implementation that splits `target` or
+/// `raw_target` again goes red here. The list is written out of sorted order,
+/// so one that sorts an unbound list goes red too. The scratch corpus holds no
+/// source tree, so the anchor binds nothing, and the list comes from the edge
+/// as written rather than from the resolver's patterns. That is the case a
+/// stale path puts in front of an adopter.
 #[test]
 fn a_member_that_holds_a_comma_stays_one_member_of_targets() {
     let at = scratch().join("comma-member");
@@ -893,7 +897,7 @@ fn a_member_that_holds_a_comma_stays_one_member_of_targets() {
     }
     std::fs::write(
         at.join("docs/interfaces/headwater-comma.md"),
-        "---\nid: HW-IFACE-headwater-comma\nstatus: current\nstatus_since: 2026-09-26\nsummary: \"A list anchor whose first member holds a comma.\"\nlast_verified: 2026-09-26\ntitle: \"headwater comma\"\nrelations:\n  governs:\n    - [\"src/a,b.rs\", src/c.rs]\n---\n\n# headwater comma\n\n## Synopsis\n\n    headwater comma\n",
+        "---\nid: HW-IFACE-headwater-comma\nstatus: current\nstatus_since: 2026-09-26\nsummary: \"A list anchor whose members hold a comma.\"\nlast_verified: 2026-09-26\ntitle: \"headwater comma\"\nrelations:\n  governs:\n    - [src/c.rs, \"src/a, b.rs\", \"src/a,b.rs\"]\n---\n\n# headwater comma\n\n## Synopsis\n\n    headwater comma\n",
     )
     .expect("the document is written");
     let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
@@ -919,13 +923,19 @@ fn a_member_that_holds_a_comma_stays_one_member_of_targets() {
         .find(|element| element.direction == "outbound" && element.relation == "governs")
         .expect("the document governs its list");
     assert_eq!(
-        list.target, "src/a,b.rs, src/c.rs",
+        list.target, "src/c.rs, src/a, b.rs, src/a,b.rs",
         "the display string is the join"
     );
     assert_eq!(
         list.targets.as_deref(),
-        Some(&["src/a,b.rs".to_string(), "src/c.rs".to_string()][..]),
-        "two members, not three"
+        Some(
+            &[
+                "src/c.rs".to_string(),
+                "src/a, b.rs".to_string(),
+                "src/a,b.rs".to_string(),
+            ][..]
+        ),
+        "three members as written, in the written order"
     );
     assert_targets_join_to_target(&related);
 }
