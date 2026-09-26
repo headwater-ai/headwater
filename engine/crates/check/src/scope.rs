@@ -55,14 +55,16 @@
 //! raises it by hand.
 //!
 //! `tests/editions.rs` catches an author who forgets, where a recorded corpus
-//! shows it. `fixtures/editions.ledger` holds, for each rule the recorded
-//! corpora reach, its `VERSION` and a digest of what the cache would store for
-//! every verdict it reaches there. A digest that moves while `VERSION` stays
-//! fails, and `HEADWATER_BLESS` does not re-record it. The ledger cannot see
-//! three things: a change that no recorded corpus exercises, a rule with no
-//! instance on any of them (the test lists each one with the reason), and a
-//! change visible only against a warm cache that an older binary wrote. The
-//! last is the digest over the compiled rule that
+//! shows it. `fixtures/editions.ledger` holds, for each rule over each
+//! recorded corpus it reaches, its `VERSION`, a fingerprint of the corpus and
+//! a digest of what the cache would store for every verdict it reaches there.
+//! A digest that moves while `VERSION` and the corpus stay fails, and
+//! `HEADWATER_BLESS` does not re-record it. An edit to a corpus is re-recorded
+//! by bless. The ledger cannot see four things: a change that no recorded
+//! corpus exercises, a rule with no instance on any of them (the test lists
+//! each one with the reason), a rule change in the same commit as an edit to
+//! its corpus, and a change visible only against a warm cache that an older
+//! binary wrote. The last is the digest over the compiled rule that
 //! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
 //! still carries.
 //!

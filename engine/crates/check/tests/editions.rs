@@ -10,32 +10,42 @@
 //! runs under one binary, so none of them could see it: a cold run and a warm
 //! run of the same compiled rule agree.
 //!
-//! `fixtures/editions.ledger` records, for each rule the recorded corpora
-//! reach, its `VERSION` and a digest of every verdict it reaches there. The
-//! digest is over what a cache would store for each instance: the instance's
-//! identity (its corpus, its grain and the paths it read, without their byte
-//! hashes) and [`headwater_check::cached_form`] of its outcome. A skip is not
-//! cached and is digested as the word `skipped`. So a message, a remediation or
-//! a patch that changes moves the digest too, because a cache stores those.
+//! `fixtures/editions.ledger` records one row for each rule over each
+//! recorded corpus it reaches: the rule's `VERSION`, a fingerprint of the
+//! corpus, and a digest of every verdict the rule reaches there. The digest is
+//! over what a cache would store for each instance: the instance's identity
+//! (its grain and the paths it read, without their byte hashes) and
+//! [`headwater_check::cached_form`] of its outcome. A skip is not cached and is
+//! digested as the word `skipped`. So a message, a remediation or a patch that
+//! changes moves the digest too, because a cache stores those. The fingerprint
+//! is over the bytes of every file in the corpus's input directory, its
+//! taxonomy, its lock string, its clock and its observations.
 //!
 //! The test recomputes the ledger and compares it row by row:
 //!
-//! - a digest that moved at an unchanged `VERSION` fails, names the rule and
-//!   the file that declares it, and **fails under `HEADWATER_BLESS` too**.
-//!   `DEVELOPING.md` tells an author to re-record with a blanket
-//!   `HEADWATER_BLESS=1 cargo test -p headwater-check`, and a bless that
-//!   rewrote this row would ship exactly the #952 defect;
-//! - a `VERSION` that moved, with or without a moved digest, and a rule with no
-//!   row yet, fail outside bless and are re-recorded under it;
-//! - a row whose rule reached no instance fails outside bless, because it pins
+//! - a digest that moved while neither `VERSION` nor the fingerprint moved
+//!   fails, names the rule, the file that declares it and the corpus, and
+//!   **fails under `HEADWATER_BLESS` too**. `DEVELOPING.md` tells an author to
+//!   re-record with a blanket `HEADWATER_BLESS=1 cargo test -p
+//!   headwater-check`, and a bless that rewrote this row would ship exactly
+//!   the #952 defect;
+//! - a `VERSION` that moved, a corpus whose fingerprint moved, and a row that
+//!   is new fail outside bless and are re-recorded under it. So an author who
+//!   edits a recorded corpus re-records it without raising any `VERSION`;
+//! - a row that reached no instance fails outside bless, because it pins
 //!   nothing, and bless drops it.
 //!
 //! What the ledger cannot see: a change that no recorded corpus exercises, a
 //! rule with no instance on any of them (listed in [`UNCOVERED`] with the
-//! reason), and a change visible only against a warm cache that an older
-//! binary wrote. The last is the digest over the compiled rule that
+//! reason), a rule change that lands in the same commit as an edit to the
+//! corpus it is read over, and a change visible only against a warm cache
+//! that an older binary wrote. The last is the digest over the compiled rule
+//! that
 //! [HW-OBL-0074](../../../../docs/obligations/0074-a-check-version-is-raised-by-hand-and-nothing-catches-a-stale.md)
 //! asks for. The ledger approximates it over fixtures and does not close it.
+//! A corpus that reads a file outside its input directory would report an
+//! edit to that file as a rule change, and bless would refuse it. None of the
+//! recorded corpora below does.
 //!
 //!     HEADWATER_BLESS=1 cargo test -p headwater-check --test editions
 //!
@@ -144,6 +154,8 @@ struct Recorded {
     /// Whether the run reads `check-rule` anchors and the claim store under
     /// the base, as `tests/fixtures.rs` does for the check tree.
     full: bool,
+    /// The directory whose every file the run can read. See [`fingerprint`].
+    inputs: PathBuf,
 }
 
 fn recorded() -> Vec<Recorded> {
@@ -159,6 +171,7 @@ fn recorded() -> Vec<Recorded> {
             clock: "2026-08-12",
             observations: Observations::empty(),
             full: true,
+            inputs: fixtures_dir().join("check"),
         },
         Recorded {
             label: "terminal-dependency",
@@ -169,6 +182,7 @@ fn recorded() -> Vec<Recorded> {
             clock: "2026-08-12",
             observations: Observations::empty(),
             full: false,
+            inputs: fixtures_dir().join("terminal-dependency"),
         },
         Recorded {
             label: "state-set-twice",
@@ -179,6 +193,7 @@ fn recorded() -> Vec<Recorded> {
             clock: "2026-08-12",
             observations: Observations::empty(),
             full: false,
+            inputs: fixtures_dir().join("state-set-twice"),
         },
         Recorded {
             label: "acceptance-criterion-proven",
@@ -195,6 +210,7 @@ fn recorded() -> Vec<Recorded> {
                 criterion_digest: "sha256:0".to_string(),
             }]),
             full: false,
+            inputs: fixtures_dir().join("acceptance-criterion-proven"),
         },
         Recorded {
             label: "editions/governs-suspect",
@@ -205,6 +221,7 @@ fn recorded() -> Vec<Recorded> {
             clock: "2026-09-24",
             observations: Observations::empty(),
             full: false,
+            inputs: fixtures_dir().join("editions"),
         },
     ]
 }
@@ -252,25 +269,81 @@ fn run(recorded: &Recorded) -> Run {
     )
 }
 
-/// One rule's row: what the ledger records, and the corpora it was read over.
+/// The fingerprint of what one recorded corpus hands its rules: the bytes of
+/// every file under its input directory, the bytes of its taxonomy, its lock
+/// string, its clock and its observations.
+///
+/// A row records it so that a corpus edit and a rule edit are told apart. A
+/// verdict that moved over an unchanged fingerprint moved because the code
+/// moved. A verdict that moved over a moved fingerprint may have moved for
+/// either reason, and bless re-records it.
+fn fingerprint(recorded: &Recorded) -> String {
+    let mut files = Vec::new();
+    walk(&recorded.inputs, &mut files);
+    files.sort();
+    let mut text = String::new();
+    for path in files {
+        let relative = path
+            .strip_prefix(&recorded.inputs)
+            .expect("a walked path is under its root")
+            .to_string_lossy()
+            .replace('\\', "/");
+        let bytes = std::fs::read(&path).expect("a corpus file reads");
+        text.push_str(&format!(
+            "file\t{relative}\t{}\n",
+            headwater_hash::digest(&bytes)
+        ));
+    }
+    let taxonomy =
+        std::fs::read(fixtures_dir().join(recorded.taxonomy)).expect("the fixture taxonomy");
+    text.push_str(&format!(
+        "taxonomy\t{}\nlock\t{}\nclock\t{}\nobservations\t{:?}\n",
+        headwater_hash::digest(&taxonomy),
+        recorded.lock,
+        recorded.clock,
+        recorded.observations,
+    ));
+    headwater_hash::digest(text.as_bytes())
+}
+
+fn walk(dir: &Path, into: &mut Vec<PathBuf>) {
+    for entry in std::fs::read_dir(dir).expect("a corpus directory reads") {
+        let path = entry.expect("a directory entry").path();
+        if path.is_dir() {
+            walk(&path, into);
+        } else {
+            into.push(path);
+        }
+    }
+}
+
+/// One rule over one recorded corpus: what the ledger records.
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Row {
     rule: String,
+    corpus: String,
     version: u32,
+    /// The corpus's [`fingerprint`] when the row was recorded.
+    inputs: String,
     digest: String,
     instances: usize,
-    /// Where the rule reached a verdict. Not written to the ledger, and only
-    /// for a message to name.
-    corpora: Vec<String>,
 }
 
-/// The rows the recorded corpora give under this binary, sorted by rule.
+impl Row {
+    fn key(&self) -> (&str, &str) {
+        (&self.rule, &self.corpus)
+    }
+}
+
+/// The rows the recorded corpora give under this binary, sorted by rule and
+/// then by corpus.
 fn compute() -> Vec<Row> {
     let mut versions: BTreeMap<&'static str, u32> = BTreeMap::new();
-    let mut lines: BTreeMap<&'static str, Vec<String>> = BTreeMap::new();
-    let mut corpora: BTreeMap<&'static str, Vec<String>> = BTreeMap::new();
+    let mut lines: BTreeMap<(&'static str, &'static str), Vec<String>> = BTreeMap::new();
+    let mut inputs: BTreeMap<&'static str, String> = BTreeMap::new();
     for recorded in recorded() {
         let ran = run(&recorded);
+        inputs.insert(recorded.label, fingerprint(&recorded));
         for (rule, version) in &ran.read_set.versions {
             let earlier = versions.insert(rule, *version);
             assert!(
@@ -284,32 +357,31 @@ fn compute() -> Vec<Row> {
                 debug_assert!(matches!(instance.outcome, Outcome::Skipped(_)));
                 "skipped".to_string()
             });
-            lines.entry(instance.rule).or_default().push(format!(
-                "{}\t{:?}\t{}\t{verdict}",
-                recorded.label,
-                instance.grain,
-                reads.join(",")
-            ));
-            let seen = corpora.entry(instance.rule).or_default();
-            if seen.last().map(String::as_str) != Some(recorded.label) {
-                seen.push(recorded.label.to_string());
-            }
+            lines
+                .entry((instance.rule, recorded.label))
+                .or_default()
+                .push(format!(
+                    "{:?}\t{}\t{verdict}",
+                    instance.grain,
+                    reads.join(",")
+                ));
         }
     }
     lines
         .into_iter()
-        .map(|(rule, mut instances)| {
+        .map(|((rule, corpus), mut instances)| {
             instances.sort_unstable();
             let mut text = instances.join("\n");
             text.push('\n');
             Row {
                 rule: rule.to_string(),
+                corpus: corpus.to_string(),
                 version: *versions
                     .get(rule)
                     .unwrap_or_else(|| panic!("{rule} reached a verdict and reported no version")),
+                inputs: inputs[corpus].clone(),
                 digest: headwater_hash::digest(text.as_bytes()),
                 instances: instances.len(),
-                corpora: corpora.remove(rule).unwrap_or_default(),
             }
         })
         .collect()
@@ -321,18 +393,19 @@ fn computed() -> &'static [Row] {
 }
 
 const HEADER: &str = "\
-# The verdict ledger of tests/editions.rs: rule, VERSION, digest of every
-# verdict over the recorded corpora, instance count. Sorted by rule.
-# HEADWATER_BLESS=1 re-records a row whose VERSION moved and never a row whose
-# digest moved at the same VERSION: raise VERSION for that.
+# The verdict ledger of tests/editions.rs: rule, recorded corpus, VERSION,
+# fingerprint of the corpus, digest of every verdict, instance count.
+# HEADWATER_BLESS=1 re-records a row whose VERSION or corpus moved, and never a
+# row whose verdicts moved over the same corpus at the same VERSION: raise
+# VERSION for that.
 ";
 
 fn render(rows: &[Row]) -> String {
     let mut text = HEADER.to_string();
     for row in rows {
         text.push_str(&format!(
-            "{}\t{}\t{}\t{}\n",
-            row.rule, row.version, row.digest, row.instances
+            "{}\t{}\t{}\t{}\t{}\t{}\n",
+            row.rule, row.corpus, row.version, row.inputs, row.digest, row.instances
         ));
     }
     text
@@ -347,28 +420,36 @@ fn parse(text: &str) -> (Vec<Row>, Vec<String>) {
             continue;
         }
         let fields: Vec<&str> = line.split('\t').collect();
-        match fields.as_slice() {
-            [rule, version, digest, instances] => match (version.parse(), instances.parse()) {
-                (Ok(version), Ok(instances)) => rows.push(Row {
-                    rule: rule.to_string(),
-                    version,
-                    digest: digest.to_string(),
-                    instances,
-                    corpora: Vec::new(),
-                }),
-                _ => failures.push(format!("the ledger line `{line}` does not read")),
-            },
-            _ => failures.push(format!("the ledger line `{line}` does not read")),
+        let row = match fields.as_slice() {
+            [rule, corpus, version, inputs, digest, instances] => {
+                match (version.parse(), instances.parse()) {
+                    (Ok(version), Ok(instances)) => Some(Row {
+                        rule: rule.to_string(),
+                        corpus: corpus.to_string(),
+                        version,
+                        inputs: inputs.to_string(),
+                        digest: digest.to_string(),
+                        instances,
+                    }),
+                    _ => None,
+                }
+            }
+            _ => None,
+        };
+        match row {
+            Some(row) => rows.push(row),
+            None => failures.push(format!("the ledger line `{line}` does not read")),
         }
     }
     (rows, failures)
 }
 
-/// The file that declares a rule, found by its name as a string literal, so
-/// that no second table of rules sits beside [`RULES`].
+/// The file that declares a rule: the one whose `pub const <NAME>: &str =`
+/// line holds the rule's name. Found by that line so that no second table of
+/// rules sits beside [`RULES`].
 fn declaring_file(rule: &str) -> String {
     let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
-    let literal = format!("\"{rule}\"");
+    let declaration = format!(": &str = \"{rule}\";");
     let mut files: Vec<PathBuf> = std::fs::read_dir(&source)
         .expect("the source directory reads")
         .map(|entry| entry.expect("a directory entry").path())
@@ -379,8 +460,9 @@ fn declaring_file(rule: &str) -> String {
         .into_iter()
         .find(|path| {
             std::fs::read_to_string(path).is_ok_and(|text| {
-                text.lines()
-                    .any(|line| line.contains("const") && line.contains(&literal))
+                text.lines().any(|line| {
+                    line.trim_start().starts_with("pub const ") && line.ends_with(&declaration)
+                })
             })
         })
         .map(|path| {
@@ -406,58 +488,77 @@ struct Judgement {
 /// change inside one process: the tests below stand a hand-made ledger in for
 /// the one an older binary recorded, as `tests/cache.rs` stands in a second
 /// rule list for an upgrade.
+///
+/// The order of the arms is the point. A moved `VERSION` and a moved corpus
+/// are each a reason for a verdict to move, so either one lets bless
+/// re-record the row. Only when neither moved is a moved verdict the code's
+/// alone, and that row is refused in both modes.
 fn judge(recorded: &str, computed: &[Row], bless: bool) -> Judgement {
     let (rows, mut failures) = parse(recorded);
-    let mut old: BTreeMap<&str, &Row> = rows.iter().map(|row| (row.rule.as_str(), row)).collect();
+    let mut old: BTreeMap<(&str, &str), &Row> = rows.iter().map(|row| (row.key(), row)).collect();
     let mut kept = Vec::new();
     for row in computed {
-        match old.remove(row.rule.as_str()) {
-            None => {
-                if !bless {
-                    failures.push(format!(
-                        "{} has no row in the ledger: record it with HEADWATER_BLESS=1",
-                        row.rule
-                    ));
-                }
-                kept.push(row.clone());
-            }
-            Some(was) if was.version == row.version && was.digest != row.digest => {
+        let (take, failure) = match old.remove(&row.key()) {
+            None => (
+                true,
+                format!(
+                    "{} has no row for {} in the ledger: record it with HEADWATER_BLESS=1",
+                    row.rule, row.corpus
+                ),
+            ),
+            Some(was) if was.version != row.version => (
+                true,
+                format!(
+                    "{} is at VERSION {} and the ledger records VERSION {} over {}: re-record \
+                     with HEADWATER_BLESS=1",
+                    row.rule, row.version, was.version, row.corpus
+                ),
+            ),
+            Some(was) if was.inputs != row.inputs => (
+                true,
+                format!(
+                    "the recorded corpus {} changed, so the row for {} over it is stale: \
+                     re-record with HEADWATER_BLESS=1",
+                    row.corpus, row.rule
+                ),
+            ),
+            Some(was) if was.digest != row.digest || was.instances != row.instances => {
                 failures.push(format!(
-                    "{} changed its verdicts over {} at VERSION {}, and VERSION did not move: \
-                     raise it in {}, then re-record with HEADWATER_BLESS=1. A warm cache keeps \
-                     serving what VERSION {} decided, and HEADWATER_BLESS does not re-record \
-                     this row",
+                    "{} changed its verdicts over {} at VERSION {}, and neither VERSION nor the \
+                     corpus moved: raise VERSION in {}, then re-record with HEADWATER_BLESS=1. A \
+                     warm cache keeps serving what VERSION {} decided, and HEADWATER_BLESS does \
+                     not re-record this row",
                     row.rule,
-                    row.corpora.join(", "),
+                    row.corpus,
                     row.version,
                     declaring_file(&row.rule),
                     row.version,
                 ));
                 kept.push(was.clone());
+                continue;
             }
-            Some(was) if was.version != row.version || was.instances != row.instances => {
-                if !bless {
-                    failures.push(format!(
-                        "{} is at VERSION {} and the ledger records VERSION {}: re-record with \
-                         HEADWATER_BLESS=1",
-                        row.rule, row.version, was.version
-                    ));
-                }
-                kept.push(row.clone());
+            Some(was) => {
+                kept.push(was.clone());
+                continue;
             }
-            Some(was) => kept.push(was.clone()),
+        };
+        if !bless {
+            failures.push(failure);
+        }
+        if take {
+            kept.push(row.clone());
         }
     }
-    for (rule, _) in old {
+    for ((rule, corpus), _) in old {
         if !bless {
             failures.push(format!(
-                "{rule} has a row in the ledger and reached no verdict on any recorded corpus, so \
-                 the row pins nothing: re-record with HEADWATER_BLESS=1, and list the rule in \
-                 UNCOVERED with the reason"
+                "{rule} has a row for {corpus} in the ledger and reached no verdict there, so the \
+                 row pins nothing: re-record with HEADWATER_BLESS=1, and list the rule in \
+                 UNCOVERED with the reason if no corpus reaches it now"
             ));
         }
     }
-    kept.sort_by(|a, b| a.rule.cmp(&b.rule));
+    kept.sort_by(|a, b| a.key().cmp(&b.key()));
     Judgement {
         ledger: render(&kept),
         failures,
@@ -512,28 +613,69 @@ fn every_rule_is_ledgered_or_named_as_uncovered() {
     }
 }
 
-/// The decisive case, #952 as data: the ledger an older binary wrote holds
-/// `relation.target.suspect` at the version this binary runs, with a digest
-/// this binary does not reach. That fails, names the rule, and fails under
-/// bless too, where the row stays as it was.
+/// Every ledgered rule is traced to the file whose `pub const` declares it,
+/// and that file is the module the rule's constant lives in.
 #[test]
-fn a_moved_digest_at_an_unchanged_version_fails_and_bless_keeps_the_row() {
-    let rows = computed();
-    let row = rows
-        .iter()
-        .find(|row| row.rule == suspect::RULE)
-        .expect("relation.target.suspect is ledgered");
-    let stale = "sha256:recorded-by-an-older-binary";
-    let older: Vec<Row> = rows
+fn every_ledgered_rule_names_the_file_that_declares_it() {
+    for (rule, file) in [
+        (suspect::RULE, "suspect.rs"),
+        (headwater_check::voice::RULE, "voice.rs"),
+        (headwater_check::retired::RULE, "retired.rs"),
+        (headwater_check::sections::RULE, "sections.rs"),
+        (headwater_check::claim::MISSING, "claim.rs"),
+    ] {
+        assert_eq!(
+            declaring_file(rule),
+            format!("engine/crates/check/src/{file}"),
+            "{rule}"
+        );
+    }
+    for row in computed() {
+        assert_ne!(
+            declaring_file(&row.rule),
+            "the module that declares it",
+            "{} has no `pub const` declaration this test can find",
+            row.rule
+        );
+    }
+}
+
+/// A copy of the computed rows with one row changed.
+fn with(rows: &[Row], rule: &str, corpus: &str, change: impl Fn(&mut Row)) -> Vec<Row> {
+    let mut found = false;
+    let changed = rows
         .iter()
         .map(|r| {
             let mut r = r.clone();
-            if r.rule == suspect::RULE {
-                r.digest = stale.to_string();
+            if r.rule == rule && r.corpus == corpus {
+                change(&mut r);
+                found = true;
             }
             r
         })
         .collect();
+    assert!(found, "{rule} has a row over {corpus}");
+    changed
+}
+
+const SUSPECT_CORPUS: &str = "editions/governs-suspect";
+
+/// The decisive case, #952 as data: the ledger an older binary wrote holds
+/// `relation.target.suspect` over the same corpus at the version this binary
+/// runs, with a digest this binary does not reach. That fails, names the rule,
+/// its file and the corpus, and fails under bless too, where the row stays as
+/// it was.
+#[test]
+fn a_moved_digest_at_an_unchanged_version_fails_and_bless_keeps_the_row() {
+    let rows = computed();
+    let version = rows
+        .iter()
+        .find(|row| row.rule == suspect::RULE)
+        .expect("relation.target.suspect is ledgered")
+        .version;
+    let older = with(rows, suspect::RULE, SUSPECT_CORPUS, |r| {
+        r.digest = "sha256:recorded-by-an-older-binary".to_string();
+    });
     let ledger = render(&older);
 
     for bless in [false, true] {
@@ -541,20 +683,42 @@ fn a_moved_digest_at_an_unchanged_version_fails_and_bless_keeps_the_row() {
         assert_eq!(judgement.failures.len(), 1, "{:?}", judgement.failures);
         let message = &judgement.failures[0];
         assert!(message.contains(suspect::RULE), "{message}");
-        assert!(
-            message.contains(&format!("VERSION {}", row.version)),
-            "{message}"
-        );
+        assert!(message.contains(&format!("VERSION {version}")), "{message}");
         assert!(
             message.contains("engine/crates/check/src/suspect.rs"),
             "{message}"
         );
-        assert!(message.contains("editions/governs-suspect"), "{message}");
+        assert!(message.contains(SUSPECT_CORPUS), "{message}");
         assert_eq!(
             judgement.ledger, ledger,
             "bless={bless} rewrote a row whose digest moved at an unchanged VERSION"
         );
     }
+}
+
+/// A corpus edit is not a rule edit. One more `governs` entry moves the
+/// suspect rule's digest, its instance count and the corpus fingerprint
+/// together, at an unchanged VERSION. Outside bless that asks for a re-record,
+/// and bless takes it without a raised VERSION.
+#[test]
+fn a_moved_corpus_asks_for_a_re_record_and_bless_takes_it() {
+    let rows = computed();
+    let older = with(rows, suspect::RULE, SUSPECT_CORPUS, |r| {
+        r.inputs = "sha256:the-corpus-before-an-edit".to_string();
+        r.digest = "sha256:the-verdicts-before-an-edit".to_string();
+        r.instances -= 1;
+    });
+    let ledger = render(&older);
+
+    let judgement = judge(&ledger, rows, false);
+    assert_eq!(judgement.failures.len(), 1, "{:?}", judgement.failures);
+    assert!(judgement.failures[0].contains(SUSPECT_CORPUS));
+    assert!(judgement.failures[0].contains("re-record"));
+    assert!(!judgement.failures[0].contains("raise VERSION"));
+
+    let judgement = judge(&ledger, rows, true);
+    assert!(judgement.failures.is_empty(), "{:?}", judgement.failures);
+    assert_eq!(judgement.ledger, render(rows));
 }
 
 /// A raised `VERSION` with an unchanged digest asks for a re-record outside
@@ -563,16 +727,7 @@ fn a_moved_digest_at_an_unchanged_version_fails_and_bless_keeps_the_row() {
 #[test]
 fn a_raised_version_asks_for_a_re_record_and_bless_takes_it() {
     let rows = computed();
-    let older: Vec<Row> = rows
-        .iter()
-        .map(|r| {
-            let mut r = r.clone();
-            if r.rule == suspect::RULE {
-                r.version -= 1;
-            }
-            r
-        })
-        .collect();
+    let older = with(rows, suspect::RULE, SUSPECT_CORPUS, |r| r.version -= 1);
     let ledger = render(&older);
 
     let judgement = judge(&ledger, rows, false);
@@ -591,7 +746,7 @@ fn a_raised_version_asks_for_a_re_record_and_bless_takes_it() {
 fn a_row_that_pins_nothing_and_a_rule_with_no_row_fail_outside_bless() {
     let rows = computed();
     let mut ledger = render(&rows[1..]);
-    ledger.push_str("no.such.rule\t1\tsha256:0\t1\n");
+    ledger.push_str("no.such.rule\tcheck\t1\tsha256:0\tsha256:0\t1\n");
 
     let judgement = judge(&ledger, rows, false);
     assert_eq!(judgement.failures.len(), 2, "{:?}", judgement.failures);
