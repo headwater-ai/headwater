@@ -3630,7 +3630,26 @@ fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode
         Some(pointers) => Budget { pointers },
         None => Budget::default(),
     };
-    let route = loaded.surface().route(task, budget);
+    let corpus = Corpus::declared(
+        root,
+        &loaded.consumer.corpus_root,
+        &loaded.consumer.exclusions,
+    );
+    // The route asks the tree whether a word of the task names a path as
+    // written, so `tools/a:b.sh` is read as that file wherever it exists
+    // (#953). It costs at most one metadata call per reading of a word, and a
+    // task holds a few dozen words.
+    let tree = |path: &str| match std::fs::metadata(corpus.base.join(path)) {
+        Ok(metadata) if metadata.is_dir() => headwater_query::Entry::Directory,
+        Ok(_) => headwater_query::Entry::File,
+        Err(_) => headwater_query::Entry::Absent,
+    };
+    let mut route = loaded.surface().route_in(task, budget, &tree);
+    // Git is read only where the route named an ungoverned path, so a route
+    // that named none runs no version control command (#953).
+    if !route.ungoverned.is_empty() {
+        route.retain_unignored(&headwater_graph::scope::Ignored::read(&corpus.base));
+    }
     // One route, rendered two ways, and the JSON document carries the text form
     // inside it. `.claude/hooks/intent.sh` is the caller that needs both out of
     // one run: it decides on the pointer set and then puts the report a person
