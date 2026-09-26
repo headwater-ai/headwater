@@ -67,6 +67,8 @@ The verb runs three git commands against `<base-rev>`. `git diff --name-status -
 
 There is no third status.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 No environment variable reaches this verb. The revision, the output directory and the repository all come from the command line. Every byte the manifest names comes from git.

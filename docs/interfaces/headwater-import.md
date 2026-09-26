@@ -46,6 +46,8 @@ The consumer declaration must contain one or more import declarations. A bare co
 
 **1** means that the import was undeclared, unpinned, invalid or not writable. A refusal writes no edge.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 The command reads no environment variable.

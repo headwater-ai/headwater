@@ -66,6 +66,8 @@ Git calls the verb only for a path whose attribute is `merge=headwater-regenerat
 
 **1** means that the path is left conflicted with the current side in place. Git reads it as a conflict. It is the only status that the verb gives. A call with fewer than four operands also exits 1, and it names the form that git uses. Git always supplies all four.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 No environment variable reaches this verb. Git finds the binary through `PATH`, and the verb reads nothing from its environment.

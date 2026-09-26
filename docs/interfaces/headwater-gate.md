@@ -58,6 +58,8 @@ The host must provide a date, or `--now` must provide one in `YYYY-MM-DD` form. 
 
 **Those two halves put different bytes on different streams.** A voided verdict writes the whole report to standard output and nothing to standard error, under `--json` as under the report a person reads. A refusal writes nothing to standard output, and its account is one English sentence on standard error. So the property is that a refusal writes no document, and not that a non-zero exit writes none, which is what [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 No environment variable reaches this verb. The repository, date and read-set path come from the command line, and the lock and file bytes come from the tree.

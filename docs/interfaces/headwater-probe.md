@@ -57,6 +57,8 @@ Global `--root` selects the repository. `--help`, `--version`, `--wide` and `--n
 
 **1** when the command line is invalid, or a required file cannot be read. A tier, arm or category name outside this engine's closed set makes the command line invalid. It is also 1 when the budget declaration is malformed or the corpus cannot load. The message names the refusal.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 No environment variable reaches a probe subcommand. The tier, repository and seed come from the command line, and the budget comes from `.headwater/probe.yml`. No model, key or endpoint is read.

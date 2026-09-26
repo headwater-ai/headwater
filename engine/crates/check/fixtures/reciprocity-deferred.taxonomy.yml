@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the reciprocity-deferred tree is checked against. One relation
+# requires both ends, and the state of the document that wrote the one half
+# decides whether the far end owes the other half yet.
+#
+# Two values carry the role `initial`, and no rule names either. A check that
+# read the word `draft` defers a `draft` writer and reports a `proposed` one,
+# and the case table holds a row for each.
+#
+# `stub` requires no state, so a document of it declares none. A writer with no
+# state defers nothing: an absence keeps the behavior the check had before the
+# deferral.
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,      role: initial}
+      - {value: proposed,   role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+  summary:
+    role: scent
+
+regimes:
+  lifecycle:
+    notes:
+      initial: draft
+      transitions: {draft: [proposed, current], proposed: [current], current: [superseded]}
+      retain_terminal: true
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  elaborates:
+    family: association
+    from: [note, stub]
+    to:   [note, stub]
+    inverse: elaborated_by
+    reciprocal: required
+    created_by: author
+
+core:
+  requires:
+    - facet_role: state
+    - relation_family: association
+
+kinds:
+  note:
+    identifier: {scheme: note_id}
+    lifecycle: notes
+    facets: {require: [status]}
+  stub:
+    identifier: {scheme: note_id}
+
+shelves:
+  notes:
+    path: reciprocity-deferred/notes/**
+    homogeneous: true
+    kind: note
+  stubs:
+    path: reciprocity-deferred/stubs/**
+    homogeneous: true
+    kind: stub

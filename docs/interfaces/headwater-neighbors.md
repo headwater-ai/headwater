@@ -53,6 +53,8 @@ The repository must carry a readable `.headwater/taxonomy.lock`, consumer declar
 
 **1** means that the verb refused the run. The six reasons are these: the task was missing, an option was invalid, or the repository could not load. Or the pin could not be read, a model file was missing, or a model file did not match its digest. Standard output is empty, and one sentence on standard error gives the reason. [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules that a refusal under `--json` is not a JSON document.
 
+**1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
+
 ## Environment
 
 No environment variable reaches this verb. The hook reads `HEADWATER_MODEL_DIR` and passes its value as `--model`.
