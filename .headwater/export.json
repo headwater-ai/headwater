@@ -1928,7 +1928,7 @@
           "id": "HW-DR-0067",
           "status": "current",
           "status_since": "2026-09-11",
-          "summary": "The vendored package root moves to `.headwater/packages/`, on the ground that the visibility it bought is one explainer, and a tree at the old root now meets a named refusal.",
+          "summary": "The vendored package root is `.headwater/packages/`, because the old root bought only the visibility of one explainer, and a tree there meets a named refusal.",
           "last_verified": "2026-09-11",
           "title": "The vendored package root moves under .headwater and the old root is named in a refusal",
           "relations": {
@@ -2163,7 +2163,7 @@
           "id": "HW-DR-0075",
           "status": "current",
           "status_since": "2026-09-24",
-          "summary": "`headwater taxonomy vendor` may accept a location, ruled yes with a boundary: the fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it.",
+          "summary": "`headwater taxonomy vendor` may accept a location, ruled yes with a boundary. The fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it.",
           "last_verified": "2026-09-24",
           "title": "The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links",
           "relations": {
@@ -2732,7 +2732,7 @@
           "status": "current",
           "status_since": "2026-09-01",
           "last_verified": "2026-09-01",
-          "summary": "Forty-six real governing documents from n8n, typed against three entries of the library, and what three runs and one coherence sweep found in a corpus that keeps its prose beside the code.",
+          "summary": "Forty-six real governing documents from n8n, typed against three entries of the library. This document also records what three runs and one coherence sweep found in a corpus that keeps its prose beside the code.",
           "title": "n8n as a worked instance — a corpus with no docs root",
           "provenance": {
             "warrant": "asserted",
@@ -2938,7 +2938,7 @@
           "id": "HW-EVAL-the-build-order-as-a-multi-agent-system",
           "status": "current",
           "status_since": "2026-09-07",
-          "summary": "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, the architecture that follows, what was rejected, and the numbers the next run is held against.",
+          "summary": "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, and the architecture that follows. What was rejected, and the numbers the next run is held against.",
           "last_verified": "2026-09-24",
           "title": "The build order as a multi-agent system",
           "provenance": {
@@ -9974,7 +9974,7 @@
           "id": "HW-PD-0007",
           "status": "current",
           "status_since": "2026-09-20",
-          "summary": "A wait that might outlive the five-minute prompt-cache lifetime is wrapped in a timeout under it and re-issued on return, so a background wait still ends the turn without paying to rewrite a context the cache would otherwise have kept warm.",
+          "summary": "A wait that might outlive the five-minute prompt-cache lifetime is wrapped in a timeout under it and re-issued on return. So a background wait still ends the turn without paying to rewrite a context the cache would otherwise have kept warm.",
           "last_verified": "2026-09-21",
           "title": "A background wait caps below the cache lifetime and re-issues itself",
           "provenance": {
