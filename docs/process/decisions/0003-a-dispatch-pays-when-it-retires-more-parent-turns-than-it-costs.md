@@ -2,7 +2,7 @@
 id: HW-PD-0003
 status: current
 status_since: 2026-09-07
-summary: "The unit of orchestration cost is one parent turn at full context, so a dispatch is worth making only when it retires more parent turns than the one it spends, which the integrator passes and a fresh agent per poll fails."
+summary: "The unit of orchestration cost is one parent turn at full context. So a dispatch is worth making only when it retires more parent turns than the one it spends. The integrator passes that test, and a fresh agent per poll fails it."
 last_verified: 2026-09-07
 title: "A dispatch pays when it retires more parent turns than it costs"
 provenance:

@@ -12,7 +12,7 @@ waiting_on: build
 
 ## Context
 
-`hw-run-policy`'s intake rule caps what a single pass sends to this register as its own full record, past which one record lists the rest. Run `20260922-1121` surfaced three small findings this way, none with a reader outside this repository. None shares a root cause with each other or with [HW-OBL-0202](0202-a-bare-none-footprint-is-claimed-as-a-literal-path-so-two-disjoint-issues-collide.md).
+`hw-run-policy`'s intake rule caps what a single pass sends to this register as its own full record, past which one record lists the rest. Run `20260922-1121` surfaced three small findings this way, none with a reader outside this repository. No two of them share a root cause, and none shares one with [HW-OBL-0202](0202-a-bare-none-footprint-is-claimed-as-a-literal-path-so-two-disjoint-issues-collide.md).
 
 ## Obligation
 
