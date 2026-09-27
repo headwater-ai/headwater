@@ -188,10 +188,10 @@ fn programs(text: &str, console: bool) -> Vec<(usize, String)> {
         }
         starts.push((command.len(), number));
         command.push_str(trimmed);
-        match scan(&command).1 {
+        match scan(&command).open {
             // A quote still open at the end of the line carries into the next
             // line, as a shell reads it (#1135).
-            Some('\'' | '"' | 'a') => {
+            Some('\'' | '"' | 'a' | '`') => {
                 command.push('\n');
                 continue;
             }
@@ -239,21 +239,35 @@ fn read_command(
 /// The parts of a command between the operators that start a new program, each
 /// with its byte offset. An operator inside quotes is part of an argument.
 fn segments(command: &str) -> Vec<(usize, &str)> {
-    scan(command).0
+    scan(command).segments
 }
 
-/// The segments of a command, and what is still open at its end: a quote
-/// (`'`, `"` or `a` for `$'…'`), a comment (`#`), or nothing.
+/// What one pass over a command finds.
+struct Scan<'a> {
+    /// The parts between the operators that start a new program, each with
+    /// its byte offset.
+    segments: Vec<(usize, &'a str)>,
+    /// What is still open at the end: a quote (`'`, `"`, `a` for `$'…'`, or
+    /// `` ` `` for a command substitution), a comment (`#`), or nothing.
+    open: Option<char>,
+    /// The byte offset of the first `<<` outside quotes and comments.
+    heredoc: Option<usize>,
+}
+
+/// Read a command as a shell splits it.
 ///
 /// A backslash escapes the next character outside quotes, inside double
-/// quotes and inside ANSI-C quotes (`$'…'`), and is literal inside single
-/// quotes. A `#` that starts a word outside quotes opens a comment to the end
-/// of the line, so an operator or an apostrophe in a comment is neither.
-fn scan(command: &str) -> (Vec<(usize, &str)>, Option<char>) {
-    // `a` marks an ANSI-C quote and `#` a comment.
+/// quotes, inside ANSI-C quotes (`$'…'`) and inside backticks, and is literal
+/// inside single quotes. Inside backticks a quote is part of the command that
+/// the backticks run, and it opens nothing here. A `#` that starts a word
+/// outside quotes opens a comment to the end of the command, so an operator,
+/// a quote or a `<<` in a comment is none of them. A word starts after a
+/// blank, a newline, or one of `;`, `&`, `|`, `(`, `)`, `<` and `>`.
+fn scan(command: &str) -> Scan<'_> {
     let mut out = Vec::new();
     let mut start = 0;
     let mut quote: Option<char> = None;
+    let mut heredoc = None;
     let mut escaped = false;
     let bytes = command.as_bytes();
     let mut at = 0;
@@ -265,24 +279,31 @@ fn scan(command: &str) -> (Vec<(usize, &str)>, Option<char>) {
             continue;
         }
         match (quote, c) {
-            (Some('#'), '\n') => quote = None,
-            (Some('#'), _) => {}
-            (Some('\'' | 'a'), '\'') | (Some('"'), '"') => quote = None,
-            (Some('"' | 'a') | None, '\\') => escaped = true,
+            (Some('\'' | 'a'), '\'') | (Some('"'), '"') | (Some('`'), '`') => quote = None,
+            (Some('"' | 'a' | '`') | None, '\\') => escaped = true,
             (Some(_), _) => {}
             (None, '$') if bytes.get(at + 1) == Some(&b'\'') => {
                 quote = Some('a');
                 at += 1;
             }
-            (None, '\'' | '"') => quote = Some(c),
+            (None, '\'' | '"' | '`') => quote = Some(c),
             (None, '#')
                 if at == 0
                     || matches!(
                         bytes[at - 1],
-                        b' ' | b'\t' | b'\n' | b';' | b'&' | b'|' | b'('
+                        b' ' | b'\t' | b'\n' | b';' | b'&' | b'|' | b'(' | b')' | b'<' | b'>'
                     ) =>
             {
-                quote = Some('#');
+                out.push((start, &command[start..at]));
+                return Scan {
+                    segments: out,
+                    open: Some('#'),
+                    heredoc,
+                };
+            }
+            (None, '<') if heredoc.is_none() && bytes.get(at + 1) == Some(&b'<') => {
+                heredoc = Some(at);
+                at += 1;
             }
             (None, '|' | '&' | ';') => {
                 // `>&` and `&>` redirect a stream and start no program.
@@ -301,7 +322,11 @@ fn scan(command: &str) -> (Vec<(usize, &str)>, Option<char>) {
         at += 1;
     }
     out.push((start, &command[start..]));
-    (out, quote)
+    Scan {
+        segments: out,
+        open: quote,
+        heredoc,
+    }
 }
 
 /// The program a segment runs, if it names one.
@@ -341,8 +366,9 @@ fn is_assignment(word: &str) -> bool {
 }
 
 /// The word that ends a here-document this command opens, if it opens one.
+/// A `<<` inside quotes or in a comment opens none.
 fn heredoc_end(command: &str) -> Option<String> {
-    let at = command.find("<<")?;
+    let at = scan(command).heredoc?;
     let rest = &command[at + 2..];
     if rest.starts_with('<') {
         return None;

@@ -178,28 +178,27 @@ def _split_unquoted(text, is_boundary):
     opens no quoted span, so the chained command is still split out.
     Inside single quotes a backslash is literal.
     """
-    pieces, _ = _scan(text, is_boundary)
+    pieces = _scan(text, is_boundary)[0]
     return [p.strip() for p in pieces if p.strip()]
 
 
 def _scan(text, is_boundary):
-    """The pieces `_split_unquoted` cuts, and the quote still open at the
-    end of `text` (`'`, `"` or `$'`), or None.
+    """The pieces `_split_unquoted` cuts, the quote still open at the end of
+    `text` (`'`, `"`, `$'` or a backtick), or None, and the index of the
+    first `<<` outside quotes and comments, or None.
 
-    `$'…'` is ANSI-C quoting: a backslash inside it escapes the next
-    character, so `$'\\''` is one quoted quote and the span stays open
-    only to the `'` after it. A `#` that starts a word outside quotes opens
-    a comment to the end of the line, and the comment is no part of a
-    piece, so an apostrophe in it opens no quote.
+    The engine's `scan` in `engine/crates/check/src/command.rs` reads a
+    command by the same rules. `$'…'` is ANSI-C quoting: a backslash inside
+    it escapes the next character, so `$'\\''` is one quoted quote and the
+    span stays open only to the `'` after it. Inside backticks a quote is
+    part of the command the backticks run and opens nothing here. A `#` that
+    starts a word outside quotes opens a comment to the end of the text, and
+    the comment is no part of a piece, so an apostrophe or a `<<` in it is
+    neither. A word starts after a blank, a newline, or one of `;&|()<>`.
     """
-    pieces, buf, quote, i = [], [], None, 0
+    pieces, buf, quote, heredoc, i = [], [], None, None, 0
     while i < len(text):
         ch = text[i]
-        if quote == '#':
-            if ch != '\n':
-                i += 1
-                continue
-            quote = None
         if ch == '\\' and quote != "'":
             buf.append(text[i:i + 2])
             i += 2
@@ -215,15 +214,15 @@ def _scan(text, is_boundary):
             buf.append(quote)
             i += 2
             continue
-        if ch in ('"', "'"):
+        if ch in ('"', "'", '`'):
             quote = ch
             buf.append(ch)
             i += 1
             continue
-        if ch == '#' and (i == 0 or text[i - 1] in ' \t\n;&|('):
-            quote = '#'
-            i += 1
-            continue
+        if ch == '#' and (i == 0 or text[i - 1] in ' \t\n;&|()<>'):
+            break
+        if ch == '<' and text[i + 1:i + 2] == '<' and heredoc is None:
+            heredoc = i
         consumed = is_boundary(text, i)
         if consumed:
             pieces.append(''.join(buf))
@@ -233,7 +232,21 @@ def _scan(text, is_boundary):
         buf.append(ch)
         i += 1
     pieces.append(''.join(buf))
-    return pieces, (None if quote == '#' else quote)
+    return pieces, quote, heredoc
+
+
+def _heredoc_end(command):
+    """The word that ends a here-document `command` opens, or None. A `<<`
+    inside quotes or in a comment opens none, and `<<<` is a here-string."""
+    at = _scan(command, lambda _t, _i: 0)[2]
+    if at is None or command[at + 2:at + 3] == '<':
+        return None
+    rest = command[at + 2:]
+    if rest.startswith('-'):
+        rest = rest[1:]
+    word = re.match(r'[^\s;|&)]*', rest.lstrip()).group(0)
+    word = word.replace("'", '').replace('"', '')
+    return word or None
 
 
 def split_chain(line):
@@ -330,9 +343,14 @@ def check_piece(piece, cargo_allowed=False):
 
 
 def _pieces(block):
-    """Every piece of every line of a command block."""
-    commands, pending = [], None
+    """Every piece of every command of a command block. The body of a
+    here-document is input to a program and is not read."""
+    commands, pending, heredoc = [], None, None
     for line in block.split('\n'):
+        if heredoc is not None:
+            if line.strip() == heredoc:
+                heredoc = None
+            continue
         if pending is not None:
             text = pending + '\n' + line
         else:
@@ -346,6 +364,7 @@ def _pieces(block):
             continue
         pending = None
         commands.append(text.strip())
+        heredoc = _heredoc_end(text)
     # A quote the block never closes is a shell syntax error. Its text is
     # still read, so a gate fails closed on it rather than skipping it.
     if pending is not None:
