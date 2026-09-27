@@ -84,13 +84,20 @@ impl Ran {
     }
 }
 
+/// A corpus that declares two export profiles, `control` and `filtered`. This
+/// repository declared two until #1251, and it is where a case that needs a
+/// second profile now points its `--root`.
+const TWO_PROFILES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/fixtures/answered-export");
+
+/// The binary over this repository, or over the corpus a case names with its
+/// own `--root`.
 fn ran(arguments: &[&str]) -> Ran {
-    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
-        .args(arguments)
-        .arg("--root")
-        .arg(repository())
-        .output()
-        .expect("the binary runs");
+    let mut command = Command::new(env!("CARGO_BIN_EXE_headwater"));
+    command.args(arguments);
+    if !arguments.contains(&"--root") {
+        command.arg("--root").arg(repository());
+    }
+    let output = command.output().expect("the binary runs");
     Ran {
         code: output.status.code(),
         out: output.stdout,
@@ -166,20 +173,9 @@ fn both_spellings() -> Vec<(&'static str, Vec<String>)> {
     vec![
         ("check", vec!["check".to_string(), "--no-cache".to_string()]),
         ("capture", vec!["capture".to_string()]),
-        // This corpus declares two profiles now: `default` (every projection
-        // that names none, which is the other five) and `site` (the one
-        // `graph_export` entry, #414 piece A). `--format` writes one artifact
-        // to a pipe, so it refuses to guess between them, and `--profile`
-        // disambiguates the same way a caller with a real second audience
-        // would have to.
-        (
-            "export",
-            vec![
-                "export".to_string(),
-                "--profile".to_string(),
-                "site".to_string(),
-            ],
-        ),
+        // This corpus declares one profile, `default`, since #1251 stopped
+        // committing its graph export, so `--format` needs no `--profile`.
+        ("export", vec!["export".to_string()]),
         (
             "sweep report",
             vec!["sweep".to_string(), "report".to_string(), returned],
@@ -196,10 +192,7 @@ fn documents() -> Vec<(&'static str, Ran)> {
     vec![
         ("check --json", ran(&["check", "--json"])),
         ("capture --json", ran(&["capture", "--json"])),
-        (
-            "export --json",
-            ran(&["export", "--json", "--profile", "site"]),
-        ),
+        ("export --json", ran(&["export", "--json"])),
         (
             "sweep report --json",
             ran(&[
@@ -359,13 +352,15 @@ fn refusals() -> Vec<(&'static str, Vec<&'static str>)> {
             "export --format json --check",
             vec!["export", "--format", "json", "--check"],
         ),
-        // This corpus declares `default` and `site`, so a target named with no
-        // profile is the two-or-more-profiles refusal and needs no scratch
-        // corpus. `both_spellings()` passes `--profile site` for that reason.
-        ("export --json, two profiles", vec!["export", "--json"]),
+        // This corpus declares one profile, so the two-or-more-profiles
+        // refusal is asked of the fixture corpus that declares two.
+        (
+            "export --json, two profiles",
+            vec!["export", "--json", "--root", TWO_PROFILES],
+        ),
         (
             "export --format json, two profiles",
-            vec!["export", "--format", "json"],
+            vec!["export", "--format", "json", "--root", TWO_PROFILES],
         ),
         (
             "taxonomy publish --json, no --out",
@@ -682,13 +677,13 @@ fn a_refusal_names_the_spelling_the_caller_typed() {
         ),
         (
             "export --json, two profiles",
-            vec!["export", "--json"],
+            vec!["export", "--json", "--root", TWO_PROFILES],
             "--json",
             "--format",
         ),
         (
             "export --format json, two profiles",
-            vec!["export", "--format", "json"],
+            vec!["export", "--format", "json", "--root", TWO_PROFILES],
             "--format",
             "--json",
         ),

@@ -330,8 +330,23 @@ fi
 
 # `integrations/dashboard` (#505): the page's own unit tests, which hold
 # HW-DR-0080's (corpus_identity, id) key and #505's decisive fixture, and
-# read this repository's `.headwater/export.json` as the worked example.
-python3 -m unittest discover -s "$root/integrations/dashboard" -p 'test_*.py' >"$scratch/dashboard.out" 2>&1
+# read this repository's graph export as the worked example. The export is not
+# committed (#1251), so it is computed here from the built engine, the way a
+# deploy computes it, and handed to the tests by `HEADWATER_EXPORT`.
+. "$root/tools/repo/resolve-engine.sh"
+if engine=$(hw_resolve_engine_bin "$root"); then
+    "$engine" export --format json --root "$root" >"$scratch/export.json" 2>"$scratch/export.err"
+    status=$?
+else
+    status=127
+    hw_resolve_engine_missing_message "$root" >"$scratch/export.err"
+fi
+if [ "$status" -eq 0 ]; then
+    pass 'integrations/dashboard: the built engine exports this repository'
+else
+    fail 'integrations/dashboard: the built engine exports this repository' "$(tail -n 5 "$scratch/export.err")"
+fi
+HEADWATER_EXPORT="$scratch/export.json" python3 -m unittest discover -s "$root/integrations/dashboard" -p 'test_*.py' >"$scratch/dashboard.out" 2>&1
 status=$?
 if [ "$status" -eq 0 ]; then
     pass 'integrations/dashboard: its unit tests pass'

@@ -12,7 +12,7 @@
 # nothing that ran it. That table is prose, `docs/taxonomies/**` is excluded
 # from this repository's census, and so a defect inside the fixture corpus
 # reaches no gate at all. Measured on 2026-09-11 against `58f46a8d`:
-# `engine/crates/check/fixtures/corpus.checks` records 0 findings under this
+# `engine/crates/check/fixtures/corpus.checks` recorded 0 findings under this
 # entry, and the census records its 15 paths as excluded. A planted defect had
 # in fact been committed into the worked corpus — `get-started.md` carried
 # `kind: reference` — so a strict run over that corpus exited 1 and the corpus

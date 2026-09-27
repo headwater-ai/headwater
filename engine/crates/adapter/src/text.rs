@@ -33,8 +33,8 @@
 //! reach the fill at all. So the layout is a pass over the composed text here,
 //! by [`headwater_check::fill::filled`], rather than a width threaded through
 //! `Census::render`, `Graph::render` and `Run::render`. That is also what keeps
-//! `crates/census/fixtures/corpus.census`, `crates/graph/fixtures/corpus.graph`
-//! and `crates/check/fixtures/corpus.checks` where they are: the composers still
+//! `crates/census/fixtures/corpus.census` and `crates/graph/fixtures/corpus.graph`
+//! where they are: the composers still
 //! write what they wrote, and this function lays it out.
 //!
 //! **The read set is not laid out, and that is the sharpest edge in this file.**

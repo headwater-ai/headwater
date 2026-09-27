@@ -14,9 +14,7 @@
 # `.githooks/post-checkout`, `.githooks/post-merge` and `.githooks/pre-commit`
 # run it, so a clone selects the driver on the first checkout, pull or commit
 # after `.gitattributes` gains a path. What that keeps is the driver's refusal,
-# which names the producer, and the site-review marker it writes under
-# `<git-common-dir>/headwater-pending-site-review/`, which `.githooks/pre-push`
-# blocks on.
+# which names the producer.
 #
 # It owns every line of that file of the form `<path> merge=headwater-regenerate`,
 # and no other line. Each run makes that set equal to what it derives: one line
@@ -29,7 +27,7 @@
 # What it cannot reach: a clone that sets the config and then merges before any
 # checkout, merge or commit has run a hook. Git runs no hook before a merge, and
 # `post-merge` runs after it, so that first merge conflicts on each fold without
-# the driver and writes no site-review marker.
+# the driver.
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -n "$root" ] || exit 0
 override=$(git rev-parse --git-path info/attributes 2>/dev/null) || exit 0

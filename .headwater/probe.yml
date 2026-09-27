@@ -22,11 +22,12 @@
 # about the paths its ablation names. `headwater probe plan` refuses a probe
 # whose predicate names a document under one of them, at every tier.
 #
-# `.headwater/export.json` is here too. It is a projection that `headwater
-# generate` writes and that nothing reads at session time, and it restates
-# every probe's expectation and `examines` target, which names the document
-# an `opened` or `cited` probe is graded on. A session that regenerates it in
-# an arm writes a copy with no probe in it, because the shelves are gone.
+# `.headwater/export.json` is here too. It is not committed since #1251, but
+# a workspace can hold one that `headwater export --format json` wrote, and it
+# restates every probe's expectation and `examines` target, which names the
+# document an `opened` or `cited` probe is graded on. A session that exports
+# again in an arm writes a copy with no probe in it, because the shelves are
+# gone.
 #
 # Other derived files name a probe by its path or title and state neither its
 # expectation nor its answer: `.headwater/nav.yml`, `.headwater/corpus.json`,

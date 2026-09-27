@@ -198,6 +198,8 @@ docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-na
   typed: decision
 docs/decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md
   typed: decision
+docs/decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -269,6 +271,8 @@ docs/how-to/README.md
 docs/how-to/cut-a-release.md
   typed: how_to
 docs/how-to/diagnose-an-isolation-failure.md
+  typed: how_to
+docs/how-to/keep-derived-files-from-conflicting-in-parallel-pull-requests.md
   typed: how_to
 docs/how-to/mine-the-shadow-mode-routing-log.md
   typed: how_to
