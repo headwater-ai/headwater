@@ -95,6 +95,20 @@ anchors
     cited by HW-OBL-0173
   code_path `.github/workflows/ci.yml` via source-tree
     cited by HW-OBL-0173
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0013
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0014
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0015
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0016
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0017
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0018
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0019
   code_path `.github/workflows/publish-crates.yml` via source-tree
     cited by HW-DR-0088
   code_path `.github/workflows/publish-crates.yml` via source-tree
@@ -205,6 +219,8 @@ anchors
     cited by HW-IFACE-headwater-derived
   code_path `engine/crates/census/src/walk.rs` via source-tree
     cited by HW-IFACE-headwater-explain
+  code_path `engine/crates/census/src/walk.rs` via source-tree
+    cited by HW-IFACE-headwater-show
   code_path `engine/crates/check/src/dependency.rs` via source-tree
     cited by HW-DR-0026
   code_path `engine/crates/check/src/facet_blank.rs` via source-tree
@@ -281,6 +297,8 @@ anchors
     cited by HW-IFACE-headwater-query
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-route
+  code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-show
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-sweep
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
@@ -383,6 +401,8 @@ anchors
     cited by HW-IFACE-headwater-probe
   code_path `engine/crates/query/src/explain.rs` via source-tree
     cited by HW-IFACE-headwater-explain
+  code_path `engine/crates/query/src/explain.rs` via source-tree
+    cited by HW-IFACE-headwater-show
   code_path `engine/crates/query/src/json.rs` via source-tree
     cited by HW-DR-0070
   code_path `engine/crates/query/src/json.rs` via source-tree

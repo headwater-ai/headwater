@@ -41,10 +41,26 @@ use headwater_yaml::{Position, Span};
 
 /// The abbreviations whose period ends no sentence.
 ///
-/// The list is closed and short on purpose. Each entry is a string this corpus
-/// writes, and an entry that nothing writes is a rule nobody can test.
-const ABBREVIATIONS: [&str; 8] = [
-    "e.g.", "i.e.", "cf.", "etc.", "vs.", "al.", "approx.", "no.",
+/// The list is closed and short on purpose. Each entry is a string that a unit
+/// test in this file holds, because the list serves every corpus the engine
+/// reads and not only this one.
+///
+/// The dotted forms `U.S.`, `U.K.`, `a.m.`, `p.m.` and `Ph.D.` come from the
+/// U.S. GPO Style Manual (2016), chapter 9, "Abbreviations and letter symbols"
+/// (#1185). They are here because a name often follows them, and a name opens
+/// with a capital or, since #1151, with a lower-case word such as `iPhone`.
+/// The titles `Mr.`, `Mrs.`, `Dr.` and `St.` of that chapter are omitted on
+/// purpose. `Dr.` and `St.` also end real sentences as `drive` and `street`,
+/// and a title is not dotted, so it waits on its own evidence. `U.S.C.` needs
+/// no entry, because no space follows its inner periods.
+///
+/// The cost: an entry suppresses the split without condition. A real sentence
+/// end on an entry, as in `sold in the U.S. The next`, joins with the sentence
+/// after it. The dotted forms end a sentence less often than a name follows
+/// them, so the list takes that cost.
+const ABBREVIATIONS: [&str; 13] = [
+    "e.g.", "i.e.", "cf.", "etc.", "vs.", "al.", "approx.", "no.", "U.S.", "U.K.", "a.m.", "p.m.",
+    "Ph.D.",
 ];
 
 /// One sentence of one document.
@@ -412,6 +428,32 @@ mod tests {
             1
         );
         assert_eq!(texts("A shelf collects them, e.g. a decision.\n").len(), 1);
+    }
+
+    /// A dotted abbreviation before a name (#1185). `U.S. iPhone` split through
+    /// the lower-case name guard, and `U.S. Federal` through the capital that
+    /// opens a sentence. The list is read before either opener, so one entry
+    /// holds both shapes. One line for each dotted entry of the list.
+    #[test]
+    fn a_dotted_abbreviation_ends_no_sentence_before_a_name() {
+        assert_eq!(texts("The U.S. iPhone ships it.\n").len(), 1);
+        assert_eq!(texts("The U.S. Federal court read it.\n").len(), 1);
+        assert_eq!(texts("The U.K. Parliament read it.\n").len(), 1);
+        assert_eq!(texts("It opens at 9 a.m. Monday.\n").len(), 1);
+        assert_eq!(texts("It closes at 5 p.m. Friday.\n").len(), 1);
+        assert_eq!(texts("She holds a Ph.D. in it.\n").len(), 1);
+        assert_eq!(texts("She holds a Ph.D. From Leeds.\n").len(), 1);
+    }
+
+    /// The cost of the dotted entries, held so that nobody reads it as a bug:
+    /// the list suppresses without condition, so a real sentence end on one of
+    /// them joins with the next sentence.
+    #[test]
+    fn a_sentence_that_ends_on_a_dotted_abbreviation_joins_the_next() {
+        assert_eq!(
+            texts("It is sold in the U.S. The next one is not.\n").len(),
+            1
+        );
     }
 
     /// The guard that catches every abbreviation the list misses: a sentence of
