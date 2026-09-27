@@ -18,7 +18,12 @@
 # The engine verbs, one run each except `route`:
 #   headwater change <base> <work>/change      the manifest of the change
 #   headwater check --change <manifest> --format json
-#   headwater route <path> <ancestors...> --json, once per changed path
+#   headwater check --format json over the base tree, unpacked under <work>,
+#     so the report can tell a finding the change introduced from one that
+#     stood before it
+#   headwater route <path> <ancestors...> --json, once per path the change
+#     leaves on the tree, and once over the base tree per path it deleted or
+#     renamed away, because the edge that named such a path is on the base
 # `route` is given each ancestor directory of the path as a further word, so
 # a pointer that anchors on an ancestor and not on the path itself is a
 # literal directory edge, which the engine matches by equality and which

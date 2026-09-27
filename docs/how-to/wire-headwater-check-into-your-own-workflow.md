@@ -79,9 +79,9 @@ The run covers the merge only when you set two things in the branch protection o
 
 A second action writes an upkeep report for each pull request. It needs no model and no assistant, so it works on any harness. The report has four parts:
 
-- **Touched** names each changed document. It also names each changed file that a document governs, with that document and its summary.
+- **Touched** names each changed document. It also names each changed file that a document governs, with that document and its summary. A file that the change deletes or renames is in this part too, with the document that governed it before the change.
 - **Stale** names each edge that the engine reports as suspect.
-- **Owed** lists the findings of `headwater check --change`, by rule and by document.
+- **Owed** lists the findings of `headwater check --change`, by rule and by document. It lists each finding that the change caused, on any document, and marks it as new. It also lists the older findings on the documents that the change touched. It counts the other findings and does not list them.
 - **Unmeasured** names what the report did not see. It names each changed file that no `governs` edge names, and each file under a directory that an edge names by its literal path. It also states that no reader checked a sentence against the change. This part is never empty.
 
 Add a second job to your workflow:

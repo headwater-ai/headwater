@@ -307,5 +307,16 @@ YAML
 python3 "$guard" "$scratch/env-only.yml" >"$scratch/guard-env.out" 2>&1
 same 'the same expression read back from env: is not flagged' 0 "$?"
 
+printf '\n# upkeep-report.py'"'"'s finding filters, fed findings the clean end-to-end corpus never raises\n'
+
+python3 "$root/integrations/headwater-upkeep/fixtures/report-filters.py" >"$scratch/report-filters.out" 2>&1
+code=$?
+if [ "$code" -eq 0 ]; then
+    pass 'a suppressed finding and an old one elsewhere are counted, a new one elsewhere is listed'
+else
+    fail 'a suppressed finding and an old one elsewhere are counted, a new one elsewhere is listed' \
+        "$(grep '^FAIL' "$scratch/report-filters.out" | tr '\n' ' ')"
+fi
+
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
