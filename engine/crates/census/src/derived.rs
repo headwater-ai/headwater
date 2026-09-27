@@ -19,21 +19,26 @@
 //! those rules. A producer output added to a tree changes the answer with no
 //! edit here.
 //!
-//! # The four producers, and each one's own rule
+//! # The three producers, and each one's own rule
 //!
 //! | producer | its rule |
 //! |---|---|
 //! | `headwater generate` | the file carries the generated-file marker, which is [`headwater_mark::carries_marker`] and the same predicate the verb refuses to overwrite on |
 //! | `headwater taxonomy resolve` | the lock path, which the verb writes and nothing else does |
-//! | `tools/site/refresh-figures.sh` | a page under `site/` carrying a `data-figure` element, which is the set the script substitutes into |
 //! | a recorded corpus fixture | a `corpus.*` fixture of an engine crate whose opening states a fold: a count over the corpus, or a digest over the whole canonical text |
 //!
 //! A tree is asked only about the producers it holds, by
-//! [`Producer::held_by`]. An adopter's tree holds the two verbs and neither the
-//! script nor the engine workspace, so a report there names no command that
-//! the tree cannot run.
+//! [`Producer::held_by`]. An adopter's tree holds the two verbs and not the
+//! engine workspace, so a report there names no command that the tree cannot
+//! run.
 //!
-//! The fourth is the one that needs its rule stated, because most recorded
+//! A page under `site/` is not a producer output. Until #1273 the figure
+//! refresh wrote measured numbers into the committed pages, and a page that
+//! carried a `data-figure` element was a fold. The refresh now fills an
+//! assembled copy when the site is published, the committed page holds only
+//! empty markers, and it merges as the hand-written text it is.
+//!
+//! The third is the one that needs its rule stated, because most recorded
 //! fixtures are **not** members. HW-DR-0049 decomposed `corpus.census` and
 //! `corpus.graph` into one record per entity precisely so that they merge, and
 //! a decomposed artifact must not declare the driver. What separates them is
@@ -107,8 +112,6 @@ pub enum Producer {
     Generate,
     /// The taxonomy resolver, which writes the committed lock.
     TaxonomyResolve,
-    /// The figure substitution over the hand-built pages.
-    FigureRefresh,
     /// A recorded fixture of an engine crate that states a fold.
     RecordedFold,
 }
@@ -119,24 +122,22 @@ impl Producer {
         match self {
             Producer::Generate => "headwater generate",
             Producer::TaxonomyResolve => "headwater taxonomy resolve",
-            Producer::FigureRefresh => "sh tools/site/refresh-figures.sh",
             Producer::RecordedFold => "HEADWATER_BLESS=1 cargo test",
         }
     }
 
     /// Whether the tree at `root` holds this producer, so that it can be run there.
     ///
-    /// The two verbs are held by every tree that has the engine. The figure
-    /// script and the blessing run belong to the repository that maintains the
-    /// engine, and a tree holds each one only where it carries the file that
-    /// runs it: [`REFRESH_SCRIPT`] and [`ENGINE_MANIFEST`]. A producer that a
+    /// The two verbs are held by every tree that has the engine. The blessing
+    /// run belongs to the repository that maintains the engine, and a tree
+    /// holds it only where it carries the file that runs it:
+    /// [`ENGINE_MANIFEST`]. A producer that a
     /// tree does not hold claims no file of that tree, so `headwater derived`
     /// never names its command there and `headwater init --git` writes no line
     /// for it. This is the one predicate both read.
     pub fn held_by(self, root: &Path) -> bool {
         match self {
             Producer::Generate | Producer::TaxonomyResolve => true,
-            Producer::FigureRefresh => root.join(REFRESH_SCRIPT).is_file(),
             Producer::RecordedFold => root.join(ENGINE_MANIFEST).is_file(),
         }
     }
@@ -146,7 +147,6 @@ impl Producer {
         match self {
             Producer::Generate => "carries the generated-file marker",
             Producer::TaxonomyResolve => "is the committed taxonomy lock",
-            Producer::FigureRefresh => "is a page under site/ carrying a data-figure element",
             Producer::RecordedFold => "is a recorded corpus fixture whose opening states a fold",
         }
     }
@@ -620,21 +620,14 @@ impl Population {
 pub const PRODUCERS: &[Producer] = &[
     Producer::Generate,
     Producer::TaxonomyResolve,
-    Producer::FigureRefresh,
     Producer::RecordedFold,
 ];
-
-/// The script that the figure producer runs, which a tree holds or does not.
-pub const REFRESH_SCRIPT: &str = "tools/site/refresh-figures.sh";
 
 /// The engine workspace that the blessing run needs, which a tree holds or does not.
 pub const ENGINE_MANIFEST: &str = "engine/Cargo.toml";
 
 /// The path the taxonomy resolver writes.
 pub const LOCK: &str = ".headwater/taxonomy.lock";
-
-/// The element the figure refresh substitutes into.
-pub const FIGURE: &str = "data-figure=";
 
 /// Compute the population of a tree, and hold it against that tree's attributes.
 pub fn population(root: &Path) -> Population {
@@ -790,8 +783,8 @@ fn shape_of(root: &Path, path: &str, producer: Option<Producer>, blessing: bool)
                 false => Shape::RecordPerEntity,
             });
         }
-        // The lock carries a digest over its whole canonical text, a figure is
-        // a count, and a recorded fold opens with one.
+        // The lock carries a digest over its whole canonical text, and a
+        // recorded fold opens with a count.
         Some(_) => return Some(Shape::Fold),
         None => {}
     }
@@ -832,16 +825,13 @@ fn rebuild_of(path: &str, producer: Option<Producer>, blessing: bool) -> Option<
 /// Which producer's rule claims a path, and none for a file nobody writes.
 ///
 /// A path is claimed by at most one producer. No two rules here overlap: the
-/// marker rule stops at a `fixtures/` component, the lock carries no marker,
-/// and a page under `site/` is neither.
+/// marker rule stops at a `fixtures/` component, and the lock carries no
+/// marker.
 fn claimed_by(root: &Path, path: &str) -> Option<Producer> {
     if path == LOCK {
         return Some(Producer::TaxonomyResolve);
     }
     let text = std::fs::read_to_string(root.join(path)).ok()?;
-    if path.starts_with("site/") && path.ends_with(".html") && text.contains(FIGURE) {
-        return Some(Producer::FigureRefresh);
-    }
     if is_recorded_fixture(path) {
         return states_a_fold(&text).then_some(Producer::RecordedFold);
     }
@@ -1282,7 +1272,7 @@ mod tests {
     fn plain_writes_the_whole_report_and_no_escape_sequence() {
         let rendered = disagreeing().render(ColorMode::Plain);
         assert!(!rendered.contains('\x1b'), "{rendered:?}");
-        assert!(rendered.starts_with("2 derived artifacts, computed from 4 producers\n"));
+        assert!(rendered.starts_with("2 derived artifacts, computed from 3 producers\n"));
         assert!(rendered.contains("  headwater generate — carries the generated-file marker"));
         assert!(rendered.contains("    docs/spec/06-engine-architecture.md\n"));
         assert!(rendered.contains("these are written by a producer and carry neither"));
@@ -1301,7 +1291,7 @@ mod tests {
         for (role, expected) in [
             (
                 "heading",
-                "\x1b[1m2 derived artifacts, computed from 4 producers\x1b[0m",
+                "\x1b[1m2 derived artifacts, computed from 3 producers\x1b[0m",
             ),
             ("verb", "\x1b[1;32mheadwater generate\x1b[0m"),
             ("path", "\x1b[36mdocs/spec/06-engine-architecture.md\x1b[0m"),

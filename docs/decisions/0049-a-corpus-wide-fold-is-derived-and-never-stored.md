@@ -3,7 +3,7 @@ id: HW-DR-0049
 status: current
 status_since: 2026-09-23
 summary: "A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict."
-last_verified: 2026-09-25
+last_verified: 2026-09-27
 title: "A corpus-wide fold is derived and never stored"
 provenance:
   warrant: accepted
@@ -15,7 +15,7 @@ provenance:
 relations:
   governs:
     - to: .gitattributes
-      verified_revision: sha256:c57eec82fdffb6d8d245700d0f37aedfce83f233b65f81bf960db9de0b28fd71
+      verified_revision: sha256:73a7006dde08da70ee169db44df8c313234197560d3a5c667ab587d6e2245bc5
   traces_to:
     - HW-EVAL-what-a-check-can-know
     - engine/crates/census/src/census.rs
@@ -59,6 +59,8 @@ relations:
 **The driver needs one command for each clone, and the commit gate reports a clone that has not run it.** Git takes no merge driver from a repository, because a driver is an executable. The committed `-merge` needs no command, and it conflicts in every clone. The driver line goes in the `info/attributes` of a clone that set the driver config. Git reads a driver that no configuration defines as a text merge.
 
 **Amended on 2026-09-24 by [#1058](https://github.com/headwater-ai/headwater/issues/1058).** Until then `.gitattributes` committed `merge=headwater-regenerate`, and every clone without the driver config merged each fold as text in silence. The same change measured every generated file. None of them states a count after #1058, and each one merged as text to the bytes its producer writes over the merged tree. So a generated file is one record per entity and carries no attribute. The lock, the recorded folds and the pages that carry figures keep `-merge`. GitHub reads neither attribute, so a check of the merged tree in CI still covers the forge.
+
+**Amended on 2026-09-27 by [#1251](https://github.com/headwater-ai/headwater/issues/1251): an artifact that only a build step reads is not committed.** This is a third shape beside "decompose" and "keep the fold under `-merge`". A forge reads no merge attribute, and a pull request that conflicts as text runs no CI and cannot join a merge queue. So for a committed file that conflicts, the only remedy is to stop the conflict. Two artifacts conflicted on most pairs of pull requests. Of 159 commits on `main` from 2026-09-20, `.headwater/export.json` moved in 72 and `engine/crates/check/fixtures/corpus.checks` moved in 48. `headwater export --format json` computes the export in one command, and no page, workflow or deploy read the committed copy. So this repository declares no `graph_export`, and `.gitignore` names the path. `corpus.checks` opened with a total over the corpus, and it is deleted. `check.report` over the pinned fixture tree stays the per-rule record, and the step summary of CI prints the totals of this repository. The Decision above names `corpus.checks` as the fold that sets the price, and the lock now sets it. The case that reopens a recorded total is an engine regression that `check.report` missed and a diff of the corpus totals would have caught. One conflict stays. Two branches that each mint the next number on one shelf conflict on the index of that shelf and on the claim file of the number, and the second branch renumbers its document. `engine/crates/cli/tests/merge_driver.rs` holds that case, and [Keep derived files from conflicting in parallel pull requests](../how-to/keep-derived-files-from-conflicting-in-parallel-pull-requests.md) states the rule for an adopter.
 
 **One exposure stays open and no mechanism here closes it.** An artifact that keeps its fold still merges quietly when the branch that carries it is behind the default branch. What covers that is a check on the merged state before landing, and a pull-request run already builds the merge rather than the branch tip. That run is conclusive exactly while the branch is current. A merge queue is the usual guarantee for currency, and a private repository under a free plan may not have one.
 

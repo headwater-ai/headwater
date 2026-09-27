@@ -89,9 +89,13 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0061](../decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md) (superseded) — A recorded terminal demonstration is a figure under HW-DR-0039. It may show only the tutorial's scratch corpus, where a blocking step already holds every printed output against a run. (asserted, and no human has accepted it)
 
+## A figure on a hand-built page is measured when the site is published, and the committed page carries none
+
+[HW-DR-0097](../decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) — The pages under site/ commit every data-figure element empty. A CI job on each push to main measures the figures into the assembled copy and deploys it with wrangler. Two pull requests that add documents merge without a conflict on the pages. (asserted, and no human has accepted it)
+
 ## Q39 — How a figure reaches a hand-built page
 
-[HW-DR-0039](../decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md) — The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.
+[HW-DR-0039](../decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md) (superseded) — The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.
 
 ## Q50 — Where the visual register of the hand-built pages lives
 

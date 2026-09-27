@@ -26,7 +26,35 @@ import dashboard  # noqa: E402
 
 FIXTURE = os.path.join(HERE, "fixtures", "two-documents.json")
 TREE = os.path.join(HERE, "fixtures", "tree")
-REPO_EXPORT = os.path.join(HERE, "..", "..", ".headwater", "export.json")
+REPO = os.path.join(HERE, "..", "..")
+
+
+def repo_export():
+    """This repository's graph export, which is computed and never committed (#1251).
+
+    `HEADWATER_EXPORT` names a file a caller already computed, which is what
+    `tools/repo/integrations-fixtures.sh` passes. Without it the newer of the two
+    built engines computes one. With neither there is nothing to read, and the
+    case says so rather than reading a stale file.
+    """
+    named = os.environ.get("HEADWATER_EXPORT")
+    if named:
+        with open(named, encoding="utf-8") as handle:
+            return json.load(handle)
+    engines = [
+        os.path.join(REPO, "engine", "target", profile, "headwater")
+        for profile in ("release", "dev-release")
+    ]
+    engines = [path for path in engines if os.access(path, os.X_OK)]
+    if not engines:
+        raise unittest.SkipTest("no built engine to compute the export, and HEADWATER_EXPORT is unset")
+    engine = max(engines, key=os.path.getmtime)
+    written = subprocess.run(
+        [engine, "export", "--format", "json", "--root", REPO],
+        check=True,
+        capture_output=True,
+    )
+    return json.loads(written.stdout)
 
 
 def load_fixture():
@@ -103,6 +131,99 @@ class CoverageView(unittest.TestCase):
         self.assertIsNone(coverage.total)
         page = dashboard.render(model)
         self.assertIn("src/**", page)
+
+
+def with_list_anchor(export):
+    """The fixture export plus one governs edge onto a list anchor of two files.
+
+    The `id` is the length-prefixed identity the engine writes for a list
+    (HW-DR-0074), which matches no file of the tree as a path. The members
+    are under `patterns`, as an export at 1.2 or later writes them (#1247).
+    """
+    target = {
+        "bound": "anchor",
+        "anchor_kind": "code_path",
+        "id": "10:README.txt9:docs/a.md",
+        "resolver": "source-tree",
+        "patterns": ["README.txt", "docs/a.md"],
+    }
+    export["graph"]["anchors"].append(dict((key, target[key]) for key in ("anchor_kind", "id", "resolver", "patterns")))
+    export["graph"]["edges"].append(
+        {"source": "docs/decisions/0002-recent.md", "relation": "governs", "written_as": "governs", "target": target}
+    )
+    return export
+
+
+def add_list_anchor(export, patterns):
+    """One more governs edge onto a list anchor, with the identity the engine would write."""
+    members = sorted(patterns)
+    target = {
+        "bound": "anchor",
+        "anchor_kind": "code_path",
+        "id": "".join("%d:%s" % (len(member.encode("utf-8")), member) for member in members),
+        "resolver": "source-tree",
+        "patterns": members,
+    }
+    export["graph"]["anchors"].append(dict((key, target[key]) for key in ("anchor_kind", "id", "resolver", "patterns")))
+    export["graph"]["edges"].append(
+        {"source": "docs/obligations/0001-old.md", "relation": "governs", "written_as": "governs", "target": target}
+    )
+    return export
+
+
+class AListAnchorIsCountedByItsMembers(unittest.TestCase):
+    """#1247: a list anchor covers the union of its members, and never its identity as a path."""
+
+    def test_the_row_matches_every_file_its_members_match(self):
+        model = dashboard.load(with_list_anchor(load_fixture()), corpus_identity="fixture")
+        coverage = dashboard.coverage_view(model, tree=TREE)
+        matched = dict((row["id"], count) for row, count in coverage.rows)
+        self.assertEqual(matched["10:README.txt9:docs/a.md"], 2)
+        self.assertEqual((coverage.covered, coverage.total), (4, 4))
+
+    def test_the_page_names_the_members_and_counts_them_as_paths(self):
+        model = dashboard.load(with_list_anchor(load_fixture()), corpus_identity="fixture")
+        self.assertEqual(
+            dashboard.governed_paths(model),
+            ["README.txt", "docs/a.md", "missing/path.rs", "src/**", "src/main.rs"],
+        )
+        page = dashboard.render(model)
+        self.assertIn("5 governed code paths", page)
+        self.assertIn("<code>README.txt</code><br><code>docs/a.md</code>", page)
+        self.assertNotIn("10:README.txt", page)
+
+    def test_a_member_two_lists_share_is_one_governed_path(self):
+        export = with_list_anchor(load_fixture())
+        add_list_anchor(export, ["docs/a.md", "src/lib.rs"])
+        model = dashboard.load(export, corpus_identity="fixture")
+        # `docs/a.md` is a member of both lists. It is one path, so the header
+        # counts six and not seven.
+        self.assertEqual(
+            dashboard.governed_paths(model),
+            ["README.txt", "docs/a.md", "missing/path.rs", "src/**", "src/lib.rs", "src/main.rs"],
+        )
+        self.assertIn("6 governed code paths", dashboard.render(model))
+
+    def test_a_file_two_members_of_one_list_match_is_one_file_of_the_row(self):
+        export = load_fixture()
+        add_list_anchor(export, ["src/**", "src/main.rs"])
+        model = dashboard.load(export, corpus_identity="fixture")
+        coverage = dashboard.coverage_view(model, tree=TREE)
+        matched = dict((row["id"], count) for row, count in coverage.rows)
+        # `src/main.rs` matches both members. The tree holds two files under
+        # `src/`, so the row matches two, and never three.
+        self.assertEqual(matched["6:src/**11:src/main.rs"], 2)
+
+    def test_an_anchor_with_no_patterns_is_its_one_id(self):
+        model = dashboard.load(load_fixture(), corpus_identity="fixture")
+        self.assertEqual(dict((row["id"], row["patterns"]) for row in model.anchors)["src/**"], ["src/**"])
+
+    def test_patterns_that_are_not_a_list_of_strings_are_refused(self):
+        export = with_list_anchor(load_fixture())
+        export["graph"]["edges"][-1]["target"]["patterns"] = "README.txt, docs/a.md"
+        with self.assertRaises(dashboard.ExportRefused) as raised:
+            dashboard.load(export, corpus_identity="fixture")
+        self.assertIn("target.patterns", str(raised.exception))
 
 
 class TheCommandLine(unittest.TestCase):
@@ -283,11 +404,10 @@ class ThePageHoldsWhatItPrints(unittest.TestCase):
 
 
 class TheWorkedExample(unittest.TestCase):
-    """.headwater/export.json in this repository is the input the issue names."""
+    """This repository's graph export is the input the issue names."""
 
     def test_every_document_of_the_repository_export_is_on_the_page(self):
-        with open(REPO_EXPORT, encoding="utf-8") as handle:
-            export = json.load(handle)
+        export = repo_export()
         model = dashboard.load(export, corpus_identity="headwater")
         documents = export["graph"]["documents"]
         self.assertEqual(len(dashboard.staleness_view(model)), len(documents))

@@ -79,8 +79,6 @@ anchors
     cited by HW-DR-0048
   code_path `.githooks/merge-regenerate` via source-tree
     cited by HW-DR-0049
-  code_path `.githooks/post-rewrite` via source-tree
-    cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `.githooks/pre-commit` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `.githooks/pre-commit` via source-tree
@@ -337,6 +335,8 @@ anchors
     cited by HW-IFACE-headwater-init
   code_path `engine/crates/cli/tests/json.rs` via source-tree
     cited by HW-DR-0043
+  code_path `engine/crates/cli/tests/merge_driver.rs` via source-tree
+    cited by HW-HOW-keep-derived-files-from-conflicting-in-parallel-pull-requests
   code_path `engine/crates/cli/tests/network_boundary.rs` via source-tree
     cited by HW-DR-0075
   code_path `engine/crates/cli/tests/publish.rs` via source-tree
@@ -547,14 +547,20 @@ anchors
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `tools/site/assemble-site.sh` via source-tree
     cited by HW-DR-0047
+  code_path `tools/site/check-site-figures.sh` via source-tree
+    cited by HW-DR-0097
   code_path `tools/site/cloudflare-build.sh` via source-tree
     cited by HW-DR-0047
+  code_path `tools/site/deploy-site.sh` via source-tree
+    cited by HW-DR-0097
   code_path `tools/site/fetch-apt.sh` via source-tree
     cited by HW-DR-0094
+  code_path `tools/site/figures-fixtures.sh` via source-tree
+    cited by HW-DR-0097
   code_path `tools/site/refresh-crawler-files.sh` via source-tree
     cited by HW-DR-0048
   code_path `tools/site/refresh-figures.sh` via source-tree
-    cited by HW-DR-0039
+    cited by HW-DR-0097
   code_path `tools/site/refresh-site-tokens.sh` via source-tree
     cited by HW-DR-0050
   code_path `tools/site/site-tokens.css` via source-tree

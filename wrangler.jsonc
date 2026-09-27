@@ -19,43 +19,29 @@
   //   what this deploy serves, and HW-DR-0047 rules the arrangement.
   //
   //   So the name below points at a directory that no commit carries. It
-  //   exists only because the build command ran, which is the one thing this
+  //   exists only because the deploy job ran, which is the one thing this
   //   file depends on and cannot state itself.
   //
-  // WHAT CLOUDFLARE RUNS BEFORE IT READS THIS FILE
+  // WHAT RUNS BEFORE THIS FILE IS READ (#1273, HW-DR-0097)
   //
-  //   The Workers Builds build command, which is set in the Cloudflare
-  //   dashboard and is one line that names a file in this repository:
+  //   The `Deploy the site` job of `.github/workflows/ci.yml`, on a push to
+  //   `main` after every gating job of that push is green. It runs
+  //   `tools/site/deploy-site.sh`, which renders the generated half, runs
+  //   `tools/site/assemble-site.sh`, fills the figures of the assembled pages
+  //   from a run of the engine, adds the APT repository, and then runs
+  //   `npx wrangler deploy` from the repository root, which is where it reads
+  //   this file. The job needs the repository secrets `CLOUDFLARE_API_TOKEN`
+  //   and `CLOUDFLARE_ACCOUNT_ID`.
   //
-  //       sh tools/site/cloudflare-build.sh
+  //   Until #1273 Cloudflare Workers Builds ran `tools/site/cloudflare-build.sh`
+  //   and deployed. That integration cannot wait for CI and has no engine to
+  //   measure the figures with, so it is to be disconnected in the Worker's
+  //   Builds settings. While it stays connected, `cloudflare-build.sh` refuses
+  //   each build that would serve a blank figure, and that build publishes
+  //   nothing.
   //
-  //   That script installs the pinned site toolchain, runs
-  //   `mkdocs build --strict`, and runs `tools/site/assemble-site.sh`. Cloudflare
-  //   then deploys from the repository root, which is where it reads this
-  //   file. `tools/site/cloudflare-build.sh` states why the dashboard field names
-  //   a file rather than carrying those commands itself.
-  //
-  //   TWO CONFIGURATIONS HAVE TO NAME THAT SCRIPT, AND THE DASHBOARD EDITS
-  //   ONE OF THEM. Workers Builds keeps one build configuration for the
-  //   default branch and a second for every other branch:
-  //
-  //       default branch   sh tools/site/cloudflare-build.sh   npx wrangler deploy
-  //       every other      sh tools/site/cloudflare-build.sh   npx wrangler versions upload
-  //
-  //   The second one is what runs on a pull request. Both read this file, so
-  //   both need the directory below, and only a build writes it. A second
-  //   configuration left empty does not touch the live site — it fails every
-  //   pull request's build instead, which is a red check that says nothing
-  //   about the change under it.
-  //
-  //   The Builds settings page shows a single `Build command`, and it writes
-  //   the first configuration only. `tools/site/cloudflare-build.sh` carries the
-  //   API call that reaches the second, because no page of that dashboard
-  //   does.
-  //
-  //   If a build command is ever unset, this directory is absent and that
-  //   deploy has nothing to serve. Restore the command first, and only then
-  //   change the name below.
+  //   If the deploy job stops running, this directory is absent and nothing
+  //   deploys. Restore the job first, and only then change the name below.
   "name": "headwater",
   "compatibility_date": "2026-08-11",
   "assets": {

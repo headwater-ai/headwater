@@ -1,6 +1,6 @@
 #!/bin/sh
-# refresh-figures.sh — measure this repository, and write the result into the
-# hand-built pages under `site/`.
+# refresh-figures.sh — measure this repository, and fill the figures of the
+# hand-built pages in an assembled copy of `site/` when the site is published.
 #
 # WHAT THIS MEASURES, AND FROM WHERE
 #
@@ -39,140 +39,132 @@
 #     `used` is a union across pages, so a figure lost on ONE page is invisible
 #     while any other page still carries it. Renaming the marker attribute on
 #     `site/how-it-works/index.html` alone gives exit 0 at `34 used across 8
-#     pages, 0 stale`; renaming it on all eight refuses. Five of the eight
+#     pages`; renaming it on all eight refuses. Five of the eight
 #     pages carry no figure at all, and nothing here notices which page holds
 #     which key. The fix is a declaration of what each page owes, which this
 #     script has nowhere to read.
 #
 #     The element pattern requires the text to hold no `<`, so a figure with a
-#     nested child element is not matched at all. `<b data-figure="rules.wired"
-#     ><b>99</b></b>` serves 99 where the run says 29, at exit 0, and it is not
-#     even reported as an unknown key. An off-shape key such as `rules.wired2`
-#     matches nothing for the same reason and is equally silent. A count of
-#     `data-figure` occurrences in the file, held against the count the pattern
-#     matched, is what would catch both.
+#     nested child element is not matched by it. `<b data-figure="rules.wired"
+#     ><b>99</b></b>` once served 99 where the run said 29, at exit 0. An
+#     off-shape key such as `rules.wired2` matched nothing for the same reason.
+#     Since #1273 the count of `data-figure` occurrences on a page is held
+#     against the count the pattern matched, and a difference fails.
 #
-# WHAT `--check` COMPARES, AND WHAT IT DOES NOT
+# WHEN A FIGURE IS MEASURED (#1273)
 #
-#   `--check` compares the 26 figures that are a function of the corpus and the
-#   lock. Eight are also a function of the clock: `run.date` and the seven that
-#   read the findings list, `findings.raised`, `findings.reported`,
-#   `findings.suppressed`, `findings.errors`, `findings.advisory`,
-#   `findings.directives` and `rules.fired`. Two dated mechanisms move a
-#   finding between reported and suppressed with no file touched, and both are
-#   in this engine: `check/src/adoption.rs` retires a migration task at
-#   `task.until < now`, and `check/src/suppression.rs` expires an escape
-#   directive at `suppression.until < now`. `headwater generate` already
-#   states this rule of its own `coverage_report` projection, in the sentence
-#   it prints on every run:
+#   A figure is measured when the site is published, and never committed. The
+#   pages under `site/` carry each `data-figure` element empty. The CI deploy
+#   on a push to `main` assembles the site into `.headwater/site-deploy`, and
+#   `--into` fills the copies there from a run of the engine at that commit.
+#   So no pull request that adds a document moves a byte under `site/`, and
+#   two such pull requests no longer conflict on the pages.
 #
-#     "its content is a function of the clock as well as of the corpus and the
-#      lock, because a migration task lapses and a suppression expires on a
-#      date. A committed copy would fail this check on a morning when nothing
-#      changed."
+#   Until #1273 this script wrote the figures into the committed pages, each
+#   page held a fold over the corpus, and `.gitattributes` declared the three
+#   pages that carried one `-merge`. Every pull request conflicted with every
+#   other one on those pages, so the merge queue landed them one at a time.
+#   The decision that supersedes HW-DR-0039 records the move.
 #
-#   These eight are reported rather than failed only where the clock is the
-#   reason they moved. A change to one of them that a tree edit caused is an
-#   ordinary stale figure, and `--check` fails it exactly as it fails any of
-#   the 26. Membership in the eight is necessary and not sufficient (#823):
-#   the earlier form of this script excused a difference in one of the eight
-#   whenever the key name was one of them, whether or not a dated mechanism
-#   had actually lapsed, and #816 and #822 both shipped a false figure that way.
-#
-#   The distinguishing measurement runs the engine a second time, at the date
-#   the page currently states (`G0`), against the tree in front of you. If
-#   `G0`'s value for a clock key equals what the page states, the tree has not
-#   moved on that key since the page was written, and today's value differing
-#   from the page is explained by the clock alone: the label `clock only`
-#   applies. If `G0` disagrees with what the page states, the tree moved that
-#   key independent of the clock, and the label does not apply.
-#
-#   Measured on 2026-09-06, each arm on a tree that nothing else touched:
-#
-#     the clock at 2027-07-01, past `AD-1`'s `until: 2027-06-30`
-#       `findings.errors` 0->1, `findings.raised` 7->8,
-#       `findings.reported` 7->8, `rules.fired` 1->2
-#     one escape directive, live today and lapsed the day after its `until`
-#       `findings.reported` 6->7, `findings.suppressed` 1->0,
-#       `findings.advisory` 6->7, `findings.directives` 1->0
-#
-#   The second arm is the one that matters, because `headwater check --strict`
-#   exits 0 on both sides of it. So on the morning a directive lapses, a gate
-#   over these figures is the only thing that goes red, on a tree nobody
-#   touched, saying a page disagrees with a run. `until` is required on every
-#   directive, so every directive reaches that morning. `G0` for that morning
-#   equals what the page states, on both of the seven findings-derived keys and
-#   on `run.date`, so the two-run measurement still excuses it.
-#
-#   The page's claim is that these numbers came from a run on the date beside
-#   them, and that claim stays true. Write mode rewrites all eight on every
-#   run, and counts them on a line of their own.
-#
-#   `run.date` is a UTC date and not the date of the machine that ran this.
-#   Measured on a host at CEST: `date +%F` read 2026-09-07 while the engine
-#   read 2026-09-06, because UTC had two hours left. So the figure rolls at UTC
-#   midnight, and an author between their own midnight and that one reads a
-#   page that disagrees with their calendar and agrees with the run.
-#
-# WHY THIS SCRIPT EXISTS AT ALL
-#
-#   HW-DR-0037 rules that a hand-built page states no figure a person typed, and
-#   it admits two forms where a number belongs on such a page. The page links to
-#   the generated artifact that produced the number. Or a build interpolates the
-#   number from a run, and the page carries no source of its own.
-#
-#   The same record measures the second form as unavailable, because
-#   `wrangler.jsonc` declares an asset directory and no build command, so nothing
-#   runs between the commit and the served bytes. That measurement still holds.
-#   This script moves the build to the other side of the commit: it runs on the
-#   author's machine, before the commit, and the interpolated figure is in the
-#   committed bytes. HW-DR-0039 records that move.
-#
-#   The distinction that makes this admissible is between a figure that is
-#   hand-RUN and one that is hand-TYPED. A hand-typed figure has no source. A
-#   hand-run figure has a source, a date, and a command that reproduces it — and
-#   `--check` fails when the page and the run disagree.
-#
-# THE DISCIPLINE, AND WHAT RUNS IT
-#
-#   Run this before any commit that touches a page carrying a figure, and read
-#   what it prints. `--check` writes nothing and exits non-zero when a page is
-#   stale, which is the form to put in front of a reviewer.
-#
-#   Two callers run it, and a person is neither of them. `.githooks/pre-commit`
-#   refuses a commit whose page disagrees with a fresh run, under
-#   `HEADWATER_SKIP_FIGURE_CHECK`, and it announces the skip. The CI step named
-#   "The figures on the hand-built pages came from a run" reads the committed
-#   tree, has no escape hatch, and is the half that holds.
+#   There is no clock partition any more. The eight figures that read the
+#   clock (`run.date` and the seven that read the findings list) were compared
+#   against a committed value and excused where only the clock moved. Nothing
+#   committed is compared against a run now, so that machinery went too.
 #
 # USAGE
 #
-#   sh tools/site/refresh-figures.sh            measure, and write the pages
-#   sh tools/site/refresh-figures.sh --check    measure, write nothing, and
-#                                                 exit 1 on any disagreement
-#   sh tools/site/refresh-figures.sh --print    measure, and print the table
+#   sh tools/site/refresh-figures.sh --check       measure, write nothing, and
+#                                                    exit 1 on a committed value,
+#                                                    an unknown key, a figure on
+#                                                    no page, or tutorial or
+#                                                    landing drift
+#   sh tools/site/refresh-figures.sh --into <dir>  measure, and fill the pages
+#                                                    under <dir>, never site/.
+#                                                    It fails as --check does,
+#                                                    less the committed value
+#   sh tools/site/refresh-figures.sh --blank       empty every figure under
+#                                                    site/. It measures nothing
+#                                                    and needs no engine. After
+#                                                    a conflict on a page, take
+#                                                    either side's prose, then
+#                                                    run this
+#   sh tools/site/refresh-figures.sh --print       measure, and print the table
+#
+#   `tools/site/deploy-site.sh` runs `--into`, and CI runs `--check` and
+#   `--into` on every event. `tools/site/figures-fixtures.sh` holds both.
 #
 # EXIT STATUS
 #
-#   0  the pages agree with the run, or the run wrote them
-#   1  a page and the run disagree, or a figure reached no page
-#   2  no engine of either profile is built
-#   3  the engine is older than the engine sources, so this cannot tell. It
+#   0  the pages carry the figures this mode asks for
+#   1  a committed value, an unknown key, a figure on no page, a marker this
+#      cannot fill, or drift
+#   2  no engine of either profile is built, or the arguments are wrong
+#   3  the engine is older than the engine sources, so this cannot measure. It
 #      writes nothing in any mode, and it names the build command rather than
-#      itself. HW-DR-0039 rules the three outcomes.
+#      itself.
 #
 set -eu
 
-MODE=write
+MODE=
+INTO=
 case "${1:-}" in
   --check) MODE=check ;;
   --print) MODE=print ;;
-  "") ;;
+  --blank) MODE=blank ;;
+  --into)
+    MODE=into
+    INTO=${2:-}
+    if [ -z "$INTO" ]; then
+      echo "refresh-figures.sh: --into needs the assembled directory to fill" >&2
+      exit 2
+    fi
+    ;;
+  "")
+    echo "refresh-figures.sh: name a mode: --check, --into <dir>, --blank or --print" >&2
+    echo "  The committed pages carry no measured figure since #1273, so there is" >&2
+    echo "  no mode that writes one into site/." >&2
+    exit 2
+    ;;
   *) echo "refresh-figures.sh: unknown argument '$1'" >&2; exit 2 ;;
 esac
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+if [ "$MODE" = into ]; then
+  case "$INTO" in
+    /*) ;;
+    *) INTO="$PWD/$INTO" ;;
+  esac
+  if [ ! -d "$INTO" ]; then
+    echo "refresh-figures.sh: $INTO is not a directory" >&2
+    exit 2
+  fi
+fi
 cd "$ROOT"
+
+# `--blank` measures nothing, so it needs no engine. It is the one command that
+# resolves a conflict on a page: take either side's prose, then blank.
+if [ "$MODE" = blank ]; then
+  python3 - <<'PY'
+import pathlib, re
+
+root = pathlib.Path.cwd()
+pattern = re.compile(
+    r'(<(\w+)\b[^>]*\bdata-figure="[^"]*"[^>]*>)([^<]*)(</\2>)')
+blanked = 0
+for page in sorted(root.glob("site/**/*.html")):
+    before = page.read_text()
+    after, n = pattern.subn(lambda m: m.group(1) + m.group(4), before)
+    if after != before:
+        page.write_text(after)
+        blanked += 1
+    if before.count("data-figure=") != n:
+        raise SystemExit("refresh-figures.sh: %s carries a data-figure element "
+                         "that holds another element, which this cannot blank"
+                         % page.relative_to(root))
+print("blanked the figures on %d page%s" % (blanked, "" if blanked == 1 else "s"))
+PY
+  exit 0
+fi
 
 # Either profile builds the engine these figures are measured with, and the
 # newer answers. `.githooks/pre-commit` runs this script, so a root that reads
@@ -230,10 +222,10 @@ trap 'rm -rf "$WORK"' EXIT
 "$HW" check --root . > "$WORK/check.txt" 2>/dev/null || true
 "$HW" conformance --root . > "$WORK/conformance.txt" 2>/dev/null || true
 
-python3 - "$MODE" "$WORK" "$HW" <<'PY'
+python3 - "$MODE" "$WORK" "$HW" "$INTO" <<'PY'
 import json, re, subprocess, sys, pathlib
 
-mode, work, hw = sys.argv[1], pathlib.Path(sys.argv[2]), sys.argv[3]
+mode, work, hw, into = sys.argv[1], pathlib.Path(sys.argv[2]), sys.argv[3], sys.argv[4]
 root = pathlib.Path.cwd()
 
 check = json.loads((work / "check.json").read_text())
@@ -388,8 +380,7 @@ if not m:
 put("conformance.level", "no level" if m.group(1) == "no level" else m.group(1),
     "conformance, its verdict line")
 
-# --- write, check, or print ----------------------------------------------
-pages = sorted(root.glob("site/**/*.html"))
+# --- fill, check, or print -----------------------------------------------
 # One element with a `data-figure` attribute, holding text and nothing else.
 # The element name is captured so the closing tag has to match it, which keeps
 # a nested element from being read as a figure.
@@ -402,97 +393,32 @@ if mode == "print":
         print("%-*s  %-12s  %s" % (width, k, fig[k], src[k]))
     raise SystemExit(0)
 
-rel = lambda p: p.relative_to(root)
-
-# The partition. A figure is gateable where it is a function of the corpus and
-# the lock, and these eight are not: each one reads the clock, or reads the
-# findings list, and two dated mechanisms move a finding between reported and
-# suppressed with the tree untouched. An adoption task lapses
-# (`check/src/adoption.rs`, `task.until < now`) and an escape directive expires
-# (`check/src/suppression.rs`, `suppression.until < now`). `rules.fired` counts
-# distinct rule names among the findings, so it moves with them.
-#
-# Membership in this set is necessary and never sufficient (#823): a
-# difference in one of these eight is excused only where the clock is the
-# reason it moved, which the G0 measurement below decides. The other 26 keys
-# are gateable outright. See WHAT `--check` COMPARES above for the measurement
-# behind this list, and why it is eight rather than one.
-CLOCK_KEYS = {
-    "run.date",
-    "findings.raised", "findings.reported", "findings.suppressed",
-    "findings.errors", "findings.advisory", "findings.directives",
-    "rules.fired",
-}
-
-# The partition names keys, so it goes stale the moment one is renamed. This is
-# that list held against the run rather than trusted, the same way the page
-# denominator below is.
-missing = sorted(CLOCK_KEYS - set(fig))
-if missing:
-    sys.exit("refresh-figures.sh: the clock partition names %s, which this run "
-             "does not measure" % ", ".join(missing))
-
-# The G0 measurement (#823). A clock-key figure's page states the date it was
-# run beside it, `run.date`. Running this engine again at that date, against
-# the *current* tree, answers what a run on the page's own claimed date would
-# see today. Where that answer agrees with what the page states, the tree has
-# not moved on that key since the page was written, and today's own value
-# differing from the page is the clock alone. Where it disagrees, the tree
-# moved that key independent of the clock, and the figure is ordinary stale.
-#
-# Today's own run answers for today's own date at no extra cost: the common
-# case is a page nobody has let go stale, where the page's `run.date` already
-# is today's, and this returns `fig` unchanged rather than spending a second
-# process on a question already answered.
-_g0_cache = {}
+# `--check` reads the committed pages and writes nothing. `--into` fills the
+# copies in an assembled directory and never touches `site/`. The two read the
+# same markers, so a key that `--check` accepts is a key `--into` fills.
+base = pathlib.Path(into) if mode == "into" else root / "site"
+pages = sorted(base.glob("**/*.html"))
+if not pages:
+    sys.exit("refresh-figures.sh: no page under %s, so there is nothing to "
+             "fill and nothing to check" % base)
 
 
-def measure_g0(date):
-    if date == fig["run.date"]:
-        return fig
-    if date in _g0_cache:
-        return _g0_cache[date]
-    cj = subprocess.run([hw, "check", "--root", ".", "--json", "--now", date],
-                        capture_output=True, text=True).stdout
-    ct = subprocess.run([hw, "check", "--root", ".", "--now", date],
-                        capture_output=True, text=True).stdout
+def rel(p):
     try:
-        data = json.loads(cj)
+        return p.relative_to(root)
     except ValueError:
-        sys.exit("refresh-figures.sh: `headwater check --now %s --json` wrote "
-                 "nothing this script can read as JSON" % date)
-    findings = data["findings"]
-    suppressed = [f for f in findings if f.get("escape") == "suppression"]
-    reported = [f for f in findings if f.get("escape") != "suppression"]
-    m = re.search(r"^\s*(\d+) findings hidden by (\d+) directives\s*$", ct, re.M)
-    if not m:
-        sys.exit("refresh-figures.sh: no suppressions block in `headwater "
-                 "check --now %s`" % date)
-    g0 = {
-        "run.date": data["clock"],
-        "findings.raised": str(len(findings)),
-        "findings.reported": str(len(reported)),
-        "findings.suppressed": str(len(suppressed)),
-        "findings.errors": str(len([f for f in reported if f["severity"] == "error"])),
-        "findings.advisory": str(len([f for f in reported if f["severity"] == "warn"])),
-        "findings.directives": m.group(2),
-        "rules.fired": str(len({f["rule"] for f in findings})),
-    }
-    _g0_cache[date] = g0
-    return g0
+        return p
 
 
-used, stale, unknown = set(), [], []
-page_dates = {}
+# Since #1273 the committed pages carry no measured value. A figure is measured
+# when the site is published, into an assembled copy, so a value in a committed
+# marker is a fold that two branches merge wrong, and it is refused. The clock
+# partition and the G0 measurement that excused a clock-only difference are
+# gone with the committed values: there is nothing committed to compare a run
+# against. HW-DR-0039's successor records the change.
+used, unknown, filled, unmatched = set(), [], [], []
 for page in pages:
     before = page.read_text()
-
-    # Read off before anything below rewrites it. A page that carries any of
-    # the seven findings-derived clock keys carries `run.date` too, which the
-    # classification step below checks rather than assumes.
-    page_date_m = re.search(
-        r'<(\w+)\b[^>]*\bdata-figure="run\.date"[^>]*>([^<]*)</\1>', before)
-    page_dates[page] = page_date_m.group(2) if page_date_m else None
 
     def sub(m):
         key = m.group(3)
@@ -500,62 +426,37 @@ for page in pages:
             unknown.append((page, key))
             return m.group(0)
         used.add(key)
-        if m.group(4) != fig[key]:
-            stale.append((page, key, m.group(4), fig[key]))
+        if mode == "check" and m.group(4) != "":
+            filled.append((page, key, m.group(4)))
         return m.group(1) + fig[key] + m.group(5)
 
-    after = pattern.sub(sub, before)
-    if mode == "write" and after != before:
+    after, matched = pattern.subn(sub, before)
+    # The pattern needs the element to hold text alone and the key to be two
+    # lower-case words. A marker that fails either is counted here, because it
+    # is otherwise read as no marker at all and served as it stands.
+    if before.count("data-figure=") != matched:
+        unmatched.append((page, before.count("data-figure=") - matched))
+    if mode == "into" and after != before:
         page.write_text(after)
-
-# Classify each stale clock-key figure by cause rather than by name. `run.date`
-# is the clock itself, so a difference in it has no tree cause to check for.
-# Every other clock key is checked against G0: `was`, here, is the value the
-# page stated before this run touched it, which is the one side of the G0
-# comparison that a rewrite has not yet erased.
-stale_measured, stale_clock = [], []
-for entry in stale:
-    page, key, was, _now = entry
-    if key not in CLOCK_KEYS:
-        stale_measured.append(entry)
-        continue
-    if key == "run.date":
-        stale_clock.append(entry)
-        continue
-    date = page_dates.get(page)
-    if date is None:
-        sys.exit("refresh-figures.sh: %s carries %s but no run.date span this "
-                 "script can read, so it cannot tell the clock from the tree"
-                 % (rel(page), key))
-    (stale_clock if measure_g0(date)[key] == was else stale_measured).append(entry)
-
-
-def collapse(occurrences):
-    # A key repeats on a page as often as the page names it, and until here
-    # each repeat printed its own line, identical byte for byte, with nothing
-    # to tell a reader whether that was five places on the page or one place
-    # printed five times. Group by the whole tuple, so a page that genuinely
-    # disagrees with itself at two spots still prints as two lines, and carry
-    # the count forward instead of the repetition.
-    counts = {}
-    for item in occurrences:
-        counts[item] = counts.get(item, 0) + 1
-    return list(counts.items())
-
 
 for page, key in unknown:
     print("unknown figure key %s in %s" % (key, rel(page)), file=sys.stderr)
-for (page, key, was, now), count in collapse(stale_measured):
-    verb = "rewrote" if mode == "write" else "stale"
-    times = " (×%d)" % count if count > 1 else ""
-    print("%s %s in %s: %s -> %s%s" % (verb, key, rel(page), was, now, times),
-          file=sys.stderr)
-stale_clock_groups = collapse(stale_clock)
-for (page, key, was, now), count in stale_clock_groups:
-    verb = "rewrote" if mode == "write" else "clock only"
-    times = " (×%d)" % count if count > 1 else ""
-    print("%s %s in %s: %s -> %s%s" % (verb, key, rel(page), was, now, times),
-          file=sys.stderr)
+for page, n in unmatched:
+    print("%d data-figure element%s in %s that this cannot fill: a nested "
+          "element, or a key that is not two lower-case words"
+          % (n, "" if n == 1 else "s", rel(page)), file=sys.stderr)
+filled_pages = {}
+for page, key, value in filled:
+    filled_pages.setdefault(page, []).append((key, value))
+for page, entries in filled_pages.items():
+    key, value = entries[0]
+    print("%s carries %d measured figure%s, the first %s holding %r"
+          % (rel(page), len(entries), "" if len(entries) == 1 else "s", key,
+             value), file=sys.stderr)
+if filled_pages:
+    print("  the committed pages carry no measured value, because a figure is "
+          "measured when the site is published. Run: "
+          "sh tools/site/refresh-figures.sh --blank", file=sys.stderr)
 
 # --- the tutorial page, held against the tutorial document ----------------
 # The tutorial page copies commands and output out of
@@ -637,26 +538,10 @@ if never:
           "skipping it, and this refuses the same thing for a figure.",
           file=sys.stderr)
 
-# The headline counts the measurements alone, and the run date is counted on
-# its own line beside it. So the two numbers add up to the lines above them, in
-# either mode, and neither one is silently folded into the other.
-print("%d figures measured, %d used across %d pages, %d stale, run of %s"
-      % (len(fig), len(used), len(pages), len(stale_measured), fig["run.date"]))
-if stale_clock_groups:
-    # Counted as groups rather than occurrences, so this sentence names the
-    # same number of figures the lines above it just printed, one grouped
-    # line each. A lapsed adoption task, an expired escape directive and the
-    # run date each move one without the tree moving, so they are counted
-    # here and they fail no check.
-    print("%d further figure%s %s only because %s a function of the "
-          "clock, and each is counted above rather than in the stale count."
-          % (len(stale_clock_groups),
-             "" if len(stale_clock_groups) == 1 else "s",
-             "differs" if len(stale_clock_groups) == 1 else "differ",
-             "it is" if len(stale_clock_groups) == 1 else "they are"))
+verb = "filled" if mode == "into" else "checked"
+print("%d figures measured, %d used across %d pages, %s under %s, run of %s"
+      % (len(fig), len(used), len(pages), verb, rel(base), fig["run.date"]))
 
-if unknown or drift or never:
-    raise SystemExit(1)
-if mode == "check" and stale_measured:
+if unknown or unmatched or filled or drift or never:
     raise SystemExit(1)
 PY

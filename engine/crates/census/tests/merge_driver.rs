@@ -177,6 +177,13 @@ fn index(entries: &[&str]) -> String {
 
 const BASE: [&str; 3] = ["alpha", "middle", "omega"];
 
+/// The fold every case merges. Until #1273 it was `site/index.html`, whose
+/// measured figures made it a fold; the pages now carry blank markers and
+/// merge as text. The taxonomy lock is a fold this repository still
+/// declares `-merge`, and git compares blobs without reading their format,
+/// so the page-shaped body below stands in for any fold.
+const FOLD: &str = ".headwater/taxonomy.lock";
+
 /// What the scratch repository is given beyond the merge driver.
 ///
 /// `None` is every case written before the gate existed, and it is what makes
@@ -215,7 +222,7 @@ fn executable(repo: &Path, path: &str, body: &str) {
     std::fs::set_permissions(&full, mode).expect("the executable bit");
 }
 
-/// Plant the engine and the four scripts the gates run, each of them recording
+/// Plant the engine and the three scripts the gates run, each of them recording
 /// that it ran.
 ///
 /// `tools/site/refresh-crawler-files.sh`, `tools/site/refresh-site-tokens.sh` and
@@ -247,7 +254,6 @@ fn plant_producers(repo: &Path, generate_exit: i32) {
         ),
     );
     for script in [
-        "tools/site/refresh-figures.sh",
         "tools/site/refresh-crawler-files.sh",
         "tools/site/refresh-site-tokens.sh",
     ] {
@@ -370,7 +376,7 @@ fn merge_two_branches_in(
         write(&repo, &format!("docs/{name}.md"), &format!("# {name}\n"));
     }
     write(&repo, "docs/README.md", &index(&BASE));
-    write(&repo, "site/index.html", &page(BASE_FIGURES));
+    write(&repo, FOLD, &page(BASE_FIGURES));
     git_ok(&repo, &["add", "-A"]);
     git_ok(&repo, &["commit", "-q", "-m", "base"]);
 
@@ -394,7 +400,7 @@ fn merge_two_branches_in(
             &format!("# {branch}\n"),
         );
         write(&repo, "docs/README.md", &index(&entries));
-        write(&repo, "site/index.html", &page(figures));
+        write(&repo, FOLD, &page(figures));
         git_ok(&repo, &["add", "-A"]);
         git_ok(&repo, &["commit", "-q", "-m", branch]);
     }
@@ -442,7 +448,7 @@ fn conflicted(repo: &Path) -> Vec<String> {
 
 /// One figure as the page now states it.
 fn figure(repo: &Path, key: &str) -> String {
-    let body = read(repo, "site/index.html");
+    let body = read(repo, FOLD);
     let marker = format!("data-figure=\"{key}\">");
     let (_, rest) = body
         .split_once(&marker)
@@ -480,23 +486,9 @@ fn configured_override(attributes: &str) -> String {
 }
 
 /// The repository's own declaration, which is what these cases are a function
-/// of. Delete the `site/` block from `.gitattributes` and two of them fail.
+/// of. Delete the lock's `-merge` line from `.gitattributes` and two of them fail.
 fn attributes() -> String {
     std::fs::read_to_string(repository_root().join(".gitattributes")).expect("the attributes file")
-}
-
-/// `.githooks/pre-push` and `.githooks/post-rewrite` both resolve
-/// `tools/site/ack-site-prose-reviewed.sh` against the scratch repository's
-/// own toplevel, not the real repository's, so a case that expects either
-/// hook to see a pending marker has to plant the real script into the
-/// scratch tree first — the same reason `plant_producers` plants
-/// `refresh-figures.sh` there rather than relying on the one this crate
-/// runs from.
-fn plant_ack_script(repo: &Path) {
-    let body =
-        std::fs::read_to_string(repository_root().join("tools/site/ack-site-prose-reviewed.sh"))
-            .expect("the ack script");
-    executable(repo, "tools/site/ack-site-prose-reviewed.sh", &body);
 }
 
 /// One branch adds a decision, the other an obligation, and neither figure
@@ -613,17 +605,17 @@ fn a_clone_without_the_driver_config_conflicts_on_a_declared_page() {
     );
     assert_eq!(
         conflicted(&repo),
-        vec!["site/index.html".to_owned()],
+        vec![FOLD.to_owned()],
         "the page and nothing else is conflicted"
     );
-    let page = read(&repo, "site/index.html");
+    let page = read(&repo, FOLD);
     assert!(
         !page.contains("<<<<<<<"),
         "the page carries no marker:\n{page}"
     );
     assert_eq!(
         page,
-        git_ok(&repo, &["show", "HEAD:site/index.html"]),
+        git_ok(&repo, &["show", &format!("HEAD:{FOLD}")]),
         "the page holds the current side's bytes"
     );
 }
@@ -654,14 +646,14 @@ fn a_declared_page_refuses_the_merge_and_names_the_command() {
 
     assert!(
         !merged.status.success(),
-        "the merge succeeded, so `site/index.html` still reconciles silently: \
+        "the merge succeeded, so the fold still reconciles silently: \
          the page reads {} where the tree holds {}",
         figure(&repo, "census.seen"),
         documents(&repo)
     );
     assert_eq!(
         conflicted(&repo),
-        vec!["site/index.html".to_owned()],
+        vec![FOLD.to_owned()],
         "the driver must refuse the page and nothing else. `docs/README.md` \
          holds one line per document and merges, and a conflict there would \
          mean the two arms clashed textually and this proved nothing"
@@ -669,433 +661,14 @@ fn a_declared_page_refuses_the_merge_and_names_the_command() {
 
     let said = String::from_utf8_lossy(&merged.stderr);
     assert!(
-        said.contains("site/index.html is a derived artifact"),
+        said.contains(&format!("{FOLD} is a derived artifact")),
         "the driver ran but said nothing a reader could act on: {said}"
     );
     assert!(
-        said.contains("tools/site/refresh-figures.sh"),
+        said.contains("headwater taxonomy resolve"),
         "the refusal must name the command that rebuilds the page, because git \
          writes no conflict marker for a custom driver and the file left in the \
          tree says nothing: {said}"
-    );
-}
-
-/// A stale branch cannot be resolved by refreshing figures alone.
-///
-/// This is the failure shape from #879: one branch carries a newer hand-written
-/// edit to the page's prose, the stale branch updates only figures, and the
-/// merge driver leaves `%A` in place. The refusal now has to call out the
-/// non-figure drift so a resolver does not accept stale prose by mistake.
-#[test]
-fn a_site_merge_warns_when_non_figure_content_differs() {
-    let repo = scratch("site-stale-non-figure-diff");
-    let driver = repository_root().join(".githooks/merge-regenerate");
-    assert!(driver.is_file(), "{} is not there", driver.display());
-
-    git_ok(&repo, &["init", "-q", "-b", "main"]);
-    git_ok(&repo, &["config", "user.name", "Fixture"]);
-    git_ok(&repo, &["config", "user.email", "fixture@example.invalid"]);
-    git_ok(&repo, &["config", "commit.gpgsign", "false"]);
-    git_ok(
-        &repo,
-        &[
-            "config",
-            "merge.headwater-regenerate.name",
-            "regenerate a derived artifact",
-        ],
-    );
-    git_ok(
-        &repo,
-        &[
-            "config",
-            "merge.headwater-regenerate.driver",
-            &format!("{} %O %A %B %P", driver.display()),
-        ],
-    );
-    write(&repo, ".gitattributes", &attributes());
-    write(
-        &repo,
-        ".git/info/attributes",
-        &configured_override(&attributes()),
-    );
-    write(
-        &repo,
-        "site/index.html",
-        "<!doctype html>\n<html><body>\n\
-         <p class=\"copy\">Base copy.</p>\n\
-         <p>Seen <span data-figure=\"census.seen\">3</span>.</p>\n\
-         </body></html>\n",
-    );
-    git_ok(&repo, &["add", "-A"]);
-    git_ok(&repo, &["commit", "-q", "-m", "base"]);
-
-    git_ok(&repo, &["checkout", "-q", "-b", "stale"]);
-    git_ok(&repo, &["checkout", "-q", "main"]);
-    write(
-        &repo,
-        "site/index.html",
-        "<!doctype html>\n<html><body>\n\
-         <p class=\"copy\">Main copy.</p>\n\
-         <p>Seen <span data-figure=\"census.seen\">3</span>.</p>\n\
-         </body></html>\n",
-    );
-    git_ok(&repo, &["add", "site/index.html"]);
-    git_ok(&repo, &["commit", "-q", "-m", "main hand edit"]);
-
-    git_ok(&repo, &["checkout", "-q", "stale"]);
-    write(
-        &repo,
-        "site/index.html",
-        "<!doctype html>\n<html><body>\n\
-         <p class=\"copy\">Base copy.</p>\n\
-         <p>Seen <span data-figure=\"census.seen\">4</span>.</p>\n\
-         </body></html>\n",
-    );
-    git_ok(&repo, &["add", "site/index.html"]);
-    git_ok(
-        &repo,
-        &["commit", "-q", "-m", "refresh figures on stale branch"],
-    );
-
-    let merged = git(&repo, &["merge", "--no-edit", "main"]);
-    let said = format!(
-        "{}{}",
-        String::from_utf8_lossy(&merged.stdout),
-        String::from_utf8_lossy(&merged.stderr)
-    );
-
-    assert!(
-        !merged.status.success(),
-        "the merge unexpectedly succeeded, so stale prose can still pass silently: {said}"
-    );
-    assert_eq!(conflicted(&repo), vec!["site/index.html".to_owned()]);
-    assert!(
-        said.contains("WARNING: non-figure prose/markup differs"),
-        "the refusal did not warn about the stale non-figure drift: {said}"
-    );
-    assert!(
-        said.contains("-<p class=\"copy\">Base copy.</p>")
-            && said.contains("+<p class=\"copy\">Main copy.</p>"),
-        "the warning did not include a non-figure diff naming the prose mismatch: {said}"
-    );
-}
-
-/// The warning above is a stderr line during a merge, and nothing checks
-/// afterward that whoever resolved the conflict actually carried the losing
-/// side's prose forward. This is the marker that closes that: a conflict with
-/// a non-figure diff drops one file under
-/// `<git-common-dir>/headwater-pending-site-review/`, `.githooks/pre-push`
-/// refuses while it exists, and `tools/site/ack-site-prose-reviewed.sh` is the
-/// only thing that clears it.
-#[test]
-fn a_refused_site_merge_leaves_a_marker_that_pre_push_refuses_until_acknowledged() {
-    let repo = scratch("site-marker-blocks-push");
-    let driver = repository_root().join(".githooks/merge-regenerate");
-    let hooks_dir = repository_root().join(".githooks");
-    let ack = repository_root().join("tools/site/ack-site-prose-reviewed.sh");
-    let pre_push = repository_root().join(".githooks/pre-push");
-    assert!(driver.is_file(), "{} is not there", driver.display());
-    assert!(ack.is_file(), "{} is not there", ack.display());
-    assert!(pre_push.is_file(), "{} is not there", pre_push.display());
-
-    git_ok(&repo, &["init", "-q", "-b", "main"]);
-    git_ok(&repo, &["config", "user.name", "Fixture"]);
-    git_ok(&repo, &["config", "user.email", "fixture@example.invalid"]);
-    git_ok(&repo, &["config", "commit.gpgsign", "false"]);
-    git_ok(
-        &repo,
-        &["config", "core.hooksPath", &hooks_dir.display().to_string()],
-    );
-    git_ok(
-        &repo,
-        &[
-            "config",
-            "merge.headwater-regenerate.name",
-            "regenerate a derived artifact",
-        ],
-    );
-    git_ok(
-        &repo,
-        &[
-            "config",
-            "merge.headwater-regenerate.driver",
-            &format!("{} %O %A %B %P", driver.display()),
-        ],
-    );
-    // No `info/attributes`: this is a clone that ran the two `git config`
-    // lines and nothing else, which is every contributor clone before #1058.
-    // The hooks select the driver on the first checkout, and the marker below
-    // depends on that (`.githooks/select-merge-driver`).
-    write(&repo, ".gitattributes", &attributes());
-    plant_ack_script(&repo);
-    write(
-        &repo,
-        "site/index.html",
-        "<!doctype html>\n<html><body>\n\
-         <p class=\"copy\">Base copy.</p>\n\
-         <p>Seen <span data-figure=\"census.seen\">3</span>.</p>\n\
-         </body></html>\n",
-    );
-    git_ok(&repo, &["add", "-A"]);
-    git_ok(&repo, &["commit", "-q", "-m", "base"]);
-
-    git_ok(&repo, &["checkout", "-q", "-b", "stale"]);
-    let selected = read(&repo, ".git/info/attributes");
-    assert!(
-        selected.contains("site/index.html merge=headwater-regenerate\n"),
-        "the hooks did not select the driver for the page on checkout:\n{selected}"
-    );
-    git_ok(&repo, &["checkout", "-q", "main"]);
-    write(
-        &repo,
-        "site/index.html",
-        "<!doctype html>\n<html><body>\n\
-         <p class=\"copy\">Main copy.</p>\n\
-         <p>Seen <span data-figure=\"census.seen\">3</span>.</p>\n\
-         </body></html>\n",
-    );
-    git_ok(&repo, &["add", "site/index.html"]);
-    git_ok(&repo, &["commit", "-q", "-m", "main hand edit"]);
-
-    git_ok(&repo, &["checkout", "-q", "stale"]);
-    write(
-        &repo,
-        "site/index.html",
-        "<!doctype html>\n<html><body>\n\
-         <p class=\"copy\">Base copy.</p>\n\
-         <p>Seen <span data-figure=\"census.seen\">4</span>.</p>\n\
-         </body></html>\n",
-    );
-    git_ok(&repo, &["add", "site/index.html"]);
-    git_ok(
-        &repo,
-        &["commit", "-q", "-m", "refresh figures on stale branch"],
-    );
-
-    let merged = git(&repo, &["merge", "--no-edit", "main"]);
-    assert!(
-        !merged.status.success(),
-        "the merge unexpectedly succeeded, so no marker was ever due"
-    );
-
-    let marker = repo.join(".git/headwater-pending-site-review/site_index.html");
-    assert!(
-        marker.is_file(),
-        "no marker written at {}",
-        marker.display()
-    );
-    let marker_body = read(&repo, ".git/headwater-pending-site-review/site_index.html");
-    assert!(
-        marker_body.contains("Base copy.") && marker_body.contains("Main copy."),
-        "the marker does not hold the non-figure diff: {marker_body}"
-    );
-
-    let refused = Command::new("sh")
-        .arg(&pre_push)
-        .arg("origin")
-        .arg("dummy")
-        .current_dir(&repo)
-        .output()
-        .expect("pre-push runs");
-    assert!(
-        !refused.status.success(),
-        "pre-push allowed a push while the marker was still unacknowledged"
-    );
-    let refused_said = String::from_utf8_lossy(&refused.stderr).into_owned();
-    assert!(
-        refused_said.contains("site/index.html"),
-        "the refusal did not name the pending page: {refused_said}"
-    );
-
-    // Resolve the conflict correctly — keep main's prose, carry the stale
-    // branch's own figure bump forward by hand — and finish the merge. This is
-    // the point a real session would run `sh tools/site/refresh-figures.sh`;
-    // the fixture writes the same result directly rather than invoking it.
-    write(
-        &repo,
-        "site/index.html",
-        "<!doctype html>\n<html><body>\n\
-         <p class=\"copy\">Main copy.</p>\n\
-         <p>Seen <span data-figure=\"census.seen\">4</span>.</p>\n\
-         </body></html>\n",
-    );
-    git_ok(&repo, &["add", "site/index.html"]);
-    git_ok(&repo, &["commit", "-q", "--no-edit"]);
-
-    let still_refused = Command::new("sh")
-        .arg(&pre_push)
-        .arg("origin")
-        .arg("dummy")
-        .current_dir(&repo)
-        .output()
-        .expect("pre-push runs");
-    assert!(
-        !still_refused.status.success(),
-        "pre-push allowed a push before anything acknowledged the marker, \
-         though finishing the merge correctly is not the same as acknowledging it"
-    );
-
-    let acked = Command::new("sh")
-        .arg(&ack)
-        .arg("site/index.html")
-        .current_dir(&repo)
-        .output()
-        .expect("ack script runs");
-    assert!(
-        acked.status.success(),
-        "the ack script failed: {}",
-        String::from_utf8_lossy(&acked.stderr)
-    );
-    assert!(!marker.is_file(), "the marker survived acknowledgment");
-
-    let allowed = Command::new("sh")
-        .arg(&pre_push)
-        .arg("origin")
-        .arg("dummy")
-        .current_dir(&repo)
-        .output()
-        .expect("pre-push runs");
-    assert!(
-        allowed.status.success(),
-        "pre-push still refuses after the marker was acknowledged: {}",
-        String::from_utf8_lossy(&allowed.stderr)
-    );
-}
-
-/// `.githooks/commit-msg` — the gate that reruns `sh
-/// tools/site/refresh-figures.sh --check` over a merged tree — runs on `git
-/// commit` and never on a `git rebase` replaying a commit. This is the case
-/// that gap describes: a rebase resolves the same driver refusal with no
-/// second check behind it at all, `.githooks/post-rewrite` is what still
-/// notices the moment the rebase ends, and the marker keeps `pre-push`
-/// refusing regardless of whether anyone read what it printed.
-#[test]
-fn a_rebase_around_a_site_conflict_is_reported_by_post_rewrite_and_still_blocks_push() {
-    let repo = scratch("site-marker-survives-rebase");
-    let driver = repository_root().join(".githooks/merge-regenerate");
-    let hooks_dir = repository_root().join(".githooks");
-    let pre_push = repository_root().join(".githooks/pre-push");
-
-    git_ok(&repo, &["init", "-q", "-b", "main"]);
-    git_ok(&repo, &["config", "user.name", "Fixture"]);
-    git_ok(&repo, &["config", "user.email", "fixture@example.invalid"]);
-    git_ok(&repo, &["config", "commit.gpgsign", "false"]);
-    git_ok(
-        &repo,
-        &["config", "core.hooksPath", &hooks_dir.display().to_string()],
-    );
-    git_ok(
-        &repo,
-        &[
-            "config",
-            "merge.headwater-regenerate.name",
-            "regenerate a derived artifact",
-        ],
-    );
-    git_ok(
-        &repo,
-        &[
-            "config",
-            "merge.headwater-regenerate.driver",
-            &format!("{} %O %A %B %P", driver.display()),
-        ],
-    );
-    write(&repo, ".gitattributes", &attributes());
-    write(
-        &repo,
-        ".git/info/attributes",
-        &configured_override(&attributes()),
-    );
-    plant_ack_script(&repo);
-    write(
-        &repo,
-        "site/index.html",
-        "<!doctype html>\n<html><body>\n\
-         <p class=\"copy\">Base copy.</p>\n\
-         <p>Seen <span data-figure=\"census.seen\">3</span>.</p>\n\
-         </body></html>\n",
-    );
-    git_ok(&repo, &["add", "-A"]);
-    git_ok(&repo, &["commit", "-q", "-m", "base"]);
-
-    git_ok(&repo, &["checkout", "-q", "-b", "stale"]);
-    write(
-        &repo,
-        "site/index.html",
-        "<!doctype html>\n<html><body>\n\
-         <p class=\"copy\">Base copy.</p>\n\
-         <p>Seen <span data-figure=\"census.seen\">4</span>.</p>\n\
-         </body></html>\n",
-    );
-    git_ok(&repo, &["add", "site/index.html"]);
-    git_ok(
-        &repo,
-        &["commit", "-q", "-m", "refresh figures on stale branch"],
-    );
-
-    git_ok(&repo, &["checkout", "-q", "main"]);
-    write(
-        &repo,
-        "site/index.html",
-        "<!doctype html>\n<html><body>\n\
-         <p class=\"copy\">Main copy.</p>\n\
-         <p>Seen <span data-figure=\"census.seen\">3</span>.</p>\n\
-         </body></html>\n",
-    );
-    git_ok(&repo, &["add", "site/index.html"]);
-    git_ok(&repo, &["commit", "-q", "-m", "main hand edit"]);
-
-    git_ok(&repo, &["checkout", "-q", "stale"]);
-    let rebase = git(&repo, &["rebase", "main"]);
-    assert!(
-        !rebase.status.success(),
-        "the rebase applied cleanly, so it never reached the driver at all"
-    );
-    let marker = repo.join(".git/headwater-pending-site-review/site_index.html");
-    assert!(
-        marker.is_file(),
-        "no marker written at {}",
-        marker.display()
-    );
-
-    // Resolve as `main` alone (dropping the stale branch's own figure bump is
-    // wrong in a different way, but this fixture only needs a resolution that
-    // finishes the rebase to reach `post-rewrite`).
-    write(
-        &repo,
-        "site/index.html",
-        "<!doctype html>\n<html><body>\n\
-         <p class=\"copy\">Main copy.</p>\n\
-         <p>Seen <span data-figure=\"census.seen\">4</span>.</p>\n\
-         </body></html>\n",
-    );
-    git_ok(&repo, &["add", "site/index.html"]);
-    let continued = git(&repo, &["rebase", "--continue"]);
-    let continued_said = format!(
-        "{}{}",
-        String::from_utf8_lossy(&continued.stdout),
-        String::from_utf8_lossy(&continued.stderr)
-    );
-    assert!(
-        continued.status.success(),
-        "the rebase did not finish: {continued_said}"
-    );
-    assert!(
-        continued_said.contains("resolved but not reviewed")
-            && continued_said.contains("site/index.html"),
-        "post-rewrite did not report the pending review when the rebase finished: {continued_said}"
-    );
-
-    let refused = Command::new("sh")
-        .arg(&pre_push)
-        .arg("origin")
-        .arg("dummy")
-        .current_dir(&repo)
-        .output()
-        .expect("pre-push runs");
-    assert!(
-        !refused.status.success(),
-        "pre-push allowed a push though the rebase never acknowledged the marker"
     );
 }
 
@@ -1275,12 +848,6 @@ fn the_merged_tree_gate_is_silent_when_every_producer_agrees() {
         ran.iter()
             .any(|c| c.starts_with("taxonomy resolve --check")),
         "the lock's producer did not run: {ran:?}"
-    );
-    assert!(
-        ran.iter()
-            .any(|c| c.starts_with("tools/site/refresh-figures.sh")),
-        "the figures' producer did not run, which is the one that writes the two \
-         pages this whole file is about: {ran:?}"
     );
 }
 
