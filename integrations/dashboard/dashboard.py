@@ -29,6 +29,7 @@ import sys
 
 NONE_STATED = "none stated"
 NEVER_VERIFIED = "never verified"
+DATE_SHAPE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 EMPTY_CORPUS = (
     "This export holds no documents, so every view below is empty. "
     "The corpus it was generated from has no governed document yet."
@@ -92,10 +93,17 @@ def _date(value, where, field):
     value = _optional_string(value, where, field)
     if value is None:
         return None
+    problem = "is %r, which is not a calendar date in the form YYYY-MM-DD" % value
+    # The shape is checked first, so every Python accepts the same set:
+    # 3.11 and later also parse `20260115` and `2026-W03-4`. The pattern uses
+    # [0-9] rather than \d, which would admit other scripts' digits, and
+    # fullmatch rather than `$`, which would admit a trailing newline.
+    if not DATE_SHAPE.fullmatch(value):
+        _refuse(where, field, problem)
     try:
         return datetime.date.fromisoformat(value).isoformat()
     except ValueError:
-        _refuse(where, field, "is %r, which is not a calendar date in the form YYYY-MM-DD" % value)
+        _refuse(where, field, problem)
 
 
 def load(export, corpus_identity):

@@ -195,6 +195,21 @@ class AMalformedExportIsRefused(unittest.TestCase):
             export["graph"]["documents"][1]["facets"]["last_verified"] = "last tuesday"
         self.refused(mutate, ["FX-OBL-0001", "facets.last_verified", "last tuesday"])
 
+    def test_the_basic_iso_form_is_refused_on_every_python(self):
+        def mutate(export):
+            export["graph"]["documents"][1]["facets"]["last_verified"] = "20260115"
+        self.refused(mutate, ["FX-OBL-0001", "facets.last_verified", "20260115"])
+
+    def test_an_iso_week_date_is_refused_on_every_python(self):
+        def mutate(export):
+            export["graph"]["documents"][1]["facets"]["last_verified"] = "2026-W03-4"
+        self.refused(mutate, ["FX-OBL-0001", "facets.last_verified", "2026-W03-4"])
+
+    def test_a_date_with_a_trailing_newline(self):
+        def mutate(export):
+            export["graph"]["documents"][1]["facets"]["last_verified"] = "2026-01-15\n"
+        self.refused(mutate, ["FX-OBL-0001", "facets.last_verified"])
+
     def test_two_documents_with_one_id(self):
         def mutate(export):
             export["graph"]["documents"][1]["id"] = "FX-DR-0002"
@@ -230,7 +245,30 @@ class ThePageHoldsWhatItPrints(unittest.TestCase):
 
     def test_a_corpus_with_documents_carries_no_empty_notice(self):
         page = dashboard.render(dashboard.load(load_fixture(), corpus_identity="fixture"))
-        self.assertNotIn("empty-corpus", page)
+        self.assertNotIn("holds no documents", page)
+
+    def test_documents_with_no_governed_code_path_carry_no_empty_notice(self):
+        export = load_fixture()
+        export["graph"]["anchors"] = []
+        export["graph"]["edges"] = []
+        model = dashboard.load(export, corpus_identity="fixture")
+        self.assertEqual((len(model.documents), len(model.anchors)), (2, 0))
+        self.assertNotIn("holds no documents", dashboard.render(model))
+
+    def test_staleness_order_and_values_are_date_text(self):
+        export = load_fixture()
+        export["graph"]["documents"].append(
+            {"path": "docs/y.md", "kind": "decision", "id": "FX-DR-0003",
+             "facets": {"title": "Mid-year", "last_verified": "2026-06-30"}}
+        )
+        model = dashboard.load(export, corpus_identity="fixture")
+        rows = dashboard.staleness_view(model)
+        self.assertEqual(
+            [(row["id"], row["last_verified"]) for row in rows],
+            [("FX-OBL-0001", "2026-01-15"), ("FX-DR-0003", "2026-06-30"), ("FX-DR-0002", "2026-09-01")],
+        )
+        for row in rows:
+            self.assertIs(type(row["last_verified"]), str)
 
     def test_an_undated_document_is_listed_first_as_never_verified(self):
         export = load_fixture()
