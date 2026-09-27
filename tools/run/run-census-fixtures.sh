@@ -237,11 +237,14 @@ same 'growth counts turns per message id, reads the last line of a split turn, a
     "$(printf '%s\n' "$gout" | grep '^growth')"
 
 # Three turns cannot be cut into quarters, and the line says so rather than
-# dividing by zero. Their context figures are still given.
+# dividing by zero. Their context figures are still given. The file ends on a
+# line cut short, the shape an agent stopped mid-write leaves, and the census
+# skips it rather than reporting nothing at all.
 head -4 "$scratch/growth.jsonl" > "$scratch/short.jsonl"
+printf '%s\n' '{"type":"assistant","message":{"id":"g4","model":"claude-sonnet-5","usage":{"input_tok' >> "$scratch/short.jsonl"
 sout=$(sh "$tool" "$scratch/short.jsonl" 2>&1); status=$?
 same 'a three-turn census exits 0' 0 "$status"
-same '  and reports too few turns for quarters' \
+same '  skips a truncated line, and reports too few turns for quarters' \
     'growth  turns 3  context at 10% 100100  at 90% 150100  too few turns for quarters' \
     "$(printf '%s\n' "$sout" | grep '^growth')"
 

@@ -83,12 +83,15 @@ command -v jq >/dev/null 2>&1 || {
 # one turn and the next, so the turns have to stay in the order the file
 # wrote them. A message's lines are written together, so a reduce that folds
 # a line into the previous turn when the id repeats and opens a new one when
-# it does not keeps that order at one pass.
-turns=$(jq -c -n '
+# it does not keeps that order at one pass. A line the harness cut short, as
+# it does when an agent is stopped mid-write, is skipped rather than ending
+# the read, which the fleet section below already does for the same reason.
+turns=$(jq -R -c -n '
     def strip_heredocs:
         gsub("<<-?[ \t]*['"'"'\"]?(?<marker>[A-Za-z_][A-Za-z0-9_]*)['"'"'\"]?\n(?:(?!^\\k<marker>$).)*\n[ \t]*\\k<marker>";
              ""; "sm");
-    reduce (inputs | select(.type == "assistant")) as $l
+    reduce (inputs | try fromjson catch null
+            | select(type == "object" and .type == "assistant")) as $l
         ([];
          ({id: $l.message.id,
            model: ($l.message.model // null),
