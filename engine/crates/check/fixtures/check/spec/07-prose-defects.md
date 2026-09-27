@@ -34,6 +34,10 @@ The two sources agree (Smith, 2004; Jones, 2007) about the shape, and a semicolo
 
 This sentence cites 12 U.S.C. 101 beside a U.S. Federal court, the U.K. Parliament, a door that opens at 9 a.m. Monday and shuts at 5 p.m. Friday, and a Ph.D. From Leeds, and it will be one robust sentence past the limit only while no abbreviation splits it.
 
+Set the flag to `no`. The loader then keeps the string exactly as the author wrote it in the source file and reads no other value from it.
+
+Pass `--no`. The robust flag will be read once.
+
 ## The three spans a patch must not land at
 
 A code span carries one and no rule reads it: `it doesn't matter` is a name rather than prose.

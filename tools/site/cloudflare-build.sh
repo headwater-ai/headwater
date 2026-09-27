@@ -82,4 +82,7 @@ python3 -m mkdocs build --strict
 echo "cloudflare-build.sh: composing the served directory"
 sh tools/site/assemble-site.sh
 
+echo "cloudflare-build.sh: adding the signed APT repository of the newest release"
+sh tools/site/fetch-apt.sh .headwater/site-deploy
+
 echo "cloudflare-build.sh: done"

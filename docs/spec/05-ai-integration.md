@@ -120,7 +120,7 @@ When a budget binds, the engine **drops satellites before nuclei**. A generated 
 
 The same engine runs, and it reads the whole corpus. [Spec 6](06-engine-architecture.md#performance-targets) refuses a flag that takes a caller's list of changed documents. Such a flag puts a second input into a verdict that no reviewer sees. The content-addressed cache pays for the position instead, and [HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) is the record that measures it.
 
-The measurement over this repository, at 166 checked documents and a warm cache, is 54 ms for `headwater check --strict`. Spec 6 allows 200 ms at this position. A cold run costs 234 ms. `headwater route` cost 35 ms at that corpus size. On 2026-09-26 it cost 180 ms on each of six warm runs over one path. That run used the `dev-release` engine on a host at a load average near 60. So the budget holds at this corpus size, and the cache does the work that no flag has to.
+The measurement over this repository, at 166 checked documents and a warm cache, is 54 ms for `headwater check --strict`. Spec 6 allows 200 ms at this position. A cold run costs 234 ms. So the budget holds at this corpus size, and the cache does the work that no flag has to. `headwater route` cost 35 ms at that corpus size. On 2026-09-28, at 444 checked documents, it cost 60 ms of user and system CPU time. That value is the median of 10 warm runs over one path, with the `dev-release` engine on an 18-core host. Spec 6 allows 100 ms for a route query. CPU time is the measure because the load on a shared host does not change it. From 2026-09-25 to 2026-09-28 the same route cost 160 ms, because each load read and hashed every file that a `governs` edge reaches ([#1160](https://github.com/headwater-ai/headwater/issues/1160)). Now a load reads those bytes only when a reader asks for the revision of that edge.
 
 Findings reach a reviewer in the vocabulary the reviewer reads. `--format sarif` is what a forge ingests as a check run, and `--format markdown` is a job summary or a review comment. Each finding carries its remediation, and the [fixability](12-check-layer.md#fixability) bar decides which ones carry a patch as well.
 
@@ -343,7 +343,16 @@ That rule is what makes the grader constraint a property rather than a promise. 
 
 Sufficiency needs a `patched`, `cited` or `answered` expectation. Without one of the three it is a question about prose quality, which belongs to the sweep. Consistency compares the read set and the cited identifiers of two runs. An equality over two prose answers is not available to a grader that reads no prose.
 
-Two earlier categories are gone, and each removal is a finding rather than a simplification. **Fidelity is not a probe.** A derived rule is a generated projection, and `generate --check` proves that it agrees with its source. To pay a model for that comparison re-derives what the graph already declares. **The counterfactual is not a category either.** It is an **arm** of every probe: `present` or `absent`. Listing it beside the others hid that it applies to all of them, and hid that the pair doubles the cost of whatever it measures. The absent arm names a declared ablation, so what "corpus absent" removed is a recorded fact.
+Two earlier categories are gone, and each removal is a finding rather than a simplification. **Fidelity is not a probe.** A derived rule is a generated projection, and `generate --check` proves that it agrees with its source. To pay a model for that comparison re-derives what the graph already declares. **The counterfactual is not a category either.** It is an **arm** of every probe: `present` or `absent`. Listing it beside the others hid that it applies to all of them, and hid that the pair doubles the cost of whatever it measures. The absent arm names a declared ablation, so what "corpus absent" removed is a recorded fact. The `ablation` field of a tier in `.headwater/probe.yml` is that record, and the engine refuses a tier that runs the absent arm without one.
+
+This repository makes two claims, and each claim has its own ablation:
+
+- **The governance changes what an agent builds.** The `campaign` tier removes `CLAUDE.md`, `.claude/`, `.githooks/` and `.headwater/`, and it keeps `docs/`. Its present arm against its absent arm measures the governance. The documents are in both arms, so this rate says nothing about them.
+- **The documents change what an agent builds.** The `documentation` tier removes the same four paths, `docs/`, and each file outside `docs/` that copies what a document states. Its present arm against its absent arm measures the documents and the governance together. The effect of the documents alone is the `documentation` absent arm against the `campaign` absent arm. That difference holds only when both ran in one batch on one model version.
+
+A probe whose predicate names a document (`opened`, `not_opened` or `cited`) cannot be satisfied in an arm that removed that document. So `headwater probe plan` refuses such a probe at a tier whose ablation removes what it examines, and it refuses before it projects the cost. An `answered` or `patched` probe reads the output of the session, and every tier admits it.
+
+**The instrument is in no arm.** A probe document states the answer that it expects, and a recorded transcript states the answers that sessions gave. So the probe shelves are the instrument and not the treatment. The `instrument` sequence of `.headwater/probe.yml` names them, and every arm of every tier removes them, the present arm too. Otherwise the difference between two arms would include the answer key.
 
 An A/B run over the two arms is the only evidence that the instruction surface earns its context cost. Without it, "the AI reads our docs" is a belief.
 
@@ -424,16 +433,19 @@ The transcript is not optional, and the reason is the evidence rules. A result w
 
 The grading is deterministic and the behavior is not, so [principle 3](00-vision-and-scope.md#design-principles) answers in two halves. A regenerated result that disagrees with its own transcript is a **defect** in the grader, the parser, or the committed inputs, and `generate --check` catches it. A rerun that returns a different rate is either sampling variance or **drift**, and only an interval separates them. So a probe result reports an interval rather than a point. An interval that overlaps the previous one is variance. An interval that does not overlap is drift, and the run identity says where to look.
 
-#### Two tiers, and the cadence follows the purpose
+#### Three tiers, and the cadence follows the purpose
 
 Cadence does not follow the category. It follows whether a run watches for a change or estimates a difference, and any category does either.
 
 | Tier | Purpose | Shape | Cadence |
 |---|---|---|---|
 | **Regression** | Detect that something moved | A fixed scenario set, one arm, against a recorded baseline | Scheduled, and weekly is a sound default |
-| **Campaign** | Estimate a difference for one named claim | Both arms, powered, one batch, one model version | On the claim: when it is published, and when a change voids it |
+| **Campaign** | Estimate a difference for the governance claim | Both arms, powered, one batch, one model version, and an absent arm that keeps `docs/` | On the claim: when it is published, and when a change voids it |
+| **Documentation** | Estimate a difference for the documentation claim | The campaign's shape, and an absent arm that also removes `docs/` | In the same batch as a campaign over the same selection, because the claim is the difference between the two absent arms |
 
 A campaign runs as one batch, or it is not one measurement. A run spread over weeks may hold a model that moved inside it. The regression tier runs one arm, so it establishes no effect and no published claim rests on it.
+
+**Every published rate names the claim it supports.** A `campaign` rate supports the governance claim and no other. It is never quoted for the documentation claim, because the documents are present in both of its arms. A `documentation` rate supports the documentation claim only as a difference between two absent arms. The other arm is the absent arm of a campaign from the same batch.
 
 **A probe never runs against a proposed change.** The network is closed at check time, no LLM sits in the validation path, and a probe is a sampler rather than a check ([spec 12](12-check-layer.md#where-the-llm-coherence-sweep-fits)). A verdict that a rerun may reverse is not what a gate needs, and a per-change cost falls on the wrong payer.
 

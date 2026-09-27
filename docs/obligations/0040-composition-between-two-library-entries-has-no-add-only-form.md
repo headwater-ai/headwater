@@ -3,8 +3,8 @@ id: HW-OBL-0040
 title: "Composition between two library entries has no add-only form"
 status: current
 status_since: 2026-08-13
-waiting_on: ruling
-last_verified: 2026-09-11
+waiting_on: build
+last_verified: 2026-09-27
 summary: "The first library entry to claim an address owns it, so a second entry cannot reuse the vocabulary that both traditions need."
 provenance:
   warrant: accepted
@@ -36,4 +36,6 @@ The two other cases are lists rather than addresses. An endpoint list of concret
 
 ## Discharge
 
-The root is one. Vocabulary that more than one tradition needs cannot live in an entry, because the first entry to claim an address owns it. Either shared vocabulary belongs to the base, or the resolver admits two identical declarations at one address and the confluence proof takes a stated exception. [Spec 2](../spec/02-taxonomy-model.md#customization-by-composition) has to choose, and [Q3](../spec/09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) is where the reasoning sits.
+The root is one. Vocabulary that more than one tradition needs cannot live in an entry, because the first entry to claim an address owns it.
+
+**The owner ruled the form on 2026-09-22, and this record now waits on a build.** [HW-DR-0095](../decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md) records the ruling. One entry may address keys of an entry that it names as a dependency in `requires`, with `add_to` and `add`. No general operation that extends or appends is added. [Spec 2](../spec/02-taxonomy-model.md#customization-by-composition) states the narrowed confluence claim. The resolver does not read `requires` for this yet, so a dependent entry that appends to a list of its dependency is still refused. The change that discharges this record is in the resolver. Its confluence check must order a pair by a declared dependency. It must admit a write from the dependent entry into a key of its dependency. It must still refuse the same write from an entry that names no dependency.

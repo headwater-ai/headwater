@@ -933,6 +933,39 @@ release_uploaded_names() {
         ' | LC_ALL=C sort -u
 }
 
+# release_uploaded_debs WORKFLOW — the Debian packages `gh release create`
+# attaches, resolved the way `release_uploaded_names` resolves an archive.
+release_uploaded_debs() {
+    [ -f "$1" ] || return 0
+    release_yaml_text "$1" |
+        tr -d '\42\47' |
+        awk '
+            {
+                line = $0
+                sub(/^[ \t]+/, "", line)
+                if (match(line, /^[A-Za-z_][A-Za-z0-9_]*=/)) {
+                    var[substr(line, 1, RLENGTH - 1)] = substr(line, RLENGTH + 1)
+                    next
+                }
+                if (index(line, "gh release create") > 0) create[++u] = line
+            }
+            END {
+                for (i = 1; i <= u; i++) {
+                    n = split(create[i], w, /[ \t]+/)
+                    for (j = 1; j <= n; j++) {
+                        t = w[j]
+                        if (t ~ /^\$\{?[A-Za-z_][A-Za-z0-9_]*\}?$/) {
+                            key = t
+                            gsub(/[${}]/, "", key)
+                            if (key in var) t = var[key]
+                        }
+                        if (t ~ /\.deb$/) print t
+                    }
+                }
+            }
+        ' | LC_ALL=C sort -u
+}
+
 # release_upload_judge PAGE WORKFLOW — the page's offer against the command that
 # attaches the files, rather than against the names the file writes down.
 release_upload_judge() {
@@ -1093,6 +1126,14 @@ release_gate_judge() {
     ')
     if [ -n "$rg_unrun" ]; then
         echo "no smoke job runs the $(oneline "$rg_unrun") archive"
+        return
+    fi
+
+    # #764. A Debian package the release attaches is installed by a smoke job
+    # through apt, or a package that apt refuses ships all the same.
+    rg_debs=$(release_uploaded_debs "$1")
+    if [ -n "$rg_debs" ] && ! printf '%s\n' "$rg_run" | grep -qx 'headwater-deb'; then
+        echo "no smoke job installs the $(oneline "$rg_debs") package the release attaches"
     else
         echo ok
     fi
@@ -1110,7 +1151,9 @@ release_build_targets() {
 # `continue-on-error:` in the job at any depth, `JOB download NAME` for the
 # `name:` a `download-artifact` step asks for, `JOB asset TARGET` for the
 # target an `asset=` names as `headwater-${TAG}-TARGET.tar.gz`, and
-# `JOB creates` for the job that runs `gh release create`.
+# `JOB creates` for the job that runs `gh release create`. A `deb=` that names
+# `headwater_…_amd64.deb` is `JOB asset headwater-deb`, because the package
+# travels as the `headwater-deb` artifact and not under a target (#764).
 release_job_facts() {
     release_yaml_text "$1" | awk -v q="'" '
         function indent(s) { match(s, /^ */); return RLENGTH }
@@ -1158,6 +1201,12 @@ release_job_facts() {
             v = unquote(v)
             if (sub(/^headwater-\$\{TAG\}-/, "", v) && sub(/\.tar\.gz$/, "", v))
                 printf "%s\tasset\t%s\n", job, v
+            next
+        }
+        /^ +deb=/ {
+            v = $0
+            sub(/^ +deb=[ \t]*/, "", v)
+            if (unquote(v) ~ /^headwater_.*_amd64\.deb$/) printf "%s\tasset\theadwater-deb\n", job
             next
         }
         index($0, "gh release create") { printf "%s\tcreates\n", job }
@@ -2452,6 +2501,18 @@ if [ -f "$release_wf" ]; then
         same "  and a smoke job that downloads one archive and runs another" \
             "smoke-linux downloads x86_64-unknown-linux-gnu and runs the x86_64-unknown-linux-musl archive" \
             "$(release_gate_judge "$scratch/release/smoke-split.yml")"
+    fi
+
+    # #764. The release attaches a Debian package, so a workflow that attaches
+    # it with no smoke job that installs it is refused.
+    sed 's/^  smoke-apt:/  check-apt:/' "$release_wf" >"$scratch/release/no-apt.yml"
+    if cmp -s "$release_wf" "$scratch/release/no-apt.yml"; then
+        fail "  a Debian package that no smoke job installs is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a Debian package that no smoke job installs is refused" \
+            "no smoke job installs the headwater_\${version}_amd64.deb package the release attaches" \
+            "$(release_gate_judge "$scratch/release/no-apt.yml")"
     fi
 
     # The guard on the guard. `bash -e` without `pipefail` takes the LAST

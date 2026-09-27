@@ -323,7 +323,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 6,
+                  "version": 7,
                   "obligations": [
                     "OB-FIX-7"
                   ],
@@ -339,7 +339,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 5,
+                  "version": 6,
                   "obligations": [
                     "OB-FIX-8"
                   ],
@@ -355,7 +355,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 5,
+                  "version": 6,
                   "obligations": [
                     "OB-FIX-22"
                   ],
@@ -794,7 +794,7 @@
             "analysisTarget"
           ],
           "hashes": {
-            "sha-256": "8dd1e0dfc872f7591dc2ce9b4d0ee7c6c6426542e92fc88c78a001c1134fedcb"
+            "sha-256": "15d94e43a05082553a4abfc5753fa0d59393ab379b0a1a4f96c02705285a93eb"
           }
         },
         {
@@ -1691,6 +1691,72 @@
           }
         },
         {
+          "ruleId": "language.retired_term.used",
+          "ruleIndex": 22,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives",
+            "markdown": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives\n\n**Fix:** rewrite the sentence without `robust`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 39,
+                  "startColumn": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "rewrite the sentence without `robust`",
+              "escape": "none",
+              "obligation": "OB-FIX-22",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 20,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids future_intent, and this sentence writes `will be`",
+            "markdown": "`declarative` forbids future_intent, and this sentence writes `will be`\n\n**Fix:** state what the system does now, or move the sentence to a document whose kind narrates"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 39,
+                  "startColumn": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state what the system does now, or move the sentence to a document whose kind narrates",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
           "ruleId": "language.controlled.not_met",
           "ruleIndex": 21,
           "level": "error",
@@ -1706,7 +1772,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 43,
+                  "startLine": 47,
                   "startColumn": 1
                 }
               }
@@ -1739,7 +1805,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 47,
+                  "startLine": 51,
                   "startColumn": 1
                 }
               }
@@ -1772,7 +1838,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 49,
+                  "startLine": 53,
                   "startColumn": 1
                 }
               }
@@ -1805,7 +1871,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 60,
+                  "startLine": 64,
                   "startColumn": 1
                 }
               }
@@ -1838,7 +1904,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 61,
+                  "startLine": 65,
                   "startColumn": 1
                 }
               }
@@ -1871,7 +1937,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 65,
+                  "startLine": 69,
                   "startColumn": 32
                 }
               }
@@ -1904,7 +1970,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 67,
+                  "startLine": 71,
                   "startColumn": 28
                 }
               }
@@ -1935,7 +2001,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 69,
+                  "startLine": 73,
                   "startColumn": 91
                 }
               }
@@ -1966,7 +2032,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 71,
+                  "startLine": 75,
                   "startColumn": 63
                 }
               }
@@ -1997,7 +2063,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 73,
+                  "startLine": 77,
                   "startColumn": 46
                 }
               }
@@ -2028,7 +2094,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 75,
+                  "startLine": 79,
                   "startColumn": 90
                 }
               }

@@ -25,7 +25,7 @@ relations:
 
 `headwater check` over this corpus reports no instance of `section.required.missing`.
 
-The rule is an error rather than an advisory, so a strict run refuses a commit that would add one. `.githooks/pre-commit` runs the strict form, and the CI job runs it again on every pull request. So the criterion is re-established on every change rather than at one commit, which is the difference between this criterion and [HW-AC-0001](0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md).
+The rule is an error rather than an advisory, so a strict run refuses a commit that would add one. `.githooks/pre-commit` runs the strict form, and the CI job runs it again on every pull request. So the criterion is re-established on every change rather than at one commit, which is the difference between this criterion and [HW-AC-0001](0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md).
 
 One thing the criterion does not state. The rule reads a heading, and it reads no word under one. A document with every required heading and nothing under any of them passes. That is the honest reading of what `sections.require` declares, and the remedy is a different rule rather than a stricter reading of this one.
 

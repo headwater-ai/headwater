@@ -138,7 +138,7 @@ impl Resolver for Items {
                 matched: vec![id.to_string()],
                 normalized: id.to_string(),
                 excluded_by: None,
-                revision: Some(revision.clone()),
+                revision: Some(revision.clone()).into(),
             },
             // A corpus exclusion is about a path in this repository, and an
             // external item is under no path here, so `excluded_by` above is
@@ -243,7 +243,7 @@ snapshot:
                 matched: vec!["12345".to_string()],
                 normalized: "12345".to_string(),
                 excluded_by: None,
-                revision: Some("7".to_string()),
+                revision: Some("7".to_string()).into(),
             }
         );
     }
@@ -268,7 +268,7 @@ snapshot:
             panic!("the item the snapshot pins did not bind");
         };
         assert_eq!(normalized, "12345");
-        assert_eq!(revision.as_deref(), Some("7"));
+        assert_eq!(revision.get(), Some("7"));
 
         // And the same snapshot at a later fetch answers with the later
         // revision under one identity, which is the whole of the drift.
@@ -280,7 +280,7 @@ snapshot:
         else {
             panic!("the item the snapshot pins did not bind");
         };
-        assert_eq!(revision.as_deref(), Some("8"));
+        assert_eq!(revision.get(), Some("8"));
     }
 
     /// The case the whole module exists for. A resolver that answered anything

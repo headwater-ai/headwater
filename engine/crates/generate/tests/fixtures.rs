@@ -87,10 +87,29 @@ impl Built {
         // `source-tree`, so a fixture that took `Resolvers::over` alone would
         // build a graph in which every `check_rule` target of this repository
         // resolves to nothing, and would then report the committed artifact as
-        // wrong. See #411.
+        // wrong. See #411. `comment-scan` joins on the condition `main.rs`
+        // sets, a declared anchor kind that names it with a pattern, and reads
+        // from the corpus base as the verb reads from the repository root.
+        // Without it every `test_site` edge of this repository records no
+        // resolver, and the export differs from the one the CLI wrote (#1097).
         let resolvers = Resolvers::over(corpus)
             .with(Box::new(headwater_check::anchors::Rules::shipped()))
             .expect("the check-rule resolver is the only one of its name");
+        let resolvers = match relations
+            .anchors
+            .iter()
+            .find(|anchor| anchor.resolver == "comment-scan")
+            .and_then(|anchor| anchor.pattern.clone())
+        {
+            Some(pattern) => resolvers
+                .with(Box::new(headwater_graph::anchors::CommentScan::new(
+                    &corpus.base,
+                    pattern,
+                    headwater_graph::anchors::CommentScan::claimed(&corpus.base),
+                )))
+                .expect("the comment-scan resolver is the only one of its name"),
+            None => resolvers,
+        };
         let graph = Graph::build(&census, &relations, &resolvers, corpus, &Config::default());
         Built {
             census,

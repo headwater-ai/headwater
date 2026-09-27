@@ -247,7 +247,7 @@ impl EdgeCheck for Suspect<'_> {
             patch,
         };
 
-        let Some(current) = revision.as_deref() else {
+        let Some(current) = revision.get() else {
             // The source tree binds a literal that names a directory and gives
             // it no digest (see `tree_revision`), so this edge could never go
             // suspect. That is reported rather than passed, with the wildcard
@@ -369,7 +369,7 @@ fn directory_members<'e>(
     patterns
         .iter()
         .filter(|member| {
-            member.revision.is_none()
+            member.revision.get().is_none()
                 && member.matched.len() == 1
                 && member.matched[0] == member.pattern
         })
