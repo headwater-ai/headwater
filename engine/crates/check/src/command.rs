@@ -1030,6 +1030,43 @@ mod tests {
         );
     }
 
+    /// Each closer closes only its own kind (third veto of PR #1217). A `)`
+    /// inside `${…}` is text, so the `${` stays open over ` #c` and the chain
+    /// is read. A `}` inside an unclosed `$(` leaves it open to the end of
+    /// the line. A `)` inside backticks is text, and a backtick inside `$( )`
+    /// opens a span of its own that the `)` does not close.
+    #[test]
+    fn a_paren_does_not_close_an_expansion() {
+        assert_eq!(
+            names("echo ${x:-) #c} && npm ci\n", false),
+            pairs(&[(0, "echo"), (0, "npm")])
+        );
+    }
+
+    #[test]
+    fn a_brace_leaves_an_unclosed_substitution_open() {
+        assert_eq!(
+            names("echo $(echo }\nnpm ci\n", false),
+            pairs(&[(0, "echo"), (0, "echo"), (0, UNREADABLE)])
+        );
+    }
+
+    #[test]
+    fn a_paren_does_not_close_backticks() {
+        assert_eq!(
+            names("FOO=`echo )` npm ci\n", false),
+            pairs(&[(0, "npm"), (0, "echo")])
+        );
+    }
+
+    #[test]
+    fn a_backtick_does_not_close_a_substitution() {
+        assert_eq!(
+            names("echo $(echo `) && npm ci\n", false),
+            pairs(&[(0, "echo"), (0, "echo"), (0, "npm"), (0, UNREADABLE)])
+        );
+    }
+
     /// The first word inside `$( )`, a pair of backticks, `<( )` and `>( )`
     /// is a program, and the text after the closer is an argument of the
     /// command around it.
