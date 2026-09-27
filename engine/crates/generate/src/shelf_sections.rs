@@ -71,6 +71,9 @@ const SHELF: &str = "{shelf}";
 struct Section {
     name: String,
     pointer: Pointer,
+    /// ` (superseded)` and the like for a document at a terminal state, and
+    /// nothing otherwise. See [`crate::terminal_marks`].
+    mark: Option<String>,
 }
 
 pub(crate) fn emit(
@@ -162,6 +165,7 @@ pub(crate) fn emit(
         // written. A document the taxonomy cannot name stops the whole file.
         let mut sections = Vec::new();
         let mut refused = None;
+        let marks = crate::terminal_marks(surface, &on_shelf);
         for pointer in ordered {
             let Some(document) = on_shelf
                 .iter()
@@ -172,6 +176,7 @@ pub(crate) fn emit(
             match surface.name(document) {
                 Some(text) => sections.push(Section {
                     name: text,
+                    mark: marks.get(&pointer.path).cloned(),
                     pointer,
                 }),
                 None => {
@@ -349,6 +354,11 @@ fn render(shelf: &str, output: &str, sections: &[Section], front: Option<&str>) 
         // It also keeps this module out of the business of guessing whether a
         // summary ends a sentence, which is punctuation that no facet states.
         out.push_str(&format!("[{label}]({target})"));
+        // On the link line and never in the heading: a heading is the address
+        // a citation lands on, and a state change must not move it.
+        if let Some(mark) = &section.mark {
+            out.push_str(mark);
+        }
         if let Some(summary) = &section.pointer.summary {
             out.push_str(&format!(" — {summary}"));
         }
@@ -382,6 +392,7 @@ mod tests {
         Section {
             name: name.to_string(),
             pointer: pointer(path, id),
+            mark: None,
         }
     }
 

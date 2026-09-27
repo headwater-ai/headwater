@@ -365,7 +365,7 @@ fn recognizable(
 /// The path carries a sequence index, so two members of one sequence are two
 /// entries rather than one repeated. Order is document order, which
 /// [`headwater_yaml::Mapping`] keeps.
-fn scalars(mapping: &Mapping, under: &str) -> Vec<(String, String, Span)> {
+pub(crate) fn scalars(mapping: &Mapping, under: &str) -> Vec<(String, String, Span)> {
     let mut out = Vec::new();
     for entry in mapping {
         let at = match under.is_empty() {

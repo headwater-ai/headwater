@@ -175,6 +175,7 @@ pub mod scope;
 pub mod sections;
 pub mod shape;
 pub mod source_form;
+pub mod state_not_set_by_edge;
 pub mod state_set_twice;
 pub mod suppression;
 pub mod surface;
@@ -220,7 +221,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 39] = [
+pub const RULES: [&str; 40] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -232,6 +233,7 @@ pub const RULES: [&str; 39] = [
     endpoint::RULE,
     dependency::RULE,
     initial_dependency::RULE,
+    state_not_set_by_edge::RULE,
     basis::RULE,
     participation::RULE,
     state_set_twice::RULE,
@@ -453,6 +455,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::edge_scope::<initial_dependency::InitialDependency<'_>>(),
             scope::edge_version::<initial_dependency::InitialDependency<'_>>(),
             scope::edge_exports::<initial_dependency::InitialDependency<'_>>(),
+        ),
+        (
+            state_not_set_by_edge::RULE,
+            scope::edge_scope::<state_not_set_by_edge::NotSetByEdge<'_>>(),
+            scope::edge_version::<state_not_set_by_edge::NotSetByEdge<'_>>(),
+            scope::edge_exports::<state_not_set_by_edge::NotSetByEdge<'_>>(),
         ),
         (
             basis::RULE,
@@ -698,6 +706,11 @@ pub fn run(
     // that writes a state onto its target. See [`initial_dependency`].
     let initial_dependency =
         initial_dependency::InitialDependency::over(declared.relations, declared.shape);
+    // An authored target that an edge declares retired and that still stands
+    // at another state, over the relations that declare `on_target.set_state`.
+    // Edge-scoped for [`dependency`]'s reason. See [`state_not_set_by_edge`].
+    let not_set_by_edge =
+        state_not_set_by_edge::NotSetByEdge::over(declared.relations, declared.shape);
     // An evidenced claim resting on a document nobody read, over the relations
     // whose declared family is `evidence`. Edge-scoped because the unit is the
     // pair: the claim is at one end and the warrant is at the other. See
@@ -826,6 +839,15 @@ pub fn run(
     ));
     instances.extend(scope::over_edges(
         &initial_dependency,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_edges(
+        &not_set_by_edge,
         census,
         graph,
         &digests,

@@ -162,6 +162,7 @@ pub(crate) fn emit(
 
         let mut ordered = pointers(surface, &on_shelf);
         surface.by_precedence(&mut ordered);
+        let marks = crate::terminal_marks(surface, &on_shelf);
         let front = match &declaration.identity {
             None => None,
             Some(identity) => {
@@ -197,6 +198,7 @@ pub(crate) fn emit(
             &crate::shelf_label(shelf),
             &path,
             &ordered,
+            &marks,
             front.as_deref(),
         );
         if let Some(declared) = &declaration.identity {
@@ -224,7 +226,13 @@ pub(crate) fn directory_of(pattern: &str) -> String {
     pattern[..stop].trim_end_matches('/').to_string()
 }
 
-fn render(shelf: &str, output: &str, ordered: &[Pointer], front: Option<&str>) -> String {
+fn render(
+    shelf: &str,
+    output: &str,
+    ordered: &[Pointer],
+    marks: &std::collections::BTreeMap<String, String>,
+    front: Option<&str>,
+) -> String {
     let mut out = String::new();
     // One marker, in whichever of the two places the file's shape admits: a
     // member of the front-matter block for an index that declares an identity,
@@ -256,6 +264,11 @@ fn render(shelf: &str, output: &str, ordered: &[Pointer], front: Option<&str>) -
         let target = relative(&base, &pointer.path);
         let label = crate::label(pointer);
         out.push_str(&format!("- [{label}]({target})"));
+        // A terminal document is a record, and the row says so. See
+        // [`crate::terminal_marks`].
+        if let Some(mark) = marks.get(&pointer.path) {
+            out.push_str(mark);
+        }
         if let Some(summary) = &pointer.summary {
             out.push_str(&format!(" — {summary}"));
         }

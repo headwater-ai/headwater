@@ -49,7 +49,7 @@ An identifier resolves only to a typed document. An untyped document resolves on
 
 **0** means that the target resolved and the bytes of its file were written to standard output. Standard error is empty.
 
-**1** means that the target was missing or is a symlink, the command line was invalid, the repository could not load, or the file could not be read. A missing target writes its refusal to standard error and no byte to standard output. A bare `headwater show` writes "`show` takes a path or an identifier".
+**1** means that the target was missing or is a symlink, or that the file could not be read. It also means that the command line was invalid or the repository could not load. A missing target writes its refusal to standard error and no byte to standard output. A bare `headwater show` writes "`show` takes a path or an identifier".
 
 **A missing target states one of five things.** The five states and their sentences are the table in the Exit status section of [`headwater explain`](headwater-explain.md#exit-status). `show` writes the same sentence as `explain` for each target, because one function writes the refusal for both verbs.
 

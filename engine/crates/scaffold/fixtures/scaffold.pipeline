@@ -54,6 +54,8 @@ rules, and for each the scope that binds it
     edge scope, one relation instance and both endpoints
   lifecycle.dependency.on_initial
     edge scope, one relation instance and both endpoints
+  lifecycle.state.not_set_by_edge
+    edge scope, one relation instance and both endpoints
   warrant.evidence.unsupported
     edge scope, one relation instance and both endpoints
   relation.participation.overdue
@@ -130,6 +132,7 @@ register
   relation.endpoint.not_permitted reaches no obligation, so it names none
   lifecycle.dependency.on_terminal reaches no obligation, so it names none
   lifecycle.dependency.on_initial reaches no obligation, so it names none
+  lifecycle.state.not_set_by_edge reaches no obligation, so it names none
   warrant.evidence.unsupported reaches no obligation, so it names none
   relation.participation.overdue reaches no obligation, so it names none
   lifecycle.state.set_twice reaches no obligation, so it names none
