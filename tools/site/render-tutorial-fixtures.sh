@@ -109,5 +109,64 @@ else
     report "prose naming another version stops the renderer" planted unplanted ""
 fi
 
+# refuse NAME DIR OLD NEW TEXT: plant NEW for OLD in the document, then
+# require that a write exits 1, prints TEXT and leaves the page as it was.
+refuse() {
+    name=$1
+    d=$(copy "$2")
+    if ! plant "$d/$doc_rel" "$3" "$4"; then
+        report "$name" planted unplanted ""
+        return
+    fi
+    status=$(run "$d")
+    if [ "$status" = 1 ] && ! cmp -s "$root/$page_rel" "$d/$page_rel"; then
+        status="1, and the page was rewritten"
+    fi
+    report "$name" 1 "$status" "$5"
+}
+
+echo "every version mention answers to the one pin"
+refuse "the macOS archive name at another version stops the renderer" mac-archive \
+    "headwater-v0.4.0-aarch64-apple-darwin" "headwater-v0.3.0-aarch64-apple-darwin" \
+    "names version 0.3.0, and its download link pins v0.4.0"
+refuse "the release page link at another version stops the renderer" release-tag \
+    "releases/tag/v0.4.0" "releases/tag/v0.3.0" \
+    "names version 0.3.0, and its download link pins v0.4.0"
+refuse "a second download link at another version stops the renderer" two-pins \
+    "mkdir -p ~/.local/bin
+curl" "mkdir -p ~/.local/bin
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.3.0/headwater-v0.3.0-x86_64-unknown-linux-musl.tar.gz
+curl" \
+    "pins 2 (0.3.0, 0.4.0)"
+refuse "a tag in a code span at another version stops the renderer" code-span \
+    "This installs version 0.4.0" 'This installs `v0.3.0`' \
+    "names version 0.3.0"
+refuse "a version number in a code span stops the renderer" version-span \
+    "This installs version 0.4.0" 'This installs version `0.3.0`' \
+    "names version 0.3.0"
+refuse "a capitalized Version stops the renderer" version-capital \
+    "This installs version 0.4.0" "This installs Version 0.3.0" \
+    "names version 0.3.0"
+
+echo "a block shape the renderer cannot write is refused, by line"
+refuse "a numbered list is refused" numbered \
+    "- About twenty minutes." "- About twenty minutes.
+
+1. A numbered item." \
+    "your-first-governed-corpus.md line"
+refuse "a numbered line under a bullet is refused" numbered-glued \
+    "- About twenty minutes." "- About twenty minutes.
+1. A numbered line under the bullet." \
+    "your-first-governed-corpus.md line"
+refuse "an indented sub-bullet is refused" sub-bullet \
+    "- About twenty minutes." "- About twenty minutes.
+  - An indented sub-item." \
+    "your-first-governed-corpus.md line"
+
+echo "a heading the renderer reads"
+refuse "a renamed Before you start heading is refused by name" renamed \
+    "## Before you start" "## Before you begin" \
+    'has no `## Before you start` section'
+
 echo "$((passed + failed)) cases ran: $passed passed; $failed failed"
 [ "$failed" -eq 0 ] && [ "$passed" -gt 0 ]

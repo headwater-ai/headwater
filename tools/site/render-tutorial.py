@@ -65,9 +65,12 @@ WHAT THIS WRITES, AND WHAT IT CARRIES OVER
   *Where to go next*. The head, the hero, the glossary and the footer are
   carried over from the page on disk. *Before you start* carries the
   document's own words, lists as lists, and the renderer stops when that
-  section names a version (`headwater-vX.Y.Z-`, `releases/tag/vX.Y.Z`,
-  `version X.Y.Z`) other than the tag in its own download link, so a
-  release bump that edits one and not the other fails here.
+  section names a version (any `vX.Y.Z`, and "version X.Y.Z" in
+  either case) other than the tag in its own download link, so a
+  release bump that edits one and not the other fails here. It reads
+  paragraphs, flat `- ` lists and fences, and it refuses any other block
+  shape in that section by its line number, rather than write it wrong. A
+  missing `##` section it reads is a refusal that names the heading.
 
 USAGE
 
@@ -377,11 +380,21 @@ def step_section(number, title, chunk):
                   check_html, right)
 
 
-def blocks(chunk):
+# A line outside a fence that opens a block shape `blocks` does not render
+# faithfully: a numbered item, a `*` or `+` bullet, a quote, a heading, a
+# table row, or any indented line (a sub-item, a continuation under an item,
+# an indented code block). Writing one would put a wrong page on disk, so the
+# renderer refuses it instead (#1138).
+UNRENDERED_SHAPE = re.compile(r"^(\s+\S|\d+[.)]\s|[*+]\s|>|#{1,6}\s|\|)")
+
+
+def blocks(chunk, first_line=1):
     """`[(kind, value)]` for `chunk` in document order: `("p", text)` for a
-    paragraph, `("ul", [item, ...])` for a `- ` list, and `("fence", text)`
-    for a fenced block. A non-blank line under a list item that does not
-    open a new item continues that item."""
+    paragraph, `("ul", [item, ...])` for a flat `- ` list, and
+    `("fence", text)` for a fenced block. A line with no indent under a list
+    item that does not open a new item continues that item. `first_line` is
+    the document line `chunk` starts on, for the refusal of any other
+    shape."""
     out, para, items, fence, inside = [], [], [], [], False
 
     def flush():
@@ -392,7 +405,7 @@ def blocks(chunk):
             out.append(("ul", list(items)))
             items.clear()
 
-    for line in chunk.split("\n"):
+    for number, line in enumerate(chunk.split("\n"), first_line):
         if is_fence(line):
             if inside:
                 out.append(("fence", "\n".join(fence)))
@@ -404,6 +417,11 @@ def blocks(chunk):
         if inside:
             fence.append(line)
             continue
+        if UNRENDERED_SHAPE.match(line):
+            sys.exit("render-tutorial: %s line %d is a block shape this "
+                     "script does not render (%r). Write it as a paragraph "
+                     "or a flat `- ` list, or teach blocks() the shape"
+                     % (DOC_PATH.relative_to(ROOT), number, line.strip()))
         text = line.strip()
         if not text:
             flush()
@@ -421,10 +439,12 @@ def blocks(chunk):
 
 # The release a tutorial pins is the tag in its own download link, and every
 # other place the section names a version must name that one (#1138).
+# A mention is any `vX.Y.Z` (an archive name, a release link, a code span)
+# and any "version X.Y.Z" in either case, with or without a code span.
 PIN = re.compile(r"releases/download/v(\d+\.\d+\.\d+)/")
-VERSION_MENTIONS = (re.compile(r"headwater-v(\d+\.\d+\.\d+)-"),
-                    re.compile(r"releases/tag/v(\d+\.\d+\.\d+)"),
-                    re.compile(r"\bversion (\d+\.\d+\.\d+)\b"))
+VERSION_MENTIONS = (re.compile(r"(?<![\w.])v(\d+\.\d+\.\d+)\b"),
+                    re.compile(r"\bversion\s+`?(\d+\.\d+\.\d+)\b",
+                               re.IGNORECASE))
 
 
 def check_version_pin(chunk):
@@ -444,14 +464,14 @@ def check_version_pin(chunk):
                          "and its download link pins v%s" % (found, pin))
 
 
-def render_before_you_start(chunk):
+def render_before_you_start(chunk, first_line=1):
     """The whole *Before you start* section, read out of the document. The
     left column holds every block before the paragraph that introduces the
     first fenced block. The right column holds that paragraph, the fence and
     everything after it, in document order, with a `**Check.**` paragraph
     styled as a check."""
     check_version_pin(chunk)
-    parts = blocks(chunk)
+    parts = blocks(chunk, first_line)
     fences = walk_fences(chunk)
     classify(fences)
     roles = iter(f.role for f in fences)
@@ -523,11 +543,22 @@ def render_where_next(chunk):
 def main():
     check_only = "--check" in sys.argv[1:]
     intro, sections = top_level_sections(strip_front_matter(DOC_PATH.read_text()))
-    steps = split_steps(sections["Steps"])
+    def section(name):
+        if name not in sections:
+            sys.exit("render-tutorial: %s has no `## %s` section, and this "
+                     "script reads one. Found: %s"
+                     % (DOC_PATH.relative_to(ROOT), name,
+                        ", ".join(sorted(sections)) or "none"))
+        return sections[name]
 
-    before_html = render_before_you_start(sections["Before you start"])
+    steps = split_steps(section("Steps"))
+
+    doc_lines = DOC_PATH.read_text().split("\n")
+    before_html = render_before_you_start(
+        section("Before you start"),
+        doc_lines.index("## Before you start") + 2)
     steps_html = "\n\n".join(step_section(n, t, c) for n, t, c in steps)
-    where_next_html = render_where_next(sections["Where to go next"])
+    where_next_html = render_where_next(section("Where to go next"))
 
     if not PAGE_PATH.exists():
         sys.exit("render-tutorial: site/tutorial/index.html is not there")
