@@ -352,4 +352,35 @@ mod tests {
             pairs(&[(0, "headwater"), (1, "echo"), (3, "cat"), (6, "tar")])
         );
     }
+
+    /// #1135: a quote still open at the end of a line carries into the next
+    /// line, so its closing quote opens no span that hides the chain after it.
+    #[test]
+    fn a_quote_open_at_the_end_of_a_line_joins_the_next_line() {
+        let block = "printf 'a\nheadwater check' && echo RAN-2 && printf 'b'\n";
+        assert_eq!(
+            names(block, false),
+            pairs(&[(0, "printf"), (1, "echo"), (1, "printf")])
+        );
+    }
+
+    /// #1135: inside `$'…'` a backslash escapes the next character, so `\'`
+    /// does not close the span.
+    #[test]
+    fn a_backslash_escapes_a_quote_inside_an_ansi_c_quote() {
+        assert_eq!(
+            names("printf $'\\'' && echo RAN-3\n", false),
+            pairs(&[(0, "printf"), (0, "echo")])
+        );
+    }
+
+    /// A `#` that starts a word outside quotes opens a comment, so an
+    /// apostrophe in it opens no quote that joins the next line.
+    #[test]
+    fn an_apostrophe_in_a_trailing_comment_joins_nothing() {
+        assert_eq!(
+            names("headwater check # it's here\nnpm install\n", false),
+            pairs(&[(0, "headwater"), (1, "npm")])
+        );
+    }
 }
