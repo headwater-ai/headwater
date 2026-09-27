@@ -316,6 +316,18 @@ same "  and it does not resolve, because its corpus is imagined" \
     citation.identifier.unresolved "$(rules)"
 same "  so a run over this repository's own prose fails" 1 "$status"
 
+# The scope of that convention, stated where its reader meets it. The owner
+# ruled on #844 that the convention is for an adopter's corpus and that this
+# repository does not practice it on its own code, and HW-DR-0092 records the
+# ruling. A rule stated for every corpus that in fact reaches none of this one
+# is the defect, so the section of the real spec 5, not the scratch copy, must
+# name the decision.
+awk '/^### Generated artifacts cite what licensed them$/ { on = 1; next }
+     on && /^##/ { exit }
+     on { print }' "$root/docs/spec/05-ai-integration.md" >"$scratch/spec5-cite"
+holds "spec 5 says whose corpus the convention is for" HW-DR-0092 \
+    "$scratch/spec5-cite"
+
 echo
 echo "the format a forge annotates a diff with"
 
