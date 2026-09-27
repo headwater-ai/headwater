@@ -10904,6 +10904,9 @@
               },
               {
                 "to": "HW-PD-0019"
+              },
+              {
+                "to": "HW-PD-0020"
               }
             ]
           }
@@ -20301,6 +20304,17 @@
           "bound": "document",
           "id": "HW-PD-0019",
           "path": "docs/process/decisions/0019-ci-runs-actions-from-the-actions-organization-only-and-carries-no-build-state-between-self-hosted-jobs.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0020",
+          "path": "docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md",
           "kind": "process_decision"
         }
       },
