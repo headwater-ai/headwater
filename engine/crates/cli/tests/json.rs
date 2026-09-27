@@ -1121,3 +1121,127 @@ fn a_member_that_holds_a_comma_stays_one_member_of_targets() {
     );
     assert_targets_join_to_target(&related);
 }
+
+/// Each member of `reach` carries the entries its one pattern matched.
+///
+/// [#1093](https://github.com/headwater-ai/headwater/issues/1093). The edit-time
+/// advisory names the files a glob reaches, and it reads them here rather than
+/// matching the glob itself, because HW-DR-0074 gives a path one matcher. The
+/// scratch corpus holds a glob over three files and one literal, so a member
+/// that writes only its count goes red, and so does one whose literal is not
+/// its own single entry.
+#[test]
+fn explain_writes_the_paths_each_pattern_of_an_anchor_matched() {
+    let at = scratch().join("reach-paths");
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
+    std::fs::create_dir_all(at.join("src/glob")).expect("the source tree is there");
+    for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
+        std::fs::copy(
+            repository().join(".headwater").join(name),
+            at.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    // Written out of sorted order, so a member that does not sort goes red.
+    for name in [
+        "src/glob/c.rs",
+        "src/glob/a.rs",
+        "src/glob/b.rs",
+        "src/lone.rs",
+    ] {
+        std::fs::write(at.join(name), "").expect("the source file is written");
+    }
+    std::fs::write(
+        at.join("docs/interfaces/headwater-reach.md"),
+        "---\nid: HW-IFACE-headwater-reach\nstatus: current\nstatus_since: 2026-09-27\nsummary: \"An anchor that holds a glob and a literal.\"\nlast_verified: 2026-09-27\ntitle: \"headwater reach\"\nrelations:\n  governs:\n    - [\"src/glob/**\", src/lone.rs]\n---\n\n# headwater reach\n\n## Synopsis\n\n    headwater reach\n",
+    )
+    .expect("the document is written");
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args([
+            "explain",
+            "--json",
+            "docs/interfaces/headwater-reach.md",
+            "--root",
+        ])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "{text}\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let value = headwater_yaml::load(&text)
+        .unwrap_or_else(|errors| panic!("the explain document parses: {errors:?}\n{text}"))
+        .value;
+    let edge = value
+        .as_map()
+        .and_then(|map| map.get("related"))
+        .and_then(|spanned| spanned.value.as_seq())
+        .and_then(|elements| {
+            elements.iter().find(|element| {
+                member(&element.value, "relation").as_deref() == Some("governs")
+                    && member(&element.value, "inbound").as_deref() == Some("false")
+            })
+        })
+        .expect("the document governs its anchor");
+    let members = edge
+        .value
+        .as_map()
+        .and_then(|map| map.get("reach"))
+        .and_then(|spanned| spanned.value.as_map())
+        .and_then(|reach| reach.get("members"))
+        .and_then(|spanned| spanned.value.as_seq())
+        .unwrap_or_else(|| panic!("the edge carries `reach.members`\n{text}"));
+    let read: Vec<(String, usize, Vec<String>)> = members
+        .iter()
+        .map(|element| {
+            let pattern = member(&element.value, "pattern").expect("a `pattern`");
+            let matched: usize = member(&element.value, "matched")
+                .expect("a `matched` count")
+                .parse()
+                .expect("`matched` is a number");
+            let paths = element
+                .value
+                .as_map()
+                .and_then(|map| map.get("paths"))
+                .and_then(|spanned| spanned.value.as_seq())
+                .unwrap_or_else(|| panic!("the member `{pattern}` carries `paths`\n{text}"))
+                .iter()
+                .map(|path| {
+                    path.value
+                        .as_scalar()
+                        .map(headwater_yaml::core_schema::as_str)
+                        .expect("a member of `paths` is a string")
+                        .to_string()
+                })
+                .collect();
+            (pattern, matched, paths)
+        })
+        .collect();
+    for (pattern, matched, paths) in &read {
+        assert_eq!(
+            paths.len(),
+            *matched,
+            "`paths` holds the entries `matched` counts for `{pattern}`"
+        );
+    }
+    let glob = read
+        .iter()
+        .find(|(pattern, ..)| pattern == "src/glob/**")
+        .expect("the glob is a member");
+    assert_eq!(
+        glob.2,
+        ["src/glob/a.rs", "src/glob/b.rs", "src/glob/c.rs"],
+        "the glob's paths are the three files, sorted"
+    );
+    let lone = read
+        .iter()
+        .find(|(pattern, ..)| pattern == "src/lone.rs")
+        .expect("the literal is a member");
+    assert_eq!(lone.2, ["src/lone.rs"], "a literal names one entry, itself");
+}
