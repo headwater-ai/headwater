@@ -1245,3 +1245,70 @@ fn explain_writes_the_paths_each_pattern_of_an_anchor_matched() {
         .expect("the literal is a member");
     assert_eq!(lone.2, ["src/lone.rs"], "a literal names one entry, itself");
 }
+
+/// `governed_entries` counts an entry that two `governs` edges reach once.
+///
+/// [#1093](https://github.com/headwater-ai/headwater/issues/1093). HW-DR-0037
+/// governs eight site pages as literal edges and `site/**` as a ninth, so a sum
+/// of `matched` over its edges states 20 where the tree holds 12. Here a glob
+/// over three files and a second edge onto one of them reach 3 entries, and a
+/// sum would say 4. An inbound edge and a `traces_to` edge onto a file outside
+/// the glob count for nothing, because neither is the document governing it.
+#[test]
+fn governed_entries_counts_an_entry_two_edges_reach_once() {
+    let at = scratch().join("governed-entries");
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
+    std::fs::create_dir_all(at.join("src/glob")).expect("the source tree is there");
+    for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
+        std::fs::copy(
+            repository().join(".headwater").join(name),
+            at.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    for name in [
+        "src/glob/a.rs",
+        "src/glob/b.rs",
+        "src/glob/c.rs",
+        "src/traced.rs",
+    ] {
+        std::fs::write(at.join(name), "").expect("the source file is written");
+    }
+    std::fs::write(
+        at.join("docs/interfaces/headwater-overlap.md"),
+        "---\nid: HW-IFACE-headwater-overlap\nstatus: current\nstatus_since: 2026-09-27\nsummary: \"Two edges that reach one entry.\"\nlast_verified: 2026-09-27\ntitle: \"headwater overlap\"\nrelations:\n  governs:\n    - \"src/glob/**\"\n    - src/glob/a.rs\n  traces_to:\n    - src/traced.rs\n---\n\n# headwater overlap\n\n## Synopsis\n\n    headwater overlap\n",
+    )
+    .expect("the document is written");
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args([
+            "explain",
+            "--json",
+            "docs/interfaces/headwater-overlap.md",
+            "--root",
+        ])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "{text}\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let value = headwater_yaml::load(&text)
+        .unwrap_or_else(|errors| panic!("the explain document parses: {errors:?}\n{text}"))
+        .value;
+    assert_eq!(
+        member(&value, "governed_entries").as_deref(),
+        Some("3"),
+        "three distinct entries, the file both edges reach counted once\n{text}"
+    );
+    let governs = related(&text)
+        .into_iter()
+        .filter(|element| element.direction == "outbound" && element.relation == "governs")
+        .count();
+    assert_eq!(governs, 2, "the case holds two governs edges, so it is not vacuous");
+}

@@ -544,6 +544,11 @@ if [ -x "$engine" ]; then
     reverse_doc 0009-iota.md HW-PD-0009 'Iota governs a glob of three' 'relations:\n  governs:\n    - "tools/glob/**"\n'
     reverse_doc 0010-kappa.md HW-PD-0010 'Kappa governs a glob of twenty-one' 'relations:\n  governs:\n    - "tools/many/**"\n'
     reverse_doc 0011-lambda.md HW-PD-0011 'Lambda governs a glob of twenty' 'relations:\n  governs:\n    - "tools/bound/**"\n'
+    # Mu and Nu each govern a glob and, as a second edge, one file inside it,
+    # the shape HW-DR-0037 has. The heading counts that file once: 3 files
+    # for Mu, and 21 for Nu, whose glob is past the bound (#1093).
+    reverse_doc 0012-mu.md HW-PD-0012 'Mu governs a glob and a file in it' 'relations:\n  governs:\n    - "tools/glob/**"\n    - tools/glob/g1.sh\n'
+    reverse_doc 0013-nu.md HW-PD-0013 'Nu governs a long glob and a file in it' 'relations:\n  governs:\n    - "tools/many/**"\n    - tools/many/f01.sh\n'
     reverse_doc 0006-zeta.md HW-PD-0006 'Zeta verified beta once' 'relations:\n  governs:\n    - to: tools/beta.sh\n      verified_revision: sha256:0000\n'
 
     if resolved=$("$reverse_root/engine/target/release/headwater" taxonomy resolve --root "$reverse_root" 2>&1); then
@@ -587,6 +592,12 @@ if [ -x "$engine" ]; then
             write.sh 0 '  tools/bound/** (20 files):\n    tools/bound/b01.sh' "$lambda"
         expect 'a glob at the bound lists its last file' \
             write.sh 0 '    tools/bound/b20.sh' "$lambda"
+        mu='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0012-mu.md"}}'
+        expect 'a file two edges reach is counted once in the heading' \
+            write.sh 0 'It governs these code paths (3):' "$mu"
+        nu='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0013-nu.md"}}'
+        expect 'past the bound, the heading is the distinct count the engine reports' \
+            write.sh 0 'It governs these code paths (21):' "$nu"
         expect 'a document with no edge in either direction is silent' \
             write.sh 0 '' \
             '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0004-delta.md"}}'
