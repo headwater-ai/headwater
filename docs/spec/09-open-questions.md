@@ -355,7 +355,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file
 
-[HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) — `headwater taxonomy graph` prints the resolved taxonomy from the lock as a Mermaid flowchart, and no projection, explain format or export target draws it (asserted, and no human has accepted it)
+[HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) — `headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 and DOT are equal candidates after it (asserted, and no human has accepted it)
 
 ## Governs and traces_to are created by an agent, because a session proposes the line and a person types it
 
@@ -392,3 +392,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order
 
 [HW-DR-0095](../decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md) — An entry that names another in requires may add into its keys, and every other pair of entries still commutes only over disjoint leaves. (asserted, and no human has accepted it)
+
+## Harper does not become part of the engine now, and Q41 stands
+
+[HW-DR-0096](../decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md) — harper-core found 0 real errors in 187 hand-read findings on 25 documents of this corpus. So the engine does not link it now, Q41 stands, and a stated precision bar or an adopter request reopens it. (asserted, and no human has accepted it)

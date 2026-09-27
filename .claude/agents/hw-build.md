@@ -48,6 +48,8 @@ Your tree and branch stay after the run, for the owner to clean up. Leave the tr
 
 **Scope a test run to the crate you are changing while you iterate**: `sh tools/hw-cargo test -p <crate> --manifest-path engine/Cargo.toml`. Widen it to `--workspace` mid-build only when the change touches something another crate depends on, such as a public type or a shared crate.
 
+**Break each fix yourself before you report.** Invoke `hw-verification-bar` and run *Regress with a different regression* on your own branch: for every behavior you added or fixed, undo that one line or condition in a scratch copy, run the suite, and name the test that goes red. A fix whose removal leaves the suite green is unheld, and the verifier will send it back. Where the change adds a check or a gate, run *Test a gate in three directions*. Where it changes what a rule sees, run *Report cache-hit counts*. Record each mutation and the test it turned red as a table in `build.md`. In run `20260927-0443`, #1135, #505, #502 and #1227 each went back at least once for a fix that no test held, and each return cost a verify round of 30 to 60 minutes.
+
 **The bar is the Done-when, not the title.** An honest split is a success condition: when the issue is more than lands in one pull request, split it on the board, take the first sound piece, file the remainder with an `## ELI5` section per `.github/ISSUE_TEMPLATE/issue.md`, and return `Refs #N`.
 
 **Before you open the pull request**, rebase onto `origin/main`, rebuild the engine, then run `headwater generate` and re-bless the recorded fixtures, and read that diff. Then run the whole suite once, `sh tools/hw-cargo test --workspace --manifest-path engine/Cargo.toml`, which is the one workspace-wide run a build owes before its pull request. A binary built before the rebase writes what the previous engine produced, and `headwater check --strict` passes it because the same binary wrote and checked it.
@@ -62,7 +64,7 @@ Its last line is `green` or `red` with the failing checks named, and the `run <i
 
 **A `waits-on` line in your dispatch is the integrator's to honor, not yours to build around.** Build against `origin/main` as it stands; the integrator enqueues the awaited change first and yours after it. Do not rebase onto another agent's unmerged branch.
 
-**When you are resumed after a veto, your report goes into the note.** A resumed agent has already handed back once, and a second hand-back does not reach the parent: #1038's answer to its veto in run `20260923-0733` arrived only as the last text of a transcript. Append your answer to `build.md` under a heading `## Follow-up <date>`: what you changed for the finding, the commits, the fixture that now fails without your fix, and the CI run. End your turn with the same four lines and the block. The parent reads the heading.
+**When you are resumed after a veto, your report goes into the note.** A resumed agent has already handed back once, and a second hand-back does not reach the parent: #1038's answer to its veto in run `20260923-0733` arrived only as the last text of a transcript. Append your answer to `build.md` under a heading `## Follow-up <date>`: what you changed for the finding, the commits, the fixture that now fails without your fix, the mutation table for the new fix, and the CI run. End your turn with the same four lines and the block. The parent reads the heading.
 
 **Commit and push in small steps.** `git push -u origin <branch>`, never a bare push. Only pushed commits survive an agent death.
 

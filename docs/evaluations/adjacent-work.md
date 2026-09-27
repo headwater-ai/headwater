@@ -899,7 +899,7 @@ Every evaluation harness in current practice ships the same shape. A small fixed
 
 The reason is not thrift. A regression run has one arm and estimates nothing, and a powered comparison costs what statistics say it costs. [Q8](../spec/09-decisions.md#q8--probe-cost-and-cadence) asked which categories run on which cadence. The observed answer is that cadence follows the purpose of the run, and category has nothing to do with it.
 
-> **Applied:** the two tiers in [spec 5](../spec/05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose).
+> **Applied:** the two tiers in [spec 5](../spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose).
 
 ### R.8 The measured failure of an unread instrument surface
 
