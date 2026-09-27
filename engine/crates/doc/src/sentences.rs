@@ -443,6 +443,30 @@ mod tests {
         assert_eq!(texts("It closes at 5 p.m. Friday.\n").len(), 1);
         assert_eq!(texts("She holds a Ph.D. in it.\n").len(), 1);
         assert_eq!(texts("She holds a Ph.D. From Leeds.\n").len(), 1);
+        assert_eq!(texts("Read 12 U.S.C. Section 101 first.\n").len(), 1);
+    }
+
+    /// A statute citation before a section number (#1228). The period after
+    /// `U.S.C.` met the digit of `101`, and a digit opens a sentence, so one
+    /// sentence split into three.
+    #[test]
+    fn a_statute_citation_before_a_number_ends_no_sentence() {
+        assert_eq!(
+            texts("Read 12 U.S.C. 101. Then stop.\n"),
+            ["Read 12 U.S.C. 101.", "Then stop."]
+        );
+    }
+
+    /// A dotted entry matches in any case (#1228). Each case is followed by a
+    /// word that opens a sentence, a capital or a name such as `iPhone`, so a
+    /// case-sensitive match splits it. After a plain lower-case word the
+    /// lower-case guard joins the two anyway, and the case would prove nothing.
+    #[test]
+    fn a_dotted_abbreviation_matches_in_any_case() {
+        assert_eq!(texts("The u.s. iPhone ships it.\n").len(), 1);
+        assert_eq!(texts("It opens at 9 A.M. Monday.\n").len(), 1);
+        assert_eq!(texts("She holds a PH.D. From Leeds.\n").len(), 1);
+        assert_eq!(texts("Read 12 u.s.c. 101 first.\n").len(), 1);
     }
 
     /// The cost of the dotted entries, held so that nobody reads it as a bug:
@@ -454,6 +478,7 @@ mod tests {
             texts("It is sold in the U.S. The next one is not.\n").len(),
             1
         );
+        assert_eq!(texts("It is set out in 5 U.S.C. The next one is not.\n").len(), 1);
     }
 
     /// The guard that catches every abbreviation the list misses: a sentence of
